@@ -73,7 +73,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
 
     final Map<String, Set<PartitionMetadata>> distributionByGroup =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(currentConfiguration);
-    validateNoRemoval(distributionByGroup, targetPartitionIds);
+    validateNoRemoval(distributionByGroup, targetPartitionIds, replicationFactor);
     final Map<PartitionId, PartitionMetadata> currentById =
         targetGroups.stream()
             .flatMap(group -> distributionByGroup.getOrDefault(group, Set.of()).stream())

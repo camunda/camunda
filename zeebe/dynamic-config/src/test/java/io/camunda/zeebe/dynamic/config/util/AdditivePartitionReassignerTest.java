@@ -91,14 +91,14 @@ final class AdditivePartitionReassignerTest {
             new PartitionId(NEW_GROUP, 1),
             new PartitionId(NEW_GROUP, 2));
     final var assigned =
-        reassigner.reassignPartitions(configuration, targetMembers, targetPartitionIds, 1);
+        reassigner.reassignPartitions(configuration, targetMembers, targetPartitionIds, 2);
 
     // then — every existing partition of both groups is unchanged, and the new tenantB partition 2
     // lands on member 3, the only member with zero load from either group
     assertThat(assigned).containsAll(tenantAPartitions);
     assertThat(assigned).contains(existingTenantB);
     final var placed = findPartition(assigned, NEW_GROUP, 2);
-    assertThat(placed.members()).containsExactly(member(3));
+    assertThat(placed.members()).containsExactlyInAnyOrder(member(3), member(2));
   }
 
   @Test

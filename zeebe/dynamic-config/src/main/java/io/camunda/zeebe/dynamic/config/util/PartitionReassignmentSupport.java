@@ -303,7 +303,8 @@ final class PartitionReassignmentSupport {
    */
   static void validateNoRemoval(
       final Map<String, Set<PartitionMetadata>> distributionByGroup,
-      final List<PartitionId> targetPartitionIds) {
+      final List<PartitionId> targetPartitionIds,
+      final int replicationFactor) {
     final Set<PartitionId> targetIdSet = Set.copyOf(targetPartitionIds);
     final var missing =
         distributionByGroup.values().stream()
@@ -317,6 +318,21 @@ final class PartitionReassignmentSupport {
               + "removing partitions or groups is not supported by this reassigner, but is "
               + "missing: "
               + missing);
+    }
+
+    final var partitionsWithReducedReplicationFactor =
+        distributionByGroup.values().stream()
+            .flatMap(Set::stream)
+            .filter(metadata -> metadata.members().size() > replicationFactor)
+            .toList();
+
+    if (!partitionsWithReducedReplicationFactor.isEmpty()) {
+      throw new IllegalArgumentException(
+          "targetPartitionIds must not reduce the replication factor of any existing partition — "
+              + "reducing replication factor is not supported by this reassigner, but the following partitions have more members than the target replication factor: "
+              + partitionsWithReducedReplicationFactor.stream()
+                  .map(PartitionMetadata::id)
+                  .toList());
     }
   }
 
