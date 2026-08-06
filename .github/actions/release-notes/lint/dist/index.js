@@ -2,6 +2,136 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 961:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GithubCheckRunApi = exports.CHECK_RUN_NAME = void 0;
+exports.renderCheckRun = renderCheckRun;
+exports.syncCheckRun = syncCheckRun;
+const github_1 = __nccwpck_require__(631);
+/**
+ * The check run the gate publishes on the PR's head commit.
+ *
+ * WHY THIS EXISTS: on `workflow_run` the job is not attached to any pull
+ * request, so GitHub renders no check row for it on the PR and branch
+ * protection has nothing to point at. The gate therefore publishes its own —
+ * "mechanism b" in the design. At the required-flip this check-run NAME is what
+ * branch protection requires, not a job name.
+ *
+ * Split like the sticky comment: the render is pure and the API is injected, so
+ * the upsert is unit-tested without mocking fetch; only GithubCheckRunApi
+ * touches the network.
+ */
+/** Branch protection will key off this exact string at the required-flip.
+ *  Renaming it silently detaches the gate from branch protection. */
+exports.CHECK_RUN_NAME = 'Release-notes PR-gate';
+/** Shown while the gate is advisory, so nobody blocks themselves on a red check
+ *  that is not required. Dropped once `enforce` is on. */
+const ADVISORY_TITLE = '⚠ Advisory — does NOT block merging';
+const ADVISORY_NOTE = '**This check is not required. You can merge with it red.**\n\n' +
+    'During the rollout window the release-notes gate reports what _would_ fail once enforcement begins.';
+/**
+ * Build the check-run payload (pure).
+ *
+ * The conclusion is red on failure from day one, independent of `enforce`: the
+ * rollout window exists to surface real-world false positives, and an invisible
+ * check surfaces none. `enforce` only controls the advisory wording — so there
+ * is no second place to remember at flip time, and the check can never claim to
+ * be advisory once it actually blocks.
+ */
+function renderCheckRun(gate, enforce) {
+    const lines = gate.checks.map((check) => `${check.outcome === 'pass' ? '✅' : '❌'} **${check.label}** — ${check.reasons.join(' ')}`);
+    if (gate.outcome === 'pass') {
+        return {
+            conclusion: 'success',
+            title: 'Release-notes checks passed',
+            summary: lines.join('\n\n'),
+        };
+    }
+    return {
+        conclusion: 'failure',
+        title: enforce ? 'Release-notes checks failed' : ADVISORY_TITLE,
+        summary: enforce ? lines.join('\n\n') : `${ADVISORY_NOTE}\n\n---\n\n${lines.join('\n\n')}`,
+    };
+}
+/**
+ * Idempotently reconcile the head SHA's check run against the outcome.
+ *
+ * Upsert, not append: the gate re-runs on every edit and push, and a plain POST
+ * each time would stack a fresh row on the PR for every event.
+ */
+async function syncCheckRun(api, headSha, gate, enforce) {
+    const run = renderCheckRun(gate, enforce);
+    const existing = (await api.list(headSha)).find((check) => check.name === exports.CHECK_RUN_NAME);
+    if (existing) {
+        await api.update(existing.id, run);
+        return 'updated';
+    }
+    await api.create(headSha, run);
+    return 'created';
+}
+/**
+ * check-runs API over plain fetch (Node global), same reasoning as the resolver
+ * and the comment adapter.
+ *
+ * Uses GITHUB_TOKEN's `checks: write` rather than the App token, so publishing
+ * the check does not depend on the App carrying that permission. Unlike the
+ * comment, no bot identity is needed here — nothing downstream keys off who
+ * posted a check run.
+ */
+class GithubCheckRunApi {
+    repoUrl;
+    headers;
+    constructor(token, owner, repo) {
+        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
+        this.headers = (0, github_1.githubHeaders)(token, { json: true });
+    }
+    async list(headSha) {
+        // Filtered server-side by name, so this returns at most our own runs —
+        // no pagination concern even on a commit with a large check suite.
+        const url = `${this.repoUrl}/commits/${headSha}/check-runs?check_name=${encodeURIComponent(exports.CHECK_RUN_NAME)}`;
+        const res = await fetch(url, { headers: this.headers });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} listing check runs for ${headSha}`);
+        const data = (await res.json());
+        return data.check_runs ?? [];
+    }
+    async create(headSha, run) {
+        const res = await fetch(`${this.repoUrl}/check-runs`, {
+            method: 'POST',
+            headers: this.headers,
+            body: JSON.stringify({
+                name: exports.CHECK_RUN_NAME,
+                head_sha: headSha,
+                status: 'completed',
+                conclusion: run.conclusion,
+                output: { title: run.title, summary: run.summary },
+            }),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} creating check run for ${headSha}`);
+    }
+    async update(checkRunId, run) {
+        const res = await fetch(`${this.repoUrl}/check-runs/${checkRunId}`, {
+            method: 'PATCH',
+            headers: this.headers,
+            body: JSON.stringify({
+                status: 'completed',
+                conclusion: run.conclusion,
+                output: { title: run.title, summary: run.summary },
+            }),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} updating check run ${checkRunId}`);
+    }
+}
+exports.GithubCheckRunApi = GithubCheckRunApi;
+
+
+/***/ }),
+
 /***/ 573:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -474,7 +604,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const node_fs_1 = __nccwpck_require__(24);
+const checkrun_1 = __nccwpck_require__(961);
 const comment_1 = __nccwpck_require__(573);
 const gate_1 = __nccwpck_require__(155);
 const core = __importStar(__nccwpck_require__(93));
@@ -483,40 +613,52 @@ const resolver_1 = __nccwpck_require__(306);
 /**
  * PR-gate lint entrypoint (warn-only rollout).
  *
- * Security: runs on pull_request_target, metadata-only. The PR body/title are
- * read from the event payload — never by checking out the PR head. The
- * privileged token comes in as an input (reused MONOREPO_RELEASE_APP).
+ * Security: runs on `workflow_run`, so the workflow and this action always
+ * resolve from the default branch and a PR cannot edit the code that judges it.
+ * The PR is identified by `pr-number`, which the workflow derives server-side
+ * from the immutable head SHA — never from anything the PR controls. The body
+ * and title are then fetched from the API, so they are current at evaluation
+ * time rather than a snapshot from whenever the event fired.
  *
  * ponytail: warn-only for now — reports the combined gate outcome (PR-issue
  * link + title lint, with a backport hop) to the job summary, the outputs, a
- * single sticky PR comment (created only on failure, flipped to resolved once
- * fixed), and the display-only `no-issue` label. Both the comment and the
- * label sync regardless of `enforce` — they're informational, not the
- * enforcement mechanism. Enforce mode ships in a follow-up PR. `enforce=true`
- * flips a fail into a non-zero exit.
+ * check run on the head SHA, a single sticky PR comment, and the display-only
+ * `no-issue` label. All three syncs run regardless of `enforce` — they are
+ * informational, not the enforcement mechanism. `enforce=true` flips a fail
+ * into a non-zero exit; enforce mode ships in a follow-up PR.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
+    const checksToken = core.getInput('checks-token', { required: true });
+    const headSha = core.getInput('head-sha', { required: true });
     const enforce = core.getBooleanInput('enforce');
-    const eventPath = process.env.GITHUB_EVENT_PATH;
-    const event = eventPath
-        ? JSON.parse((0, node_fs_1.readFileSync)(eventPath, 'utf8'))
-        : {};
-    const pr = event.pull_request;
-    if (!pr) {
-        core.info('No pull_request in payload; nothing to lint.');
+    // Empty means the head SHA resolved to no pull request — a workflow_run from
+    // something that is not a PR. Nothing to lint, and not an error.
+    const prNumberInput = core.getInput('pr-number').trim();
+    if (prNumberInput === '') {
+        core.info('No pull request for this head SHA; nothing to lint.');
+        return;
+    }
+    const prNumber = Number(prNumberInput);
+    if (!Number.isInteger(prNumber) || prNumber <= 0) {
+        core.setFailed(`pr-number must be a positive integer, got "${prNumberInput}".`);
         return;
     }
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    // A transient resolver error (403/500) must respect `enforce`: warn-only means
-    // the gate never hard-fails, so an API blip cannot turn a green check red.
+    // A transient API error (403/500) must respect `enforce`: warn-only means the
+    // gate never hard-fails, so a blip cannot turn a green check red.
     let gate;
     try {
+        const pull = await resolver.fetchPull(prNumber);
+        if (!pull) {
+            core.info(`PR #${prNumber} could not be fetched; nothing to lint.`);
+            return;
+        }
         gate = await (0, gate_1.evaluateGate)(resolver, {
-            body: pr.body ?? '',
-            title: pr.title ?? '',
-            authorLogin: pr.user?.login,
+            body: pull.body,
+            title: pull.title,
+            authorLogin: pull.authorLogin,
         });
     }
     catch (err) {
@@ -535,36 +677,45 @@ async function run() {
     const heading = gate.outcome === 'pass' ? '✅ Release-notes checks passed' : '❌ Release-notes checks failed';
     const summaryLines = gate.checks.map((check) => `${check.outcome === 'pass' ? '✅' : '❌'} ${check.label}: ${check.reasons.join(' ')}`);
     await core.summary.addHeading(heading, 3).addList(summaryLines).write();
-    // Sticky PR comment (D24: comments from day one) + the display-only `no-issue`
-    // label. Both only need `gate` + the PR number and are independent, so run
-    // them concurrently. Each is best-effort: a sync failure is logged and must
-    // never fail the gate — warn or not, the outcome above stands.
-    if (pr.number) {
-        const prNumber = pr.number;
-        await Promise.allSettled([
-            (async () => {
-                try {
-                    const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', prNumber);
-                    const action = await (0, comment_1.syncStickyComment)(comments, gate);
-                    core.info(`Sticky comment: ${action}.`);
-                }
-                catch (err) {
-                    core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-                }
-            })(),
-            (async () => {
-                try {
-                    const labels = new labels_1.GithubLabelApi(token, owner ?? '', repo ?? '', prNumber);
-                    const action = await (0, labels_1.syncNoIssueLabel)(labels, gate);
-                    core.setOutput('label-action', action);
-                    core.info(`no-issue label: ${action}.`);
-                }
-                catch (err) {
-                    core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-                }
-            })(),
-        ]);
-    }
+    // The check run (the PR's only visible signal, since a workflow_run job does
+    // not attach to the PR), the sticky comment, and the display-only `no-issue`
+    // label. Independent of each other, so run them concurrently. Each is
+    // best-effort: a sync failure is logged and must never fail the gate — warn
+    // or not, the outcome above stands.
+    await Promise.allSettled([
+        (async () => {
+            try {
+                const checks = new checkrun_1.GithubCheckRunApi(checksToken, owner ?? '', repo ?? '');
+                const action = await (0, checkrun_1.syncCheckRun)(checks, headSha, gate, enforce);
+                core.setOutput('check-run-action', action);
+                core.info(`Check run: ${action}.`);
+            }
+            catch (err) {
+                core.warning(`Check run sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+            }
+        })(),
+        (async () => {
+            try {
+                const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', prNumber);
+                const action = await (0, comment_1.syncStickyComment)(comments, gate);
+                core.info(`Sticky comment: ${action}.`);
+            }
+            catch (err) {
+                core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+            }
+        })(),
+        (async () => {
+            try {
+                const labels = new labels_1.GithubLabelApi(token, owner ?? '', repo ?? '', prNumber);
+                const action = await (0, labels_1.syncNoIssueLabel)(labels, gate);
+                core.setOutput('label-action', action);
+                core.info(`no-issue label: ${action}.`);
+            }
+            catch (err) {
+                core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+            }
+        })(),
+    ]);
     if (gate.outcome === 'fail') {
         const msg = reasons.join(' ');
         if (enforce)
@@ -823,6 +974,19 @@ class GithubResolver {
     async fetchPullBody(number, repo) {
         if (this.isCrossRepo(repo))
             return null;
+        const pull = await this.fetchPull(number);
+        return pull?.body ?? null;
+    }
+    /**
+     * Fetch the fields the gate evaluates for one same-repo pull request, or null
+     * if it does not exist.
+     *
+     * This is how the entrypoint obtains the PR under `workflow_run`, where the
+     * event payload carries no `pull_request` object at all. Fetching also means
+     * the body is read at evaluation time, so a stale or superseded trigger run
+     * can never evaluate an out-of-date body.
+     */
+    async fetchPull(number) {
         const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
             headers: this.headers,
         });
@@ -831,7 +995,7 @@ class GithubResolver {
         if (!res.ok)
             throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
         const data = (await res.json());
-        return data.body ?? '';
+        return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
     }
     /** A ref points at a different repo than the one being gated (case-insensitive). */
     isCrossRepo(repo) {

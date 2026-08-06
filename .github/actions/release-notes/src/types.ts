@@ -59,6 +59,20 @@ export interface Resolver {
   resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
 }
 
+/**
+ * The pull-request fields the gate evaluates. Fetched from the API rather than
+ * read off the event payload: on `workflow_run` there is no `pull_request` in
+ * the payload at all, and fetching also guarantees the body is current at
+ * evaluation time rather than a snapshot from whenever the event fired.
+ */
+export interface PullMeta {
+  readonly body: string;
+  readonly title: string;
+  /** Drives the bot title-lint exemption (D16). Absent means "not exempt", so a
+   *  missing author degrades to a stricter check, never a looser one. */
+  readonly authorLogin?: string;
+}
+
 /** How the linked PR was delivered — a direct PR, or a backport hop to an original. */
 export type DeliveryPath = 'direct' | 'backportHop';
 

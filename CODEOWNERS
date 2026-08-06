@@ -26,8 +26,7 @@
 /.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
 /.github/dependency-review-config.json                   @camunda/engineering-operations
 /.github/actions/release-notes/**                        @camunda/engineering-operations
-/.github/workflows/release-notes-pr-gate.yml             @camunda/engineering-operations
-/.github/workflows/release-notes-action-ci.yml           @camunda/engineering-operations
+/.github/workflows/release-notes*                        @camunda/engineering-operations
 
 ###################
 ## Core Features ##

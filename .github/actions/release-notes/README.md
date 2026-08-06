@@ -148,23 +148,38 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
 | `src/gate/`     | Orchestrates link (+ backport hop) + title into one `GateOutcome`                       |
 | `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)                |
 | `src/labels/`   | `no-issue` label sync, mirroring the PR-issue-link check (pure logic + `fetch` adapter) |
+| `src/checkrun/` | Check-run render + idempotent upsert on the head SHA (pure logic + `fetch` adapter)     |
 | `src/gha.ts`    | Minimal `@actions/core` replacement                                                     |
 | `src/lint.ts`   | The gate entrypoint (warn-only)                                                         |
 
 ## Security model
 
-The gate runs on **`pull_request_target`, metadata-only**
-(`.github/workflows/release-notes-pr-gate.yml`):
+The gate runs on **`workflow_run`, metadata-only**. Two workflows:
 
-- The PR body is read from the event payload — the workflow **never checks out
-  the PR head**. The only checkout takes the base ref (to load this action).
-- A privileged token (reused `MONOREPO_RELEASE_APP`) lets the gate post a
-  sticky comment and sync the display-only `no-issue` label, including on fork
-  PRs. `GITHUB_TOKEN` on plain `pull_request` cannot do that for forks.
+| Workflow | Trigger | Role |
+|---|---|---|
+| `release-notes-pr-gate-trigger.yml` | `pull_request` | Empty. No token, no checkout, no logic — it exists only because `workflow_run` cannot be fired by a pull request directly. |
+| `release-notes-pr-gate.yml` | `workflow_run` | The gate. Loads from the default branch with a base-repo token. |
 
-Note: because `pull_request_target` uses the workflow definition from the
-**base** branch, this workflow only runs once it has landed on the target
-branch — the required-check spike can only be verified after merge to `main`.
+Why this shape:
+
+- On `workflow_run` the workflow **and this action always resolve from the
+  default branch**, so a PR cannot edit the code that judges it. Plain
+  `pull_request` would load both from the PR's own merge ref.
+- The job holds a base-repo token, so the sticky comment and `no-issue` label
+  work **on fork PRs too**. Plain `pull_request` gives forks a read-only token.
+- **Never check out the PR head.** The checkout takes the default ref; adding
+  `ref: …head…` would execute PR-authored code with a privileged token.
+- The PR number is re-derived server-side from the immutable
+  `workflow_run.head_sha` (`GET /commits/{sha}/pulls`), never passed in from
+  the trigger workflow — a fork controls that job and could claim any number.
+- Because a `workflow_run` job is not attached to a PR, GitHub renders no check
+  row for it. The gate publishes its own check run (`src/checkrun/`) on the head
+  SHA; that check-run **name** is what branch protection requires at the
+  required-flip.
+
+Note: `workflow_run` only fires when the workflow is on the **default branch**,
+so neither workflow runs until this lands on `main`.
 
 ## Build & test
 

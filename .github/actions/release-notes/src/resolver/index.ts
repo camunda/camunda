@@ -1,5 +1,5 @@
 import { githubHeaders, repoApiUrl } from '../github';
-import type { ParsedRef, ResolvedRef, Resolver } from '../types';
+import type { ParsedRef, PullMeta, ResolvedRef, Resolver } from '../types';
 
 /** A PR body can carry at most this many refs to the API. A legitimate PR never
  *  needs more than a handful — this bounds the worst case (a body stuffed with
@@ -77,14 +77,31 @@ export class GithubResolver implements Resolver {
    */
   async fetchPullBody(number: number, repo: string | null): Promise<string | null> {
     if (this.isCrossRepo(repo)) return null;
+    const pull = await this.fetchPull(number);
+    return pull?.body ?? null;
+  }
 
+  /**
+   * Fetch the fields the gate evaluates for one same-repo pull request, or null
+   * if it does not exist.
+   *
+   * This is how the entrypoint obtains the PR under `workflow_run`, where the
+   * event payload carries no `pull_request` object at all. Fetching also means
+   * the body is read at evaluation time, so a stale or superseded trigger run
+   * can never evaluate an out-of-date body.
+   */
+  async fetchPull(number: number): Promise<PullMeta | null> {
     const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
       headers: this.headers,
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
-    const data = (await res.json()) as { body?: string | null };
-    return data.body ?? '';
+    const data = (await res.json()) as {
+      body?: string | null;
+      title?: string | null;
+      user?: { login?: string } | null;
+    };
+    return { body: data.body ?? '', title: data.title ?? '', authorLogin: data.user?.login };
   }
 
   /** A ref points at a different repo than the one being gated (case-insensitive). */
