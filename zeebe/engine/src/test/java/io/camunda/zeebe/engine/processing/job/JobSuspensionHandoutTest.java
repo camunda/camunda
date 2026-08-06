@@ -184,6 +184,68 @@ public final class JobSuspensionHandoutTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldActivateJobAfterResume() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createInstanceWithJob(jobType);
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    assertThat(ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys()).isEmpty();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
+    assertThat(batch.getValue().getJobKeys()).hasSize(1);
+  }
+
+  @Test
+  public void shouldKeepJobPriorityAcrossSuspendAndResume() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType).zeebeJobPriority("77"))
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
+    assertThat(batch.getValue().getJobs()).hasSize(1);
+    assertThat(batch.getValue().getJobs().get(0).getPriority()).isEqualTo(77);
+  }
+
+  @Test
+  public void shouldNotifyWorkersOnResume() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createInstanceWithJob(jobType);
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.RESUMED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
   private long createInstanceWithJob(final String jobType) {
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
