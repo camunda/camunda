@@ -877,9 +877,7 @@ public final class JobStateTest {
 
   /** Creates an activatable job and parks it the way the secret resolution flow does. */
   private void parkJobForSecretResolution(final long key, final JobRecord record) {
-    jobState.insertJobRecordActivatable(key, record);
-    jobState.makeJobActivatableByPriority(
-        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+    jobState.create(key, record);
     jobState.parkForSecretResolution(key, record);
   }
 

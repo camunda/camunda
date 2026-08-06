@@ -350,8 +350,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
 
   private void createActivatableJob(final long key, final DirectBuffer type) {
     final JobRecord record = new JobRecord().setType(type).setTenantId(TENANT).setRetries(1);
-    jobState.insertJobRecordActivatable(key, record);
-    jobState.makeJobActivatableByPriority(type, key, TENANT, record.getPriority());
+    jobState.create(key, record);
   }
 
   private List<Long> activatableKeys(final DirectBuffer type) {

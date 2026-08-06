@@ -93,7 +93,7 @@ public final class SecretReferenceBatchIncidentsCreatedApplierTest {
             .setRetries(3)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     jobState.create(jobKey, jobRecord);
-    jobState.makeJobNotActivatable(jobKey, jobRecord);
+    jobState.parkForSecretResolution(jobKey, jobRecord);
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
     final var value =

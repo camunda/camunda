@@ -52,9 +52,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
             .setType("test")
             .setRetries(3)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    jobState.insertJobRecordActivatable(jobKey, jobRecord);
-    jobState.makeJobActivatableByPriority(
-        jobRecord.getTypeBuffer(), jobKey, jobRecord.getTenantId(), jobRecord.getPriority());
+    jobState.create(jobKey, jobRecord);
     jobState.parkForSecretResolution(jobKey, jobRecord);
     return jobRecord;
   }
