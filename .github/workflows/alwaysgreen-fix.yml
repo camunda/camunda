@@ -114,7 +114,7 @@ jobs:
             *) echo "::error::unsupported base_ref '$BASE_REF'"; exit 1 ;;
           esac
           case "$SURFACE" in
-            sm-smoke-e2e|saas-smoke-e2e) ;;
+            sm-smoke-e2e|saas-smoke-e2e|helm-install) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
           # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
