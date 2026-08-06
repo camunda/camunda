@@ -26,6 +26,10 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
 
   private static final String BUCKET_A = "bucket-a";
   private static final String BUCKET_B = "bucket-b";
+  private static final String USER_DEFAULT = "store-default-user";
+  private static final String USER_A = "store-a-user";
+  private static final String USER_B = "store-b-user";
+  private static final String USER_C = "store-c-user";
   private static final Network NETWORK = Network.newNetwork();
 
   @Container
@@ -52,6 +56,17 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
       client.createBucket(cfg -> cfg.bucket(BUCKET_A)).join();
       client.createBucket(cfg -> cfg.bucket(BUCKET_B)).join();
     }
+
+    // Each store gets its own Minio user, scoped to the one bucket that store writes into, and the
+    // root key pair is never handed to the broker. That makes the credentials load-bearing: a
+    // regression that drops the per-store key pair falls back to the AWS SDK default chain, which
+    // has nothing to offer here, and a store built with a sibling's key pair is refused by Minio
+    // with AccessDenied. It cannot separate store-a from store-c, which share bucket-a — those two
+    // stay isolated by prefix alone, as the class javadoc of AbstractDocumentIsolationIT describes.
+    MINIO.createScopedUser(USER_DEFAULT, USER_DEFAULT + "-secret", BUCKET_B);
+    MINIO.createScopedUser(USER_A, USER_A + "-secret", BUCKET_A);
+    MINIO.createScopedUser(USER_B, USER_B + "-secret", BUCKET_B);
+    MINIO.createScopedUser(USER_C, USER_C + "-secret", BUCKET_A);
 
     // every store is configured with its own endpoint, region and credentials, so nothing is read
     // from the process environment. An IP-based endpoint forces path-style access in the AWS SDK
@@ -82,13 +97,13 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
         .withProperty("camunda.physical-tenants.tenantc.document.default-store-id", STORE_C)
         .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C);
 
-    withStoreConnection(BROKER, "camunda.document.aws.store-default", minioEndpoint);
+    withStoreConnection(BROKER, "camunda.document.aws.store-default", minioEndpoint, USER_DEFAULT);
     withStoreConnection(
-        BROKER, "camunda.physical-tenants.tenanta.document.aws.store-a", minioEndpoint);
+        BROKER, "camunda.physical-tenants.tenanta.document.aws.store-a", minioEndpoint, USER_A);
     withStoreConnection(
-        BROKER, "camunda.physical-tenants.tenantb.document.aws.store-b", minioEndpoint);
+        BROKER, "camunda.physical-tenants.tenantb.document.aws.store-b", minioEndpoint, USER_B);
     withStoreConnection(
-        BROKER, "camunda.physical-tenants.tenantc.document.aws.store-c", minioEndpoint);
+        BROKER, "camunda.physical-tenants.tenantc.document.aws.store-c", minioEndpoint, USER_C);
 
     BROKER.start();
 
@@ -96,17 +111,20 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
   }
 
   /**
-   * Points a single document store at Minio with its own credentials. Configuring them per store —
-   * rather than through the AWS SDK's process-wide environment — is what lets each physical tenant
-   * reach its storage under its own identity.
+   * Points a single document store at Minio with the key pair of the user created for it.
+   * Configuring credentials per store — rather than through the AWS SDK's process-wide environment
+   * — is what lets each physical tenant reach its storage under its own identity.
    */
   private static void withStoreConnection(
-      final TestStandaloneBroker broker, final String storePrefix, final String endpoint) {
+      final TestStandaloneBroker broker,
+      final String storePrefix,
+      final String endpoint,
+      final String user) {
     broker
         .withProperty(storePrefix + ".endpoint", endpoint)
         .withProperty(storePrefix + ".region", MINIO.region())
-        .withProperty(storePrefix + ".access-key", MINIO.accessKey())
-        .withProperty(storePrefix + ".secret-key", MINIO.secretKey());
+        .withProperty(storePrefix + ".access-key", user)
+        .withProperty(storePrefix + ".secret-key", user + "-secret");
   }
 
   @AfterAll
