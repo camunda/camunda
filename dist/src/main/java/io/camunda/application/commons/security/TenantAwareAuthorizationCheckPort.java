@@ -7,67 +7,68 @@
  */
 package io.camunda.application.commons.security;
 
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.TokenClaimsAuthenticationResolver;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.Either;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.core.authz.AuthorizationService;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.authz.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.security.core.authz.ScopedAuthorizationCheckPortFactory.ScopedAuthorizationCheckPorts;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
 import java.util.Map;
 
 /**
- * {@link AuthorizationCheckPort} that resolves the {@link AuthorizationChecker} for the physical
- * tenant of the current request via {@link AuthorizationCheckerProvider} before delegating to a
- * per-call {@link AuthorizationService}, and additionally grants COMPONENT/ACCESS on {@code admin}
- * to any principal holding the legacy {@code identity} component grant.
+ * {@link AuthorizationCheckPort} that resolves the per-physical-tenant {@link
+ * AuthorizationCheckPort} assembled by {@link
+ * io.camunda.security.core.authz.ScopedAuthorizationCheckPortFactory} for the physical tenant of
+ * the current request, and additionally grants COMPONENT/ACCESS on {@code admin} to any principal
+ * holding the legacy {@code identity} component grant.
  *
  * <p>The {@code identity}-to-{@code admin} alias exists because the Identity web app was renamed to
  * Admin; hosts with pre-existing {@code identity} component grants must keep working against the
  * {@code admin} component id without a data migration. It replaces the legacy {@code
  * IdentityToAdminComponentAliasAdapter} (issue #399).
+ *
+ * <p>{@code hasPerTenantScopes} distinguishes the two wiring shapes: when secondary storage is
+ * disabled, {@code checkPorts} was assembled from a single {@code default}-keyed entry and every
+ * request — regardless of what {@link PhysicalTenantContext#currentOrNull()} returns, typically
+ * {@code null} — resolves to it; when per-tenant scopes exist, the physical tenant id is passed
+ * through unchanged (including {@code null}) so an unstamped request fails hard rather than
+ * silently resolving against the default tenant's storage.
  */
 final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort {
 
   private static final String COMPONENT_ADMIN = "admin";
   private static final String COMPONENT_IDENTITY_LEGACY_ALIAS = "identity";
 
-  private final AuthorizationCheckerProvider authorizationCheckerProvider;
-  private final PropertyAuthorizationEvaluatorRegistry propertyEvaluatorRegistry;
-  private final boolean authorizationEnabled;
-  private final boolean multiTenancyChecksEnabled;
-  private final LazyTokenClaimsConverter claimsConverter;
+  private final ScopedAuthorizationCheckPorts checkPorts;
+  private final boolean hasPerTenantScopes;
+  private final TokenClaimsAuthenticationResolver claimsResolver;
 
   TenantAwareAuthorizationCheckPort(
-      final AuthorizationCheckerProvider authorizationCheckerProvider,
-      final PropertyAuthorizationEvaluatorRegistry propertyEvaluatorRegistry,
-      final boolean authorizationEnabled,
-      final boolean multiTenancyChecksEnabled,
-      final LazyTokenClaimsConverter claimsConverter) {
-    this.authorizationCheckerProvider = authorizationCheckerProvider;
-    this.propertyEvaluatorRegistry = propertyEvaluatorRegistry;
-    this.authorizationEnabled = authorizationEnabled;
-    this.multiTenancyChecksEnabled = multiTenancyChecksEnabled;
-    this.claimsConverter = claimsConverter;
+      final ScopedAuthorizationCheckPorts checkPorts,
+      final boolean hasPerTenantScopes,
+      final TokenClaimsAuthenticationResolver claimsResolver) {
+    this.checkPorts = checkPorts;
+    this.hasPerTenantScopes = hasPerTenantScopes;
+    this.claimsResolver = claimsResolver;
   }
 
   @Override
   public <T> Either<AuthorizationRejection, Void> check(
       final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
-    final AuthorizationService authorizationService = authorizationServiceForCurrentTenant();
+    final AuthorizationCheckPort checkPort = checkPortForCurrentScope();
     final Either<AuthorizationRejection, Void> result =
-        authorizationService.check(authentication, authorization);
+        checkPort.check(authentication, authorization);
     if (result.isRight() || !isComponentAdminAccess(authorization)) {
       return result;
     }
     final Either<AuthorizationRejection, Void> aliasResult =
-        authorizationService.check(authentication, withIdentityAlias(authorization));
+        checkPort.check(authentication, withIdentityAlias(authorization));
     // If both checks fail, return the original rejection: it names the requested "admin"
     // component, whereas aliasResult's would reference the internal "identity" alias.
     return aliasResult.isRight() ? aliasResult : result;
@@ -76,7 +77,7 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
   @Override
   public <T> Either<AuthorizationRejection, Void> check(
       final Map<String, Object> claims, final RequiredAuthorization<T> authorization) {
-    return check(claimsConverter.convert(claims), authorization);
+    return check(claimsResolver.resolve(claims), authorization);
   }
 
   @Override
@@ -84,18 +85,14 @@ final class TenantAwareAuthorizationCheckPort implements AuthorizationCheckPort 
       final CamundaAuthentication authentication,
       final RequiredAuthorization<T> authorization,
       final T resource) {
-    return authorizationServiceForCurrentTenant().check(authentication, authorization, resource);
+    return checkPortForCurrentScope().check(authentication, authorization, resource);
   }
 
-  private AuthorizationService authorizationServiceForCurrentTenant() {
-    final AuthorizationChecker checker =
-        authorizationCheckerProvider.withPhysicalTenant(PhysicalTenantContext.currentOrNull());
-    return new AuthorizationService(
-        checker,
-        propertyEvaluatorRegistry,
-        authorizationEnabled,
-        multiTenancyChecksEnabled,
-        claimsConverter);
+  private AuthorizationCheckPort checkPortForCurrentScope() {
+    if (!hasPerTenantScopes) {
+      return checkPorts.forScope(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    }
+    return checkPorts.forScope(PhysicalTenantContext.currentOrNull());
   }
 
   private static <T> boolean isComponentAdminAccess(final RequiredAuthorization<T> authorization) {
