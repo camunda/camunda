@@ -217,16 +217,7 @@ public final class VariableOutputMappingTransformerTest {
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
 
     // when: evaluate one by one, stopping at the first failure (mirrors runtime fail-fast)
-    final var resultBuilder =
-        new MappingResultBuilder(
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null),
-            path ->
-                Optional.ofNullable(variables.get(path.getFirst()))
-                    .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                    .orElse(null));
+    final var resultBuilder = new MappingResultBuilder(resolver(variables), resolver(variables));
     EvaluationResult failure = null;
     for (final var mapping : outputMappings) {
       final EvaluationContext context =
@@ -291,6 +282,65 @@ public final class VariableOutputMappingTransformerTest {
 
     // then: both mapped branches survive, the unmapped one is not propagated
     MsgPackUtil.assertEquality(document, "{'data':{'wanted1':'A','wanted2':'B'}}");
+  }
+
+  @Test
+  void shouldResolveBackReferenceToAWrittenNestedPath() {
+    // given
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a.b", "foo"));
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    // when
+    final var document = evaluateOutputMappings(outputMappings, Map.of(), Map.of());
+
+    // then
+    MsgPackUtil.assertEquality(document, "{'a':{'b':1}, 'foo':1}");
+  }
+
+  @Test
+  void shouldMergeWrittenNestedPathIntoTheMergeTargetValue() {
+    // given: the merge target already holds 'a' with its own sibling 'c', which is therefore also
+    // visible to the element by walking up the scope chain
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a.b", "foo"));
+    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'c':2}"));
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    // when
+    final var document = evaluateOutputMappings(outputMappings, variables, variables);
+
+    // then: 'c' survives because it belongs to the merge target
+    MsgPackUtil.assertEquality(document, "{'a':{'b':1,'c':2}, 'foo':1}");
+  }
+
+  @Test
+  void shouldResolveBackReferenceToAnUnwrittenBranchFromTheScopeChain() {
+    // given: 'a.c' exists only on the element and is never a mapping target
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a.c", "foo"));
+    final Map<String, DirectBuffer> scopeChain = Map.of("a", asMsgPack("{'c':9}"));
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    // when
+    final var document = evaluateOutputMappings(outputMappings, scopeChain, Map.of());
+
+    // then: the back-reference reads 'c' even though the earlier write did not include it, and 'c'
+    // still does not propagate
+    MsgPackUtil.assertEquality(document, "{'a':{'b':1}, 'foo':9}");
+  }
+
+  @Test
+  void shouldSeedEvaluationAndMergeTargetIndependently() {
+    // given: 'p' and 'q' are element-local, 'c' belongs to the merge target (and is therefore
+    // visible on the scope chain too)
+    final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
+    final Map<String, DirectBuffer> scopeChain = Map.of("a", asMsgPack("{'p':0,'q':1,'c':2}"));
+    final Map<String, DirectBuffer> mergeTarget = Map.of("a", asMsgPack("{'c':2}"));
+    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    // when
+    final var document = evaluateOutputMappings(outputMappings, scopeChain, mergeTarget);
+
+    // then
+    MsgPackUtil.assertEquality(document, "{'a':{'c':2,'b':1}, 'd':{'p':0,'q':1,'c':2,'b':1}}");
   }
 
   // evaluates output mappings one by one in modeling order, mirroring
