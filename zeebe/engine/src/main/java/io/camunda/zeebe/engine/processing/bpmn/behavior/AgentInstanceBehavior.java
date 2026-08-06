@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -22,20 +21,10 @@ public final class AgentInstanceBehavior {
     commandWriter = writers.command();
   }
 
-  /**
-   * Completes every agent instance still associated with the given process instance.
-   *
-   * <p>Writes a single "batch completion" {@code AGENT_INSTANCE:COMPLETE} command scoped to the
-   * process instance (no {@code agentInstanceKey}), instead of one command per agent instance: the
-   * number of agent instances a process instance has accumulated is unbounded, so writing one
-   * follow-up command per instance here could exceed the record-batch size limit for a single
-   * processing round. {@link AgentInstanceCompleteProcessor} completes them one at a time,
-   * self-chaining until none remain.
-   */
+  /** Completes every agent instance still associated with the given process instance. */
   public void completeAgentInstancesOfProcessInstance(final BpmnElementContext context) {
     final long processInstanceKey = context.getProcessInstanceKey();
-    commandWriter.appendFollowUpCommand(
-        -1L,
+    commandWriter.appendNewCommand(
         AgentInstanceIntent.COMPLETE,
         new AgentInstanceRecord().setProcessInstanceKey(processInstanceKey));
   }

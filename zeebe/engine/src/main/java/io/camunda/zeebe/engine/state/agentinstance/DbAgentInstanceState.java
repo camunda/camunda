@@ -69,7 +69,7 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
   }
 
   @Override
-  public Long findFirstAgentInstanceKeyByProcessInstanceKey(final long piKey) {
+  public Long getFirstAgentInstanceKeyByProcessInstanceKey(final long piKey) {
     final var found = new AtomicReference<Long>();
     processInstanceKey.wrapLong(piKey);
     byProcessInstanceKeyColumnFamily.whileEqualPrefix(

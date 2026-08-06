@@ -69,7 +69,7 @@ public final class AgentInstanceCompleteProcessor
     final Long agentInstanceKey;
     if (isBatchCompletion) {
       agentInstanceKey =
-          agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(
+          agentInstanceState.getFirstAgentInstanceKeyByProcessInstanceKey(
               value.getProcessInstanceKey());
     } else {
       agentInstanceKey = value.getAgentInstanceKey();
@@ -88,8 +88,7 @@ public final class AgentInstanceCompleteProcessor
 
     if (isBatchCompletion) {
       // re-chain: other agent instances may still be left for this process instance
-      commandWriter.appendFollowUpCommand(
-          command.getKey(),
+      commandWriter.appendNewCommand(
           AgentInstanceIntent.COMPLETE,
           new AgentInstanceRecord().setProcessInstanceKey(value.getProcessInstanceKey()));
     }

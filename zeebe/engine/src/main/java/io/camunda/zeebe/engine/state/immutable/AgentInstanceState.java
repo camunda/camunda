@@ -23,11 +23,11 @@ public interface AgentInstanceState {
   List<Long> getAgentInstanceKeysByProcessInstanceKey(long processInstanceKey);
 
   /**
-   * Finds a single agent instance still associated with the given process instance, without loading
-   * the full key list. Used to drive batch completion one instance at a time.
+   * Returns the smallest remaining agent instance key for the given process instance, without
+   * loading the full key list. Used to drive batch completion one instance at a time.
    *
-   * @return the key of an agent instance still associated with the given process instance, or
-   *     {@code null} if none remain
+   * @return the smallest key of an agent instance still associated with the given process instance,
+   *     or {@code null} if none remain
    */
-  Long findFirstAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
+  Long getFirstAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
 }
