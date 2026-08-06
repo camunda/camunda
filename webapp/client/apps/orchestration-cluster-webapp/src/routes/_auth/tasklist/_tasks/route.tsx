@@ -19,7 +19,6 @@ import {
 } from '#/tasklist/modules/available-tasks/searchSchema';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
-import {tracking} from '#/shared/tracking';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	validateSearch: tasklistIndexSearchSchema,
@@ -46,13 +45,6 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 		const nextOpenTask = tasks[nextOpenTaskIndex];
 
 		if (shouldAutoSelectNextTask && nextOpenTask !== undefined) {
-			tracking.track({
-				eventName: 'tasklist:task-opened',
-				by: 'auto-select',
-				position: nextOpenTaskIndex,
-				filter: search.filter,
-				sorting: search.sortBy,
-			});
 			throw redirect({
 				to: '/tasklist/$userTaskKey',
 				params: {userTaskKey: nextOpenTask.userTaskKey},

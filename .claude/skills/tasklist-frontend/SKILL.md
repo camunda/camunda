@@ -24,7 +24,7 @@ Don't duplicate those rules here; follow them.
 pages reuse — for example, a layout module shared by sibling pages, or a filters module
 those pages share.
 
-Cross-cutting concerns (http, errors, theme, tracking, etc.) are not Tasklist modules —
+Cross-cutting concerns (http, errors, theme, etc.) are not Tasklist modules —
 they live in `src/shared/`. See "The shared folder boundary" below.
 
 Small, self-contained pages can live entirely inside a single module folder. The `login`
@@ -92,7 +92,7 @@ logic belongs in the pod (page or module), not in the dictionary entry.
 ## The shared folder boundary
 
 Cross-pod infrastructure lives in `src/shared/` (http, auth, config, errors, theme, i18n,
-tracking, feature flags, shared pages).
+feature flags, shared pages).
 
 **For Tasklist work, do NOT unilaterally change anything inside `src/shared/`.** Reuse what
 is already there. If a Tasklist feature seems to need a new or changed shared module, stop

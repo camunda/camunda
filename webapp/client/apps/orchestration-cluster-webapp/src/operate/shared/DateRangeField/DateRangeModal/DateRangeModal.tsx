@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
 import {DatePicker, Layer, Modal, Stack} from '@carbon/react';
 import {createPortal} from 'react-dom';
 import {logger} from '#/operate/shared/utils/logger';
-import {tracking} from '#/shared/tracking';
 import {formatDate} from '../formatDate';
 import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
@@ -29,7 +27,6 @@ const isCompleteDate = (date: string | undefined): date is string => /^\d{4}-\d{
 
 type Props = {
 	title: string;
-	filterName: string;
 	onCancel: () => void;
 	onApply: ({fromDateTime, toDateTime}: {fromDateTime: Date; toDateTime: Date}) => void;
 	defaultValues: {
@@ -41,28 +38,7 @@ type Props = {
 	isModalOpen: boolean;
 };
 
-const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filterName, title, isModalOpen}) => {
-	const [calendarRef, setCalendarRef] = useState<Element | null>(null);
-	const [dateSelectionMethods, setDateSelectionMethods] = useState<{
-		datePicker: boolean;
-		dateInput: boolean;
-		quickFilter: boolean;
-		timeInput: boolean;
-	}>({datePicker: false, dateInput: false, quickFilter: false, timeInput: false});
-
-	useEffect(() => {
-		const flatpickrDays = calendarRef?.querySelector('.flatpickr-days');
-		const handlePick = () => {
-			setDateSelectionMethods((prevState) => ({
-				...prevState,
-				datePicker: true,
-			}));
-		};
-
-		flatpickrDays?.addEventListener('click', handlePick);
-		return () => flatpickrDays?.removeEventListener('click', handlePick);
-	}, [calendarRef]);
-
+const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, title, isModalOpen}) => {
 	const handleApply = ({
 		fromDate,
 		fromTime,
@@ -79,14 +55,6 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 				onApply({
 					fromDateTime: new Date(`${fromDate} ${fromTime}`),
 					toDateTime: new Date(`${toDate} ${toTime}`),
-				});
-				tracking.track({
-					eventName: 'operate:date-range-applied',
-					methods: {
-						...dateSelectionMethods,
-						timeInput: fromTime !== defaultTime.from || toTime !== defaultTime.to,
-					},
-					filterName,
 				});
 			} catch (e) {
 				logger.error(e);
@@ -142,58 +110,14 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 											}}
 											dateFormat="Y-m-d"
 											short
-											onOpen={() => {
-												// scope to the open calendar — the unified app can have several
-												// flatpickr instances in the DOM (legacy queried the first one)
-												setCalendarRef(document.querySelector('.flatpickr-calendar.open'));
-											}}
-											onClose={() => setCalendarRef(null)}
 										>
-											<DateInput
-												id="date-picker-input-id-start"
-												type="from"
-												labelText="From date"
-												onChange={() =>
-													setDateSelectionMethods((prevState) => ({
-														...prevState,
-														dateInput: true,
-													}))
-												}
-											/>
-											<DateInput
-												id="date-picker-input-id-finish"
-												type="to"
-												labelText="To date"
-												onChange={() =>
-													setDateSelectionMethods((prevState) => ({
-														...prevState,
-														dateInput: true,
-													}))
-												}
-											/>
+											<DateInput id="date-picker-input-id-start" type="from" labelText="From date" />
+											<DateInput id="date-picker-input-id-finish" type="to" labelText="To date" />
 										</DatePicker>
 									</div>
 									<TimeInputStack orientation="horizontal">
-										<TimeInput
-											type="from"
-											labelText="From time"
-											onChange={() =>
-												setDateSelectionMethods((prevState) => ({
-													...prevState,
-													timeInput: true,
-												}))
-											}
-										/>
-										<TimeInput
-											type="to"
-											labelText="To time"
-											onChange={() =>
-												setDateSelectionMethods((prevState) => ({
-													...prevState,
-													timeInput: true,
-												}))
-											}
-										/>
+										<TimeInput type="from" labelText="From time" />
+										<TimeInput type="to" labelText="To time" />
 									</TimeInputStack>
 								</Stack>
 							</Modal>,

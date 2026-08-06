@@ -15,7 +15,6 @@ import {Button, Column, Grid, Layer, Link, Stack} from '@carbon/react';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useTranslation} from 'react-i18next';
 import type {ProcessesSearch} from '#/tasklist/modules/processes/searchSchema';
-import {tracking} from '#/shared/tracking';
 import styles from './TasklistProcessesPage.module.scss';
 
 type Props = {
@@ -82,7 +81,6 @@ const TasklistProcessesPage: React.FC<Props> = ({
 													target="_blank"
 													rel="noopener noreferrer"
 													inline
-													onClick={() => tracking.track({eventName: 'tasklist:processes-empty-message-link-clicked'})}
 												>
 													{t('tasklist.processesErrorBodyLinkLabel')}
 												</Link>

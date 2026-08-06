@@ -1607,8 +1607,6 @@ camunda: # Type: io.camunda.configuration.Camunda
   webapp: # Type: io.camunda.configuration.beans.WebappProperties
     active-components: null # Type: List<String>, Env: CAMUNDA_WEBAPP_ACTIVECOMPONENTS
     cloud: # Type: io.camunda.zeebe.gateway.rest.config.WebappConfiguration$Cloud
-      mixpanel-api-host: null # Type: String, Env: CAMUNDA_WEBAPP_CLOUD_MIXPANELAPIHOST
-      mixpanel-token: null # Type: String, Env: CAMUNDA_WEBAPP_CLOUD_MIXPANELTOKEN
       stage: null # Type: String, Env: CAMUNDA_WEBAPP_CLOUD_STAGE
 
     enterprise: null # Type: Boolean, Env: CAMUNDA_WEBAPP_ENTERPRISE

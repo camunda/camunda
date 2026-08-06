@@ -12,8 +12,7 @@ import {processesSearchSchema} from '#/tasklist/modules/processes/searchSchema';
 import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
 import {queries} from '#/shared/http/queries';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useEffect, useMemo} from 'react';
-import {tracking} from '#/shared/tracking';
+import {useMemo} from 'react';
 import {requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
@@ -31,10 +30,6 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 		);
 	},
 	errorComponent: function ProcessesErrorPage({error, reset}: ErrorComponentProps) {
-		useEffect(() => {
-			tracking.track({eventName: 'tasklist:processes-fetch-failed'});
-		}, [error]);
-
 		const result = requestErrorSchema.safeParse(error);
 
 		if (

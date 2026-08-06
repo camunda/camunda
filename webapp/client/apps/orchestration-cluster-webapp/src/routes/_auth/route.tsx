@@ -15,19 +15,16 @@ import {C3Provider} from '#/shared/c3/components/C3Provider';
 import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 import {Header} from '#/shared/header/components/Header';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import {tracking} from '#/shared/tracking';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
 const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
 		try {
-			const [currentUser, systemConfig] = await Promise.all([
+			const [, systemConfig] = await Promise.all([
 				queryClient.ensureQueryData(queries.getCurrentUser()),
 				queryClient.ensureQueryData(queries.getSystemConfiguration()),
 				queryClient.ensureQueryData(queries.getLicense()),
 			]);
-
-			tracking.identifyUser(currentUser);
 
 			storeSessionState('clientConfig', systemConfig);
 		} catch {

@@ -7,7 +7,6 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Title, LabelContainer, Label} from './styled';
@@ -31,12 +30,6 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 				data-testid="total-instances-link"
 				to="/operate/processes"
 				search={runningOrAllInstancesFilter(count.total)}
-				onClick={() => {
-					tracking.track({
-						eventName: 'operate:navigation',
-						link: 'dashboard-running-processes',
-					});
-				}}
 			>
 				{t('operate.dashboard.runningInstancesTotal', {count: count.total})}
 			</Title>
@@ -46,12 +39,6 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 					data-testid="incident-instances-link"
 					to="/operate/processes"
 					search={{active: false, incidents: true, completed: false, canceled: false}}
-					onClick={() => {
-						tracking.track({
-							eventName: 'operate:navigation',
-							link: 'dashboard-processes-with-incidents',
-						});
-					}}
 				>
 					{t('operate.dashboard.instancesWithIncident')}
 				</Label>
@@ -59,12 +46,6 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 					data-testid="active-instances-link"
 					to="/operate/processes"
 					search={{active: true, incidents: false, completed: false, canceled: false}}
-					onClick={() => {
-						tracking.track({
-							eventName: 'operate:navigation',
-							link: 'dashboard-active-processes',
-						});
-					}}
 				>
 					{t('operate.dashboard.activeInstances')}
 				</Label>

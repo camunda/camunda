@@ -4,11 +4,10 @@
 //   node fidelity.mjs --ported <dir> [--legacy <dir>] [--locales <dir>]
 //   node fidelity.mjs --selftest
 //
-// Checks (exact, no LLM):
-//   1. locale coverage  - every t('operate.*') key the port uses exists in en/de/fr/es
-//   2. tracking carried - every legacy eventName has an `operate:<name>` counterpart in the port
+// Checks locale coverage: every t('operate.*') key the port uses exists in en/de/fr/es.
 //
-// Exits non-zero if anything is missing, so it slots into the loop as a gate.
+// Exits non-zero if anything is missing, so it slots into the loop as a gate. --legacy is
+// accepted for compatibility with existing migration commands but is intentionally ignored.
 // The two judgment calls ("no inlined shared logic", "behaves 1:1") are NOT here -
 // they go to the LLM flagger, which emits a diff for human review, never an approval.
 
@@ -40,12 +39,6 @@ function tKeys(src) {
   return [...keys];
 }
 
-// eventName: 'foo' -> ['foo', ...]
-function eventNames(src) {
-  const re = /eventName:\s*['"]([^'"]+)['"]/g;
-  return [...new Set([...src.matchAll(re)].map((m) => m[1]))];
-}
-
 // walk translation.operate... resolving a dotted key; returns true if present
 function hasKey(localeObj, dottedKey) {
   let node = localeObj.translation ?? localeObj;
@@ -66,28 +59,15 @@ function checkLocales(portedSrc, localesDir) {
   return {checked: keys.length, missing};
 }
 
-function checkTracking(legacySrc, portedSrc) {
-  const legacy = eventNames(legacySrc);
-  const ported = new Set(eventNames(portedSrc));
-  const missing = legacy
-    .filter((e) => !ported.has(`operate:${e}`))
-    .map((e) => `tracking event not carried: '${e}' (expected 'operate:${e}')`);
-  return {checked: legacy.length, missing};
-}
-
 function selftest() {
   const assert = (c, m) => {
     if (!c) throw new Error('FAIL: ' + m);
   };
   assert(JSON.stringify(tKeys(`t('operate.a.b'); t("x.y"); t('operate.c')`)) ===
     JSON.stringify(['operate.a.b', 'operate.c']), 'tKeys filters to operate.* and dedupes');
-  assert(JSON.stringify(eventNames(`tracking.track({eventName: 'foo', sortBy})`)) ===
-    JSON.stringify(['foo']), 'eventNames extracts from object form');
   const loc = {translation: {operate: {a: {b: 1}}}};
   assert(hasKey(loc, 'operate.a.b') === true, 'hasKey resolves nested under translation');
   assert(hasKey(loc, 'operate.a.z') === false, 'hasKey false on missing leaf');
-  assert(checkTracking(`eventName: 'foo'\neventName: 'bar'`, `eventName: 'operate:foo'`)
-    .missing.length === 1, 'tracking flags the uncarried event only');
   console.log('selftest OK');
 }
 
@@ -102,7 +82,6 @@ function main() {
   if (process.argv.includes('--selftest')) return selftest();
 
   const ported = arg('ported');
-  const legacy = arg('legacy');
   const localesDir = arg('locales') ??
     'webapp/client/apps/orchestration-cluster-webapp/src/shared/i18n/locales';
   if (!ported) {
@@ -116,14 +95,6 @@ function main() {
   const loc = checkLocales(portedSrc, localesDir);
   console.log(`locale coverage: ${loc.checked} operate.* keys checked across ${LOCALES.length} locales`);
   all.push(...loc.missing);
-
-  if (legacy) {
-    const trk = checkTracking(readAll(legacy), portedSrc);
-    console.log(`tracking: ${trk.checked} legacy events checked`);
-    all.push(...trk.missing);
-  } else {
-    console.log('tracking: skipped (pass --legacy <dir> to check)');
-  }
 
   if (all.length) {
     console.error('\nFIDELITY FAILURES:\n' + all.map((m) => '  - ' + m).join('\n'));

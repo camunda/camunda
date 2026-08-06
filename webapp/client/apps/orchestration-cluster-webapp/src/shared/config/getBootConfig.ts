@@ -20,8 +20,6 @@ const BootConfigSchema = z.object({
 	isEnterprise: z.stringbool().optional().default(false),
 	organizationId: nullableString,
 	clusterId: nullableString,
-	mixpanelToken: nullableString,
-	mixpanelApiHost: nullableString,
 });
 
 type BootConfig = z.infer<typeof BootConfigSchema>;

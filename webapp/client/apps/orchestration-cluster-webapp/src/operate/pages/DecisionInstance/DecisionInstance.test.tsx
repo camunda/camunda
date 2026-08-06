@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -15,7 +15,6 @@ import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {tracking} from '#/shared/tracking';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionInstance} from './DecisionInstance';
 
@@ -36,7 +35,6 @@ describe('<DecisionInstance />', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 		notificationsStore.reset();
-		vi.restoreAllMocks();
 	});
 
 	it('should render the header', async ({worker}) => {
@@ -50,21 +48,6 @@ describe('<DecisionInstance />', () => {
 
 		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: 'Operate Decision Instance'})).toBeInTheDocument();
-	});
-
-	it('should track when the decision instance details are loaded', async ({worker}) => {
-		const trackSpy = vi.spyOn(tracking, 'track');
-		worker.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(createDecisionInstance({state: 'EVALUATED'})),
-			}),
-		);
-
-		const screen = await renderPage();
-
-		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
-		expect(trackSpy).toHaveBeenCalledWith({eventName: 'operate:decision-instance-details-loaded', state: 'EVALUATED'});
 	});
 
 	it('should display forbidden content', async ({worker}) => {

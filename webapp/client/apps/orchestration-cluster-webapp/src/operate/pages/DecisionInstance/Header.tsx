@@ -10,7 +10,6 @@ import {Button, Link} from '@carbon/react';
 import {Link as RouterLink} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {tracking} from '#/shared/tracking';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/InstanceHeader';
@@ -60,15 +59,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 				hideOverflowingContent: false,
 				content: (
 					// TODO(#55977): point at the filtered Decisions list once its search schema exists
-					<Link
-						as={RouterLink}
-						to="/operate/decisions"
-						title={versionLinkTitle}
-						aria-label={versionLinkTitle}
-						onClick={() => {
-							tracking.track({eventName: 'operate:navigation', link: 'decision-details-version'});
-						}}
-					>
+					<Link as={RouterLink} to="/operate/decisions" title={versionLinkTitle} aria-label={versionLinkTitle}>
 						{decisionInstance.decisionDefinitionVersion}
 					</Link>
 				),
@@ -101,9 +92,6 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						aria-label={t('operate.decisionInstance.header.processInstanceLinkTitle', {
 							processInstanceKey: decisionInstance.processInstanceKey,
 						})}
-						onClick={() => {
-							tracking.track({eventName: 'operate:navigation', link: 'decision-details-parent-process-details'});
-						}}
 					>
 						{decisionInstance.processInstanceKey}
 					</Link>
@@ -126,10 +114,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						kind="tertiary"
 						title={t('operate.decisionInstance.header.openDrdButton')}
 						aria-label={t('operate.decisionInstance.header.openDrdButton')}
-						onClick={() => {
-							onOpenDrd();
-							tracking.track({eventName: 'operate:drd-panel-interaction', action: 'open'});
-						}}
+						onClick={onOpenDrd}
 					>
 						{t('operate.decisionInstance.header.openDrdButton')}
 					</Button>

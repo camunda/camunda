@@ -12,7 +12,6 @@ import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ErrorBoundary} from 'react-error-boundary';
-import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
@@ -65,12 +64,6 @@ const IncidentsByError: React.FC = () => {
 							canceled: false,
 						}}
 						title={item.errorMessage}
-						onClick={() => {
-							tracking.track({
-								eventName: 'operate:navigation',
-								link: 'dashboard-process-incidents-by-error-message-all-processes',
-							});
-						}}
 					>
 						<InstancesBar
 							label={{type: 'incident', size: 'small', text: item.errorMessage}}

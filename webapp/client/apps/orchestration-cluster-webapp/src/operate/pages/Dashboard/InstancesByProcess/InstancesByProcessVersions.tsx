@@ -9,7 +9,6 @@
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
-import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {instancesByProcessVersionsQuery} from './instancesByProcess.queries';
 import {runningOrAllInstancesFilter} from '../processesLinkFilters';
@@ -43,12 +42,6 @@ const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenan
 							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}
-							onClick={() => {
-								tracking.track({
-									eventName: 'operate:navigation',
-									link: 'dashboard-process-instances-by-name-single-version',
-								});
-							}}
 						>
 							<InstancesBar
 								label={{type: 'process', size: 'small', text: labelText}}

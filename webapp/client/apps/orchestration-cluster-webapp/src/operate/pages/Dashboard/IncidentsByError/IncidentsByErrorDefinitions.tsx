@@ -9,7 +9,6 @@
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
 import {Li, LinkWrapper} from '../styled';
@@ -44,12 +43,6 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}
-							onClick={() => {
-								tracking.track({
-									eventName: 'operate:navigation',
-									link: 'dashboard-process-incidents-by-error-message-single-version',
-								});
-							}}
 						>
 							<InstancesBar
 								label={{type: 'incident', size: 'small', text: labelText}}

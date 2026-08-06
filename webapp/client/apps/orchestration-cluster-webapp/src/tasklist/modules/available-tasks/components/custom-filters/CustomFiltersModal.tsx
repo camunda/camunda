@@ -10,7 +10,6 @@ import {useMemo, useState} from 'react';
 import {FieldsModal} from './FieldsModal';
 import {FilterNameModal} from './FilterNameModal';
 import {DeleteFilterModal} from './DeleteFilterModal';
-import {tracking} from '#/shared/tracking';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import type {NamedCustomFilters} from '#/tasklist/modules/available-tasks/customFiltersSchema';
 
@@ -50,9 +49,6 @@ const CustomFiltersModal: React.FC<Props> = ({filterId, isOpen, onSuccess, onDel
 						...getStateLocally('tasklist.customFilters'),
 						custom: filters,
 					});
-					tracking.track({
-						eventName: 'tasklist:custom-filter-applied',
-					});
 					onSuccess('custom');
 				}}
 				onSave={(filters) => {
@@ -76,10 +72,6 @@ const CustomFiltersModal: React.FC<Props> = ({filterId, isOpen, onSuccess, onDel
 						},
 					});
 
-					tracking.track({
-						eventName: 'tasklist:custom-filter-updated',
-					});
-
 					onSuccess(filterId);
 					onEditSuccess?.(filterId);
 				}}
@@ -101,10 +93,6 @@ const CustomFiltersModal: React.FC<Props> = ({filterId, isOpen, onSuccess, onDel
 					});
 					setCurrentStep('fields');
 
-					tracking.track({
-						eventName: 'tasklist:custom-filter-saved',
-					});
-
 					onSuccess(newFilterId);
 				}}
 				onCancel={() => setCurrentStep('fields')}
@@ -119,9 +107,6 @@ const CustomFiltersModal: React.FC<Props> = ({filterId, isOpen, onSuccess, onDel
 						'tasklist.customFilters',
 						Object.fromEntries(Object.entries(stored).filter(([name]) => name !== filterId)),
 					);
-					tracking.track({
-						eventName: 'tasklist:custom-filter-deleted',
-					});
 					setCurrentStep('fields');
 					onDelete(filterId!);
 				}}
