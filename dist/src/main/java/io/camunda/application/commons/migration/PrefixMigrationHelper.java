@@ -531,7 +531,8 @@ public final class PrefixMigrationHelper {
                   if (isHistoricIndex(
                       srcIndex, descriptor.getIndexName(), descriptor.getVersion())) {
                     destIndex =
-                        srcIndex.replace(
+                        renameHistoricIndexPrefix(
+                            srcIndex,
                             oldPrefix,
                             descriptor.getIndexPrefix() + "-" + descriptor.getComponentName());
                   } else {
@@ -545,6 +546,25 @@ public final class PrefixMigrationHelper {
       return Optional.of(new AliasCloneTargets(srcAlias, destAlias, targetIndices));
     }
     return Optional.empty();
+  }
+
+  /**
+   * {@code srcIndex} is expected to start with {@code oldPrefix} (it comes from {@link
+   * PrefixMigrationClient#getIndicesInAlias}, whose alias is built from that same prefix), so only
+   * the leading occurrence must be swapped. A plain {@link String#replace} would also rewrite any
+   * later occurrence of {@code oldPrefix} inside the rest of the index name. The prefix is verified
+   * rather than assumed, since an alias can in principle be attached to an index whose name doesn't
+   * follow the expected convention -- silently mangling such a name would be worse than the bug
+   * being fixed here.
+   */
+  @VisibleForTesting
+  static String renameHistoricIndexPrefix(
+      final String srcIndex, final String oldPrefix, final String newPrefixAndComponent) {
+    if (!srcIndex.startsWith(oldPrefix)) {
+      throw new IllegalStateException(
+          "Expected historic index [%s] to start with prefix [%s]".formatted(srcIndex, oldPrefix));
+    }
+    return newPrefixAndComponent + srcIndex.substring(oldPrefix.length());
   }
 
   private static List<String> indicesToDelete(
