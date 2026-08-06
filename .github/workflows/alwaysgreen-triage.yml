@@ -105,12 +105,17 @@ jobs:
       # Called from stable/8.x that is a tree with no .github/actions/alwaysgreen-flag and
       # no .github/scripts/alwaysgreen, and the job dies on the first of them. There is no
       # context value for "the ref this workflow was loaded from": job_workflow_sha is
-      # absent at runtime and workflow_sha is the caller's. On workflow_dispatch the
-      # dispatched ref is already the right tree, so only workflow_call needs the default.
+      # absent at runtime and workflow_sha is the caller's.
+      #
+      # run_id tells the two entry paths apart. github.event_name cannot: inside a called
+      # workflow it reports the RUN's event, so a manually dispatched pipeline calling
+      # triage looks identical to triage being dispatched itself. run_id is required on
+      # triage's own workflow_dispatch and absent on workflow_call, so it is only set when
+      # github.ref_name really is this workflow's ref.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tooling_ref || (github.event_name == 'workflow_dispatch' && github.ref_name) || 'main' }}
+          ref: ${{ inputs.tooling_ref || (inputs.run_id && github.ref_name) || 'main' }}
           sparse-checkout: .github
           persist-credentials: false
 
