@@ -105,6 +105,8 @@ paths:
   # Authentication endpoints
   /authentication/me:
     $ref: 'authentication.yaml#/paths/~1authentication~1me'
+  /authentication/me/authorizations/search:
+    $ref: 'authentication.yaml#/paths/~1authentication~1me~1authorizations~1search'
 
   # Authorization endpoints
   /authorizations:
