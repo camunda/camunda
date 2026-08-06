@@ -19,6 +19,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -106,7 +107,10 @@ public final class JobSuspensionHandoutTest {
     // when
     ENGINE.processInstance().withInstanceKey(parentInstanceKey).suspend();
 
-    // then - the child instance's job is still handed out
+    // then - the child instance's job is still handed out. This holds because the walker never
+    // reaches the child instance at all (its root has no parent link in the element instance
+    // tree), not because of the walker's processInstanceKey filter - see SuspendedJobsWalker's
+    // class javadoc.
     final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
     assertThat(batch.getValue().getJobKeys()).containsExactly(childJob.getKey());
   }
@@ -129,6 +133,12 @@ public final class JobSuspensionHandoutTest {
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long parkedJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(otherJobType)
+            .getFirst()
+            .getKey();
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .limit(2)
@@ -140,14 +150,20 @@ public final class JobSuspensionHandoutTest {
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
-    // then - the sibling job of the same instance is parked, but the activated job is not
+    // then - of the two jobs of this instance, only the still-activatable sibling is parked; the
+    // activated one is not. Read the already-exported records directly (no further wait) so the
+    // check covers every Job.SUSPENDED record the suspend command produced, not just the first one
+    // a blocking record stream happens to hand back.
     final List<Long> suspendedJobKeys =
-        RecordingExporter.jobRecords(JobIntent.SUSPENDED)
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(1)
+        RecordingExporter.getRecords().stream()
+            .filter(record -> record.getIntent() == JobIntent.SUSPENDED)
+            .filter(
+                record ->
+                    ((JobRecordValue) record.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
             .map(Record::getKey)
-            .toList();
-    assertThat(suspendedJobKeys).doesNotContain(activatedJobKey);
+            .collect(Collectors.toList());
+    assertThat(suspendedJobKeys).containsExactly(parkedJobKey).doesNotContain(activatedJobKey);
   }
 
   @Test
