@@ -79,7 +79,8 @@ public final class JobSuspensionJobStreamPushTest {
     final RecordingJobStream jobStream =
         JOB_STREAMER.addJobStream(BufferUtil.wrapString(jobType), jobActivationProperties);
 
-    // then - the parked job is not pushed to a stream waiting for its type
+    // then - the parked job is not pushed to a stream waiting for its type. Registering a stream
+    // starts no scan, so this is a sanity check; the load-bearing assertion is the one after resume
     assertThat(jobStream.getActivatedJobs()).isEmpty();
 
     // when - the instance is resumed

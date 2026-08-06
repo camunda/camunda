@@ -910,6 +910,9 @@ public final class JobStateTest {
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
     jobState.create(key, jobRecord);
+    // parked the way a job waiting for a secret is: out of the index, still ACTIVATABLE
+    jobState.makeJobNotActivatable(key, jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
 
     // when
     jobState.makeActivatableAfterSecretResolution(key);

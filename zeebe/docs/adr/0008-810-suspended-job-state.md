@@ -131,11 +131,11 @@ process instance level only.
   writes one event per migrated entity. Chunking the suspend batch is a follow-up if this is ever
   hit in practice.
 - Resume can write a much larger batch per job than suspend did. Each `Job.RESUMED` is followed by
-  `BpmnJobActivationBehavior.publishWork`, which appends a `JobBatch.ACTIVATED` carrying the job and
-  its fetched variables when a stream is waiting for that job type. An instance that suspended
+  `BpmnJobActivationBehavior.publishWork`, which appends a `JobBatch.ACTIVATED` for the job when a
+  stream is waiting for that job type. An instance that suspended
   successfully can therefore have every resume attempt rejected for exceeding the maximum record
   batch size, leaving it suspended with no way out but cancellation.
-- The claim that hand-out order is unchanged does not hold for a pre-8.10 job still in the legacy
+- Hand-out order is unchanged, with one exception: a pre-8.10 job still in the legacy
   `JOB_ACTIVATABLE` column family: suspend and resume move it into `JOB_ACTIVATABLE_BY_PRIORITY`,
   changing its order relative to other legacy jobs. This is the same effect
   `makeActivatableAfterSecretResolution` already has on such jobs, so it is not a new defect.
