@@ -27,12 +27,23 @@
     instead would change the throughput the engine can sustain, and the moving hot
     tail is half the point of this workload.
 
-    Size it by the element count below: each element costs 38 bytes, so 300 elements
-    is ~11.4KB of settled state per parked instance. At 110 PI/s (27.5 cold/s) over
-    3 partitions that is ~0.37GB/h per partition, crossing the 3.2GB base-level-1
-    boundary at ~8.5h. Growing this costs processing-thread time (300 elements is
-    ~0.8ms per parked instance) and disk: at 13h each broker holds ~15GB of runtime
-    state plus a snapshot of comparable size, against a 64Gi volume.
+    Size it by the element count below: each element costs 38 bytes, so 480 elements
+    writes ~18.2KB per parked instance. Settled state grows by less than that: 300
+    elements measured 7.46KB net per parked instance, not 11.4KB, because compaction
+    reclaims the hot branch's tombstones against it. That measurement (0.252GB/h per
+    partition at 110 PI/s, 3 partitions, R^2 0.9993 over a settled 40min window) is
+    what sets 480: it puts growth near 0.47GB/h per partition, crossing the 3.2GB
+    base-level-1 boundary around 7h so that a 13h run spends about half its length in
+    the regime this workload exists to probe. 300 elements would cross it at 12.7h,
+    i.e. in the final twenty minutes, which is no use.
+
+    Do not re-derive the element count from first principles. Predicting it that way
+    overshot the real slope by 51%; re-measure it on a settled DB instead.
+
+    Costs, both measured: ~1.3ms of processing thread per parked instance at 480
+    elements, and on disk ~0.47GB/h per partition of SST plus a roughly fixed journal,
+    with snapshots nearly free because RocksDB checkpoints hard-link SST files (25-42MB
+    of snapshot against 437MB of runtime). A 13h run lands near 40GB of a 64Gi volume.
   -->
   <bpmn:process id="mixedHotCold" name="Mixed hot and cold state" isExecutable="true">
     <bpmn:startEvent id="start" name="start">
@@ -63,7 +74,7 @@
     </bpmn:sequenceFlow>
     <bpmn:scriptTask id="coldBallast" name="write ballast">
       <bpmn:extensionElements>
-        <zeebe:script expression="=for i in 1..300 return uuid()" resultVariable="ballast" />
+        <zeebe:script expression="=for i in 1..480 return uuid()" resultVariable="ballast" />
       </bpmn:extensionElements>
       <bpmn:incoming>flow_split_cold</bpmn:incoming>
       <bpmn:outgoing>flow_coldBallast_coldFork</bpmn:outgoing>
