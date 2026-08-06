@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -140,6 +142,46 @@ final class PhysicalTenantProvisioningInitializerTest {
     final var tenantATarget = bootstrapTargetMember(tenantAOperations);
     final var tenantBTarget = bootstrapTargetMember(tenantBOperations);
     assertThat(tenantATarget).isNotEqualTo(tenantBTarget);
+  }
+
+  @Test
+  void shouldNotPlaceNewTenantPartitionsOnLeftOrUninitializedMembers() {
+    // given — members 0-2 are live (ACTIVE) but already loaded with tenantX's partitions; member
+    // 8 has never joined (UNINITIALIZED) and member 9 has left the cluster (LEFT) — both are still
+    // present in globalConfiguration().members(), just not live, and both are otherwise completely
+    // unloaded. If they weren't excluded from the candidate set, the reassigner's least-loaded
+    // tie-break would pick one of them over the more-loaded but live members 0-2.
+    final var existingTenantX =
+        Set.of(
+            partition("tenantX", 1, Set.of(member(0)), member(0)),
+            partition("tenantX", 2, Set.of(member(1)), member(1)),
+            partition("tenantX", 3, Set.of(member(2)), member(2)));
+    final var uninitializedMember = member(8);
+    final var leftMember = member(9);
+    final var baseConfiguration = configurationWith(existingTenantX);
+    final var configuration =
+        baseConfiguration.updateGlobalConfiguration(
+            global ->
+                global
+                    .addMember(uninitializedMember, BrokerState.uninitialized())
+                    .addMember(
+                        leftMember,
+                        BrokerState.initializeAsActive().setState(BrokerState.State.LEFT)));
+    final var staticConfiguration = staticConfigWith(List.of(tenantPartitionIds("tenantA", 1)), 1);
+    final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then — the new tenant's sole partition still lands on one of the loaded-but-live members
+    // 0-2, never on the unloaded-but-not-live members 8/9
+    final var operations =
+        result.partitionGroup("tenantA").pendingChanges().orElseThrow().pendingOperations();
+    final var targetedMembers =
+        operations.stream()
+            .map(ClusterConfigurationChangeOperation::memberId)
+            .collect(Collectors.toSet());
+    assertThat(targetedMembers).doesNotContain(uninitializedMember, leftMember);
   }
 
   @Test

@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -113,8 +114,7 @@ public class PhysicalTenantProvisioningInitializer
    */
   private CurrentClusterConfiguration provisionTenants(
       final CurrentClusterConfiguration configuration, final List<String> newTenantIds) {
-    final Set<MemberId> targetMembers =
-        Set.copyOf(configuration.globalConfiguration().members().keySet());
+    final Set<MemberId> targetMembers = liveMembers(configuration);
     final var existingPartitionIds =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration).values().stream()
             .flatMap(Set::stream)
@@ -151,6 +151,24 @@ public class PhysicalTenantProvisioningInitializer
       result = addGroupAndStartChange(result, newTenantId, tenantOperations);
     }
     return result;
+  }
+
+  /**
+   * The members eligible to host a new tenant's partitions: every broker known to the cluster
+   * except those in {@link BrokerState.State#LEFT} or {@link BrokerState.State#UNINITIALIZED} —
+   * mirroring {@link CurrentClusterConfiguration#clusterSize()}'s definition of "live". Using the
+   * raw {@code globalConfiguration().members().keySet()} instead would let a decommissioned or
+   * not-yet-joined broker be selected as a target, stalling provisioning once its bootstrap/join
+   * operation can never complete.
+   */
+  private static Set<MemberId> liveMembers(final CurrentClusterConfiguration configuration) {
+    return configuration.globalConfiguration().members().entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().state() != BrokerState.State.LEFT
+                    && entry.getValue().state() != BrokerState.State.UNINITIALIZED)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
   }
 
   private Set<PartitionMetadata> getTargetDistribution(
