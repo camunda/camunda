@@ -63,48 +63,43 @@ public final class AgentInstanceCompleteProcessor
 
   @Override
   public void processRecord(final TypedRecord<AgentInstanceRecord> command) {
-    final long agentInstanceKey = command.getValue().getAgentInstanceKey();
-    if (agentInstanceKey == -1L) {
-      completeNextOfProcessInstance(command);
-    } else {
-      completeSingle(command, agentInstanceKey);
-    }
-  }
+    final var value = command.getValue();
+    final boolean isBatchCompletion = value.getAgentInstanceKey() == -1L;
 
-  private void completeSingle(
-      final TypedRecord<AgentInstanceRecord> command, final long agentInstanceKey) {
-    final var current = agentInstanceState.getRecord(agentInstanceKey);
+    final Long agentInstanceKey;
+    if (isBatchCompletion) {
+      agentInstanceKey =
+          agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(
+              value.getProcessInstanceKey());
+    } else {
+      agentInstanceKey = value.getAgentInstanceKey();
+    }
+    final var current =
+        agentInstanceKey == null ? null : agentInstanceState.getRecord(agentInstanceKey);
     if (current == null) {
       rejectionWriter.appendRejection(
-          command, RejectionType.NOT_FOUND, ERROR_MSG_NOT_FOUND.formatted(agentInstanceKey));
+          command, RejectionType.NOT_FOUND, rejectionReason(isBatchCompletion, value));
       return;
     }
 
-    appendCompleted(agentInstanceKey, current);
-  }
-
-  private void completeNextOfProcessInstance(final TypedRecord<AgentInstanceRecord> command) {
-    final long processInstanceKey = command.getValue().getProcessInstanceKey();
-    final Long agentInstanceKey =
-        agentInstanceState.findFirstAgentInstanceKeyByProcessInstanceKey(processInstanceKey);
-    if (agentInstanceKey == null) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.NOT_FOUND, ERROR_MSG_NONE_REMAINING.formatted(processInstanceKey));
-      return;
-    }
-
-    appendCompleted(agentInstanceKey, agentInstanceState.getRecord(agentInstanceKey));
-    // re-chain: other agent instances may still be left for this process instance
-    commandWriter.appendFollowUpCommand(
-        command.getKey(),
-        AgentInstanceIntent.COMPLETE,
-        new AgentInstanceRecord().setProcessInstanceKey(processInstanceKey));
-  }
-
-  private void appendCompleted(final long agentInstanceKey, final AgentInstanceRecord current) {
     current.setStatus(AgentInstanceStatus.COMPLETED);
     current.setChangedAttributes(List.of(AgentInstanceRecord.ATTR_STATUS));
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.COMPLETED, current);
+
+    if (isBatchCompletion) {
+      // re-chain: other agent instances may still be left for this process instance
+      commandWriter.appendFollowUpCommand(
+          command.getKey(),
+          AgentInstanceIntent.COMPLETE,
+          new AgentInstanceRecord().setProcessInstanceKey(value.getProcessInstanceKey()));
+    }
+  }
+
+  private static String rejectionReason(
+      final boolean isBatchCompletion, final AgentInstanceRecord value) {
+    return isBatchCompletion
+        ? ERROR_MSG_NONE_REMAINING.formatted(value.getProcessInstanceKey())
+        : ERROR_MSG_NOT_FOUND.formatted(value.getAgentInstanceKey());
   }
 
   @Override
