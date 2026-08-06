@@ -22,6 +22,7 @@ import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -87,6 +88,61 @@ public class AwsDocumentStore implements DocumentStore {
       final String bucketPath,
       final ExecutorService executor) {
     this(bucketName, defaultTTL, bucketPath, executor, AwsClientOptions.sdkDefaults());
+  }
+
+  /**
+   * @deprecated superseded by {@link #AwsDocumentStore(String, Long, String, ExecutorService,
+   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
+   *     caller compiled against an earlier release still links.
+   */
+  @Deprecated(forRemoval = true)
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled) {
+    this(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        endpointOverride,
+        forcePathStyle,
+        chunkedEncodingEnabled,
+        null);
+  }
+
+  /**
+   * @deprecated superseded by {@link #AwsDocumentStore(String, Long, String, ExecutorService,
+   *     AwsClientOptions)}, which also carries the store's own region and credentials. Kept so a
+   *     caller compiled against an earlier release still links.
+   */
+  @Deprecated(forRemoval = true)
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    this(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        new AwsClientOptions(
+            endpointOverride,
+            forcePathStyle,
+            chunkedEncodingEnabled,
+            supportLegacyMd5,
+            null,
+            null,
+            null));
   }
 
   public AwsDocumentStore(
