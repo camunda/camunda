@@ -14,14 +14,12 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
-import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
-import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.core.authz.DefaultTenantAccessProvider;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.authz.TenantAccessProvider;
@@ -52,9 +50,7 @@ public class ResourceAccessControllerConfiguration {
   @Bean
   public TenantAccessProvider tenantAccessProvider(
       final CamundaSecurityLibraryProperties cslProperties) {
-    return cslProperties.getMultiTenancy().isChecksEnabled()
-        ? new DefaultTenantAccessProvider()
-        : new DisabledTenantAccessProvider();
+    return TenantAccessProvider.of(cslProperties.getMultiTenancy().isChecksEnabled());
   }
 
   @Bean
