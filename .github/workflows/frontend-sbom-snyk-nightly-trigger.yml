@@ -1,0 +1,55 @@
+# description: Runs the nightly frontend SBOM vulnerability scan for maintained branches.
+# test location: .github/workflows/frontend-sbom-snyk-nightly.yml
+# type: CI
+# owner: @camunda/core-features
+---
+name: Frontend SBOM Snyk Nightly Trigger
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare-matrix:
+    name: Prepare branch matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      branches: ${{ steps.maintained-branches.outputs.branches }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: List maintained frontend branches
+        id: maintained-branches
+        uses: ./.github/actions/list-maintained-branches
+        with:
+          min-version: '8.8'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  scan:
+    name: "Scan (${{ matrix.branch }})"
+    needs: prepare-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.prepare-matrix.outputs.branches) }}
+    uses: ./.github/workflows/frontend-sbom-snyk-nightly.yml
+    secrets: inherit
+    with:
+      branch: ${{ matrix.branch }}
+      notify-on-failure: true
