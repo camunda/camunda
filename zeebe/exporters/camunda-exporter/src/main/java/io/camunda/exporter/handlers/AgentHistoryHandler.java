@@ -143,6 +143,7 @@ public class AgentHistoryHandler
       case USER -> AgentHistoryRole.USER;
       case ASSISTANT -> AgentHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentHistoryRole.TOOL_RESULT;
+      case CONFIGURATION -> AgentHistoryRole.CONFIGURATION;
       // should never happen — protocol UNSPECIFIED is always overwritten before export
       case UNSPECIFIED ->
           throw new IllegalStateException(

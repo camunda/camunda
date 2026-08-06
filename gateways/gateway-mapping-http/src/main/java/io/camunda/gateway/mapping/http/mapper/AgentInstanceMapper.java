@@ -185,6 +185,7 @@ public class AgentInstanceMapper {
       case USER -> AgentHistoryRole.USER;
       case ASSISTANT -> AgentHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentHistoryRole.TOOL_RESULT;
+      case CONFIGURATION -> AgentHistoryRole.CONFIGURATION;
     };
   }
 

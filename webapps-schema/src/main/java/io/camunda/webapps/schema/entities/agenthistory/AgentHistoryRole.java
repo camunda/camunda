@@ -11,5 +11,6 @@ package io.camunda.webapps.schema.entities.agenthistory;
 public enum AgentHistoryRole {
   USER,
   ASSISTANT,
-  TOOL_RESULT
+  TOOL_RESULT,
+  CONFIGURATION
 }

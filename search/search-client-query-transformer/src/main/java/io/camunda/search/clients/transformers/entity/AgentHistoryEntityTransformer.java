@@ -53,6 +53,7 @@ public class AgentHistoryEntityTransformer
       case USER -> AgentInstanceHistoryRole.USER;
       case ASSISTANT -> AgentInstanceHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentInstanceHistoryRole.TOOL_RESULT;
+      case CONFIGURATION -> AgentInstanceHistoryRole.CONFIGURATION;
     };
   }
 
