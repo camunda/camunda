@@ -29,7 +29,9 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
@@ -1404,6 +1406,7 @@ class SearchQueryResponseMapperTest {
 
       // then
       assertThat(result.getHistoryItemKey()).isEqualTo("100");
+      assertThat(result.getHistoryItemId()).isEqualTo("history-item-1");
       assertThat(result.getAgentInstanceKey()).isEqualTo("200");
       assertThat(result.getElementInstanceKey()).isEqualTo("300");
       assertThat(result.getJobKey()).isEqualTo("600");
@@ -1642,6 +1645,95 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
       assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
       assertThat(result.getMetrics().getDurationMs()).isNull();
+    }
+
+    @Test
+    void shouldMapConfigurationFields() {
+      // given — a CONFIGURATION item that touched tools/model/provider/limits/systemPrompt
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              "history-item-1",
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              1,
+              AgentInstanceHistoryRole.CONFIGURATION,
+              List.of(),
+              List.of(),
+              null,
+              List.of(new Tool("search", "Searches the web", "Task_1")),
+              "gpt-4o",
+              "openai",
+              new Limits(1000L, 10, 5),
+              List.of(
+                  new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null)),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getHistoryItemId()).isEqualTo("history-item-1");
+      assertThat(result.getRole().getValue()).isEqualTo("CONFIGURATION");
+      assertThat(result.getTools()).hasSize(1);
+      assertThat(result.getTools().get(0).getName()).isEqualTo("search");
+      assertThat(result.getTools().get(0).getDescription()).isEqualTo("Searches the web");
+      assertThat(result.getTools().get(0).getElementId()).isEqualTo("Task_1");
+      assertThat(result.getModel()).isEqualTo("gpt-4o");
+      assertThat(result.getProvider()).isEqualTo("openai");
+      assertThat(result.getLimits().getMaxTokens()).isEqualTo(1000L);
+      assertThat(result.getLimits().getMaxModelCalls()).isEqualTo(10);
+      assertThat(result.getLimits().getMaxToolCalls()).isEqualTo(5);
+      assertThat(result.getSystemPrompt()).hasSize(1);
+      assertThat(result.getSystemPrompt().get(0).getContentType()).isEqualTo("TEXT");
+    }
+
+    @Test
+    void shouldMapEmptyToolsAndSystemPromptAndSentinelLimitsWhenUntouched() {
+      // given — a non-CONFIGURATION item; tools/model/provider/limits/systemPrompt are untouched
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              "history-item-1",
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              1,
+              AgentInstanceHistoryRole.USER,
+              List.of(),
+              List.of(),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getTools()).isEmpty();
+      assertThat(result.getModel()).isNull();
+      assertThat(result.getProvider()).isNull();
+      assertThat(result.getLimits().getMaxTokens()).isEqualTo(-1L);
+      assertThat(result.getLimits().getMaxModelCalls()).isEqualTo(-1);
+      assertThat(result.getLimits().getMaxToolCalls()).isEqualTo(-1);
+      assertThat(result.getSystemPrompt()).isEmpty();
     }
   }
 }
