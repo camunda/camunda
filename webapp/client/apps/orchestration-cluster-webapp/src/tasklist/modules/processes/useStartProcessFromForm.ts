@@ -10,9 +10,6 @@ import {useMutation} from '@tanstack/react-query';
 import type {CreateProcessInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {tracking} from '#/shared/tracking';
-import {t} from 'i18next';
 
 type StartProcessFromFormVariables = {
 	processDefinitionKey: string;
@@ -30,14 +27,6 @@ function useStartProcessFromForm() {
 			}
 
 			return response.json();
-		},
-		onSuccess: () => {
-			tracking.track({eventName: 'tasklist:process-started'});
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('tasklist.processesStartProcessNotificationSuccess'),
-				isDismissable: true,
-			});
 		},
 	});
 }
