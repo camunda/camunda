@@ -107,10 +107,10 @@ public final class JobSuspensionHandoutTest {
     // when
     ENGINE.processInstance().withInstanceKey(parentInstanceKey).suspend();
 
-    // then - the child instance's job is still handed out. This holds because the walker never
+    // then - the child instance's job is still handed out. This holds because the behavior never
     // reaches the child instance at all (its root has no parent link in the element instance
-    // tree), not because of the walker's processInstanceKey filter - see SuspendedJobsWalker's
-    // class javadoc.
+    // tree), not because of the processInstanceKey filter - see
+    // ProcessInstanceSuspensionJobBehavior's class javadoc.
     final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
     assertThat(batch.getValue().getJobKeys()).containsExactly(childJob.getKey());
   }
