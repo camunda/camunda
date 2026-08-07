@@ -67,6 +67,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
       final List<PartitionId> targetPartitionIds,
       final int replicationFactor) {
 
+    // validation
     validateTargetMembers(targetMembers, replicationFactor);
     final Set<String> targetGroups =
         targetPartitionIds.stream().map(PartitionId::group).collect(Collectors.toSet());
@@ -74,6 +75,8 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     final Map<String, Set<PartitionMetadata>> distributionByGroup =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(currentConfiguration);
     validateNoRemoval(distributionByGroup, targetPartitionIds, replicationFactor);
+
+    // generate assignment for new partitions
     final Map<PartitionId, PartitionMetadata> currentById =
         targetGroups.stream()
             .flatMap(group -> distributionByGroup.getOrDefault(group, Set.of()).stream())
@@ -82,28 +85,55 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     final List<MemberId> sortedMembers =
         targetMembers.stream().sorted(MemberId.ID_COMPARATOR).toList();
     final int clusterSize = sortedMembers.size();
-    final int replicaSlotCount = Math.min(replicationFactor, clusterSize);
+
+    final List<PartitionId> sortedPartitionIds =
+        targetPartitionIds.stream().distinct().sorted().toList();
 
     final Map<MemberId, Integer> replicaCountByMember = new HashMap<>();
     final Map<MemberId, Integer> leaderCountByMember = new HashMap<>();
+    final var result =
+        generateAssignmentForNewPartitions(
+            sortedPartitionIds,
+            distributionByGroup,
+            replicaCountByMember,
+            leaderCountByMember,
+            currentById,
+            sortedMembers,
+            replicationFactor);
+
+    // generate the final partition metadata set, including existing partitions and new ones
+    return generatePartitionMetadata(
+        replicationFactor,
+        sortedPartitionIds,
+        currentById,
+        result.newMembersById(),
+        result.newPrimaryById(),
+        clusterSize);
+  }
+
+  private static Assignment generateAssignmentForNewPartitions(
+      final List<PartitionId> sortedPartitionIds,
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Map<MemberId, Integer> replicaCountByMember,
+      final Map<MemberId, Integer> leaderCountByMember,
+      final Map<PartitionId, PartitionMetadata> currentById,
+      final List<MemberId> sortedMembers,
+      final int replicationFactor) {
     distributionByGroup
         .values()
         .forEach(
             partitions -> accumulateLoad(partitions, replicaCountByMember, leaderCountByMember));
 
-    final List<PartitionId> processingOrder =
-        targetPartitionIds.stream().distinct().sorted().toList();
-
     final List<PartitionId> newPartitionIds = new ArrayList<>();
     final Map<PartitionId, Set<MemberId>> newMembersById = new LinkedHashMap<>();
     final Map<PartitionId, MemberId> newPrimaryById = new LinkedHashMap<>();
-    for (final PartitionId id : processingOrder) {
+    for (final PartitionId id : sortedPartitionIds) {
       if (currentById.containsKey(id)) {
         continue;
       }
       final var placement =
           selectNewPartitionMembers(
-              sortedMembers, replicaSlotCount, replicaCountByMember, leaderCountByMember);
+              sortedMembers, replicationFactor, replicaCountByMember, leaderCountByMember);
       newPartitionIds.add(id);
       newMembersById.put(id, new LinkedHashSet<>(placement.members()));
       newPrimaryById.put(id, placement.primary());
@@ -115,11 +145,21 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     // already-selected replicas — never moving a replica, never touching an existing partition.
     rebalanceLeaders(
         newPartitionIds, newMembersById, newPrimaryById, sortedMembers, leaderCountByMember);
+    return new Assignment(newMembersById, newPrimaryById);
+  }
 
+  private static Set<PartitionMetadata> generatePartitionMetadata(
+      final int replicationFactor,
+      final List<PartitionId> processingOrder,
+      final Map<PartitionId, PartitionMetadata> currentById,
+      final Map<PartitionId, Set<MemberId>> newMembersById,
+      final Map<PartitionId, MemberId> newPrimaryById,
+      final int clusterSize) {
     final Set<PartitionMetadata> result = new HashSet<>();
     for (final PartitionId id : processingOrder) {
       final var existing = currentById.get(id);
       if (existing != null) {
+        // existing partitions are unchanged, add them as it is.
         result.add(existing);
         continue;
       }
@@ -136,4 +176,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     }
     return result;
   }
+
+  private record Assignment(
+      Map<PartitionId, Set<MemberId>> newMembersById, Map<PartitionId, MemberId> newPrimaryById) {}
 }
