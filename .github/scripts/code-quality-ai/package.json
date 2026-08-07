@@ -1,0 +1,14 @@
+{
+  "name": "code-quality-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scripts for the AI-assisted code quality pipeline.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.27.0",
+    "@octokit/rest": "^22.0.0"
+  }
+}
