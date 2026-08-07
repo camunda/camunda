@@ -45,6 +45,7 @@ public interface TimerRecordValue
   /**
    * @return the key of the related element instance.
    */
+  @Override
   long getElementInstanceKey();
 
   /**

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -43,6 +44,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
@@ -62,11 +64,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public MessageSubscriptionRecord() {
-    super(14);
+    super(15);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -80,6 +84,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(elementIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(elementTypeProp);
   }
 
@@ -97,6 +102,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBusinessId(record.getBusinessIdBuffer());
     setElementId(record.getElementIdBuffer());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
+    setStorageOrdinalKey(record.getStorageOrdinalKey());
     setElementType(record.getElementType());
   }
 
@@ -278,5 +284,15 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
   }
 }

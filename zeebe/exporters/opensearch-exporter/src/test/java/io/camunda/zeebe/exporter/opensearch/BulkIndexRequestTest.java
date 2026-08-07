@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -92,7 +93,19 @@ final class BulkIndexRequestTest {
     recordAsMap.remove("agent");
     recordAsMap.remove("requestChannelType");
     recordAsMap.remove("requestToolName");
+    // the storage ordinal key is stripped from every record value during serialization; it can
+    // appear at any nesting level (e.g. embedded job records), so remove it recursively
+    removeStorageOrdinalKeys(recordAsMap);
     return MAPPER.writeValueAsBytes(recordAsMap).length;
+  }
+
+  private static void removeStorageOrdinalKeys(final Object node) {
+    if (node instanceof final Map<?, ?> map) {
+      map.remove("storageOrdinalKey");
+      map.values().forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+    } else if (node instanceof final Collection<?> collection) {
+      collection.forEach(BulkIndexRequestTest::removeStorageOrdinalKeys);
+    }
   }
 
   @Test

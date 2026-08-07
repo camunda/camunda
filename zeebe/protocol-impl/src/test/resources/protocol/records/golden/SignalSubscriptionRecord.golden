@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -35,6 +36,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
 
   private final LongProperty processDefinitionKeyProp =
@@ -50,11 +52,13 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
       new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public SignalSubscriptionRecord() {
-    super(9);
+    super(10);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(signalNameProp)
         .declareProperty(catchEventIdProp)
@@ -63,6 +67,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnElementTypeProp);
   }
 
@@ -75,6 +80,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     tenantIdProp.setValue(record.getTenantId());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
   }
 
@@ -188,6 +194,16 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
 
   public SignalSubscriptionRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public SignalSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 

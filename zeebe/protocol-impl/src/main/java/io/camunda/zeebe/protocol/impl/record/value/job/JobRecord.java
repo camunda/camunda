@@ -100,6 +100,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue LEASE_TOKEN_KEY = new StringValue("leaseToken");
@@ -149,6 +150,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
   private final StringProperty leaseTokenProp = new StringProperty(LEASE_TOKEN_KEY, EMPTY_STRING);
@@ -156,7 +159,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
   public JobRecord() {
-    super(30);
+    super(31);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -183,6 +186,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
         .declareProperty(leaseTokenProp)
@@ -217,6 +221,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
     setTags(record.getTags());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
     leaseTokenProp.setValue(record.getLeaseTokenBuffer());
@@ -612,6 +617,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @JsonIgnore
   public DirectBuffer getLeaseTokenBuffer() {
     return leaseTokenProp.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public JobRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
