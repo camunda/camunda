@@ -88,10 +88,8 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   List<AgentHistoryMessageContentValue> getContent();
 
   /**
-   * Returns the system prompt, as content blocks, as of this entry. Reserved for a future
-   * configuration-change entry kind (see #58794); unused until that lands. An empty list does not
-   * by itself mean the system prompt wasn't touched — it may also mean the prompt was explicitly
-   * cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   * Returns the system prompt, as content blocks, as of this entry. Populated by CONFIGURATION
+   * items; empty for other roles.
    */
   List<AgentHistoryMessageContentValue> getSystemPrompt();
 
@@ -105,35 +103,33 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   String getHistoryItemId();
 
   /**
-   * Returns the complete list of tools available to the agent as of this entry. Reserved for a
-   * future configuration-change entry kind (see #58794); unused until that lands. An empty list
-   * does not by itself mean the tool list wasn't touched — it may also mean the tools were
-   * explicitly cleared; check {@link #getChangedAttributes()} to tell the two apart.
+   * Returns the complete list of tools available to the agent as of this entry. Populated by
+   * CONFIGURATION items; empty for other roles.
    */
   List<AgentInstanceRecordValue.AgentInstanceToolValue> getTools();
 
   /**
-   * Returns the LLM model identifier as of this entry. Reserved for a future configuration-change
-   * entry kind (see #58794); empty until that lands.
+   * Returns the LLM model identifier as of this entry. Populated by CONFIGURATION items; empty for
+   * other roles.
    */
   String getModel();
 
   /**
-   * Returns the LLM provider as of this entry. Reserved for a future configuration-change entry
-   * kind (see #58794); empty until that lands.
+   * Returns the LLM provider as of this entry. Populated by CONFIGURATION items; empty for other
+   * roles.
    */
   String getProvider();
 
   /**
-   * Returns the operational limits as of this entry. Reserved for a future configuration-change
-   * entry kind (see #58794); unused until that lands.
+   * Returns the operational limits as of this entry. Populated by CONFIGURATION items; unused for
+   * other roles.
    */
   AgentInstanceRecordValue.AgentInstanceLimitsValue getLimits();
 
   /**
    * Returns the names of attributes this entry intends to update, or the names of the attributes
-   * that were actually updated; empty otherwise. Reserved for a future configuration-change entry
-   * kind (see #58794); unused until that lands.
+   * that were actually updated; empty otherwise. Reserved for CONFIGURATION items once the engine
+   * processing that populates it lands (see #58791); unused until then.
    */
   List<String> getChangedAttributes();
 
