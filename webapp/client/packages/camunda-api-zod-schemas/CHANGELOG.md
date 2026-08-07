@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.88
+
+### 🚀 Enhancements
+
+- Add single-instance and batch suspend/resume request/response schemas and endpoints, plus `SUSPEND_PROCESS_INSTANCE`/`RESUME_PROCESS_INSTANCE` batch-operation types, to the 8.10 process-instance schemas ([#57534](https://github.com/camunda/camunda/issues/57534))
+
+### ❤️ Contributors
+
+- Francesco Esposito (@phoinixi)
+
 ## v0.0.87
 
 ### 🚀 Enhancements
