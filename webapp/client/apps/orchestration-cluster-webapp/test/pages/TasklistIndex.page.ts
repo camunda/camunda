@@ -91,7 +91,10 @@ class TasklistIndexPage extends BasePage {
 	}
 
 	async expandFilters() {
-		await this.expandFiltersButton.click();
+		const box = await this.expandFiltersButton.boundingBox();
+		await this.expandFiltersButton.click({
+			position: box === null ? undefined : {x: box.width / 2, y: box.height - 4},
+		});
 	}
 
 	get sortButton() {
