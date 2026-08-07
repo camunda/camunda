@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -78,6 +79,7 @@ class ClusterConfigurationManagementIntegrationTest {
   private final Map<Integer, TestNode> nodes = new HashMap<>();
   private Set<MemberId> clusterMemberIds;
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final AtomicLong rebalanceIds = new AtomicLong();
 
   @BeforeEach
   void setup() {
@@ -343,7 +345,8 @@ class ClusterConfigurationManagementIntegrationTest {
                 Duration.ofSeconds(1),
                 Duration.ofSeconds(5)),
             new NoopClusterChangeExecutor(),
-            meterRegistry);
+            meterRegistry,
+            rebalanceIds::incrementAndGet);
     return new TestNode(cluster, service);
   }
 
