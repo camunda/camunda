@@ -206,6 +206,13 @@ jobs:
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      # manually bring down docker compose
+      # as the action currently has an issue with large amounts of logs
+      # from docker compose https://github.com/hoverkraft-tech/compose-action/issues/297
+      # consider removing this step once the issue is resolved
+      - name: Stop Database service
+        if: ${{ always() && inputs.database-type != 'h2' }}
+        run: docker compose -f db/docker-compose.yml --project-name db down
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
