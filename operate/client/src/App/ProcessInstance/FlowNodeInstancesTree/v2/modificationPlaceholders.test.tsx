@@ -22,7 +22,7 @@ import {
   processInstanceId,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
-  Wrapper,
+  getWrapper,
   mockMultiInstanceProcessInstance,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
@@ -85,7 +85,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -251,7 +251,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -337,7 +337,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -404,7 +404,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

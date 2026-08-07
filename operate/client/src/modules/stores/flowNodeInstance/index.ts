@@ -422,6 +422,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
+    this.isPollRequestRunning = false;
     this.disposer?.();
     this.instanceExecutionHistoryDisposer?.();
     this.instanceFinishedDisposer?.();
