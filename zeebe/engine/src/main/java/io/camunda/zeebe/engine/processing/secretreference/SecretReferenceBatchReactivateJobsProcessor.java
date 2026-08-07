@@ -156,6 +156,12 @@ public final class SecretReferenceBatchReactivateJobsProcessor
    * resolution puts the job back on this path. A job that carries an incident is skipped too,
    * whichever state it is in: an incident means the job waits for someone to resolve it, and
    * resolving it hands the job out again.
+   *
+   * <p>The jobs are read again here rather than kept from the selection that sized them. The job
+   * state hands out one record instance it reuses on every read, and the batch event applied in
+   * between reads jobs itself, so keeping them would mean copying every selected job's record onto
+   * the heap for the whole batch. Reading a job twice costs a point lookup, which is the cheaper of
+   * the two.
    */
   private void publishReactivatedJobs(final SecretReferenceRecord processedBatch) {
     // shared across the batch so the workers of a job type are notified once, not once per job
@@ -164,8 +170,7 @@ public final class SecretReferenceBatchReactivateJobsProcessor
       if (jobState.getState(jobKey) != State.ACTIVATABLE || hasIncident(jobKey)) {
         continue;
       }
-      // the job state hands out one record instance that it reuses on the next read, so each job is
-      // published before the next one is read
+      // the reused record instance is why each job is published before the next one is read
       final JobRecord job = jobState.getJob(jobKey);
       if (job != null) {
         jobActivationBehavior.publishWork(jobKey, job, notifiedJobTypes);
