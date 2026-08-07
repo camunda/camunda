@@ -57,12 +57,71 @@ final class VariableInputMappingTransformerTest {
         "{'a':{'b':1, 'c':2}}"
       },
       {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
-      // a mapping reads the PARTIAL object an earlier a.* mapping built so far, not the outer
-      // scope's "a"
+      // a mapping reads the object an earlier a.* mapping started, completed with the outer
+      // scope's "a" for the properties no mapping has produced - "b" is mapped, "z" defers
       {
         List.of(mapping("x", "a.b"), mapping("a", "c")),
         Map.of("x", asMsgPack("1"), "a", asMsgPack("{'z':99}")),
-        "{'a':{'b':1}, 'c':{'b':1}}"
+        "{'a':{'b':1}, 'c':{'z':99, 'b':1}}"
+      },
+      // ... but only the mapped properties are applied: "a" itself does NOT gain the scope's "z"
+      {
+        List.of(mapping("x", "a.b")),
+        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'z':99}")),
+        "{'a':{'b':1}}"
+      },
+      // per-field identity copy of the same root: the second mapping's source must still see the
+      // outer scope's "foo.baz", not dead-end on the partial object the first mapping started
+      // regression test for https://github.com/camunda/camunda/issues/59646
+      {
+        List.of(mapping("foo.bar", "foo.bar"), mapping("foo.baz", "foo.baz")),
+        Map.of("foo", asMsgPack("{'bar':1, 'baz':2}")),
+        "{'foo':{'bar':1, 'baz':2}}"
+      },
+      // reversing the two lines yields the same result - declaration order no longer picks a
+      // survivor
+      {
+        List.of(mapping("foo.baz", "foo.baz"), mapping("foo.bar", "foo.bar")),
+        Map.of("foo", asMsgPack("{'bar':1, 'baz':2}")),
+        "{'foo':{'baz':2, 'bar':1}}"
+      },
+      // the same, one level deeper: the fallback has to recurse, or the dead end just moves down
+      {
+        List.of(mapping("foo.bar.x", "foo.bar.x"), mapping("foo.bar.y", "foo.bar.y")),
+        Map.of("foo", asMsgPack("{'bar':{'x':1, 'y':2}, 'other':3}")),
+        "{'foo':{'bar':{'x':1, 'y':2}}}"
+      },
+      // a mapped property still wins over the scope's: "bar" reads as the just-mapped 7, not 1
+      {
+        List.of(mapping("7", "foo.bar"), mapping("foo.bar", "foo.baz")),
+        Map.of("foo", asMsgPack("{'bar':1, 'baz':2}")),
+        "{'foo':{'bar':7, 'baz':7}}"
+      },
+      // a scope value that is not an object has no properties to defer to
+      {
+        List.of(mapping("1", "foo.bar"), mapping("foo.baz", "foo.baz")),
+        Map.of("foo", asMsgPack("5")),
+        "{'foo':{'bar':1, 'baz':null}}"
+      },
+      // ... nor does an absent one
+      {
+        List.of(mapping("1", "foo.bar"), mapping("foo.baz", "foo.baz")),
+        Map.of(),
+        "{'foo':{'bar':1, 'baz':null}}"
+      },
+      // a target mapped as a WHOLE is complete, so it shadows the scope value outright instead of
+      // deferring - unlike the partially built object above
+      {
+        List.of(mapping("{bar: 7}", "foo"), mapping("foo", "copy")),
+        Map.of("foo", asMsgPack("{'bar':1, 'baz':2}")),
+        "{'foo':{'bar':7}, 'copy':{'bar':7}}"
+      },
+      // same root, plain target first: the source reads the COMPLETE "foo" the plain mapping
+      // declared, so ".baz" misses on the number 1 rather than deferring to the scope's object
+      {
+        List.of(mapping("1", "foo"), mapping("foo.baz", "foo.baz")),
+        Map.of("foo", asMsgPack("{'bar':1, 'baz':2}")),
+        "{'foo':{'baz':null}}"
       },
       // nested source
       {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
@@ -200,7 +259,7 @@ final class VariableInputMappingTransformerTest {
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
     // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -233,7 +292,7 @@ final class VariableInputMappingTransformerTest {
                     .isTrue());
 
     // when
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -275,7 +334,7 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final ExpressionLanguage language) {
     final var inputMappings = transformer.transformInputMappings(mappings, language);
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {

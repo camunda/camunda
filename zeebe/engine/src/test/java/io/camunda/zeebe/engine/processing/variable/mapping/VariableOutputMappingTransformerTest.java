@@ -138,6 +138,19 @@ public final class VariableOutputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':1}"
       },
+      // per-field identity copy of the same root - the output counterpart of #59646. Output
+      // mappings seed every path level from the scope while accumulating, so the second source
+      // already reads a complete "a"; pinned here so the two sides cannot drift apart
+      {
+        List.of(mapping("a.b", "a.b"), mapping("a.c", "a.c")),
+        Map.of("a", asMsgPack("{'b':1, 'c':2}")),
+        "{'a':{'b':1, 'c':2}}"
+      },
+      {
+        List.of(mapping("a.b.x", "a.b.x"), mapping("a.b.y", "a.b.y")),
+        Map.of("a", asMsgPack("{'b':{'x':1, 'y':2}, 'other':3}")),
+        "{'a':{'b':{'x':1, 'y':2}, 'other':3}}"
+      },
       // declaration order preserved across regrouped nested targets (#11789 / #56387): an entry
       // declared BETWEEN two entries of the same parent target sees the in-between assignment
       {
@@ -154,6 +167,20 @@ public final class VariableOutputMappingTransformerTest {
         Map.of(),
         "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
             + "'notNested':'abc', 'notNestedAssigned':'abc'}"
+      },
+      // a back-reference to the root of an earlier nested target reads it POST-merge, so it also
+      // carries the scope's siblings ...
+      {
+        List.of(mapping("1", "a.b"), mapping("a", "d")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'a':{'p':0, 'b':1}, 'd':{'p':0, 'b':1}}"
+      },
+      // ... whereas declared first it reads the pre-merge scope value: output ordering observably
+      // changes what a back-reference sees
+      {
+        List.of(mapping("a", "d"), mapping("1", "a.b")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'d':{'p':0}, 'a':{'p':0, 'b':1}}"
       },
       // source FEEL expression
       {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
@@ -203,7 +230,7 @@ public final class VariableOutputMappingTransformerTest {
     // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
     // shadow the scope variables, and nested targets merge with the scope value at every level
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -236,7 +263,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when: evaluate one by one, stopping at the first failure (mirrors runtime fail-fast)
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -277,7 +304,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -310,7 +337,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
