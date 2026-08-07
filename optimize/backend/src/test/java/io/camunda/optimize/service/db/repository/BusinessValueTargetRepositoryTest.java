@@ -46,4 +46,21 @@ class BusinessValueTargetRepositoryTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("processDefinitionKey");
   }
+
+  @Test
+  void shouldRejectBlankTenant() {
+    assertThatThrownBy(() -> BusinessValueTargetRepository.documentId("   ", "any-key"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId");
+  }
+
+  @Test
+  void shouldRejectBlankProcessKey() {
+    assertThatThrownBy(
+            () ->
+                BusinessValueTargetRepository.documentId(
+                    ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID, "   "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("processDefinitionKey");
+  }
 }
