@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -62,6 +63,15 @@ public final class JobSecretPushInjectionTest {
   private static final String JOB_TYPE = "task-type";
   private static final String SECRET_NAME = "token";
   private static final String SECRET_VALUE = "resolved-secret";
+
+  /**
+   * Jobs parked on one reference, padded so that their hand-outs cannot share a single record
+   * batch: the padding sits in a task header, which is part of the job record the reactivation
+   * sizes its batch against, and ten of them exceed the 4 MB maximum fragment size.
+   */
+  private static final int PADDED_JOB_COUNT = 10;
+
+  private static final int JOB_PADDING_SIZE = 500_000;
 
   // static, because the engine rule below reads them while it is initialized, and a field
   // initializer can only read a field declared before it; setUp resets them per test
@@ -363,6 +373,54 @@ public final class JobSecretPushInjectionTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isEqualTo(1));
     assertThat(jobStream.getActivatedJobs()).isEmpty();
+  }
+
+  /**
+   * A reactivation sizes its record batch against what handing each job out will write into that
+   * same batch, but the sizing and the writing live in different classes. The processor's own test
+   * mocks the writer, so it can only check the arithmetic; this drives the chain on a real record
+   * batch with jobs too large to share one, which is what turns the reserved bound into a checked
+   * one.
+   */
+  @Test
+  public void shouldPushEveryReactivatedJobWithoutExceedingTheRecordBatch() {
+    // given - parked jobs padded so that one record batch cannot hand out all of them
+    deploy(
+        t -> {
+          t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization");
+          t.zeebeTaskHeader("padding", "x".repeat(JOB_PADDING_SIZE));
+        });
+    for (int i = 0; i < PADDED_JOB_COUNT; i++) {
+      engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    }
+    awaitResolutionRequests(PADDED_JOB_COUNT);
+
+    // when - the reference resolves
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+
+    // then - every parked job is handed out, none left behind by the size cut
+    Awaitility.await("until every parked job is pushed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(PADDED_JOB_COUNT));
+
+    // and - no batch overflowed; that rejection strands the jobs of its cycle for good, since the
+    // reactivation command is written by the engine and has nobody to report the failure to
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(record -> record.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+
+    // and - the hand-outs really spanned several batches, so the cut was exercised rather than the
+    // jobs happening to fit one of them
+    assertThat(exportedCountOf(SecretReferenceIntent.BATCH_JOBS_REACTIVATED))
+        .describedAs("the padded jobs do not fit one batch, so the chain runs several cycles")
+        .isGreaterThan(1);
+  }
+
+  /** Counts the records exported so far, without waiting for more of them to arrive. */
+  private long exportedCountOf(final SecretReferenceIntent intent) {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getIntent() == intent)
+        .count();
   }
 
   /**
