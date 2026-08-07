@@ -61,7 +61,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
           List.of(ELEMENT_INSTANCE_KEY),
           AgentInstanceStatus.COMPLETED,
           new AgentInstanceDefinition("gpt-4o", "openai", "You are a helpful assistant."),
-          new AgentInstanceMetrics(100L, 200L, 3, 5),
+          new AgentInstanceMetrics(100L, 200L, 0L, 0L, 0L, 3, 5),
           new AgentInstanceLimits(10000L, 10, 50),
           List.of(new AgentInstanceTool("search", "Search the web", "searchElement")),
           "AgentTask",

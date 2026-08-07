@@ -44,6 +44,9 @@ public record AgentHistoryDbModel(
     OffsetDateTime producedAt,
     Long inputTokens,
     Long outputTokens,
+    Long reasoningTokenCount,
+    Long cacheCreationTokenCount,
+    Long cacheReadTokenCount,
     Long durationMs,
     String content,
     String toolCalls,
@@ -99,6 +102,9 @@ public record AgentHistoryDbModel(
         producedAt,
         inputTokens,
         outputTokens,
+        reasoningTokenCount,
+        cacheCreationTokenCount,
+        cacheReadTokenCount,
         durationMs,
         content,
         toolCalls,
@@ -230,6 +236,9 @@ public record AgentHistoryDbModel(
         .producedAt(producedAt)
         .inputTokens(inputTokens)
         .outputTokens(outputTokens)
+        .reasoningTokenCount(reasoningTokenCount)
+        .cacheCreationTokenCount(cacheCreationTokenCount)
+        .cacheReadTokenCount(cacheReadTokenCount)
         .durationMs(durationMs)
         .historyItemId(historyItemId)
         .model(model)
@@ -270,6 +279,9 @@ public record AgentHistoryDbModel(
     private OffsetDateTime producedAt;
     private Long inputTokens;
     private Long outputTokens;
+    private Long reasoningTokenCount;
+    private Long cacheCreationTokenCount;
+    private Long cacheReadTokenCount;
     private Long durationMs;
     private String content;
     private String toolCalls;
@@ -386,6 +398,21 @@ public record AgentHistoryDbModel(
       return this;
     }
 
+    public Builder reasoningTokenCount(final Long reasoningTokenCount) {
+      this.reasoningTokenCount = reasoningTokenCount;
+      return this;
+    }
+
+    public Builder cacheCreationTokenCount(final Long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
+      return this;
+    }
+
+    public Builder cacheReadTokenCount(final Long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
+      return this;
+    }
+
     public Builder durationMs(final Long durationMs) {
       this.durationMs = durationMs;
       return this;
@@ -461,6 +488,9 @@ public record AgentHistoryDbModel(
           producedAt,
           inputTokens,
           outputTokens,
+          reasoningTokenCount,
+          cacheCreationTokenCount,
+          cacheReadTokenCount,
           durationMs,
           content,
           toolCalls,

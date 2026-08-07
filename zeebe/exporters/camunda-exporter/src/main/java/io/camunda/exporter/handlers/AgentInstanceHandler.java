@@ -8,6 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_CREATION_TOKEN_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CACHE_READ_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
@@ -17,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.REASONING_TOKEN_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
@@ -114,6 +117,9 @@ public class AgentInstanceHandler
         .setMaxToolCalls(value.getLimits().getMaxToolCalls())
         .setInputTokens(value.getMetrics().getInputTokens())
         .setOutputTokens(value.getMetrics().getOutputTokens())
+        .setReasoningTokenCount(value.getMetrics().getReasoningTokenCount())
+        .setCacheCreationTokenCount(value.getMetrics().getCacheCreationTokenCount())
+        .setCacheReadTokenCount(value.getMetrics().getCacheReadTokenCount())
         .setModelCalls(value.getMetrics().getModelCalls())
         .setToolCalls(value.getMetrics().getToolCalls())
         .setTools(mapTools(value.getTools()))
@@ -148,6 +154,9 @@ public class AgentInstanceHandler
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
     updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
+    updateFields.put(REASONING_TOKEN_COUNT, entity.getReasoningTokenCount());
+    updateFields.put(CACHE_CREATION_TOKEN_COUNT, entity.getCacheCreationTokenCount());
+    updateFields.put(CACHE_READ_TOKEN_COUNT, entity.getCacheReadTokenCount());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());
     updateFields.put(TOOL_CALLS, entity.getToolCalls());
     updateFields.put(TOOLS, entity.getTools());
