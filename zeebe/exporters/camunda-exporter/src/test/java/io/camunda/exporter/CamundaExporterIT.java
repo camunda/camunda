@@ -79,8 +79,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -93,7 +91,6 @@ import org.testcontainers.containers.GenericContainer;
  * This is a smoke test to verify that the exporter can connect to an Elasticsearch instance and
  * export records using the configured handlers.
  */
-@TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
@@ -104,13 +101,22 @@ final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
+  private String testPrefix;
+
+  @BeforeEach
+  public void beforeEach() {
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+  }
+
   @AfterEach
   public void afterEach() throws IOException {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
+      searchDB.esClient().indices().delete(req -> req.index(testPrefix + "*"));
       searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
+    searchDB.osClient().indices().delete(req -> req.index(testPrefix + "*"));
     searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
   }
 
@@ -118,6 +124,8 @@ final class CamundaExporterIT {
   void shouldOpenDifferentPartitions(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var p1Exporter = new CamundaExporter();
     final var p1Context = getContextFromConfig(config, 1);
@@ -155,6 +163,8 @@ final class CamundaExporterIT {
   void shouldUpdateExporterPositionAfterFlushing(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -178,6 +188,8 @@ final class CamundaExporterIT {
   void shouldExportRecordOnceBulkSizeReached(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     config.getBulk().setSize(2);
     final var exporter = new CamundaExporter();
@@ -210,6 +222,8 @@ final class CamundaExporterIT {
       final GenericContainer<?> container) throws IOException {
     // given
     final var config = getConnectConfigForContainer(container);
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -248,6 +262,8 @@ final class CamundaExporterIT {
   void shouldPeriodicallyFlushBasedOnConfiguration(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var duration = 2;
     config.getBulk().setDelay(duration);
@@ -273,6 +289,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var valueType = ValueType.VARIABLE;
     final Record record =
@@ -335,6 +353,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long notExistingOperationReference = 9876543210L;
@@ -371,6 +391,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long invalidTimestamp = 8109027450636607488L;
@@ -452,6 +474,10 @@ final class CamundaExporterIT {
   void shouldFailToOpenWhenSchemaMissingThenOpenAfterSchemaCreationAndExport(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
+    // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+
     // Do not create schema yet
     final var exporter = spy(new CamundaExporter());
     final var context = getContextFromConfig(config);
@@ -570,6 +596,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -614,7 +642,7 @@ final class CamundaExporterIT {
       varDocumentIds.add(varHandler.generateIds(variableRecord).getFirst());
     }
 
-    clientAdapter.refresh();
+    clientAdapter.refresh(testPrefix);
 
     // then
     await()
@@ -642,6 +670,8 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
     final Record record =
         factory.generateRecord(
