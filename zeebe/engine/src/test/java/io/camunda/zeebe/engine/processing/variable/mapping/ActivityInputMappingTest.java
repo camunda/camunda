@@ -193,6 +193,57 @@ public final class ActivityInputMappingTest {
         mapping(b -> b.zeebeInput("say \"hi\"", "greeting")),
         activityVariables(variable("greeting", "\"say \\\"hi\\\"\""))
       },
+      {
+        // per-field identity copy of one root variable: the second mapping's source resolves
+        // 'foo.baz' against the parent scope, not against the partial object the first mapping
+        // started, so both fields survive
+        // regression test for https://github.com/camunda/camunda/issues/59646
+        "{'foo': {'bar': 1, 'baz': 2}}",
+        mapping(
+            b ->
+                b.zeebeInputExpression("foo.bar", "foo.bar")
+                    .zeebeInputExpression("foo.baz", "foo.baz")),
+        activityVariables(variable("foo", "{\"bar\":1,\"baz\":2}"))
+      },
+      {
+        // ... and declaration order no longer picks which field survives
+        "{'foo': {'bar': 1, 'baz': 2}}",
+        mapping(
+            b ->
+                b.zeebeInputExpression("foo.baz", "foo.baz")
+                    .zeebeInputExpression("foo.bar", "foo.bar")),
+        activityVariables(variable("foo", "{\"baz\":2,\"bar\":1}"))
+      },
+      {
+        // the fallback recurses, so the same identity copy works one level deeper too
+        "{'foo': {'bar': {'x': 1, 'y': 2}}}",
+        mapping(
+            b ->
+                b.zeebeInputExpression("foo.bar.x", "foo.bar.x")
+                    .zeebeInputExpression("foo.bar.y", "foo.bar.y")),
+        activityVariables(variable("foo", "{\"bar\":{\"x\":1,\"y\":2}}"))
+      },
+      {
+        // completing a source lookup from the scope must NOT turn a nested input target into a
+        // merge: mapping only 'foo.bar' still drops the parent's 'baz' from the local 'foo'
+        "{'foo': {'bar': 1, 'baz': 2}}",
+        mapping(b -> b.zeebeInputExpression("foo.bar", "foo.bar")),
+        activityVariables(variable("foo", "{\"bar\":1}"))
+      },
+      {
+        // a property an earlier mapping produced wins over the parent scope's
+        "{'foo': {'bar': 1, 'baz': 2}}",
+        mapping(
+            b -> b.zeebeInputExpression("7", "foo.bar").zeebeInputExpression("foo.bar", "foo.baz")),
+        activityVariables(variable("foo", "{\"bar\":7,\"baz\":7}"))
+      },
+      {
+        // a target mapped as a WHOLE is complete: it shadows the parent scope outright, so the
+        // later source sees only what that mapping produced
+        "{'foo': {'bar': 1, 'baz': 2}}",
+        mapping(b -> b.zeebeInputExpression("{bar: 7}", "foo").zeebeInputExpression("foo", "copy")),
+        activityVariables(variable("foo", "{\"bar\":7}"), variable("copy", "{\"bar\":7}"))
+      },
     };
   }
 

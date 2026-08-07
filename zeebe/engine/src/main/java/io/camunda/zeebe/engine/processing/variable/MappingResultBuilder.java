@@ -31,14 +31,17 @@ import org.jspecify.annotations.Nullable;
  * earlier mappings. {@link #toDocument()} returns the accumulated results as a single MsgPack
  * document to be merged into the element's local scope.
  *
- * <p>For input mappings (no-arg constructor), a mapping to a nested target descends into (or
+ * <p>For input mappings ({@link #forInputMappings}), a mapping to a nested target descends into (or
  * creates) intermediate objects; a mapping whose target collides structurally with an earlier one
- * (a value where an object is needed, or vice versa) replaces the earlier entry — last-wins.
+ * (a value where an object is needed, or vice versa) replaces the earlier entry — last-wins. The
+ * accumulated results are never merged with the scope: what {@link #toDocument()} returns fully
+ * replaces the same-named scope variables. A {@link #getVariable} lookup does fall back to the
+ * scope, see there.
  *
- * <p>For output mappings (constructor with a {@code scopeValueResolver}), a nested target instead
- * merges with the existing scope variable at every path level: a level that is absent or holds a
- * plain value is seeded from the current scope value at that path. A non-context scope value
- * poisons the level to null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
+ * <p>For output mappings ({@link #forOutputMappings}), a nested target instead merges with the
+ * existing scope variable at every path level: a level that is absent or holds a plain value is
+ * seeded from the current scope value at that path. A non-context scope value poisons the level to
+ * null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
  */
 @NullMarked
 public final class MappingResultBuilder {
@@ -61,23 +64,42 @@ public final class MappingResultBuilder {
 
   private final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver;
 
-  /** Builder for input mappings: nested targets never merge with existing scope values. */
-  public MappingResultBuilder() {
-    this(path -> null);
+  private final Function<String, @Nullable DirectBuffer> scopeVariableResolver;
+
+  private MappingResultBuilder(
+      final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver,
+      final Function<String, @Nullable DirectBuffer> scopeVariableResolver) {
+    this.scopeValueResolver = scopeValueResolver;
+    this.scopeVariableResolver = scopeVariableResolver;
+  }
+
+  /**
+   * Builder for input mappings: nested targets never merge with existing scope values, so the
+   * accumulated document replaces the same-named scope variables outright. The resolver is used
+   * only to complete a {@link #getVariable} lookup of a target that is still being built, see
+   * there.
+   *
+   * @param scopeVariableResolver resolves a top-level variable name to its current scope value, or
+   *     {@code null} when there is none
+   */
+  public static MappingResultBuilder forInputMappings(
+      final Function<String, @Nullable DirectBuffer> scopeVariableResolver) {
+    return new MappingResultBuilder(path -> null, scopeVariableResolver);
   }
 
   /**
    * Builder for output mappings: when a nested target path needs a map at a level that is absent
    * (or currently holds a plain value), the level is seeded from the existing scope value at that
    * path. A non-context scope value poisons the level to null, matching FEEL's {@code context
-   * merge} behavior.
+   * merge} behavior. Because every level is already seeded while accumulating, a {@link
+   * #getVariable} lookup needs no further scope fallback.
    *
    * @param scopeValueResolver resolves a target-path prefix to the current scope value at that
    *     path, or {@code null} when there is none; invoked only when a level must be (re)created
    */
-  public MappingResultBuilder(
+  public static MappingResultBuilder forOutputMappings(
       final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver) {
-    this.scopeValueResolver = scopeValueResolver;
+    return new MappingResultBuilder(scopeValueResolver, name -> null);
   }
 
   /**
@@ -101,6 +123,12 @@ public final class MappingResultBuilder {
    * has produced it yet. Nested structures are serialized to a MsgPack document on lookup. A
    * poisoned top-level entry returns a NIL buffer (not Java {@code null}, which would let the
    * caller fall back to the scope lookup instead of seeing the poisoned null).
+   *
+   * <p>A variable that only nested targets have contributed to so far is still under construction:
+   * the properties no mapping has produced yet are completed from the scope value, so that a later
+   * mapping reading one of them resolves it up the scope chain instead of dead-ending on the
+   * partial object (see {@link #withScopeFallback}). A variable a mapping produced as a whole is
+   * complete and shadows the scope value outright.
    */
   public @Nullable DirectBuffer getVariable(final String name) {
     final var entry = entries.get(name);
@@ -111,8 +139,45 @@ public final class MappingResultBuilder {
     } else if (entry instanceof final DirectBuffer value) {
       return value;
     } else {
-      return serialize(asNestedMap(entry));
+      return serialize(withScopeFallback(asNestedMap(entry), scopeVariableResolver.apply(name)));
     }
+  }
+
+  /**
+   * Returns the still-under-construction {@code partial} completed with the properties of {@code
+   * scopeValue} that no mapping has produced yet, so a read of one of them defers up the scope
+   * chain like any other variable lookup.
+   *
+   * <p>Mapped properties win over the scope, and a property both sides hold as an object is
+   * completed recursively — otherwise the dead-end would just move one level down. Only the
+   * accumulated results are ever applied to the scope ({@link #toDocument} does not use this), so
+   * completing a read does not turn a nested input target into a merge.
+   *
+   * <p>{@code scopeValue} that is absent or not an object leaves the partial untouched: there is no
+   * object to resolve the remaining properties against.
+   */
+  private static Map<String, Object> withScopeFallback(
+      final Map<String, Object> partial, final @Nullable DirectBuffer scopeValue) {
+    if (scopeValue == null
+        || scopeValue.capacity() == 0
+        || !MsgPackCodes.isMap(scopeValue.getByte(0))) {
+      return partial;
+    }
+    final var completed = deserializeTopLevel(scopeValue);
+    partial.forEach(
+        (key, value) -> {
+          if (value instanceof Map<?, ?>) {
+            final var scopeProperty = completed.get(key);
+            completed.put(
+                key,
+                withScopeFallback(
+                    asNestedMap(value),
+                    scopeProperty instanceof final DirectBuffer buffer ? buffer : null));
+          } else {
+            completed.put(key, value);
+          }
+        });
+    return completed;
   }
 
   /** Returns all accumulated results as a single MsgPack document (a map). */
