@@ -10,8 +10,9 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
-import io.camunda.zeebe.engine.processing.job.JobSecretValues.Secret;
-import io.camunda.zeebe.engine.processing.job.JobSecretValues.SecretCheckResult;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.CachedSecret;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -45,10 +46,10 @@ import org.slf4j.LoggerFactory;
  *       is dropped and reported for an incident.
  * </ol>
  *
- * <p>The cached values are materialized once at check time and reused for the injection, so a value
- * evicted from the cache in between cannot drop a job late. The injected values must only ever
- * reach the record that is written to the activation response and nowhere else. That keeps the
- * secret values on the response only: state, records, and logs keep the placeholders.
+ * <p>The cached values are read once at check time and reused for the injection, so a value evicted
+ * from the cache in between cannot drop a job late. The injected values must only ever reach the
+ * record that is written to the activation response and nowhere else. That keeps the secret values
+ * on the response only: state, records, and logs keep the placeholders.
  *
  * <p>The job-push path injects the same values into the job it streams, see {@code
  * BpmnJobActivationBehavior#publishWork}.
@@ -58,7 +59,7 @@ public final class JobSecretInjector {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobSecretInjector.class.getPackageName());
 
-  private final JobSecretValues secretValues;
+  private final JobSecretLookup secretLookup;
 
   // accumulated per activation command while the collector checks and appends jobs, consumed
   // (and reset) by injectSecretValues; the collector's reset() bounds a new command
@@ -69,26 +70,25 @@ public final class JobSecretInjector {
   private final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets = new LinkedHashMap<>();
 
   public JobSecretInjector(final SecretStoreRegistry secretStoreRegistry) {
-    secretValues = new JobSecretValues(secretStoreRegistry);
+    secretLookup = new JobSecretLookup(secretStoreRegistry);
   }
 
   /** Discards any state accumulated for a previous activation command. */
   public void reset() {
-    secretValues.reset();
     jobsWithCachedSecrets.clear();
     jobsWithNonCachedSecrets.clear();
   }
 
   /**
    * Checks the job's secret references for cached values, see {@link
-   * JobSecretValues#check(JobRecord)}.
+   * JobSecretLookup#check(JobRecord)}.
    *
    * <p>The collector skips a job with any non-cached reference and registers it via {@link
    * #registerForResolution}, so the processor can request the background resolution of the
    * non-cached references and park the job until it is resolved.
    */
   public SecretCheckResult checkSecrets(final JobRecord job) {
-    return secretValues.check(job);
+    return secretLookup.check(job);
   }
 
   /**
@@ -165,7 +165,7 @@ public final class JobSecretInjector {
         final byte[] injected;
         try {
           injected =
-              secretValues.injectedVariablesOf(
+              secretLookup.injectedVariablesOf(
                   jobWithSecrets.job(), jobWithSecrets.cachedSecrets());
         } catch (final Exception e) {
           return Optional.of(
@@ -275,7 +275,7 @@ public final class JobSecretInjector {
   public record FailedInjectionJob(long jobKey, JobRecord job) implements DroppedJob {}
 
   /** A registered job: its index in the batch, the job, and its cached secrets. */
-  record JobWithCachedSecrets(int index, JobRecord job, List<Secret> cachedSecrets) {}
+  record JobWithCachedSecrets(int index, JobRecord job, List<CachedSecret> cachedSecrets) {}
 
   /** The first job removed by {@link #dropJobsFromIndex}, i.e. the one at the given index. */
   private record RemovedJob(long jobKey, JobRecord job) {}

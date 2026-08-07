@@ -19,9 +19,9 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobIncidentBehavior;
-import io.camunda.zeebe.engine.processing.job.JobSecretValues;
-import io.camunda.zeebe.engine.processing.job.JobSecretValues.Secret;
-import io.camunda.zeebe.engine.processing.job.JobSecretValues.SecretCheckResult;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -82,7 +82,7 @@ public class BpmnJobActivationBehavior {
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
-  private final JobSecretValues secretValues;
+  private final JobSecretLookup secretLookup;
   private final JobIncidentBehavior jobIncidentBehavior;
 
   public BpmnJobActivationBehavior(
@@ -106,7 +106,7 @@ public class BpmnJobActivationBehavior {
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
-    secretValues = new JobSecretValues(secretStoreRegistry);
+    secretLookup = new JobSecretLookup(secretStoreRegistry);
     jobIncidentBehavior =
         new JobIncidentBehavior(state, keyGenerator, writers.state(), incidentMetrics);
   }
@@ -152,52 +152,44 @@ public class BpmnJobActivationBehavior {
       return;
     }
 
-    try {
-      // the values are materialized by the check and injected below, so a value evicted from the
-      // cache in between cannot leave the job with a placeholder it was activated for
-      final SecretCheckResult secrets = secretValues.check(wrappedJobRecord);
-      if (!secrets.nonCachedSecrets().isEmpty()) {
-        requestResolutionAndPark(jobKey, jobType, jobKind, secrets, notifiedJobTypes);
-        return;
-      }
-
-      final JobStream jobStream = optionalJobStream.get();
-      final JobActivationProperties properties = jobStream.properties();
-
-      setJobProperties(wrappedJobRecord, properties);
-      jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
-      final var pushableJobRecord = new JobRecord();
-      cloneJob(wrappedJobRecord, pushableJobRecord);
-      if (!injectSecretValues(jobKey, pushableJobRecord, secrets)) {
-        // the job is not activated, so it stays available and its incident tells why it is not
-        // pushed
-        return;
-      }
-
-      // activate job in state; the batch drops the variables, so the injected values stay off the
-      // log
-      final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
-      appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
-      final var jobBatchKey = keyGenerator.nextKey();
-      stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
-
-      final var activatedJob = new ActivatedJobImpl();
-      activatedJob.setJobKey(jobKey).setRecord(pushableJobRecord);
-
-      // job push through side effect
-      sideEffectWriter.appendSideEffect(
-          () -> {
-            jobStream.push(activatedJob);
-            jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
-            return true;
-          });
-    } finally {
-      // the materialized values are needed only until they are injected into the job to push, so
-      // they are discarded as soon as the hand-out is over: afterwards the only plaintext value
-      // left is the one in the pushed job itself, which carries it to the worker, and the next
-      // hand-out materializes its own values, which cannot have expired since
-      secretValues.reset();
+    // the check reads the values that are injected below, so a value evicted from the cache in
+    // between cannot leave the job with a placeholder it was activated for. They live on the check
+    // result only, which ends with this hand-out: afterwards the only plaintext value left is the
+    // one in the pushed job itself, which carries it to the worker
+    final SecretCheckResult secrets = secretLookup.check(wrappedJobRecord);
+    if (!secrets.nonCachedSecrets().isEmpty()) {
+      requestResolutionAndPark(jobKey, jobType, jobKind, secrets, notifiedJobTypes);
+      return;
     }
+
+    final JobStream jobStream = optionalJobStream.get();
+    final JobActivationProperties properties = jobStream.properties();
+
+    setJobProperties(wrappedJobRecord, properties);
+    jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+    final var pushableJobRecord = new JobRecord();
+    cloneJob(wrappedJobRecord, pushableJobRecord);
+    if (!injectSecretValues(jobKey, pushableJobRecord, secrets)) {
+      // the job is not activated, so it stays available and its incident tells why it is not pushed
+      return;
+    }
+
+    // activate job in state; the batch drops the variables, so the injected values stay off the log
+    final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
+    appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
+    final var jobBatchKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
+
+    final var activatedJob = new ActivatedJobImpl();
+    activatedJob.setJobKey(jobKey).setRecord(pushableJobRecord);
+
+    // job push through side effect
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          jobStream.push(activatedJob);
+          jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
+          return true;
+        });
   }
 
   /**
@@ -268,7 +260,7 @@ public class BpmnJobActivationBehavior {
     }
     try {
       final byte[] injected =
-          secretValues.injectedVariablesOf(pushableJobRecord, secrets.cachedSecrets());
+          secretLookup.injectedVariablesOf(pushableJobRecord, secrets.cachedSecrets());
       if (injected != null) {
         pushableJobRecord.setVariables(BufferUtil.wrapArray(injected));
       }
