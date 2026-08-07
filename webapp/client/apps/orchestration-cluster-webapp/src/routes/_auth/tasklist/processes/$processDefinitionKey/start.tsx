@@ -78,9 +78,13 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 		const router = useRouter();
 		const queryClient = useQueryClient();
 		const variant = getErrorVariant(error);
-		const retry = useCallback(() => {
+		const retry = useCallback(async () => {
 			reset();
-			queryClient.resetQueries(queries.getProcessStartForm(processDefinitionKey)).then(() => router.invalidate());
+			await queryClient.resetQueries({
+				queryKey: queries.getProcessStartForm(processDefinitionKey).queryKey,
+				exact: true,
+			});
+			await router.invalidate();
 		}, [processDefinitionKey, queryClient, reset, router]);
 
 		return (
