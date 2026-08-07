@@ -100,7 +100,7 @@ class BusinessValueTargetIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void scanAllReturnsRowsAcrossTenants() {
+  void shouldReturnAllRowsAcrossTenantsOnScanAll() {
     // given
     final BusinessValueTargetDto a = target(PROCESS_KEY, DEFAULT_TENANT, 28_800_000L, 85);
     final BusinessValueTargetDto b = target(PROCESS_KEY, OTHER_TENANT, 3_600_000L, 50);

@@ -68,6 +68,58 @@ class BusinessValueTargetWriterTest {
   }
 
   @Test
+  void shouldRejectBlankTenantId() {
+    // given
+    final BusinessValueTargetDto target = validTarget();
+    target.setTenantId("   ");
+
+    // when + then
+    assertThatThrownBy(() -> writer.upsertTarget(target))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId");
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void shouldRejectEmptyTenantId() {
+    // given
+    final BusinessValueTargetDto target = validTarget();
+    target.setTenantId("");
+
+    // when + then
+    assertThatThrownBy(() -> writer.upsertTarget(target))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId");
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void shouldRejectNegativeCycleTimeMillis() {
+    // given a negative duration is not a valid target
+    final BusinessValueTargetDto target = validTarget();
+    target.setCycleTimeTargetMillis(-1L);
+
+    // when + then
+    assertThatThrownBy(() -> writer.upsertTarget(target))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("cycleTimeTargetMillis");
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void shouldAcceptZeroCycleTimeMillis() {
+    // given zero is a valid (albeit tight) target
+    final BusinessValueTargetDto target = validTarget();
+    target.setCycleTimeTargetMillis(0L);
+
+    // when
+    writer.upsertTarget(target);
+
+    // then
+    verify(repository).upsert(target);
+  }
+
+  @Test
   void shouldRejectBlankProcessDefinitionKey() {
     // given
     final BusinessValueTargetDto target = validTarget();

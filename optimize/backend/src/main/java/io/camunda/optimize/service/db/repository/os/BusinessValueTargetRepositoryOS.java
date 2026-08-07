@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TARGET_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
@@ -92,6 +93,7 @@ public class BusinessValueTargetRepositoryOS implements BusinessValueTargetRepos
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_TARGET_INDEX_NAME))
+            .query(matchAll())
             .size(LIST_FETCH_LIMIT);
 
     return osClient.searchValues(requestBuilder, BusinessValueTargetDto.class);

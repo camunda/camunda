@@ -51,8 +51,9 @@ public class BusinessValueTargetWriter {
     if (target.getProcessDefinitionKey() == null || target.getProcessDefinitionKey().isBlank()) {
       throw new IllegalArgumentException("processDefinitionKey must not be null or blank");
     }
-    if (target.getTenantId() == null) {
-      throw new IllegalArgumentException("tenantId must not be null on a business-value target");
+    if (target.getTenantId() == null || target.getTenantId().isBlank()) {
+      throw new IllegalArgumentException(
+          "tenantId must not be null or blank on a business-value target");
     }
     final Long cycleTimeMillis = target.getCycleTimeTargetMillis();
     final TargetValueUnit unit = target.getCycleTimeTargetUnit();
@@ -64,6 +65,10 @@ public class BusinessValueTargetWriter {
               + "] unit=["
               + unit
               + "]");
+    }
+    if (cycleTimeMillis != null && cycleTimeMillis < 0) {
+      throw new IllegalArgumentException(
+          "cycleTimeTargetMillis must be non-negative but was " + cycleTimeMillis);
     }
     if (unit != null && !SUPPORTED_CYCLE_TIME_UNITS.contains(unit)) {
       throw new IllegalArgumentException(

@@ -11,6 +11,8 @@ import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_VALUE_TA
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,13 +54,22 @@ public class BusinessValueTargetRepositoryES implements BusinessValueTargetRepos
         BusinessValueTargetRepository.documentId(
             target.getTenantId(), target.getProcessDefinitionKey());
     try {
-      esClient.index(
-          OptimizeIndexRequestBuilderES.of(
-              b ->
-                  b.optimizeIndex(esClient, BUSINESS_VALUE_TARGET_INDEX_NAME)
-                      .id(documentId)
-                      .document(target)
-                      .refresh(Refresh.True)));
+      final IndexResponse response =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  b ->
+                      b.optimizeIndex(esClient, BUSINESS_VALUE_TARGET_INDEX_NAME)
+                          .id(documentId)
+                          .document(target)
+                          .refresh(Refresh.True)));
+      if (response.result() != Result.Created && response.result() != Result.Updated) {
+        final String message =
+            String.format(
+                "Could not upsert business-value target for id [%s]. Result: [%s].",
+                documentId, response.result());
+        LOG.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Could not upsert business-value target for id [%s].", documentId);
