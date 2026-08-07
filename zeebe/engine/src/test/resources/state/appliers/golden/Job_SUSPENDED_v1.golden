@@ -16,8 +16,9 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
 /**
  * Parks an activatable job of a suspended process instance: sets {@link State#SUSPENDED} and
- * removes it from the activatable index. Does nothing unless the job is {@link State#ACTIVATABLE},
- * so a job a worker or a failure already owns is left alone.
+ * removes it from the activatable index. Uses the stored job record for the index key so a
+ * mismatched event value cannot leave a ghost entry. Does nothing unless the job is {@link
+ * State#ACTIVATABLE}, so a job a worker or a failure already owns is left alone.
  */
 public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -32,7 +33,11 @@ public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, J
     if (!jobState.isInState(key, State.ACTIVATABLE)) {
       return;
     }
+    final JobRecord storedJob = jobState.getJob(key);
+    if (storedJob == null) {
+      return;
+    }
     jobState.updateJobState(key, State.SUSPENDED);
-    jobState.makeJobNotActivatable(key, value);
+    jobState.makeJobNotActivatable(key, storedJob);
   }
 }

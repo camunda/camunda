@@ -44,7 +44,7 @@ public class JobResumedApplierTest {
     final long jobKey = 1L;
     final int priority = 42;
     final var record = jobRecord().setPriority(priority);
-    jobState.insertJobRecordActivatable(jobKey, record);
+    createActivatableJob(jobKey, record);
     suspendedApplier.applyState(jobKey, record);
 
     // when
@@ -57,11 +57,34 @@ public class JobResumedApplierTest {
   }
 
   @Test
+  void shouldIndexWithStoredAttributesWhenEventRecordDiffers() {
+    // given - index key is type/tenant/priority of the stored job; a mismatched event value must
+    // not insert under the wrong attributes
+    final long jobKey = 2L;
+    final int priority = 42;
+    final var stored = jobRecord().setPriority(priority);
+    createActivatableJob(jobKey, stored);
+    suspendedApplier.applyState(jobKey, stored);
+    final var mismatchedEvent = jobRecord().setPriority(1);
+
+    // when
+    applier.applyState(jobKey, mismatchedEvent);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.ACTIVATABLE);
+    assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(priority);
+    assertThat(isServedAsActivatable(jobKey)).isTrue();
+    // removing with the stored attributes must hit the entry that was written
+    jobState.makeJobNotActivatable(jobKey, jobState.getJob(jobKey));
+    assertThat(isServedAsActivatable(jobKey)).isFalse();
+  }
+
+  @Test
   void shouldLeaveJobThatWasNeverParkedAlone() {
     // given
-    final long jobKey = 2L;
+    final long jobKey = 3L;
     final var record = jobRecord();
-    jobState.insertJobRecordActivatable(jobKey, record);
+    createActivatableJob(jobKey, record);
     jobState.activate(jobKey, record);
 
     // when
@@ -81,6 +104,12 @@ public class JobResumedApplierTest {
     // when / then - no exception
     applier.applyState(jobKey, record);
     assertThat(jobState.getState(jobKey)).isEqualTo(State.NOT_FOUND);
+  }
+
+  private void createActivatableJob(final long jobKey, final JobRecord record) {
+    jobState.insertJobRecordActivatable(jobKey, record);
+    jobState.makeJobActivatableByPriority(
+        record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
   }
 
   private static JobRecord jobRecord() {

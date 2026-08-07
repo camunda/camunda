@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
 /**
  * Makes a parked job activatable again when its process instance is resumed, using the type, tenant
- * and priority from the event. Does nothing unless the job is in {@link State#SUSPENDED}, so a job
- * that a worker or a failure owns is never re-inserted into the index.
+ * and priority from the stored job. Does nothing unless the job is in {@link State#SUSPENDED}, so a
+ * job that a worker or a failure owns is never re-inserted into the index.
  */
 public final class JobResumedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -32,8 +32,12 @@ public final class JobResumedApplier implements TypedEventApplier<JobIntent, Job
     if (!jobState.isInState(key, State.SUSPENDED)) {
       return;
     }
+    final JobRecord storedJob = jobState.getJob(key);
+    if (storedJob == null) {
+      return;
+    }
     jobState.updateJobState(key, State.ACTIVATABLE);
     jobState.makeJobActivatableByPriority(
-        value.getTypeBuffer(), key, value.getTenantId(), value.getPriority());
+        storedJob.getTypeBuffer(), key, storedJob.getTenantId(), storedJob.getPriority());
   }
 }
