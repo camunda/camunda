@@ -28,15 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Transforms variable mappings.
  *
- * <p>Neither input nor output mappings are combined into a single context expression. Each mapping
- * is kept as its own parsed source expression plus its split target path (e.g. target {@code a.b.c}
- * becomes {@code [a, b, c]}), so that mappings can be evaluated one by one in modeling order at
- * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
- * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
+ * <p>Neither input nor output mappings are combined into a single context expression for normal
+ * evaluation. Each mapping is kept as its own parsed source expression plus its split target path
+ * (e.g. target {@code a.b.c} becomes {@code [a, b, c]}), so that mappings can be evaluated one by
+ * one in modeling order at runtime, with each mapping's result visible to subsequent mappings (see
+ * {@link InputMapping}, {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
  *
  * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
  * result must be merged with the existing scope variable if that variable is a JSON object, at
@@ -70,7 +71,61 @@ public final class VariableMappingTransformer {
     return new InputMappings(
         transformedMappings,
         detectSecretReferences(context),
-        detectClusterVariableReferences(context));
+        detectClusterVariableReferences(context),
+        combinedExpression(context, expressionLanguage));
+  }
+
+  /**
+   * Builds the single FEEL context expression the input mappings compiled into before they were
+   * evaluated one by one — {@code x -> a, y -> b.c} becomes {@code ={a:x,b:{c:y}}} — so the {@code
+   * evaluateInputMappingsOneByOne} kill-switch can restore that evaluation without a redeployment.
+   * Built for every process, because the flag is broker configuration the transformer must not
+   * read: it may flip after the process was transformed into the cache.
+   *
+   * <p>Returns {@code null} when the combined expression does not parse, instead of rejecting the
+   * deployment the way the pre-{@code #58801} transformer did. No target that passes deploy-time
+   * validation is currently known to produce one: the FEEL keywords that {@code
+   * ZeebeExpressionValidator}'s reserved list does not cover ({@code some}, {@code every}, {@code
+   * return}, ...) are all accepted as context keys, which a test pins. So this is defense in depth,
+   * not a reproduced hazard — but the two alternatives are both worse than a null. Throwing would
+   * reject such a process at deployment for everyone, including the vast majority who never touch
+   * the kill-switch; failing at runtime would make it permanently un-activatable the moment someone
+   * flips the flag, with no incident to resolve.
+   */
+  private static @Nullable Expression combinedExpression(
+      final MappingContext context, final ExpressionLanguage expressionLanguage) {
+    final var expression =
+        expressionLanguage.parseExpression(EXPRESSION_MARKER + context.visit(feelContextBuilder()));
+    return expression.isValid() ? expression : null;
+  }
+
+  /**
+   * Visitor that renders a mapping context as the FEEL context expression text: a leaf becomes
+   * {@code target:source}, a nested context {@code target:{...}}. A static source is quoted as a
+   * string literal, with the {@code #16043} double-quote escaping.
+   */
+  private static MappingContextVisitor<String> feelContextBuilder() {
+    return new MappingContextVisitor<>() {
+      @Override
+      public String onEntry(final String targetKey, final Expression sourceExpression) {
+        final var expression =
+            sourceExpression instanceof StaticExpression
+                ? "\"" + sourceExpression.getExpression().replaceAll("\"", "\\\\\"") + "\""
+                : sourceExpression.getExpression();
+        return targetKey + ":" + expression;
+      }
+
+      @Override
+      public String onContext(final List<String> entries) {
+        return "{" + String.join(",", entries) + "}";
+      }
+
+      @Override
+      public String onContextEntry(
+          final String targetKey, final String contextValue, final List<String> contextPath) {
+        return targetKey + ":" + contextValue;
+      }
+    };
   }
 
   private static Expression toInputSourceExpression(
