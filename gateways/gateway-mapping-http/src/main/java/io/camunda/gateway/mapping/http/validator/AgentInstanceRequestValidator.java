@@ -163,6 +163,25 @@ public class AgentInstanceRequestValidator {
             }
           }
 
+          if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+            if (request.getJobKey() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+            }
+
+            for (int i = 0; i < request.getHistory().size(); i++) {
+              final var historyItem = request.getHistory().get(i);
+              if (historyItem.getHistoryItemId() == null
+                  || historyItem.getHistoryItemId().isBlank()) {
+                violations.add(
+                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + i + "].historyItemId"));
+              }
+              if (historyItem.getLoopIteration() == null) {
+                violations.add(
+                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + i + "].loopIteration"));
+              }
+            }
+          }
+
           return violations;
         });
   }

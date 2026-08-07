@@ -13,6 +13,7 @@ import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
@@ -115,6 +116,20 @@ public class AgentInstanceMapper {
             record.addChangedAttribute("tools");
           }
 
+          if (request.getJobKey() != null) {
+            record.setJobKey(Long.parseLong(request.getJobKey()));
+          }
+
+          if (request.getJobLease() != null) {
+            record.setJobLease(request.getJobLease());
+          }
+
+          if (request.getHistory() != null) {
+            for (final AgentInstanceHistoryItem historyItem : request.getHistory()) {
+              record.addHistoryItem(mapHistoryItem(historyItem));
+            }
+          }
+
           return record;
         });
   }
@@ -178,6 +193,42 @@ public class AgentInstanceMapper {
     return AgentInstanceHistoryItemCreationResult.Builder.create()
         .historyItemKey(KeyUtil.keyToString(record.getAgentHistoryKey()))
         .build();
+  }
+
+  private AgentHistoryRecord mapHistoryItem(final AgentInstanceHistoryItem historyItem) {
+    final var record = new AgentHistoryRecord();
+
+    record.setHistoryItemId(historyItem.getHistoryItemId());
+    record.setLoopIteration(historyItem.getLoopIteration());
+    record.setRole(mapHistoryRole(historyItem.getRole()));
+    record.setProducedAt(
+        OffsetDateTime.parse(historyItem.getProducedAt()).toInstant().toEpochMilli());
+
+    for (final AgentInstanceMessageContent content : historyItem.getContent()) {
+      record.addContent(mapContent(content));
+    }
+
+    if (historyItem.getToolCalls() != null) {
+      for (final AgentInstanceToolCall toolCall : historyItem.getToolCalls()) {
+        record.addToolCall(mapToolCall(toolCall));
+      }
+    }
+
+    if (historyItem.getMetrics() != null) {
+      final var metrics = historyItem.getMetrics();
+      final var recordMetrics = record.getMetrics();
+      if (metrics.getInputTokens() != null) {
+        recordMetrics.setInputTokens(metrics.getInputTokens());
+      }
+      if (metrics.getOutputTokens() != null) {
+        recordMetrics.setOutputTokens(metrics.getOutputTokens());
+      }
+      if (metrics.getDurationMs() != null) {
+        recordMetrics.setDurationMs(metrics.getDurationMs());
+      }
+    }
+
+    return record;
   }
 
   private AgentHistoryRole mapHistoryRole(final AgentInstanceHistoryRoleEnum role) {
