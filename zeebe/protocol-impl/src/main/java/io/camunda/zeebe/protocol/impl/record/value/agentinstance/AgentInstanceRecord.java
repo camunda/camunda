@@ -32,10 +32,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_METRICS = "metrics";
   public static final String ATTR_TOOLS = "tools";
 
-  // Derived from a future configuration-change history entry kind on the output side (see #58794
-  // for that entry kind and #58791 for the engine processing that merges them in), never from a
-  // request-level changedAttributes entry — these are not part of ALLOWED_ATTRIBUTES in
-  // AgentInstanceUpdateProcessor, only of the output-side merge order.
+  // Derived from the CONFIGURATION history entry kind on the output side, once the engine
+  // processing that merges them in lands (see #58791) — never from a request-level
+  // changedAttributes entry. Not part of ALLOWED_ATTRIBUTES in AgentInstanceUpdateProcessor, only
+  // of the output-side merge order.
   public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
   public static final String ATTR_MODEL = "model";
   public static final String ATTR_PROVIDER = "provider";
