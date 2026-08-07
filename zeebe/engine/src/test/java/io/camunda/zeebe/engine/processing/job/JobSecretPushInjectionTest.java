@@ -206,7 +206,7 @@ public final class JobSecretPushInjectionTest {
 
     // then - both jobs are pushed with the resolved value
     Awaitility.await("until both waiting jobs are pushed")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
     assertThat(jobStream.getActivatedJobs())
         .extracting(ActivatedJob::jobKey)
@@ -434,7 +434,7 @@ public final class JobSecretPushInjectionTest {
 
   private ActivatedJob awaitPushedJob() {
     Awaitility.await("until the job is pushed to the stream")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).isNotEmpty());
     return jobStream.getActivatedJobs().getFirst();
   }

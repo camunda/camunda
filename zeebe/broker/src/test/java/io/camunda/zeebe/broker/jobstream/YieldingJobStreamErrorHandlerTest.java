@@ -70,9 +70,15 @@ public class YieldingJobStreamErrorHandlerTest {
         .containsExactly("test-type", 3, "process", 42L, "task", 43L, "tenant");
   }
 
+  /**
+   * Every pushed job is yielded without its variables, whatever they hold. The one that motivates
+   * it is a job whose variables carry the values of its secret references, which must not reach the
+   * log, but the yield processor takes the job it yields from state either way, so the command only
+   * ever needs to name the job.
+   */
   @Test
   public void shouldYieldJobWithoutVariables() {
-    // given a pushed job whose variables carry the resolved values of its secret references
+    // given a pushed job with variables
     final JobRecord pushedJob =
         new JobRecord()
             .setType("test-type")
@@ -83,7 +89,7 @@ public class YieldingJobStreamErrorHandlerTest {
     errorHandler.handleError(
         activatedJob, new RuntimeException("job push failed"), mockTaskResultBuilder);
 
-    // then the yield command must not carry them into the log
+    // then the yield command does not carry them into the log, and the pushed job keeps them
     final var yieldedJob = ArgumentCaptor.forClass(JobRecord.class);
     verify(mockTaskResultBuilder)
         .appendCommandRecord(eq(1L), eq(JobIntent.YIELD), yieldedJob.capture());
