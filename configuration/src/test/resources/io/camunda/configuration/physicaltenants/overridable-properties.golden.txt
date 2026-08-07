@@ -301,6 +301,7 @@ processing.engine.secrets.retry-max-attempts
 processing.engine.secrets.retry-max-delay
 processing.engine.usage-metrics.export-interval
 processing.engine.validators.results-output-max-size
+processing.evaluate-boundary-event-correlation-key-in-activity-scope
 processing.flow-control.request.aimd.backoff-ratio
 processing.flow-control.request.aimd.initial-limit
 processing.flow-control.request.aimd.max-limit

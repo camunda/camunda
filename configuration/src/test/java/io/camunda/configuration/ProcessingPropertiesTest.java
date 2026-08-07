@@ -65,6 +65,8 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "camunda.processing.enable-message-body-on-expired="
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "camunda.processing.evaluate-boundary-event-correlation-key-in-activity-scope="
+            + EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
         "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES
       })
   class WithOnlyUnifiedConfigSet {
@@ -105,7 +107,7 @@ public class ProcessingPropertiesTest {
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
               FeatureFlagsCfg::isEnableMessageBodyOnExpired)
           .returns(
-              EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
               FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
@@ -194,6 +196,8 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "camunda.processing.enable-message-body-on-expired="
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "camunda.processing.evaluate-boundary-event-correlation-key-in-activity-scope="
+            + EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
         "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES,
 
         // legacy
@@ -248,7 +252,7 @@ public class ProcessingPropertiesTest {
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
               FeatureFlagsCfg::isEnableMessageBodyOnExpired)
           .returns(
-              EXPECTED_CONFIGURED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              EXPECTED_DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
               FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
