@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -94,7 +95,7 @@ public final class ClusterVariableSecretJobCreationTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "token", "/authToken"));
+        .containsExactly(tuple(SecretStoreRegistry.DEFAULT_STORE_ID, "token", "/authToken"));
   }
 
   @Test
@@ -141,7 +142,8 @@ public final class ClusterVariableSecretJobCreationTest {
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
         .containsExactlyInAnyOrder(
-            tuple("", "cvToken", "/fromVar"), tuple("", "directToken", "/direct"));
+            tuple(SecretStoreRegistry.DEFAULT_STORE_ID, "cvToken", "/fromVar"),
+            tuple(SecretStoreRegistry.DEFAULT_STORE_ID, "directToken", "/direct"));
   }
 
   @Test
@@ -217,7 +219,7 @@ public final class ClusterVariableSecretJobCreationTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "globalToken", "/authToken"));
+        .containsExactly(tuple(SecretStoreRegistry.DEFAULT_STORE_ID, "globalToken", "/authToken"));
   }
 
   @Test
@@ -261,7 +263,7 @@ public final class ClusterVariableSecretJobCreationTest {
             JobSecretReferenceValue::getStoreId,
             JobSecretReferenceValue::getSecretReference,
             JobSecretReferenceValue::getPath)
-        .containsExactly(tuple("", "envToken", "/authToken"));
+        .containsExactly(tuple(SecretStoreRegistry.DEFAULT_STORE_ID, "envToken", "/authToken"));
   }
 
   @Test
