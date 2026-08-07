@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -46,6 +47,7 @@ final class JobBatchCollector {
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   private final JobState jobState;
+  private final IncidentState incidentState;
   private final JobVariablesCollector jobVariablesCollector;
   private final CslAuthorizationCheck cslCheck;
   private final Predicate<Integer> canWriteEventOfLength;
@@ -69,6 +71,7 @@ final class JobBatchCollector {
       final JobProcessingMetrics jobMetrics,
       final JobSecretInjector jobSecretInjector) {
     jobState = state.getJobState();
+    incidentState = state.getIncidentState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
     this.cslCheck = cslCheck;
@@ -119,6 +122,16 @@ final class JobBatchCollector {
           if (!value.isWithLease() && !jobRecord.getLeaseToken().isEmpty()) {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
             jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
+          if (jobRecord.hasSecretReferences() && hasIncident(key)) {
+            // A job whose secret value injection failed keeps its incident and stays activatable,
+            // so without this it would be collected again, fail the same way again, and truncate
+            // every batch it lands in, taking the jobs behind it out of the activation with it.
+            // The job waits for its incident to be resolved instead, which hands it out again.
+            // Only a job with secret references can reach that state, so no other job pays for the
+            // lookup.
             return true;
           }
 
@@ -185,6 +198,10 @@ final class JobBatchCollector {
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  private boolean hasIncident(final long jobKey) {
+    return incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT;
   }
 
   private Predicate<JobRecord> buildAuthzPredicate(final TypedRecord<JobBatchRecord> record) {

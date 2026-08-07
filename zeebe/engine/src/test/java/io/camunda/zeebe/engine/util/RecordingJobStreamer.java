@@ -49,6 +49,13 @@ public class RecordingJobStreamer implements JobStreamer {
     jobStreams.clear();
   }
 
+  /**
+   * Drops the recorded notification counts, so a streamer shared by a class starts each test at 0.
+   */
+  public void clearNotifications() {
+    jobNotifications.clear();
+  }
+
   public RecordingJobStream addJobStream(
       final DirectBuffer jobType, final JobActivationProperties jobActivationProperties) {
     final var jobStream = new RecordingJobStream(jobActivationProperties);

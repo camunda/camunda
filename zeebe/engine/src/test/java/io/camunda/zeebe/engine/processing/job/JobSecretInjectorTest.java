@@ -237,7 +237,7 @@ final class JobSecretInjectorTest {
 
       // then - every non-cached reference is reported, not only the first miss
       assertThat(check.cachedSecrets())
-          .extracting(secret -> secret.reference().name())
+          .extracting(cachedSecret -> cachedSecret.secret().reference().name())
           .containsExactly("token");
       assertThat(check.nonCachedSecrets())
           .extracting(secret -> secret.reference().name())

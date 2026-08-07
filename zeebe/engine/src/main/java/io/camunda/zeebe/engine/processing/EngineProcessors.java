@@ -271,7 +271,8 @@ public final class EngineProcessors {
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
             cslCheck,
-            tenantCheck);
+            tenantCheck,
+            secretStoreRegistry);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -526,7 +527,8 @@ public final class EngineProcessors {
         incidentMetrics,
         scheduledTaskStateFactory,
         secretStoreRegistry,
-        config);
+        config,
+        bpmnBehaviors.jobActivationBehavior());
 
     return typedRecordProcessors;
   }
@@ -621,7 +623,8 @@ public final class EngineProcessors {
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final SecretStoreRegistry secretStoreRegistry) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -640,7 +643,8 @@ public final class EngineProcessors {
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         evaluateDuplicateOutputMappingTargetsInOrder,
         cslCheck,
-        tenantCheck);
+        tenantCheck,
+        secretStoreRegistry);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
