@@ -27,11 +27,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-class ProcessDeletedHandlerTest {
+class ProcessFullyDeletedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessDeletedHandler underTest = new ProcessDeletedHandler(indexName);
+  private final ProcessFullyDeletedHandler underTest = new ProcessFullyDeletedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -46,7 +46,7 @@ class ProcessDeletedHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"DELETED"},
+      names = {"FULLY_DELETED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final ProcessIntent intent) {
     // given
@@ -60,7 +60,7 @@ class ProcessDeletedHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"DELETED"},
+      names = {"FULLY_DELETED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final ProcessIntent intent) {
     // given
@@ -82,7 +82,7 @@ class ProcessDeletedHandlerTest {
             .build();
     final Record<Process> record =
         factory.generateRecord(
-            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DELETED).withValue(value));
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.FULLY_DELETED).withValue(value));
 
     // when
     final var ids = underTest.generateIds(record);
@@ -106,7 +106,7 @@ class ProcessDeletedHandlerTest {
   void shouldSetStateDeletedOnUpdateEntity() {
     // given
     final Record<Process> record =
-        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DELETED));
+        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.FULLY_DELETED));
     final ProcessEntity entity = new ProcessEntity();
 
     // when
