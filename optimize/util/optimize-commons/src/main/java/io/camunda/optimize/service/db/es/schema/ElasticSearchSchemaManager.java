@@ -24,6 +24,7 @@ import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
 import io.camunda.optimize.service.db.es.schema.index.CollectionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
@@ -380,6 +381,7 @@ public class ElasticSearchSchemaManager
     return Arrays.asList(
         new AlertIndexES(),
         new BusinessKeyIndexES(),
+        new BusinessValueOverviewIndexES(),
         new BusinessValueTargetIndexES(),
         new CollectionIndexES(),
         new DashboardIndexES(),
