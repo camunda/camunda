@@ -38,6 +38,9 @@
             },
             "operationReference": {
               "type": "long"
+            },
+            "batchOperationReference": {
+              "type": "long"
             }
           }
         }
