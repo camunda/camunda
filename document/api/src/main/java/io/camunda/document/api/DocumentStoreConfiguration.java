@@ -7,8 +7,11 @@
  */
 package io.camunda.document.api;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public record DocumentStoreConfiguration(
     String defaultDocumentStoreId,
@@ -18,5 +21,51 @@ public record DocumentStoreConfiguration(
   public record DocumentStoreConfigurationRecord(
       String id,
       Class<? extends DocumentStoreProvider> providerClass,
-      Map<String, String> properties) {}
+      Map<String, String> properties) {
+
+    /**
+     * Property keys whose values authenticate against the backing store. {@link #toString()}
+     * replaces them with {@link #REDACTED}. Matched case-insensitively because store properties
+     * also arrive through the legacy {@code DOCUMENT_STORE_<ID>_<PROPERTY>} environment bridge.
+     *
+     * <p>Extend this when a provider gains a credential property: a value under a key absent here
+     * is printed in the clear.
+     *
+     * <p>{@code CREDENTIALS_PATH} is deliberately absent — it names a key file rather than holding
+     * a key, and it is the value worth seeing when a store fails to read it.
+     */
+    private static final Set<String> SENSITIVE_PROPERTIES =
+        Set.of("ACCESS_KEY", "SECRET_KEY", "CONNECTION_STRING");
+
+    private static final String REDACTED = "<redacted>";
+
+    /**
+     * Renders the record with every credential-bearing property masked. The default record {@code
+     * toString} would print the raw properties map, and this record is interpolated into
+     * configuration error messages that end up in broker logs.
+     */
+    @Override
+    public String toString() {
+      return "DocumentStoreConfigurationRecord[id="
+          + id
+          + ", providerClass="
+          + (providerClass == null ? null : providerClass.getName())
+          + ", properties="
+          + redactedProperties()
+          + "]";
+    }
+
+    private Map<String, String> redactedProperties() {
+      if (properties == null) {
+        return null;
+      }
+      final Map<String, String> redacted = new LinkedHashMap<>();
+      properties.forEach((key, value) -> redacted.put(key, isSensitive(key) ? REDACTED : value));
+      return redacted;
+    }
+
+    private static boolean isSensitive(final String key) {
+      return key != null && SENSITIVE_PROPERTIES.contains(key.toUpperCase(Locale.ROOT));
+    }
+  }
 }

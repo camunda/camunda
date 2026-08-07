@@ -164,6 +164,16 @@ public class Document {
     private Boolean chunkedEncodingEnabled;
     private Boolean supportLegacyMd5;
 
+    /**
+     * Access key of the credentials this store authenticates with. Must be set together with {@code
+     * secret-key}. When neither is set, the store uses the credentials the AWS SDK resolves from
+     * the process environment, which are shared with every other store.
+     */
+    private String accessKey;
+
+    /** Secret key of the credentials this store authenticates with. See {@code access-key}. */
+    private String secretKey;
+
     public String getBucketName() {
       return bucketName;
     }
@@ -227,11 +237,33 @@ public class Document {
     public void setSupportLegacyMd5(final Boolean supportLegacyMd5) {
       this.supportLegacyMd5 = supportLegacyMd5;
     }
+
+    public String getAccessKey() {
+      return accessKey;
+    }
+
+    public void setAccessKey(final String accessKey) {
+      this.accessKey = accessKey;
+    }
+
+    public String getSecretKey() {
+      return secretKey;
+    }
+
+    public void setSecretKey(final String secretKey) {
+      this.secretKey = secretKey;
+    }
   }
 
   public static class GcpStore {
     private String bucketName;
     private String prefix;
+
+    /**
+     * Path to the service account key file this store authenticates with. When unset, the store
+     * uses the application default credentials, which are shared with every other store.
+     */
+    private String credentialsPath;
 
     public String getBucketName() {
       return bucketName;
@@ -247,6 +279,14 @@ public class Document {
 
     public void setPrefix(final String prefix) {
       this.prefix = prefix;
+    }
+
+    public String getCredentialsPath() {
+      return credentialsPath;
+    }
+
+    public void setCredentialsPath(final String credentialsPath) {
+      this.credentialsPath = credentialsPath;
     }
   }
 

@@ -254,4 +254,151 @@ class PhysicalTenantDocumentOverlayTest {
             () -> PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment))
         .doesNotThrowAnyException();
   }
+
+  @Test
+  void shouldResolveCredentialsPerPhysicalTenant() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.store.bucket-name", "root-bucket",
+                    "camunda.document.aws.store.access-key", "root-key",
+                    "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.document.gcp.gcs.bucket-name", "root-gcs",
+                    "camunda.document.gcp.gcs.credentials-path", "/secrets/root.json",
+                    "camunda.physical-tenants.tenanta.document.aws.store.access-key",
+                        "tenant-a-key",
+                    "camunda.physical-tenants.tenanta.document.aws.store.secret-key",
+                        "tenant-a-secret",
+                    "camunda.physical-tenants.tenanta.document.gcp.gcs.credentials-path",
+                        "/secrets/tenant-a.json")));
+
+    final Document tenantA =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
+    final Document tenantB =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenantb", environment);
+
+    assertThat(tenantA.getAws().get("store").getAccessKey()).isEqualTo("tenant-a-key");
+    assertThat(tenantA.getAws().get("store").getSecretKey()).isEqualTo("tenant-a-secret");
+    assertThat(tenantA.getGcp().get("gcs").getCredentialsPath())
+        .isEqualTo("/secrets/tenant-a.json");
+    // the tenant restated only its credentials, so the root bucket must survive the overlay
+    assertThat(tenantA.getAws().get("store").getBucketName()).isEqualTo("root-bucket");
+
+    // a tenant without an override keeps the root credentials
+    assertThat(tenantB.getAws().get("store").getAccessKey()).isEqualTo("root-key");
+    assertThat(tenantB.getAws().get("store").getSecretKey()).isEqualTo("root-secret");
+    assertThat(tenantB.getGcp().get("gcs").getCredentialsPath()).isEqualTo("/secrets/root.json");
+  }
+
+  @Test
+  void shouldRejectATenantOverridingOnlyOneHalfOfTheKeyPair() {
+    // the inherited half pairs two different identities, which passes the store's both-or-neither
+    // check and only fails at the first document operation
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.store.bucket-name", "root-bucket",
+                    "camunda.document.aws.store.access-key", "root-key",
+                    "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.physical-tenants.tenanta.document.aws.store.access-key",
+                        "tenant-a-key")));
+
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("store")
+        .withMessageContaining("access-key")
+        .withMessageContaining("secret-key");
+  }
+
+  @Test
+  void shouldAcceptATenantOverridingNeitherHalfOfTheKeyPair() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.store.bucket-name", "root-bucket",
+                    "camunda.document.aws.store.access-key", "root-key",
+                    "camunda.document.aws.store.secret-key", "root-secret",
+                    "camunda.physical-tenants.tenanta.document.aws.store.bucket-path",
+                        "tenant-a")));
+
+    final Document doc =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
+
+    assertThat(doc.getAws().get("store").getAccessKey()).isEqualTo("root-key");
+    assertThat(doc.getAws().get("store").getSecretKey()).isEqualTo("root-secret");
+  }
+
+  @Test
+  void shouldResolveAzureConnectionStringPerPhysicalTenant() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.azure.blobs.container-name", "root-container",
+                    "camunda.document.azure.blobs.container-path", "root/path",
+                    "camunda.document.azure.blobs.connection-string",
+                        "AccountName=root;AccountKey=root-key",
+                    "camunda.physical-tenants.tenanta.document.azure.blobs.connection-string",
+                        "AccountName=tenanta;AccountKey=tenant-a-key")));
+
+    final Document tenantA =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
+    final Document tenantB =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenantb", environment);
+
+    assertThat(tenantA.getAzure().get("blobs").getConnectionString())
+        .isEqualTo("AccountName=tenanta;AccountKey=tenant-a-key");
+    // the tenant restated only its connection string, so the root container must survive the
+    // overlay — losing it would silently send the tenant's documents to the default container
+    assertThat(tenantA.getAzure().get("blobs").getContainerName()).isEqualTo("root-container");
+    assertThat(tenantA.getAzure().get("blobs").getContainerPath()).isEqualTo("root/path");
+
+    // a tenant without an override keeps the root connection string
+    assertThat(tenantB.getAzure().get("blobs").getConnectionString())
+        .isEqualTo("AccountName=root;AccountKey=root-key");
+  }
+
+  @Test
+  void shouldGiveEachPhysicalTenantItsOwnAzureStore() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.physical-tenants.tenanta.document.azure.blobs-a.container-name",
+                        "container-a",
+                    "camunda.physical-tenants.tenanta.document.azure.blobs-a.connection-string",
+                        "AccountName=tenanta;AccountKey=tenant-a-key",
+                    "camunda.physical-tenants.tenantb.document.azure.blobs-b.container-name",
+                        "container-b",
+                    "camunda.physical-tenants.tenantb.document.azure.blobs-b.connection-string",
+                        "AccountName=tenantb;AccountKey=tenant-b-key")));
+
+    final Document tenantA =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
+    final Document tenantB =
+        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenantb", environment);
+
+    // neither tenant may see the other's store, let alone its credentials
+    assertThat(tenantA.getAzure()).containsOnlyKeys("blobs-a");
+    assertThat(tenantB.getAzure()).containsOnlyKeys("blobs-b");
+    assertThat(tenantA.getAzure().get("blobs-a").getConnectionString())
+        .isEqualTo("AccountName=tenanta;AccountKey=tenant-a-key");
+    assertThat(tenantB.getAzure().get("blobs-b").getConnectionString())
+        .isEqualTo("AccountName=tenantb;AccountKey=tenant-b-key");
+  }
 }
