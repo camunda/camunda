@@ -8,11 +8,16 @@
 package io.camunda.zeebe.shared.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -30,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -50,6 +56,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
@@ -57,6 +66,7 @@ import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -91,7 +101,7 @@ final class ClusterApiUtilsTest {
   @ParameterizedTest
   @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
   void shouldMapClusterChangeOperation(final ClusterConfigurationChangeOperation operation) {
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
     assertThat(encoded).isNotNull();
     assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
     assertThat(OperationEnum.values())
@@ -112,6 +122,82 @@ final class ClusterApiUtilsTest {
         .contains(encoded.getOperation());
   }
 
+  @ParameterizedTest
+  @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
+  void shouldTagOnlyPartitionGroupOperationsWithPhysicalTenant(
+      final ClusterConfigurationChangeOperation operation) {
+    // when
+    final var encoded = ClusterApiUtils.mapOperation("tenant-a", operation);
+
+    // then
+    if (operation instanceof PartitionGroupOperation) {
+      assertThat(encoded.getPhysicalTenant()).isEqualTo("tenant-a");
+    } else {
+      assertThat(encoded.getPhysicalTenant()).isNull();
+    }
+  }
+
+  @Test
+  void shouldMapPhasedResponseIntoPlannedChangesTaggedByTenant() {
+    // given
+    final var globalOperation = new MemberJoinOperation(member(1));
+    final var tenantAOperation = new DeleteHistoryOperation(member(1));
+    final var tenantBOperation = new DeleteHistoryOperation(member(2));
+    final List<Phase> phases =
+        List.of(
+            new GlobalPhase(List.of(globalOperation)),
+            new PartitionGroupParallelPhase(
+                Map.of(
+                    "tenant-a", List.of(tenantAOperation),
+                    "tenant-b", List.of(tenantBOperation))));
+    final var response =
+        new ClusterConfigurationChangeResponse(
+            1,
+            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+            new CurrentConfigurationChangeResponse(
+                CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases));
+
+    // when
+    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
+
+    // then
+    assertThat(result.getStatusCode().value()).isEqualTo(202);
+    final var body = (PlannedOperationsResponse) result.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> op.getPhysicalTenant() == null)
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.BROKER_ADD);
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> "tenant-a".equals(op.getPhysicalTenant()))
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.DELETE_HISTORY);
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> "tenant-b".equals(op.getPhysicalTenant()))
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.DELETE_HISTORY);
+  }
+
+  @Test
+  void shouldFallBackToLegacyPlannedChangesWhenMultiConfigurationResponseIsAbsent() {
+    // given — a peer that hasn't populated the new multi-partition-group response, e.g. one still
+    // running old code (see ClusterConfigurationChangeResponse.response()).
+    final var operation = new MemberLeaveOperation(member(1));
+    final var response =
+        new ClusterConfigurationChangeResponse(
+            1, new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of(operation)), null);
+
+    // when
+    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
+
+    // then
+    final var body = (PlannedOperationsResponse) result.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getPlannedChanges())
+        .extracting(op -> op.getOperation(), op -> op.getPhysicalTenant())
+        .containsExactly(tuple(OperationEnum.BROKER_REMOVE, null));
+  }
+
   @Test
   void shouldUseBrokerIdAsIntegerForNonZoneAwareBroker() {
     // given
@@ -119,7 +205,7 @@ final class ClusterApiUtilsTest {
     final var operation = new MemberJoinOperation(memberId);
 
     // when
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
 
     // then
     assertThat(encoded.getBrokerId()).isEqualTo(1);
@@ -132,7 +218,7 @@ final class ClusterApiUtilsTest {
     final var operation = new MemberJoinOperation(memberId);
 
     // when
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
 
     // then
     assertThat(encoded.getBrokerId()).isEqualTo("zone-a_0");

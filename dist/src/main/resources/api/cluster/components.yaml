@@ -459,6 +459,8 @@ schemas:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
         $ref: "components.yaml#/schemas/PartitionId"
+      physicalTenant:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
       priority:
         type: integer
         format: int32
@@ -498,6 +500,25 @@ schemas:
         type: array
         items:
           $ref: "components.yaml#/schemas/PartitionState"
+      physicalTenants:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PhysicalTenantState"
+
+  PhysicalTenantState:
+    title: PhysicalTenantState
+    description: State of a physical tenant
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      mode:
+        type: string
+        description: The mode of the physical tenant
+        enum:
+          - UNKNOWN
+          - PROCESSING
+          - RECOVERING
 
   BrokerStateCode:
     title: BrokerStateCode
@@ -516,6 +537,8 @@ schemas:
     properties:
       id:
         $ref: "components.yaml#/schemas/PartitionId"
+      physicalTenant:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
       state:
         $ref: "components.yaml#/schemas/PartitionStateCode"
       priority:
@@ -601,6 +624,12 @@ schemas:
     type: integer
     format: int32
     example: 1
+
+  PhysicalTenantId:
+    title: PhysicalTenantId
+    description: The ID of a physical tenant
+    type: string
+    example: "mytenant"
 
   ExporterId:
     title: Exporter
