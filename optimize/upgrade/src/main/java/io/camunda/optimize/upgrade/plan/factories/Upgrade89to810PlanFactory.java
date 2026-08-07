@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.upgrade.plan.factories;
 
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -21,6 +22,7 @@ public class Upgrade89to810PlanFactory implements UpgradePlanFactory {
         .fromVersion("8.9")
         .toVersion("8.10.0")
         .addUpgradeStep(new CreateIndexStep(new BusinessValueTargetIndexES()))
+        .addUpgradeStep(new CreateIndexStep(new BusinessValueOverviewIndexES()))
         .build();
   }
 }
