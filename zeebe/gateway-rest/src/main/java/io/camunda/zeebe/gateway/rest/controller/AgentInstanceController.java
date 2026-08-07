@@ -142,8 +142,10 @@ public class AgentInstanceController {
       final String physicalTenantId, final AgentInstanceRecord record) {
     final var agentInstanceServices = serviceRegistry.agentInstanceServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> agentInstanceServices.updateAgentInstance(record, authentication));
+    return RequestExecutor.executeServiceMethod(
+        () -> agentInstanceServices.updateAgentInstance(record, authentication),
+        mapper::toAgentInstanceUpdateResult,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createHistoryItem(

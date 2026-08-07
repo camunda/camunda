@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
+import io.camunda.gateway.protocol.model.AgentInstanceCreatedHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
@@ -23,6 +24,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateResult;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
@@ -139,6 +141,19 @@ public class AgentInstanceMapper {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
         .build();
+  }
+
+  public AgentInstanceUpdateResult toAgentInstanceUpdateResult(final AgentInstanceRecord record) {
+    final List<AgentInstanceCreatedHistoryItem> createdHistory =
+        record.getHistory().stream()
+            .map(
+                item ->
+                    AgentInstanceCreatedHistoryItem.Builder.create()
+                        .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
+                        .isDuplicate(item.isDuplicate())
+                        .build())
+            .collect(Collectors.toList());
+    return AgentInstanceUpdateResult.Builder.create().createdHistory(createdHistory).build();
   }
 
   public Either<ProblemDetail, AgentHistoryRecord> toCreateAgentHistoryRecord(
