@@ -18,6 +18,7 @@ package io.atomix.raft.rebalance;
 import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
+import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
@@ -100,6 +101,7 @@ final class LeadershipTransferAttempt {
   private final MemberId desiredLeader;
   private final MemberId coordinator;
   private final long correlationId;
+  private final RebalanceConfiguration configuration;
   private final Runnable finishListener;
   private long startMs;
   private boolean finished;
@@ -109,12 +111,14 @@ final class LeadershipTransferAttempt {
       final RaftContext raft,
       final LeaderRole leader,
       final LeadershipTransferInitiateRequest request,
+      final RebalanceConfiguration configuration,
       final Runnable finishListener) {
     this.raft = raft;
     this.leader = leader;
     desiredLeader = request.desiredLeader();
     coordinator = request.coordinator();
     correlationId = request.correlationId();
+    this.configuration = configuration;
     this.finishListener = finishListener;
   }
 
@@ -122,7 +126,7 @@ final class LeadershipTransferAttempt {
     raft.checkThread();
     startMs = System.currentTimeMillis();
     raft.getLeadershipTransferWriteBarrier()
-        .freeze(raft.getRebalanceReplicationTimeout())
+        .freeze(configuration.replicationTimeout())
         .whenCompleteAsync(
             (writesFrozenSinceMs, error) -> {
               if (error != null) {
@@ -195,7 +199,7 @@ final class LeadershipTransferAttempt {
             leader::isRunning,
             desiredLeader,
             targetIndex,
-            startMs + raft.getRebalanceReplicationTimeout().toMillis());
+            startMs + configuration.replicationTimeout().toMillis());
     activePhase = catchUpWait;
     catchUpWait
         .start()
@@ -207,7 +211,9 @@ final class LeadershipTransferAttempt {
   }
 
   private void promote() {
-    final var promotion = new TimeoutNowPromotion(raft, leader::isRunning, desiredLeader);
+    final var promotion =
+        new TimeoutNowPromotion(
+            raft, leader::isRunning, desiredLeader, configuration.maxTransferAttempts());
     activePhase = promotion;
     promotion
         .start()
@@ -243,12 +249,12 @@ final class LeadershipTransferAttempt {
 
   /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
   private Duration pauseBudget() {
-    return raft.getRebalanceReplicationTimeout().plus(promotionBudget()).plus(PAUSE_BUDGET_SLACK);
+    return configuration.replicationTimeout().plus(promotionBudget()).plus(PAUSE_BUDGET_SLACK);
   }
 
   /** The wall time {@link TimeoutNowPromotion} can spend spacing out its attempts. */
   private Duration promotionBudget() {
-    return raft.getHeartbeatInterval().multipliedBy(raft.getRebalanceMaxTransferAttempts());
+    return raft.getHeartbeatInterval().multipliedBy(configuration.maxTransferAttempts());
   }
 
   private void observeDuration(final LeadershipTransferResult result) {

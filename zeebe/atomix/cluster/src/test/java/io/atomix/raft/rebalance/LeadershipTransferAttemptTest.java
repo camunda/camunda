@@ -100,7 +100,12 @@ public class LeadershipTransferAttemptTest {
             .withCorrelationId(0x5eed_0a01L)
             .build();
     final var attempt =
-        new LeadershipTransferAttempt(leader.getContext(), leaderRole(leader), request, () -> {});
+        new LeadershipTransferAttempt(
+            leader.getContext(),
+            leaderRole(leader),
+            request,
+            leader.getContext().getRebalanceConfiguration(),
+            () -> {});
     leader.getContext().getThreadContext().execute(attempt::start);
   }
 

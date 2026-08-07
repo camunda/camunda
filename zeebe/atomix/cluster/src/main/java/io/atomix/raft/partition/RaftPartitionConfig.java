@@ -207,6 +207,9 @@ public class RaftPartitionConfig {
    * The maximum replication lag, in bytes, that the desired leader may have for the current leader
    * to attempt a coordinated leadership transfer. Above it the partition is skipped with {@code
    * LAG_TOO_HIGH}. Maps to {@code camunda.cluster.raft.rebalance.replicationLagThreshold}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
    */
   public long getRebalanceReplicationLagThreshold() {
     return rebalanceReplicationLagThreshold;
@@ -220,6 +223,9 @@ public class RaftPartitionConfig {
    * How long the current leader waits (paused, declining writes) for the desired leader to finish
    * replicating during a coordinated leadership transfer before cancelling with {@code
    * REPLICATION_TIMED_OUT}. Maps to {@code camunda.cluster.raft.rebalance.replicationTimeout}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
    */
   public Duration getRebalanceReplicationTimeout() {
     return rebalanceReplicationTimeout;
@@ -233,6 +239,9 @@ public class RaftPartitionConfig {
    * The maximum number of TimeoutNow requests the current leader sends (including the initial
    * request) before reporting {@code TIMEOUT_NOW_EXHAUSTED} during a leadership transfer. Maps to
    * {@code camunda.cluster.raft.rebalance.maxTransferAttempts}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
    */
   public int getRebalanceMaxTransferAttempts() {
     return rebalanceMaxTransferAttempts;
