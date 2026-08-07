@@ -1,0 +1,134 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useCallback} from 'react';
+import {createFileRoute, useNavigate, useRouter, type ErrorComponentProps} from '@tanstack/react-router';
+import {useQueryClient, useSuspenseQuery} from '@tanstack/react-query';
+import {queries} from '#/shared/http/queries';
+import {requestErrorSchema} from '#/shared/http/request';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {
+	StartProcessFormModal,
+	StartProcessFormModalError,
+	StartProcessFormModalSkeleton,
+	type StartProcessFormModalErrorVariant,
+} from '#/tasklist/modules/processes/components/StartProcessFormModal';
+import {useStartProcessFromForm} from '#/tasklist/modules/processes/useStartProcessFromForm';
+import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
+import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
+import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
+import {ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
+
+const HTTP_STATUS_FORBIDDEN = 403;
+const HTTP_STATUS_NOT_FOUND = 404;
+
+function useCloseStartProcessForm() {
+	const search = Route.useSearch();
+	const navigate = useNavigate();
+
+	return useCallback(() => navigate({to: '/tasklist/processes', search}), [navigate, search]);
+}
+
+function getErrorVariant(error: unknown): StartProcessFormModalErrorVariant {
+	if (error instanceof ProcessStartFormImportError) {
+		return 'schema-import-failed';
+	}
+
+	if (error instanceof ProcessStartFormNotFoundError) {
+		return 'not-found';
+	}
+
+	const result = requestErrorSchema.safeParse(error);
+
+	if (result.success && result.data.response?.status === HTTP_STATUS_NOT_FOUND) {
+		return 'not-found';
+	}
+
+	if (result.success && result.data.response?.status === HTTP_STATUS_FORBIDDEN) {
+		return 'forbidden';
+	}
+
+	return 'load-failed';
+}
+
+export const Route = createFileRoute('/_auth/tasklist/processes/$processDefinitionKey/start')({
+	loader: async ({context: {queryClient}, params: {processDefinitionKey}}) => {
+		const process = await queryClient.ensureQueryData(queries.getProcessDefinition(processDefinitionKey));
+
+		if (!process.hasStartForm) {
+			throw new ProcessStartFormNotFoundError();
+		}
+
+		await queryClient.ensureQueryData(queries.getProcessStartForm(processDefinitionKey));
+	},
+	pendingComponent: function StartProcessFormPending() {
+		const {processDefinitionKey} = Route.useParams();
+		const close = useCloseStartProcessForm();
+
+		return <StartProcessFormModalSkeleton processDisplayName={processDefinitionKey} onClose={close} />;
+	},
+	errorComponent: function StartProcessFormRouteError({error, reset}: ErrorComponentProps) {
+		const {processDefinitionKey} = Route.useParams();
+		const close = useCloseStartProcessForm();
+		const router = useRouter();
+		const queryClient = useQueryClient();
+		const variant = getErrorVariant(error);
+		const retry = useCallback(async () => {
+			reset();
+			await queryClient.resetQueries({
+				queryKey: queries.getProcessStartForm(processDefinitionKey).queryKey,
+				exact: true,
+			});
+			await router.invalidate();
+		}, [processDefinitionKey, queryClient, reset, router]);
+
+		return (
+			<StartProcessFormModalError
+				processDisplayName={processDefinitionKey}
+				variant={variant}
+				onClose={close}
+				onRetry={variant === 'load-failed' ? retry : undefined}
+			/>
+		);
+	},
+	component: function StartProcessFormRoute() {
+		const {processDefinitionKey} = Route.useParams();
+		const search = Route.useSearch();
+		const {data: process} = useSuspenseQuery(queries.getProcessDefinition(processDefinitionKey));
+		const {data: form} = useSuspenseQuery({
+			...queries.getProcessStartForm(processDefinitionKey),
+			refetchOnReconnect: false,
+			refetchOnWindowFocus: false,
+		});
+		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
+		const selectedTenantId = getProcessDefinitionsRequestBody(search, currentUser.tenants).filter?.tenantId;
+		const {mutateAsync: startProcess} = useStartProcessFromForm();
+		const {mutateAsync: uploadDocuments} = useUploadDocuments();
+		const close = useCloseStartProcessForm();
+
+		return (
+			<StartProcessFormModal
+				processDisplayName={process.name ?? process.processDefinitionId}
+				schema={form.schema}
+				isMultiTenancyEnabled={getClientConfig().deployment.isMultiTenancyEnabled}
+				tenantId={selectedTenantId}
+				onClose={close}
+				onFileUpload={uploadDocuments}
+				onSubmit={async (partialVariables) => {
+					const variables = partialVariables.reduce<Record<string, unknown>>((result, {name, value}) => {
+						result[name] = tryParseJSON(value);
+						return result;
+					}, {});
+
+					await startProcess({processDefinitionKey, tenantId: selectedTenantId, variables});
+					close();
+				}}
+			/>
+		);
+	},
+});

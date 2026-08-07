@@ -29,11 +29,17 @@ import type {
 	Variable,
 	QueryDecisionDefinitionsRequestBody,
 	QueryDecisionDefinitionsResponseBody,
+	GetProcessDefinitionResponseBody,
+	GetProcessStartFormResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
+
+type ProcessStartFormResponse = Omit<GetProcessStartFormResponseBody, 'schema'> & {
+	schema: string;
+};
 
 const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
@@ -53,6 +59,8 @@ const queryKeys = {
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	queryProcessDefinitionsInfinite: (body: QueryProcessDefinitionsRequestBody) =>
 		['queryProcessDefinitionsInfinite', body] as const,
+	processDefinition: (processDefinitionKey: string) => ['processDefinition', processDefinitionKey] as const,
+	processStartForm: (processDefinitionKey: string) => ['processStartForm', processDefinitionKey] as const,
 	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) => ['queryDecisionDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -326,6 +334,30 @@ const queries = {
 			queryKey: queryKeys.queryProcessDefinitions(body),
 			queryFn: async (): Promise<QueryProcessDefinitionsResponseBody> => {
 				const {response, error} = await request(endpoints.queryProcessDefinitions(body));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	getProcessDefinition: (processDefinitionKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processDefinition(processDefinitionKey),
+			queryFn: async (): Promise<GetProcessDefinitionResponseBody> => {
+				const {response, error} = await request(endpoints.getProcessDefinition({processDefinitionKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	getProcessStartForm: (processDefinitionKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processStartForm(processDefinitionKey),
+			queryFn: async (): Promise<ProcessStartFormResponse> => {
+				const {response, error} = await request(endpoints.getProcessStartForm({processDefinitionKey}));
 				if (error !== null) {
 					throw error;
 				}

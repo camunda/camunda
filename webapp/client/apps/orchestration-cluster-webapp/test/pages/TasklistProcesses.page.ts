@@ -22,6 +22,10 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.goto(`/tasklist/processes${search}`);
 	}
 
+	async gotoStartForm(processDefinitionKey: string, search = '') {
+		return this.page.goto(`/tasklist/processes/${processDefinitionKey}/start${search}`);
+	}
+
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
@@ -68,6 +72,30 @@ class TasklistProcessesPage extends BasePage {
 
 	get startProcessButton() {
 		return this.page.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessDialog() {
+		return this.page.getByRole('dialog', {name: /Start process/});
+	}
+
+	get cancelStartProcessButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Cancel'});
+	}
+
+	get closeStartProcessButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Close'});
+	}
+
+	get shareStartProcessButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Share process URL'});
+	}
+
+	get startProcessFormButton() {
+		return this.startProcessDialog.getByRole('button', {name: 'Start process'});
+	}
+
+	get startProcessFormError() {
+		return this.startProcessDialog.getByRole('alert');
 	}
 }
 

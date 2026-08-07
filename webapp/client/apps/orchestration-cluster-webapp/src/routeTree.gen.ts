@@ -30,6 +30,7 @@ import { Route as AuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/
 import { Route as AuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/index'
 import { Route as AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/route'
 import { Route as AuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/process'
+import { Route as AuthTasklistProcessesProcessDefinitionKeyStartRouteImport } from './routes/_auth/tasklist/processes/$processDefinitionKey/start'
 import { Route as AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
 
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -143,6 +144,12 @@ const AuthTasklistTasksUserTaskKeyProcessRoute =
     path: '/process',
     getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
   } as any)
+const AuthTasklistProcessesProcessDefinitionKeyStartRoute =
+  AuthTasklistProcessesProcessDefinitionKeyStartRouteImport.update({
+    id: '/$processDefinitionKey/start',
+    path: '/$processDefinitionKey/start',
+    getParentRoute: () => AuthTasklistProcessesRoute,
+  } as any)
 const AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
   AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport.update({
     id: '/$auditLogKey',
@@ -160,7 +167,7 @@ export interface FileRoutesByFullPath {
   '/operate/decisions': typeof AuthOperateDecisionsRouteWithChildren
   '/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/operate/processes': typeof AuthOperateProcessesRoute
-  '/tasklist/processes': typeof AuthTasklistProcessesRoute
+  '/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/tasklist/': typeof AuthTasklistTasksIndexRoute
   '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/tasklist/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
+  '/tasklist/processes/$processDefinitionKey/start': typeof AuthTasklistProcessesProcessDefinitionKeyStartRoute
   '/tasklist/$userTaskKey/': typeof AuthTasklistTasksUserTaskKeyIndexRoute
   '/tasklist/$userTaskKey/history/$auditLogKey': typeof AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
@@ -179,13 +187,14 @@ export interface FileRoutesByTo {
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
   '/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/operate/processes': typeof AuthOperateProcessesRoute
-  '/tasklist/processes': typeof AuthTasklistProcessesRoute
+  '/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
   '/operate/decisions/$decisionInstanceId': typeof AuthOperateDecisionsDecisionInstanceIdRoute
   '/operate/decisions': typeof AuthOperateDecisionsIndexRoute
   '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/tasklist/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
+  '/tasklist/processes/$processDefinitionKey/start': typeof AuthTasklistProcessesProcessDefinitionKeyStartRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyIndexRoute
   '/tasklist/$userTaskKey/history/$auditLogKey': typeof AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
@@ -202,7 +211,7 @@ export interface FileRoutesById {
   '/_auth/operate/decisions': typeof AuthOperateDecisionsRouteWithChildren
   '/_auth/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/_auth/operate/processes': typeof AuthOperateProcessesRoute
-  '/_auth/tasklist/processes': typeof AuthTasklistProcessesRoute
+  '/_auth/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
@@ -211,6 +220,7 @@ export interface FileRoutesById {
   '/_auth/tasklist/_tasks/': typeof AuthTasklistTasksIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/_auth/tasklist/_tasks/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
+  '/_auth/tasklist/processes/$processDefinitionKey/start': typeof AuthTasklistProcessesProcessDefinitionKeyStartRoute
   '/_auth/tasklist/_tasks/$userTaskKey/': typeof AuthTasklistTasksUserTaskKeyIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': typeof AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute
 }
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/tasklist/'
     | '/tasklist/$userTaskKey/history'
     | '/tasklist/$userTaskKey/process'
+    | '/tasklist/processes/$processDefinitionKey/start'
     | '/tasklist/$userTaskKey/'
     | '/tasklist/$userTaskKey/history/$auditLogKey'
   fileRoutesByTo: FileRoutesByTo
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/operate/decisions'
     | '/tasklist/$userTaskKey/history'
     | '/tasklist/$userTaskKey/process'
+    | '/tasklist/processes/$processDefinitionKey/start'
     | '/tasklist/$userTaskKey'
     | '/tasklist/$userTaskKey/history/$auditLogKey'
   id:
@@ -276,6 +288,7 @@ export interface FileRouteTypes {
     | '/_auth/tasklist/_tasks/'
     | '/_auth/tasklist/_tasks/$userTaskKey/history'
     | '/_auth/tasklist/_tasks/$userTaskKey/process'
+    | '/_auth/tasklist/processes/$processDefinitionKey/start'
     | '/_auth/tasklist/_tasks/$userTaskKey/'
     | '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
   fileRoutesById: FileRoutesById
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyProcessRouteImport
       parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
     }
+    '/_auth/tasklist/processes/$processDefinitionKey/start': {
+      id: '/_auth/tasklist/processes/$processDefinitionKey/start'
+      path: '/$processDefinitionKey/start'
+      fullPath: '/tasklist/processes/$processDefinitionKey/start'
+      preLoaderRoute: typeof AuthTasklistProcessesProcessDefinitionKeyStartRouteImport
+      parentRoute: typeof AuthTasklistProcessesRoute
+    }
     '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
       id: '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
       path: '/$auditLogKey'
@@ -542,14 +562,28 @@ const AuthTasklistTasksRouteRouteWithChildren =
     AuthTasklistTasksRouteRouteChildren,
   )
 
+interface AuthTasklistProcessesRouteChildren {
+  AuthTasklistProcessesProcessDefinitionKeyStartRoute: typeof AuthTasklistProcessesProcessDefinitionKeyStartRoute
+}
+
+const AuthTasklistProcessesRouteChildren: AuthTasklistProcessesRouteChildren = {
+  AuthTasklistProcessesProcessDefinitionKeyStartRoute:
+    AuthTasklistProcessesProcessDefinitionKeyStartRoute,
+}
+
+const AuthTasklistProcessesRouteWithChildren =
+  AuthTasklistProcessesRoute._addFileChildren(
+    AuthTasklistProcessesRouteChildren,
+  )
+
 interface AuthTasklistRouteRouteChildren {
   AuthTasklistTasksRouteRoute: typeof AuthTasklistTasksRouteRouteWithChildren
-  AuthTasklistProcessesRoute: typeof AuthTasklistProcessesRoute
+  AuthTasklistProcessesRoute: typeof AuthTasklistProcessesRouteWithChildren
 }
 
 const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
   AuthTasklistTasksRouteRoute: AuthTasklistTasksRouteRouteWithChildren,
-  AuthTasklistProcessesRoute: AuthTasklistProcessesRoute,
+  AuthTasklistProcessesRoute: AuthTasklistProcessesRouteWithChildren,
 }
 
 const AuthTasklistRouteRouteWithChildren =
