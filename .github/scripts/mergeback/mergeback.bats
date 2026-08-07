@@ -47,6 +47,24 @@ run_stderr() { run bash -c 'bash "$@" 2>&1 >/dev/null' _ "$@"; }
 # Source a script (past its exec guard) and run one of its functions; captures stdout only.
 run_fn() { run bash -c 'source "$1"; shift; "$@" 2>/dev/null' _ "$@"; }
 
+# make_remote <dir> <branch...> [tag:<name>...] — build a throwaway repo that `resolve` can treat as a
+# remote via `git ls-remote`. One empty base commit, then a branch/tag per arg (`tag:X.Y.Z` makes a
+# tag, anything else a branch). Used to exercise the ACTIVE-detection body end-to-end without network.
+make_remote() {
+  local dir="$1"; shift
+  git init -q -b main "$dir"
+  git -C "$dir" config user.email t@t.dev
+  git -C "$dir" config user.name tester
+  git -C "$dir" commit -q --allow-empty -m base
+  local ref
+  for ref in "$@"; do
+    case "$ref" in
+      tag:*) git -C "$dir" tag "${ref#tag:}" ;;
+      *)     git -C "$dir" branch "$ref" ;;
+    esac
+  done
+}
+
 # ── detect ───────────────────────────────────────────────────────────────────
 
 @test "detect: extensionless root file (Makefile) survives in paths" {
@@ -182,6 +200,25 @@ run_fn() { run bash -c 'source "$1"; shift; "$@" 2>/dev/null' _ "$@"; }
   run_fn "$RESOLVE" version_max 8.9.0-alpha2 8.9.0-alpha10
   [ "$status" -eq 0 ]
   [ "$output" = 8.9.0-alpha10 ]
+}
+
+# ── resolve: RC vs final tag active-detection (the release-window blind spot boundary) ────────
+
+@test "resolve: an RC tag does NOT retire the release branch (stays active mid-RC)" {
+  # A cut RC tags the line (8.9.0-rc1) but the final X.Y.Z is not published yet. The tag regex
+  # counts only X.Y.Z / X.Y.Z-alphaN, so the -rc tag is ignored and the branch stays monitored.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0-rc1
+  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'release-8.9.0\tstable/8.9' ]
+}
+
+@test "resolve: the final release tag retires the branch (drops out of active set)" {
+  # Once 8.9.0 itself is tagged the version equals the highest tag -> inactive, so nothing is emitted.
+  make_remote "${BATS_TEST_TMPDIR}/remote" release-8.9.0 stable/8.9 tag:8.9.0
+  run bash "$RESOLVE" "${BATS_TEST_TMPDIR}/remote"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }
 
 # ── triage: automation-author / release-plugin noise filter (what kills the noise) ────────────
