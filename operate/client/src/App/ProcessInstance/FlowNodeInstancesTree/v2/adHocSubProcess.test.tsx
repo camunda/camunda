@@ -11,7 +11,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {open} from 'modules/mocks/diagrams';
 import {
-  Wrapper,
+  getWrapper,
   adHocSubProcessesInstance,
   adHocNodeFlowNodeInstances,
   mockAdHocSubProcessesInstance,
@@ -62,7 +62,7 @@ describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

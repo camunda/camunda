@@ -15,7 +15,7 @@ import {
   eventSubProcessFlowNodeInstances,
   mockFlowNodeInstance,
   processInstanceId,
-  Wrapper,
+  getWrapper,
   eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
 } from './mocks';
@@ -61,7 +61,7 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

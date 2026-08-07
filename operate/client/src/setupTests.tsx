@@ -144,6 +144,8 @@ beforeAll(() => {
   mockServer.listen({
     onUnhandledRequest: 'error',
   });
+
+  window.prompt = vi.fn();
 });
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
