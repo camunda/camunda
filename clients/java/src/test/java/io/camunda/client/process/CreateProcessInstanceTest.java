@@ -173,6 +173,175 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .containsOnly(entry("foo", "bar"));
   }
 
+  // Verifies repeated addVariable calls accumulate entries.
+  @Test
+  public void shouldCreateProcessInstanceWithMultipleAddVariableCalls() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariable("key1", "value1")
+        .addVariable("key2", "value2")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key1", "value1"), entry("key2", "value2"));
+  }
+
+  // Verifies addVariables and addVariable can be mixed and still accumulate.
+  @Test
+  public void shouldAccumulateAddVariableWithAddVariablesMap() {
+    // given
+    final java.util.Map<String, Object> variables = new java.util.HashMap<>();
+    variables.put("key1", "value1");
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariables(variables)
+        .addVariable("key2", "value2")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key1", "value1"), entry("key2", "value2"));
+  }
+
+  // Verifies map-based reset works the same with addVariables as with addVariable.
+  @Test
+  public void shouldResetAccumulatedVariablesWhenCallingVariablesMapAndAddVariables() {
+    // given
+    final java.util.Map<String, Object> replacementVariables = new java.util.HashMap<>();
+    replacementVariables.put("key2", "value2");
+    final java.util.Map<String, Object> additionalVariables = new java.util.HashMap<>();
+    additionalVariables.put("key3", "value3");
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariable("key1", "value1")
+        .variables(replacementVariables)
+        .addVariables(additionalVariables)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key2", "value2"), entry("key3", "value3"));
+  }
+
+  // Verifies single-variable reset clears prior additive state before continuing accumulation.
+  @Test
+  public void shouldResetAccumulatedVariablesWhenCallingVariable() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariable("key1", "value1")
+        .variable("key2", "value2")
+        .addVariable("key3", "value3")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key2", "value2"), entry("key3", "value3"));
+  }
+
+  // Verifies addVariables pre-state is cleared by string reset before continuing accumulation.
+  @Test
+  public void shouldSeedAccumulationWhenCallingVariablesStringAfterAddVariables() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariables(Collections.singletonMap("key1", "value1"))
+        .variables("{\"key2\":\"value2\"}")
+        .addVariable("key3", "value3")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key2", "value2"), entry("key3", "value3"));
+  }
+
+  // Verifies addVariables pre-state is cleared by InputStream reset before continuing accumulation.
+  @Test
+  public void shouldSeedAccumulationWhenCallingVariablesInputStreamAfterAddVariables() {
+    // given
+    final String variables = "{\"key2\":\"value2\"}";
+    final InputStream inputStream =
+        new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariables(Collections.singletonMap("key1", "value1"))
+        .variables(inputStream)
+        .addVariable("key3", "value3")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key2", "value2"), entry("key3", "value3"));
+  }
+
+  // Verifies addVariables pre-state is cleared by object reset before continuing accumulation.
+  @Test
+  public void shouldSeedAccumulationWhenCallingVariablesObjectAfterAddVariables() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariables(Collections.singletonMap("key1", "value1"))
+        .variables(new VariableDocument())
+        .addVariable("key3", "value3")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("foo", "bar"), entry("key3", "value3"));
+  }
+
+  // Verifies string reset also composes correctly with addVariables after reset.
+  @Test
+  public void shouldSeedAccumulationWhenCallingVariablesStringAndAddVariablesAfterAddVariable() {
+    // given
+    final java.util.Map<String, Object> additionalVariables = new java.util.HashMap<>();
+    additionalVariables.put("key3", "value3");
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .addVariable("key1", "value1")
+        .variables("{\"key2\":\"value2\"}")
+        .addVariables(additionalVariables)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key2", "value2"), entry("key3", "value3"));
+  }
+
   @Test
   public void shouldRaiseAnErrorIfRequestFails() {
     // given

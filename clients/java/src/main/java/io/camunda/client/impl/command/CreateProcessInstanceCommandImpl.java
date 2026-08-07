@@ -52,7 +52,7 @@ import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateProcessInstanceCommandImpl
-    extends CommandWithVariables<CreateProcessInstanceCommandImpl>
+    extends CommandWithVariables<CreateProcessInstanceCommandStep3>
     implements CreateProcessInstanceCommandStep1,
         CreateProcessInstanceCommandStep2,
         CreateProcessInstanceCommandStep3 {
