@@ -19,7 +19,7 @@ elasticsearch:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
     - &saas '8.19.16'
   es9:
-    - "9.4.0"
+    - "9.5.0"
   saas: *saas
 
 opensearch:
