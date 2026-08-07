@@ -15386,9 +15386,9 @@ style-to-object@1.0.14:
     inline-style-parser "0.2.7"
 
 styled-components@^6.1.9:
-  version "6.4.3"
-  resolved "https://registry.yarnpkg.com/styled-components/-/styled-components-6.4.3.tgz#9544423c537b76ba091cb5a8b6b4f36833df4cfc"
-  integrity sha512-wYXrhu+JmDjZ1Tv7O0OopGTfztbzun43Pjjhh2H+xc0h5A09dwpZ5FJbrifJDcL8g5TA9btpWOX2+iSRuJTExw==
+  version "6.5.1"
+  resolved "https://registry.yarnpkg.com/styled-components/-/styled-components-6.5.1.tgz#fe52edbcb55224aea92bc83fd92bc8772297b362"
+  integrity sha512-6AsQEXcG7QhtdzjwJ4s5Amx5R9veYH9AP3+U6nF2BAMU0i1iM3cAXKJXuAKZCdv3Y2ntVMcL44cPx4cIDxgYFg==
   dependencies:
     "@emotion/is-prop-valid" "1.4.0"
     css-to-react-native "3.2.0"
