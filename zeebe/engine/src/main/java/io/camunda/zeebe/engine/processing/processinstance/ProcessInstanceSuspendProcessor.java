@@ -20,14 +20,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -54,7 +52,7 @@ public final class ProcessInstanceSuspendProcessor
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
-  private final SuspendedJobsWalker jobsWalker;
+  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
@@ -67,7 +65,9 @@ public final class ProcessInstanceSuspendProcessor
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
     suspensionState = processingState.getSuspensionState();
-    jobsWalker = new SuspendedJobsWalker(elementInstanceState, processingState.getJobState());
+    suspensionJobBehavior =
+        new ProcessInstanceSuspensionJobBehavior(
+            elementInstanceState, processingState.getJobState(), stateWriter);
   }
 
   @Override
@@ -80,10 +80,7 @@ public final class ProcessInstanceSuspendProcessor
 
     final ProcessInstanceRecord value = elementInstance.getValue();
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
-    jobsWalker.forEachJob(
-        command.getKey(),
-        JobState.State.ACTIVATABLE,
-        (jobKey, job) -> stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job));
+    suspensionJobBehavior.suspendJobs(command.getKey());
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
   }
