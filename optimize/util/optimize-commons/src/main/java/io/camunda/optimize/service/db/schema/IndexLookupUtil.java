@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.schema;
 
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
 import io.camunda.optimize.service.db.es.schema.index.CollectionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardShareIndexES;
@@ -33,6 +34,7 @@ import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionRepor
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.CollectionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardShareIndexOS;
@@ -110,6 +112,9 @@ public class IndexLookupUtil {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     lookupMap.put(AlertIndexES.class.getSimpleName(), index -> new AlertIndexOS());
     lookupMap.put(BusinessKeyIndexES.class.getSimpleName(), index -> new BusinessKeyIndexOS());
+    lookupMap.put(
+        BusinessValueTargetIndexES.class.getSimpleName(),
+        index -> new BusinessValueTargetIndexOS());
     lookupMap.put(CollectionIndexES.class.getSimpleName(), index -> new CollectionIndexOS());
     lookupMap.put(DashboardIndexES.class.getSimpleName(), index -> new DashboardIndexOS());
     lookupMap.put(
@@ -160,6 +165,9 @@ public class IndexLookupUtil {
     // OpenSearch -> ElasticSearch Index lookup functions
     lookupMap.put(AlertIndexOS.class.getSimpleName(), index -> new AlertIndexES());
     lookupMap.put(BusinessKeyIndexOS.class.getSimpleName(), index -> new BusinessKeyIndexES());
+    lookupMap.put(
+        BusinessValueTargetIndexOS.class.getSimpleName(),
+        index -> new BusinessValueTargetIndexES());
     lookupMap.put(CollectionIndexOS.class.getSimpleName(), index -> new CollectionIndexES());
     lookupMap.put(DashboardIndexOS.class.getSimpleName(), index -> new DashboardIndexES());
     lookupMap.put(

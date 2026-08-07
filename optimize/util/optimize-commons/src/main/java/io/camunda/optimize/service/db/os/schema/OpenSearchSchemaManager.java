@@ -22,6 +22,7 @@ import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.CollectionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardShareIndexOS;
@@ -550,6 +551,7 @@ public class OpenSearchSchemaManager
     return Arrays.asList(
         new AlertIndexOS(),
         new BusinessKeyIndexOS(),
+        new BusinessValueTargetIndexOS(),
         new CollectionIndexOS(),
         new DashboardIndexOS(),
         new DashboardShareIndexOS(),
