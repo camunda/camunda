@@ -11,7 +11,9 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -144,8 +146,11 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
@@ -159,11 +164,9 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withValue(processInstanceRecordValue));
 
-    // when
-    final var idList = underTest.generateIds(processInstanceRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(processInstanceRecord.getKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, processInstanceRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(processInstanceRecord.getKey()), index));
   }
 
   @Test

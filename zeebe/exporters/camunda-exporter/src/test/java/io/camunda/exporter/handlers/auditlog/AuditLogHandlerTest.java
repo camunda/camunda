@@ -9,13 +9,17 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
@@ -33,6 +37,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -70,6 +75,7 @@ class AuditLogHandlerTest {
   void setUp() {
     config = mock(AuditLogConfiguration.class);
     transformer = mock(AuditLogTransformer.class);
+    when(transformer.getRecordValueType()).thenReturn(RecordValue.class);
     handler = new AuditLogHandler<>(INDEX_NAME, transformer, config);
   }
 
@@ -106,11 +112,33 @@ class AuditLogHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
-    final var idList = handler.generateIds(record);
+  void shouldExtractIdAndIndexesForNonOrdinalRecord() {
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.mainIndex("test-index");
+    when(indexLocator.locate(INDEX_NAME)).thenReturn(index);
 
-    assertThat(idList).hasSize(1);
-    assertThat(idList.getFirst()).isEqualTo(record.getPartitionId() + "-" + record.getPosition());
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
+
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(record.getPartitionId() + "-" + record.getPosition(), index));
+  }
+
+  @Test
+  void shouldExtractIdAndIndexesForOrdinalRecord() {
+    reset(transformer);
+    when(transformer.getRecordValueType()).thenReturn((Class) IncidentRecordValue.class);
+    handler = new AuditLogHandler<>(INDEX_NAME, transformer, config);
+
+    final var indexLocator = mock(TargetIndexLocator.class);
+    final var index = TargetIndex.ordinalIndex("test-index", 123);
+    when(indexLocator.locateOrdinalIndex(eq(INDEX_NAME), any())).thenReturn(index);
+
+    final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
+
+    assertThat(idAndIndexes)
+        .containsExactly(
+            new IdAndIndex(record.getPartitionId() + "-" + record.getPosition(), index));
   }
 
   @Test

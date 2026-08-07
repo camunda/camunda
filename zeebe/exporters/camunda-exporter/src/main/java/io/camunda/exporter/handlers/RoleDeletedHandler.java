@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleDeletedHandler implements MainIndexExporterHandler<RoleEntity, RoleRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS = Set.of(RoleIntent.DELETED);
   private final String indexName;
 

@@ -17,7 +17,8 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.util.List;
 
-public class ResourceDeletedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
+public class ResourceDeletedHandler
+    implements MainIndexExporterHandler<DeployedResourceEntity, Resource> {
 
   private static final ResourceIntent SUPPORTED_INTENT = ResourceIntent.DELETED;
   private final String indexName;

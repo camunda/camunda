@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MappingRuleCreatedUpdatedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
+    implements MainIndexExporterHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED);
 

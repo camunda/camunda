@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import java.util.List;
 
 public class HistoryDeletionDeletedHandler
-    implements ExportHandler<HistoryDeletionEntity, HistoryDeletionRecordValue> {
+    implements MainIndexExporterHandler<HistoryDeletionEntity, HistoryDeletionRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
 

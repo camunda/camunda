@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
 
 public class ClusterVariableDeletedHandler
-    implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
+    implements MainIndexExporterHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
   private static final ClusterVariableIntent SUPPORTED_INTENT = ClusterVariableIntent.DELETED;
   private final String indexName;

@@ -9,7 +9,7 @@ package io.camunda.exporter.handlers.waitstate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateDetails;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 @NullMarked
 public abstract class AbstractWaitStateHandler<R extends RecordValue & WaitStateRelated>
-    implements ExportHandler<WaitStateEntity, R> {
+    implements StorageOrdinalKeyExportHandler<WaitStateEntity, R> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractWaitStateHandler.class);
 

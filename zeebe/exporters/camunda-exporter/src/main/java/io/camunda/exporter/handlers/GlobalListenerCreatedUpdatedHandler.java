@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 public class GlobalListenerCreatedUpdatedHandler
-    implements ExportHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
+    implements MainIndexExporterHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(GlobalListenerIntent.CREATED, GlobalListenerIntent.UPDATED);
