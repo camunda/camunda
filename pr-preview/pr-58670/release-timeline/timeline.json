@@ -177,6 +177,22 @@
       "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
     },
     {
+      "title": "Stable branch creation for 8.10",
+      "start": "2026-08-18",
+      "end": "2026-08-25",
+      "branch": "stable/8.10",
+      "note": "Features for 8.10 should be backported here, from main.",
+      "description": "Monorepo Release Manager creates the new stable branch from main, adjusting CI workflows as necessary. Features should be merged to main and backported here."
+    },
+    {
+      "title": "Feature freeze of 8.10.0",
+      "start": "2026-08-25",
+      "end": "2026-09-22",
+      "branch": "stable/8.10",
+      "note": "No new features, scope extensions, or risky changes are allowed on this branch anymore without exemption.",
+      "description": "Lock the scope for the minor release. Allow only stabilization, fixes, testing improvements and late features with exemptions."
+    },
+    {
       "title": "Code freeze of 8.10.0-alpha5",
       "start": "2026-08-25",
       "end": "2026-09-01",
@@ -189,6 +205,38 @@
       "start": "2026-09-01",
       "end": "2026-09-01",
       "branch": "release-8.10.0-alpha5",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.10.0",
+      "start": "2026-09-22",
+      "end": "2026-10-05",
+      "branch": "release-8.10.0",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.10.0",
+      "start": "2026-10-06",
+      "end": "2026-10-06",
+      "branch": "release-8.10.0",
+      "note": "No more merges.",
+      "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
+    },
+    {
+      "title": "Code freeze of 8.11.0-alpha1",
+      "start": "2026-10-27",
+      "end": "2026-11-03",
+      "branch": "release-8.11.0-alpha1",
+      "note": "Only bug fixes found during QA should be backported to this branch.",
+      "description": "During this phase, release candidates are built from the branch until the release date whenever new fixes need QA validation."
+    },
+    {
+      "title": "Release of 8.11.0-alpha1",
+      "start": "2026-11-03",
+      "end": "2026-11-03",
+      "branch": "release-8.11.0-alpha1",
       "note": "No more merges.",
       "description": "Final camunda/camunda artifacts should be tested and available for the overall C8 release train."
     }
