@@ -8,14 +8,21 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.api.context.PropertyAuthorizationEvaluator;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.authz.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.security.core.authz.ScopedAuthorizationCheckPortFactory;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -25,11 +32,11 @@ import org.springframework.context.annotation.Configuration;
  * Builds the webapp-facing {@link AuthorizationCheckPort}, replacing the legacy {@code
  * ResourcePermissionPort}/{@code AuthorizationRepositoryPort} trio (issue #399).
  *
- * <p>Gated on the same condition as {@link AuthorizationCheckerProviderConfiguration}, the
- * collaborator whose per-tenant checkers vary with secondary storage, rather than on secondary
- * storage itself: with secondary storage disabled there is exactly one authorization source and
- * {@link AuthorizationCheckerProvider#withPhysicalTenant(String)} resolves every tenant to it, so
- * this bean constructs and behaves correctly in every storage mode.
+ * <p>Gated on the same condition as {@link AuthorizationScopeRepositoryConfiguration}'s root {@link
+ * AuthorizationScopeRepositoryPort} bean (unconditional), rather than on secondary storage itself:
+ * with secondary storage disabled there is exactly one authorization source and this bean seeds a
+ * single {@code default}-keyed scope so every request resolves to it, so this bean constructs and
+ * behaves correctly in every storage mode.
  *
  * <p>{@code @ConditionalOnMissingBean(AuthorizationCheckPort.class)} lets this user configuration
  * win the race against {@code camunda-security-library}'s own default {@code
@@ -38,7 +45,7 @@ import org.springframework.context.annotation.Configuration;
  * {@code @ImportAutoConfiguration}-imported configuration, per Spring Boot's ordering guarantee.
  * That CSL default builds a single {@code AuthorizationService} from a single {@code
  * AuthorizationChecker} bean, with no per-physical-tenant fan-out, so it cannot serve this repo's
- * requirement of one {@code AuthorizationService} per physical tenant; this bean is the required
+ * requirement of one {@code AuthorizationCheckPort} per physical tenant; this bean is the required
  * override, not a redundant duplicate.
  *
  * <p>{@link LazyTokenClaimsConverter} and {@link MembershipPort} are only registered as beans under
@@ -59,16 +66,44 @@ public class WebAppAuthorizationCheckPortConfiguration {
   @Bean
   @ConditionalOnMissingBean(AuthorizationCheckPort.class)
   public AuthorizationCheckPort authorizationCheckPort(
-      final AuthorizationCheckerProvider authorizationCheckerProvider,
+      final AuthorizationScopeRepositoryPort defaultScopeRepository,
+      final Optional<PhysicalTenantSearchClientReaders> physicalTenantSearchClientReaders,
       final List<PropertyAuthorizationEvaluator<?>> propertyAuthorizationEvaluators,
       final CamundaSecurityLibraryProperties securityProperties,
       final ObjectProvider<LazyTokenClaimsConverter> claimsConverter) {
-    return new TenantAwareAuthorizationCheckPort(
-        authorizationCheckerProvider,
-        new PropertyAuthorizationEvaluatorRegistry(propertyAuthorizationEvaluators),
-        securityProperties.getAuthorizations().isEnabled(),
-        securityProperties.getMultiTenancy().isChecksEnabled(),
-        claimsConverter.getIfAvailable(() -> defaultClaimsConverter(securityProperties)));
+    final var resolver =
+        claimsConverter.getIfAvailable(() -> defaultClaimsConverter(securityProperties));
+    // Equivalent to "the map would be empty" (the condition AuthorizationCheckerProvider used):
+    // PhysicalTenantResolver always synthesizes a "default" entry when none is explicitly
+    // configured, so whenever PhysicalTenantSearchClientReaders exists at all, its map is
+    // guaranteed non-empty.
+    final boolean hasPerTenantScopes = physicalTenantSearchClientReaders.isPresent();
+    final Map<String, AuthorizationScopeRepositoryPort> scopeRepositoriesByScope =
+        hasPerTenantScopes
+            ? perTenantScopeRepositories(physicalTenantSearchClientReaders.get())
+            : Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultScopeRepository);
+    final var checkPorts =
+        ScopedAuthorizationCheckPortFactory.create(
+            scopeRepositoriesByScope,
+            resolver,
+            propertyAuthorizationEvaluators,
+            securityProperties.getAuthorizations().isEnabled(),
+            securityProperties.getMultiTenancy().isChecksEnabled());
+    return new TenantAwareAuthorizationCheckPort(checkPorts, hasPerTenantScopes, resolver);
+  }
+
+  private static Map<String, AuthorizationScopeRepositoryPort> perTenantScopeRepositories(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+    final Map<String, AuthorizationScopeRepositoryPort> scopeRepositories = new LinkedHashMap<>();
+    physicalTenantSearchClientReaders
+        .readersByPhysicalTenant()
+        .forEach(
+            (tenantId, searchClientReaders) ->
+                scopeRepositories.put(
+                    tenantId,
+                    new SearchAuthorizationScopeRepository(
+                        searchClientReaders.authorizationReader())));
+    return Map.copyOf(scopeRepositories);
   }
 
   /**

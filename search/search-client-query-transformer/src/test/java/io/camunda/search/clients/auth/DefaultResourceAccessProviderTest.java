@@ -21,6 +21,8 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -508,6 +510,38 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.allowed()).isFalse();
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void forScopeRepositoryShouldBuildDefaultProviderWhenAuthorizationsEnabled() {
+    // given
+    final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
+    when(scopeRepository.findAuthorizedScopes(any(), any(), any()))
+        .thenReturn(List.of(AuthorizationScope.of("bar")));
+
+    // when
+    final var provider = DefaultResourceAccessProvider.forScopeRepository(scopeRepository, true);
+    final var result = provider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(provider).isInstanceOf(DefaultResourceAccessProvider.class);
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.authorization().resourceIds()).containsExactly("bar");
+  }
+
+  @Test
+  void forScopeRepositoryShouldBuildDisabledProviderWhenAuthorizationsDisabled() {
+    // given
+    final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
+
+    // when
+    final var provider = DefaultResourceAccessProvider.forScopeRepository(scopeRepository, false);
+
+    // then
+    assertThat(provider).isInstanceOf(DisabledResourceAccessProvider.class);
   }
 
   private UserTaskEntity createUserTask(final String assignee) {
