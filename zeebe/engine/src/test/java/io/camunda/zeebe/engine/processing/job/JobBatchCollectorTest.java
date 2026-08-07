@@ -33,12 +33,14 @@ import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariablesAssert;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -195,6 +197,30 @@ final class JobBatchCollectorTest {
     JobBatchRecordValueAssert.assertThat(record.getValue())
         .hasOnlyJobKeys(firstPlainJob.key)
         .isTruncated();
+  }
+
+  @Test
+  void shouldSkipJobWithSecretReferenceThatCarriesAnIncident() {
+    // given - a job whose secret value injection failed: it keeps an incident and stays
+    // activatable, and it sits in front of a plain job
+    secretCache.put("token", "resolved");
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    final long scopeKey = state.getKeyGenerator().nextKey();
+    setVariables(scopeKey, Map.of("auth", "camunda.secrets.token"));
+    final var incidentedJob = createJobWithSecretReference(scopeKey, "token");
+    raiseIncidentFor(incidentedJob.key);
+    final var plainJob = createJob(scopeKey);
+
+    // when
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - the job waits for its incident to be resolved instead of being collected into a batch
+    // it would only fail again, and the job behind it is activated all the same
+    EitherAssert.assertThat(result).right().isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    JobBatchRecordValueAssert.assertThat(record.getValue())
+        .hasOnlyJobKeys(plainJob.key)
+        .isNotTruncated();
   }
 
   @Test
@@ -765,6 +791,14 @@ final class JobBatchCollectorTest {
 
     state.getJobState().create(jobKey, jobRecord);
     return new Job(jobKey, jobRecord);
+  }
+
+  private void raiseIncidentFor(final long jobKey) {
+    state
+        .getIncidentState()
+        .createIncident(
+            state.getKeyGenerator().nextKey(),
+            new IncidentRecord().setJobKey(jobKey).setErrorType(ErrorType.SECRET_RESOLUTION_ERROR));
   }
 
   private void setVariables(final long variableScopeKey, final Map<String, String> variables) {

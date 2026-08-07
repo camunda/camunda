@@ -72,9 +72,18 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
    * <p>Only the job's identity is copied into the incident; the message is the caller's, so a
    * caller whose failure details could carry secret data must log those details instead of passing
    * them in.
+   *
+   * <p>A job that already carries an unresolved incident gets no second one. The job to incident
+   * index holds one entry per job and is written with an insert, so a second incident for the same
+   * job fails the applier rather than replacing the first. The incident the job already has says it
+   * needs attention, which is what a repeat would say too.
    */
   public void createJobIncident(
       final long jobKey, final JobRecord job, final ErrorType errorType, final String message) {
+    if (incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT) {
+      return;
+    }
+
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceProvider(elementInstanceState::getInstance)
