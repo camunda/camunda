@@ -185,6 +185,8 @@ ProcessInstanceModificationInstruction:
 
 Semantic correctness of these annotations (does the property actually exist? was it really introduced in that version?) is still validated in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md) — the Spectral rule only checks shape.
 
+When a reviewer deliberately wants to publish a version other than the one the verifier computes, use `x-added-in-version-override` / `addedInVersionOverride` instead of just changing the annotation — see ["Overriding the computed version"](../../.github/scripts/x-added-in-version-check/README.md#overriding-the-computed-version) in the verifier's README.
+
 ### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
 
 Three rules validate the producer/consumer dependency annotations consumed by the API test generator:

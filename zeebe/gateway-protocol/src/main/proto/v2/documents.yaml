@@ -374,6 +374,10 @@ components:
           addedInVersion: "8.9"
         - propertyName: title
           addedInVersion: "8.9"
+        - propertyName: fileName
+          addedInVersionOverride: "8.7"
+        - propertyName: detail
+          addedInVersionOverride: "8.7"
 
     DocumentCreationBatchResponse:
       allOf:
@@ -392,6 +396,11 @@ components:
               description: Documents that failed creation.
               items:
                 $ref: '#/components/schemas/DocumentReference'
+          x-properties-added-in-version:
+            - propertyName: "createdDocuments"
+              addedInVersionOverride: "8.7"
+            - propertyName: "failedDocuments"
+              addedInVersionOverride: "8.7"
 
     DocumentMetadata:
       description: Information about the document.

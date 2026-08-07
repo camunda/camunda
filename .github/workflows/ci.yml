@@ -2302,95 +2302,76 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # openapi-x-added-in-version-check:
-  #   name: "Lint / C8 REST OpenAPI x-added-in-version"
-  #   # Blocking PR check that runs the in-repo verifier under
-  #   # .github/scripts/x-added-in-version-check against the spec files in this
-  #   # PR and surfaces each finding as a GitHub Actions `::error::`
-  #   # annotation. The verifier exits non-zero on findings, and
-  #   # PR authors get early feedback via
-  #   # inline annotations.
-  #   # KNOWN LIMITATION: this check does not run on fork PRs, as it requires
-  #   # the ability to clone cross-repo in the Camunda org.
-  #   if: |
-  #     needs.detect-changes.outputs.openapi-changes == 'true'
-  #     && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
-  #   needs: [ detect-changes ]
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 10
-  #   permissions:
-  #     contents: read
-  #   env:
-  #     VERIFIER_DIR: .github/scripts/x-added-in-version-check
-  #   steps:
-  #     - uses: camunda/infra-global-github-actions/start-build-monitor@0c642f6720ab5e9931633fd93b49ac8c767c34e3 # main
-  #     - name: Checkout PR
-  #       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-  #       timeout-minutes: 1
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-  #       with:
-  #         node-version: '24'
-  #     - name: Configure git auth for transitive clones
-  #       # The build:version-map script spawns its own `git clone` of
-  #       # camunda/return-of-api-added-in-analysis from inside Node, which
-  #       # doesn't inherit the auth header that actions/checkout sets on the
-  #       # host repo. Rewrite all github.com URLs globally so any anonymous
-  #       # clone in this job is transparently authenticated.
-  #       env:
-  #         CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: |
-  #         TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
-  #         git config --global \
-  #           url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
-  #           "https://github.com/"
-  #         echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
-  #     - name: Install verifier dependencies
-  #       uses: ./.github/actions/npm-ci-with-retry
-  #       with:
-  #         directory: ${{ env.VERIFIER_DIR }}
-  #     - name: Build verifier artefacts (endpoint-map + version-map)
-  #       working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
-  #       env:
-  #         # LATEST_BRANCH is not consumed by the in-repo scripts directly.
-  #         # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
-  #         # forwards process.env to its bundler, which uses LATEST_BRANCH as
-  #         # the camunda/camunda ref to bundle as the next (in-development)
-  #         # version. Must be the commit the step above checked out, otherwise the
-  #         # difference between the two is reported as annotation drift: on
-  #         # `pull_request` this was previously pinned to the PR head SHA while
-  #         # the checkout resolves the ephemeral merge commit (head merged into
-  #         # the current base tip), so spec changes that landed on the base
-  #         # branch after the PR branched off were present in the YAML but absent
-  #         # from the version map, producing findings the PR never caused.
-  #         # `github.sha` is exactly what actions/checkout resolves by default for
-  #         # every event that triggers this workflow — the merge commit on
-  #         # `pull_request`, the pushed/queued commit otherwise — so the bundle
-  #         # always covers the same tree that gets verified. (The scheduled
-  #         # workflow instead tracks a branch name for the rolling latest.)
-  #         LATEST_BRANCH: ${{ github.sha }}
-  #         RETURN_OF_API_REF: v0.1.1
-  #       run: npm run build:artefacts
-  #     - name: Run PR verifier
-  #       # Verifier exits non-zero on findings, which fails the job and
-  #       # therefore the `check-results` aggregate gate.
-  #       working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
-  #       env:
-  #         OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
-  #         ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json
-  #         VERSION_MAP_PATH: ./artefacts/version-map.json
-  #         ANNOTATION_PATH_PREFIX: zeebe/gateway-protocol/src/main/proto/v2
-  #       run: npm run --silent verify:specs:ci
-  #     - name: Observe build status
-  #       if: always()
-  #       continue-on-error: true
-  #       uses: ./.github/actions/observe-build-status
-  #       with:
-  #         build_status: ${{ job.status }}
-  #         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-  #         secret_vault_address: ${{ secrets.VAULT_ADDR }}
-  #         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  openapi-x-added-in-version-check:
+    name: "Lint / C8 REST OpenAPI x-added-in-version"
+    # Blocking PR check that runs the in-repo verifier under
+    # .github/scripts/x-added-in-version-check against the spec files in this
+    # PR and surfaces each finding as a GitHub Actions `::error::`
+    # annotation. The verifier exits non-zero on findings, and
+    # PR authors get early feedback via
+    # inline annotations.
+    if: |
+      needs.detect-changes.outputs.openapi-changes == 'true'
+      && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      VERIFIER_DIR: .github/scripts/x-added-in-version-check
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
+      - name: Checkout PR
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install verifier dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.VERIFIER_DIR }}
+      - name: Build verifier artefacts (endpoint-map + version-map)
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
+        env:
+          # build-artefacts.mjs runs the vendored build-bundler-version-map.mjs
+          # directly, which uses LATEST_BRANCH as the camunda/camunda ref to
+          # bundle as the next (in-development) version. Must be the commit
+          # the step above checked out, otherwise the difference between the
+          # two is reported as annotation drift: on `pull_request` this was
+          # previously pinned to the PR head SHA while the checkout resolves
+          # the ephemeral merge commit (head merged into the current base
+          # tip), so spec changes that landed on the base branch after the PR
+          # branched off were present in the YAML but absent from the version
+          # map, producing findings the PR never caused.
+          # `github.sha` is exactly what actions/checkout resolves by default
+          # for every event that triggers this workflow — the merge commit on
+          # `pull_request`, the pushed/queued commit otherwise — so the bundle
+          # always covers the same tree that gets verified. (The scheduled
+          # workflow instead tracks a branch name for the rolling latest.)
+          LATEST_BRANCH: ${{ github.sha }}
+        run: npm run build:artefacts
+      - name: Run PR verifier
+        # Verifier exits non-zero on findings, which fails the job and
+        # therefore the `check-results` aggregate gate.
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
+        env:
+          OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
+          ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json
+          VERSION_MAP_PATH: ./artefacts/version-map.json
+          ANNOTATION_PATH_PREFIX: zeebe/gateway-protocol/src/main/proto/v2
+        run: npm run --silent verify:specs:ci
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
@@ -2522,7 +2503,7 @@ jobs:
       - load-test-helm-lockfile
       - maven-spotless-linter
       - openapi-lint
-      # - openapi-x-added-in-version-check
+      - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
       - physical-tenant-acceptance-tests
