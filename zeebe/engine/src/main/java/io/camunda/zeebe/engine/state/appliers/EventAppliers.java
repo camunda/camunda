@@ -513,6 +513,8 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.UPDATED, 2, NOOP_EVENT_APPLIER);
     register(JobIntent.MIGRATED, new JobMigratedApplier(state));
     register(JobIntent.PRIORITY_UPDATED, new JobPriorityUpdatedApplier(state));
+    register(JobIntent.SUSPENDED, new JobSuspendedApplier(state));
+    register(JobIntent.RESUMED, new JobResumedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {
