@@ -56,16 +56,17 @@ documented as a caller obligation.
 **D2. The suspend and resume processors walk the element instance tree of the process instance
 and write one job event per affected job.** `ProcessInstanceSuspendProcessor` appends
 `Job.SUSPENDED` for every job in `ACTIVATABLE`; `ProcessInstanceResumeProcessor` appends
-`Job.RESUMED` for every job in `SUSPENDED`. Both use `SuspendedJobsWalker`, an `ArrayDeque` walk of
-`ElementInstanceState` (the pattern of `ProcessInstanceMigrationMigrateProcessor`), so the cost is
-paid once per suspend or resume rather than on every poll.
+`Job.RESUMED` for every job in `SUSPENDED`. Both use `ProcessInstanceSuspensionJobBehavior`, an
+`ArrayDeque` walk of `ElementInstanceState` (the pattern of
+`ProcessInstanceMigrationMigrateProcessor`), so the cost is paid once per suspend or resume rather
+than on every poll.
 
 The walk never crosses into a called child instance: `ElementInstanceState.getChildren` is driven
 by an element instance's `parentKey`, and a called child instance's root element has no such
 parent link, so there is no tree edge to follow into it. This matters because the suspension
 marker is keyed by the suspended instance alone — a called child instance's own commands are not
 gated by it, so parking the child's jobs too would let the child un-park them on its own while the
-parent is still suspended. The `processInstanceKey` filter in the walker is a defensive check of
+parent is still suspended. The `processInstanceKey` filter in the behavior is a defensive check of
 that invariant, not the mechanism that enforces it.
 
 On resume, after each `Job.RESUMED` the processor calls `BpmnJobActivationBehavior.publishWork`,
