@@ -360,7 +360,7 @@ Ownership model:
 - [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
 - [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
 - [ ] Track minor backports via labels/board to avoid missing required fixes.
-- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
+- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts. The [Release Merge-back Conflict Check](#merge-back-divergence-handling) runs this automatically in the RC window; confirm it is green (or that any alert has been triaged) before the final merge-back.
 
 #### 6. Documentation and communication hygiene
 
@@ -380,6 +380,50 @@ Ownership model:
 - [Issue #40009](https://github.com/camunda/camunda/issues/40009)
 - [Issue #37374](https://github.com/camunda/camunda/issues/37374)
 - [Issue #38074](https://github.com/camunda/camunda/issues/38074)
+
+### Merge-back Divergence Handling
+
+The **[Release Merge-back Conflict Check](https://github.com/camunda/camunda/blob/main/.github/workflows/release-mergeback-conflict-check.yml)** (`release-mergeback-conflict-check.yml`) is a read-only, scheduled early-warning for release→target merge-back conflicts. It never mutates a branch, opens a PR, or merges — it only surfaces what a human should look at before the final merge-back.
+
+**What it does**, for every currently-active release branch (a `release-X.Y.Z` — including pre-branch alphas named `release-X.Y.Z-alphaN` — whose version is not yet tagged on its line):
+
+1. **Resolve the target.** `stable/X.Y` if it exists, otherwise `main` (a pre-branch alpha of the next minor merges back to `main`).
+2. **Detect** whether merging the release tip forward into the target would conflict (`git merge-tree`, read-only).
+3. **Triage** each conflicting path into one bucket:
+   - **version/build** (`pom.xml`, lockfiles) — mechanical version bumps. Silent; "theirs for versions" on merge-back.
+   - **source — text drift** — release-side changes already on the target by patch-id (`git cherry`). Resolve at PR time; no action.
+   - **source / dependency missing on target** (`missing_on: target`) — the FORWARD alarm: a commit is on the release branch but NOT on the target. A human confirms whether it is a forward-port that must reach the target or a release-only change that must not.
+   - **source missing on release** (`missing_on: release`) — the REVERSE alarm: a commit is on the **target** (main/stable) but NOT on the release branch, and it authored the very lines that clash. This is the INC-6953 shape — a main/stable re-fix on the conflicting lines that was never backported to the release. It is deliberately scoped to the conflicting lines (never a blanket "target is ahead" sweep), so a target branch that has merely moved on elsewhere does not trigger it. A human confirms whether that target fix still needs to reach the release before it ships.
+   - **needs review (no commit to attribute)** — merge-tree reported a real conflict, but neither direction can name a commit because the clash has no line to blame: the target **deleted** lines the release still edits (modify/delete), or both sides **inserted** at the same spot (add/add). This is NOT a "missing commit" claim — nothing was necessarily forgotten — but it is also NOT benign drift, so it is surfaced for a human to resolve the conflict directly rather than being silently swallowed.
+4. **Notify** the configured Slack channel **only** when the actionable bucket is non-empty. A clean or mechanical-only result is a quiet success. An in-flight release always conflicts on version bumps, so the gate is the actionable count, not the raw conflict.
+
+**A/B classification** underpins the triage. Divergence is two populations with opposite safe treatment:
+
+- **(A) accidental drift** (silently-failed backport, independent Renovate bump) — the missing change should be forward-ported.
+- **(B) intentional asymmetry** (a release-only workaround deliberately reverted on the target) — re-applying it onto the target would be **harmful**. Never auto-apply a B change.
+
+The automation-author / patch-id filter suppresses mechanical noise; the residual alarm is what a human classifies as A vs B.
+
+**Out of scope:** semantic breakage that is CI-red but not a textual conflict — e.g. cross-component version skew (CPT/ZPT built against an older API). `git merge-tree` cannot see these; route them straight to escalation (see the [CPT Medic](#others) trigger for merge-back PRs failing CI on API incompatibility).
+
+#### Escalation path
+
+When an alert fires and the MRM cannot safely resolve the missing change:
+
+1. **Open a high-severity incident** for the merge-back conflict.
+2. **Assign the team(s) owning the conflicting files** (the alert includes CODEOWNERS-derived owners where available).
+3. Confirmed **A** gap: forward-port the missing commit (cherry-pick / focused backport), then re-run the merge-back.
+4. Confirmed **B** gap: take the target's side and **do not** re-apply the release-only change — record why in the merge-back PR.
+5. **Semantic / CI-red** breakage: escalate to the owning medic (e.g. CPT Medic) rather than treating it as a textual conflict.
+
+#### Running it manually
+
+Dispatch the workflow with `workflow_dispatch`:
+
+- Leave `release_ref`/`target_ref` empty to auto-discover active release branches, or set `release_ref` (e.g. `release-8.9.0`) to check one pair (the target is auto-derived).
+- Set `dry_run: true` to render the alert into the run summary instead of posting to Slack — useful for previewing the exact message.
+
+Scripts live in [`.github/scripts/mergeback/`](https://github.com/camunda/camunda/tree/main/.github/scripts/mergeback) (detector, triage, resolver, Slack renderer) with a `mergeback.bats` regression suite run in CI.
 
 ### Possible Issues When Cutting The Stable Branch
 
