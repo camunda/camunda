@@ -58,6 +58,7 @@ public class ExportersEndpoint {
             new ExporterEnableRequest(
                 exporterId,
                 Optional.ofNullable(initializeInfo).map(InitializationInfo::initializeFrom),
+                Optional.empty(),
                 dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }

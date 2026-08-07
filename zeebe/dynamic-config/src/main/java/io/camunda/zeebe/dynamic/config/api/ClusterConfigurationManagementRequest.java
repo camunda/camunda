@@ -160,7 +160,15 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ExporterDeleteRequest(String exporterId, Optional<String> physicalTenantId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
+  /**
+   * Enable an exporter on all partitions of the given physical tenant. If no physicalTenantId is
+   * provided, it applies to all tenants.
+   */
+  record ExporterEnableRequest(
+      String exporterId,
+      Optional<String> initializeFrom,
+      Optional<String> physicalTenantId,
+      boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ExportingStateChangeRequest(ExportingState state, boolean dryRun)
