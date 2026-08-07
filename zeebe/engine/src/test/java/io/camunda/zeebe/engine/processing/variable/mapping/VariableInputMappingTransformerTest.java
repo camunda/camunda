@@ -27,6 +27,7 @@ import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class VariableInputMappingTransformerTest {
 
@@ -305,6 +306,35 @@ final class VariableInputMappingTransformerTest {
 
     // then
     MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1, 'd':1}, 'c':1}");
+  }
+
+  @Test
+  void shouldBuildTheCombinedExpressionForTheKillSwitch() {
+    // given: the kill-switch needs the combined FEEL context expression these mappings compiled
+    // into before #58801, built for every process so the flag can flip without a redeployment
+    final var mappings = List.of(mapping("x", "a"), mapping("y", "b.c"));
+
+    // when
+    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
+
+    // then
+    assertThat(inputMappings.combinedExpression()).isNotNull();
+    assertThat(inputMappings.combinedExpression().isValid()).isTrue();
+  }
+
+  @ParameterizedTest(name = "target ''{0}''")
+  @ValueSource(strings = {"some", "every", "return", "satisfies", "in", "and", "or", "not"})
+  void shouldStillBuildTheCombinedExpressionForNonReservedFeelKeywordTargets(final String target) {
+    // given: a target that is a FEEL keyword but NOT on ZeebeExpressionValidator's reserved list,
+    // so it passes deploy-time validation and reaches the transformer
+    final var mappings = List.of(mapping("1", target));
+
+    // when
+    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
+
+    // then: feel-scala accepts these as context keys, so the combined expression still parses and
+    // the kill-switch has an old behaviour to fall back to
+    assertThat(inputMappings.combinedExpression()).isNotNull();
   }
 
   @Test

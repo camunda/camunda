@@ -91,6 +91,29 @@ public class EngineTest {
       assertThat(brokerCfg.getExperimental().getFeatures())
           .returns(true, FeatureFlagsCfg::isEvaluateDuplicateOutputMappingTargetsInOrder);
     }
+
+    @Test
+    void shouldEvaluateInputMappingsOneByOneByDefault() {
+      assertThat(brokerCfg.getExperimental().getFeatures())
+          .returns(true, FeatureFlagsCfg::isEvaluateInputMappingsOneByOne);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.processing.engine.evaluate-input-mappings-one-by-one=false"})
+  class WithEvaluateInputMappingsOneByOneConfigured {
+    final BrokerBasedProperties brokerCfg;
+
+    WithEvaluateInputMappingsOneByOneConfigured(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetEvaluateInputMappingsOneByOne() {
+      assertThat(brokerCfg.getExperimental().getFeatures())
+          .returns(false, FeatureFlagsCfg::isEvaluateInputMappingsOneByOne);
+    }
   }
 
   @Nested

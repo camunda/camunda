@@ -20,6 +20,7 @@ public class Engine {
       Set.of("zeebe.broker.experimental.engine.maxProcessDepth");
 
   private static final boolean DEFAULT_EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
+  private static final boolean DEFAULT_EVALUATE_INPUT_MAPPINGS_ONE_BY_ONE = true;
 
   /** Configuration properties for the engine's distribution settings. */
   @NestedConfigurationProperty private Distribution distribution = new Distribution();
@@ -63,6 +64,22 @@ public class Engine {
    */
   private boolean evaluateDuplicateOutputMappingTargetsInOrder =
       DEFAULT_EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER;
+
+  /**
+   * Controls how the input-variable mappings of an element are evaluated. When enabled (default),
+   * each mapping's source is evaluated on its own, in modeling order, so a later mapping can
+   * reference what an earlier one produced. When disabled, all mappings of the element are
+   * evaluated as the single combined FEEL context expression they compiled into before this change,
+   * reproducing the behavior of versions up to 8.7.35 and 8.8.33.
+   *
+   * <p>Disabling this reinstates the bugs that change fixed - a mapping declared between two
+   * mappings that share a target root is invisible to the later one, and per-field copies of one
+   * variable drop all but one field - so it is a compatibility escape hatch, not something to reach
+   * for by default. A process whose combined expression does not parse (which deploys fine either
+   * way) keeps being evaluated one mapping at a time even when this is disabled, rather than
+   * failing every activation.
+   */
+  private boolean evaluateInputMappingsOneByOne = DEFAULT_EVALUATE_INPUT_MAPPINGS_ONE_BY_ONE;
 
   public Distribution getDistribution() {
     return distribution;
@@ -143,6 +160,14 @@ public class Engine {
 
   public boolean isEvaluateDuplicateOutputMappingTargetsInOrder() {
     return evaluateDuplicateOutputMappingTargetsInOrder;
+  }
+
+  public boolean isEvaluateInputMappingsOneByOne() {
+    return evaluateInputMappingsOneByOne;
+  }
+
+  public void setEvaluateInputMappingsOneByOne(final boolean evaluateInputMappingsOneByOne) {
+    this.evaluateInputMappingsOneByOne = evaluateInputMappingsOneByOne;
   }
 
   public void setEvaluateDuplicateOutputMappingTargetsInOrder(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -49,13 +50,15 @@ public final class BpmnVariableMappingBehavior {
 
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private final boolean evaluateInputMappingsOneByOne;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean evaluateInputMappingsOneByOne) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -65,6 +68,7 @@ public final class BpmnVariableMappingBehavior {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+    this.evaluateInputMappingsOneByOne = evaluateInputMappingsOneByOne;
   }
 
   /**
@@ -74,6 +78,10 @@ public final class BpmnVariableMappingBehavior {
    * sees the results of the earlier mappings (they take priority over same-named scope variables)
    * and falls back to the element's variable scope otherwise. Evaluation stops at the first failing
    * mapping and no variables are applied in that case.
+   *
+   * <p>With the {@code evaluateInputMappingsOneByOne} kill-switch disabled, the mappings are
+   * instead evaluated as the single combined FEEL context expression they compiled into before that
+   * change, see {@link #applyCombinedInputMappingExpression}.
    *
    * @param context The current bpmn element context
    * @param element The current bpmn element
@@ -87,6 +95,15 @@ public final class BpmnVariableMappingBehavior {
 
     if (inputMappings.isEmpty()) {
       return Either.right(null);
+    }
+
+    if (!evaluateInputMappingsOneByOne) {
+      final var combined = inputMappings.get().combinedExpression();
+      if (combined != null) {
+        return applyCombinedInputMappingExpression(context, element, combined, scopeKey, tenantId);
+      }
+      // the combined expression does not parse, so there is no old behavior to fall back to; the
+      // mappings are evaluated one by one below rather than failing every activation forever
     }
 
     // the resolver completes a read of a target that earlier nested mappings only partially built,
@@ -109,6 +126,31 @@ public final class BpmnVariableMappingBehavior {
       resultBuilder.put(mapping.targetPath(), result.get());
     }
     return mapLocalVariables(context, element, resultBuilder.toDocument());
+  }
+
+  /**
+   * Evaluates all input mappings as the single combined FEEL context expression they compiled into
+   * before {@code #58801} — {@code {a: x, b: {c: y}}} — and applies the resulting document as the
+   * element's local variables.
+   *
+   * <p>This is the {@code evaluateInputMappingsOneByOne} kill-switch's path. It differs from the
+   * per-mapping evaluation in ways that were the point of that change: same-root targets are
+   * regrouped to the position of the first one, so a mapping declared between them is not visible
+   * to the later one (#11789); a target superseded by a colliding one is dropped without its source
+   * ever being evaluated; and a failure names the whole combined expression rather than the one
+   * mapping that failed.
+   */
+  private Either<Failure, Void> applyCombinedInputMappingExpression(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final Expression combinedExpression,
+      final long scopeKey,
+      final String tenantId) {
+    // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
+    // for input mappings, so a modeled reference survives evaluation instead of nulling
+    return inputMappingExpressionProcessor
+        .evaluateVariableMappingContextExpression(combinedExpression, scopeKey, tenantId)
+        .flatMap(result -> mapLocalVariables(context, element, result));
   }
 
   /**
