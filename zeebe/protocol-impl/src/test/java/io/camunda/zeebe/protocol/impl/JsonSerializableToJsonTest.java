@@ -5279,7 +5279,6 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": ["status", "metrics"],
           "jobKey": -1,
           "jobLease": "",
-          "loopIteration": 0,
           "history": [],
           "storageOrdinalKey": 11
         }
@@ -5309,7 +5308,6 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": [],
           "jobKey": -1,
           "jobLease": "",
-          "loopIteration": 0,
           "history": [],
           "storageOrdinalKey": 0
         }
@@ -5345,7 +5343,6 @@ final class JsonSerializableToJsonTest {
                   new AgentInstanceRecord()
                       .setJobKey(2251799813685252L)
                       .setJobLease("job-lease-abc123")
-                      .setLoopIteration(3)
                       .setHistory(List.of(item));
               return record;
             },
@@ -5370,7 +5367,6 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": [],
           "jobKey": 2251799813685252,
           "jobLease": "job-lease-abc123",
-          "loopIteration": 3,
           "history": [
             {
               "agentHistoryKey": -1,

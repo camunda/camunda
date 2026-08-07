@@ -128,9 +128,6 @@
             "jobLease": {
               "type": "keyword"
             },
-            "loopIteration": {
-              "type": "integer"
-            },
             "history": {
               "properties": {
                 "agentHistoryKey": {
