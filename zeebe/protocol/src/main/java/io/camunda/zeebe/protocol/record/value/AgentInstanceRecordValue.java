@@ -128,12 +128,6 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   String getJobLease();
 
   /**
-   * @return the loopIteration this command belongs to; a loopIteration is one pass through the
-   *     agent feedback loop: one LLM call, its tool dispatches, and their results
-   */
-  int getLoopIteration();
-
-  /**
    * @return the batch of history items carried by this command, each reusing the same shape as a
    *     persisted {@code AgentHistoryRecord} entry
    */

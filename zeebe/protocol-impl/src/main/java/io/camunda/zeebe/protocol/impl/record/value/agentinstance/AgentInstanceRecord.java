@@ -72,12 +72,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
-  private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
   private final ArrayProperty<AgentHistoryRecord> historyProp =
       new ArrayProperty<>("history", AgentHistoryRecord::new);
 
   public AgentInstanceRecord() {
-    super(22);
+    super(21);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
@@ -98,7 +97,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(changedAttributesProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
-        .declareProperty(loopIterationProp)
         .declareProperty(historyProp);
   }
 
@@ -289,16 +287,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setJobLease(final String jobLease) {
     jobLeaseProp.setValue(jobLease);
-    return this;
-  }
-
-  @Override
-  public int getLoopIteration() {
-    return loopIterationProp.getValue();
-  }
-
-  public AgentInstanceRecord setLoopIteration(final int loopIteration) {
-    loopIterationProp.setValue(loopIteration);
     return this;
   }
 

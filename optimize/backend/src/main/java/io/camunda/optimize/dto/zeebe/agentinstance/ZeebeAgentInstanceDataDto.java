@@ -32,7 +32,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private String tenantId;
   private long jobKey = -1L;
   private String jobLease;
-  private int loopIteration;
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
@@ -155,15 +154,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.jobLease = jobLease;
   }
 
-  @Override
-  public int getLoopIteration() {
-    return loopIteration;
-  }
-
-  public void setLoopIteration(final int loopIteration) {
-    this.loopIteration = loopIteration;
-  }
-
   // Not tracked — Optimize's import doesn't need the embedded history batch, only the
   // instance-level fields above.
   @Override
@@ -245,7 +235,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         tenantId,
         jobKey,
         jobLease,
-        loopIteration,
         status,
         definition,
         metrics,
@@ -266,7 +255,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
         && jobKey == that.jobKey
-        && loopIteration == that.loopIteration
         && Objects.equals(elementInstanceKeys, that.elementInstanceKeys)
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
@@ -301,8 +289,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + jobKey
         + ", jobLease="
         + jobLease
-        + ", loopIteration="
-        + loopIteration
         + ", status="
         + status
         + ", definition="
@@ -330,7 +316,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String tenantId = "tenantId";
     public static final String jobKey = "jobKey";
     public static final String jobLease = "jobLease";
-    public static final String loopIteration = "loopIteration";
     public static final String status = "status";
     public static final String definition = "definition";
     public static final String metrics = "metrics";
