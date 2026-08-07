@@ -238,14 +238,14 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_ENG_OPS_TEST_CHANNEL_WEBHOOK;
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Render and post merge-back alert to Slack
         # Same guard as the Vault step: never fire when the producing step was skipped ('' != '0'),
         # and never on a dry run (that path renders to the summary instead).
         if: ${{ !inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
         env:
-          SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ENG_OPS_TEST_CHANNEL_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
@@ -274,7 +274,7 @@ jobs:
               echo "::error::Slack webhook post failed (HTTP ${http_body}): ${resp:-no body}"
               exit 1
             fi
-            echo "✅ Posted merge-back alert to the eng-ops test channel."
+            echo "✅ Posted merge-back alert to the monorepo release channel."
           done < actionable.ndjson
 
       - name: Observe build status
