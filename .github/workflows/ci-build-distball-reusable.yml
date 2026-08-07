@@ -34,6 +34,9 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@02b3f0e49b00b98fffc76af690ebc83c28f24dae # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: build-shared
@@ -101,6 +104,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Upload distball to GCS
+        # gcloud is only installed/authenticated when gcs-build-cache-auth ran, which is
+        # itself skipped for fork PRs (no Vault access) -- see gcs-build-cache-auth/action.yml.
+        if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
@@ -115,6 +121,8 @@ jobs:
             gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
       - name: Upload SNAPSHOTs to GCS
+        # Same fork-PR guard as "Upload distball to GCS" above.
+        if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
