@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers.waitstate;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
@@ -28,7 +28,7 @@ import java.util.List;
  * @param <R> the record value type handled by the injected transformer
  */
 public class WaitStateRemoveHandler<R extends RecordValue & WaitStateRelated>
-    implements ExportHandler<WaitStateEntity, R> {
+    implements StorageOrdinalKeyExportHandler<WaitStateEntity, R> {
 
   private final String indexName;
   private final WaitStateTransformer<R> transformer;

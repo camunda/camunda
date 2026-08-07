@@ -106,8 +106,7 @@ public class ExportHandlerArchTest {
           // correct interface
           .resideOutsideOfPackages(
               "io.camunda.exporter.handlers.batchoperation..",
-              "io.camunda.exporter.handlers.operation..",
-              "io.camunda.exporter.handlers.waitstate..")
+              "io.camunda.exporter.handlers.operation..")
           .should()
           .beAssignableTo(
               DescribedPredicate.or(
