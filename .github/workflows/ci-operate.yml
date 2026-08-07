@@ -129,6 +129,7 @@ jobs:
         shardTotal: [4]
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: '@camunda/operate-frontend'
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
@@ -384,6 +385,7 @@ jobs:
         shardTotal: [4]
     env:
       TEST_TYPE: visual-regression
+      TEST_OWNER: '@camunda/operate-frontend'
     container:
       image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
