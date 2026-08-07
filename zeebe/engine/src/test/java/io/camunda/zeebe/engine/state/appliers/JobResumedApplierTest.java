@@ -106,6 +106,25 @@ public class JobResumedApplierTest {
     assertThat(jobState.getState(jobKey)).isEqualTo(State.NOT_FOUND);
   }
 
+  @Test
+  void shouldMakeSecretWaitingJobActivatableAfterSuspendOverride() {
+    // given - suspend overrides WAITING_FOR_SECRET_RESOLUTION; resume restores ACTIVATABLE. If
+    // secrets are still needed, the next activation path re-parks for resolution.
+    final long jobKey = 4L;
+    final var record = jobRecord();
+    createActivatableJob(jobKey, record);
+    jobState.parkForSecretResolution(jobKey, record);
+    suspendedApplier.applyState(jobKey, record);
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.SUSPENDED);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.ACTIVATABLE);
+    assertThat(isServedAsActivatable(jobKey)).isTrue();
+  }
+
   private void createActivatableJob(final long jobKey, final JobRecord record) {
     jobState.insertJobRecordActivatable(jobKey, record);
     jobState.makeJobActivatableByPriority(

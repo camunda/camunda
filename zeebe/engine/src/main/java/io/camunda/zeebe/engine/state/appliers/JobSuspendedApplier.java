@@ -13,14 +13,23 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
- * Parks an activatable job of a suspended process instance: sets {@link State#SUSPENDED} and
- * removes it from the activatable index. Uses the stored job record for the index key so a
- * mismatched event value cannot leave a ghost entry. Does nothing unless the job is {@link
- * State#ACTIVATABLE}, so a job a worker or a failure already owns is left alone.
+ * Parks a job of a suspended process instance: sets {@link State#SUSPENDED} and removes it from the
+ * activatable index. Uses the stored job record for the index key so a mismatched event value
+ * cannot leave a ghost entry.
+ *
+ * <p>Acts on {@link State#ACTIVATABLE} and {@link State#WAITING_FOR_SECRET_RESOLUTION}. Suspension
+ * overrides secret-waiting so a later secret reactivation cannot put the job back into the index
+ * while the process instance is still suspended. A job a worker or a failure already owns is left
+ * alone.
  */
 public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, JobRecord> {
+
+  private static final Set<State> SUSPENDABLE_STATES =
+      EnumSet.of(State.ACTIVATABLE, State.WAITING_FOR_SECRET_RESOLUTION);
 
   private final MutableJobState jobState;
 
@@ -30,7 +39,7 @@ public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, J
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    if (!jobState.isInState(key, State.ACTIVATABLE)) {
+    if (!SUSPENDABLE_STATES.contains(jobState.getState(key))) {
       return;
     }
     final JobRecord storedJob = jobState.getJob(key);

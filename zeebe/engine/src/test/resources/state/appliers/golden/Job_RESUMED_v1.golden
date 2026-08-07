@@ -17,7 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 /**
  * Makes a parked job activatable again when its process instance is resumed, using the type, tenant
  * and priority from the stored job. Does nothing unless the job is in {@link State#SUSPENDED}, so a
- * job that a worker or a failure owns is never re-inserted into the index.
+ * job that a worker or a failure owns is never re-inserted into the index. A job that was suspended
+ * over secret-waiting becomes {@link State#ACTIVATABLE}; if secrets are still required, the next
+ * activation path re-parks it for resolution.
  */
 public final class JobResumedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 

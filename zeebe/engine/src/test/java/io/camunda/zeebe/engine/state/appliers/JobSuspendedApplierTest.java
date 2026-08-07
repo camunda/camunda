@@ -83,10 +83,61 @@ public class JobSuspendedApplierTest {
   }
 
   @Test
+  void shouldOverrideJobWaitingForSecretResolution() {
+    // given - suspension must win over secret-waiting so a later secret reactivation cannot
+    // re-insert the job while the process instance is still suspended
+    final long jobKey = 4L;
+    final var record = jobRecord();
+    createActivatableJob(jobKey, record);
+    jobState.parkForSecretResolution(jobKey, record);
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.SUSPENDED);
+    assertThat(isServedAsActivatable(jobKey)).isFalse();
+  }
+
+  @Test
+  void shouldLeaveFailedJobAlone() {
+    // given
+    final long jobKey = 5L;
+    final var record = jobRecord().setRetries(0);
+    createActivatableJob(jobKey, record);
+    jobState.activate(jobKey, record);
+    jobState.updateJobState(jobKey, State.FAILED);
+    jobState.makeJobNotActivatable(jobKey, record);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.FAILED);
+  }
+
+  @Test
+  void shouldLeaveErrorThrownJobAlone() {
+    // given
+    final long jobKey = 6L;
+    final var record = jobRecord();
+    createActivatableJob(jobKey, record);
+    jobState.activate(jobKey, record);
+    jobState.throwError(jobKey, record);
+
+    // when
+    applier.applyState(jobKey, record);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.ERROR_THROWN);
+  }
+
+  @Test
   void shouldRemoveIndexEntryUsingStoredJobWhenEventRecordDiffers() {
     // given - index key is type/tenant/priority of the stored job; a mismatched event value must
     // not leave a ghost activatable entry behind
-    final long jobKey = 4L;
+    final long jobKey = 7L;
     final var stored = jobRecord().setPriority(50);
     createActivatableJob(jobKey, stored);
     final var mismatchedEvent = jobRecord().setPriority(1);
