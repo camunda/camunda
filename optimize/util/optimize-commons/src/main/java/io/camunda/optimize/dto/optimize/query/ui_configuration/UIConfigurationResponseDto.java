@@ -29,6 +29,7 @@ public class UIConfigurationResponseDto {
   private boolean cslEnabled;
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
+  private Integer entityNameMaxLength;
   private DatabaseType optimizeDatabase;
   private boolean validLicense;
   private String licenseType;
@@ -204,6 +205,14 @@ public class UIConfigurationResponseDto {
 
   public void setExportCsvLimit(final Integer exportCsvLimit) {
     this.exportCsvLimit = exportCsvLimit;
+  }
+
+  public Integer getEntityNameMaxLength() {
+    return entityNameMaxLength;
+  }
+
+  public void setEntityNameMaxLength(final Integer entityNameMaxLength) {
+    this.entityNameMaxLength = entityNameMaxLength;
   }
 
   public DatabaseType getOptimizeDatabase() {

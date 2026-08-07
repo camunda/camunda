@@ -572,6 +572,11 @@ entity:
   kpiRefreshInterval: 600
   # flag to determine whether this Optimize instance should (re)create management entities on startup
   createOnStartup: ${CAMUNDA_OPTIMIZE_ENTITY_CREATE_ON_STARTUP:true}
+  # Maximum number of characters allowed in the name of a report, collection, dashboard or alert.
+  # Matches the orchestration cluster's equivalent limit for name fields. Note that a name well below
+  # this can still be too large to index, as Elasticsearch/OpenSearch cap a term at 32766 bytes and a
+  # character takes up to 3 bytes in UTF-8. Existing longer names remain readable.
+  nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
 export:
   csv:
