@@ -823,9 +823,8 @@ components:
           type: string
         loopIteration:
           description: |
-            The loopIteration this item belongs to. A loopIteration is one pass through the agent
-            feedback loop: one LLM call, its tool dispatches, and their results. Omit if not grouping
-            items by loopIteration.
+            The loop iteration this item belongs to. Omit if not grouping items by
+            loopIteration.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
@@ -976,7 +975,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
         loopIteration:
-          description: Filter by loopIteration number. A loopIteration is one pass through the agent feedback loop (one LLM call, its tool dispatches, and their results).
+          description: Filter by loop iteration number.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
         commitStatus:
@@ -1041,9 +1040,7 @@ components:
           description: The lease token of the activation that produced this item.
           type: string
         loopIteration:
-          description: |
-            The loopIteration this item belongs to. A loopIteration is one pass through the agent
-            feedback loop: one LLM call, its tool dispatches, and their results.
+          description: The loop iteration this item belongs to.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
         role:
