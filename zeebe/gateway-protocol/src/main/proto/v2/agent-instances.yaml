@@ -853,7 +853,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
         producedAt:
-          description: The connector-side timestamp of when this message was produced.
+          description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
 
@@ -1070,7 +1070,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
         producedAt:
-          description: The connector-side timestamp of when this message was produced.
+          description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
     AgentInstanceHistoryRoleEnum:
