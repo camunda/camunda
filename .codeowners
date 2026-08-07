@@ -455,3 +455,7 @@ optimize.Dockerfile         @camunda/core-features
 # Operate frontend: overrides the broad /operate/ rule above, which predates the
 # operate-frontend/operate-backend team split.
 /operate/client/            @camunda/operate-frontend
+
+# Optimize frontend: overrides the broad /optimize/ rule above, which predates the
+# optimize-frontend/optimize-backend team split.
+/optimize/client/           @camunda/optimize-frontend
