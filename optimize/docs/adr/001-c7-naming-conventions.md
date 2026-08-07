@@ -56,3 +56,4 @@ Instead, additional documentation is added to avoid confusion.
 
 - [Decision Document](https://docs.google.com/document/d/1SQmYhuhzlVRrymkZKAXPGGO47LDsDf5YQE7ba5eXTEo/edit?usp=sharing)
 - [GitHub issue #53375](https://github.com/camunda/camunda/issues/53375)
+

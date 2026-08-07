@@ -29,3 +29,4 @@ directory when the first ADR for that domain is written.
   (REST `/v1`, `/v2`, gRPC via the Zeebe gateway), augment authorization claims with a cached
   `/userinfo` call when an OIDC provider omits them from the access token itself, matching what
   the browser login flow already does.
+
