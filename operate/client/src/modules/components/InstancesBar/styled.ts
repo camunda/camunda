@@ -126,6 +126,18 @@ const BarContainer = styled.div`
   margin: var(--cds-spacing-03) 0;
 `;
 
+const DrainingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: var(--cds-spacing-03);
+  color: var(--cds-support-error);
+
+  & + ${ActiveCount} {
+    margin-left: 0;
+  }
+`;
+
 type ActiveBarProps = {
   $isPassive?: boolean;
   $size: Size;
@@ -190,4 +202,5 @@ export {
   BarContainer,
   ActiveInstancesBar,
   IncidentsBar,
+  DrainingIndicator,
 };
