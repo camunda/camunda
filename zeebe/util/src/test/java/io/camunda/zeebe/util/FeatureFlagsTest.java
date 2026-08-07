@@ -25,6 +25,7 @@ class FeatureFlagsTest {
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
     assertThat(sut.evaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
     assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
+    assertThat(sut.evaluateInputMappingsOneByOne()).isTrue();
   }
 
   @Test
@@ -38,5 +39,6 @@ class FeatureFlagsTest {
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
     assertThat(sut.evaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
     assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
+    assertThat(sut.evaluateInputMappingsOneByOne()).isTrue();
   }
 }

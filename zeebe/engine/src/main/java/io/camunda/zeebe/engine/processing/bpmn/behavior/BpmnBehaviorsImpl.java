@@ -89,6 +89,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MessageCorrelationMetrics messageCorrelationMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean evaluateInputMappingsOneByOne,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck) {
 
@@ -197,7 +198,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            evaluateDuplicateOutputMappingTargetsInOrder,
+            evaluateInputMappingsOneByOne);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
