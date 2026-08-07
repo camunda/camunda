@@ -258,7 +258,9 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         enableRequest.dryRun(),
         new ExporterEnableRequestTransformer(
-            enableRequest.exporterId(), enableRequest.initializeFrom()));
+            enableRequest.exporterId(),
+            enableRequest.initializeFrom(),
+            enableRequest.physicalTenantId()));
   }
 
   @Override

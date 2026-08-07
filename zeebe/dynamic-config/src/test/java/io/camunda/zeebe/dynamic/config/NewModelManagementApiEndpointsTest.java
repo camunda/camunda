@@ -464,7 +464,8 @@ final class NewModelManagementApiEndpointsTest {
     // when
     final var response =
         handler
-            .enableExporter(new ExporterEnableRequest(exporterId, Optional.empty(), false))
+            .enableExporter(
+                new ExporterEnableRequest(exporterId, Optional.empty(), Optional.empty(), false))
             .join();
 
     // then

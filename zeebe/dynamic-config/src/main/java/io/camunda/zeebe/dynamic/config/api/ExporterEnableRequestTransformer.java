@@ -12,7 +12,6 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -29,8 +28,7 @@ import java.util.Optional;
 /**
  * Enables an exporter, either for a single physical tenant or, when none is given, for every
  * physical tenant. Unlike disable and delete, an exporter does not need to already exist on a
- * partition to be enabled there; tenants/partitions where it is already {@link State#ENABLED} are
- * silently skipped rather than failing the whole request.
+ * partition to be enabled there.
  */
 final class ExporterEnableRequestTransformer implements ConfigurationChangeRequest {
 
