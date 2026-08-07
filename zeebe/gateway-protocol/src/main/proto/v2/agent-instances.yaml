@@ -841,8 +841,8 @@ components:
         toolCalls:
           description: |
             Tool calls associated with this history item.
-            For ASSISTANT items: tool calls dispatched by this LLM response, with arguments populated.
-            For TOOL_RESULT items: single-entry array referencing the originating tool call, with arguments null.
+            For ASSISTANT items: tool calls dispatched by this LLM response.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call.
             Omit for USER items.
           type: array
           nullable: true
@@ -893,8 +893,8 @@ components:
         toolCalls:
           description: |
             Tool calls associated with this history item.
-            For ASSISTANT items: tool calls dispatched by this LLM response, with arguments populated.
-            For TOOL_RESULT items: single-entry array referencing the originating tool call, with arguments null.
+            For ASSISTANT items: tool calls dispatched by this LLM response.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call.
             Omit for USER items.
           type: array
           nullable: true
@@ -1058,8 +1058,8 @@ components:
         toolCalls:
           description: |
             Tool calls for this item. Empty for USER items and ASSISTANT items with no tool dispatches.
-            ASSISTANT items: dispatched tool calls with arguments populated.
-            TOOL_RESULT items: single-entry array referencing the originating tool call (arguments null).
+            ASSISTANT items: dispatched tool calls.
+            TOOL_RESULT items: single-entry array referencing the originating tool call.
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceToolCall'
@@ -1176,7 +1176,6 @@ components:
     AgentInstanceToolCall:
       description: |
         A tool call associated with a history item. Used in both ASSISTANT and TOOL_RESULT items.
-        ASSISTANT items carry arguments; TOOL_RESULT items carry arguments as null.
       type: object
       required:
         - toolCallId
@@ -1195,7 +1194,9 @@ components:
           type: string
           nullable: true
         arguments:
-          description: The tool call arguments as provided by the LLM. Null on TOOL_RESULT items.
+          description: |
+            The tool call arguments as provided by the LLM. May be null or populated on
+            any item, including TOOL_RESULT.
           type: object
           nullable: true
           additionalProperties: true
