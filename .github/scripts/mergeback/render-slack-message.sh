@@ -78,7 +78,9 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
         + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",
-                  text: (":warning: Output truncated to fit Slack limits — see the <" + $run_url + "|workflow run> for the complete list.") } ] } ]
+                  text: (":warning: Output truncated to fit Slack limits — see the "
+                         + (if $run_url != "" then "<" + $run_url + "|workflow run>" else "workflow run" end)
+                         + " for the complete list.") } ] } ]
            else [] end)
         + [ { type: "context", elements: [ { type: "mrkdwn", text: $footer } ] } ]
       ) }' <<< "$doc"

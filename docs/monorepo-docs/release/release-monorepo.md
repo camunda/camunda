@@ -393,7 +393,7 @@ The **[Release Merge-back Conflict Check](https://github.com/camunda/camunda/blo
    - **version/build** (`pom.xml`, lockfiles) — mechanical version bumps. Silent; "theirs for versions" on merge-back.
    - **source — text drift** — release-side changes already on the target by patch-id (`git cherry`). Resolve at PR time; no action.
    - **source / dependency missing on target** — a commit is on the release branch but NOT on the target. **The alarm** — a human confirms whether it is a forward-port that must reach the target or a release-only change that must not.
-4. **Notify** the eng-ops channel via Slack **only** when the actionable bucket is non-empty. A clean or mechanical-only result is a quiet success. An in-flight release always conflicts on version bumps, so the gate is the actionable count, not the raw conflict.
+4. **Notify** the configured Slack channel **only** when the actionable bucket is non-empty. A clean or mechanical-only result is a quiet success. An in-flight release always conflicts on version bumps, so the gate is the actionable count, not the raw conflict.
 
 **A/B classification** underpins the triage. Divergence is two populations with opposite safe treatment:
 

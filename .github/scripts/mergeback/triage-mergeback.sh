@@ -56,10 +56,13 @@ is_version_build() {
 owner_for() {
   local path="$1"
   command -v codeowners-cli >/dev/null 2>&1 || return 0
-  # Prints "@team1 @team2" (or an unowned marker). Keep only @-tokens; `|| true` absorbs grep's
-  # no-match exit under pipefail.
-  codeowners-cli owner "$path" 2>/dev/null \
-    | tr ' ' '\n' | grep -E '^@' | tr '\n' ' ' | sed 's/ *$//' || true
+  # Query the stable JSON interface, not the human-readable default: `--format json` is a
+  # contractual shape (immune to wording/format drift) and `--root ./` anchors resolution to the
+  # repo root so ownership is correct regardless of the current working directory. jq extracts the
+  # required owners as space-separated @-tokens (empty when unowned). `|| true` absorbs a non-zero
+  # exit (CLI or jq) under pipefail — empty ownership beats a wrong one.
+  codeowners-cli owner --root ./ --format json "$path" 2>/dev/null \
+    | jq -r --arg p "$path" '(.[$p].required // []) | join(" ")' 2>/dev/null || true
 }
 
 # Read the detector's structured contract {status, paths}.
