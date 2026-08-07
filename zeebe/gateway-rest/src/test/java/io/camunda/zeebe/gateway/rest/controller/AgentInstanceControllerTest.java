@@ -803,18 +803,18 @@ class AgentInstanceControllerTest extends RestControllerTest {
   @Nested
   class CreateHistoryItemTest {
 
-  private static final long HISTORY_ITEM_KEY = 9007199254741018L;
+    private static final long HISTORY_ITEM_KEY = 9007199254741018L;
 
-  @Test
-  void shouldCreateAgentHistoryItemWithTextContent() {
-    // given
-    final var responseRecord = new AgentHistoryRecord();
-    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
-    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+    @Test
+    void shouldCreateAgentHistoryItemWithTextContent() {
+      // given
+      final var responseRecord = new AgentHistoryRecord();
+      responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+      when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
-    final var requestBody =
-        """
+      final var requestBody =
+          """
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
@@ -826,56 +826,56 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "producedAt": "2025-06-01T12:00:00Z"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isCreated()
-        .expectBody()
-        .json(
-            """
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isCreated()
+          .expectBody()
+          .json(
+              """
             { "historyItemKey": "%d" }
             """
-                .formatted(HISTORY_ITEM_KEY),
-            JsonCompareMode.STRICT);
+                  .formatted(HISTORY_ITEM_KEY),
+              JsonCompareMode.STRICT);
 
-    verify(agentHistoryServices)
-        .createAgentHistoryItem(
-            assertArg(
-                record -> {
-                  assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
-                  assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
-                  assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
-                  assertThat(record.getJobLease()).isEqualTo("lease-abc");
-                  assertThat(record.getRole().name()).isEqualTo("ASSISTANT");
-                  assertThat(record.getContent()).hasSize(1);
-                  assertThat(record.getContent().get(0).getText())
-                      .isEqualTo("I will process the invoice.");
-                  // no metrics in the request — protocol record carries the -1 sentinel
-                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
-                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
-                  assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
-                }),
-            any());
-  }
+      verify(agentHistoryServices)
+          .createAgentHistoryItem(
+              assertArg(
+                  record -> {
+                    assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
+                    assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getRole().name()).isEqualTo("ASSISTANT");
+                    assertThat(record.getContent()).hasSize(1);
+                    assertThat(record.getContent().get(0).getText())
+                        .isEqualTo("I will process the invoice.");
+                    // no metrics in the request — protocol record carries the -1 sentinel
+                    assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
+                    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
+                    assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
+                  }),
+              any());
+    }
 
-  @Test
-  void shouldCreateAgentHistoryItemWithAllFields() {
-    // given
-    final var responseRecord = new AgentHistoryRecord();
-    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
-    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+    @Test
+    void shouldCreateAgentHistoryItemWithAllFields() {
+      // given
+      final var responseRecord = new AgentHistoryRecord();
+      responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+      when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
-    final var requestBody =
-        """
+      final var requestBody =
+          """
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
@@ -897,45 +897,46 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "producedAt": "2025-06-01T12:00:00Z"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isCreated();
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isCreated();
 
-    verify(agentHistoryServices)
-        .createAgentHistoryItem(
-            assertArg(
-                record -> {
-                  assertThat(record.getLoopIteration()).isEqualTo(2);
-                  assertThat(record.getContent()).hasSize(2);
-                  assertThat(record.getToolCalls()).hasSize(1);
-                  assertThat(record.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-001");
-                  assertThat(record.getToolCalls().get(0).getToolName()).isEqualTo("extract_data");
-                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(512L);
-                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(128L);
-                  assertThat(record.getMetrics().getDurationMs()).isEqualTo(1500L);
-                }),
-            any());
-  }
+      verify(agentHistoryServices)
+          .createAgentHistoryItem(
+              assertArg(
+                  record -> {
+                    assertThat(record.getLoopIteration()).isEqualTo(2);
+                    assertThat(record.getContent()).hasSize(2);
+                    assertThat(record.getToolCalls()).hasSize(1);
+                    assertThat(record.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-001");
+                    assertThat(record.getToolCalls().get(0).getToolName())
+                        .isEqualTo("extract_data");
+                    assertThat(record.getMetrics().getInputTokens()).isEqualTo(512L);
+                    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(128L);
+                    assertThat(record.getMetrics().getDurationMs()).isEqualTo(1500L);
+                  }),
+              any());
+    }
 
-  @Test
-  void shouldCreateAgentHistoryItemWithDocumentContent() {
-    // given
-    final var responseRecord = new AgentHistoryRecord();
-    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
-    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+    @Test
+    void shouldCreateAgentHistoryItemWithDocumentContent() {
+      // given
+      final var responseRecord = new AgentHistoryRecord();
+      responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+      when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
-    final var requestBody =
-        """
+      final var requestBody =
+          """
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
@@ -964,55 +965,57 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "producedAt": "2025-06-01T12:00:00Z"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY, ELEMENT_INSTANCE_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY, ELEMENT_INSTANCE_KEY);
 
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isCreated();
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isCreated();
 
-    verify(agentHistoryServices)
-        .createAgentHistoryItem(
-            assertArg(
-                record -> {
-                  assertThat(record.getContent()).hasSize(1);
-                  final var docContent = record.getContent().get(0);
-                  assertThat(docContent.getContentType())
-                      .isEqualTo(AgentHistoryContentType.DOCUMENT);
-                  final var docRef = docContent.getDocumentReference();
-                  assertThat(docRef.getDocumentId()).isEqualTo("doc-abc");
-                  assertThat(docRef.getStoreId()).isEqualTo("store-1");
-                  assertThat(docRef.getContentHash()).isEqualTo("sha256:deadbeef");
-                  final var meta = docRef.getMetadata();
-                  assertThat(meta.getContentType()).isEqualTo("application/pdf");
-                  assertThat(meta.getFileName()).isEqualTo("invoice.pdf");
-                  assertThat(meta.getExpiresAt())
-                      .isEqualTo(
-                          OffsetDateTime.parse("2025-12-31T23:59:59Z").toInstant().toEpochMilli());
-                  assertThat(meta.getSize()).isEqualTo(12345L);
-                  assertThat(meta.getProcessDefinitionId()).isEqualTo("invoice-process");
-                  assertThat(meta.getProcessInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
-                  assertThat(meta.getCustomProperties()).containsEntry("source", "email");
-                }),
-            any());
-  }
+      verify(agentHistoryServices)
+          .createAgentHistoryItem(
+              assertArg(
+                  record -> {
+                    assertThat(record.getContent()).hasSize(1);
+                    final var docContent = record.getContent().get(0);
+                    assertThat(docContent.getContentType())
+                        .isEqualTo(AgentHistoryContentType.DOCUMENT);
+                    final var docRef = docContent.getDocumentReference();
+                    assertThat(docRef.getDocumentId()).isEqualTo("doc-abc");
+                    assertThat(docRef.getStoreId()).isEqualTo("store-1");
+                    assertThat(docRef.getContentHash()).isEqualTo("sha256:deadbeef");
+                    final var meta = docRef.getMetadata();
+                    assertThat(meta.getContentType()).isEqualTo("application/pdf");
+                    assertThat(meta.getFileName()).isEqualTo("invoice.pdf");
+                    assertThat(meta.getExpiresAt())
+                        .isEqualTo(
+                            OffsetDateTime.parse("2025-12-31T23:59:59Z")
+                                .toInstant()
+                                .toEpochMilli());
+                    assertThat(meta.getSize()).isEqualTo(12345L);
+                    assertThat(meta.getProcessDefinitionId()).isEqualTo("invoice-process");
+                    assertThat(meta.getProcessInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                    assertThat(meta.getCustomProperties()).containsEntry("source", "email");
+                  }),
+              any());
+    }
 
-  @Test
-  void shouldCreateAgentHistoryItemWithNonMapObjectContent() {
-    // given
-    final var responseRecord = new AgentHistoryRecord();
-    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
-    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+    @Test
+    void shouldCreateAgentHistoryItemWithNonMapObjectContent() {
+      // given
+      final var responseRecord = new AgentHistoryRecord();
+      responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+      when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
-    final var requestBody =
-        """
+      final var requestBody =
+          """
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
@@ -1025,55 +1028,55 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "producedAt": "2025-06-01T12:00:00Z"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .exchange()
-        .expectStatus()
-        .isCreated();
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isCreated();
 
-    verify(agentHistoryServices)
-        .createAgentHistoryItem(
-            assertArg(
-                record -> {
-                  assertThat(record.getContent()).hasSize(2);
-                  final var arrayContent = record.getContent().get(0);
-                  assertThat(arrayContent.getContentType())
-                      .isEqualTo(AgentHistoryContentType.OBJECT);
-                  assertThat(arrayContent.getObject()).isEqualTo(List.of(10, 20, 30));
-                  final var scalarContent = record.getContent().get(1);
-                  assertThat(scalarContent.getContentType())
-                      .isEqualTo(AgentHistoryContentType.OBJECT);
-                  assertThat(scalarContent.getObject()).isEqualTo(42);
-                }),
-            any());
-  }
+      verify(agentHistoryServices)
+          .createAgentHistoryItem(
+              assertArg(
+                  record -> {
+                    assertThat(record.getContent()).hasSize(2);
+                    final var arrayContent = record.getContent().get(0);
+                    assertThat(arrayContent.getContentType())
+                        .isEqualTo(AgentHistoryContentType.OBJECT);
+                    assertThat(arrayContent.getObject()).isEqualTo(List.of(10, 20, 30));
+                    final var scalarContent = record.getContent().get(1);
+                    assertThat(scalarContent.getContentType())
+                        .isEqualTo(AgentHistoryContentType.OBJECT);
+                    assertThat(scalarContent.getObject()).isEqualTo(42);
+                  }),
+              any());
+    }
 
-  @ParameterizedTest(name = "[{index}] {0}")
-  @MethodSource("invalidHistoryItemRequests")
-  void shouldRejectInvalidHistoryItemRequest(
-      final HistoryItemRequest request, final String expectedDetail) {
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%s/history".formatted(request.agentInstanceKeyPath()))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request.requestBody())
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
-            """
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("invalidHistoryItemRequests")
+    void shouldRejectInvalidHistoryItemRequest(
+        final HistoryItemRequest request, final String expectedDetail) {
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%s/history".formatted(request.agentInstanceKeyPath()))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request.requestBody())
+          .exchange()
+          .expectStatus()
+          .isBadRequest()
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+          .expectBody()
+          .json(
+              """
             {
               "type": "about:blank",
               "title": "INVALID_ARGUMENT",
@@ -1082,16 +1085,16 @@ class AgentInstanceControllerTest extends RestControllerTest {
               "instance": "/v2/agent-instances/%s/history"
             }
             """
-                .formatted(expectedDetail, request.agentInstanceKeyPath()),
-            JsonCompareMode.STRICT);
+                  .formatted(expectedDetail, request.agentInstanceKeyPath()),
+              JsonCompareMode.STRICT);
 
-    verifyNoInteractions(agentHistoryServices);
-  }
+      verifyNoInteractions(agentHistoryServices);
+    }
 
-  static Stream<Arguments> invalidHistoryItemRequests() {
-    final String validKey = String.valueOf(AGENT_INSTANCE_KEY);
-    final String validBody =
-        """
+    static Stream<Arguments> invalidHistoryItemRequests() {
+      final String validKey = String.valueOf(AGENT_INSTANCE_KEY);
+      final String validBody =
+          """
         {
           "elementInstanceKey": "%d",
           "jobKey": "%d",
@@ -1101,23 +1104,23 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "producedAt": "2025-06-01T12:00:00Z"
         }
         """
-            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
 
-    return Stream.of(
-        Arguments.of(
-            named("zero agentInstanceKey", new HistoryItemRequest("0", validBody)),
-            "The value for agentInstanceKey is '0' but must be > 0."),
-        Arguments.of(
-            named("non-numeric agentInstanceKey", new HistoryItemRequest("not-a-key", validBody)),
-            "The provided agentInstanceKey 'not-a-key' is not a valid key."
-                + " Expected a numeric value."
-                + " Did you pass an entity id instead of an entity key?."),
-        Arguments.of(
-            named(
-                "missing elementInstanceKey",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+      return Stream.of(
+          Arguments.of(
+              named("zero agentInstanceKey", new HistoryItemRequest("0", validBody)),
+              "The value for agentInstanceKey is '0' but must be > 0."),
+          Arguments.of(
+              named("non-numeric agentInstanceKey", new HistoryItemRequest("not-a-key", validBody)),
+              "The provided agentInstanceKey 'not-a-key' is not a valid key."
+                  + " Expected a numeric value."
+                  + " Did you pass an entity id instead of an entity key?."),
+          Arguments.of(
+              named(
+                  "missing elementInstanceKey",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "jobKey": "%d",
                       "jobLease": "lease-abc",
@@ -1126,14 +1129,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(JOB_KEY))),
-            "No elementInstanceKey provided."),
-        Arguments.of(
-            named(
-                "zero elementInstanceKey",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(JOB_KEY))),
+              "No elementInstanceKey provided."),
+          Arguments.of(
+              named(
+                  "zero elementInstanceKey",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "0",
                       "jobKey": "%d",
@@ -1143,14 +1146,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(JOB_KEY))),
-            "The value for elementInstanceKey is '0' but must be > 0."),
-        Arguments.of(
-            named(
-                "missing jobKey",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(JOB_KEY))),
+              "The value for elementInstanceKey is '0' but must be > 0."),
+          Arguments.of(
+              named(
+                  "missing jobKey",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobLease": "lease-abc",
@@ -1159,14 +1162,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY))),
-            "No jobKey provided."),
-        Arguments.of(
-            named(
-                "missing role",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY))),
+              "No jobKey provided."),
+          Arguments.of(
+              named(
+                  "missing role",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1175,14 +1178,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No role provided."),
-        Arguments.of(
-            named(
-                "missing producedAt",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No role provided."),
+          Arguments.of(
+              named(
+                  "missing producedAt",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1191,14 +1194,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "content": [{ "contentType": "TEXT", "text": "hello" }]
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No producedAt provided."),
-        Arguments.of(
-            named(
-                "invalid producedAt format",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No producedAt provided."),
+          Arguments.of(
+              named(
+                  "invalid producedAt format",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1208,15 +1211,15 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "not-a-date"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "The provided producedAt 'not-a-date' cannot be parsed as a date"
-                + " according to RFC 3339, section 5.6."),
-        Arguments.of(
-            named(
-                "invalid document metadata expiresAt format",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "The provided producedAt 'not-a-date' cannot be parsed as a date"
+                  + " according to RFC 3339, section 5.6."),
+          Arguments.of(
+              named(
+                  "invalid document metadata expiresAt format",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1242,15 +1245,15 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "The provided content[0].documentReference.metadata.expiresAt 'not-a-date'"
-                + " cannot be parsed as a date according to RFC 3339, section 5.6."),
-        Arguments.of(
-            named(
-                "TEXT content missing text field",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "The provided content[0].documentReference.metadata.expiresAt 'not-a-date'"
+                  + " cannot be parsed as a date according to RFC 3339, section 5.6."),
+          Arguments.of(
+              named(
+                  "TEXT content missing text field",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1259,14 +1262,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content[0].text provided."),
-        Arguments.of(
-            named(
-                "DOCUMENT content missing documentReference",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No content[0].text provided."),
+          Arguments.of(
+              named(
+                  "DOCUMENT content missing documentReference",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1275,14 +1278,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content[0].documentReference provided."),
-        Arguments.of(
-            named(
-                "OBJECT content missing object field",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No content[0].documentReference provided."),
+          Arguments.of(
+              named(
+                  "OBJECT content missing object field",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1291,14 +1294,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content[0].object provided."),
-        Arguments.of(
-            named(
-                "DOCUMENT content with missing documentId",
-                new HistoryItemRequest(
-                    validKey,
-                    """
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No content[0].object provided."),
+          Arguments.of(
+              named(
+                  "DOCUMENT content with missing documentId",
+                  new HistoryItemRequest(
+                      validKey,
+                      """
                     {
                       "elementInstanceKey": "%d",
                       "jobKey": "%d",
@@ -1307,24 +1310,24 @@ class AgentInstanceControllerTest extends RestControllerTest {
                       "producedAt": "2025-06-01T12:00:00Z"
                     }
                     """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content[0].documentReference.documentId provided."));
-  }
+                          .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+              "No content[0].documentReference.documentId provided."));
+    }
 
-  @Test
-  void shouldReturn5xxOnHistoryItemServiceError() {
-    // given
-    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
+    @Test
+    void shouldReturn5xxOnHistoryItemServiceError() {
+      // given
+      when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
 
-    // when / then
-    webClient
-        .post()
-        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              """
             {
               "elementInstanceKey": "%d",
               "jobKey": "%d",
@@ -1334,13 +1337,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
               "producedAt": "2025-06-01T12:00:00Z"
             }
             """
-                .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))
-        .exchange()
-        .expectStatus()
-        .is5xxServerError();
-  }
+                  .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))
+          .exchange()
+          .expectStatus()
+          .is5xxServerError();
+    }
 
-  private record HistoryItemRequest(String agentInstanceKeyPath, String requestBody) {}
+    private record HistoryItemRequest(String agentInstanceKeyPath, String requestBody) {}
   }
 
   private record UpdateRequest(long agentInstanceKey, String requestBody) {}
