@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef, useState, type ReactNode} from 'react';
+import {useCallback, useRef, useState, type ReactNode} from 'react';
 import {
 	Button,
 	ComposedModal,
@@ -75,6 +75,13 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 }) => {
 	const {t} = useTranslation();
 	const title = t('tasklist.processesStartProcessWithForm', {processDisplayName});
+	const handleShareButtonClick = useCallback(() => {
+		try {
+			navigator.clipboard.writeText(window.location.href);
+		} catch (error) {
+			console.error('Failed to copy URL to clipboard', error);
+		}
+	}, []);
 
 	return (
 		<ComposedModal open preventCloseOnClickOutside size="lg" onClose={onClose} aria-label={title}>
@@ -90,7 +97,7 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 								renderIcon={Share}
 								iconDescription={t('tasklist.processesStartProcessWithFormShareURLAriaLabel')}
 								tooltipPosition="right"
-								onClick={() => navigator.clipboard.writeText(window.location.href)}
+								onClick={handleShareButtonClick}
 								aria-label={t('tasklist.processesStartProcessWithFormShareURLAriaLabel')}
 							/>
 						) : null}
