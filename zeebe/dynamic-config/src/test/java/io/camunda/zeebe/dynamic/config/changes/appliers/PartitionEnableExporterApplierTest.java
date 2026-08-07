@@ -144,6 +144,30 @@ final class PartitionEnableExporterApplierTest {
   }
 
   @Test
+  void shouldRejectIfExporterIsNotConfigured() {
+    // given
+    final String exporterId = "exporterA";
+    final var config =
+        DynamicPartitionConfig.init()
+            .updateExporting(c -> c.addExporters(Set.of(exporterId)))
+            .updateExporting(c -> c.withConfigNotFoundFor(Set.of(exporterId)));
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+
+    // when
+    final var result =
+        new PartitionEnableExporterApplier(
+                memberId, 1, exporterId, Optional.empty(), partitionChangeExecutor)
+            .init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("is not configured");
+  }
+
+  @Test
   void shouldExecuteEnableExporterCallbackForNewExporter() {
     // given
     final var config = DynamicPartitionConfig.init();
