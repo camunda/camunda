@@ -63,20 +63,20 @@ public final class AgentInstanceClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
-  private static final Function<Long, Record<AgentInstanceRecordValue>> COMPLETED_EXPECTATION =
-      (position) ->
-          RecordingExporter.agentInstanceRecords()
-              .withIntent(AgentInstanceIntent.COMPLETED)
-              .withSourceRecordPosition(position)
-              .getFirst();
-
+  /**
+   * Self-chained follow-up {@code COMPLETE} commands are each dequeued in their own processing
+   * round (with command batching disabled) or reprocessed eagerly within the initial one (the
+   * default), so the closing rejection's source position isn't reliably the initial command's
+   * position. Filtering by {@code processInstanceKey} instead identifies the right (and only)
+   * rejection regardless of how many rounds completion took.
+   */
   private static final Function<Long, Record<AgentInstanceRecordValue>>
       COMPLETE_REJECTION_EXPECTATION =
-          (position) ->
+          (processInstanceKey) ->
               RecordingExporter.agentInstanceRecords()
                   .onlyCommandRejections()
                   .withIntent(AgentInstanceIntent.COMPLETE)
-                  .withSourceRecordPosition(position)
+                  .withProcessInstanceKey(processInstanceKey)
                   .getFirst();
 
   private final CommandWriter writer;
@@ -97,6 +97,12 @@ public final class AgentInstanceClient {
 
   public AgentInstanceClient withAgentInstanceKey(final long agentInstanceKey) {
     record.setAgentInstanceKey(agentInstanceKey);
+    return this;
+  }
+
+  /** Sets the process instance the agent instance belongs to. */
+  public AgentInstanceClient withProcessInstanceKey(final long processInstanceKey) {
+    record.setProcessInstanceKey(processInstanceKey);
     return this;
   }
 
@@ -206,18 +212,16 @@ public final class AgentInstanceClient {
   }
 
   /**
-   * Drives {@code AGENT_INSTANCE:COMPLETE} directly against {@link #withAgentInstanceKey}, without
-   * requiring a ProcessProcessor-driven process instance lifecycle.
+   * Drives {@code AGENT_INSTANCE:COMPLETE} directly, without requiring a ProcessProcessor-driven
+   * process instance lifecycle: completes every agent instance belonging to {@link
+   * #withProcessInstanceKey}. Always returns the closing {@code NOT_FOUND} rejection, the signal
+   * that every agent instance for that process instance has been completed, so {@link
+   * #expectRejection()} is not needed.
    */
   public Record<AgentInstanceRecordValue> complete() {
-    final long position =
-        writer.writeCommand(
-            record.getAgentInstanceKey(),
-            AgentInstanceIntent.COMPLETE,
-            record,
-            authorizedTenantIds.toArray(new String[0]));
-    return (expectRejection ? COMPLETE_REJECTION_EXPECTATION : COMPLETED_EXPECTATION)
-        .apply(position);
+    writer.writeCommand(
+        AgentInstanceIntent.COMPLETE, record, authorizedTenantIds.toArray(new String[0]));
+    return COMPLETE_REJECTION_EXPECTATION.apply(record.getProcessInstanceKey());
   }
 
   private void applyChangedAttributes() {

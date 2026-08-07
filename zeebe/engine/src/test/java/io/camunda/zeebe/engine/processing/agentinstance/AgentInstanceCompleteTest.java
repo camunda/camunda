@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -42,48 +43,138 @@ public class AgentInstanceCompleteTest {
   @Test
   public void shouldCompleteAgentInstanceAndSetStatusCompleted() {
     // given
-    final var agentInstanceKey = deployAndCreateAgentInstance();
+    final var fixture = deployAndCreateAgentInstance();
 
-    // when
-    final var completed = ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).complete();
+    // when — no expectRejection() needed: complete() always resolves to the closing NOT_FOUND
+    // rejection, the signal that cleanup finished, not an error
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
     // then
-    assertThat(completed.getKey()).isEqualTo(agentInstanceKey);
+    final var completed =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withRecordKey(fixture.agentInstanceKey())
+            .getFirst();
     assertThat(completed.getValue().getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED);
   }
 
   @Test
   public void shouldDeleteAgentInstanceFromStateOnCompleted() {
     // given
-    final var agentInstanceKey = deployAndCreateAgentInstance();
+    final var fixture = deployAndCreateAgentInstance();
 
     // when
-    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).complete();
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
     // then
-    assertThat(ENGINE.getProcessingState().getAgentInstanceState().getRecord(agentInstanceKey))
+    assertThat(
+            ENGINE
+                .getProcessingState()
+                .getAgentInstanceState()
+                .getRecord(fixture.agentInstanceKey()))
         .isNull();
   }
 
   @Test
-  public void shouldRejectCompleteWhenAgentInstanceDoesNotExist() {
+  public void shouldRejectCompleteWhenNoAgentInstanceForProcessInstance() {
     // given
-    final long unknownAgentInstanceKey = 9999L;
+    final long unknownProcessInstanceKey = 9999L;
 
-    // when
+    // when — no expectRejection() needed: a NOT_FOUND rejection is one of two equally valid
+    // outcomes, not an error
     final var rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(unknownAgentInstanceKey)
-            .expectRejection()
-            .complete();
+        ENGINE.agentInstances().withProcessInstanceKey(unknownProcessInstanceKey).complete();
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason()).contains(String.valueOf(unknownAgentInstanceKey));
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(unknownProcessInstanceKey));
+    assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(unknownProcessInstanceKey);
   }
 
-  private long deployAndCreateAgentInstance() {
+  @Test
+  public void shouldCompleteAgentInstancesOfProcessInstanceAcrossMultipleBatchCycles() {
+    // given — three agent instances belonging to the same process instance, created directly
+    // (mirroring this class's style of driving the processor without a job/process lifecycle)
+    final String secondTaskId = "second-agent-task";
+    final String thirdTaskId = "third-agent-task";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .parallelGateway("join")
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask(secondTaskId, t -> t.zeebeJobType("other-agent"))
+                .connectTo("join")
+                .moveToNode("fork")
+                .serviceTask(thirdTaskId, t -> t.zeebeJobType("third-agent"))
+                .connectTo("join")
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var firstTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var secondTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(secondTaskId)
+            .getFirst();
+    final var thirdTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(thirdTaskId)
+            .getFirst();
+    final var firstAgentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(firstTaskInstance.getKey())
+            .create()
+            .getKey();
+    final var secondAgentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(secondTaskInstance.getKey())
+            .create()
+            .getKey();
+    final var thirdAgentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(thirdTaskInstance.getKey())
+            .create()
+            .getKey();
+
+    // when — a single batch-completion command is issued for the process instance
+    ENGINE.agentInstances().withProcessInstanceKey(processInstanceKey).complete();
+
+    // then — all three agent instances are completed, one per self-chained cycle
+    assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3)
+                .map(Record::getKey))
+        .describedAs("All three agent instances are completed across self-chained batch cycles")
+        .containsExactlyInAnyOrder(
+            firstAgentInstanceKey, secondAgentInstanceKey, thirdAgentInstanceKey);
+
+    // and — the final self-chained batch command, once no agent instances remain, is rejected;
+    // this rejection is itself the signal that the process instance's cleanup is complete
+    final var rejectedBatchCommand =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(rejectedBatchCommand.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+  }
+
+  private AgentInstanceFixture deployAndCreateAgentInstance() {
     ENGINE
         .deployment()
         .withXmlResource(
@@ -95,12 +186,14 @@ public class AgentInstanceCompleteTest {
         .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
-    return ENGINE
-        .agentInstances()
-        .withElementInstanceKey(serviceTaskInstance.getKey())
-        .create()
-        .getValue()
-        .getAgentInstanceKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    return new AgentInstanceFixture(processInstanceKey, agentInstanceKey);
   }
 
   private static Record<ProcessInstanceRecordValue> awaitServiceTaskActivated(
@@ -111,4 +204,6 @@ public class AgentInstanceCompleteTest {
         .withElementId(SERVICE_TASK_ID)
         .getFirst();
   }
+
+  private record AgentInstanceFixture(long processInstanceKey, long agentInstanceKey) {}
 }

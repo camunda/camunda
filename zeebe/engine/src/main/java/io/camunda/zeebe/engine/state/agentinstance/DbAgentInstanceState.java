@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class DbAgentInstanceState implements MutableAgentInstanceState {
 
@@ -65,6 +66,19 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
           keys.add(key.second().getValue());
         });
     return keys;
+  }
+
+  @Override
+  public Long getFirstAgentInstanceKeyByProcessInstanceKey(final long piKey) {
+    final var found = new AtomicReference<Long>();
+    processInstanceKey.wrapLong(piKey);
+    byProcessInstanceKeyColumnFamily.whileEqualPrefix(
+        processInstanceKey,
+        (compositeKey) -> {
+          found.set(compositeKey.second().getValue());
+          return false;
+        });
+    return found.get();
   }
 
   @Override
