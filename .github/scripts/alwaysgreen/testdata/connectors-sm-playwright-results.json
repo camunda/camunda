@@ -1,0 +1,174 @@
+{
+  "config": {
+    "rootDir": "/__w/connectors/connectors/charts/camunda-platform-8.10/test/e2e/node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10"
+  },
+  "stats": {
+    "startTime": "2026-08-07T14:18:41.752Z",
+    "duration": 233442.57499999998,
+    "expected": 3,
+    "skipped": 1,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "suites": [
+    {
+      "title": "smoke-tests.spec.js",
+      "file": "smoke-tests.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Smoke Tests",
+          "file": "smoke-tests.spec.js",
+          "line": 11,
+          "column": 25,
+          "specs": [
+            {
+              "title": "Basic Login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "smoke-tests",
+                  "projectName": "smoke-tests",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 75370,
+                      "retry": 0,
+                      "startTime": "2026-08-07T14:18:42.488Z",
+                      "annotations": [
+                        {
+                          "type": "testrail_attachment",
+                          "description": "test-results/screenshots/screenshot-f15da562-a48d-484b-9843-50603a20fbfb.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d03b434c519df96c634-f036dcf77d2095bc3f6d",
+              "file": "smoke-tests.spec.js",
+              "line": 34,
+              "column": 24
+            },
+            {
+              "title": "Basic Navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "smoke-tests",
+                  "projectName": "smoke-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 93565,
+                      "retry": 0,
+                      "startTime": "2026-08-07T14:18:42.476Z",
+                      "annotations": [
+                        {
+                          "type": "testrail_attachment",
+                          "description": "test-results/screenshots/screenshot-0b97f60b-4f56-48b9-8c47-c8700cd280a8.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d03b434c519df96c634-61395be7308db1da49ba",
+              "file": "smoke-tests.spec.js",
+              "line": 40,
+              "column": 24
+            },
+            {
+              "title": "Most Common Flow User Flow With All Apps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "smoke-tests",
+                  "projectName": "smoke-tests",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 157069,
+                      "retry": 0,
+                      "startTime": "2026-08-07T14:19:57.988Z",
+                      "annotations": [
+                        {
+                          "type": "testrail_attachment",
+                          "description": "test-results/screenshots/screenshot-6fb20d5b-8b1c-4689-b875-b3361d09553e.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d03b434c519df96c634-637cfd39361ad6955cc8",
+              "file": "smoke-tests.spec.js",
+              "line": 66,
+              "column": 24
+            },
+            {
+              "title": "Most Common REST Connector User Flow @tasklistV2",
+              "ok": true,
+              "tags": [
+                "tasklistV2"
+              ],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "skipped",
+                  "projectId": "smoke-tests",
+                  "projectName": "smoke-tests",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "retry": 0,
+                      "startTime": "2026-08-07T14:20:16.175Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/__w/connectors/connectors/charts/camunda-platform-8.10/test/e2e/node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.10/smoke-tests.spec.js",
+                            "line": 129,
+                            "column": 20
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d03b434c519df96c634-5eb5e1723da6e23b0b80",
+              "file": "smoke-tests.spec.js",
+              "line": 129,
+              "column": 20
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

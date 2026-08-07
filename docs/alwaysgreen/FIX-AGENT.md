@@ -3,10 +3,19 @@
 Read this in full before touching any file. It is the agent's contract; the dispatch
 prompt deliberately carries almost nothing so this stays the single source of truth.
 
-The pipeline is `.github/workflows/docker-build-helm-integration.yml`. On every push it
-builds the Camunda image, deploys it to GKE via the Helm charts, runs a Self-Managed
-smoke suite, and separately triggers a SaaS smoke suite. `alwaysgreen-triage.yml`
-classifies a failure and dispatches you with the specs already extracted.
+More than one pipeline dispatches you, and they share this manual because they share a
+shape: on every push they build a product image, deploy it to GKE via the Helm charts,
+run a Self-Managed smoke suite, and separately trigger a SaaS smoke suite.
+`alwaysgreen-triage.yml` classifies a failure and dispatches you with the specs already
+extracted.
+
+| Source pipeline | Repository | Branches |
+|---|---|---|
+| `docker-build-helm-integration.yml` | `camunda/camunda` | `main`, `stable/8.7`–`8.9` |
+| `MERGE_QUEUE_HELM_TEST.yaml` | `camunda/connectors` | `main`, `stable/8.7`–`8.9` |
+
+The dispatch key's first segment names the source (`camunda:main:sm-smoke-e2e`), and the
+source repository is the one checked out at the failing branch in your workspace.
 
 ## Turning it on and off
 
@@ -146,8 +155,14 @@ block.
 |-------------------------------------------------------|--------------------------------|-----------------------------------------|
 | stale selector, wrong wait, bad assertion             | `c8-cross-component-e2e-tests` | `tests/SM-8.x/`, `tests/8.x/`, `pages/` |
 | chart values, Keycloak/Identity wiring, deploy config | `camunda-platform-helm`        | `charts/camunda-platform-8.x/`          |
-| product regression                                    | `camunda`                      | the owning module                       |
-| pipeline plumbing                                     | `camunda`                      | `.github/`                              |
+| product regression                                    | the source repository          | the owning module                       |
+| pipeline plumbing                                     | the source repository          | `.github/`                              |
+
+"The source repository" is whichever pipeline dispatched you — `camunda` for
+`docker-build-helm-integration.yml`, `camunda/connectors` for
+`MERGE_QUEUE_HELM_TEST.yaml`. It is the one repository in the workspace checked out at
+the branch that failed, and the dispatch key's first segment names it. When the source
+is connectors, read `## When the source is connectors` below before opening a PR there.
 
 The spec paths in `/tmp/test_specs.json` are already mapped to source. If you need to
 redo it: the suite comes from `config.rootDir` (`…/dist/tests/SM-8.10` → `SM-8.10`) and
@@ -182,15 +197,43 @@ the differences between version directories often encode real product difference
 should stay encoded, and editing a passing sibling risks breaking it. If the same bug
 plausibly affects another version, say so in the PR body instead of changing it.
 
+## When the source is connectors
+
+The run under test built and deployed a fresh connectors image, so a runtime or bundle
+regression shows up as a Playwright failure exactly like a stale selector does. Decide
+between them the same way as anywhere else — but if you conclude the product is at
+fault, these rules are CI-enforced in `camunda/connectors` and a PR that breaks one is
+rejected:
+
+- **PR title must match** `^(feat|fix|deps|docs|style|refactor|perf|test|chore|build|other|ci): `.
+- **Never `feat:`.** That type requires a named QA approver
+  (`ENFORCE_QA_APPROVAL.yml`); an agent PR must not enter that gate. A fix is `fix:`,
+  a test change is `test:`, a workflow change is `ci:`.
+- **Never hand-edit a generated element template.** They are produced by each
+  connector's `GenerateElementTemplate` test, and regenerating one means running Maven,
+  which is forbidden. If the fix needs a regenerated template, stop and write
+  "no fix determined" with the reason — do not edit the JSON.
+- **Never hand cherry-pick a backport.** Each branch's failure is dispatched against
+  its own branch, so a backport should not arise. If one genuinely does, say so in the
+  PR body and let a human add the `backport stable/X.Y` label
+  (`korthout/backport-action`).
+- `mvn` and `./mvnw` are forbidden, so you cannot compile or test a Java change. A
+  connectors code fix you cannot even compile is a strong signal to escalate instead.
+
+Signals that the fault is connectors rather than the test: the same spec fails on every
+branch at once (test-side drift is normally version-scoped), and the blamed PR touches
+`connector-runtime/`, `bundle/`, or the connector the spec exercises.
+
 ## Which branch the PR targets
 
-A `camunda/camunda` PR must be opened with `--base <base_ref>` — the branch that failed,
-supplied in the prompt. `gh pr create` with no `--base` targets the repository default
-branch, so a `stable/8.9` fix opened that way carries the entire stable-to-main delta, and
-merging it would push stable-only code onto `main`. The workflow re-checks the base
-afterwards and retargets a wrong one, but it warns when it has to.
+A PR in the **source repository** must be opened with `--base <base_ref>` — the branch
+that failed, supplied in the prompt. `gh pr create` with no `--base` targets the
+repository default branch, so a `stable/8.9` fix opened that way carries the entire
+stable-to-main delta, and merging it would push stable-only code onto `main`. The
+workflow re-checks the base afterwards and retargets a wrong one, but it warns when it
+has to.
 
-This applies to `camunda/camunda` only. `c8-cross-component-e2e-tests` and
+This applies to the source repository only. `c8-cross-component-e2e-tests` and
 `camunda-platform-helm` have no per-version branches — their PRs take their own default
 branch, and the version lives in the path (`tests/SM-8.9/`, `charts/camunda-platform-8.9/`).
 
@@ -229,8 +272,8 @@ guarantees the signal survives.
 - **Lint before commit.** For `.ts`: `npx prettier --check <files>` and
   `npx eslint <files> --ext .ts`. `printWidth` is 80 and CI fails on a single-character
   formatting delta.
-- **Forbidden commands:** `kubectl`, `helm`, any deploy, `npm run build`, `mvnw` full-repo
-  builds, and Playwright — there is nothing to run against.
+- **Forbidden commands:** `kubectl`, `helm`, any deploy, `npm run build`, `mvn` /
+  `./mvnw`, `docker`, and Playwright — there is nothing to run against.
 
 ## Result manifest
 

@@ -11,11 +11,18 @@ def _spec(name="t", file="tests/SM-8.10/smoke-tests.spec.ts", deterministic=True
     return classify.FailingSpec(file=file, test_name=name, statuses=statuses)
 
 
-def _cand(surface=classify.SURFACE_SM_E2E, base_ref="main", specs=None, job_level=False):
+def _cand(
+    surface=classify.SURFACE_SM_E2E,
+    base_ref="main",
+    specs=None,
+    job_level=False,
+    source="",
+):
     return plan.Candidate(
         base_ref=base_ref,
         surface=surface,
         job_name="Playwright e2e after install - install on gke - agrn (1 of 1)",
+        source=source,
         specs=list(specs if specs is not None else [_spec()]),
         job_level=job_level,
     )
@@ -210,3 +217,72 @@ def test_open_fix_pr_blocks_even_when_the_body_claims_nothing():
     cand = _cand(surface=classify.SURFACE_SM_E2E)
     result = _plan([cand], covered_fingerprints=set(), open_pr_keys={"main:sm-smoke-e2e"})
     assert result.dispatches == []
+
+
+# ---------------------------------------------------------------------------
+# Source namespacing
+# ---------------------------------------------------------------------------
+
+
+def test_dispatch_key_is_namespaced_by_source():
+    assert (
+        plan.dispatch_key("main", "sm-smoke-e2e", "connectors")
+        == "connectors:main:sm-smoke-e2e"
+    )
+
+
+def test_two_sources_on_the_same_branch_do_not_suppress_each_other():
+    # Both pipelines open PRs into the same e2e repository and both call their branch
+    # "main", so an un-namespaced key would make either one's agent block the other's.
+    connectors = _cand(source="connectors")
+    monorepo = _cand(source="camunda")
+    assert connectors.key != monorepo.key
+
+    result = _plan([monorepo], inflight_keys={connectors.key})
+    assert len(result.dispatches) == 1
+
+
+def test_key_labels_fit_githubs_length_limit():
+    # A label over the limit is rejected silently by `gh label create`, and the missing
+    # label disables dedupe instead of failing the run — so this is asserted, not hoped.
+    sources = ("camunda", "connectors", "camunda-operator")
+    base_refs = ("main", "stable/8.7", "stable/8.8", "stable/8.9", "stable/8.10")
+    for source in sources:
+        for base_ref in base_refs:
+            for surface in sorted(classify.DISPATCHABLE_SURFACES):
+                label = plan.KEY_LABEL_PREFIX + plan.dispatch_key(
+                    base_ref, surface, source
+                )
+                assert len(label) <= plan.MAX_LABEL_LENGTH, label
+
+
+# ---------------------------------------------------------------------------
+# Fifth dedupe layer: spec paths already open in a PR
+# ---------------------------------------------------------------------------
+
+
+def test_open_pr_touching_a_spec_path_suppresses_the_candidate():
+    cand = _cand(specs=[_spec(file="tests/8.10/smoke-tests.spec.ts")])
+    result = _plan([cand], claimed_paths={"tests/8.10/smoke-tests.spec.ts": 2951})
+    assert result.dispatches == []
+    assert result.suppressed[0].reason == plan.SUPPRESSED_PATH_CLAIMED
+    assert "#2951" in result.suppressed[0].detail
+
+
+def test_a_sibling_version_path_does_not_shadow_the_failing_one():
+    # Matching on basenames would make an open PR against 8.9 suppress an 8.10 failure.
+    cand = _cand(specs=[_spec(file="tests/8.10/smoke-tests.spec.ts")])
+    result = _plan([cand], claimed_paths={"tests/8.9/smoke-tests.spec.ts": 2951})
+    assert len(result.dispatches) == 1
+
+
+def test_job_level_candidates_are_not_path_claimed():
+    cand = _cand(specs=[], job_level=True)
+    result = _plan([cand], claimed_paths={"tests/8.10/smoke-tests.spec.ts": 1})
+    assert len(result.dispatches) == 1
+
+
+def test_path_claim_is_checked_after_evidence_so_the_reason_is_useful():
+    cand = _cand(specs=[])
+    result = _plan([cand], claimed_paths={"tests/8.10/smoke-tests.spec.ts": 1})
+    assert result.suppressed[0].reason == plan.SUPPRESSED_NO_EVIDENCE

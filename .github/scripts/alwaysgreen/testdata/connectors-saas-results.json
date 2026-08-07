@@ -1,0 +1,507 @@
+{
+  "config": {
+    "rootDir": "/home/runner/_work/c8-cross-component-e2e-tests/c8-cross-component-e2e-tests/tests/8.10"
+  },
+  "stats": {
+    "startTime": "2026-07-30T07:19:43.486Z",
+    "duration": 1108066.997,
+    "expected": 10,
+    "skipped": 2,
+    "unexpected": 2,
+    "flaky": 1
+  },
+  "suites": [
+    {
+      "title": "test-setup.spec.ts",
+      "file": "test-setup.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Cluster Setup Tests",
+          "file": "test-setup.spec.ts",
+          "line": 33,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Enable Alpha Features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "status": "skipped",
+                      "duration": 205,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.503Z"
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-27f7ac2762c7523aae56",
+              "file": "test-setup.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "Create Default Cluster",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 2160000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "status": "failed",
+                      "duration": 280012,
+                      "error": {
+                        "message": "Error: Login failed after 3 attempts: Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 60000ms exceeded while waiting on the predicate"
+                      },
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.511Z"
+                    },
+                    {
+                      "workerIndex": 7,
+                      "status": "passed",
+                      "duration": 638382,
+                      "retry": 1,
+                      "startTime": "2026-07-30T07:24:26.370Z"
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-8ebca52336a06034469b",
+              "file": "test-setup.spec.ts",
+              "line": 71,
+              "column": 7
+            },
+            {
+              "title": "Create Agentic Orchestration Cluster",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "status": "skipped",
+                      "duration": 191,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.539Z"
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-8ec143e045c51bf29d5d",
+              "file": "test-setup.spec.ts",
+              "line": 150,
+              "column": 7
+            },
+            {
+              "title": "Create AWS Cluster",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 2160000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "status": "passed",
+                      "duration": 377065,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.543Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-123077bb1aa00a9b8bfd",
+              "file": "test-setup.spec.ts",
+              "line": 217,
+              "column": 7
+            },
+            {
+              "title": "Create Project Folder for User 1",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "status": "passed",
+                      "duration": 284424,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.533Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-fd461562eb1fa374e13d",
+              "file": "test-setup.spec.ts",
+              "line": 260,
+              "column": 9
+            },
+            {
+              "title": "Create Project Folder for User 2",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "status": "passed",
+                      "duration": 232980,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.521Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-428cd40f4d7d2b44e68a",
+              "file": "test-setup.spec.ts",
+              "line": 260,
+              "column": 9
+            },
+            {
+              "title": "Create Project Folder for User 3",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2-setup",
+                  "projectName": "chromium-v2-setup",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "status": "passed",
+                      "duration": 138480,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:19:45.518Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6231f7bc451ffa4ed4ae-2abbc1d7088c94990a3a",
+              "file": "test-setup.spec.ts",
+              "line": 260,
+              "column": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "navigation.spec.ts",
+      "file": "navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Navigation Tests",
+          "file": "navigation.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Navigate to Web Modeler",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "status": "passed",
+                      "duration": 27749,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.120Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-d9031be9b5e2ea33120c",
+              "file": "navigation.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "Navigate to Console",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "status": "passed",
+                      "duration": 21114,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.146Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-a973b8b7dabd74b69d31",
+              "file": "navigation.spec.ts",
+              "line": 33,
+              "column": 7
+            },
+            {
+              "title": "Navigate to Operate",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "status": "passed",
+                      "duration": 28770,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.125Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-39fbe5c577ebc2536cd7",
+              "file": "navigation.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "Navigate to Optimize",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "status": "passed",
+                      "duration": 26556,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.140Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-abba42a10c0efa497b6a",
+              "file": "navigation.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "Navigate to Tasklist",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "status": "passed",
+                      "duration": 30284,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.164Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-1d3ae5d428898ee620af",
+              "file": "navigation.spec.ts",
+              "line": 53,
+              "column": 7
+            },
+            {
+              "title": "Navigate to Admin",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "status": "passed",
+                      "duration": 28473,
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.140Z"
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-c0d75fca8117c511ecb3",
+              "file": "navigation.spec.ts",
+              "line": 61,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "smoke-tests.spec.ts",
+      "file": "smoke-tests.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Smoke Tests",
+          "file": "smoke-tests.spec.ts",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Most Common Flow User Flow With All Apps",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 2160000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "status": "failed",
+                      "duration": 87147,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 30000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: getByTitle('append gateway')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - expect.toBeVisible with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTitle('append gateway')\u001b[22m\n"
+                      },
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.138Z"
+                    },
+                    {
+                      "workerIndex": 17,
+                      "status": "failed",
+                      "duration": 93300,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 30000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: getByTitle('append gateway')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - expect.toBeVisible with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for getByTitle('append gateway')\u001b[22m\n"
+                      },
+                      "retry": 1,
+                      "startTime": "2026-07-30T07:36:37.173Z"
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a8bb41ad8b38f84bf4a2-ba9c910bd8afd4ff1c72",
+              "file": "smoke-tests.spec.ts",
+              "line": 47,
+              "column": 7
+            },
+            {
+              "title": "Most Common REST Connector User Flow",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 2160000,
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-v2",
+                  "projectName": "chromium-v2",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "status": "failed",
+                      "duration": 65049,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 15000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: getByTitle('Append task')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - expect.toBeVisible with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByTitle('Append task')\u001b[22m\n"
+                      },
+                      "retry": 0,
+                      "startTime": "2026-07-30T07:35:09.155Z"
+                    },
+                    {
+                      "workerIndex": 16,
+                      "status": "failed",
+                      "duration": 69409,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 15000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: getByTitle('Append task')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - expect.toBeVisible with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByTitle('Append task')\u001b[22m\n"
+                      },
+                      "retry": 1,
+                      "startTime": "2026-07-30T07:36:15.064Z"
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a8bb41ad8b38f84bf4a2-8694fdb0d2932cccf84b",
+              "file": "smoke-tests.spec.ts",
+              "line": 240,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

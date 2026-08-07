@@ -9,12 +9,18 @@ name: AlwaysGreen Fix Agent
 
 # The bracketed dispatch key is load-bearing: alwaysgreen-triage reads it back off
 # in-progress runs to avoid dispatching a second agent for a surface already being worked
-# on. It must stay byte-identical to plan.dispatch_key() — "<base_ref>:<surface>".
-run-name: "AlwaysGreen fix [${{ inputs.base_ref }}:${{ inputs.surface }}]"
+# on. Passed in whole rather than recomposed here, so the two can never drift.
+run-name: "AlwaysGreen fix [${{ inputs.dispatch_key }}]"
 
 on:
   workflow_dispatch:
     inputs:
+      dispatch_key:
+        description: >
+          plan.dispatch_key() verbatim — "<source>:<base_ref>:<surface>". The source
+          segment selects the workspace manifest and the token scope, and namespaces
+          the dedupe label so two source pipelines do not suppress each other.
+        required: true
       base_ref:
         description: 'Branch to fix against (main, stable/8.x)'
         required: true
@@ -107,6 +113,7 @@ jobs:
         env:
           BASE_REF: ${{ inputs.base_ref }}
           SURFACE: ${{ inputs.surface }}
+          DISPATCH_KEY: ${{ inputs.dispatch_key }}
         run: |
           set -euo pipefail
           case "$BASE_REF" in
@@ -117,6 +124,37 @@ jobs:
             sm-smoke-e2e|saas-smoke-e2e) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
+
+          # The source pipeline decides which repositories this run may touch. Scoping
+          # the app token per source keeps a missing app installation on one repository
+          # from failing every other source's runs.
+          source="${DISPATCH_KEY%%:*}"
+          case "$source" in
+            camunda)
+              manifest=alwaysgreen
+              source_repo=camunda/camunda
+              token_repos='camunda,c8-cross-component-e2e-tests,camunda-platform-helm,camunda-docs'
+              fix_repos='camunda/camunda camunda/c8-cross-component-e2e-tests camunda/camunda-platform-helm'
+              ;;
+            connectors)
+              manifest=alwaysgreen-connectors
+              source_repo=camunda/connectors
+              token_repos='connectors,c8-cross-component-e2e-tests,camunda-platform-helm,camunda-docs'
+              fix_repos='camunda/connectors camunda/c8-cross-component-e2e-tests'
+              ;;
+            *) echo "::error::unsupported dispatch key source '$source'"; exit 1 ;;
+          esac
+          if [ "$DISPATCH_KEY" != "${source}:${BASE_REF}:${SURFACE}" ]; then
+            echo "::error::dispatch_key '$DISPATCH_KEY' does not match base_ref/surface"
+            exit 1
+          fi
+          {
+            echo "source=${source}"
+            echo "manifest=${manifest}"
+            echo "source_repo=${source_repo}"
+            echo "token_repos=${token_repos}"
+            echo "fix_repos=${fix_repos}"
+          } >> "$GITHUB_OUTPUT"
           # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
           # when main moves to 8.11.
           if [ "$BASE_REF" = "main" ]; then version=8.10; else version="${BASE_REF#stable/}"; fi
@@ -200,11 +238,7 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
-          repositories: >-
-            camunda,
-            c8-cross-component-e2e-tests,
-            camunda-platform-helm,
-            camunda-docs
+          repositories: ${{ steps.target.outputs.token_repos }}
 
       - name: Configure git
         env:
@@ -217,15 +251,19 @@ jobs:
       - name: Ensure labels exist
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
+          # GitHub caps a label at 50 characters; plan.py asserts the whole supported
+          # matrix fits, because an over-long name is rejected silently here and the
+          # missing label disables dedupe rather than failing the run.
+          KEY_LABEL: ag-key:${{ inputs.dispatch_key }}
+          FIX_REPOS: ${{ steps.target.outputs.fix_repos }}
         run: |
-          for repo in camunda/camunda camunda/c8-cross-component-e2e-tests camunda/camunda-platform-helm; do
+          for repo in ${FIX_REPOS}; do
             gh label create "${FIX_LABEL}" --repo "$repo" --color "1D76DB" \
               --description "Bot-opened fix PR for an AlwaysGreen failure" 2>/dev/null || true
             # Triage suppresses a surface that already has an open fix PR. It reads this
             # label rather than the PR body, whose coverage block the agent may omit.
             gh label create "${KEY_LABEL}" --repo "$repo" --color "C5DEF5" \
-              --description "AlwaysGreen fix PR for dispatch key ${KEY_LABEL#alwaysgreen-key:}" 2>/dev/null || true
+              --description "AlwaysGreen fix PR for dispatch key ${KEY_LABEL#ag-key:}" 2>/dev/null || true
           done
 
       - name: Set up Go
@@ -258,44 +296,51 @@ jobs:
       - name: Stage workspace manifest
         env:
           BASE_REF: ${{ inputs.base_ref }}
+          MANIFEST: ${{ steps.target.outputs.manifest }}
+          SOURCE_REPO: ${{ steps.target.outputs.source_repo }}
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.workspace-templates"
-          cp .github/workspace-templates/alwaysgreen.yaml \
-             "$HOME/.workspace-templates/alwaysgreen.yaml"
-          cp .github/workspace-templates/alwaysgreen.guidance.md \
-             "$HOME/.workspace-templates/alwaysgreen.guidance.md"
+          cp ".github/workspace-templates/${MANIFEST}.yaml" \
+             "$HOME/.workspace-templates/${MANIFEST}.yaml"
+          cp ".github/workspace-templates/${MANIFEST}.guidance.md" \
+             "$HOME/.workspace-templates/${MANIFEST}.guidance.md"
 
-          # The monorepo is the one repo that is branch-scoped: a stable/8.x failure has
-          # to be read and fixed on that branch. The other three have no release branches
-          # and stay on main. Rewrite only the camunda entry, so the workspace is created
-          # on the failing branch rather than created on main and moved afterwards.
-          python3 - "$HOME/.workspace-templates/alwaysgreen.yaml" "${BASE_REF}" <<'PY'
+          # The source repository is the one that is branch-scoped: a stable/8.x failure
+          # has to be read and fixed on that branch. The others have no release branches
+          # and stay on main. Rewrite only that entry, so the workspace is created on the
+          # failing branch rather than created on main and moved afterwards.
+          python3 - "$HOME/.workspace-templates/${MANIFEST}.yaml" "${BASE_REF}" "${SOURCE_REPO}" <<'PY'
           import sys
-          path, base_ref = sys.argv[1], sys.argv[2]
+          path, base_ref, source_repo = sys.argv[1], sys.argv[2], sys.argv[3]
           lines = open(path).read().splitlines(keepends=True)
-          in_camunda = False
+          in_source = False
           for i, line in enumerate(lines):
               if line.lstrip().startswith('- url:'):
-                  in_camunda = line.rstrip().endswith('camunda/camunda.git')
-              elif in_camunda and line.lstrip().startswith('default_branch:'):
+                  in_source = line.rstrip().endswith(f'{source_repo}.git')
+              elif in_source and line.lstrip().startswith('default_branch:'):
                   indent = line[: len(line) - len(line.lstrip())]
                   lines[i] = f'{indent}default_branch: {base_ref}\n'
                   break
+          else:
+              raise SystemExit(f"no {source_repo} entry to pin in {path}")
           open(path, 'w').writelines(lines)
           PY
-          grep -A2 'camunda/camunda.git' "$HOME/.workspace-templates/alwaysgreen.yaml"
+          grep -A2 "${SOURCE_REPO}.git" "$HOME/.workspace-templates/${MANIFEST}.yaml"
 
       - name: Create workspace
-        run: workspace create "${{ steps.ws.outputs.name }}" --manifest alwaysgreen
+        run: |
+          workspace create "${{ steps.ws.outputs.name }}" \
+            --manifest "${{ steps.target.outputs.manifest }}"
 
-      - name: Point the monorepo at the failing branch
+      - name: Point the source repository at the failing branch
         env:
           TARGET_REF: ${{ inputs.base_ref }}
           WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+          SOURCE_REPO: ${{ steps.target.outputs.source_repo }}
         run: |
           set -euo pipefail
-          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/${SOURCE_REPO#*/}"
           git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
           git -C "$ws_dir" checkout "${TARGET_REF}"
 
@@ -316,6 +361,7 @@ jobs:
           EVIDENCE_RUN_URL: ${{ steps.ctx.outputs.evidence_run_url }}
           EVIDENCE_REPO: ${{ steps.ctx.outputs.evidence_repo }}
           FAILING_RUN_URL: ${{ inputs.failing_run_url }}
+          SOURCE_REPO: ${{ steps.target.outputs.source_repo }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/alwaysgreen-artifacts
@@ -336,7 +382,7 @@ jobs:
           # only evidence for a Ready-but-erroring component. Retention is 1 day, so
           # absence is normal for a replay of an older run.
           if [ -n "${FAILING_RUN_URL}" ]; then
-            dl "${GITHUB_REPOSITORY}" "${FAILING_RUN_URL##*/}" 'diagnostics-e2e*'
+            dl "${SOURCE_REPO}" "${FAILING_RUN_URL##*/}" 'diagnostics-e2e*'
           fi
           # Deliberately pipe-free. `find | head -40` makes head close the pipe once
           # the cap is reached, find then dies on SIGPIPE, and pipefail turns this
@@ -360,6 +406,7 @@ jobs:
           TRIAGE_RUN_URL: ${{ inputs.triage_run_url }}
           BLAME_AUTHOR: ${{ steps.ctx.outputs.blame_author }}
           BLAME_PR: ${{ steps.ctx.outputs.blame_pr }}
+          SOURCE_REPO: ${{ steps.target.outputs.source_repo }}
         run: |
           set -euo pipefail
           ws_dir="$HOME/workspaces/${WORKSPACE_NAME}"
@@ -409,7 +456,7 @@ jobs:
           Branch naming: fix/alwaysgreen-${SURFACE}-<slug>. Commit/PR type: 'test:' for
           test-only changes, 'ci:' for workflow changes, 'fix:' for product or chart code.
 
-          PR base: a camunda/camunda PR MUST be opened with --base ${BASE_REF}.
+          PR base: a ${SOURCE_REPO} PR MUST be opened with --base ${BASE_REF}.
           Without it gh targets the default branch, so a stable-branch fix would
           carry the whole stable-to-main delta. PRs in the other repos take their
           own default branch.
@@ -426,9 +473,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BLAME_REVIEWER: ${{ steps.ctx.outputs.blame_reviewer }}
-          DEFAULT_REPO: ${{ github.repository }}
+          DEFAULT_REPO: ${{ steps.target.outputs.source_repo }}
           BASE_REF: ${{ inputs.base_ref }}
-          KEY_LABEL: alwaysgreen-key:${{ inputs.base_ref }}:${{ inputs.surface }}
+          KEY_LABEL: ag-key:${{ inputs.dispatch_key }}
         run: |
           set -euo pipefail
           [ -f /tmp/fix-meta.json ] || { echo "no fix-meta.json"; exit 0; }
@@ -449,7 +496,7 @@ jobs:
               echo "::warning::could not label ${repo}#${num} with ${KEY_LABEL} — triage will re-dispatch this key until the label is applied"
             fi
 
-            # Only camunda/camunda PRs are branch-scoped; the e2e and chart repos have
+            # Only source-repo PRs are branch-scoped; the e2e and chart repos have
             # no per-version branches. Repair rather than trust: an unset --base
             # silently targets the default branch, which makes the diff the whole
             # stable-to-main delta.

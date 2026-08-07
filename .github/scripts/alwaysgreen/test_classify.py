@@ -6,6 +6,9 @@ one pins a mistake that was actually observed rather than a hypothetical.
 
 from __future__ import annotations
 
+import json
+import pathlib
+
 import classify
 
 
@@ -479,3 +482,93 @@ def test_normalised_ref_makes_fingerprints_stable_across_queue_runs():
         "main", "sm-smoke-e2e", "tests/SM-8.10/smoke-tests.spec.ts", "t"
     )
     assert a == b == direct
+
+
+# ---------------------------------------------------------------------------
+# connectors surfaces (MERGE_QUEUE_HELM_TEST.yaml)
+# ---------------------------------------------------------------------------
+
+
+def test_connectors_sm_job_maps_to_the_sm_surface():
+    # Nested reusable-workflow name, verbatim from a failing connectors run. The leaf
+    # segment has a leading space, so a naive rsplit without strip() misses it.
+    name = (
+        "Trigger SM E2E tests / Helm chart Integration Tests / agrn - install - gke"
+        " / Playwright e2e after install - install on gke - agrn (1 of 1)"
+    )
+    assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
+
+
+def test_connectors_helm_install_and_cleanup_keep_their_surfaces():
+    install = (
+        "Trigger SM E2E tests / Helm chart Integration Tests / agrn - install - gke"
+        " / install for install on gke - agrn"
+    )
+    cleanup = (
+        "Trigger SM E2E tests / Helm chart Integration Tests / agrn - install - gke"
+        " / Cleanup - install on gke - agrn"
+    )
+    assert classify.surface_for_job(install) == classify.SURFACE_HELM_INSTALL
+    assert classify.surface_for_job(cleanup) == classify.SURFACE_HELM_CLEANUP
+
+
+def test_connectors_image_build_is_classified_as_build():
+    # "Build and Publish Connectors Docker Image" does not start with the monorepo's
+    # "Build and Push Docker Image", so before the prefix was added this failure
+    # reported as unclassified rather than as a known non-dispatchable surface.
+    assert (
+        classify.surface_for_job("Build and Publish Connectors Docker Image")
+        == classify.SURFACE_BUILD
+    )
+
+
+def test_ai_agent_cpt_is_classified_but_not_dispatchable():
+    surface = classify.surface_for_job("AI Agent E2E Tests (CPT)")
+    assert surface == classify.SURFACE_CONNECTORS_AI
+    assert surface not in classify.DISPATCHABLE_SURFACES
+
+
+def test_connectors_saas_trigger_reuses_the_existing_prefix():
+    assert classify.surface_for_job("Trigger SaaS E2E tests") == classify.SURFACE_SAAS_E2E
+
+
+# ---------------------------------------------------------------------------
+# Real connectors reports
+# ---------------------------------------------------------------------------
+
+
+def _report(name):
+    path = pathlib.Path(__file__).parent / "testdata" / name
+    return json.loads(path.read_text())
+
+
+def test_real_connectors_sm_report_resolves_its_suite():
+    # The SM suite runs from the published npm package, so rootDir ends in
+    # dist/tests/SM-8.10 rather than a checkout path.
+    report = _report("connectors-sm-playwright-results.json")
+    assert classify.suite_from_rootdir(report["config"]["rootDir"]) == "SM-8.10"
+
+
+def test_real_connectors_sm_report_maps_compiled_specs_to_source_paths():
+    assert (
+        classify.source_spec_path("smoke-tests.spec.js", suite="SM-8.10")
+        == "tests/SM-8.10/smoke-tests.spec.ts"
+    )
+
+
+def test_real_connectors_saas_report_yields_dispatchable_failures():
+    # Downstream run 30522330457: two specs failed every attempt, one passed on retry.
+    report = _report("connectors-saas-results.json")
+    suite = classify.suite_from_rootdir(report["config"]["rootDir"])
+    assert suite == "8.10"
+
+    counts = classify.count_specs(report)
+    assert (counts.failed, counts.setup_failed, counts.flaky) == (2, 0, 1)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_E2E
+    )
+
+    specs = classify.failing_specs(report, suite=suite)
+    assert [s.file for s in specs] == ["tests/8.10/smoke-tests.spec.ts"] * 2
+    assert all(s.deterministic for s in specs)

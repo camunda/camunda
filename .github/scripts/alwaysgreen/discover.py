@@ -33,9 +33,16 @@ import plan as planning
 REPO = os.environ.get("ALWAYSGREEN_REPO", "camunda/camunda")
 E2E_REPO = os.environ.get("ALWAYSGREEN_E2E_REPO", "camunda/c8-cross-component-e2e-tests")
 FIX_WORKFLOW = os.environ.get("ALWAYSGREEN_FIX_WORKFLOW", "alwaysgreen-fix.yml")
+#: Repository hosting the fix workflow. Differs from REPO when a pipeline in another
+#: repository calls the shared triage: one fix agent serves every source pipeline, so
+#: in-flight runs must be looked up where the agent actually runs.
+FIX_REPO = os.environ.get("ALWAYSGREEN_FIX_REPO", REPO)
 FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
+#: Namespaces dispatch keys, so pipelines in different repos that share branch names
+#: and open PRs into the same e2e repository do not suppress one another.
+SOURCE = REPO.split("/")[-1]
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
-KEY_LABEL_PREFIX = "alwaysgreen-key:"
+KEY_LABEL_PREFIX = planning.KEY_LABEL_PREFIX
 #: Repos a fix PR can land in, mirroring the fix workflow's own label list.
 FIX_PR_REPOS = [
     REPO,
@@ -139,6 +146,7 @@ def sm_candidates(run_id: str, base_ref: str, job_name: str, workdir: Path) -> p
         base_ref=base_ref,
         surface=classify.SURFACE_SM_E2E,
         job_name=job_name,
+        source=SOURCE,
         evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
         evidence_repo=REPO,
     )
@@ -162,7 +170,10 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
     pipeline's own `downstream_category`, which cannot express `product` or `mixed`.
     """
     cand = planning.Candidate(
-        base_ref=base_ref, surface=classify.SURFACE_SAAS_INFRA, job_name=job_name
+        base_ref=base_ref,
+        surface=classify.SURFACE_SAAS_INFRA,
+        job_name=job_name,
+        source=SOURCE,
     )
 
     cat_dir = workdir / "saas-category"
@@ -224,17 +235,24 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
 
 
 def covered_fingerprints() -> set[str]:
-    prs = gh_json(
-        [
-            "pr", "list", "--repo", REPO,
-            "--search", f"label:{FIX_LABEL} is:open",
-            "--limit", "100", "--json", "number,body",
-        ],
-        [],
-    )
+    """Fingerprints already claimed by an open fix PR, in any repo a fix can land in.
+
+    Scanned across FIX_PR_REPOS rather than the source repo alone: a test-side fix
+    lands in the e2e repository, so a source-repo-only scan finds nothing and this
+    layer never fires.
+    """
     out: set[str] = set()
-    for pr in prs if isinstance(prs, list) else []:
-        out |= planning.parse_coverage_block(pr.get("body"))
+    for repo in FIX_PR_REPOS:
+        prs = gh_json(
+            [
+                "pr", "list", "--repo", repo,
+                "--search", f"label:{FIX_LABEL} is:open",
+                "--limit", "100", "--json", "number,body",
+            ],
+            [],
+        )
+        for pr in prs if isinstance(prs, list) else []:
+            out |= planning.parse_coverage_block(pr.get("body"))
     return out
 
 
@@ -282,7 +300,7 @@ def inflight_keys() -> tuple[set[str], bool]:
     """
     runs, err = gh_json_ex(
         [
-            "run", "list", "--repo", REPO, "--workflow", FIX_WORKFLOW,
+            "run", "list", "--repo", FIX_REPO, "--workflow", FIX_WORKFLOW,
             "--limit", "50", "--json", "status,name,databaseId",
         ],
         None,
@@ -300,6 +318,54 @@ def inflight_keys() -> tuple[set[str], bool]:
         if r.get("status") in {"queued", "in_progress"} and "[" in (r.get("name") or "")
     }
     return {k for k in keys if k}, True
+
+
+def paths_claimed_by_open_prs(paths: set[str]) -> tuple[dict[str, int], bool]:
+    """Map each spec path that an open e2e-repo PR already touches to that PR number.
+
+    Deliberately author-agnostic — a `claude/*` branch from another agent, a human
+    fix, and a bot PR all count. Filtering by author would reintroduce exactly the
+    blindness this layer exists to close.
+
+    Returns (claims, ok). On any lookup failure `ok` is False and the caller
+    suppresses: a missed dispatch retries on the next failing run, a duplicate PR
+    editing the same lines does not un-happen.
+    """
+    claims: dict[str, int] = {}
+    if not paths:
+        return claims, True
+
+    prs, err = gh_json_ex(
+        [
+            "pr", "list", "--repo", E2E_REPO, "--state", "open",
+            "--limit", "100", "--json", "number,files",
+        ],
+        None,
+    )
+    if prs is None:
+        log(f"::warning::open PR path scan failed for {E2E_REPO}: {err.strip()[:200]}")
+        return claims, False
+    if not isinstance(prs, list):
+        return claims, False
+
+    if len(prs) >= 100:
+        log("::warning::open PR listing hit the page limit; suppressing this run")
+        return claims, False
+
+    for pr in prs:
+        number = pr.get("number")
+        files = pr.get("files") or []
+        # gh caps the per-PR file list. A truncated list under-reports claims, which
+        # would read as "nothing claimed" — the one wrong answer this layer must not
+        # give, so treat it as a failed lookup.
+        if len(files) >= 100:
+            log(f"::warning::PR #{number} file list is truncated; suppressing this run")
+            return claims, False
+        for entry in files:
+            name = (entry.get("path") or "").strip()
+            if name in paths and name not in claims:
+                claims[name] = number
+    return claims, True
 
 
 def product_bug_fingerprints() -> set[str]:
@@ -370,6 +436,7 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
             candidates.append(
                 planning.Candidate(
                     base_ref=base_ref, surface=surface, job_name=name, job_level=True,
+                    source=SOURCE,
                     evidence_run_url=f"https://github.com/{REPO}/actions/runs/{run_id}",
                     evidence_repo=REPO,
                 )
@@ -449,12 +516,20 @@ def main() -> int:
             pr_keys = {c.key for c in candidates}
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
+        spec_paths = {s.file for c in candidates for s in c.specs if s.file}
+        claimed, claimed_ok = paths_claimed_by_open_prs(spec_paths)
+        if not claimed_ok:
+            # Cannot prove the files are free; treat every one as claimed.
+            claimed = {path: 0 for path in spec_paths}
+            log("::warning::open PR path scan failed; suppressing dispatch this run")
+
         result = planning.plan_dispatches(
             candidates,
             covered_fingerprints=covered_fingerprints(),
             inflight_keys=keys,
             open_pr_keys=pr_keys,
             product_bug_fingerprints=product_bug_fingerprints(),
+            claimed_paths=claimed,
             max_dispatches=args.max_dispatches,
         )
         result.noise = noise

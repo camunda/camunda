@@ -29,10 +29,29 @@ SUPPRESSED_PR_OPEN = "open-fix-pr-for-surface"
 SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
+SUPPRESSED_PATH_CLAIMED = "spec-path-claimed-by-open-pr"
+
+#: GitHub rejects a label longer than this, and the dispatch key is stamped on fix
+#: PRs as `ag-key:<key>`. Asserted over the supported matrix in test_plan.py so a new
+#: source repo or base ref cannot silently push a label past the limit — the failure
+#: mode is a label that is never created, which disables dedupe without any error.
+KEY_LABEL_PREFIX = "ag-key:"
+MAX_LABEL_LENGTH = 50
 
 
-def dispatch_key(base_ref: str, surface: str) -> str:
-    return f"{base_ref}:{surface}"
+def dispatch_key(base_ref: str, surface: str, source: str = "") -> str:
+    """Identify one failing surface on one branch of one source pipeline.
+
+    `source` is the source repository's name (`connectors`, `camunda`). Several
+    pipelines open fix PRs into the same e2e repository and share branch names, so
+    without it `main:saas-smoke-e2e` from connectors and from the monorepo are the
+    same string and each would suppress the other's dispatch.
+
+    Fingerprints deliberately stay un-namespaced: they identify a failing *test*,
+    which is the same test whichever pipeline observed it, so one fix PR should
+    cover it for all of them.
+    """
+    return f"{source}:{base_ref}:{surface}" if source else f"{base_ref}:{surface}"
 
 
 @dataclass
@@ -42,6 +61,8 @@ class Candidate:
     base_ref: str
     surface: str
     job_name: str
+    #: Source repository name the failing run belongs to, e.g. `connectors`.
+    source: str = ""
     specs: list[classify.FailingSpec] = field(default_factory=list)
     #: Run whose artifacts hold the evidence. For SaaS this is the downstream run
     #: in the e2e repository, not the AlwaysGreen run.
@@ -52,7 +73,7 @@ class Candidate:
 
     @property
     def key(self) -> str:
-        return dispatch_key(self.base_ref, self.surface)
+        return dispatch_key(self.base_ref, self.surface, self.source)
 
     @property
     def spec_fingerprints(self) -> list[str]:
@@ -95,6 +116,7 @@ def plan_dispatches(
     inflight_keys: set[str],
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
+    claimed_paths: dict[str, int] | None = None,
     max_dispatches: int = 2,
     dispatchable_surfaces: frozenset[str] = classify.DISPATCHABLE_SURFACES,
 ) -> Plan:
@@ -126,6 +148,24 @@ def plan_dispatches(
         if not cand.job_level and not cand.specs:
             plan.suppressed.append(Suppression(cand, SUPPRESSED_NO_EVIDENCE))
             continue
+
+        # Author-agnostic: the other agents editing these files (the e2e repo's own
+        # nightly triage, another product pipeline, a human) dedupe on schemes this
+        # one cannot see, so the only reliable signal is that the file is already
+        # open in a PR. Keyed on exact repo-relative paths, so tests/8.9/x.spec.ts
+        # never shadows tests/8.10/x.spec.ts.
+        claimed = claimed_paths or {}
+        if not cand.job_level and claimed:
+            hits = sorted({(s.file, claimed[s.file]) for s in cand.specs if s.file in claimed})
+            if hits:
+                plan.suppressed.append(
+                    Suppression(
+                        cand,
+                        SUPPRESSED_PATH_CLAIMED,
+                        ", ".join(f"{path} (#{number})" for path, number in hits),
+                    )
+                )
+                continue
 
         fps = cand.fingerprints
 

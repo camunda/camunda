@@ -5,8 +5,9 @@ fetched from the GitHub API and the downloaded artifacts. Keeping the two apart 
 what makes this file unit-testable without a cluster or a token.
 
 The rules encoded here were derived from every failed run of
-docker-build-helm-integration.yml in a 300-run window (29 failures). The
-non-obvious ones:
+docker-build-helm-integration.yml in a 300-run window (29 failures), and extended
+with the same census over camunda/connectors' MERGE_QUEUE_HELM_TEST.yaml (300 runs,
+29 failures, 42 failing jobs). The non-obvious ones:
 
 * A `failure` conclusion does not imply a fixable failure. GitHub platform
   internal errors and mid-job cancellations both surface as `failure` with no
@@ -105,6 +106,9 @@ SURFACE_HELM_INSTALL = "helm-install"
 SURFACE_HELM_CLEANUP = "helm-cleanup"
 SURFACE_BUILD = "build"
 SURFACE_CI_INFRA = "ci-infra"
+#: connectors only: a Maven integration test driving a real LLM. Classified so it
+#: is reported and routed, never dispatched — see DISPATCHABLE_SURFACES.
+SURFACE_CONNECTORS_AI = "connectors-ai-e2e"
 
 #: Surfaces the first increment dispatches. Everything else is recorded and
 #: reported but not handed to the agent yet.
@@ -122,6 +126,8 @@ _SURFACE_PREFIXES: tuple[tuple[str, str], ...] = (
     ("install for install on", SURFACE_HELM_INSTALL),
     ("Cleanup - install on", SURFACE_HELM_CLEANUP),
     ("Build and Push Docker Image", SURFACE_BUILD),
+    ("Build and Publish Connectors Docker Image", SURFACE_BUILD),
+    ("AI Agent E2E Tests", SURFACE_CONNECTORS_AI),
     ("Preflight checks", SURFACE_CI_INFRA),
     ("Check Run Conditions", SURFACE_CI_INFRA),
     ("Format Identifier", SURFACE_CI_INFRA),

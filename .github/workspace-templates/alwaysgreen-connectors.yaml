@@ -1,0 +1,29 @@
+name: alwaysgreen-connectors
+description: "Cross-repo fix workspace for AlwaysGreen failures in camunda/connectors"
+purpose: |
+  You are fixing a failure in the connectors AlwaysGreen pipeline
+  (MERGE_QUEUE_HELM_TEST.yaml in camunda/connectors).
+
+  The failing job identifies the surface that broke, not the repository that needs
+  the change. A Playwright job failing does not mean the test is wrong: the run
+  deploys a freshly built connectors image, so a runtime or bundle regression
+  surfaces as a test failure. Read FIX-AGENT.md in the workspace root before doing
+  anything else.
+
+repos:
+  - url: https://github.com/camunda/connectors.git
+    path: connectors
+    default_branch: main
+  - url: https://github.com/camunda/c8-cross-component-e2e-tests.git
+    path: c8-cross-component-e2e-tests
+    default_branch: main
+  - url: https://github.com/camunda/camunda-platform-helm.git
+    path: camunda-platform-helm
+    default_branch: main
+  - url: https://github.com/camunda/camunda-docs.git
+    path: camunda-docs
+    default_branch: main
+
+derive:
+  agents_from: AGENTS.md
+  ai_guidance: alwaysgreen-connectors.guidance.md
