@@ -33,6 +33,12 @@
     // globally enabled in .github/renovate.json5.
 
     {
+      // Fit into .ci/scripts/renovate-assignments.py
+      matchFileNames: ["load-tests/**"],
+      addLabels: ["area/load-tests"]
+    },
+
+    {
       // Simplify the commit message when updating the Camunda Platform Helm Chart for load tests
       matchDepNames: [
         "camunda/camunda-platform-helm",
