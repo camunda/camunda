@@ -20,6 +20,7 @@ describe('getDiagramNameByProcessDefinition', () => {
       hasStartForm: false,
       resourceName: null,
       versionTag: null,
+      state: 'ACTIVE',
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'order-process_v5',
@@ -36,6 +37,7 @@ describe('getDiagramNameByProcessDefinition', () => {
       hasStartForm: false,
       resourceName: null,
       versionTag: null,
+      state: 'ACTIVE',
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'fallback-id_v2',

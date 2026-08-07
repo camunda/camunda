@@ -47,6 +47,7 @@ describe('OperationsLog InstancesTable', () => {
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         {
+          state: 'ACTIVE',
           processDefinitionKey: '123456',
           processDefinitionId: 'process1',
           name: 'Test Process',

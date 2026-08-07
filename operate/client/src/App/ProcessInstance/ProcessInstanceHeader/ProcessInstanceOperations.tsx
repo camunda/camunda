@@ -133,6 +133,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({
 
   const enterMigrationMode = () => {
     processInstanceMigrationStore.setSourceProcessDefinition({
+      state: 'ACTIVE',
       processDefinitionKey: processInstance.processDefinitionKey,
       processDefinitionId: processInstance.processDefinitionId,
       version: processInstance.processDefinitionVersion,
