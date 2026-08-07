@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.secretreference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -981,6 +982,25 @@ final class SecretResolutionSchedulerTest {
   }
 
   @Test
+  void shouldNotRegisterAStoreUnavailableSeriesWhenNoFailCommandFits() throws Exception {
+    // given — a store that is not configured, and a result with no room left for any of its refs
+    stubPending("unknown-store", "a", "b");
+    when(resultBuilder.appendCommandRecord(any(), any())).thenReturn(false);
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then — both refs stay pending, so the series must not exist at all: an always-zero line
+    // reads as "this store is healthy" rather than "nothing has been decided for it yet"
+    assertThat(
+            meterRegistry
+                .find(SecretResolutionMetricsDoc.RESOLUTION_OUTCOME.getName())
+                .tag(SecretResolutionKeyNames.STORE.asString(), "unknown-store")
+                .counters())
+        .isEmpty();
+  }
+
+  @Test
   void shouldTagTheOutcomeWithASentinelWhenTheReferenceCarriesNoStoreId() throws Exception {
     // given — a reference written before #59432, when a reference carried no store ID at all;
     // those are still in state after an upgrade and are resolved by this scheduler
@@ -1033,6 +1053,23 @@ final class SecretResolutionSchedulerTest {
         .isEqualTo(1);
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR)).isNull();
     assertThat(outcomeCount(STORE_ID, SecretResolutionOutcome.ERROR)).isZero();
+  }
+
+  @Test
+  void shouldNotTimeAStoreThrowingAnErrorAsACallThatCameBack() throws Exception {
+    // given — an Error rather than an exception, e.g. a store blowing the stack or running the
+    // broker out of memory
+    stubPending(STORE_ID, "db-password");
+    when(secretStore.resolve(any())).thenThrow(new StackOverflowError("boom"));
+
+    // when — the scheduler only guards against RuntimeException, so an Error leaves the cycle
+    assertThatThrownBy(() -> scheduler.resolveSecrets(resultBuilder))
+        .isInstanceOf(StackOverflowError.class);
+
+    // then — a call that failed must not land in the histogram of the calls that returned, which
+    // is what its latency would otherwise be read as
+    assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR).count()).isEqualTo(1);
+    assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.RETURNED)).isNull();
   }
 
   @ParameterizedTest
