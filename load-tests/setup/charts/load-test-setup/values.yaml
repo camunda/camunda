@@ -261,7 +261,7 @@ opensearch:
 
   image:
     repository: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch
-    tag: 2.19.0
+    tag: 3.8.0
 
   replicas: 3
 
