@@ -60,6 +60,8 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
           token: ${{ steps.github-token.outputs.token }}
+          # The token is re-introduced in the push step below only. See INC-7027.
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -73,10 +75,74 @@ jobs:
       - name: Regenerate golden files
         run: make -C load-tests/setup/test update-golden
 
+      # Replaces camunda/action-git-commit@v1, which requires persisted checkout credentials and
+      # accepts no token input in any released version (v1.0.0 .. v1.8.1), so the push is inlined.
+      # Behaviour is intentionally identical: same endless-loop guard, same `gha-creds-*` exclusion,
+      # same no-op-when-clean, same author (author of the previous commit), same message.
+      # See INC-7027.
       - name: Commit and push golden files
-        uses: camunda/action-git-commit@v1
-        with:
-          commit-message: "test: update load-test golden files"
+        env:
+          GITHUB_APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          COMMIT_MESSAGE: "test: update load-test golden files"
+          TARGET_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # --- Endless-loop guard (port of camunda/action-git-commit block-loops.sh) ---------------
+          # This workflow pushes with an App token, and App-token pushes do re-trigger workflows.
+          # Refuse to push if the branch already carries `max_commit` identical automated commits.
+          max_commit=3
+          origin_branch="origin/main"
+          # actions/checkout only creates remote-tracking refs for the checked-out ref, so
+          # origin/main is normally absent here and the guard below would silently degrade.
+          git fetch --quiet --depth=$((max_commit + 1)) origin main:refs/remotes/origin/main 2>/dev/null || true
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "On main, skipping the endless-loop guard (the action skips it too)."
+          elif ! git show-ref --quiet "refs/remotes/${origin_branch}"; then
+            echo "::warning::No '${origin_branch}' branch found, unable to check for endless GitHub Action run loops"
+          else
+            echo "::group::git commits"
+            git log --format="oneline" "${origin_branch}.."
+            echo "::endgroup::"
+            last_author="$(git log --max-count 1 --pretty="format:%an")"
+            expected="${last_author} = ${COMMIT_MESSAGE}"
+            nb_commits_repeated="$(git log --max-count "${max_commit}" --format="format:%an = %s" "${origin_branch}.." | grep --fixed-strings --count "${expected}" || true)"
+            if [ "${nb_commits_repeated}" -ge "${max_commit}" ]; then
+              echo "::error::Too many commits (total=${nb_commits_repeated} commits repeated) made by ${last_author} with subject: ${COMMIT_MESSAGE}."
+              echo "::error::Stopping GitHub Action now because it may be running in an endless loop."
+              exit 255
+            fi
+            echo "::notice::${last_author} committed ${nb_commits_repeated} commits with subject \"${COMMIT_MESSAGE}\" compared to the origin branch: ${origin_branch} (within the last ${max_commit} commits)."
+          fi
+
+          # --- Commit (port of camunda/action-git-commit commit-changes.sh) ------------------------
+          # `git add .` stages everything, so keep the action's guard against committing credential
+          # files accidentally left in the workspace.
+          ignore_file="$(mktemp)"
+          printf '%s\n' 'gha-creds-*' > "${ignore_file}"
+          git config core.excludesFile "${ignore_file}"
+
+          if [ -z "$(git status --short)" ]; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          echo "Changes detected:"
+          git status --short --branch
+
+          # No author is configured on this workflow, so reuse the author of the previous commit,
+          # which is what camunda/action-git-commit does by default.
+          git config user.name "$(git log --max-count 1 --pretty=format:%an)"
+          git config user.email "$(git log --max-count 1 --pretty=format:%ae)"
+
+          git add .
+          git commit --message "${COMMIT_MESSAGE}"
+
+          # Credential is supplied per-command via a helper reading the step env, so the token is
+          # neither written to .git/config nor visible in the process arguments.
+          git -c credential.helper= \
+              -c credential.helper='!f() { echo username=x-access-token; echo "password=${GITHUB_APP_TOKEN}"; }; f' \
+              push origin "HEAD:refs/heads/${TARGET_BRANCH}"
 
       - name: Observe build status
         if: always()
