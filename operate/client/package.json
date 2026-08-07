@@ -42,7 +42,7 @@
     "react-router-dom": "7.18.1",
     "react-transition-group": "4.4.5",
     "remark-gfm": "4.0.1",
-    "styled-components": "6.4.2",
+    "styled-components": "6.5.0",
     "tiny-svg": "4.1.4",
     "zod": "4.4.3"
   },

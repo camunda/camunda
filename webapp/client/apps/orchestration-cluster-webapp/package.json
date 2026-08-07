@@ -61,7 +61,7 @@
 		"react-i18next": "17.0.11",
 		"react-transition-group": "4.4.5",
 		"sass": "1.102.0",
-		"styled-components": "6.4.4",
+		"styled-components": "6.5.0",
 		"xstate": "5.32.5",
 		"zod": "4.4.3"
 	},
