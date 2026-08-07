@@ -20,10 +20,10 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
-import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.Test;
 
 class AgentDefinitionValidatorTest {
@@ -96,9 +96,14 @@ class AgentDefinitionValidatorTest {
   void aiAgentTaskOnAdHocSubProcessIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.aiAgentTaskOnAdHocSubProcessIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess.zeebeAgentDefinition(ZeebeAgentType.aiAgentTask).task("A"))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -108,26 +113,60 @@ class AgentDefinitionValidatorTest {
   }
 
   @Test
-  void externalOnAdHocSubProcessIsInvalid() {
+  void externalOnAdHocSubProcessIsValid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.externalOnAdHocSubProcessIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> adHocSubProcess.zeebeExternalAgentDefinition().task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void agentDefinitionOnUnsupportedElementIsInvalid() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .manualTask("task")
+            .addExtensionElement(
+                ZeebeAgentDefinition.class, a -> a.setAgentType(ZeebeAgentType.external))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
-        expect(AdHocSubProcess.class, "agentType 'external' is only allowed on a service task."));
+        expect(
+            ManualTask.class,
+            "agentType 'external' is only allowed on a service task or an ad-hoc sub-process."));
   }
 
   @Test
   void duplicateAgentDefinitionOnAdHocSubProcessIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnAdHocSubProcess.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.aiAgentSubProcess))
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.external))
+                        .task("A"))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -138,9 +177,20 @@ class AgentDefinitionValidatorTest {
   void duplicateAgentDefinitionOnServiceTaskIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.duplicateAgentDefinitionOnServiceTask.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.aiAgentTask))
+                        .addExtensionElement(
+                            ZeebeAgentDefinition.class,
+                            a -> a.setAgentType(ZeebeAgentType.external)))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -151,9 +201,14 @@ class AgentDefinitionValidatorTest {
   void missingAgentTypeIsInvalid() {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/AgentDefinitionValidatorTest.missingAgentTypeIsInvalid.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test").addExtensionElement(ZeebeAgentDefinition.class, a -> {}))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
