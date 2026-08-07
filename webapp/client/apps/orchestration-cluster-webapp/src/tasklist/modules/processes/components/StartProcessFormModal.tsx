@@ -75,9 +75,9 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 }) => {
 	const {t} = useTranslation();
 	const title = t('tasklist.processesStartProcessWithForm', {processDisplayName});
-	const handleShareButtonClick = useCallback(() => {
+	const handleShareButtonClick = useCallback(async () => {
 		try {
-			navigator.clipboard.writeText(window.location.href);
+			await navigator.clipboard.writeText(window.location.href);
 		} catch (error) {
 			console.error('Failed to copy URL to clipboard', error);
 		}
