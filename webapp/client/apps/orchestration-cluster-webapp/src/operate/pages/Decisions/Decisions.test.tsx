@@ -12,15 +12,20 @@ import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
+	mockQueryDecisionDefinitionsEndpointByFilter,
 	mockQueryDecisionInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {Notifications} from '#/shared/notifications/components/Notifications';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {DecisionsHarness} from './DecisionsHarness';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -50,6 +55,7 @@ describe('<Decisions />', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+		notificationsStore.reset();
 	});
 
 	it('should render the filter sections', async ({worker}) => {
@@ -92,6 +98,7 @@ describe('<Decisions />', () => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
 		const screen = await renderDecisionsPage({decisionDefinitionId: 'discount-rate', decisionDefinitionVersion: '1'});
@@ -104,6 +111,154 @@ describe('<Decisions />', () => {
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 		await expect.poll(getSearch).toMatchObject({decisionDefinitionId: 'invoice-approval'});
 		expect(getSearch().decisionDefinitionVersion).toBeUndefined();
+	});
+
+	it('clears the decision filter and shows an error toast when the decision id has no match', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<>
+					<DecisionsHarness />
+					<Notifications />
+				</>
+			),
+			{path: '/operate/decisions', initialEntry: '/operate/decisions?decisionDefinitionId=does-not-exist'},
+		);
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+
+		await expect.element(screen.getByText('Decision could not be found')).toBeVisible();
+		await expect.poll(() => getSearch().decisionDefinitionId).toBeUndefined();
+		expect(screen.router.history.canGoBack()).toBe(false);
+	});
+
+	it('should resolve a selected decision outside the loaded definitions page', async ({worker}) => {
+		const selectedDefinition = createDecisionDefinition({
+			name: 'Later Decision',
+			decisionDefinitionId: 'later-decision',
+			version: 2,
+		});
+		const olderDefinition = createDecisionDefinition({
+			name: 'Later Decision',
+			decisionDefinitionId: 'later-decision',
+			version: 1,
+		});
+		worker.use(
+			mockQueryDecisionDefinitionsEndpointByFilter({
+				unfilteredResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [],
+						page: {hasMoreTotalItems: true, totalItems: 1001},
+					}),
+				),
+				filteredResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [selectedDefinition]})),
+				versionsResponses: [
+					HttpResponse.json(
+						createQueryDecisionDefinitionsResponse({
+							items: [selectedDefinition],
+							page: {totalItems: 2, endCursor: 'next-page', hasMoreTotalItems: true},
+						}),
+					),
+					HttpResponse.json(
+						createQueryDecisionDefinitionsResponse({
+							items: [olderDefinition],
+							page: {totalItems: 2},
+						}),
+					),
+				],
+			}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: 'later-decision',
+			decisionDefinitionVersion: '2',
+		});
+
+		await expect.element(screen.getByRole('heading', {name: 'Later Decision'})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('Later Decision');
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toHaveTextContent('2');
+		await userEvent.click(screen.getByRole('combobox', {name: 'Version'}));
+		await expect.element(screen.getByRole('option', {name: '1'})).toBeVisible();
+		expect((screen.router.state.location.search as Record<string, unknown>).decisionDefinitionId).toBe(
+			'later-decision',
+		);
+	});
+
+	it('should wait for a stale missing selection to refetch before clearing it', async ({worker}) => {
+		const emptyResponse = HttpResponse.json(createQueryDecisionDefinitionsResponse());
+		worker.use(
+			mockQueryDecisionDefinitionsEndpointByFilter({
+				unfilteredResponse: DECISION_DEFINITIONS,
+				filteredResponse: emptyResponse,
+			}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: 'new-decision',
+			decisionDefinitionVersion: '1',
+		});
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		await expect.poll(() => getSearch().decisionDefinitionId).toBeUndefined();
+
+		const newDefinition = createDecisionDefinition({
+			name: 'New Decision',
+			decisionDefinitionId: 'new-decision',
+			version: 1,
+		});
+		worker.use(
+			mockQueryDecisionDefinitionsEndpointByFilter({
+				unfilteredResponse: DECISION_DEFINITIONS,
+				filteredResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [newDefinition]})),
+			}),
+		);
+
+		await screen.router.navigate({
+			to: '.',
+			search: {decisionDefinitionId: 'new-decision', decisionDefinitionVersion: 1},
+		});
+
+		await expect.element(screen.getByRole('heading', {name: 'New Decision'})).toBeVisible();
+		expect(getSearch().decisionDefinitionId).toBe('new-decision');
+	});
+
+	it('should ask for a tenant when a decision version exists in multiple tenants', async ({worker}) => {
+		const definitions = HttpResponse.json(
+			createQueryDecisionDefinitionsResponse({
+				items: [
+					createDecisionDefinition({
+						name: 'Invoice Approval',
+						decisionDefinitionId: 'invoice-approval',
+						version: 1,
+						tenantId: '<tenant-A>',
+					}),
+					createDecisionDefinition({
+						name: 'Invoice Approval',
+						decisionDefinitionId: 'invoice-approval',
+						version: 1,
+						tenantId: '<tenant-B>',
+					}),
+				],
+			}),
+		);
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: definitions}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: 'invoice-approval',
+			decisionDefinitionVersion: '1',
+			tenantId: 'all',
+		});
+
+		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
 	});
 
 	describe('instance state checkboxes', () => {
