@@ -41,7 +41,7 @@ class ProcessExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"CREATED", "DRAINING", "DELETED"},
+      names = {"CREATED", "DRAINING", "FULLY_DELETED"},
       mode = Mode.INCLUDE)
   void shouldExportHandledIntents(final ProcessIntent intent) {
     // given
@@ -55,7 +55,7 @@ class ProcessExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessIntent.class,
-      names = {"CREATED", "DRAINING", "DELETED"},
+      names = {"CREATED", "DRAINING", "FULLY_DELETED"},
       mode = Mode.EXCLUDE)
   void shouldNotExportOtherIntents(final ProcessIntent intent) {
     // given
@@ -87,7 +87,7 @@ class ProcessExportHandlerTest {
   }
 
   @Test
-  void shouldMarkDeletedOnDeletedRecord() {
+  void shouldMarkDeletedOnFullyDeletedRecord() {
     // given
     final long processDefinitionKey = 456L;
     final Process value =
@@ -97,7 +97,7 @@ class ProcessExportHandlerTest {
             .build();
     final Record<Process> record =
         factory.generateRecord(
-            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DELETED).withValue(value));
+            ValueType.PROCESS, r -> r.withIntent(ProcessIntent.FULLY_DELETED).withValue(value));
 
     // when
     underTest.export(record);
