@@ -12,7 +12,6 @@ import type {FieldValidator} from 'final-form';
 import {Field, useForm} from 'react-final-form';
 import {Checkbox, IconButton, Stack} from '@carbon/react';
 import {Close} from '@carbon/react/icons';
-import {tracking} from '#/shared/tracking';
 import {OptionalFiltersMenu} from '#/operate/shared/OptionalFiltersMenu/OptionalFiltersMenu';
 import {DateRangeField} from '#/operate/shared/DateRangeField/DateRangeField';
 import {AdvancedStringFilter} from '#/operate/shared/AdvancedStringFilter/AdvancedStringFilter';
@@ -173,10 +172,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 				}))}
 				onFilterSelect={(filter) => {
 					onVisibleFilterChange((currentVisibleFilters) => Array.from(new Set([...currentVisibleFilters, filter])));
-					tracking.track({
-						eventName: 'operate:optional-filter-selected',
-						filterName: filter,
-					});
 					if (filter === 'startDateRange') {
 						setIsStartDateRangeModalOpen(true);
 					}

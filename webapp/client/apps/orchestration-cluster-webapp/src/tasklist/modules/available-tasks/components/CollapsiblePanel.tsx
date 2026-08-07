@@ -21,7 +21,6 @@ import {getCustomFilterSearch} from '#/tasklist/modules/available-tasks/getCusto
 import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
 import {DeleteFilterModal} from './custom-filters/DeleteFilterModal';
 import styles from './CollapsiblePanel.module.scss';
-import {tracking} from '#/shared/tracking';
 
 type BuiltInFilter = (typeof FILTER_VALUES)[number];
 
@@ -79,9 +78,6 @@ const CollapsiblePanel: React.FC = () => {
 		const {[filterId]: _, ...remainingFilters} = storedFilters;
 
 		storeStateLocally('tasklist.customFilters', remainingFilters);
-		tracking.track({
-			eventName: 'tasklist:custom-filter-deleted',
-		});
 	}, []);
 
 	const handleDelete = useCallback(() => {

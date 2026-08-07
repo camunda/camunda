@@ -11,7 +11,6 @@ import {Checkmark, SortAscending} from '@carbon/react/icons';
 import {useNavigate, useSearch} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
-import {tracking} from '#/shared/tracking';
 import styles from './Filters.module.scss';
 import {
 	isBuiltInFilter,
@@ -69,14 +68,6 @@ const Filters: React.FC = () => {
 
 	const onSort = (id: TasklistIndexSearch['sortBy']) => {
 		navigate({to: '.', search: (prev) => ({...prev, sortBy: id})});
-		const stored = !isBuiltInFilter(filter) ? getStateLocally('tasklist.customFilters')?.[filter] : undefined;
-		tracking.track({
-			eventName: 'tasklist:tasks-filtered',
-			filter,
-			sorting: id,
-			customFilters: stored?.variables?.map((variable) => variable.name ?? '') ?? [],
-			customFilterVariableCount: stored?.variables?.length ?? 0,
-		});
 	};
 
 	return (

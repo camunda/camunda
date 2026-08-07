@@ -9,7 +9,6 @@
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
-import {tracking} from '#/shared/tracking';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
 
@@ -26,22 +25,12 @@ const NoInstancesEmptyState: React.FC = () => {
 			link={{
 				label: t('operate.dashboard.learnMoreLink'),
 				href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
-				onClick: () =>
-					tracking.track({
-						eventName: 'operate:dashboard-link-clicked',
-						link: 'operate-docs',
-					}),
 			}}
 			button={
 				modelerLink !== undefined
 					? {
 							label: t('operate.dashboard.goToModelerButton'),
 							href: modelerLink,
-							onClick: () =>
-								tracking.track({
-									eventName: 'operate:dashboard-link-clicked',
-									link: 'modeler',
-								}),
 						}
 					: undefined
 			}

@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {tracking} from '#/shared/tracking';
 import {mapDecisionInstancesFilter, mapDecisionInstancesSort, type DecisionsSearch} from './decisionsFilter';
 
 const PAGE_LIMIT = 50;
@@ -66,13 +64,6 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 	const decisionInstances = data?.pages.flatMap((page) => page.items) ?? [];
 	const totalCount = data?.pages.at(0)?.page.totalItems ?? 0;
 	const hasMoreTotalItems = data?.pages.at(0)?.page.hasMoreTotalItems ?? false;
-
-	useEffect(() => {
-		if (data !== undefined) {
-			tracking.track({eventName: 'operate:decisions-loaded', filters: Object.keys(filter ?? {}), sort});
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- track once per resolved page of data, not on every filter/sort identity change
-	}, [data]);
 
 	return {
 		status,

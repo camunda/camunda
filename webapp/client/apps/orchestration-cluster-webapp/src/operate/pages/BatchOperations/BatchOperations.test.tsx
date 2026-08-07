@@ -8,14 +8,13 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect, vi} from 'vitest';
+import {describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {mockQueryBatchOperationsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {
 	createBatchOperation,
 	createQueryBatchOperationsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
-import {tracking} from '#/shared/tracking';
 import {BatchOperations} from './BatchOperations';
 
 const EMPTY_RESPONSE = HttpResponse.json(createQueryBatchOperationsResponse());
@@ -121,22 +120,5 @@ describe('<BatchOperations />', () => {
 		const screen = await renderPage();
 
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
-	});
-
-	it('should track when a column is sorted', async ({worker}) => {
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
-		const trackSpy = vi.spyOn(tracking, 'track');
-
-		const screen = await renderPage();
-
-		await screen.getByRole('button', {name: 'Operation'}).click();
-
-		expect(trackSpy).toHaveBeenCalledWith({
-			eventName: 'operate:batch-operations-sorted',
-			sortBy: 'operationType',
-			sortOrder: 'desc',
-		});
-
-		trackSpy.mockRestore();
 	});
 });

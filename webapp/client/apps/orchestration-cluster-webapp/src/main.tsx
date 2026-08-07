@@ -12,11 +12,11 @@ import {routeTree} from './routeTree.gen';
 import {QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
 import {ThemeProvider} from '#/shared/theme/ThemeProvider';
-import {tracking} from '#/shared/tracking';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {initI18next} from '#/shared/i18n/i18next';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
+import {loadOsano} from '#/shared/osano';
 
 initI18next();
 
@@ -44,7 +44,7 @@ const rootElement = document.getElementById('app')!;
 if (!rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
 
-	tracking.loadAnalyticsToWillingUsers().finally(() => {
+	loadOsano().finally(() => {
 		root.render(
 			<ThemeProvider>
 				<QueryClientProvider client={reactQueryClient}>

@@ -13,7 +13,6 @@ import {TrashCan} from '@carbon/react/icons';
 import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {tracking} from '#/shared/tracking';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from './decisionsFilter';
 
@@ -86,7 +85,6 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 				window.location.assign(`/operate/batch-operations/${batchOperationKey}`);
 			},
 		});
-		tracking.track({eventName: 'operate:batch-operation', operationType: 'DELETE_DECISION_INSTANCE'});
 		onDeleted();
 	};
 

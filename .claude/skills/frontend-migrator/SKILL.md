@@ -34,7 +34,7 @@ Decide how the feature decomposes in the new architecture. The general rule:
 
 - **One route file** per navigable URL, under `src/routes/_auth/<pod>/`
 - **Page component and supporting code** in the pod's area (`src/operate/`, `src/tasklist/`, or `src/admin/`). The pod decides its own internal structure — there is no prescribed layout.
-- **Shared cross-cutting code** in `src/shared/<concern>/` — http, auth, config, errors, i18n, theme, tracking. Use what's already there; extend it rather than duplicating in the pod area.
+- **Shared cross-cutting code** in `src/shared/<concern>/` — http, auth, config, errors, i18n, theme. Use what's already there; extend it rather than duplicating in the pod area.
 
 Produce the code directly. If the decomposition is genuinely ambiguous (e.g., a legacy page that mixes two concerns and could become one page or two), flag it for the user with your recommendation and reasoning.
 
@@ -163,6 +163,10 @@ Endpoint mocks live in `shared-test-modules/mock-handlers.ts`. If the mock you n
 **Legacy (Operate):** No i18n — all strings are hardcoded in English. There are no `i18next` imports, translation files, or `useTranslation()` calls.
 
 **Target:** The orchestration cluster webapp uses `i18next` + `react-i18next`. When migrating from Operate, wrap user-facing strings in `t('key')` via `useTranslation()` and add translation keys to the appropriate namespace in `src/shared/i18n/`. Check the target's namespace structure before adding keys.
+
+### Tracking
+
+The orchestration cluster webapp does not use Mixpanel tracking. Do not migrate legacy tracking imports, event calls, event types, tracking-only state, configuration, or tests. When tracking shares a callback with feature behavior, remove only the tracking code and preserve the functional behavior.
 
 ## Handling partial migrations
 

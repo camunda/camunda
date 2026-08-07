@@ -8,7 +8,6 @@
 
 import {Field, useField, useForm} from 'react-final-form';
 import {Calendar} from '@carbon/react/icons';
-import {tracking} from '#/shared/tracking';
 import {IconTextInput} from '#/operate/shared/IconInput/IconTextInput';
 import {formatDate, formatISODate, formatTime} from './formatDate';
 import {DateRangeModal} from './DateRangeModal/DateRangeModal';
@@ -58,10 +57,6 @@ const DateRangeField: React.FC<Props> = ({
 	const handleClick = () => {
 		if (!isModalOpen) {
 			onClick();
-			tracking.track({
-				eventName: 'operate:date-range-popover-opened',
-				filterName,
-			});
 		}
 	};
 
@@ -89,7 +84,6 @@ const DateRangeField: React.FC<Props> = ({
 				<DateRangeModal
 					isModalOpen={isModalOpen}
 					title={popoverTitle}
-					filterName={filterName}
 					onCancel={onModalClose}
 					onApply={({fromDateTime, toDateTime}) => {
 						onModalClose();

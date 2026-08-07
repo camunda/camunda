@@ -15,7 +15,6 @@ import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
-import {tracking} from '#/shared/tracking';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
@@ -136,9 +135,6 @@ const taskCompletionMachine = setup({
 				isDismissable: true,
 			});
 		},
-		trackCompletionDelayed: () => {
-			tracking.track({eventName: 'tasklist:task-completion-delayed-notification'});
-		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
 			const {queryClient, userTaskKey} = context;
 
@@ -165,9 +161,6 @@ const taskCompletionMachine = setup({
 				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 				isDismissable: true,
 			});
-		},
-		trackCompletionFailure: () => {
-			tracking.track({eventName: 'tasklist:task-completion-rejected-notification'});
 		},
 		complete: emit({type: 'task.completed'}),
 		resetRetryCount: assign({pollRetryCount: 0}),
@@ -224,20 +217,17 @@ const taskCompletionMachine = setup({
 					},
 					{
 						target: 'CompletionFailed',
-						actions: [
-							{
-								type: 'notifyCompletionFailure',
-								params: ({event}) => ({error: event.error as CompletionFailure | undefined}),
-							},
-							'trackCompletionFailure',
-						],
+						actions: {
+							type: 'notifyCompletionFailure',
+							params: ({event}) => ({error: event.error as CompletionFailure | undefined}),
+						},
 					},
 				],
 			},
 		},
 
 		CompletionDelayed: {
-			entry: ['setOptimisticCompleting', 'notifyCompletionDelayed', 'trackCompletionDelayed'],
+			entry: ['setOptimisticCompleting', 'notifyCompletionDelayed'],
 			tags: 'status:completing',
 			always: {target: 'PollingCompletion'},
 		},

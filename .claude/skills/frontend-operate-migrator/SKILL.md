@@ -234,15 +234,15 @@ Run **after the edit tier, scoped to the just-ported component** — not across 
 
 ```bash
 node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs \
-  --ported <ported-component-dir> --legacy <legacy-component-dir>
+  --ported <ported-component-dir>
 ```
 
-Checks locale coverage (every `t('operate.*')` key exists in en/de/fr/es) and tracking carry-over (every legacy `eventName` has an `operate:<name>` counterpart). Non-zero exit = a gate failure; fix before continuing.
+Checks locale coverage (every `t('operate.*')` key exists in en/de/fr/es). Non-zero exit = a gate failure; fix before continuing.
 
 **Judgment (LLM flagger — flag, never approve):** the two checks a script cannot make. Emit a reviewable diff for the engineer; never assert "looks faithful."
 
 1. **No inlined shared logic.** For each shared hook/util/type the legacy component imports, confirm the port imports the same shared module — not a per-consumer copy. List any logic that was duplicated instead of shared.
-2. **1:1 behavior.** Walk the legacy component's branches, effects, and tracking calls; list any the port adds, drops, or alters. Output a `legacy → port` diff of observable behavior. The engineer decides; you do not.
+2. **1:1 behavior.** Walk the legacy component's branches and effects; list any observable behavior the port adds, drops, or alters. Ignore tracking-only behavior. Output a `legacy → port` diff of observable behavior. The engineer decides; you do not.
 
 Per the verification rule: a script saying "key X missing from de.json" is trusted; an LLM saying "looks faithful" is not. The flagger produces evidence, the engineer rules.
 
@@ -279,7 +279,7 @@ Validate every search/path param with Zod via `validateSearch` / `parseParams`. 
 
 ## Tracking events
 
-Never drop a tracking event when porting. Carry every `tracking.track` call across, namespaced: legacy `foo` → `operate:foo`. The fidelity script enforces this.
+The orchestration cluster webapp does not use Mixpanel tracking. Do not port legacy tracking events, tracking-only state, or tracking tests. If a callback combines tracking with feature behavior, preserve the feature behavior and remove only the tracking code.
 
 ## Feature flags
 

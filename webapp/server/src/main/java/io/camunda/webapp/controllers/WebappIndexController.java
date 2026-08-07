@@ -56,10 +56,6 @@ public class WebappIndexController {
     model.addAttribute("baseName", context.getContextPath() + "/webapp/");
     model.addAttribute("contextPath", context.getContextPath());
     model.addAttribute("isEnterprise", webappConfiguration.isEnterprise());
-    model.addAttribute(
-        "mixpanelToken", nullToEmpty(webappConfiguration.getCloud().getMixpanelToken()));
-    model.addAttribute(
-        "mixpanelApiHost", nullToEmpty(webappConfiguration.getCloud().getMixpanelApiHost()));
     final var saas = securityProperties != null ? securityProperties.getSaas() : null;
     model.addAttribute("organizationId", nullToEmpty(SaasConfigurationHelper.organizationId(saas)));
     model.addAttribute("clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(saas)));

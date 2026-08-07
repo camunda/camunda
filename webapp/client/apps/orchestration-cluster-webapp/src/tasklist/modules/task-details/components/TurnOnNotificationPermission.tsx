@@ -10,7 +10,6 @@ import {ActionableNotification} from '@carbon/react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {requestPermission} from '#/shared/os-notifications/requestPermission';
-import {tracking} from '#/shared/tracking';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import styles from './TurnOnNotificationPermission.module.scss';
 
@@ -37,12 +36,6 @@ const TurnOnNotificationPermission: React.FC = () => {
 				actionButtonLabel={t('tasklist.turnOnNotificationsActionButton')}
 				onActionButtonClick={async () => {
 					const result = await requestPermission();
-					if (result !== undefined) {
-						tracking.track({
-							eventName: 'tasklist:os-notification-permission-requested',
-							outcome: result,
-						});
-					}
 					if (result !== 'default') {
 						setIsEnabled(false);
 					}

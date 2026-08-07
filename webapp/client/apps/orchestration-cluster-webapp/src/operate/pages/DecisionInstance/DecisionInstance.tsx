@@ -9,7 +9,6 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {tracking} from '#/shared/tracking';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {requestErrorSchema} from '#/shared/http/request';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
@@ -28,17 +27,11 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [drdPanelState, setDrdPanelState] = useState<'minimized' | 'closed'>('minimized');
-	const {data: decisionInstance, error, status} = useDecisionInstance(decisionInstanceId);
+	const {error} = useDecisionInstance(decisionInstanceId);
 
 	const requestError = requestErrorSchema.safeParse(error);
 	const isUnauthorized = requestError.success && requestError.data.response?.status === 403;
 	const isNotFound = requestError.success && requestError.data.response?.status === 404;
-
-	useEffect(() => {
-		if (status === 'success' && decisionInstance.state !== undefined) {
-			tracking.track({eventName: 'operate:decision-instance-details-loaded', state: decisionInstance.state});
-		}
-	}, [status, decisionInstance?.state]);
 
 	useEffect(() => {
 		if (isNotFound) {

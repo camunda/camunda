@@ -14,11 +14,10 @@ type Props = {
 	type: 'from' | 'to';
 	id: string;
 	labelText: string;
-	onChange?: () => void;
 	autoFocus?: boolean;
 };
 
-const DateInput = forwardRef<HTMLDivElement, Props>(({type, onChange, ...props}, ref) => {
+const DateInput = forwardRef<HTMLDivElement, Props>(({type, ...props}, ref) => {
 	return (
 		<Field name={`${type}Date`}>
 			{({input}: {input: {value: string; onChange: (value: string) => void}}) => {
@@ -28,7 +27,6 @@ const DateInput = forwardRef<HTMLDivElement, Props>(({type, onChange, ...props},
 						size="sm"
 						onChange={(event) => {
 							input.onChange(event.target.value);
-							onChange?.();
 						}}
 						ref={ref}
 						placeholder="YYYY-MM-DD"

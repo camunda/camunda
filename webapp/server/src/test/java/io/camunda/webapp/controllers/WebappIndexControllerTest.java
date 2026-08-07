@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
-import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -55,8 +54,6 @@ class WebappIndexControllerTest {
     assertThat(model.getAttribute("baseName")).isEqualTo("/camunda/webapp/");
     assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda");
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
-    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("");
-    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("");
     assertThat(model.getAttribute("organizationId")).isEqualTo("");
     assertThat(model.getAttribute("clusterId")).isEqualTo("");
   }
@@ -148,27 +145,6 @@ class WebappIndexControllerTest {
   }
 
   @Test
-  void shouldExposeMixpanelConfig() {
-    // given
-    when(servletContext.getContextPath()).thenReturn("");
-    final Cloud cloud = new Cloud();
-    cloud.setMixpanelToken("test-token");
-    cloud.setMixpanelApiHost("https://api-eu.mixpanel.com");
-    final WebappConfiguration config = new WebappConfiguration();
-    config.setCloud(cloud);
-    final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
-    final ExtendedModelMap model = new ExtendedModelMap();
-
-    // when
-    controller.webapp(model);
-
-    // then
-    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("test-token");
-    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("https://api-eu.mixpanel.com");
-  }
-
-  @Test
   void shouldUseDefaultConfigWhenWebappConfigurationIsNull() {
     // given
     when(servletContext.getContextPath()).thenReturn("");
@@ -181,8 +157,6 @@ class WebappIndexControllerTest {
     // then — falls back to default WebappConfiguration values
     assertThat(viewName).isEqualTo("webapp/index");
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
-    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("");
-    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("");
     assertThat(model.getAttribute("baseName")).isEqualTo("/webapp/");
     assertThat(model.getAttribute("contextPath")).isEqualTo("");
   }

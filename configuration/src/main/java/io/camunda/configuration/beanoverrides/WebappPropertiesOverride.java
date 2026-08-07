@@ -99,21 +99,5 @@ public class WebappPropertiesOverride {
     if (cloud.getStage() == null && legacyTasklistProperties.getCloud().getStage() != null) {
       cloud.setStage(legacyTasklistProperties.getCloud().getStage());
     }
-
-    if (cloud.getMixpanelToken() == null) {
-      if (legacyOperateProperties.getCloud().getMixpanelToken() != null) {
-        cloud.setMixpanelToken(legacyOperateProperties.getCloud().getMixpanelToken());
-      } else if (legacyTasklistProperties.getCloud().getMixpanelToken() != null) {
-        cloud.setMixpanelToken(legacyTasklistProperties.getCloud().getMixpanelToken());
-      }
-    }
-
-    if (cloud.getMixpanelApiHost() == null) {
-      if (legacyOperateProperties.getCloud().getMixpanelAPIHost() != null) {
-        cloud.setMixpanelApiHost(legacyOperateProperties.getCloud().getMixpanelAPIHost());
-      } else if (legacyTasklistProperties.getCloud().getMixpanelAPIHost() != null) {
-        cloud.setMixpanelApiHost(legacyTasklistProperties.getCloud().getMixpanelAPIHost());
-      }
-    }
   }
 }

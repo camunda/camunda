@@ -10,7 +10,6 @@ import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import {tracking} from '#/shared/tracking';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {useCallback} from 'react';
 
@@ -55,9 +54,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 				name: 'Tasklist',
 				routeProps: {
 					to: tabRoutes['tasklistIndex'],
-					onClick: () => {
-						tracking.track({eventName: 'tasklist:navigation', link: 'header-logo'});
-					},
 				},
 			},
 			elements: hasTasklistAccess
@@ -75,12 +71,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 								),
 							routeProps: {
 								to: tabRoutes['tasklistIndex'],
-								onClick: () => {
-									tracking.track({
-										eventName: 'tasklist:navigation',
-										link: 'header-tasks',
-									});
-								},
 								activeOptions: {
 									exact: true,
 								},
@@ -92,12 +82,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/tasklist/processes'),
 							routeProps: {
 								to: tabRoutes['tasklistProcesses'],
-								onClick: () => {
-									tracking.track({
-										eventName: 'tasklist:navigation',
-										link: 'header-processes',
-									});
-								},
 							},
 						},
 					]
@@ -114,9 +98,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 				name: 'Admin',
 				routeProps: {
 					to: tabRoutes['admin'],
-					onClick: () => {
-						tracking.track({eventName: 'admin:navigation', link: 'header-logo'});
-					},
 				},
 			},
 			elements: hasAdminAccess ? [] : [],
@@ -132,9 +113,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 				name: 'Operate',
 				routeProps: {
 					to: tabRoutes['operate'],
-					onClick: () => {
-						tracking.track({eventName: 'operate:navigation', link: 'header-logo'});
-					},
 				},
 			},
 			elements: hasOperateAccess
@@ -146,9 +124,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							routeProps: {
 								to: tabRoutes['operate'],
 								activeOptions: {exact: true},
-								onClick: () => {
-									tracking.track({eventName: 'operate:navigation', link: 'header-dashboard'});
-								},
 							},
 						},
 						{
@@ -157,9 +132,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/processes'),
 							routeProps: {
 								to: tabRoutes['operateProcesses'],
-								onClick: () => {
-									tracking.track({eventName: 'operate:navigation', link: 'header-processes'});
-								},
 							},
 						},
 						{
@@ -168,9 +140,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/decisions'),
 							routeProps: {
 								to: tabRoutes['operateDecisions'],
-								onClick: () => {
-									tracking.track({eventName: 'operate:navigation', link: 'header-decisions'});
-								},
 							},
 						},
 						{
@@ -184,9 +153,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 									isCurrentPage: hasRouteMatch('/operate/batch-operations'),
 									routeProps: {
 										to: tabRoutes['operateBatchOperations'],
-										onClick: () => {
-											tracking.track({eventName: 'operate:navigation', link: 'header-batch-operations'});
-										},
 									},
 								},
 								{
@@ -195,9 +161,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 									isCurrentPage: hasRouteMatch('/operate/operations-log'),
 									routeProps: {
 										to: tabRoutes['operateOperationsLog'],
-										onClick: () => {
-											tracking.track({eventName: 'operate:navigation', link: 'header-operations-log'});
-										},
 									},
 								},
 							],

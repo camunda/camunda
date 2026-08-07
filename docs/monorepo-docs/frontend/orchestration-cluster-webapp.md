@@ -16,7 +16,7 @@ from `operate/client`, `tasklist/client`, and `identity/client`.
 | Forms           | react-final-form + Zod                                  | See [Forms](./forms.md)                       |
 | API contracts   | `@camunda/camunda-api-zod-schemas`                      | Runtime-validated                             |
 | Design system   | Carbon (`@carbon/react`) + Camunda composite components | Sass for styles                               |
-| Telemetry       | Mixpanel + Osano consent                                |                                               |
+| Consent         | Osano                                                   | Cookie preferences                            |
 | Unit tests      | Vitest browser mode (Playwright provider)               | See [Testing](./testing.md)                   |
 | E2E / a11y / VR | Playwright + Axe + MSW                                  |                                               |
 
@@ -36,9 +36,9 @@ apps/orchestration-cluster-webapp/
 │   │   ├── http/           # Endpoints, queries, request wrapper
 │   │   ├── i18n/           # Internationalization
 │   │   ├── login/          # Login UI components
+│   │   ├── osano.ts        # Cookie consent
 │   │   ├── svg/            # Generated SVG components
 │   │   ├── theme/          # Theme provider (MobX)
-│   │   ├── tracking.tsx    # Analytics (Mixpanel)
 │   │   ├── pages/          # Shared pages (login, errors, forbidden, 404)
 │   │   ├── assets/svg/     # SVG sources (see Generating SVG components)
 │   │   └── feature-flags.ts
@@ -76,7 +76,7 @@ Path aliases give each pod a clean import boundary:
 Changes here affect every pod, so they require cross-pod coordination.
 
 Current shared modules: `auth`, `browser-storage`, `config`, `errors`, `http`,
-`i18n`, `login`, `svg`, `theme`, `tracking`, plus shared pages (login,
+`i18n`, `login`, `svg`, `theme`, plus shared pages (login,
 error states, 404) and feature flags.
 
 Keep shared code **focused and small**. A shared module owns one concern.

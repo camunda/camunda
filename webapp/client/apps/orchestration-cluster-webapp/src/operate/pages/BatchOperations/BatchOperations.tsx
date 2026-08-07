@@ -9,7 +9,6 @@
 import {Pagination} from '@carbon/react';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
-import {tracking} from '#/shared/tracking';
 import {SortableTable} from '#/operate/shared/SortableTable';
 import {BatchItemsCount} from '#/operate/shared/BatchItemsCount';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator';
@@ -43,16 +42,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 			switch (col.key) {
 				case 'operationType':
 					return (
-						<OperationLink
-							href={`/operate/batch-operations/${row.batchOperationKey}`}
-							onClick={() => {
-								tracking.track({
-									eventName: 'operate:batch-operation-details-opened',
-									batchOperationType: row.batchOperationType,
-									batchOperationState: row.state,
-								});
-							}}
-						>
+						<OperationLink href={`/operate/batch-operations/${row.batchOperationKey}`}>
 							{formatOperationType(row.batchOperationType)}
 						</OperationLink>
 					);
@@ -91,9 +81,6 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 					rowKey={(row) => row.batchOperationKey}
 					isFetching={isFetching}
 					emptyState={<span>No batch operations found</span>}
-					onSort={(sortBy, sortOrder) => {
-						tracking.track({eventName: 'operate:batch-operations-sorted', sortBy, sortOrder});
-					}}
 					data-testid="batch-operations-table"
 				/>
 			</TableContainer>

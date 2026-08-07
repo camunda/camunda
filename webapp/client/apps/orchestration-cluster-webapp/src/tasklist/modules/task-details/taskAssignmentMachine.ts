@@ -14,7 +14,6 @@ import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {tracking} from '#/shared/tracking';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
@@ -183,9 +182,6 @@ const taskAssignmentMachine = setup({
 				isDismissable: true,
 			});
 		},
-		trackUnassignmentDelayed: () => {
-			tracking.track({eventName: 'tasklist:task-unassignment-delayed-notification'});
-		},
 		commitTask: ({context}, params: {task: UserTask | undefined}) => {
 			const {queryClient, userTaskKey} = context;
 
@@ -210,12 +206,6 @@ const taskAssignmentMachine = setup({
 				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 				isDismissable: true,
 			});
-		},
-		trackAssigned: () => {
-			tracking.track({eventName: 'tasklist:task-assigned'});
-		},
-		trackUnassigned: () => {
-			tracking.track({eventName: 'tasklist:task-unassigned'});
 		},
 		resetRetryCount: assign({pollRetryCount: 0}),
 		incrementRetryCount: assign({pollRetryCount: ({context}) => context.pollRetryCount + 1}),
@@ -432,7 +422,6 @@ const taskAssignmentMachine = setup({
 		},
 
 		AssignmentSucceeded: {
-			entry: 'trackAssigned',
 			tags: 'status:assignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
@@ -467,7 +456,7 @@ const taskAssignmentMachine = setup({
 		},
 
 		UnassignmentDelayed: {
-			entry: ['setOptimisticUnassigning', 'notifyUnassignmentDelayed', 'trackUnassignmentDelayed', 'resetRetryCount'],
+			entry: ['setOptimisticUnassigning', 'notifyUnassignmentDelayed', 'resetRetryCount'],
 			tags: 'status:unassigning',
 			initial: 'Fetching',
 			states: {
@@ -541,7 +530,6 @@ const taskAssignmentMachine = setup({
 		},
 
 		UnassignmentSucceeded: {
-			entry: 'trackUnassigned',
 			tags: 'status:unassignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},

@@ -9,8 +9,6 @@
 import {useCallback} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.10';
-import {getStateLocally} from '#/shared/browser-storage/local-storage';
-import {tracking} from '#/shared/tracking';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/TaskDetailsForm';
@@ -42,19 +40,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 	onLoadNextVariablesPage = () => {},
 }) => {
 	const navigate = useNavigate();
-	const isCamundaForm = formSchema !== null;
-	const customFilter = getStateLocally('tasklist.customFilters')?.[search.filter];
-
 	const onComplete = useCallback(() => {
-		tracking.track({
-			eventName: 'tasklist:task-completed',
-			isCamundaForm,
-			hasRemainingTasks: false,
-			filter: search.filter,
-			customFilters: Object.keys(customFilter ?? {}),
-			customFilterVariableCount: customFilter?.variables?.length ?? 0,
-		});
-
 		navigate({
 			to: '/tasklist',
 			search,
@@ -63,7 +49,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 				tasklistAutoSelectSource: 'task-completion',
 			}),
 		});
-	}, [navigate, search, customFilter, isCamundaForm]);
+	}, [navigate, search]);
 	const {status, isCompletionAllowed, isHidden, complete} = useTaskCompletion({
 		userTaskKey: task.userTaskKey,
 		currentUser: currentUser.username,

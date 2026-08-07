@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Mixpanel} from 'mixpanel-browser';
-
 declare module '@tanstack/history' {
 	interface HistoryState {
 		tasklistAutoSelectSource?: 'task-completion';
@@ -23,7 +21,6 @@ export declare global {
 				addEventListener: (eventType: string, callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void) => void;
 			};
 		};
-		mixpanel?: Mixpanel;
 	}
 
 	interface ImportMetaEnv {
@@ -34,7 +31,5 @@ export declare global {
 		readonly VITE_OSANO_DEV_ENV_URL: string;
 		readonly VITE_OSANO_INT_ENV_URL: string;
 		readonly VITE_OSANO_PROD_ENV_URL: string;
-		readonly VITE_MIXPANEL_TOKEN: string;
-		readonly VITE_MIXPANEL_HOST: string;
 	}
 }

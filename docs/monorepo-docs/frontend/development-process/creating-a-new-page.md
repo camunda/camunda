@@ -17,7 +17,7 @@ structure, naming conventions, and patterns. There is no prescribed
 layout inside a pod.
 
 `src/shared/` holds cross-cutting infrastructure (http, auth, config,
-errors, theme, i18n, tracking) that all pods can import. Changes to
+errors, theme, i18n) that all pods can import. Changes to
 shared code require cross-pod coordination.
 
 `src/routes/` is shared routing infrastructure. Route files are thin

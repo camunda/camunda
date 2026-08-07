@@ -12,7 +12,6 @@ import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ErrorBoundary} from 'react-error-boundary';
-import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
@@ -64,12 +63,6 @@ const InstancesByProcess: React.FC = () => {
 							to="/operate/processes"
 							search={{process: item.processDefinitionId, ...runningOrAllInstancesFilter(total)}}
 							title={labelText}
-							onClick={() => {
-								tracking.track({
-									eventName: 'operate:navigation',
-									link: 'dashboard-process-instances-by-name-all-versions',
-								});
-							}}
 						>
 							<InstancesBar
 								label={{type: 'process', size: 'medium', text: labelText}}

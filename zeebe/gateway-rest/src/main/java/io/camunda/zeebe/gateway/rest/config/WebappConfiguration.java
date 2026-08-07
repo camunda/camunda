@@ -51,8 +51,6 @@ public class WebappConfiguration {
 
   public static class Cloud {
     private String stage;
-    private String mixpanelToken;
-    private String mixpanelApiHost;
 
     public String getStage() {
       return stage;
@@ -60,22 +58,6 @@ public class WebappConfiguration {
 
     public void setStage(final String stage) {
       this.stage = stage;
-    }
-
-    public String getMixpanelToken() {
-      return mixpanelToken;
-    }
-
-    public void setMixpanelToken(final String mixpanelToken) {
-      this.mixpanelToken = mixpanelToken;
-    }
-
-    public String getMixpanelApiHost() {
-      return mixpanelApiHost;
-    }
-
-    public void setMixpanelApiHost(final String mixpanelApiHost) {
-      this.mixpanelApiHost = mixpanelApiHost;
     }
   }
 }

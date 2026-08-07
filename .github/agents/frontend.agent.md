@@ -43,7 +43,7 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 - **Tech Stack:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, MobX, Carbon (`@carbon/react`), SCSS
 - **Testing:** Vitest Browser Mode + MSW (unit), Playwright + MSW (integration/visual/a11y)
 - **File Structure:**
-  - `webapp/client/apps/orchestration-cluster-webapp/src/shared/` — cross-pod shared modules (http, auth, config, theme, i18n, errors, tracking, shared pages)
+  - `webapp/client/apps/orchestration-cluster-webapp/src/shared/` — cross-pod shared modules (http, auth, config, theme, i18n, errors, shared pages)
   - `webapp/client/apps/orchestration-cluster-webapp/src/operate/` — Operate pod area (internal structure owned by the pod)
   - `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` — Tasklist pod area (internal structure owned by the pod)
   - `webapp/client/apps/orchestration-cluster-webapp/src/admin/` — Admin pod area (internal structure owned by the pod)

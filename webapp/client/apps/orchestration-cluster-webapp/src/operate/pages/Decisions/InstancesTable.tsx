@@ -13,7 +13,6 @@ import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/Pa
 import {StateIcon} from '#/operate/shared/StateIcon/StateIcon';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
-import {tracking} from '#/shared/tracking';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
 import {useDecisionInstancesSearch} from './useDecisionInstancesSearch';
@@ -78,9 +77,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			render: (row: DecisionInstance) => (
 				<InstanceLink
 					href={`/operate/decisions/${row.decisionEvaluationInstanceKey}`}
-					onClick={() => {
-						tracking.track({eventName: 'operate:navigation', link: 'decision-instances-parent-process-details'});
-					}}
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
 					})}
@@ -128,9 +124,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				row.processInstanceKey ? (
 					<InstanceLink
 						href={`/operate/processes/${row.processInstanceKey}`}
-						onClick={() => {
-							tracking.track({eventName: 'operate:navigation', link: 'decision-instances-parent-process-details'});
-						}}
 						title={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
 					>
 						{row.processInstanceKey}

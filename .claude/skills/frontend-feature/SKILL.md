@@ -19,7 +19,7 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
   - `#/shared/*` → `src/shared/` (cross-pod shared code)
 - Prefer **types** from `@camunda/camunda-api-zod-schemas` to type API responses — trust the API contract. Use Zod schema validation only for **user input** (forms, URL search params, path params). For general validation needs beyond API contracts, use Zod directly.
 - Pod areas (`src/operate/`, `src/tasklist/`, `src/admin/`) are **autonomous** — pods decide their own internal folder structure, naming conventions, and patterns. Do not prescribe internal layout for another pod's area.
-- `src/shared/` holds cross-cutting infrastructure (http, auth, config, errors, theme, i18n, tracking, feature flags). Changes here affect all pods; keep shared code focused and small.
+- `src/shared/` holds cross-cutting infrastructure (http, auth, config, errors, theme, i18n, feature flags). Changes here affect all pods; keep shared code focused and small.
 - Route files live in `src/routes/_auth/{pod}/` and are **thin wrappers**: they wire the pod's page component into the router. No feature logic in route files.
 - Use a single `export {}` block at the end of each file — no inline `export` on declarations. Only export symbols that are actually imported by other files. Don't export internal helpers, types used only within the same file, or constants that nothing else references. This keeps the public surface minimal and scannable.
 - YAGNI — don't build abstractions for hypothetical future use. Three similar lines beat a premature wrapper. Wait until a real requirement forces the shape.
@@ -39,7 +39,7 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
 A feature lives in the pod's area and plugs into the shared router:
 
 1. **Pod area** (`src/{operate,tasklist,admin}/`) — build your page component and any supporting code here. Internal structure (folder names, conventions, depth) is the pod's decision. Reuse existing shared modules before creating new ones in the pod area.
-2. **`src/shared/`** — for cross-cutting concerns used by more than one pod: http, auth, config, errors, theme, i18n, tracking, feature flags. Keep shared code focused; one module per concern.
+2. **`src/shared/`** — for cross-cutting concerns used by more than one pod: http, auth, config, errors, theme, i18n, feature flags. Keep shared code focused; one module per concern.
 3. **`src/routes/_auth/{pod}/`** — thin route file. File path = URL path. Auth-gated routes go under `_auth/`. The route owns the loader, `pendingComponent`, and `errorComponent`. It imports the page component from the pod area.
 
 Default to a new route for anything a user can navigate to. Skip a route only for transient overlays (toasts, hover cards), non-linkable modals (confirmations), or in-page tabs sharing the same data (encode as `?tab=...` search param).
