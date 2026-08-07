@@ -7,6 +7,7 @@
  */
 
 import {notificationsStore} from 'modules/stores/notifications';
+import type {RequestError} from 'modules/request';
 
 const handleMutationError = (options: {
   statusCode: number;
@@ -37,6 +38,19 @@ const handleOperationError = (statusCode?: number) => {
   });
 };
 
+const handleProcessInstanceStateChangeError = (
+  error: RequestError | Error,
+  action: 'suspend' | 'resume',
+) => {
+  const response = error instanceof Error ? null : error.response;
+
+  handleMutationError({
+    statusCode: response?.status ?? 0,
+    title: `Failed to ${action} process instance`,
+    subtitle: error instanceof Error ? error.message : response?.statusText,
+  });
+};
+
 const handleBatchOperationError = (statusCode?: number, title?: string) => {
   if (statusCode === 404) {
     notificationsStore.displayNotification({
@@ -55,4 +69,9 @@ const handleBatchOperationError = (statusCode?: number, title?: string) => {
   });
 };
 
-export {handleOperationError, handleBatchOperationError, handleMutationError};
+export {
+  handleOperationError,
+  handleBatchOperationError,
+  handleMutationError,
+  handleProcessInstanceStateChangeError,
+};
