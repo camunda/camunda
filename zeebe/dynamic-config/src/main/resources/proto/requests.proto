@@ -151,10 +151,10 @@ message TopologyChangeResponse {
   map<string, topology_protocol.MemberState> expectedTopology = 3;
   repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
   // The new multi-partition-group configuration, in addition to the legacy
-  // default-group projection above. plannedChanges is shared between both
-  // views (same operations), so it is not duplicated here.
+  // default-group projection above.
   topology_protocol.CurrentClusterConfiguration currentConfiguration = 5;
   topology_protocol.CurrentClusterConfiguration expectedConfiguration = 6;
+  repeated topology_protocol.PhasedChangePlanPhase phases = 7;
 }
 
 message Response {

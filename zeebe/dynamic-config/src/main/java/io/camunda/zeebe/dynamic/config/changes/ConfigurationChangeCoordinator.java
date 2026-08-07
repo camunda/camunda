@@ -73,7 +73,8 @@ public interface ConfigurationChangeCoordinator {
       CurrentClusterConfiguration finalMultiConfiguration,
       long changeId,
       // The operations that will be applied to the current configuration.
-      List<ClusterConfigurationChangeOperation> operations) {}
+      List<ClusterConfigurationChangeOperation> legacyOperations,
+      List<Phase> phases) {}
 
   @FunctionalInterface
   interface ConfigurationChangeRequest {

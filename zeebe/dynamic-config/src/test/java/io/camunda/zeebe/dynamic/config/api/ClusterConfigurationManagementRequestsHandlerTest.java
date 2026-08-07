@@ -62,6 +62,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
                     CurrentClusterConfiguration.fromLegacy(config),
                     CurrentClusterConfiguration.fromLegacy(config),
                     1L,
+                    List.of(),
                     List.of())));
 
     // when
@@ -86,6 +87,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
                     CurrentClusterConfiguration.fromLegacy(config),
                     CurrentClusterConfiguration.fromLegacy(config),
                     1L,
+                    List.of(),
                     List.of())));
 
     // when
