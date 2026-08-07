@@ -54,6 +54,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/authentication/me/authorizations/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/authorizations': {
     POST: {
       '201': 1,
@@ -65,6 +70,29 @@ export const RESPONSE_INDEX = {
     },
   },
   '/authorizations/{authorizationKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/backups/runtime': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/backups/runtime/state': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/backups/runtime/state/sync': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/backups/runtime/{backupId}': {
     GET: {
       '200': 1,
     },
@@ -203,6 +231,11 @@ export const RESPONSE_INDEX = {
   },
   '/element-instances/{elementInstanceKey}/incidents/search': {
     POST: {
+      '200': 1,
+    },
+  },
+  '/exporting': {
+    GET: {
       '200': 1,
     },
   },
@@ -548,6 +581,16 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/secrets/resolve': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/secrets/list': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/setup/user': {
     POST: {
       '201': 1,
@@ -556,6 +599,12 @@ export const RESPONSE_INDEX = {
   '/signals/broadcast': {
     POST: {
       '200': 1,
+    },
+  },
+  '/cluster/v2/status': {
+    GET: {
+      '200': 1,
+      '503': 1,
     },
   },
   '/system/usage-metrics': {
@@ -622,6 +671,9 @@ export const RESPONSE_INDEX = {
     },
   },
   '/restore': {
+    GET: {
+      '200': 1,
+    },
     POST: {
       '202': 1,
     },
