@@ -306,6 +306,11 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationFilter'
           description: The authorization search filters.
+      x-properties-added-in-version:
+        - propertyName: "sort"
+          addedInVersion: "8.8"
+        - propertyName: "filter"
+          addedInVersion: "8.8"
 
     AuthorizationFilter:
       description: Authorization search filter.
@@ -372,6 +377,18 @@ components:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
       x-properties-added-in-version:
+        - propertyName: "ownerId"
+          addedInVersion: "8.8"
+        - propertyName: "ownerType"
+          addedInVersion: "8.8"
+        - propertyName: "resourceType"
+          addedInVersion: "8.8"
+        - propertyName: "resourceId"
+          addedInVersion: "8.8"
+        - propertyName: "permissionTypes"
+          addedInVersion: "8.8"
+        - propertyName: "authorizationKey"
+          addedInVersion: "8.8"
         - propertyName: resourcePropertyName
           addedInVersion: "8.9"
 
@@ -387,6 +404,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthorizationResult'
+      x-properties-added-in-version:
+        - propertyName: "items"
+          addedInVersion: "8.8"
 
     AuthorizationCreateResult:
       x-semantic-provider:
