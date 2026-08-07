@@ -310,7 +310,8 @@ final class ElasticsearchExporterIT {
         || valueType == ValueType.USER_TASK
         || valueType == ValueType.DEPLOYMENT
         || valueType == ValueType.JOB
-        || valueType == ValueType.AGENT_INSTANCE) {
+        || valueType == ValueType.AGENT_INSTANCE
+        || valueType == ValueType.AGENT_DEFINITION) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
           .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
@@ -110,6 +111,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -5152,6 +5154,54 @@ final class JsonSerializableToJsonTest {
           "resourceName": "",
           "duplicate": false,
           "version": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentDefinitionRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentDefinitionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AgentDefinitionRecord()
+                    .setAgentDefinitionKey(2251799813685251L)
+                    .setAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                    .setName("Invoice Data Extraction")
+                    .setElementId("invoice-data-extraction-agent")
+                    .setBpmnProcessId("invoice-handling-process")
+                    .setProcessDefinitionKey(2251799813685100L)
+                    .setProcessDefinitionVersion(3)
+                    .setProcessDefinitionVersionTag("v1.0")
+                    .setTenantId("<default>"),
+        """
+        {
+          "agentDefinitionKey": 2251799813685251,
+          "agentType": "AI_AGENT_TASK",
+          "name": "Invoice Data Extraction",
+          "elementId": "invoice-data-extraction-agent",
+          "bpmnProcessId": "invoice-handling-process",
+          "processDefinitionKey": 2251799813685100,
+          "processDefinitionVersion": 3,
+          "processDefinitionVersionTag": "v1.0",
+          "tenantId": "<default>"
+        }
+        """
+      },
+      {
+        "Empty AgentDefinitionRecord",
+        (Supplier<UnifiedRecordValue>) AgentDefinitionRecord::new,
+        """
+        {
+          "agentDefinitionKey": -1,
+          "agentType": "UNSPECIFIED",
+          "name": "",
+          "elementId": "",
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "processDefinitionVersionTag": "",
+          "tenantId": "<default>"
         }
         """
       },

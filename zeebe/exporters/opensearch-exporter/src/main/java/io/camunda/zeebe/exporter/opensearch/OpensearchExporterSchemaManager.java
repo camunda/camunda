@@ -194,6 +194,9 @@ public class OpensearchExporterSchemaManager {
       if (index.agentHistory) {
         createValueIndexTemplate(ValueType.AGENT_HISTORY, version);
       }
+      if (index.agentDefinition) {
+        createValueIndexTemplate(ValueType.AGENT_DEFINITION, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
@@ -146,6 +148,61 @@ class CompactRecordLoggerTest {
           .contains(
               """
               in <process "procID"[K123]"bizzID">""");
+    }
+
+    @Test
+    void shouldSummarizeAgentDefinitionRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_DEFINITION)
+              .withValue(
+                  ImmutableAgentDefinitionRecordValue.builder()
+                      .withAgentDefinitionKey(1L)
+                      .withAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                      .withName("Customer Support Escalation Agent")
+                      .withElementId("Activity_1")
+                      .withBpmnProcessId("orderProcess")
+                      .withProcessDefinitionKey(2L)
+                      .withProcessDefinitionVersion(3)
+                      .withProcessDefinitionVersionTag("v1.0")
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentDefinition(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              "K1 AI_AGENT_TASK @\"Activity_1\" \"Custome..n Agent\" of <process \"orderProcess\"[K2] v3 tag:v1.0>");
+    }
+
+    @Test
+    void shouldSummarizeAgentDefinitionRecordWithoutName() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_DEFINITION)
+              .withValue(
+                  ImmutableAgentDefinitionRecordValue.builder()
+                      .withAgentDefinitionKey(1L)
+                      .withAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                      .withElementId("Activity_1")
+                      .withBpmnProcessId("orderProcess")
+                      .withProcessDefinitionKey(2L)
+                      .withProcessDefinitionVersion(3)
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentDefinition(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo("K1 AI_AGENT_TASK @\"Activity_1\" of <process \"orderProcess\"[K2] v3>");
     }
 
     @Test
