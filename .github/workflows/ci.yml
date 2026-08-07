@@ -667,7 +667,9 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
@@ -692,7 +694,9 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
@@ -716,7 +720,9 @@ jobs:
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -732,6 +738,9 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
       # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
       # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
       # so restore-shared-m2 pulls from GCS (same-region, non-billable). RDBMS ITs run in-process
@@ -748,6 +757,7 @@ jobs:
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
       - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
@@ -755,6 +765,14 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/restore-shared-m2
+        if: steps.is-fork.outputs.is-fork != 'true'
+      # Fork PRs can't authenticate to GCS (no Vault access), so build the SNAPSHOTs locally
+      # instead of restoring them -- same fallback the database/webapp-UT reusable workflows
+      # use for their standalone (non-ci.yml) callers.
+      - uses: ./.github/actions/build-zeebe
+        if: steps.is-fork.outputs.is-fork == 'true'
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
@@ -951,6 +969,9 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Check for fork
+        id: is-fork
+        uses: ./.github/actions/is-fork
       - name: Generate cache key with current hour
         if: matrix.group == 'qa-update'
         id: cache-key
@@ -983,6 +1004,7 @@ jobs:
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
       - name: Authenticate to GCS build-cache
+        if: steps.is-fork.outputs.is-fork != 'true'
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
@@ -991,9 +1013,11 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
       - name: Create dist/target
+        if: steps.is-fork.outputs.is-fork != 'true'
         shell: bash
         run: mkdir -p dist/target
       - name: Download distball from GCS
+        if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 5
@@ -1004,6 +1028,15 @@ jobs:
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
       # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
       - uses: ./.github/actions/restore-shared-m2
+        if: steps.is-fork.outputs.is-fork != 'true'
+      # Fork PRs can't authenticate to GCS (no Vault access), so build the distball + SNAPSHOTs
+      # locally instead of restoring them -- same fallback the database/webapp-UT reusable
+      # workflows use for their standalone (non-ci.yml) callers. Produces dist/target/*.tar.gz,
+      # same as "Download distball from GCS" above, so build-platform-docker below is unchanged.
+      - uses: ./.github/actions/build-zeebe
+        if: steps.is-fork.outputs.is-fork == 'true'
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -1754,7 +1787,9 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
@@ -1768,7 +1803,9 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   optimize-ci:
     if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
@@ -1782,7 +1819,9 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
-      use-shared-distball: true
+      # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
+      # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
+      use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
