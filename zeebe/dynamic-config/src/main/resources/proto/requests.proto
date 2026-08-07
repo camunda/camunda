@@ -101,6 +101,9 @@ message ReassignAllPartitionsRequest {
 message ExporterDisableRequest {
   string exporterId = 1;
   bool dryRun = 2;
+  // When physicalTenantId is set, the exporter will be disabled only for that tenant.
+  // If not set, the exporter will be disabled for all tenants.
+  optional string physicalTenantId = 3;
 }
 
 message ExporterDeleteRequest {

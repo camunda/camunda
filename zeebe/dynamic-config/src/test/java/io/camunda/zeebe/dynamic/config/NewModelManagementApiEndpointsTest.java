@@ -378,7 +378,9 @@ final class NewModelManagementApiEndpointsTest {
 
     // when
     final var response =
-        handler.disableExporter(new ExporterDisableRequest(exporterId, false)).join();
+        handler
+            .disableExporter(new ExporterDisableRequest(exporterId, Optional.empty(), false))
+            .join();
 
     // then
     assertThat(response.legacyResponse().plannedChanges())
@@ -401,7 +403,7 @@ final class NewModelManagementApiEndpointsTest {
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter))));
 
     // when
-    handler.disableExporter(new ExporterDisableRequest(exporterId, false)).join();
+    handler.disableExporter(new ExporterDisableRequest(exporterId, Optional.empty(), false)).join();
 
     // then — the plan is applied on the local member and completes
     final var config = manager.getMultiConfiguration().join();
