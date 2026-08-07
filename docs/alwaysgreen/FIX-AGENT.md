@@ -143,7 +143,8 @@ block.
 ## When the surface is helm-install
 
 There is no Playwright report: the install never got far enough to run tests. Your evidence
-is the failing job's log (`gh api repos/camunda/camunda/actions/jobs/<id>/logs`, or
+is the failing job's log (`gh api repos/camunda/camunda/actions/jobs/<id>/logs` — the
+job-level endpoint returns plain text, unlike the run-level one which returns a zip — or
 `gh run view <run> --log-failed`) and the `diagnostics-e2e*` dump in
 `/tmp/alwaysgreen-artifacts/`, which holds the pod list, events and component logs.
 

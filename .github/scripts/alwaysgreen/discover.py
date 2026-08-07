@@ -356,17 +356,19 @@ def resolve_blame(head_sha: str) -> classify.Blame:
 # ---------------------------------------------------------------------------
 
 
-def job_log(job_id: str) -> str:
-    """Raw log of one job, empty when it cannot be read.
+def job_log(job_id: str) -> str | None:
+    """Raw log of one job, or None when it could not be read.
 
     A helm-install failure has no report artifact: the evidence is the job log and the
-    diagnostics dump. Unreadable logs fall through to the withhold default rather than
-    dispatching blind.
+    diagnostics dump. None is kept distinct from an empty log so an unreadable one is
+    reported as such instead of looking like a log that simply carried no markers.
+
+    The job-level endpoint returns plain text; the run-level one returns a zip.
     """
     out, err = gh_text_ex(["api", f"repos/{REPO}/actions/jobs/{job_id}/logs"])
     if out is None:
         log(f"::warning::could not read log for job {job_id}: {err.strip()[:200]}")
-        return ""
+        return None
     return out
 
 
@@ -395,7 +397,12 @@ def build_candidates(run_id: str, base_ref: str, workdir: Path):
         elif surface == classify.SURFACE_SAAS_E2E:
             candidates.append(saas_candidate(run_id, base_ref, name, workdir))
         elif surface == classify.SURFACE_HELM_INSTALL:
-            verdict, detail = classify.helm_install_verdict(job_log(str(job.get("id") or "")))
+            text = job_log(str(job.get("id") or ""))
+            if text is None:
+                noise.append((classify.job_leaf_name(name), "helm-unreadable-log"))
+                log("helm-install: log unreadable, withholding")
+                continue
+            verdict, detail = classify.helm_install_verdict(text)
             log(f"helm-install verdict: {verdict} ({detail})")
             if verdict != classify.HELM_ACTIONABLE:
                 noise.append((classify.job_leaf_name(name), f"helm-{verdict}: {detail}"))
