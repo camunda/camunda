@@ -23,7 +23,15 @@ import java.util.List;
  * on a single partition in isolation: {@code P_K} sends a {@code QUERY} batching one {@link
  * MessageStartLockReleaseHolder holder} per lock entry to {@code P_B} (derived from each holder's
  * instance key); {@code P_B} replies {@code RELEASE} back to {@code P_K} (derived from {@link
- * #requestKeyProp the request key}) with the single gone holder.
+ * #requestKeyProp the request key}) with the single gone holder. On the {@code PUSHED} path {@code
+ * P_B} builds the same {@code RELEASE} itself, from the holder-origin entry, the moment the holder
+ * completes — so the release also flows without a preceding {@code QUERY}.
+ *
+ * <p>The {@link #requestKeyProp request key} is purely a partition-addressing envelope: the {@code
+ * RELEASE} is routed to the partition its bits encode. On the query path {@code P_K} stamps it so
+ * the reply comes back to itself; on the push path {@code P_B} synthesizes it from the buffered
+ * message key's partition bits to address {@code P_K}. It is never a request-correlation id and
+ * never an event key.
  */
 public final class MessageStartCorrelationKeyLockReleaseRecord extends UnifiedRecordValue
     implements MessageStartCorrelationKeyLockReleaseRecordValue {

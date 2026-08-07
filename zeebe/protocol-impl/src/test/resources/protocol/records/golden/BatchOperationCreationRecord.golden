@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.BatchOperationJobUpdatePlanValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationJobUpdatePlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Collection;
 import java.util.List;

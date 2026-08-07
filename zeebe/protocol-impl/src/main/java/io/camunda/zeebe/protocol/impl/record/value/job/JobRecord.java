@@ -331,6 +331,31 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return rootProcessInstanceKeyProp.getValue();
   }
 
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public JobRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public JobRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getLeaseToken() {
+    return bufferAsString(leaseTokenProp.getValue());
+  }
+
   @Override
   public String getBpmnProcessId() {
     return bufferAsString(bpmnProcessIdProp.getValue());
@@ -410,6 +435,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public boolean isJobToUserTaskMigration() {
+    return isJobToUserTaskMigrationProp.getValue();
+  }
+
+  @Override
   public List<JobSecretReferenceValue> getSecretReferences() {
     // detach copies so the returned list stays valid if this record is reused or reset later
     return secretReferencesProp.stream()
@@ -434,40 +464,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  /**
-   * Direct access to the secret reference elements, without the detached copies of {@link
-   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
-   */
-  @JsonIgnore
-  public ValueArray<JobSecretReference> secretReferences() {
-    return secretReferencesProp;
-  }
-
-  @JsonIgnore
-  public boolean hasSecretReferences() {
-    return !secretReferencesProp.isEmpty();
-  }
-
-  public JobRecord addSecretReference(
-      final String storeId, final String secretReference, final String path) {
-    secretReferencesProp
-        .add()
-        .setStoreId(storeId)
-        .setSecretReference(secretReference)
-        .setPath(path);
-    return this;
-  }
-
-  public JobRecord resetSecretReferences() {
-    secretReferencesProp.reset();
-    return this;
-  }
-
-  @Override
-  public boolean isJobToUserTaskMigration() {
-    return isJobToUserTaskMigrationProp.getValue();
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -483,49 +479,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
-    return this;
-  }
-
-  @Override
-  public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
-  }
-
-  public JobRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public JobRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
-  }
-
-  @Override
-  public String getLeaseToken() {
-    return bufferAsString(leaseTokenProp.getValue());
-  }
-
-  @JsonIgnore
-  public boolean hasLeaseToken() {
-    return !getLeaseToken().isEmpty();
-  }
-
   public JobRecord setLeaseToken(final String leaseToken) {
     leaseTokenProp.setValue(leaseToken);
     return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getLeaseTokenBuffer() {
-    return leaseTokenProp.getValue();
   }
 
   public JobRecord setElementInstanceKey(final long elementInstanceKey) {
@@ -612,6 +568,50 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  /**
+   * Direct access to the secret reference elements, without the detached copies of {@link
+   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
+   */
+  @JsonIgnore
+  public ValueArray<JobSecretReference> secretReferences() {
+    return secretReferencesProp;
+  }
+
+  @JsonIgnore
+  public boolean hasSecretReferences() {
+    return !secretReferencesProp.isEmpty();
+  }
+
+  public JobRecord addSecretReference(
+      final String storeId, final String secretReference, final String path) {
+    secretReferencesProp
+        .add()
+        .setStoreId(storeId)
+        .setSecretReference(secretReference)
+        .setPath(path);
+    return this;
+  }
+
+  public JobRecord resetSecretReferences() {
+    secretReferencesProp.reset();
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasLeaseToken() {
+    return !getLeaseToken().isEmpty();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getLeaseTokenBuffer() {
+    return leaseTokenProp.getValue();
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {

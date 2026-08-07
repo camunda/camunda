@@ -160,6 +160,56 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return bufferAsString(elementIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
   public MessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
@@ -220,63 +270,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
-  }
-
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
   }
 
-  public MessageSubscriptionRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  @Override
-  public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
-  }
-
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
-    return this;
-  }
-
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setRootProcessInstanceKey(final long key) {
-    rootProcessInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  @Override
-  public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
-    return this;
   }
 }

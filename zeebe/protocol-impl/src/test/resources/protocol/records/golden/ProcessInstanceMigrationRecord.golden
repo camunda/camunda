@@ -124,6 +124,16 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProperty.getValue());
+  }
+
+  public ProcessInstanceMigrationRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
+    return this;
+  }
+
   /** Returns true if this record has mapping instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMappingInstructions() {
@@ -143,16 +153,6 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   public ProcessInstanceMigrationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
-    return this;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProperty.getValue());
-  }
-
-  public ProcessInstanceMigrationRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 }

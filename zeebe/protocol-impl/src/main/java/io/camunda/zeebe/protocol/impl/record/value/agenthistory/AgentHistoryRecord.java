@@ -144,22 +144,17 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
 
   public AgentHistoryRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
-    return this;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
@@ -244,11 +239,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
-    contentProp.add().copy(content);
-    return this;
-  }
-
   @Override
   public List<AgentHistoryMessageContentValue> getSystemPrompt() {
     return systemPromptProp.stream()
@@ -269,11 +259,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         systemPromptProp.add().copy(item);
       }
     }
-    return this;
-  }
-
-  public AgentHistoryRecord addSystemPrompt(final AgentHistoryMessageContent block) {
-    systemPromptProp.add().copy(block);
     return this;
   }
 
@@ -298,18 +283,9 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
-    toolCallsProp.add().copy(toolCall);
-    return this;
-  }
-
   @Override
   public AgentHistoryMetrics getMetrics() {
     return metricsProp.getValue();
-  }
-
-  public AgentHistoryRecord ignoreLease() {
-    return setJobLease(JobRecord.EMPTY_LEASE);
   }
 
   @Override
@@ -386,11 +362,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentHistoryRecord addChangedAttribute(final String attribute) {
-    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
-    return this;
-  }
-
   @Override
   public boolean isDuplicate() {
     return isDuplicateProp.getValue();
@@ -398,6 +369,35 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setDuplicate(final boolean duplicate) {
     isDuplicateProp.setValue(duplicate);
+    return this;
+  }
+
+  public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
+    contentProp.add().copy(content);
+    return this;
+  }
+
+  public AgentHistoryRecord addSystemPrompt(final AgentHistoryMessageContent block) {
+    systemPromptProp.add().copy(block);
+    return this;
+  }
+
+  public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
+    toolCallsProp.add().copy(toolCall);
+    return this;
+  }
+
+  public AgentHistoryRecord ignoreLease() {
+    return setJobLease(JobRecord.EMPTY_LEASE);
+  }
+
+  public AgentHistoryRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
     return this;
   }
 }

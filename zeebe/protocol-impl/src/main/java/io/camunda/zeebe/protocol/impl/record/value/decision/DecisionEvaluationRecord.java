@@ -287,15 +287,15 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
-  }
-
   public DecisionEvaluationRecord setEvaluationFailureMessage(
       final String evaluationFailureMessage) {
     evaluationFailureMessageProp.setValue(evaluationFailureMessage);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
   }
 
   @Override
