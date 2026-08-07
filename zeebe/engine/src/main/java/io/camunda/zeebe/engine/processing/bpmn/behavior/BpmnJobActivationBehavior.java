@@ -124,16 +124,15 @@ public class BpmnJobActivationBehavior {
   }
 
   /**
-   * Upper bound on what handing this job out adds to the record batch. A caller that hands out
-   * several jobs into one batch reserves this per job, so the hand-out cannot overflow a batch the
-   * caller sized (see {@code SecretReferenceBatchReactivateJobsProcessor}).
+   * Estimate of what handing this job out adds to the record batch, for a caller that hands out
+   * several jobs into one batch and wants to cut the batch before it runs out of room (see {@code
+   * SecretReferenceBatchReactivateJobsProcessor}).
    *
-   * <p>A hand-out writes at most one of three things for a job, each carrying a subset of the job
-   * record plus a bounded addition that the calculation buffer covers along with the record
-   * framing: the activation event (the job without its variables, plus the stream's worker name),
-   * the incident of a failed secret injection (the job's identity, plus a fixed message), or the
-   * resolution requests that park it again (one reference of the job each, and they stop themselves
-   * once the batch is full).
+   * <p>An estimate, not a bound: it is measured on the stored job record, which does not carry the
+   * worker name of the stream that ends up taking the job, and a hand-out writes that name twice,
+   * on the job it puts in the activation batch and on the batch itself. A caller therefore cannot
+   * size a hand-out it has not made yet. What keeps a hand-out inside the batch is the hand-out
+   * itself: it checks before it appends and reports back when the batch is out of room.
    */
   public static int maxHandOutLength(final JobRecord jobRecord) {
     return jobRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
@@ -147,8 +146,13 @@ public class BpmnJobActivationBehavior {
    *
    * <p>The job record is read before this returns, so a caller may pass the record instance the job
    * state reuses across reads.
+   *
+   * @return whether the record batch had room for this hand-out. A caller handing out several jobs
+   *     into one batch must stop when this is {@code false}: the batch is out of room, so the jobs
+   *     after this one would only be turned away too, and the append that does not fit would fail
+   *     the whole command rather than this one job.
    */
-  public void publishWork(
+  public boolean publishWork(
       final long jobKey, final JobRecord jobRecord, final Set<String> notifiedJobTypes) {
     final JobRecord wrappedJobRecord = new JobRecord();
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
@@ -163,7 +167,7 @@ public class BpmnJobActivationBehavior {
     if (optionalJobStream.isEmpty()) {
       // the job stays activatable; a long poll checks its secret references when it collects it
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
-      return;
+      return true;
     }
 
     // the check reads the values that are injected below, so a value evicted from the cache in
@@ -172,8 +176,7 @@ public class BpmnJobActivationBehavior {
     // one in the pushed job itself, which carries it to the worker
     final SecretCheckResult secrets = secretLookup.check(wrappedJobRecord);
     if (!secrets.nonCachedSecrets().isEmpty()) {
-      requestResolutionAndPark(jobKey, jobType, jobKind, secrets, notifiedJobTypes);
-      return;
+      return requestResolutionAndPark(jobKey, jobType, jobKind, secrets, notifiedJobTypes);
     }
 
     final JobStream jobStream = optionalJobStream.get();
@@ -184,13 +187,24 @@ public class BpmnJobActivationBehavior {
     final var pushableJobRecord = new JobRecord();
     cloneJob(wrappedJobRecord, pushableJobRecord);
     if (!injectSecretValues(jobKey, pushableJobRecord, secrets)) {
-      // the job is not activated, so it stays available and its incident tells why it is not pushed
-      return;
+      // the job is not activated, so it stays available and its incident tells why it is not
+      // pushed. The batch itself is fine, so a caller handing out more jobs should carry on
+      return true;
     }
 
     // activate job in state; the batch drops the variables, so the injected values stay off the log
     final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
     appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
+    // the activation is sized here rather than by the caller: only now is the stream known, and
+    // with it the worker name this record carries twice. Letting the append overflow instead would
+    // fail the whole command, which for an engine-written one means no rejection anybody reads
+    if (!stateWriter.canWriteEventOfLength(
+        jobBatchRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+      // the job is not activated, so it stays available; the notification lets a long poll collect
+      // it, and the caller stops handing out jobs this batch can no longer take
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      return false;
+    }
     final var jobBatchKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
 
@@ -204,6 +218,7 @@ public class BpmnJobActivationBehavior {
           jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
           return true;
         });
+    return true;
   }
 
   /**
@@ -216,8 +231,10 @@ public class BpmnJobActivationBehavior {
    * again. A job that could not be parked at all stays activatable and is announced to the workers
    * instead of being counted as skipped, so a long poll can still collect it and request the
    * resolution itself.
+   *
+   * @return whether the record batch had room for every request, i.e. {@code false} once it ran out
    */
-  private void requestResolutionAndPark(
+  private boolean requestResolutionAndPark(
       final long jobKey,
       final String jobType,
       final JobKind jobKind,
@@ -225,6 +242,7 @@ public class BpmnJobActivationBehavior {
       final Set<String> notifiedJobTypes) {
     final Set<SecretReference> requested = new HashSet<>();
     boolean parked = false;
+    boolean batchHadRoom = true;
     for (final Secret secret : secrets.nonCachedSecrets()) {
       if (!requested.add(secret.reference())) {
         continue;
@@ -239,6 +257,7 @@ public class BpmnJobActivationBehavior {
       // top of the value, the same way the collector sizes the job records it appends
       if (!stateWriter.canWriteEventOfLength(
           event.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+        batchHadRoom = false;
         break;
       }
       stateWriter.appendFollowUpEvent(
@@ -250,6 +269,7 @@ public class BpmnJobActivationBehavior {
     } else {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
     }
+    return batchHadRoom;
   }
 
   /** Notifies the workers of the job type unless this batch of jobs already did. */

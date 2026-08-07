@@ -67,6 +67,10 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     keyGenerator = mock(KeyGenerator.class);
     when(keyGenerator.nextKey()).thenReturn(999L);
     jobActivationBehavior = mock(BpmnJobActivationBehavior.class);
+    // a hand-out reports whether the batch had room for it; the default mock answer is false, which
+    // would stop the drain after the first job in every test that does not care about the budget
+    when(jobActivationBehavior.publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any()))
+        .thenReturn(true);
 
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
@@ -198,7 +202,7 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
             invocation -> {
               publishedJobTypes.put(
                   invocation.getArgument(0), ((JobRecord) invocation.getArgument(1)).getType());
-              return null;
+              return true;
             })
         .when(jobActivationBehavior)
         .publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any());
@@ -240,8 +244,10 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
     activatableJob(1L);
     activatableJob(2L);
     waitingJob(2L);
+    // the first check is the selection sizing the second job, which does not fit; the checks after
+    // it guard the hand-outs of what was selected, and those still have room
     when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
-        .thenReturn(false);
+        .thenReturn(false, true);
     final var value =
         new SecretReferenceRecord()
             .setStoreId(STORE_ID)
@@ -328,7 +334,7 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
               final long publishedJobKey = invocation.getArgument(0);
               secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
               secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, publishedJobKey);
-              return null;
+              return true;
             })
         .when(jobActivationBehavior)
         .publishWork(org.mockito.ArgumentMatchers.anyLong(), any(), any());
