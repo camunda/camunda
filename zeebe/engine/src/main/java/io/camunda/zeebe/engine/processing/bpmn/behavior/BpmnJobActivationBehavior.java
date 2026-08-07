@@ -124,6 +124,22 @@ public class BpmnJobActivationBehavior {
   }
 
   /**
+   * Upper bound on what handing this job out adds to the record batch. A caller that hands out
+   * several jobs into one batch reserves this per job, so the hand-out cannot overflow a batch the
+   * caller sized (see {@code SecretReferenceBatchReactivateJobsProcessor}).
+   *
+   * <p>A hand-out writes at most one of three things for a job, each carrying a subset of the job
+   * record plus a bounded addition that the calculation buffer covers along with the record
+   * framing: the activation event (the job without its variables, plus the stream's worker name),
+   * the incident of a failed secret injection (the job's identity, plus a fixed message), or the
+   * resolution requests that park it again (one reference of the job each, and they stop themselves
+   * once the batch is full).
+   */
+  public static int maxHandOutLength(final JobRecord jobRecord) {
+    return jobRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+  }
+
+  /**
    * Hands the job to a job worker like {@link #publishWork(long, JobRecord)}, but notifies the
    * workers of a job type only once per {@code notifiedJobTypes}. A caller that hands out several
    * jobs that became available together (e.g. the jobs a resolved secret reference reactivates)

@@ -108,9 +108,11 @@ public final class SecretReferenceBatchReactivateJobsProcessor
 
   /**
    * Returns the jobs of the command this cycle reactivates: as many as the record batch can take,
-   * since every pushed job appends an activation event of roughly the size of its job record. The
-   * first job is always taken, so a cycle always drains at least one waiting entry and the chain
-   * cannot spin on a job whose record alone exceeds the budget.
+   * since handing a job out writes into the same batch. What that costs is {@link
+   * BpmnJobActivationBehavior#maxHandOutLength(JobRecord)}, so the bound stays with the hand-out
+   * that spends it rather than being restated here. The first job is always taken, so a cycle
+   * always drains at least one waiting entry and the chain cannot spin on a job whose record alone
+   * exceeds the budget.
    */
   private SecretReferenceRecord selectJobsToReactivate(final SecretReferenceRecord value) {
     final var storeId = value.getStoreId();
@@ -124,8 +126,8 @@ public final class SecretReferenceBatchReactivateJobsProcessor
         value.getLength()
             + maxNextCommandLength(storeId, secretReference)
             + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
-    // the activations of the selected jobs share one record batch, so their lengths accumulate
-    var selectedActivationsLength = 0;
+    // the hand-outs of the selected jobs share one record batch, so their lengths accumulate
+    var selectedHandOutsLength = 0;
     var jobSelected = false;
     for (final long jobKey : value.getJobKeys()) {
       final JobRecord job = jobState.getJob(jobKey);
@@ -135,15 +137,14 @@ public final class SecretReferenceBatchReactivateJobsProcessor
         selected.addJobKey(jobKey);
         continue;
       }
-      final int activationLength =
-          job.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+      final int handOutLength = BpmnJobActivationBehavior.maxHandOutLength(job);
       if (jobSelected
           && !stateWriter.canWriteEventOfLength(
-              selectedActivationsLength + activationLength + followUpRecordsReserve)) {
+              selectedHandOutsLength + handOutLength + followUpRecordsReserve)) {
         break;
       }
       selected.addJobKey(jobKey);
-      selectedActivationsLength += activationLength;
+      selectedHandOutsLength += handOutLength;
       jobSelected = true;
     }
     return selected;
