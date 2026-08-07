@@ -226,7 +226,22 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodeExporterDeleteRequest() {
     // given
-    final var exporterDeleteRequest = new ExporterDeleteRequest("expId", false);
+    final var exporterDeleteRequest =
+        new ExporterDeleteRequest("expId", Optional.of("tenanta"), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterDeleteRequest(exporterDeleteRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterDeleteRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterDeleteRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExporterDeleteRequestWithoutPhysicalTenantId() {
+    // given
+    final var exporterDeleteRequest = new ExporterDeleteRequest("expId", Optional.empty(), false);
 
     // when
     final var encodedRequest =

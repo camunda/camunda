@@ -68,7 +68,7 @@ public class ExportersEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
 
     return requestSender
-        .deleteExporter(new ExporterDeleteRequest(exporterId, dryRun))
+        .deleteExporter(new ExporterDeleteRequest(exporterId, Optional.empty(), dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 

@@ -757,15 +757,17 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
   @Test
   void shouldDeleteExporter() {
-    // given
+    // given — the exporter is in CONFIG_NOT_FOUND, the state a delete requires
     final String exporterId = "exporterId";
     final var request =
-        new ClusterConfigurationManagementRequest.ExporterDeleteRequest(exporterId, false);
+        new ClusterConfigurationManagementRequest.ExporterDeleteRequest(
+            exporterId, Optional.empty(), false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
                 ExportingState.EXPORTING,
-                Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
+                Map.of(
+                    exporterId, new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
             memberFactory.apply(0),

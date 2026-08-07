@@ -438,7 +438,9 @@ final class NewModelManagementApiEndpointsTest {
 
     // when
     final var response =
-        handler.deleteExporter(new ExporterDeleteRequest(exporterId, false)).join();
+        handler
+            .deleteExporter(new ExporterDeleteRequest(exporterId, Optional.empty(), false))
+            .join();
 
     // then
     assertThat(response.legacyResponse().plannedChanges())
