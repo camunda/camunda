@@ -662,6 +662,36 @@
 					"message": "Data could not be fetched",
 					"additionalInfo": "Refresh the page to try again"
 				},
+				"operations": {
+					"loadingMessage": "Instance {{processInstanceKey}} has scheduled operations",
+					"retryTitle": "Retry Instance {{processInstanceKey}}",
+					"cancelTitle": "Cancel Instance {{processInstanceKey}}",
+					"modifyTitle": "Modify Instance {{processInstanceKey}}",
+					"deleteTitle": "Delete Instance {{processInstanceKey}}",
+					"deleteButtonLabel": "Delete",
+					"cancelConfirmationModal": {
+						"heading": "Apply Operation",
+						"applyButton": "Apply",
+						"cancelButton": "Cancel",
+						"body": "About to cancel Instance {{processInstanceKey}}. In case there are called instances, these will be canceled too.",
+						"hint": "Click \"Apply\" to proceed.",
+						"verificationLoading": "Checking whether this instance can be canceled...",
+						"verificationError": "Cancellation availability could not be checked. Close this dialog and try again."
+					},
+					"cancelRootInstanceModal": {
+						"heading": "Cancel Instance",
+						"bodyBeforeLink": "To cancel this instance, the root instance",
+						"bodyAfterLink": "needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically.",
+						"linkTitle": "View root instance {{rootInstanceId}}"
+					},
+					"deleteConfirmationModal": {
+						"heading": "Delete Instance",
+						"deleteButton": "Delete",
+						"cancelButton": "Cancel",
+						"body": "About to delete Instance {{processInstanceKey}}.",
+						"hint": "Click \"Delete\" to proceed."
+					}
+				},
 				"panelHeader": {
 					"resultCount_one": "{{count}} result",
 					"resultCount_other": "{{count}} results",
