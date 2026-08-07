@@ -516,12 +516,20 @@ class DefaultResourceAccessProviderTest {
   void forScopeRepositoryShouldBuildDefaultProviderWhenAuthorizationsEnabled() {
     // given
     final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
+    when(scopeRepository.findAuthorizedScopes(any(), any(), any()))
+        .thenReturn(List.of(AuthorizationScope.of("bar")));
 
     // when
     final var provider = DefaultResourceAccessProvider.forScopeRepository(scopeRepository, true);
+    final var result = provider.resolveResourceAccess(authentication, authorization);
 
     // then
     assertThat(provider).isInstanceOf(DefaultResourceAccessProvider.class);
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.authorization().resourceIds()).containsExactly("bar");
   }
 
   @Test
