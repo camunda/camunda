@@ -14,10 +14,12 @@ import {
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {HttpResponse} from 'msw';
@@ -31,6 +33,9 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		mockQueryProcessDefinitionsEndpoint({
 			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 		}),
 	);
 });

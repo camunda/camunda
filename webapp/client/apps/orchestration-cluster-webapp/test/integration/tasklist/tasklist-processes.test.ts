@@ -50,6 +50,9 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 			failureResponse: new HttpResponse(null, {status: 400}),
 		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
 	);
 });
 

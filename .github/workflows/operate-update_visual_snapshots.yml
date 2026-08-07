@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: write
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1
+      image: mcr.microsoft.com/playwright:v1.62.1
       options: --user 1001:1000
 
     steps:
