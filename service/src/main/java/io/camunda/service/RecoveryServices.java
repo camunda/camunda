@@ -28,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
@@ -71,7 +72,7 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
         authentication,
         () ->
             clusterConfigurationRequestSender.modeChange(
-                new ModeChangeRequest(getPhysicalTenantId(), mode, dryRun)));
+                new ModeChangeRequest(Optional.of(getPhysicalTenantId()), mode, dryRun)));
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(

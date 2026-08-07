@@ -32,10 +32,11 @@ import org.slf4j.LoggerFactory;
  * <p>One handler is built per physical tenant by the {@link
  * io.camunda.zeebe.broker.bootstrap.PartitionManagerStep} that owns the tenant, reusing that
  * tenant's {@link TopologyManagerImpl}, and is closed when the step shuts the partition manager
- * down. Only the default tenant participates in cluster configuration changes, so only its handler
- * registers as the broker's {@link ModeChangeExecutor} and stays registered across mode changes. A
- * transition stops the active manager, recreates it in the target mode, starts it, and re-publishes
- * it on the {@link BrokerStartupContext}.
+ * down. Each handler registers as the {@link ModeChangeExecutor} of its own partition group and
+ * stays registered across mode changes, so a cluster configuration change can transition one
+ * physical tenant while the others keep processing. A transition stops the active manager,
+ * recreates it in the target mode, starts it, and re-publishes it on the {@link
+ * BrokerStartupContext}.
  *
  * <p>The handler keeps no partition manager reference of its own; the active manager and the
  * remaining dependencies are resolved from the {@link BrokerStartupContext} on demand.
@@ -85,10 +86,8 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
   }
 
   /**
-   * Registers this handler as the broker's mode change executor. Only the default tenant
-   * participates in cluster configuration changes, so only its handler registers. The partition
-   * change executors are registered by the partition manager itself on {@link
-   * PartitionManager#start()}.
+   * Registers this handler as the mode change executor of its partition group. The partition change
+   * executors are registered by the partition manager itself on {@link PartitionManager#start()}.
    */
   public void register() {
     clusterConfigurationService().registerModeChangeExecutor(partitionGroup, this);
@@ -236,10 +235,6 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
 
   private boolean isRecovering() {
     return currentManager() instanceof RecoveryPartitionManager;
-  }
-
-  private boolean isDefaultGroup() {
-    return PartitionManager.isDefaultPhysicalTenant(partitionGroup);
   }
 
   private ConcurrencyControl concurrencyControl() {

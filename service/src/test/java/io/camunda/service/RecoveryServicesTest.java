@@ -40,6 +40,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -92,7 +93,7 @@ public class RecoveryServicesTest {
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
     verify(clusterConfigurationRequestSender)
-        .modeChange(new ModeChangeRequest(PHYSICAL_TENANT_ID, mode, true));
+        .modeChange(new ModeChangeRequest(Optional.of(PHYSICAL_TENANT_ID), mode, true));
   }
 
   @Test
@@ -385,6 +386,11 @@ public class RecoveryServicesTest {
         PHYSICAL_TENANT_ID, List.of(100L), null, null, "elasticsearch", false, false);
   }
 
+  private void stubTopologySuccess() {
+    when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
+  }
+
   private void stubRestoreSuccess() {
     when(clusterConfigurationRequestSender.restore(any()))
         .thenReturn(
@@ -394,11 +400,6 @@ public class RecoveryServicesTest {
                         0L,
                         new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
                         null))));
-  }
-
-  private void stubTopologySuccess() {
-    when(clusterConfigurationRequestSender.getTopology())
-        .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
   }
 
   private void grant(

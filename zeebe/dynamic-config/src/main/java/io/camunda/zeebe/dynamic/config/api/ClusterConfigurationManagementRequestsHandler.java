@@ -263,9 +263,7 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> modeChange(
       final ModeChangeRequest modeChangeRequest) {
     return handleRequest(
-        modeChangeRequest.dryRun(),
-        new ModeChangeRequestTransformer(
-            modeChangeRequest.physicalTenantId(), modeChangeRequest.mode()));
+        modeChangeRequest.dryRun(), new ModeChangeRequestTransformer(modeChangeRequest));
   }
 
   @Override
