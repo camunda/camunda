@@ -40,14 +40,15 @@ scan visits it and hand-out cost returns to zero.
 
 Transition table:
 
-|  From state   |      Event      |            Guard            |                                    Effect                                     |
-|---------------|-----------------|-----------------------------|-------------------------------------------------------------------------------|
-| `ACTIVATABLE` | `Job.SUSPENDED` | job is in `ACTIVATABLE`     | state set to `SUSPENDED`, job removed from activatable index                  |
-| `SUSPENDED`   | `Job.SUSPENDED` | job is in `SUSPENDED`       | no-op (idempotent)                                                            |
-| other state   | `Job.SUSPENDED` | job is not in `ACTIVATABLE` | no-op                                                                         |
-| `SUSPENDED`   | `Job.RESUMED`   | job is in `SUSPENDED`       | state set to `ACTIVATABLE`, job re-inserted by its type, tenant, and priority |
-| other state   | `Job.RESUMED`   | job is not in `SUSPENDED`   | no-op                                                                         |
-| any state     | job deletion    | —                           | job record and state removed, same as any other job                           |
+|           From state            |      Event      |                   Guard                   |                                    Effect                                     |
+|---------------------------------|-----------------|-------------------------------------------|-------------------------------------------------------------------------------|
+| `ACTIVATABLE`                   | `Job.SUSPENDED` | job is in `ACTIVATABLE`                   | state set to `SUSPENDED`, job removed from activatable index                  |
+| `WAITING_FOR_SECRET_RESOLUTION` | `Job.SUSPENDED` | job is in `WAITING_FOR_SECRET_RESOLUTION` | state set to `SUSPENDED`; suspension overrides secret-waiting                 |
+| `SUSPENDED`                     | `Job.SUSPENDED` | job is in `SUSPENDED`                     | no-op (idempotent)                                                            |
+| other state                     | `Job.SUSPENDED` | job is not suspendable                    | no-op                                                                         |
+| `SUSPENDED`                     | `Job.RESUMED`   | job is in `SUSPENDED`                     | state set to `ACTIVATABLE`, job re-inserted by its type, tenant, and priority |
+| other state                     | `Job.RESUMED`   | job is not in `SUSPENDED`                 | no-op                                                                         |
+| any state                       | job deletion    | —                                         | job record and state removed, same as any other job                           |
 
 Each guard returns silently instead of throwing, because an exception in an event applier bans the
 process instance, or fails the partition on replay. The precondition is enforced by the guard, not
@@ -55,10 +56,11 @@ documented as a caller obligation.
 
 **D2. The suspend and resume processors walk the element instance tree of the process instance
 and write one job event per affected job.** `ProcessInstanceSuspendProcessor` appends
-`Job.SUSPENDED` for every job in `ACTIVATABLE`; `ProcessInstanceResumeProcessor` appends
-`Job.RESUMED` for every job in `SUSPENDED`. Both use `SuspendedJobsWalker`, an `ArrayDeque` walk of
-`ElementInstanceState` (the pattern of `ProcessInstanceMigrationMigrateProcessor`), so the cost is
-paid once per suspend or resume rather than on every poll.
+`Job.SUSPENDED` for every job in `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION`;
+`ProcessInstanceResumeProcessor` appends `Job.RESUMED` for every job in `SUSPENDED`. Both use
+`SuspendedJobsWalker`, an `ArrayDeque` walk of `ElementInstanceState` (the pattern of
+`ProcessInstanceMigrationMigrateProcessor`), so the cost is paid once per suspend or resume rather
+than on every poll.
 
 The walk never crosses into a called child instance: `ElementInstanceState.getChildren` is driven
 by an element instance's `parentKey`, and a called child instance's root element has no such
@@ -76,6 +78,12 @@ poll-only worker gets the job-available notification from the same call.
 Jobs in `ACTIVATED`, `FAILED`, and `ERROR_THROWN` are left alone. They are already absent from the
 activatable index, and every path that would re-publish them — fail, recur after backoff, incident
 resolution, activation time-out — is already rejected or buffered by the suspension gate.
+
+Jobs in `WAITING_FOR_SECRET_RESOLUTION` are overridden to `SUSPENDED`. Secret reactivation
+(`makeActivatableAfterSecretResolution`) acts only while the job is still waiting for secrets, so
+moving the job to `SUSPENDED` stops a later secret completion from putting it back into the
+activatable index while the process instance is suspended. On resume the job becomes `ACTIVATABLE`
+again; if secrets are still required, the next activation path re-parks it for resolution.
 
 **D3. Worker lifecycle commands need no new handling; only the exhaustive `State` switches gain a
 branch.**
