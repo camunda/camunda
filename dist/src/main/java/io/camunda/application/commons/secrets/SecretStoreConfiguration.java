@@ -22,7 +22,10 @@ import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
+import io.camunda.zeebe.shared.management.ActorClockService;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,18 +60,21 @@ public class SecretStoreConfiguration {
               "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
 
   @Bean
-  public SecretStoreRegistries secretStoreRegistries(final PhysicalTenantResolver resolver) {
+  public SecretStoreRegistries secretStoreRegistries(
+      final PhysicalTenantResolver resolver, final ActorClockService clockService) {
     final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
     // tracks every store successfully constructed across all tenants processed so far, so a
     // failure partway through (e.g. a later tenant's AWS store failing to build) can close
     // them instead of leaking their underlying clients/connections
     final List<SecretStore> created = new ArrayList<>();
+    final var timeSource = new ActorClockInstantSource(clockService);
     try {
       resolver
           .mapValues(Camunda::getSecrets)
           .forEach(
               (tenantId, secrets) ->
-                  registries.put(tenantId, buildRegistry(tenantId, secrets.getStores(), created)));
+                  registries.put(
+                      tenantId, buildRegistry(tenantId, secrets.getStores(), created, timeSource)));
     } catch (final RuntimeException e) {
       closeAll(created);
       throw e;
@@ -77,7 +83,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStoreRegistry buildRegistry(
-      final String tenantId, final Stores config, final List<SecretStore> created) {
+      final String tenantId,
+      final Stores config,
+      final List<SecretStore> created,
+      final InstantSource timeSource) {
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
         STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
@@ -100,7 +109,7 @@ public class SecretStoreConfiguration {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
     }
-    return new SecretStoreRegistry(Map.copyOf(stores));
+    return new SecretStoreRegistry(Map.copyOf(stores), Map.of(), timeSource);
   }
 
   private static void closeAll(final List<SecretStore> stores) {
@@ -199,6 +208,31 @@ public class SecretStoreConfiguration {
             config.getPathPrefix(),
             config.getEndpoint(),
             config.getContainerSecretId()));
+  }
+
+  /**
+   * Adapts {@link ActorClockService}, which exposes only epoch millis, into an {@link
+   * InstantSource} for the secret cache's expiry — so {@code /actuator/clock} time travel reaches
+   * cached secrets, and both broker and gateway share the same time source as the rest of the
+   * platform.
+   *
+   * <p>Overrides {@link #millis()} rather than relying on the default {@code
+   * instant().toEpochMilli()}, since the cache reads its ticker on every lookup, including on the
+   * job-activation path where an allocation per lookup is exactly what that path's contract rules
+   * out. {@link io.camunda.zeebe.scheduler.clock.ActorClock} overrides the same pair for the same
+   * reason.
+   */
+  private record ActorClockInstantSource(ActorClockService clockService) implements InstantSource {
+
+    @Override
+    public Instant instant() {
+      return Instant.ofEpochMilli(clockService.epochMilli());
+    }
+
+    @Override
+    public long millis() {
+      return clockService.epochMilli();
+    }
   }
 
   /** Builds one {@link SecretStore} from a single configured entry of a given store type. */

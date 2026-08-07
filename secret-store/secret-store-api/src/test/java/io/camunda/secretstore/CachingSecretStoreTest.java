@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -175,6 +177,40 @@ class CachingSecretStoreTest {
     assertThat(store.resolveCalls).containsExactly(Set.of("token"));
     assertThat(results.get("token"))
         .isEqualTo(new Failed(SecretErrorCode.NOT_FOUND, "failed: token", null));
+    assertThat(cachingStore.lookupLocal("token")).isEmpty();
+  }
+
+  @Test
+  void shouldInvalidateACachedValueWhenResolvingFromTheStoreFails() {
+    // given a cached value that the store now fails authoritatively
+    cache.put("token", "cached-value");
+    store.fails("token", SecretErrorCode.ACCESS_DENIED);
+
+    // when
+    cachingStore.resolveFromStore(Set.of("token"));
+
+    // then the stale value is no longer available to cache-only readers
+    assertThat(cachingStore.lookupLocal("token")).isEmpty();
+  }
+
+  @Test
+  void shouldInvalidateOnlyFailedNamesInABatchResolvedFromTheStore() {
+    // given two cached values, where the store now resolves one and rejects the other
+    cache.put("token", "old-token");
+    cache.put("apiKey", "old-api-key");
+    store.holds("token", "new-token");
+    store.fails("apiKey", SecretErrorCode.ACCESS_DENIED);
+
+    // when
+    final var results = cachingStore.resolveFromStore(Set.of("token", "apiKey"));
+
+    // then the successful result refreshes its cache entry, and the failed result clears only its
+    // stale value
+    assertThat(results)
+        .containsEntry("token", new Resolved("new-token"))
+        .containsEntry("apiKey", new Failed(SecretErrorCode.ACCESS_DENIED, "failed: apiKey", null));
+    assertThat(cachingStore.lookupLocal("token")).contains("new-token");
+    assertThat(cachingStore.lookupLocal("apiKey")).isEmpty();
   }
 
   @Test
@@ -227,6 +263,38 @@ class CachingSecretStoreTest {
   void shouldAnswerATypeCheckForAStoreThatIsNotWrapped() {
     // when / then an unwrapped store answers for itself, so the same check serves both
     assertThat(store.is(RecordingSecretStore.class)).isTrue();
+  }
+
+  @Test
+  void shouldResolveARotatedValueOnceTheTtlElapses() {
+    // given a store whose value changes, cached through a TTL-bounded cache instead of the
+    // never-expiring in-memory fake the other tests use
+    final var timeSource = new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z"));
+    final var ttl = Duration.ofMinutes(20);
+    final var ttlCache =
+        CaffeineSecretCache.create(CaffeineSecretCache.DEFAULT_MAX_SIZE, ttl, timeSource);
+    final var ttlStore = new CachingSecretStore(store, ttlCache);
+    store.holds("token", "v1");
+
+    // when resolved once, the store is read and the value cached
+    assertThat(ttlStore.resolve(Set.of("token")).get("token")).isEqualTo(new Resolved("v1"));
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"));
+
+    // and when the store's value changes before the TTL elapses
+    store.holds("token", "v2");
+    ttlStore.resolve(Set.of("token"));
+
+    // then the cache still answers with the stale value, and the store was not asked again
+    assertThat(ttlStore.resolve(Set.of("token")).get("token")).isEqualTo(new Resolved("v1"));
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"));
+
+    // when the TTL elapses
+    timeSource.advance(ttl);
+
+    // then the next resolution reads the store again and picks up the rotated value, with no
+    // restart required
+    assertThat(ttlStore.resolve(Set.of("token")).get("token")).isEqualTo(new Resolved("v2"));
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"), Set.of("token"));
   }
 
   private static final class RecordingSecretStore implements SecretStore {

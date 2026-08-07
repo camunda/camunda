@@ -276,6 +276,9 @@ final class JobSecretInjectorTest {
 
             @Override
             public void put(final String name, final String value) {}
+
+            @Override
+            public void remove(final String name) {}
           };
       final var injector = new JobSecretInjector(registryWith(throwingCache));
       final var job = job(Map.of("auth", "camunda.secrets.token"), ref("token", "/auth"));

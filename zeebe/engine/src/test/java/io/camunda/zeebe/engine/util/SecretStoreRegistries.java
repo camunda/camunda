@@ -38,6 +38,9 @@ public final class SecretStoreRegistries {
 
           @Override
           public void put(final String name, final String ignored) {}
+
+          @Override
+          public void remove(final String name) {}
         };
     return new SecretStoreRegistry(
         Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, new NoopSecretStore()),
