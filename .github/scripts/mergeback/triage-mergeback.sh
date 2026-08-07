@@ -18,9 +18,17 @@
 #                            never backported). Tied to the clash itself, never a whole-file or blanket
 #                            target-ahead sweep — see reverse_conflict_hits for the flood guard.
 #   version_build_gap  - a version/build file carrying a REAL missing dep change (also actionable).
-#   source_drift       - neither direction fires: changes already on both sides by patch-id. Text drift.
+#   needs_review       - THE OTHER ALARM: merge-tree flagged a conflict, but attribution hit a
+#                        structural blind spot so no commit can be blamed — a target DELETION or a
+#                        release/target INSERTION on the clashing lines (no surviving line to blame,
+#                        no base span to overlap). It makes NO missing-commit claim; it only says a
+#                        human must resolve this conflict. This is what keeps a modify/delete or an
+#                        add/add conflict from silently landing in source_drift (INC follow-up).
+#   source_drift       - neither direction fires AND no blind spot: changes PROVEN already on both
+#                        sides by patch-id. Benign text drift. Silent.
 #
-# action_count = |source_missing| + |version_build_gap|. Gate downstream on action_count > 0.
+# action_count = |source_missing| + |version_build_gap| + |needs_review|. Gate downstream on
+# action_count > 0.
 #
 # Read-only (git reads only). Requires jq.
 #
@@ -101,7 +109,7 @@ if [ "$status" = clean ]; then
     release_ref: $release_ref, target_ref: $target_ref,
     conflicting_paths: 0, action_count: 0,
     verdict: "merge-back is clean — no conflicting paths.",
-    source_missing: [], version_build_gap: [], source_drift: [], version_build: []
+    source_missing: [], version_build_gap: [], needs_review: [], source_drift: [], version_build: []
   }'
   exit 0
 fi
@@ -117,7 +125,7 @@ if [ "${#paths[@]}" -eq 0 ]; then
       path: "(unclassified conflict — merge-tree reported a conflict with no named paths; inspect the run and merge manually)",
       owner: "", commits: []
     }],
-    version_build_gap: [], source_drift: [], version_build: []
+    version_build_gap: [], needs_review: [], source_drift: [], version_build: []
   }'
   exit 0
 fi
@@ -218,9 +226,57 @@ reverse_conflict_hits() {
   printf '%s' "$out"
 }
 
+# Blind-spot detector for the REVERSE direction. reverse_conflict_hits() localises a conflict by
+# overlapping positive-width base ranges and then git-blames the surviving TARGET lines. Two conflict
+# shapes leave no line to blame, so that pass returns empty and the path would fall through to
+# source_drift (a PROVEN-benign bucket) — a FALSE all-clear:
+#   (1) modify/delete    - target DELETED lines release still edits (no surviving target line to blame);
+#   (2) insertion-derived - release and/or target INSERTED at the same spot (no base span to overlap).
+# merge-tree already flagged this path as conflicting, so once neither forward nor reverse blame
+# attributes a commit, this decides "proven benign drift" (silent) vs "blind-spot conflict" (a human
+# must resolve). It makes NO missing-commit claim — it only asks whether the conflict is one the blame
+# pass structurally could not examine. Returns 0 (blind spot found) / 1 (none).
+reverse_conflict_blindspot() {
+  local p="$1"
+  [ -n "$merge_base_ref" ] || return 1
+  # Release-side base intervals; insertions kept as zero-width points (ins=1) so an insertion edge is
+  # recognisable rather than dropped (the exact drop that hid the add/add case).
+  local rel
+  rel="$(git diff -U0 "$merge_base_ref" "$release_ref" -- "$p" 2>/dev/null \
+    | awk '/^@@ / {
+        split($2, m, ","); a = substr(m[1], 2) + 0; b = (m[2] == "" ? 1 : m[2]) + 0
+        if (b == 0) print a, a, 1            # release insertion point
+        else        print a, a + b - 1, 0    # release modification/deletion span
+      }')"
+  [ -n "$rel" ] || return 1
+  # A target hunk whose base range overlaps a release base range is a clash. It is a BLIND SPOT (no
+  # blamable line) when the clashing edit is a target deletion, a target insertion, or a release
+  # insertion — the three zero-width shapes the blame pass skips. Pure modification-vs-modification
+  # overlaps are NOT blind spots (they are blamable), so genuine text drift stays in source_drift.
+  git diff -U0 "$merge_base_ref" "$target_ref" -- "$p" 2>/dev/null \
+    | awk -v rel="$rel" '
+        BEGIN {
+          n = split(rel, L, "\n")
+          for (i = 1; i <= n; i++) { if (L[i] == "") continue; split(L[i], f, " "); rs[i]=f[1]; re[i]=f[2]; rins[i]=f[3] }
+        }
+        /^@@ / {
+          split($2, mo, ","); ba = substr(mo[1], 2) + 0; bb = (mo[2] == "" ? 1 : mo[2]) + 0
+          split($3, mn, ","); td = (mn[2] == "" ? 1 : mn[2]) + 0
+          tins = (bb == 0) ? 1 : 0                  # target insertion (no base span)
+          tdel = (td == 0) ? 1 : 0                  # target deletion (no target line to blame)
+          te = (bb == 0) ? ba : ba + bb - 1
+          for (i = 1; i <= n; i++) {
+            if (L[i] == "") continue
+            if (ba <= re[i] && rs[i] <= te && (tdel || tins || rins[i])) { found = 1; exit }
+          }
+        }
+        END { exit (found ? 0 : 1) }'
+}
+
 version_build=()
 version_build_gap=()   # version/build files carrying a REAL missing dep change
 source_missing=()   # "path" entries; commit detail JSON accumulated per path below
+needs_review=()   # merge-tree conflicts with no blamable commit (blind spot) — a human must resolve
 source_drift=()
 declare -A missing_detail   # path -> newline-separated JSON objects {sha,author,subject}
 
@@ -265,6 +321,10 @@ for p in "${paths[@]}"; do
   if [ -n "$hits" ]; then
     source_missing+=("$p")
     missing_detail[$p]="$hits"
+  elif reverse_conflict_blindspot "$p"; then
+    # merge-tree conflicted but no commit is blamable (modify/delete or insertion): not a missing-commit
+    # alarm, but not proven-benign drift either — surface it so a human resolves the conflict.
+    needs_review+=("$p")
   else
     source_drift+=("$p")
   fi
@@ -295,7 +355,7 @@ build_string_array() {
 }
 
 conflicting_paths="${#paths[@]}"
-action_count=$(( ${#source_missing[@]} + ${#version_build_gap[@]} ))
+action_count=$(( ${#source_missing[@]} + ${#version_build_gap[@]} + ${#needs_review[@]} ))
 if [ "$action_count" -eq 0 ]; then
   verdict="no mid-release action required — all conflicts are mechanical or text drift."
 else
@@ -305,6 +365,7 @@ fi
 # Guard empty-array expansion under set -u; pass nothing when a bucket is empty.
 sm_json="$(build_actionable ${source_missing[@]+"${source_missing[@]}"})"
 vbg_json="$(build_actionable ${version_build_gap[@]+"${version_build_gap[@]}"})"
+nr_json="$(build_actionable ${needs_review[@]+"${needs_review[@]}"})"
 sd_json="$(build_string_array ${source_drift[@]+"${source_drift[@]}"})"
 vb_json="$(build_string_array ${version_build[@]+"${version_build[@]}"})"
 
@@ -316,6 +377,7 @@ jq -n \
   --arg verdict "$verdict" \
   --argjson source_missing "${sm_json:-[]}" \
   --argjson version_build_gap "${vbg_json:-[]}" \
+  --argjson needs_review "${nr_json:-[]}" \
   --argjson source_drift "${sd_json:-[]}" \
   --argjson version_build "${vb_json:-[]}" \
   '{
@@ -326,6 +388,7 @@ jq -n \
     verdict: $verdict,
     source_missing: $source_missing,
     version_build_gap: $version_build_gap,
+    needs_review: $needs_review,
     source_drift: $source_drift,
     version_build: $version_build
   }'

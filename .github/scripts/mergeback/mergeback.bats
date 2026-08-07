@@ -163,6 +163,44 @@ make_remote() {
   [ "$(jq -r '.source_missing[0].commits[0].missing_on' <<<"$output")" = release ]
 }
 
+@test "triage: modify/delete blind spot (target deletes a line release edits) is flagged needs_review" {
+  # Reviewer repro. A patch-equivalent shared edit on the clashing line, then a TARGET-only deletion.
+  # merge-tree reports a modify/delete conflict, but the reverse blame has no surviving target line to
+  # blame, so before the blind-spot check the path fell silently into source_drift (action_count 0).
+  # It must NOT be a source_missing alarm (nothing was forgotten) — just a conflict a human resolves.
+  commit base $'app.js=X\nY\nZ'
+  git branch release
+  commit "shared: bump Y on main" $'app.js=X\nY2\nZ'        # main P
+  commit "chore: drop the line on main" $'app.js=X\nZ'      # main deletion, missing on release
+  git checkout -q release && commit "shared: bump Y on release" $'app.js=X\nY2\nZ'  # release P' (patch-identical)
+  echo '{"status":"conflict","paths":["app.js"]}' > c.json
+  run_json "$TRIAGE" main release c.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.action_count' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.needs_review[0].path' <<<"$output")" = app.js ]
+  [ "$(jq -r '.source_missing | length' <<<"$output")" -eq 0 ]
+  [ "$(jq -r '.source_drift | length' <<<"$output")" -eq 0 ]
+}
+
+@test "triage: add/add blind spot (same insertion both sides, target then modifies it) is flagged needs_review" {
+  # Reviewer repro. Both branches independently apply the SAME insertion (patch-identical, so the
+  # forward check sees it present), then the target modifies the inserted line. merge-tree reports a
+  # conflict, but the release-side pure insertion carries no base span to overlap, so the reverse blame
+  # found nothing and the path fell silently into source_drift. Surface it for manual resolution.
+  commit base $'app.js=X\nZ'
+  git branch release
+  commit "shared: insert Y on main" $'app.js=X\nY\nZ'       # main P (insertion)
+  commit "fix: Y to Y2 on main" $'app.js=X\nY2\nZ'          # main modify, missing on release
+  git checkout -q release && commit "shared: insert Y on release" $'app.js=X\nY\nZ'  # release P' (patch-identical insertion)
+  echo '{"status":"conflict","paths":["app.js"]}' > c.json
+  run_json "$TRIAGE" main release c.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.action_count' <<<"$output")" -eq 1 ]
+  [ "$(jq -r '.needs_review[0].path' <<<"$output")" = app.js ]
+  [ "$(jq -r '.source_missing | length' <<<"$output")" -eq 0 ]
+  [ "$(jq -r '.source_drift | length' <<<"$output")" -eq 0 ]
+}
+
 # ── resolve: fail-closed remote lookup ───────────────────────────────────────
 
 @test "resolve: fails closed when the remote is unreachable" {

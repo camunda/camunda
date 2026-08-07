@@ -65,6 +65,7 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
   # clip cannot hide the notice.
   ( ((.source_missing | length) > $max_paths)
     or ((.version_build_gap | length) > $max_paths)
+    or (((.needs_review // []) | length) > $max_paths)
     or ([.source_missing[], .version_build_gap[]] | any(.commits | length > $max_commits))
     or ([ (.source_missing[], .version_build_gap[]) | path_body($max_commits) | length > 2900 ] | any)
   ) as $truncated
@@ -76,6 +77,7 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
             text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)) } } ]
         + actionable_list(":blob_detective:"; "Source changes maybe missing on target or release"; .source_missing)
         + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
+        + actionable_list(":mag:"; "Conflicts needing manual review — no commit to attribute; resolve at merge-back"; (.needs_review // []))
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",
                   text: (":warning: Output truncated to fit Slack limits — see the "
