@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@camunda8/orchestration-cluster-api": "9.1.4",
-    "@playwright/test": "1.61.1"
+    "@playwright/test": "1.62.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
