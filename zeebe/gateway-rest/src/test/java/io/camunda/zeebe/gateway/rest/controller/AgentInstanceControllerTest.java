@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,7 +50,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
   private static final long ELEMENT_INSTANCE_KEY = 2251799813685248L;
   private static final long AGENT_INSTANCE_KEY = 9007199254741017L;
   private static final long JOB_KEY = 2251799813685249L;
-  private static final long HISTORY_ITEM_KEY = 9007199254741018L;
 
   @MockitoBean private AgentInstanceServices agentInstanceServices;
   @MockitoBean private AgentHistoryServices agentHistoryServices;
@@ -800,7 +800,10 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .is5xxServerError();
   }
 
-  // --------------------------------- history item tests -----------------------------------------
+  @Nested
+  class CreateHistoryItemTest {
+
+  private static final long HISTORY_ITEM_KEY = 9007199254741018L;
 
   @Test
   void shouldCreateAgentHistoryItemWithTextContent() {
@@ -1337,7 +1340,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .is5xxServerError();
   }
 
-  private record UpdateRequest(long agentInstanceKey, String requestBody) {}
-
   private record HistoryItemRequest(String agentInstanceKeyPath, String requestBody) {}
+  }
+
+  private record UpdateRequest(long agentInstanceKey, String requestBody) {}
 }
