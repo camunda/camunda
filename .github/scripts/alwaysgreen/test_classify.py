@@ -110,11 +110,13 @@ def test_helm_install_and_cleanup_are_distinct_surfaces():
     )
 
 
-def test_only_e2e_surfaces_dispatch_in_first_increment():
+def test_dispatchable_surfaces():
     assert classify.SURFACE_SM_E2E in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_SAAS_E2E in classify.DISPATCHABLE_SURFACES
-    assert classify.SURFACE_HELM_INSTALL not in classify.DISPATCHABLE_SURFACES
+    # Dispatchable, but gated further by helm_install_verdict.
+    assert classify.SURFACE_HELM_INSTALL in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_BUILD not in classify.DISPATCHABLE_SURFACES
+    assert classify.SURFACE_HELM_CLEANUP not in classify.DISPATCHABLE_SURFACES
 
 
 # ---------------------------------------------------------------------------
@@ -479,3 +481,64 @@ def test_normalised_ref_makes_fingerprints_stable_across_queue_runs():
         "main", "sm-smoke-e2e", "tests/SM-8.10/smoke-tests.spec.ts", "t"
     )
     assert a == b == direct
+
+# ---------------------------------------------------------------------------
+# Helm install verdict
+# ---------------------------------------------------------------------------
+
+
+def test_helm_scheduling_failure_is_infrastructure():
+    # Shape taken from run 31103675147, where 0/39 nodes could take the pod.
+    log = (
+        "Warning  FailedScheduling  20m  default-scheduler  0/39 nodes are available: "
+        "1 Insufficient cpu, 34 node(s) had untolerated taint(s), 4 node(s) didn't "
+        "match Pod's node affinity/selector."
+    )
+    verdict, detail = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_INFRASTRUCTURE
+    assert detail == "FailedScheduling"
+
+
+def test_helm_volume_attach_failure_is_infrastructure():
+    log = 'Multi-Attach error for volume "pvc-8e24" Volume is already exclusively attached'
+    verdict, _ = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_INFRASTRUCTURE
+
+
+def test_helm_values_error_is_actionable():
+    log = "Error: INSTALLATION FAILED: values don't meet the specifications of the schema"
+    verdict, detail = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_ACTIONABLE
+    assert detail == "INSTALLATION FAILED"
+
+
+def test_helm_schema_error_without_install_prefix_is_actionable():
+    # helm template and dry-run print the bare message; only install prefixes it with
+    # INSTALLATION FAILED. Verified locally against camunda-platform-8.10.
+    log = ("Error: values don't meet the specifications of the schema(s) in the "
+           "following chart(s):\ncamunda-platform:\n- global.multitenancy.enabled: "
+           "Invalid type. Expected: boolean, given: string")
+    verdict, _ = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_ACTIONABLE
+
+
+def test_helm_crashloop_is_actionable():
+    verdict, _ = classify.helm_install_verdict("identity  0/1  CrashLoopBackOff  5")
+    assert verdict == classify.HELM_ACTIONABLE
+
+
+def test_helm_chart_marker_wins_over_scheduling_noise():
+    # A values bug can crash a pod the scheduler also complained about; the chart
+    # reading is the one an agent can act on.
+    log = "Warning FailedScheduling 0/39 nodes are available\nError: UPGRADE FAILED: template"
+    verdict, detail = classify.helm_install_verdict(log)
+    assert verdict == classify.HELM_ACTIONABLE
+    assert detail == "UPGRADE FAILED"
+
+
+def test_helm_unreadable_log_withholds():
+    # gh failures yield an empty string; that must not read as "nothing was wrong".
+    verdict, detail = classify.helm_install_verdict("")
+    assert verdict == classify.HELM_INFRASTRUCTURE
+    assert detail == "no chart-level failure signal"
+

@@ -114,7 +114,7 @@ jobs:
             *) echo "::error::unsupported base_ref '$BASE_REF'"; exit 1 ;;
           esac
           case "$SURFACE" in
-            sm-smoke-e2e|saas-smoke-e2e) ;;
+            sm-smoke-e2e|saas-smoke-e2e|helm-install) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
           # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
@@ -183,7 +183,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common ALWAYS_GREEN_ANTHROPIC_API_KEY | ANTHROPIC_API_KEY ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
             secret/data/products/qa/ci/common GH_TOKEN | GH_PAT ;
 

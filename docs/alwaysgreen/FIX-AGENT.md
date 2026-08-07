@@ -140,6 +140,32 @@ effect only once that package is published. Say so in the PR body: until then th
 stays red and the same failure will be re-dispatched unless your PR carries the coverage
 block.
 
+## When the surface is helm-install
+
+There is no Playwright report: the install never got far enough to run tests. Your evidence
+is the failing job's log (`gh api repos/camunda/camunda/actions/jobs/<id>/logs` — the
+job-level endpoint returns plain text, unlike the run-level one which returns a zip — or
+`gh run view <run> --log-failed`) and the `diagnostics-e2e*` dump in
+`/tmp/alwaysgreen-artifacts/`, which holds the pod list, events and component logs.
+
+Triage has already withheld the cluster-side failures — scheduling, capacity, volume
+attach, image pull — so a dispatch means something in the log pointed at the chart or its
+values: an `INSTALLATION FAILED`, a rejected value, a `CrashLoopBackOff`, a missing key.
+Start from that marker rather than re-reading the whole log.
+
+Which component failed to become ready decides the repo. A chart-side cause — a values
+default, a template, Keycloak or Identity wiring, a probe or resource setting — belongs in
+`camunda-platform-helm` under the chart directory named in your prompt. A component that is
+configured correctly and still crashes on startup is a product bug, and belongs in
+`camunda`. Say which of the two you concluded, and why, in the PR body.
+
+`camunda-platform-helm` has no release branches: the version is the directory, so the PR
+targets that repo's default branch. Chart goldens are generated — regenerate them with the
+repo's `make` targets rather than hand-editing, or the PR will be rejected on review.
+
+If the log points at neither — the install simply timed out with healthy pods — that is the
+cluster, not the chart. Write `not-determined` rather than inventing a values change.
+
 ## Where fixes go
 
 |                       Diagnosis                       |           Repository           |                  Path                   |
