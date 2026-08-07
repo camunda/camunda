@@ -1098,6 +1098,7 @@ public class ProtoBufSerializer
             .setDryRun(exporterEnableRequest.dryRun());
 
     exporterEnableRequest.initializeFrom().ifPresent(builder::setInitializeFrom);
+    exporterEnableRequest.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
 
     return builder.build().toByteArray();
   }
@@ -1343,8 +1344,15 @@ public class ProtoBufSerializer
           exporterEnableRequest.hasInitializeFrom()
               ? Optional.of(exporterEnableRequest.getInitializeFrom())
               : Optional.empty();
+      final Optional<String> physicalTenantId =
+          exporterEnableRequest.hasPhysicalTenantId()
+              ? Optional.of(exporterEnableRequest.getPhysicalTenantId())
+              : Optional.empty();
       return new ExporterEnableRequest(
-          exporterEnableRequest.getExporterId(), initializeFrom, exporterEnableRequest.getDryRun());
+          exporterEnableRequest.getExporterId(),
+          initializeFrom,
+          physicalTenantId,
+          exporterEnableRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
