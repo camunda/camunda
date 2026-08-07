@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NonNull;
 
@@ -49,13 +50,15 @@ public final class BpmnVariableMappingBehavior {
 
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private final boolean propagateOnlyMappedNestedOutputPaths;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean propagateOnlyMappedNestedOutputPaths) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -65,6 +68,7 @@ public final class BpmnVariableMappingBehavior {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+    this.propagateOnlyMappedNestedOutputPaths = propagateOnlyMappedNestedOutputPaths;
   }
 
   /**
@@ -155,17 +159,30 @@ public final class BpmnVariableMappingBehavior {
         }
       }
 
-      // Resolves the current scope value at a nested target's path so the builder can merge into
-      // it and keep the existing sibling properties: look up the top-level variable in the element
-      // scope, then navigate into it along the remaining path segments (null when absent).
-      final var resultBuilder =
-          new MappingResultBuilder(
-              path ->
+      final long variableScopeKey = getVariableScopeKey(context);
+      // Resolves a nested target's path against the element's scope chain. Seeds the evaluation
+      // view, so a source expression can still read any branch visible to the element.
+      final Function<List<String>, DirectBuffer> scopeChainResolver =
+          path ->
+              Optional.ofNullable(
+                      variablesState.getVariable(
+                          elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
+                  .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
+                  .orElse(null);
+      // Resolves the same path against the scope the result is merged into. Seeds the emitted
+      // document, so only mapped paths propagate and the target scope's own siblings survive.
+      // With the kill-switch off, both views share the scope chain, reproducing the old behavior
+      // where an unmapped local branch was propagated too.
+      final Function<List<String>, DirectBuffer> mergeTargetResolver =
+          propagateOnlyMappedNestedOutputPaths
+              ? path ->
                   Optional.ofNullable(
                           variablesState.getVariable(
-                              elementInstanceKey, BufferUtil.wrapString(path.getFirst())))
+                              variableScopeKey, BufferUtil.wrapString(path.getFirst())))
                       .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
-                      .orElse(null));
+                      .orElse(null)
+              : scopeChainResolver;
+      final var resultBuilder = new MappingResultBuilder(scopeChainResolver, mergeTargetResolver);
       final var processor =
           expressionProcessor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
 
@@ -183,8 +200,7 @@ public final class BpmnVariableMappingBehavior {
         }
         resultBuilder.put(mapping.targetPath(), result.get());
       }
-      return mapVariables(
-          context, element, getVariableScopeKey(context), resultBuilder.toDocument());
+      return mapVariables(context, element, variableScopeKey, resultBuilder.toDocument());
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default

@@ -272,6 +272,12 @@ public class BrokerBasedPropertiesOverride {
 
     override
         .getExperimental()
+        .getFeatures()
+        .setPropagateOnlyMappedNestedOutputPaths(
+            camunda.getProcessing().getEngine().isPropagateOnlyMappedNestedOutputPaths());
+
+    override
+        .getExperimental()
         .getEngine()
         .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
   }

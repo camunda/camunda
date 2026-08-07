@@ -20,6 +20,7 @@ public class Engine {
       Set.of("zeebe.broker.experimental.engine.maxProcessDepth");
 
   private static final boolean DEFAULT_EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
+  private static final boolean DEFAULT_PROPAGATE_ONLY_MAPPED_NESTED_OUTPUT_PATHS = true;
 
   /** Configuration properties for the engine's distribution settings. */
   @NestedConfigurationProperty private Distribution distribution = new Distribution();
@@ -63,6 +64,18 @@ public class Engine {
    */
   private boolean evaluateDuplicateOutputMappingTargetsInOrder =
       DEFAULT_EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER;
+
+  /**
+   * Controls which parts of a variable an output mapping propagates to the parent scope when the
+   * mapping targets a nested path (e.g. {@code data.result}). When enabled (default), only the
+   * mapped paths are propagated, merged into the value the parent scope already holds. When
+   * disabled, the whole variable as it exists on the completing element is propagated, so branches
+   * the process never mapped - for example other fields a form or job returned - are merged into
+   * the parent as well. Disabling this restores the behavior prior to this change, but is a
+   * compatibility escape hatch, not something to reach for by default.
+   */
+  private boolean propagateOnlyMappedNestedOutputPaths =
+      DEFAULT_PROPAGATE_ONLY_MAPPED_NESTED_OUTPUT_PATHS;
 
   public Distribution getDistribution() {
     return distribution;
@@ -149,5 +162,14 @@ public class Engine {
       final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+  }
+
+  public boolean isPropagateOnlyMappedNestedOutputPaths() {
+    return propagateOnlyMappedNestedOutputPaths;
+  }
+
+  public void setPropagateOnlyMappedNestedOutputPaths(
+      final boolean propagateOnlyMappedNestedOutputPaths) {
+    this.propagateOnlyMappedNestedOutputPaths = propagateOnlyMappedNestedOutputPaths;
   }
 }

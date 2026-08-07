@@ -163,12 +163,11 @@ public final class ActivityOutputMappingTest {
         scopeVariables(variable("a", "{\"b\":null,\"e\":3}"))
       },
       {
-        // the merge seed is read from the element-local scope walking up: a local variable
-        // created by an input mapping contributes its properties to the propagated result
-        // (#35251 behavior — intentionally preserved in this PR, fix tracked separately)
+        // only the mapped path is propagated: 'a' exists locally because of the input mapping, so
+        // its 'l' property is not merged into the parent scope (#35251)
         "{'x': {'l': 1}, 'y': 2}",
         mapping(b -> b.zeebeInputExpression("x", "a").zeebeOutputExpression("y", "a.m")),
-        scopeVariables(variable("a", "{\"l\":1,\"m\":2}"))
+        scopeVariables(variable("a", "{\"m\":2}"))
       },
       {
         // mappings are evaluated in modeling order, so a later mapping can reference the target
