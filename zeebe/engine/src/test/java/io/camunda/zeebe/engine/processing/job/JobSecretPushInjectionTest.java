@@ -41,6 +41,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +73,15 @@ public final class JobSecretPushInjectionTest {
   private static final int PADDED_JOB_COUNT = 10;
 
   private static final int JOB_PADDING_SIZE = 500_000;
+
+  /**
+   * Jobs parked on one reference and handed out to a stream whose worker name is written twice per
+   * hand-out: the reserve leaves 8 KB of slack per job, so a name this size overruns it by two
+   * orders of magnitude and a handful of hand-outs exceed the 4 MB maximum fragment size.
+   */
+  private static final int OVERSIZED_WORKER_JOB_COUNT = 10;
+
+  private static final int OVERSIZED_WORKER_NAME_SIZE = 300_000;
 
   // static, because the engine rule below reads them while it is initialized, and a field
   // initializer can only read a field declared before it; setUp resets them per test
@@ -416,6 +426,71 @@ public final class JobSecretPushInjectionTest {
         .isGreaterThan(1);
   }
 
+  /**
+   * A reactivation sizes its batch against the stored job records, which carry no worker name: that
+   * name belongs to the stream that takes the job, and a hand-out writes it twice, on the job it
+   * puts in the activation batch and on the batch itself. A stream registered with a worker name
+   * larger than the per-job slack therefore makes every hand-out cost more than the batch reserved
+   * for it, and the reserve alone cannot keep the cycle inside the maximum fragment size.
+   */
+  @Test
+  public void shouldNotStrandReactivatedJobsWhenTheWorkerNameOutgrowsTheReserve() {
+    // given - a stream whose worker name dwarfs the slack the reserve leaves per job, and jobs
+    // parked on one reference
+    JOB_STREAMER.clearStreams();
+    jobStream = registerJobStream("w".repeat(OVERSIZED_WORKER_NAME_SIZE));
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final List<Long> jobKeys = parkJobsOnTheSecret(OVERSIZED_WORKER_JOB_COUNT);
+
+    // when - the reference resolves and the reactivation hands the parked jobs out
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    // an overflowing cycle writes no batch event at all, so waiting for one would only time out;
+    // waiting for either outcome lets the assertions below name what actually went wrong
+    Awaitility.await("until the reactivation cycle has run")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        exportedCountOf(SecretReferenceIntent.BATCH_JOBS_REACTIVATED) > 0
+                            || exportedBatchOverflowCount() > 0)
+                    .isTrue());
+
+    // then - no batch overflowed; that rejection rolls the cycle back, and since the reactivation
+    // command is written by the engine there is nobody to report it to
+    assertThat(exportedBatchOverflowCount()).isZero();
+
+    // and - the reactivation handed out what it could
+    Awaitility.await("until the reactivated jobs are pushed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).isNotEmpty());
+
+    // and - no job is left waiting on a reference that is resolved already. A job the batch could
+    // not take stays activatable, so a long poll still collects it; a job left parked waits for a
+    // resolution that will not be requested again
+    assertThat(jobKeys)
+        .allSatisfy(
+            jobKey ->
+                assertThat(jobState(jobKey)).isNotEqualTo(State.WAITING_FOR_SECRET_RESOLUTION));
+  }
+
+  /** Counts the record batches rejected for exceeding the maximum fragment size. */
+  private long exportedBatchOverflowCount() {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
+        .count();
+  }
+
+  /** Creates {@code count} instances whose jobs all park on the test's secret reference. */
+  private List<Long> parkJobsOnTheSecret(final int count) {
+    final List<Long> jobKeys = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      jobKeys.add(jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create()));
+    }
+    awaitResolutionRequests(count);
+    return jobKeys;
+  }
+
   /** Counts the records exported so far, without waiting for more of them to arrive. */
   private long exportedCountOf(final SecretReferenceIntent intent) {
     return RecordingExporter.getRecords().stream()
@@ -478,7 +553,11 @@ public final class JobSecretPushInjectionTest {
   }
 
   private RecordingJobStream registerJobStream() {
-    final var worker = BufferUtil.wrapString("test");
+    return registerJobStream("test");
+  }
+
+  private RecordingJobStream registerJobStream(final String workerName) {
+    final var worker = BufferUtil.wrapString(workerName);
     final var properties =
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
