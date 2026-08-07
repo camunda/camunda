@@ -26,9 +26,10 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
   RESOLUTION_DURATION {
     @Override
     public String getDescription() {
-      return "Latency of one batch resolution call against a secret store, covering the store IO "
-          + "only and not the cache write or the follow-up command. Split by how the call ended, so "
-          + "a store timing out does not distort the latency of the calls that came back.";
+      return "Latency of one batch resolution call against a secret store, covering the call "
+          + "itself and not the follow-up commands the engine writes for its results. Split by how "
+          + "the call ended, so a store timing out does not distort the latency of the calls that "
+          + "came back.";
     }
 
     @Override
@@ -74,7 +75,7 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Number of secret references that reached a terminal resolution outcome */
+  /** Outcomes the engine produced while resolving secret references */
   RESOLUTION_OUTCOME {
     @Override
     public String getDescription() {
@@ -84,7 +85,11 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
           + "unavailable but still has retry attempts left is not counted at all, because it has "
           + "not reached a terminal outcome yet. ERROR is the one non-terminal value: it counts one "
           + "per resolution cycle a store failed unexpectedly in, not one per reference, since "
-          + "those references stay pending and are retried.";
+          + "those references stay pending and are retried. A terminal value can slightly "
+          + "over-count: a reference stops being pending only once the follow-up command has been "
+          + "processed, so a cycle running before that resolves it a second time and counts it "
+          + "again, even though the duplicate command is then rejected. Read the counter as a rate "
+          + "signal per outcome rather than as an exact number of references.";
     }
 
     @Override

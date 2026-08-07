@@ -55,19 +55,22 @@ public final class SecretResolutionMetrics {
 
   /**
    * Runs one batch resolution call against the given store and records how long it took, split by
-   * how the call itself ended. Only the call is measured, so the cache writes and the command
-   * appends that follow a successful one stay out of the latency.
+   * how the call itself ended. Only the call is measured, so the command appends that follow a
+   * successful one stay out of the latency.
    */
   public <T> T recordResolution(final String storeId, final Supplier<T> storeCall) {
     final var sample = Timer.start(registry);
-    var callResult = SecretResolutionCallResult.RETURNED;
+    // anything that leaves this method other than a value or a SecretStoreUnavailableException is
+    // an unmodelled failure, an Error included. Defaulting to ERROR and setting RETURNED only on
+    // the path that returns a value covers those without catching Throwable, which would otherwise
+    // time a failed call under the success bucket.
+    var callResult = SecretResolutionCallResult.ERROR;
     try {
-      return storeCall.get();
+      final T result = storeCall.get();
+      callResult = SecretResolutionCallResult.RETURNED;
+      return result;
     } catch (final SecretStoreUnavailableException e) {
       callResult = SecretResolutionCallResult.STORE_UNAVAILABLE;
-      throw e;
-    } catch (final RuntimeException e) {
-      callResult = SecretResolutionCallResult.ERROR;
       throw e;
     } finally {
       sample.stop(resolutionTimers.get(callResult).get(storeTag(storeId)));

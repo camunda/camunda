@@ -139,6 +139,17 @@ final class SecretResolutionMetricsDocTest {
   }
 
   @Test
+  void shouldDocumentHowFarTheOutcomeCounterCanBeTrusted() {
+    // given
+    final var description = SecretResolutionMetricsDoc.RESOLUTION_OUTCOME.getDescription();
+
+    // when/then — the counter is neither one-per-reference nor exact, and both caveats have to
+    // reach whoever builds an alert on it: ERROR counts per cycle, and a terminal outcome can be
+    // counted twice when a reference is resolved again before its command has been processed
+    assertThat(description).contains("ERROR").contains("over-count");
+  }
+
+  @Test
   void shouldMapEveryStoreErrorCodeToItsOwnOutcome() {
     // given/when
     final var outcomes =
