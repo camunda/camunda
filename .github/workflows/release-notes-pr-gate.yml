@@ -1,0 +1,101 @@
+# Release-notes PR-gate (epic #53605, work unit #53593).
+#
+# SECURITY MODEL (v2) — read before editing:
+#   * Runs on `workflow_run`, so this workflow and the local action ALWAYS
+#     resolve from the default branch, and the job holds a base-repo token —
+#     fork PRs included. A pull request cannot influence the code that judges
+#     it, and there is no `pull_request_target` anywhere.
+#   * The checkout below takes the default ref. NEVER add
+#     `ref: ${{ github.event.workflow_run.head_* }}` or any other PR-controlled
+#     ref: that would execute PR-authored code with a privileged token, which is
+#     the whole class of attack this trigger avoids.
+#   * The PR number is re-derived server-side from the immutable
+#     workflow_run.head_sha. It is deliberately NOT passed in from the trigger
+#     workflow (via artifact or otherwise) — a fork controls that job and could
+#     claim any PR number. Nothing attacker-controlled crosses this boundary.
+#   * Warn-only during rollout (enforce=false). The check run reports red on
+#     failure from day one but is NOT a required check, so it blocks nobody —
+#     its output says so explicitly. The flip to enforce + required status check
+#     happens later via branch protection (see epic #53605).
+#
+# The gate is deliberately NOT part of Unified CI: ci.yml does not listen to
+# `edited`, and a PR body edit is the primary way an author fixes a gate
+# failure. This is a PR-metadata policy check, not CI on code changes.
+---
+name: Release-notes PR-gate
+
+on:
+  workflow_run:
+    # Matched by `name:`, not by filename — renaming the trigger workflow
+    # silently unlinks the gate.
+    workflows: ['Release-notes PR-gate trigger']
+    # `requested` fires when the trigger run is CREATED, not when it finishes.
+    # The stub does no work, so there is nothing to wait for.
+    types: [requested]
+
+# One run per commit; a newer event for the same head SHA cancels the older one.
+# Keyed on head_sha rather than PR number because the number is not known until
+# the job resolves it, and the check run is published per-SHA anyway.
+concurrency:
+  group: release-notes-pr-gate-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # checkout of the default branch only
+  checks: write # publish the gate's check run on the PR head SHA
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  pr-issue-link:
+    name: PR-issue link
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Default ref = the default branch. NEVER the PR head. See SECURITY MODEL.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # The only trustworthy identifier in the workflow_run payload is the head
+      # SHA. Ask GitHub which PR owns it — this resolves fork PR heads too,
+      # because the base repo holds refs/pull/N/head for every PR. An empty
+      # result is not an error: the action treats it as "nothing to lint".
+      - name: Resolve the pull request from the head SHA
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          number="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" --jq '.[0].number // empty')"
+          if [ -z "${number}" ]; then
+            echo "No pull request owns ${HEAD_SHA}; the gate has nothing to evaluate."
+          else
+            echo "Resolved ${HEAD_SHA} to PR #${number}."
+          fi
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # v1.1.0
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Lint PR-issue link
+        uses: ./.github/actions/release-notes/lint
+        with:
+          # App token: bot identity, so the sticky comment and the label sync
+          # trigger downstream automations that GITHUB_TOKEN events do not.
+          token: ${{ steps.github-token.outputs.token }}
+          # The check run is published with GITHUB_TOKEN's `checks: write` above,
+          # so it does not depend on the App carrying that permission.
+          checks-token: ${{ github.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          enforce: 'false' # warn-only during rollout

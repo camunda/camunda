@@ -1,0 +1,50 @@
+# Ignition for the release-notes PR-gate (epic #53605, work unit #53593).
+#
+# WHY THIS FILE EXISTS — read before editing:
+#   `workflow_run` cannot be fired by a pull request directly; it only fires
+#   when another workflow is requested. This workflow is that other workflow.
+#   It deliberately does NOTHING: no checkout, no token, no action, no logic.
+#   The real gate lives in release-notes-pr-gate.yml and runs on workflow_run,
+#   where its code always resolves from the default branch and it gets a
+#   base-repo token (fork PRs included).
+#
+#   Running on `pull_request` means this file is loaded from the PR's own merge
+#   ref, so a PR can edit it. That is harmless precisely because it is empty —
+#   there is no logic to subvert and no token to steal. A PR that deletes it
+#   produces no workflow_run, so the gate never reports; once the gate's check
+#   is required that leaves the PR blocked, which is the safe direction.
+#
+#   Do NOT add steps here. Anything real belongs in the workflow_run handler.
+#
+# NOTE: renaming this workflow breaks the link — release-notes-pr-gate.yml
+# matches it by the `name:` below.
+---
+name: Release-notes PR-gate trigger
+
+on:
+  pull_request:
+    # The branches whose release notes this gate governs. The base-branch filter
+    # must live here: workflow_run's own `branches:` filter matches the
+    # triggering run's HEAD branch, not the PR base.
+    branches: [main, 'stable/**']
+    # `edited` is load-bearing: a body edit is how an author fixes a gate
+    # failure, and it is also how a passing PR could silently lose its issue
+    # link. Without it the gate's verdict can go stale against the current body.
+    types: [opened, edited, synchronize]
+
+# Nothing is read, nothing is written.
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  trigger:
+    name: Release-notes PR-gate trigger
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Explain
+        run: |
+          echo "This job exists only to emit a workflow_run event."
+          echo "The release-notes gate is evaluated by release-notes-pr-gate.yml."

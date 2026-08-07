@@ -207,6 +207,14 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
+  release-notes-action:
+    description: Output whether the release-notes action's tests and bundle-drift guards should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.release-notes-action-change == 'true'
+      }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
     value: >-
@@ -289,6 +297,14 @@ runs:
         renovate-config-change:
           - '**/renovate.json5'
           - '.github/renovate/**.json5'
+
+        # The gate workflows are included so a change to either still runs the
+        # action's tests and the bundle-drift guard that back them.
+        release-notes-action-change:
+          - '.github/actions/release-notes/**'
+          - '.github/workflows/release-notes*'
+          - '.github/pull_request_template.md'
+          - 'commitlint.config.cjs'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
