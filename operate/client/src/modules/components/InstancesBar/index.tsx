@@ -15,7 +15,10 @@ import {
   ActiveInstancesBar,
   ActiveCount,
   IncidentsBar,
+  DrainingIndicator,
 } from './styled';
+import {Timer} from '@carbon/react/icons';
+import {Tooltip} from '@carbon/react';
 
 type Props = {
   label?: {
@@ -25,6 +28,8 @@ type Props = {
   };
   activeInstancesCount?: number;
   incidentsCount: number;
+  isDraining?: boolean;
+  drainingDescription?: string;
   size: 'small' | 'medium' | 'large';
   className?: string;
 };
@@ -33,6 +38,8 @@ const InstancesBar: React.FC<Props> = ({
   label,
   activeInstancesCount,
   incidentsCount,
+  isDraining = false,
+  drainingDescription,
   size,
   className,
 }) => {
@@ -59,6 +66,17 @@ const InstancesBar: React.FC<Props> = ({
           >
             {label.text}
           </Label>
+        )}
+        {isDraining && (
+          <Tooltip
+            label={drainingDescription ?? 'Draining'}
+            align="top"
+            autoAlign
+          >
+            <DrainingIndicator data-testid="draining-indicator">
+              <Timer size={16} />
+            </DrainingIndicator>
+          </Tooltip>
         )}
 
         {activeInstancesCount !== undefined && activeInstancesCount >= 0 && (

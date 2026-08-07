@@ -13,4 +13,10 @@ const VersionTag = styled(Tag)`
   margin-left: 0;
 `;
 
-export {VersionTag};
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-05);
+`;
+
+export {VersionTag, HeaderActions};
