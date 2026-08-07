@@ -114,9 +114,10 @@ paths:
         - basicAuth: []
       summary: Update agent instance
       description: |
-        Updates the mutable fields of an agent instance: status, metric counters, and
-        tools. Metric values are treated as deltas and applied immediately to the
-        aggregate counters. Tool updates replace the existing tool list.
+        Updates the mutable fields of an agent instance (status, metric counters, and
+        tools) and appends a batch of history items to its conversation history. Metric
+        values are treated as deltas and applied immediately to the aggregate counters.
+        Tool updates replace the existing tool list.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -734,6 +735,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AgentTool'
+        jobKey:
+          description: |
+            The key of the job activation during which this update is being made.
+            Required whenever history is provided.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        jobLease:
+          description: |
+            Opaque lease token received from the job activation response. Disambiguates
+            this activation from any other activation of the same job: if the job is
+            later retried, history items submitted under a superseded lease are discarded
+            rather than committed.
+          nullable: true
+          type: string
+        history:
+          description: |
+            A batch of history items to append to the agent instance's conversation
+            history, in request order. Each created item is echoed back in the
+            response's createdHistory, positionally correlated.
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryItem'
 
     ## Filters
 
@@ -830,6 +855,58 @@ components:
             - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
         producedAt:
           description: The connector-side timestamp of when this message was produced.
+          type: string
+          format: date-time
+
+    AgentInstanceHistoryItem:
+      description: |
+        A single history item to append to the agent instance's conversation history,
+        submitted as part of the batch on an agent instance update request.
+      type: object
+      required:
+        - historyItemId
+        - loopIteration
+        - role
+        - content
+        - producedAt
+      properties:
+        historyItemId:
+          description: |
+            Caller-assigned identifier used to detect and dedupe retries of the same
+            item. For example, when a retried job activation resubmits history items
+            it already sent in an earlier attempt, those items are not rejected; they
+            are flagged via isDuplicate in the response instead. Must be non-blank.
+          type: string
+        loopIteration:
+          description: The loop iteration this item belongs to.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
+        role:
+          description: The role of this history item in the conversation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        content:
+          description: The content blocks of this history item.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
+        toolCalls:
+          description: |
+            Tool calls associated with this history item.
+            For ASSISTANT items: tool calls dispatched by this LLM response, with arguments populated.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call, with arguments null.
+            Omit for USER items.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AgentInstanceToolCall'
+        metrics:
+          description: Per-call token and latency metrics. Present on ASSISTANT items only.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+        producedAt:
+          description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
 
