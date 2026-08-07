@@ -43,8 +43,6 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
  */
 public final class JobSecretLookup {
 
-  private static final String SECRET_REFERENCE_PREFIX = "camunda.secrets.";
-
   /** Reads and writes the msgpack encoding of job variables as Jackson trees. */
   private final ObjectMapper variablesMapper = new ObjectMapper(new MessagePackFactory());
 
@@ -141,11 +139,9 @@ public final class JobSecretLookup {
   private static List<Secret> secretsOf(final JobRecord job) {
     final List<Secret> secrets = new ArrayList<>();
     for (final JobSecretReference reference : job.secretReferences()) {
-      secrets.add(
-          new Secret(
-              new SecretReference(reference.getStoreId(), reference.getSecretReference()),
-              reference.getPath(),
-              SECRET_REFERENCE_PREFIX + reference.getSecretReference()));
+      final var secretReference =
+          new SecretReference(reference.getStoreId(), reference.getSecretReference());
+      secrets.add(new Secret(secretReference, reference.getPath(), secretReference.reference()));
     }
     if (secrets.size() > 1) {
       secrets.sort(comparingInt((Secret secret) -> secret.placeholder().length()).reversed());

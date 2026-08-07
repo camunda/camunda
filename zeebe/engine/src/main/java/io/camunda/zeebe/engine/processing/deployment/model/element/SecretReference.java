@@ -46,6 +46,16 @@ import scala.jdk.javaapi.CollectionConverters;
 @NullMarked
 public record SecretReference(String storeId, String name) {
 
+  private static final String ROOT = "camunda";
+  private static final String NAMESPACE = "secrets";
+
+  /**
+   * The text every reference starts with, {@code camunda.secrets.}. The single definition of the
+   * prefix: callers that build a reference's text, strip it off a match, or match it in raw text
+   * all derive it from here.
+   */
+  public static final String PREFIX = ROOT + "." + NAMESPACE + ".";
+
   /**
    * Matches a {@code camunda.secrets.<name>} occurrence in raw text, shared by callers that scan
    * text rather than a parsed FEEL AST (e.g. {@link
@@ -54,10 +64,7 @@ public record SecretReference(String storeId, String name) {
    * io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableSecretReferenceScanner}).
    */
   public static final Pattern REFERENCE_PATTERN =
-      Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
-
-  private static final String ROOT = "camunda";
-  private static final String NAMESPACE = "secrets";
+      Pattern.compile(Pattern.quote(PREFIX) + "[\\p{Alnum}_]+");
 
   /** Segments a {@code camunda.secrets.<name>} reference has: root, namespace and name. */
   private static final int REFERENCE_SEGMENT_COUNT = 3;
@@ -124,7 +131,7 @@ public record SecretReference(String storeId, String name) {
 
   /** The full reference as it appears in an expression, e.g. {@code camunda.secrets.token}. */
   public String reference() {
-    return ROOT + "." + NAMESPACE + "." + name;
+    return PREFIX + name;
   }
 
   /**
