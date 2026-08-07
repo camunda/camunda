@@ -19,13 +19,14 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
  * job whose secret injection fails during batch activation (see {@code
  * JobBatchActivateProcessor#raiseIncidentJobSecretInjectionFailed}) was never parked for background
  * resolution (contrast {@code SecretReferenceResolutionRequestedApplier#parkWaitingJob}) - it is
- * still sitting in the activatable index. Removing it here, while keeping its ACTIVATABLE state,
- * stops every subsequent poll from re-attempting the same failing injection and raising another
- * incident. {@link IncidentResolvedV4Applier} already re-inserts ACTIVATABLE jobs into the index
- * via {@code makeActivatableAfterSecretResolution} when this incident resolves, so this reuses that
- * existing recovery path. For a job that was already parked by the other producer of this same
- * error type ({@code SecretReferenceBatchCreateIncidentsProcessor}), this call is a harmless no-op:
- * it is already out of the index.
+ * still sitting in the activatable index. Parking it here the same way stops every subsequent poll
+ * from re-attempting the same failing injection and raising another incident, and lets {@link
+ * IncidentResolvedV4Applier} reactivate it via {@code makeActivatableAfterSecretResolution} when
+ * this incident resolves - that method only reactivates a job parked in {@code
+ * State#WAITING_FOR_SECRET_RESOLUTION}, so parking must go through {@link
+ * MutableJobState#parkForSecretResolution} rather than a plain index removal. For a job that was
+ * already parked by the other producer of this same error type ({@code
+ * SecretReferenceBatchCreateIncidentsProcessor}), parking again is a no-op.
  */
 final class IncidentCreatedV2Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
@@ -52,7 +53,7 @@ final class IncidentCreatedV2Applier implements TypedEventApplier<IncidentIntent
       jobState.disable(jobKey, jobRecord);
     } else if (ErrorType.SECRET_RESOLUTION_ERROR == value.getErrorType()) {
       final var jobRecord = jobState.getJob(jobKey);
-      jobState.makeJobNotActivatable(jobKey, jobRecord);
+      jobState.parkForSecretResolution(jobKey, jobRecord);
     }
   }
 }
