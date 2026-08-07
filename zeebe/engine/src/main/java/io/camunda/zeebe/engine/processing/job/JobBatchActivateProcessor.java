@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -324,9 +325,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   /**
-   * Raises an incident for a job whose secret value injection failed. The incident message is a
-   * fixed text: the failure details are only logged, so no secret-related data (the exception may
-   * quote the variables document) can end up in persisted records.
+   * Raises an incident for a job whose secret value injection failed. The message points at the
+   * broker log rather than carrying the failure itself, which may quote the variables document and
+   * with it secret data that must stay out of persisted records.
    */
   private void raiseIncidentJobSecretInjectionFailed(final FailedInjectionJob failed) {
     raiseJobIncident(
@@ -334,9 +335,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
         failed.job(),
         ErrorType.SECRET_RESOLUTION_ERROR,
         String.format(
-            "The job with key '%s' can not be activated, because injecting its secret values into the job variables failed. "
-                + "The error details are only logged, to keep possible secret data out of persisted records.",
-            failed.jobKey()));
+            "Expected to activate job with key '%s', but injecting the values of its secret "
+                + "references into the job variables failed. Check the broker logs of partition %d "
+                + "for the failure details.",
+            failed.jobKey(), Protocol.decodePartitionId(failed.jobKey())));
   }
 
   private void raiseMessageSizeExceededIncident(

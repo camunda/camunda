@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -66,9 +67,9 @@ public class BpmnJobActivationBehavior {
   private static final Logger LOGGER = LoggerFactory.getLogger(BpmnJobActivationBehavior.class);
 
   private static final String SECRET_INJECTION_FAILED_MESSAGE =
-      "The job with key '%s' can not be pushed to a job worker, because injecting its secret values "
-          + "into the job variables failed. The error details are only logged, to keep possible "
-          + "secret data out of persisted records.";
+      "Expected to push job with key '%s' to a job worker, but injecting the values of its secret "
+          + "references into the job variables failed. Check the broker logs of partition %d for "
+          + "the failure details.";
 
   private final JobStreamer jobStreamer;
   private final JobVariablesCollector jobVariablesCollector;
@@ -247,7 +248,8 @@ public class BpmnJobActivationBehavior {
    * Replaces the secret placeholders in the variables of the job to push with the values found for
    * them, and returns whether the job can be pushed. A failed injection raises an incident and
    * keeps the job from being pushed, so it cannot reach a worker with a placeholder where a value
-   * belongs. The failure details are only logged, so no secret-related data can end up in persisted
+   * belongs. The incident points at the broker log rather than carrying the failure itself, which
+   * may quote the variables document and with it secret data that must stay out of persisted
    * records.
    */
   private boolean injectSecretValues(
@@ -273,7 +275,7 @@ public class BpmnJobActivationBehavior {
           jobKey,
           pushableJobRecord,
           ErrorType.SECRET_RESOLUTION_ERROR,
-          SECRET_INJECTION_FAILED_MESSAGE.formatted(jobKey));
+          SECRET_INJECTION_FAILED_MESSAGE.formatted(jobKey, Protocol.decodePartitionId(jobKey)));
       return false;
     }
   }
