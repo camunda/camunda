@@ -244,7 +244,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             cslCheck,
             tenantCheck,
             secretStoreRegistry,
-            incidentMetrics);
+            incidentBehavior);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

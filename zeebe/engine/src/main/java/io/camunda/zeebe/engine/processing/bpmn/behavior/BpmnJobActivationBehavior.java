@@ -12,13 +12,11 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
-import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
-import io.camunda.zeebe.engine.processing.job.JobIncidentBehavior;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
@@ -83,7 +81,7 @@ public class BpmnJobActivationBehavior {
   private final CslTenantCheck tenantCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
   private final JobSecretLookup secretLookup;
-  private final JobIncidentBehavior jobIncidentBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -95,7 +93,7 @@ public class BpmnJobActivationBehavior {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final IncidentMetrics incidentMetrics) {
+      final BpmnIncidentBehavior incidentBehavior) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -107,8 +105,7 @@ public class BpmnJobActivationBehavior {
     this.tenantCheck = tenantCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
-    jobIncidentBehavior =
-        new JobIncidentBehavior(state, keyGenerator, writers.state(), incidentMetrics);
+    this.incidentBehavior = incidentBehavior;
   }
 
   /**
@@ -272,7 +269,7 @@ public class BpmnJobActivationBehavior {
           jobKey,
           pushableJobRecord.getType(),
           e);
-      jobIncidentBehavior.createIncident(
+      incidentBehavior.createJobIncident(
           jobKey,
           pushableJobRecord,
           ErrorType.SECRET_RESOLUTION_ERROR,

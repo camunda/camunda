@@ -11,10 +11,10 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
-import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -61,7 +61,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final JobSecretInjector jobSecretInjector;
-  private final JobIncidentBehavior jobIncidentBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -71,7 +71,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics,
+      final BpmnIncidentBehavior incidentBehavior,
       final SecretStoreRegistry secretStoreRegistry) {
 
     stateWriter = writers.state();
@@ -91,8 +91,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
-    jobIncidentBehavior =
-        new JobIncidentBehavior(state, keyGenerator, stateWriter, incidentMetrics);
+    this.incidentBehavior = incidentBehavior;
   }
 
   @Override
@@ -347,6 +346,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   private void raiseJobIncident(
       final long jobKey, final JobRecord job, final ErrorType errorType, final String message) {
-    jobIncidentBehavior.createIncident(jobKey, job, errorType, message);
+    incidentBehavior.createJobIncident(jobKey, job, errorType, message);
   }
 }

@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -60,6 +62,47 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
 
   public void createIncident(final Tuple<Failure, BpmnElementContext> failureAndContext) {
     createIncident(failureAndContext.getLeft(), failureAndContext.getRight());
+  }
+
+  /**
+   * Raises an incident on the element instance of a job that cannot be handed to a worker, so the
+   * reason is visible instead of the job being silently stuck. Both activation paths need this and
+   * have no element context to build an incident from, only the job.
+   *
+   * <p>Only the job's identity is copied into the incident; the message is the caller's, so a
+   * caller whose failure details could carry secret data must log those details instead of passing
+   * them in.
+   */
+  public void createJobIncident(
+      final long jobKey, final JobRecord job, final ErrorType errorType, final String message) {
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
+    // a local record, not the reused incidentRecord field: this runs while an activation is being
+    // written, where a half-built shared record is easy to leak into the next incident
+    final var jobIncidentRecord =
+        new IncidentRecord()
+            .setErrorType(errorType)
+            .setErrorMessage(message)
+            .setBpmnProcessId(job.getBpmnProcessIdBuffer())
+            .setProcessDefinitionKey(job.getProcessDefinitionKey())
+            .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setElementId(job.getElementIdBuffer())
+            .setElementInstanceKey(job.getElementInstanceKey())
+            .setJobKey(jobKey)
+            .setTenantId(job.getTenantId())
+            .setVariableScopeKey(job.getElementInstanceKey())
+            .setElementInstancePath(treePathProperties.elementInstancePath())
+            .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+            .setCallingElementPath(treePathProperties.callingElementPath());
+
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), IncidentIntent.CREATED, jobIncidentRecord);
+    incidentMetrics.incidentCreated();
   }
 
   public void createIncident(final Failure failure, final BpmnElementContext context) {
