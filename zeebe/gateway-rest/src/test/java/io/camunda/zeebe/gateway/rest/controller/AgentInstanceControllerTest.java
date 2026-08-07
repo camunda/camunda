@@ -440,7 +440,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .bodyValue(requestBody)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "createdHistory": [] }
+            """,
+            JsonCompareMode.STRICT);
 
     verify(agentInstanceServices)
         .updateAgentInstance(
@@ -483,7 +489,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .bodyValue(requestBody)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "createdHistory": [] }
+            """,
+            JsonCompareMode.STRICT);
 
     verify(agentInstanceServices)
         .updateAgentInstance(
@@ -528,7 +540,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .bodyValue(requestBody)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "createdHistory": [] }
+            """,
+            JsonCompareMode.STRICT);
 
     verify(agentInstanceServices)
         .updateAgentInstance(
@@ -568,7 +586,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .bodyValue(requestBody)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "createdHistory": [] }
+            """,
+            JsonCompareMode.STRICT);
 
     verify(agentInstanceServices)
         .updateAgentInstance(
@@ -603,7 +627,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .bodyValue(requestBody)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "createdHistory": [] }
+            """,
+            JsonCompareMode.STRICT);
 
     verify(agentInstanceServices)
         .updateAgentInstance(
