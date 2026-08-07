@@ -247,7 +247,7 @@ const StartProcessFormModalError: React.FC<ErrorProps> = ({processDisplayName, v
 				hideCloseButton
 				lowContrast
 				title={t(isForbidden ? 'tasklist.taskDetailsProcessForbiddenTitle' : 'errorGenericErrorPageTitle')}
-				subtitle={t(subtitleKey, {processDefinitionKey: processDisplayName})}
+				subtitle={t(subtitleKey, {processDisplayName})}
 			/>
 		</StartProcessFormModalShell>
 	);
