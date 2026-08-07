@@ -209,6 +209,11 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getFeatures()
         .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+            processing.isEvaluateBoundaryEventCorrelationKeyInActivityScope());
 
     populateFromEngine(override);
   }
