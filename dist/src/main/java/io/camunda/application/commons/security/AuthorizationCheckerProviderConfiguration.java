@@ -20,12 +20,12 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Builds the single {@link AuthorizationCheckerProvider} injected into the service registry.
  *
- * <p>Gated on the same condition as its consumers ({@code CamundaServicesConfiguration} and {@code
- * WebAppAuthorizationCheckPortConfiguration}) rather than on secondary storage, so it constructs in
- * every storage mode: the required, default-tenant-pinned {@link AuthorizationChecker} bean is
- * always present here, while the per-tenant checkers are derived only when {@link
- * PhysicalTenantSearchClientReaders} exists (i.e. secondary storage is enabled). Each per-tenant
- * checker is built through {@link AuthorizationCheckerFactory}.
+ * <p>Gated on the same condition as its only consumer ({@code CamundaServicesConfiguration}) rather
+ * than on secondary storage, so it constructs in every storage mode: the required,
+ * default-tenant-pinned {@link AuthorizationChecker} bean is always present here, while the
+ * per-tenant checkers are derived only when {@link PhysicalTenantSearchClientReaders} exists (i.e.
+ * secondary storage is enabled). Each per-tenant checker is built through {@link
+ * AuthorizationCheckerFactory}.
  *
  * <p>This is the only remaining consumer of {@link AuthorizationCheckerFactory}: it exists so
  * {@code CamundaServicesConfiguration} can hand a raw {@link AuthorizationChecker} to services

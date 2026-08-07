@@ -59,9 +59,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
 
     // when / then
     runner
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -89,9 +87,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -129,9 +125,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -187,9 +181,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
