@@ -79,7 +79,7 @@ public final class SecretReferenceBatchReactivateJobsProcessor
     // the event above reactivated the eligible jobs, so they can be handed to a worker again. A
     // pushing worker only ever receives jobs that are pushed to it, so the reactivation must push
     // them; publishWork checks their references again and parks a job whose value is gone already
-    publishReactivatedJobs(processedBatch);
+    publishReactivatedJobs(processedBatch, followUpRecordsReserve(value));
 
     // a hand-out that found the value gone from the cache requested the resolution again, which
     // makes the reference pending again. This chain stops there: the jobs it has not drained yet
@@ -107,25 +107,23 @@ public final class SecretReferenceBatchReactivateJobsProcessor
   }
 
   /**
-   * Returns the jobs of the command this cycle reactivates: as many as the record batch can take,
-   * since handing a job out writes into the same batch. What that costs is {@link
-   * BpmnJobActivationBehavior#maxHandOutLength(JobRecord)}, so the bound stays with the hand-out
+   * Returns the jobs of the command this cycle reactivates: as many as the record batch is expected
+   * to take, since handing a job out writes into the same batch. What that costs is {@link
+   * BpmnJobActivationBehavior#maxHandOutLength(JobRecord)}, so the estimate stays with the hand-out
    * that spends it rather than being restated here. The first job is always taken, so a cycle
    * always drains at least one waiting entry and the chain cannot spin on a job whose record alone
    * exceeds the budget.
+   *
+   * <p>Only an expectation: a hand-out can cost more than the stored job record predicts, because
+   * the worker name of the stream that takes the job is not on that record. Selecting a job the
+   * batch turns out not to fit is not a failure, it just leaves the job activatable for a long poll
+   * (see {@link #publishReactivatedJobs}); what keeps the batch intact is the hand-out's own check.
    */
   private SecretReferenceRecord selectJobsToReactivate(final SecretReferenceRecord value) {
     final var storeId = value.getStoreId();
     final var secretReference = value.getSecretReference();
     final var selected = newBatch(storeId, secretReference);
-    // capacity reserved for the two records written after the pushes: the batch result event (its
-    // keys are a subset of the command's, so the command value bounds its size) and a potential
-    // follow-up BATCH_REACTIVATE_JOBS command; the buffer absorbs the record metadata not included
-    // in the value lengths
-    final int followUpRecordsReserve =
-        value.getLength()
-            + maxNextCommandLength(storeId, secretReference)
-            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+    final int followUpRecordsReserve = followUpRecordsReserve(value);
     // the hand-outs of the selected jobs share one record batch, so their lengths accumulate
     var selectedHandOutsLength = 0;
     var jobSelected = false;
@@ -157,29 +155,54 @@ public final class SecretReferenceBatchReactivateJobsProcessor
    * whichever state it is in: an incident means the job waits for someone to resolve it, and
    * resolving it hands the job out again.
    *
+   * <p>Stops as soon as the batch runs out of room, either because a hand-out reports it or because
+   * what is left would not cover the records written after the hand-outs. The jobs it does not
+   * reach were reactivated all the same, so they stay activatable and a long poll collects them.
+   * That is the lesser of the two outcomes: pressing on means an append that does not fit, which
+   * fails the whole cycle, and since this command is written by the engine its rejection reaches
+   * nobody, leaving every job of the cycle parked on a reference that is resolved already.
+   *
    * <p>The jobs are read again here rather than kept from the selection that sized them. The job
    * state hands out one record instance it reuses on every read, and the batch event applied in
    * between reads jobs itself, so keeping them would mean copying every selected job's record onto
    * the heap for the whole batch. Reading a job twice costs a point lookup, which is the cheaper of
    * the two.
    */
-  private void publishReactivatedJobs(final SecretReferenceRecord processedBatch) {
+  private void publishReactivatedJobs(
+      final SecretReferenceRecord processedBatch, final int followUpRecordsReserve) {
     // shared across the batch so the workers of a job type are notified once, not once per job
     final Set<String> notifiedJobTypes = new HashSet<>();
     for (final long jobKey : processedBatch.getJobKeys()) {
       if (jobState.getState(jobKey) != State.ACTIVATABLE || hasIncident(jobKey)) {
         continue;
       }
+      if (!stateWriter.canWriteEventOfLength(followUpRecordsReserve)) {
+        // keeping this much free is what lets the follow-up command below be appended unchecked,
+        // so the chain reaches the jobs this cycle leaves waiting
+        break;
+      }
       // the reused record instance is why each job is published before the next one is read
       final JobRecord job = jobState.getJob(jobKey);
-      if (job != null) {
-        jobActivationBehavior.publishWork(jobKey, job, notifiedJobTypes);
+      if (job != null && !jobActivationBehavior.publishWork(jobKey, job, notifiedJobTypes)) {
+        break;
       }
     }
   }
 
   private boolean hasIncident(final long jobKey) {
     return incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT;
+  }
+
+  /**
+   * Capacity to keep free for the two records written after the hand-outs: the batch result event
+   * (its keys are a subset of the command's, so the command value bounds its size) and a potential
+   * follow-up {@code BATCH_REACTIVATE_JOBS} command. The buffer absorbs the record metadata that
+   * the value lengths do not include.
+   */
+  private static int followUpRecordsReserve(final SecretReferenceRecord value) {
+    return value.getLength()
+        + maxNextCommandLength(value.getStoreId(), value.getSecretReference())
+        + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
   }
 
   private static SecretReferenceRecord newBatch(

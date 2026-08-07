@@ -276,6 +276,63 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
   }
 
   @Test
+  void shouldStopHandingOutJobsWhenTheFollowUpRecordsNoLongerFit() {
+    // given - two jobs the selection took, and a batch that runs out of room once the first of
+    // them has been handed out
+    activatableJob(1L);
+    activatableJob(2L);
+    // the selection sizes the second job (fits), then each hand-out checks that the records
+    // written after it still fit: they do for the first job and no longer for the second
+    when(stateWriter.canWriteEventOfLength(org.mockito.ArgumentMatchers.anyInt()))
+        .thenReturn(true, true, false);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L)
+            .addJobKey(2L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the drain stops rather than letting a hand-out take the room the follow-up records
+    // need, which would fail the whole cycle
+    verify(jobActivationBehavior).publishWork(eq(1L), any(), any());
+    verify(jobActivationBehavior, never()).publishWork(eq(2L), any(), any());
+
+    // and - both jobs were still reactivated, so the one left un-pushed is activatable rather than
+    // parked on a reference that is resolved already
+    final var eventCaptor = ArgumentCaptor.forClass(SecretReferenceRecord.class);
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(500L), eq(SecretReferenceIntent.BATCH_JOBS_REACTIVATED), eventCaptor.capture());
+    Assertions.assertThat(eventCaptor.getValue().getJobKeys()).containsExactly(1L, 2L);
+  }
+
+  @Test
+  void shouldStopHandingOutJobsWhenAHandOutReportsTheBatchIsFull() {
+    // given - two jobs the selection took, and a first hand-out that finds no room for its
+    // activation once the stream's worker name is on it
+    activatableJob(1L);
+    activatableJob(2L);
+    when(jobActivationBehavior.publishWork(eq(1L), any(), any())).thenReturn(false);
+    final var value =
+        new SecretReferenceRecord()
+            .setStoreId(STORE_ID)
+            .setSecretReference(SECRET_REF)
+            .addJobKey(1L)
+            .addJobKey(2L);
+
+    // when
+    processor.processRecord(command(value));
+
+    // then - the jobs behind it are not handed out either: the batch is out of room, so their
+    // appends would fail the whole cycle instead of just turning one job away
+    verify(jobActivationBehavior).publishWork(eq(1L), any(), any());
+    verify(jobActivationBehavior, never()).publishWork(eq(2L), any(), any());
+  }
+
+  @Test
   void shouldNotPublishJobThatCarriesAnIncident() {
     // given - an activatable job whose incident still waits to be resolved
     activatableJob(1L);
