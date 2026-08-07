@@ -117,7 +117,8 @@ paths:
         Updates the mutable fields of an agent instance (status, metric counters, and
         tools) and appends a batch of history items to its conversation history. Metric
         values are treated as deltas and applied immediately to the aggregate counters.
-        Tool updates replace the existing tool list.
+        Tool updates replace the existing tool list. Each history item created for this
+        request is echoed back in the response.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -132,8 +133,12 @@ paths:
             schema:
               $ref: '#/components/schemas/AgentInstanceUpdateRequest'
       responses:
-        "204":
+        "200":
           description: The agent instance was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceUpdateResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -759,6 +764,41 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceHistoryItem'
+
+    AgentInstanceUpdateResult:
+      description: Response returned after successfully updating an agent instance.
+      type: object
+      required:
+        - createdHistory
+      properties:
+        createdHistory:
+          description: |
+            One entry per history item submitted in the request, in request order.
+            Empty when no history items were submitted.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
+
+    AgentInstanceCreatedHistoryItem:
+      description: |
+        The outcome of appending a single history item from an update request's
+        history batch.
+      type: object
+      required:
+        - historyItemKey
+        - isDuplicate
+      properties:
+        historyItemKey:
+          description: |
+            The system-generated key for the history item. When isDuplicate is true,
+            this is the key of the original entry, not a new one.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
+        isDuplicate:
+          description: |
+            True if this item had already been recorded and no new AGENT_HISTORY event
+            was created for it; false if a new event was created.
+          type: boolean
 
     ## Filters
 
