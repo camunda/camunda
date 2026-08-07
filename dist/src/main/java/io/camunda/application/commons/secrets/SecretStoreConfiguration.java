@@ -9,12 +9,15 @@ package io.camunda.application.commons.secrets;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
@@ -73,8 +76,7 @@ public class SecretStoreConfiguration {
           .mapValues(Camunda::getSecrets)
           .forEach(
               (tenantId, secrets) ->
-                  registries.put(
-                      tenantId, buildRegistry(tenantId, secrets.getStores(), created, timeSource)));
+                  registries.put(tenantId, buildRegistry(tenantId, secrets, created, timeSource)));
     } catch (final RuntimeException e) {
       closeAll(created);
       throw e;
@@ -84,9 +86,10 @@ public class SecretStoreConfiguration {
 
   private static SecretStoreRegistry buildRegistry(
       final String tenantId,
-      final Stores config,
+      final Secrets secrets,
       final List<SecretStore> created,
       final InstantSource timeSource) {
+    final Stores config = secrets.getStores();
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
         STORE_BINDINGS.stream().mapToLong(binding -> binding.ids(config).size()).sum();
@@ -103,13 +106,54 @@ public class SecretStoreConfiguration {
     // eagerly builds a client and probes credentials, which would otherwise surface first for a
     // configuration that is rejected anyway
     STORE_BINDINGS.forEach(binding -> binding.requireSupportedStoreIds(config, tenantId));
+    // read before any store is built, for the same reason: an out-of-bounds ttl/max-size fails
+    // startup without first constructing an AWS/GCP client only to roll it back again
+    final Secrets.Cache cacheConfig;
+    try {
+      // validates as a side effect, see Secrets#getCache
+      cacheConfig = secrets.getCache();
+    } catch (final IllegalArgumentException e) {
+      // the config object carries no tenant identity, so the property path it reports is the
+      // canonical one; name the tenant here, where it is known, or an operator running several
+      // cannot tell whose override is at fault
+      throw new IllegalArgumentException(
+          "Physical tenant '"
+              + tenantId
+              + "' has an invalid secret cache configuration: "
+              + e.getMessage(),
+          e);
+    }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
     STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, created, tenantId));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
     }
-    return new SecretStoreRegistry(Map.copyOf(stores), Map.of(), timeSource);
+    return new SecretStoreRegistry(
+        Map.copyOf(stores), caches(stores.keySet(), cacheConfig, timeSource), timeSource);
+  }
+
+  /**
+   * One cache per store, keyed by the same store IDs the registry is given. Building from the
+   * finalized store IDs with a fresh instance per ID is what keeps {@link SecretStoreRegistry} from
+   * rejecting the map: no cache for a store nothing is configured for, and no instance shared by
+   * two store IDs (a cache is keyed by the bare secret name, so a shared one would let one store's
+   * value answer for another store's secret of the same name).
+   *
+   * <p>The noop fallback store is covered too. It never caches anything — only a resolved value is
+   * cached and it resolves none — but covering it keeps this a single loop over the finalized store
+   * IDs, with no branch that could later leave a real store on the registry's own cache defaults
+   * instead of the configured ttl and max-size.
+   */
+  private static Map<String, SecretCache> caches(
+      final Set<String> storeIds, final Secrets.Cache config, final InstantSource timeSource) {
+    final Map<String, SecretCache> caches = new LinkedHashMap<>();
+    storeIds.forEach(
+        storeId ->
+            caches.put(
+                storeId,
+                CaffeineSecretCache.create(config.getMaxSize(), config.getTtl(), timeSource)));
+    return Map.copyOf(caches);
   }
 
   private static void closeAll(final List<SecretStore> stores) {

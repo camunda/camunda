@@ -335,6 +335,8 @@ processing.max-commands-in-batch
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
+secrets.cache.max-size
+secrets.cache.ttl
 secrets.stores.aws
 secrets.stores.file
 secrets.stores.gcp
