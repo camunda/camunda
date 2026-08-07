@@ -41,7 +41,7 @@ public class JobSuspendedApplierTest {
     // given
     final long jobKey = 1L;
     final var record = jobRecord();
-    jobState.insertJobRecordActivatable(jobKey, record);
+    createActivatableJob(jobKey, record);
 
     // when
     applier.applyState(jobKey, record);
@@ -56,7 +56,7 @@ public class JobSuspendedApplierTest {
     // given
     final long jobKey = 2L;
     final var record = jobRecord();
-    jobState.insertJobRecordActivatable(jobKey, record);
+    createActivatableJob(jobKey, record);
     jobState.activate(jobKey, record);
 
     // when
@@ -71,7 +71,7 @@ public class JobSuspendedApplierTest {
     // given
     final long jobKey = 3L;
     final var record = jobRecord();
-    jobState.insertJobRecordActivatable(jobKey, record);
+    createActivatableJob(jobKey, record);
     applier.applyState(jobKey, record);
 
     // when
@@ -80,6 +80,29 @@ public class JobSuspendedApplierTest {
     // then
     assertThat(jobState.getState(jobKey)).isEqualTo(State.SUSPENDED);
     assertThat(isServedAsActivatable(jobKey)).isFalse();
+  }
+
+  @Test
+  void shouldRemoveIndexEntryUsingStoredJobWhenEventRecordDiffers() {
+    // given - index key is type/tenant/priority of the stored job; a mismatched event value must
+    // not leave a ghost activatable entry behind
+    final long jobKey = 4L;
+    final var stored = jobRecord().setPriority(50);
+    createActivatableJob(jobKey, stored);
+    final var mismatchedEvent = jobRecord().setPriority(1);
+
+    // when
+    applier.applyState(jobKey, mismatchedEvent);
+
+    // then
+    assertThat(jobState.getState(jobKey)).isEqualTo(State.SUSPENDED);
+    assertThat(isServedAsActivatable(jobKey)).isFalse();
+  }
+
+  private void createActivatableJob(final long jobKey, final JobRecord record) {
+    jobState.insertJobRecordActivatable(jobKey, record);
+    jobState.makeJobActivatableByPriority(
+        record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
   }
 
   private static JobRecord jobRecord() {
