@@ -326,6 +326,14 @@ final class StreamJobsTest {
                 // then
                 assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(1)).hasSize(1);
               });
+
+      // and the yield command drops the pushed job's variables, which carry the values of its
+      // secret references once it has any and must not reach the log. The assertion is on the
+      // command, not on the YIELDED event: that event is written from the job in state, so it
+      // carries the state's variables either way
+      assertThat(RecordingExporter.jobRecords(JobIntent.YIELD).limit(1))
+          .singleElement()
+          .satisfies(record -> assertThat(record.getValue().getVariables()).isEmpty());
     }
 
     @Test
