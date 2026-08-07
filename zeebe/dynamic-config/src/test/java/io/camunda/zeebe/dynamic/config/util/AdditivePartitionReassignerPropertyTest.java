@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -71,6 +73,10 @@ final class AdditivePartitionReassignerPropertyTest {
     // PartitionDistributionInvariants.assertSatisfied
     PartitionDistributionInvariants.assertSatisfied(
         result, targetMembers, targetPartitionIds, replicationFactor, 3);
+
+    assertThat(result)
+        .describedAs("No existing partition was moved or removed")
+        .containsAll(oldDistribution);
   }
 
   private CurrentClusterConfiguration configurationWith(
