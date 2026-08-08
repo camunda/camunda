@@ -2057,7 +2057,9 @@ jobs:
       - zeebe-ci
       - zeebe-unit-tests
     env:
-      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+      # Fork PRs never authenticate to GCS (no Vault access), so there's nothing to clean up
+      # there -- exclude them explicitly instead of relying on the run/echo fallback below.
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event.pull_request.head.repo.fork != true }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Check for aborted jobs
