@@ -5,13 +5,13 @@
 # deployments from the workflow's inputs, then runs `make install`/`make install-stable`
 # against the rendered load-test folder. Centralized here because the override logic
 # branches on several independent, optional inputs (custom vs. Docker Hub images per
-# component, read benchmarks, Optimize metrics, user-supplied Helm values, whether the
-# metrics-exporter image was built this run).
+# component, read benchmarks, Optimize metrics, user-supplied Helm values, an explicit
+# metrics-exporter tag).
 #
 # Usage: load-test-install-camunda-platform.sh <namespace> <install-target> <image-tag> \
 #          <image-repository> <image-registry> <camunda-repo> <optimize-repo> \
 #          <perform-read-benchmarks> <enable-optimize> <enable-optimize-metrics> \
-#          <metrics-exporter-built> <enable-chaos> <physical-tenants> [OPTIONS]
+#          <enable-chaos> <physical-tenants> [OPTIONS]
 #
 #   namespace                  Load-test namespace (also the setup folder name)
 #   install-target             Make target to run (install or install-stable)
@@ -23,7 +23,6 @@
 #   perform-read-benchmarks    Run continuous read benchmarks (true/false)
 #   enable-optimize            Whether Optimize is part of this deployment (true/false)
 #   enable-optimize-metrics    Enable the load-tester Optimize report-evaluation meter (true/false)
-#   metrics-exporter-built     Whether build-metrics-exporter-image ran this run (true/false)
 #   enable-chaos               Enable chaos-killer (true/false)
 #   physical-tenants           Deploy a second physical tenant (true/false)
 #
@@ -32,6 +31,9 @@
 #   --orchestration-tag TAG       Docker Hub orchestration tag (empty when using a custom build)
 #   --identity-tag TAG            Explicit Identity image tag
 #   --connectors-tag TAG          Explicit Connectors image tag
+#   --metrics-exporter-tag TAG    Explicit metrics-exporter image tag (empty to use the Helm
+#                                 chart's "latest" default; the metrics-exporter has its own
+#                                 versioning, independent of image-tag above)
 #   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
 #   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
 #   --scenario SCENARIO           Workload scenario to run
@@ -48,15 +50,15 @@ optimize_repo="$7"
 perform_read_benchmarks="$8"
 enable_optimize="$9"
 enable_optimize_metrics="${10}"
-metrics_exporter_built="${11}"
-enable_chaos="${12}"
-physical_tenants="${13}"
-shift 13
+enable_chaos="${11}"
+physical_tenants="${12}"
+shift 12
 
 optimize_tag=""
 orchestration_tag=""
 identity_tag=""
 connectors_tag=""
+metrics_exporter_tag=""
 load_test_load=""
 platform_helm_values=""
 scenario=""
@@ -67,6 +69,7 @@ while [[ $# -gt 0 ]]; do
     --orchestration-tag) orchestration_tag="$2"; shift 2 ;;
     --identity-tag) identity_tag="$2"; shift 2 ;;
     --connectors-tag) connectors_tag="$2"; shift 2 ;;
+    --metrics-exporter-tag) metrics_exporter_tag="$2"; shift 2 ;;
     --load-test-load) load_test_load="$2"; shift 2 ;;
     --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
     --scenario) scenario="$2"; shift 2 ;;
@@ -130,12 +133,12 @@ if [[ -n "${platform_helm_values}" ]]; then
   additional_platform_config+=" ${platform_helm_values}"
 fi
 
-# Pin the metrics-exporter image to the tag built by build-metrics-exporter-image.
-# If the image has been skipped, keep using the "latest" tag, which
-# is assuming to be always published by the dedicated CI running on
-# the main branch.
-if [[ "${metrics_exporter_built}" == "true" ]]; then
-  additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${image_tag}"
+# The metrics-exporter has its own independent versioning, decoupled from the
+# Camunda version under test (unlike image_tag above). Only override the Helm
+# chart default ("latest", kept fresh by the dedicated CI on main) when
+# metrics-exporter-tag was explicitly set to test a new metrics-exporter build.
+if [[ -n "${metrics_exporter_tag}" ]]; then
+  additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${metrics_exporter_tag}"
 fi
 
 make "${install_target}" \
