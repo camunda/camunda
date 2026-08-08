@@ -81,7 +81,7 @@
     "@vitest/coverage-istanbul": "4.1.10",
     "@vitest/eslint-plugin": "1.6.24",
     "@vitest/ui": "4.1.10",
-    "axe-core": "4.12.1",
+    "axe-core": "4.13.0",
     "diagram-js": "15.18.1",
     "eslint": "10.8.0",
     "eslint-plugin-import-x": "4.17.1",
