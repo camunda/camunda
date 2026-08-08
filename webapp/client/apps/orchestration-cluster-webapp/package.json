@@ -25,7 +25,7 @@
 		"@camunda/camunda-composite-components": "0.25.4",
 		"@carbon/grid": "11.59.0",
 		"@carbon/layout": "11.56.0",
-		"@carbon/react": "1.112.0",
+		"@carbon/react": "1.113.0",
 		"@carbon/styles": "1.112.0",
 		"@carbon/type": "11.64.0",
 		"@devbookhq/splitter": "1.4.2",
