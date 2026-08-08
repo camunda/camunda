@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
 import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
@@ -170,6 +171,8 @@ public final class EngineProcessors {
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var messageCorrelationMetrics =
         new MessageCorrelationMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var secretResolutionMetrics =
+        new SecretResolutionMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -526,7 +529,8 @@ public final class EngineProcessors {
         incidentMetrics,
         scheduledTaskStateFactory,
         secretStoreRegistry,
-        config);
+        config,
+        secretResolutionMetrics);
 
     return typedRecordProcessors;
   }
