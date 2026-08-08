@@ -261,6 +261,7 @@ public class ResourceDeletionTest {
             ProcessIntent.CREATED,
             DeploymentIntent.CREATED,
             ResourceDeletionIntent.DELETING,
+            ProcessIntent.DRAINING,
             ProcessIntent.DELETING,
             ProcessIntent.DELETED,
             ResourceDeletionIntent.DELETED);
@@ -578,6 +579,40 @@ public class ResourceDeletionTest {
     verifyMessageStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 4);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
     verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
+  }
+
+  @Test
+  public void shouldSkipDrainingVersionWhenResubscribingStartEvents() {
+    // given - three versions of the same process, each with a message start event
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneKey = deployProcessWithMessageStartEventAndUserTask(processId);
+    final var versionTwoKey = deployProcessWithMessageStartEventAndUserTask(processId);
+
+    // and - version two has a running instance, so deleting it leaves it DRAINING rather than
+    // physically deleted (its start subscription is inactive because version three is deployed
+    // next)
+    engine.message().withCorrelationKey("key").withName("message").publish();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessDefinitionKey(versionTwoKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+    final var versionThreeKey = deployProcessWithMessageStartEventAndUserTask(processId);
+
+    engine.resourceDeletion().withResourceKey(versionTwoKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(versionTwoKey)
+        .await();
+
+    // when - the latest version is deleted, its start subscription must be handed back down
+    engine.resourceDeletion().withResourceKey(versionThreeKey).delete();
+
+    // then - resubscription skips the DRAINING version two and lands on the ACTIVE version one:
+    // version one is subscribed once on its own deployment, then again by the resubscription. Since
+    // there is exactly one resubscription and it targets version one, the draining version two is
+    // never resubscribed to.
+    verifyMessageStartEventSubscriptionIsDeleted(versionThreeKey);
+    verifyMessageStartEventSubscriptionIsCreated(versionOneKey, 2);
   }
 
   @Test
@@ -1147,6 +1182,23 @@ public class ResourceDeletionTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .message("message")
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private long deployProcessWithMessageStartEventAndUserTask(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .message("message")
+                .userTask("wait")
                 .endEvent()
                 .done())
         .deploy()
