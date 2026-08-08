@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.util.Optional;
@@ -34,8 +35,25 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
       final SequenceFlow element, final ValidationResultCollector validationResultCollector) {
     IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
-    if (element.getSource() instanceof ExclusiveGateway) {
-      final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
+    final FlowNode source = element.getSource();
+    final FlowNode target = element.getTarget();
+
+    if (source == null) {
+      validationResultCollector.addError(
+          0, "Attribute 'sourceRef' must reference a valid flow node");
+    }
+
+    if (target == null) {
+      validationResultCollector.addError(
+          0, "Attribute 'targetRef' must reference a valid flow node");
+    }
+
+    if (source == null) {
+      return;
+    }
+
+    if (source instanceof ExclusiveGateway) {
+      final ExclusiveGateway gateway = (ExclusiveGateway) source;
       if (gateway.getOutgoing().size() > 1
           && gateway.getDefault() != element
           && element.getConditionExpression() == null) {
@@ -43,8 +61,8 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
       }
     }
 
-    if (element.getSource() instanceof InclusiveGateway) {
-      final InclusiveGateway gateway = (InclusiveGateway) element.getSource();
+    if (source instanceof InclusiveGateway) {
+      final InclusiveGateway gateway = (InclusiveGateway) source;
       if (gateway.getOutgoing().size() > 1) {
         final Optional<SequenceFlow> sequenceFlow =
             gateway.getOutgoing().stream()
