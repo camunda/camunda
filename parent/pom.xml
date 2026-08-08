@@ -143,7 +143,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.10.3</version.spotbugs>
-    <version.archunit>1.4.2</version.archunit>
+    <version.archunit>1.5.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-ffi>2.3.0</version.jnr-ffi>
