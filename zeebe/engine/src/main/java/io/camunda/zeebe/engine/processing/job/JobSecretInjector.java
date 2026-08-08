@@ -336,7 +336,9 @@ public final class JobSecretInjector {
   /**
    * Replaces the placeholder in the text leaf addressed by the secret's JSON pointer. Pointers that
    * do not address a text leaf of an object (e.g. the path no longer matches the variables, or it
-   * runs into an array) are skipped defensively.
+   * runs into an array) are skipped defensively. A text leaf that does not contain the expected
+   * placeholder is not skipped: it means the referenced value changed between input mapping
+   * evaluation and job creation, so it fails the injection instead (see the class javadoc).
    */
   private static boolean replaceInLeaf(
       final JsonNode document, final Secret secret, final String value) {
@@ -352,7 +354,15 @@ public final class JobSecretInjector {
     final String text = leaf.textValue();
     final String replaced = text.replace(secret.placeholder(), value);
     if (replaced.equals(text)) {
-      return false;
+      throw new IllegalStateException(
+          "Secret reference '"
+              + secret.placeholder()
+              + "' at "
+              + secret.path()
+              + " does not match the job's variables — the referenced value changed since the "
+              + "placeholder was baked in (job variables are re-read from the current variable "
+              + "scope on every activation attempt, so a later merge into that scope can overwrite "
+              + "it)");
     }
     ((ObjectNode) parent).put(pointer.last().getMatchingProperty(), replaced);
     return true;

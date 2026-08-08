@@ -681,7 +681,12 @@ public final class EventAppliers implements EventApplier {
   private void registerIncidentEventAppliers(final MutableProcessingState state) {
     register(
         IncidentIntent.CREATED,
+        1,
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
+    register(
+        IncidentIntent.CREATED,
+        2,
+        new IncidentCreatedV2Applier(state.getIncidentState(), state.getJobState()));
     register(
         IncidentIntent.RESOLVED,
         1,
