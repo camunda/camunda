@@ -104,8 +104,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Upload distball to GCS
-        # gcloud is only installed/authenticated when gcs-build-cache-auth ran, which is
-        # itself skipped for fork PRs (no Vault access) -- see gcs-build-cache-auth/action.yml.
+        # gcs-build-cache-auth runs unconditionally, but its internal Vault/WIF/setup-gcloud
+        # steps no-op on fork PRs (no Vault access -- see gcs-build-cache-auth/action.yml),
+        # so gcloud is never installed. Guard this step the same way.
         if: steps.is-fork.outputs.is-fork != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.

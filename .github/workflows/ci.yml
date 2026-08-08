@@ -2588,7 +2588,9 @@ jobs:
       - zeebe-ci
       - zeebe-unit-tests
     env:
-      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+      # Fork PRs never authenticate to GCS (no Vault access), so there's nothing to clean up
+      # there -- exclude them explicitly instead of relying on the run/echo fallback below.
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event.pull_request.head.repo.fork != true }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
