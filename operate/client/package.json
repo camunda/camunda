@@ -32,7 +32,7 @@
     "mixpanel-browser": "2.81.0",
     "mobx": "6.16.1",
     "mobx-react": "9.2.1",
-    "mobx-react-lite": "4.1.1",
+    "mobx-react-lite": "5.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-error-boundary": "6.1.1",
