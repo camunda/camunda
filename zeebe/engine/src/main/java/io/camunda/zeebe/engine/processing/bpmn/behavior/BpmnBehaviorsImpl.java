@@ -71,6 +71,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
   private final AgentInstanceBehavior agentInstanceBehavior;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -310,6 +311,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     agentInstanceBehavior = new AgentInstanceBehavior(writers);
 
+    loopDetectionBehavior =
+        new BpmnLoopDetectionBehavior(
+            processingState.getElementInstanceState(),
+            config.getMaxElementActivationCount(),
+            config.getMaxElementActivationCountByType(),
+            config.getElementActivationRetryCooldown());
+
     processDeletionBehavior =
         new BpmnProcessDeletionBehavior(
             processingState.getProcessState(),
@@ -443,6 +451,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnProcessDeletionBehavior processDeletionBehavior() {
     return processDeletionBehavior;
+  }
+
+  @Override
+  public BpmnLoopDetectionBehavior loopDetectionBehavior() {
+    return loopDetectionBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

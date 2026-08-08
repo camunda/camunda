@@ -66,4 +66,6 @@ public interface BpmnBehaviors {
   AgentInstanceBehavior agentInstanceBehavior();
 
   BpmnProcessDeletionBehavior processDeletionBehavior();
+
+  BpmnLoopDetectionBehavior loopDetectionBehavior();
 }

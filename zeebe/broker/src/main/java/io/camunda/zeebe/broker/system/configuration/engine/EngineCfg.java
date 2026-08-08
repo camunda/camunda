@@ -27,6 +27,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
+  private LoopDetectionCfg loopDetection = new LoopDetectionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -43,6 +44,7 @@ public final class EngineCfg implements ConfigurationEntry {
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
     startup.init(globalConfig, brokerBase);
+    loopDetection.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -157,6 +159,14 @@ public final class EngineCfg implements ConfigurationEntry {
     startup = startupCfg;
   }
 
+  public LoopDetectionCfg getLoopDetection() {
+    return loopDetection;
+  }
+
+  public void setLoopDetection(final LoopDetectionCfg loopDetection) {
+    this.loopDetection = loopDetection;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -188,6 +198,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + processInstanceCreation
         + ", startup="
         + startup
+        + ", loopDetection="
+        + loopDetection
         + '}';
   }
 
@@ -247,6 +259,9 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessageStartLockReleasePollBatchLimit(
             processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
-        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setMaxElementActivationCount(loopDetection.getMaxElementActivationCount())
+        .setElementActivationRetryCooldown(loopDetection.getElementActivationRetryCooldown())
+        .setMaxElementActivationCountByType(loopDetection.getMaxElementActivationCountByType());
   }
 }

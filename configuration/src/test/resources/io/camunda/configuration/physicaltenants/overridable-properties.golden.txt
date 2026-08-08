@@ -290,6 +290,9 @@ processing.engine.evaluate-duplicate-output-mapping-targets-in-order
 processing.engine.job.include-variables-in-job-completed-event
 processing.engine.job.timeout-checker-batch-limit
 processing.engine.job.timeout-checker-polling-interval
+processing.engine.loop-detection.element-activation-retry-cooldown
+processing.engine.loop-detection.max-element-activation-count
+processing.engine.loop-detection.max-element-activation-count-by-type
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
