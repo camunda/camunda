@@ -18,8 +18,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
@@ -80,6 +83,19 @@ public final class BpmnSignalBehavior {
     signalRecord.setSignalName(signalName).setVariables(variables).setTenantId(tenantId);
 
     final var key = keyGenerator.nextKey();
-    commandWriter.appendFollowUpCommand(key, SignalIntent.BROADCAST, signalRecord);
+    // A signal broadcast triggered by a throw event is an internal side-effect of process
+    // execution, not a user-initiated broadcast, so it must not be subjected to the
+    // CREATE_PROCESS_INSTANCE / UPDATE_PROCESS_INSTANCE authorization check in
+    // SignalBroadcastProcessor. It is normally treated as internal via isInternalCommand(), but a
+    // command processed within a batch operation propagates its batchOperationReference to every
+    // follow-up command, which makes the follow-up non-internal. Marking the follow-up as
+    // PRE_AUTHORIZED keeps it exempt from the user authorization check regardless of the inherited
+    // batchOperationReference.
+    final var authInfo = new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED);
+    commandWriter.appendFollowUpCommand(
+        key,
+        SignalIntent.BROADCAST,
+        signalRecord,
+        FollowUpCommandMetadata.of(builder -> builder.authInfo(authInfo)));
   }
 }
