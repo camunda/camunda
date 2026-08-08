@@ -28,7 +28,10 @@ import org.junit.Test;
  * Covers the core detection-to-emission story for {@code AgentDefinition:CREATED} at deploy time:
  * an element carrying a recognized agent marker (explicit {@code zeebe:agentDefinition}, or a
  * {@code zeebe:modelerTemplate} fallback) mints exactly one {@code AgentDefinition} per deployed
- * process version, while an unmarked element mints nothing.
+ * process version, while an unmarked element mints nothing. Also covers the deployment versioning
+ * invariants also enforced for other deployed resources: a fully duplicate deployment must not mint
+ * an additional {@code AgentDefinition}, while a mixed deployment that reassigns a duplicate BPMN
+ * resource to a new process version must mint a new one for it.
  *
  * <p>These minting scenarios are red until {@code AgentDefinitionTransformer} is wired into {@code
  * BpmnResourceTransformer.writeRecords} to actually mint and emit the records asserted here.
@@ -38,6 +41,9 @@ public final class AgentDefinitionDeploymentTest {
   /** {@code zeebe:modelerTemplate} id of the Agentic AI service task connector template. */
   private static final String MODELER_TEMPLATE_AI_AGENT_TASK =
       "io.camunda.connectors.agenticai.aiagent.v1";
+
+  private static final String FORM_V1 = "/form/test-form-1.form";
+  private static final String FORM_V2 = "/form/test-form-1_v2.form";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -241,6 +247,122 @@ public final class AgentDefinitionDeploymentTest {
     assertThat(agentDefinitionRecordV2.getValue().getAgentDefinitionKey())
         .describedAs(
             "Should mint a distinct agentDefinitionKey for the redeployed process's"
+                + " AgentDefinition")
+        .isNotEqualTo(agentDefinitionKeyV1);
+  }
+
+  @Test
+  public void shouldNotCreateAgentDefinitionForFullyDuplicateDeployment() {
+    // given
+    final var processId = "process-fully-duplicate";
+    final var elementId = "agent-task";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(
+                elementId, t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+            .endEvent()
+            .done();
+
+    final var firstDeployment = engine.deployment().withXmlResource(process).deploy();
+    final var processDefinitionKey =
+        firstDeployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .describedAs("Should mint an AgentDefinition on the first deployment as a precondition")
+        .isTrue();
+
+    // when — redeploy the exact same, unchanged resource
+    final var secondDeployment = engine.deployment().withXmlResource(process).deploy();
+
+    // then
+    assertThat(secondDeployment.getValue().getProcessesMetadata())
+        .singleElement()
+        .satisfies(
+            metadata ->
+                Assertions.assertThat(metadata)
+                    .describedAs("Should keep the duplicate process at its original version")
+                    .hasVersion(1)
+                    .isDuplicate()
+                    .hasProcessDefinitionKey(processDefinitionKey));
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .skip(1)
+                        .exists()))
+        .describedAs(
+            "Should not mint a second AgentDefinition for the duplicate process definition")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldCreateAgentDefinitionWithReassignedKeyForMixedDeploymentRedeploy() {
+    // given — a BPMN resource with an agent marker deployed alongside a form resource
+    final var processId = "process-mixed-redeploy";
+    final var elementId = "agent-task";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(
+                elementId, t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+            .endEvent()
+            .done();
+
+    final var firstDeployment =
+        engine.deployment().withXmlResource(process).withJsonClasspathResource(FORM_V1).deploy();
+    final var processDefinitionKeyV1 =
+        firstDeployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+    final var agentDefinitionKeyV1 =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKeyV1)
+            .getFirst()
+            .getValue()
+            .getAgentDefinitionKey();
+
+    // when — redeploy with the byte-identical BPMN resource but a changed form resource, forcing
+    // the deployment as a whole to reassign the duplicate BPMN process to a new version
+    final var secondDeployment =
+        engine.deployment().withXmlResource(process).withJsonClasspathResource(FORM_V2).deploy();
+    final var processMetadataV2 = secondDeployment.getValue().getProcessesMetadata().getFirst();
+    final var processDefinitionKeyV2 = processMetadataV2.getProcessDefinitionKey();
+
+    // then
+    Assertions.assertThat(processMetadataV2)
+        .describedAs(
+            "Should reassign the duplicate BPMN process to a new version because a sibling"
+                + " resource in the same deployment changed")
+        .hasVersion(2)
+        .isNotDuplicate();
+
+    assertThat(processDefinitionKeyV2)
+        .describedAs(
+            "Should assign the duplicate BPMN process a fresh processDefinitionKey, distinct"
+                + " from its original one, because a sibling resource in the same deployment"
+                + " changed")
+        .isNotEqualTo(processDefinitionKeyV1);
+
+    final var agentDefinitionRecordV2 =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKeyV2)
+            .getFirst();
+
+    Assertions.assertThat(agentDefinitionRecordV2.getValue())
+        .describedAs(
+            "Should mint a new AgentDefinition for the reassigned process version, matching its"
+                + " new processDefinitionVersion")
+        .hasElementId(elementId)
+        .hasBpmnProcessId(processId)
+        .hasProcessDefinitionKey(processDefinitionKeyV2)
+        .hasProcessDefinitionVersion(2);
+
+    assertThat(agentDefinitionRecordV2.getValue().getAgentDefinitionKey())
+        .describedAs(
+            "Should mint a distinct agentDefinitionKey for the reassigned process version's"
                 + " AgentDefinition")
         .isNotEqualTo(agentDefinitionKeyV1);
   }
