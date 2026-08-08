@@ -50,7 +50,7 @@ spec:
       initContainers:
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.10.0-alpha3
+          image: camunda/identity:8.10.0-alpha4.2
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -67,6 +67,8 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: orchestration-security-authentication-oidc-secret
+            - name: CAMUNDA_ORCHESTRATION_CLIENT_ID
+              value: "orchestration"
             - name: VALUES_KEYCLOAK_SETUP_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -79,9 +81,6 @@ spec:
                   key: identity-firstuser-password
             - name: IDENTITY_LOG_APPENDER
               value: Stackdriver
-          envFrom:
-            - configMapRef:
-                name: c8-golden-main-none-optimize-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m
