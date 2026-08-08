@@ -526,7 +526,7 @@ public final class CamundaClientImpl implements CamundaClient {
       final String authority = host.contains(":") ? "[" + host + "]" : host;
       channelBuilder =
           NettyChannelBuilder.forTarget("dns:///" + authority + ":" + address.getPort());
-      channelBuilder.defaultLoadBalancingPolicy("round_robin");
+      configureClientSideLoadBalancing(channelBuilder);
     } else {
       channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
     }
@@ -546,6 +546,17 @@ public final class CamundaClientImpl implements CamundaClient {
     }
 
     return channelBuilder.build();
+  }
+
+  @SuppressWarnings("deprecation") // NettyChannelBuilder#nameResolverFactory is the only way to
+  // scope a custom NameResolver.Factory to a single channel; grpc-java has not offered a
+  // non-deprecated replacement, despite keeping the method around for exactly this use case. See
+  // PeriodicRefreshNameResolverFactory for why a custom factory is needed here.
+  private static void configureClientSideLoadBalancing(final NettyChannelBuilder channelBuilder) {
+    channelBuilder.defaultLoadBalancingPolicy("round_robin");
+    channelBuilder.nameResolverFactory(
+        new PeriodicRefreshNameResolverFactory(
+            PeriodicRefreshNameResolverFactory.DEFAULT_REFRESH_INTERVAL));
   }
 
   private static CallCredentials buildCallCredentials(final CamundaClientConfiguration config) {
