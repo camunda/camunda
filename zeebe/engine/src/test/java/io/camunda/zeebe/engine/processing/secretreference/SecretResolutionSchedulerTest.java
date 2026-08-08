@@ -266,9 +266,45 @@ final class SecretResolutionSchedulerTest {
     // then the store is asked even for a cached reference and the reference fails: the completion
     // record is durable and exported, so it must not claim a secret the store no longer has
     verify(secretStore).resolve(Set.of("db-password"));
+    assertThat(registry.getStores().get(STORE_ID).lookupLocal("db-password")).isEmpty();
     verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_FAIL), any());
     verify(resultBuilder, never())
         .appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
+  }
+
+  @Test
+  void shouldInvalidateOnlyFailedCachedReferencesInAMixedBatch() throws Exception {
+    // given two cached references, where an authoritative store read refreshes one and fails the
+    // other in the same scheduler batch
+    final var cache = new InMemorySecretCache();
+    cache.put("db-password", "old-password");
+    cache.put("api-key", "old-api-key");
+    final var registry =
+        new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, cache));
+    final var localScheduler =
+        new SecretResolutionScheduler(
+            () -> scheduledTaskState, registry, new EngineConfiguration());
+    localScheduler.onRecovered(context);
+    stubPending(STORE_ID, "db-password", "api-key");
+    when(secretStore.resolve(Set.of("db-password", "api-key")))
+        .thenReturn(
+            Map.of(
+                "db-password",
+                new SecretResolutionResult.Resolved("new-password"),
+                "api-key",
+                new SecretResolutionResult.Failed(
+                    SecretErrorCode.ACCESS_DENIED, "access denied", null)));
+
+    // when
+    localScheduler.resolveSecrets(resultBuilder);
+
+    // then the successful reference is still held locally with the refreshed value, while the
+    // failed reference is cleared so later cache-only activation cannot reveal it
+    assertThat(registry.getStores().get(STORE_ID).lookupLocal("db-password"))
+        .contains("new-password");
+    assertThat(registry.getStores().get(STORE_ID).lookupLocal("api-key")).isEmpty();
+    verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_COMPLETE), any());
+    verify(resultBuilder).appendCommandRecord(eq(SecretReferenceIntent.RESOLUTION_FAIL), any());
   }
 
   @Test

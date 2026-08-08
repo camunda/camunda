@@ -247,5 +247,10 @@ public final class JobWaitingForSecretResolutionTest {
     public void put(final String name, final String value) {
       cachedSecrets.put(name, value);
     }
+
+    @Override
+    public void remove(final String name) {
+      cachedSecrets.remove(name);
+    }
   }
 }
