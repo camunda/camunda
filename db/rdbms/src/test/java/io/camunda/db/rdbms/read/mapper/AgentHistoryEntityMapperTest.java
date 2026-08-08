@@ -15,6 +15,8 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistor
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -51,11 +53,22 @@ class AgentHistoryEntityMapperTest {
                 List.of(new ContentItem(ContentType.TEXT, "Hello from assistant", null, null)))
             .toolCallValues(
                 List.of(new ToolCall("tc-1", "myTool", "Task_1", Map.of("key", "value"))))
+            .historyItemId("history-item-1")
+            .toolValues(List.of(new Tool("search", "Searches the web", "Task_2")))
+            .model("gpt-4o")
+            .provider("openai")
+            .maxTokens(1000L)
+            .maxModelCalls(10)
+            .maxToolCalls(5)
+            .systemPromptItems(
+                List.of(
+                    new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null)))
             .build();
 
     final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
 
     assertThat(entity.historyItemKey()).isEqualTo(100L);
+    assertThat(entity.historyItemId()).isEqualTo("history-item-1");
     assertThat(entity.agentInstanceKey()).isEqualTo(200L);
     assertThat(entity.elementInstanceKey()).isEqualTo(300L);
     assertThat(entity.processInstanceKey()).isEqualTo(400L);
@@ -77,6 +90,61 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.toolCalls()).hasSize(1);
     assertThat(entity.toolCalls().get(0).toolCallId()).isEqualTo("tc-1");
     assertThat(entity.toolCalls().get(0).toolName()).isEqualTo("myTool");
+    assertThat(entity.tools()).hasSize(1);
+    assertThat(entity.tools().get(0).name()).isEqualTo("search");
+    assertThat(entity.model()).isEqualTo("gpt-4o");
+    assertThat(entity.provider()).isEqualTo("openai");
+    assertThat(entity.limits()).isNotNull();
+    assertThat(entity.limits().maxTokens()).isEqualTo(1000L);
+    assertThat(entity.limits().maxModelCalls()).isEqualTo(10);
+    assertThat(entity.limits().maxToolCalls()).isEqualTo(5);
+    assertThat(entity.systemPrompt()).hasSize(1);
+    assertThat(entity.systemPrompt().get(0).contentType()).isEqualTo(ContentType.TEXT);
+    assertThat(entity.systemPrompt().get(0).text()).isEqualTo("You are a helpful assistant.");
+  }
+
+  @Test
+  void shouldMapNullHistoryItemIdToEmptyString() {
+    // given — historyItemId is only carried by CONFIGURATION-triggering paths; other items leave
+    // it unset on the DB model
+    final var dbModel = minimalDbModel(45L).historyItemId(null).build();
+
+    // when
+    final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
+
+    // then
+    assertThat(entity.historyItemId()).isEmpty();
+  }
+
+  @Test
+  void shouldMapEmptyToolsAndSystemPromptAndSentinelLimitsWhenUntouched() {
+    // given — a CONFIGURATION item (or non-CONFIGURATION item) that didn't touch these fields
+    final var dbModel = minimalDbModel(46L).build();
+
+    // when
+    final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
+
+    // then
+    assertThat(entity.tools()).isEmpty();
+    assertThat(entity.model()).isNull();
+    assertThat(entity.provider()).isNull();
+    assertThat(entity.limits()).isEqualTo(new Limits(-1, -1, -1));
+    assertThat(entity.systemPrompt()).isEmpty();
+  }
+
+  @Test
+  void shouldDefaultMissingLimitsSubFieldsToNegativeOneWhenLimitsTouched() {
+    // given — only maxTokens was touched; maxModelCalls/maxToolCalls left null on the DB row
+    final var dbModel = minimalDbModel(47L).maxTokens(500L).build();
+
+    // when
+    final AgentInstanceHistoryEntity entity = AgentHistoryEntityMapper.toEntity(dbModel);
+
+    // then
+    assertThat(entity.limits()).isNotNull();
+    assertThat(entity.limits().maxTokens()).isEqualTo(500L);
+    assertThat(entity.limits().maxModelCalls()).isEqualTo(-1);
+    assertThat(entity.limits().maxToolCalls()).isEqualTo(-1);
   }
 
   @Test

@@ -22,6 +22,8 @@ import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryEmbeddedToolCallValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
@@ -33,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolC
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceLimitsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -188,6 +192,85 @@ final class AgentHistoryHandlerTest {
                 "tc-1", "search", "searchElement", Map.of("query", "weather")));
   }
 
+  @Test
+  void shouldPopulateConfigurationFieldsForCreatedIntent() {
+    // given — a CONFIGURATION item that touched
+    // historyItemId/tools/model/provider/limits/systemPrompt
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildMinimalRecordValue(50L, 3))
+            .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.CONFIGURATION)
+            .withHistoryItemId("history-item-1")
+            .withTools(
+                List.of(
+                    ImmutableAgentInstanceToolValue.builder()
+                        .withName("search")
+                        .withDescription("Searches the web")
+                        .withElementId("Task_1")
+                        .build()))
+            .withModel("gpt-4o")
+            .withProvider("openai")
+            .withLimits(
+                ImmutableAgentInstanceLimitsValue.builder()
+                    .withMaxTokens(1000L)
+                    .withMaxModelCalls(10)
+                    .withMaxToolCalls(5)
+                    .build())
+            .withSystemPrompt(
+                List.of(
+                    ImmutableAgentHistoryMessageContentValue.builder()
+                        .withContentType(
+                            io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+                        .withText("You are a helpful assistant.")
+                        .withObject(Map.of())
+                        .build()))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(101L).withValue(recordValue));
+    final var entity = new AgentHistoryEntity().setId("101");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.CONFIGURATION);
+    assertThat(entity.getHistoryItemId()).isEqualTo("history-item-1");
+    assertThat(entity.getTools())
+        .containsExactly(new AgentHistoryToolValue("search", "Searches the web", "Task_1"));
+    assertThat(entity.getModel()).isEqualTo("gpt-4o");
+    assertThat(entity.getProvider()).isEqualTo("openai");
+    assertThat(entity.getLimits()).isEqualTo(new AgentHistoryLimitsValue(1000L, 10, 5));
+    assertThat(entity.getSystemPrompt())
+        .containsExactly(
+            new AgentHistoryContentValue(
+                AgentHistoryContentType.TEXT, "You are a helpful assistant.", null, null));
+  }
+
+  @Test
+  void shouldMapUntouchedConfigurationFields() {
+    // given — a non-CONFIGURATION item (protocol defaults: empty historyItemId/tools/model/
+    // provider/systemPrompt, all-sentinel limits)
+    final var recordValue = buildMinimalRecordValue(50L, 3);
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(102L).withValue(recordValue));
+    final var entity = new AgentHistoryEntity().setId("102");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getHistoryItemId()).isNull();
+    assertThat(entity.getTools()).isEmpty();
+    assertThat(entity.getModel()).isNull();
+    assertThat(entity.getProvider()).isNull();
+    assertThat(entity.getLimits()).isEqualTo(new AgentHistoryLimitsValue(-1L, -1, -1));
+    assertThat(entity.getSystemPrompt()).isEmpty();
+  }
+
   @ParameterizedTest(name = "[{index}] Terminal ''{0}'' event must not clobber CREATED content")
   @EnumSource(
       value = AgentHistoryIntent.class,
@@ -229,6 +312,30 @@ final class AgentHistoryHandlerTest {
                         .withElementId("searchElement")
                         .withArguments(Map.of("query", "weather"))
                         .build()))
+            .withHistoryItemId("history-item-1")
+            .withTools(
+                List.of(
+                    ImmutableAgentInstanceToolValue.builder()
+                        .withName("search")
+                        .withDescription("Searches the web")
+                        .withElementId("Task_1")
+                        .build()))
+            .withModel("gpt-4o")
+            .withProvider("openai")
+            .withLimits(
+                ImmutableAgentInstanceLimitsValue.builder()
+                    .withMaxTokens(1000L)
+                    .withMaxModelCalls(10)
+                    .withMaxToolCalls(5)
+                    .build())
+            .withSystemPrompt(
+                List.of(
+                    ImmutableAgentHistoryMessageContentValue.builder()
+                        .withContentType(
+                            io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+                        .withText("You are a helpful assistant.")
+                        .withObject(Map.of())
+                        .build()))
             .build();
 
     final Record<AgentHistoryRecordValue> createdRecord =
@@ -266,6 +373,17 @@ final class AgentHistoryHandlerTest {
                                     .build())
                             .withContent(List.of())
                             .withToolCalls(List.of())
+                            .withHistoryItemId("")
+                            .withTools(List.of())
+                            .withModel("")
+                            .withProvider("")
+                            .withLimits(
+                                ImmutableAgentInstanceLimitsValue.builder()
+                                    .withMaxTokens(-1L)
+                                    .withMaxModelCalls(-1)
+                                    .withMaxToolCalls(-1)
+                                    .build())
+                            .withSystemPrompt(List.of())
                             .build()));
 
     underTest.updateEntity(trimmedRecord, entity);
@@ -315,6 +433,32 @@ final class AgentHistoryHandlerTest {
               .assertThat(entity.getCommitStatus())
               .as("commitStatus must reflect the terminal event that was actually applied")
               .isEqualTo(expectedStatus);
+          softly
+              .assertThat(entity.getHistoryItemId())
+              .as("historyItemId must still hold the original CREATED value")
+              .isEqualTo("history-item-1");
+          softly
+              .assertThat(entity.getTools())
+              .as("tools must still hold the original CREATED tool list")
+              .containsExactly(new AgentHistoryToolValue("search", "Searches the web", "Task_1"));
+          softly
+              .assertThat(entity.getModel())
+              .as("model must still hold the original CREATED value")
+              .isEqualTo("gpt-4o");
+          softly
+              .assertThat(entity.getProvider())
+              .as("provider must still hold the original CREATED value")
+              .isEqualTo("openai");
+          softly
+              .assertThat(entity.getLimits())
+              .as("limits must still hold the original CREATED value")
+              .isEqualTo(new AgentHistoryLimitsValue(1000L, 10, 5));
+          softly
+              .assertThat(entity.getSystemPrompt())
+              .as("systemPrompt must still hold the original CREATED value")
+              .containsExactly(
+                  new AgentHistoryContentValue(
+                      AgentHistoryContentType.TEXT, "You are a helpful assistant.", null, null));
         });
   }
 
