@@ -9,13 +9,16 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.gateway.protocol.model.AgentTool;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -89,6 +92,30 @@ class AgentInstanceRequestValidatorTest {
         .role(AgentInstanceHistoryRoleEnum.USER)
         .content(List.of(content))
         .producedAt(producedAt)
+        .build();
+  }
+
+  private static AgentInstanceHistoryItem historyItemWithLoopIteration(
+      final String historyItemId, final int loopIteration) {
+    final AgentInstanceMessageContent content =
+        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(loopIteration)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(List.of(content))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceHistoryItem historyItemWithContent(
+      final String historyItemId, final List<AgentInstanceMessageContent> content) {
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(content)
+        .producedAt("2025-06-01T12:00:00Z")
         .build();
   }
 
@@ -352,6 +379,141 @@ class AgentInstanceRequestValidatorTest {
           .isEqualTo(
               "The provided history[0].producedAt 'not-a-date' cannot be parsed as a date"
                   + " according to RFC 3339, section 5.6.");
+    }
+
+    @Test
+    @DisplayName("Should reject a malformed jobKey even without a history batch")
+    void shouldRejectMalformedJobKeyWithoutHistory() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey("not-a-number");
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo(
+              "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
+                  + " Did you pass an entity id instead of an entity key?.");
+    }
+
+    @Test
+    @DisplayName("Should reject a null history item in the batch")
+    void shouldRejectNullHistoryItemInBatch() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      final var history = new ArrayList<AgentInstanceHistoryItem>();
+      history.add(null);
+      request.setHistory(history);
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0] provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a zero loopIteration")
+    void shouldRejectHistoryItemWithZeroLoopIteration() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithLoopIteration("item-1", 0)));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("The value for history[0].loopIteration is '0' but must be > 0.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a negative loopIteration")
+    void shouldRejectHistoryItemWithNegativeLoopIteration() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithLoopIteration("item-1", -1)));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("The value for history[0].loopIteration is '-1' but must be > 0.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with blank text content")
+    void shouldRejectHistoryItemWithBlankTextContent() {
+      final AgentInstanceMessageContent content =
+          AgentInstanceTextContent.Builder.create().contentType("TEXT").text("  ").build();
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithContent("item-1", List.of(content))));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].content[0].text provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with document content missing a documentReference")
+    void shouldRejectHistoryItemWithDocumentContentMissingDocumentReference() {
+      final AgentInstanceMessageContent content =
+          AgentInstanceDocumentContent.Builder.create()
+              .contentType("DOCUMENT")
+              .documentReference(null)
+              .build();
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithContent("item-1", List.of(content))));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("No history[0].content[0].documentReference provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with object content missing an object")
+    void shouldRejectHistoryItemWithObjectContentMissingObject() {
+      final AgentInstanceMessageContent content =
+          AgentInstanceObjectContent.Builder.create().contentType("OBJECT").object(null).build();
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithContent("item-1", List.of(content))));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].content[0].object provided.");
     }
   }
 }
