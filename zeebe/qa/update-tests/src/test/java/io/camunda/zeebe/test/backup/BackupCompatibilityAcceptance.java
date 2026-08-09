@@ -326,7 +326,7 @@ public interface BackupCompatibilityAcceptance {
   private boolean shouldRetryBackupDueToSnapshot(final BackupInfo status, final int retryCount) {
     return status.getState() == StateCode.FAILED
         && status.getFailureReason() != null
-        && status.getFailureReason().contains("Cannot find a snapshot that can be included")
+        && status.getFailureReason().contains("No valid snapshots found for backup")
         && retryCount < MAX_BACKUP_RETRIES;
   }
 
