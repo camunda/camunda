@@ -237,7 +237,7 @@ final class BackupApiRequestHandlerTest {
         .returns("test", BackupStatusResponse::getBrokerVersion)
         .returns(createdAt.toString(), BackupStatusResponse::getCreatedAt)
         .returns(lastModified.toString(), BackupStatusResponse::getLastUpdated)
-        .matches(response -> response.getFailureReason().isEmpty());
+        .matches(response -> response.getFailureReason() == null);
   }
 
   @Test
