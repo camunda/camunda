@@ -801,6 +801,199 @@ class AgentInstanceControllerTest extends RestControllerTest {
   }
 
   @Nested
+  class UpdateWithHistoryBatchTest {
+
+    private static final long HISTORY_ITEM_KEY_1 = 9007199254741019L;
+    private static final long HISTORY_ITEM_KEY_2 = 9007199254741020L;
+    private static final long HISTORY_ITEM_KEY_3 = 9007199254741021L;
+
+    @Test
+    void shouldReturn200WithCreatedHistoryInRequestOrderFlaggingDuplicates() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2).setDuplicate(true));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_3));
+      when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "jobLease": "lease-abc",
+            "history": [
+              %s,
+              %s,
+              %s
+            ]
+          }
+          """
+              .formatted(
+                  ELEMENT_INSTANCE_KEY,
+                  JOB_KEY,
+                  historyItemJson("item-1", "USER", "hello"),
+                  historyItemJson("item-2", "ASSISTANT", "hi there"),
+                  historyItemJson("item-3", "USER", "thanks"));
+
+      // when / then
+      webClient
+          .patch()
+          .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "createdHistory": [
+                  { "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemKey": "%d", "isDuplicate": true },
+                  { "historyItemKey": "%d", "isDuplicate": false }
+                ]
+              }
+              """
+                  .formatted(HISTORY_ITEM_KEY_1, HISTORY_ITEM_KEY_2, HISTORY_ITEM_KEY_3),
+              JsonCompareMode.STRICT);
+
+      verify(agentInstanceServices)
+          .updateAgentInstance(
+              assertArg(
+                  record -> {
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getHistory()).hasSize(3);
+                    assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
+                    assertThat(record.getHistory().get(0).getContent().get(0).getText())
+                        .isEqualTo("hello");
+                    assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
+                    assertThat(record.getHistory().get(2).getHistoryItemId()).isEqualTo("item-3");
+                  }),
+              any());
+    }
+
+    @Test
+    void shouldReturnEmptyCreatedHistoryWhenHistoryIsEmptyArray() {
+      // given
+      when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "history": []
+          }
+          """
+              .formatted(ELEMENT_INSTANCE_KEY);
+
+      // when / then
+      webClient
+          .patch()
+          .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              { "createdHistory": [] }
+              """,
+              JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void shouldReturn400WhenHistoryItemRejectedByBrokerWithMessageIntact() {
+      // given -- a distinct, unrelated invalidity (job no longer active for the batch); an
+      // intra-batch duplicate historyItemId is deliberately not this kind of rejection
+      final var rejectionReason =
+          ("Expected job with key '%d' referenced by history[1].historyItemId 'item-2' to be"
+                  + " currently activated for agent instance with key '%d', but it is not.")
+              .formatted(JOB_KEY, AGENT_INSTANCE_KEY);
+      final var expectedDetail =
+          "Command 'UPDATE' rejected with code 'INVALID_ARGUMENT': " + rejectionReason;
+      when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  ErrorMapper.mapBrokerRejection(
+                      new BrokerRejection(
+                          AgentInstanceIntent.UPDATE,
+                          AGENT_INSTANCE_KEY,
+                          RejectionType.INVALID_ARGUMENT,
+                          rejectionReason))));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "jobLease": "lease-abc",
+            "history": [
+              %s,
+              %s
+            ]
+          }
+          """
+              .formatted(
+                  ELEMENT_INSTANCE_KEY,
+                  JOB_KEY,
+                  historyItemJson("item-1", "USER", "hello"),
+                  historyItemJson("item-2", "USER", "hello again"));
+
+      // when / then
+      webClient
+          .patch()
+          .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isEqualTo(HttpStatus.BAD_REQUEST)
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+          .expectBody()
+          .json(
+              """
+              {
+                "type": "about:blank",
+                "title": "INVALID_ARGUMENT",
+                "status": 400,
+                "detail": "%s",
+                "instance": "/v2/agent-instances/%d"
+              }
+              """
+                  .formatted(expectedDetail, AGENT_INSTANCE_KEY),
+              JsonCompareMode.STRICT);
+    }
+
+    private String historyItemJson(
+        final String historyItemId, final String role, final String text) {
+      return """
+          {
+            "historyItemId": "%s",
+            "loopIteration": 1,
+            "role": "%s",
+            "content": [{ "contentType": "TEXT", "text": "%s" }],
+            "producedAt": "2025-06-01T12:00:00Z"
+          }
+          """
+          .formatted(historyItemId, role, text);
+    }
+  }
+
+  @Nested
   class CreateHistoryItemTest {
 
     private static final long HISTORY_ITEM_KEY = 9007199254741018L;
