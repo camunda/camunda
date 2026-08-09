@@ -38,6 +38,29 @@ class AgentInstanceMapperTest {
   private final AgentInstanceMapper mapper =
       new AgentInstanceMapper(new AgentInstanceRequestValidator());
 
+  private static AgentInstanceHistoryItem historyItem(
+      final String historyItemId, final AgentInstanceHistoryRoleEnum role, final String text) {
+    return historyItem(historyItemId, 1, role, text);
+  }
+
+  private static AgentInstanceHistoryItem historyItem(
+      final String historyItemId,
+      final int loopIteration,
+      final AgentInstanceHistoryRoleEnum role,
+      final String text) {
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(loopIteration)
+        .role(role)
+        .content(List.of(textContent(text)))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceMessageContent textContent(final String text) {
+    return AgentInstanceTextContent.Builder.create().contentType("TEXT").text(text).build();
+  }
+
   @Nested
   class ExistingUpdateFieldMappingTest {
 
@@ -318,28 +341,5 @@ class AgentInstanceMapperTest {
       assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
       assertThat(record.getChangedAttributes()).containsExactly("status", "metrics", "tools");
     }
-  }
-
-  private static AgentInstanceHistoryItem historyItem(
-      final String historyItemId, final AgentInstanceHistoryRoleEnum role, final String text) {
-    return historyItem(historyItemId, 1, role, text);
-  }
-
-  private static AgentInstanceHistoryItem historyItem(
-      final String historyItemId,
-      final int loopIteration,
-      final AgentInstanceHistoryRoleEnum role,
-      final String text) {
-    return AgentInstanceHistoryItem.Builder.create()
-        .historyItemId(historyItemId)
-        .loopIteration(loopIteration)
-        .role(role)
-        .content(List.of(textContent(text)))
-        .producedAt("2025-06-01T12:00:00Z")
-        .build();
-  }
-
-  private static AgentInstanceMessageContent textContent(final String text) {
-    return AgentInstanceTextContent.Builder.create().contentType("TEXT").text(text).build();
   }
 }

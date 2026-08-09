@@ -32,6 +32,31 @@ class AgentInstanceRequestValidatorTest {
 
   private final AgentInstanceRequestValidator validator = new AgentInstanceRequestValidator();
 
+  private static AgentInstanceHistoryItem historyItem(final String historyItemId) {
+    final AgentInstanceMessageContent content =
+        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(List.of(content))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceHistoryItem historyItemWithoutLoopIteration(
+      final String historyItemId) {
+    final AgentInstanceMessageContent content =
+        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(null)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(List.of(content))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
   @Nested
   @DisplayName("Existing update rules")
   class ExistingUpdateRuleTest {
@@ -202,30 +227,5 @@ class AgentInstanceRequestValidatorTest {
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No jobKey provided.");
     }
-  }
-
-  private static AgentInstanceHistoryItem historyItem(final String historyItemId) {
-    final AgentInstanceMessageContent content =
-        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
-    return AgentInstanceHistoryItem.Builder.create()
-        .historyItemId(historyItemId)
-        .loopIteration(1)
-        .role(AgentInstanceHistoryRoleEnum.USER)
-        .content(List.of(content))
-        .producedAt("2025-06-01T12:00:00Z")
-        .build();
-  }
-
-  private static AgentInstanceHistoryItem historyItemWithoutLoopIteration(
-      final String historyItemId) {
-    final AgentInstanceMessageContent content =
-        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
-    return AgentInstanceHistoryItem.Builder.create()
-        .historyItemId(historyItemId)
-        .loopIteration(null)
-        .role(AgentInstanceHistoryRoleEnum.USER)
-        .content(List.of(content))
-        .producedAt("2025-06-01T12:00:00Z")
-        .build();
   }
 }
