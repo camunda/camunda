@@ -16,6 +16,7 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
@@ -166,24 +167,40 @@ public class AgentInstanceRequestValidator {
           if (request.getHistory() != null && !request.getHistory().isEmpty()) {
             if (request.getJobKey() == null) {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+            } else {
+              validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
             }
 
             for (int i = 0; i < request.getHistory().size(); i++) {
-              final var historyItem = request.getHistory().get(i);
-              if (historyItem.getHistoryItemId() == null
-                  || historyItem.getHistoryItemId().isBlank()) {
-                violations.add(
-                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + i + "].historyItemId"));
-              }
-              if (historyItem.getLoopIteration() == null) {
-                violations.add(
-                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + i + "].loopIteration"));
-              }
+              validateHistoryItem(i, request.getHistory().get(i), violations);
             }
           }
 
           return violations;
         });
+  }
+
+  private void validateHistoryItem(
+      final int index, final AgentInstanceHistoryItem historyItem, final List<String> violations) {
+    if (historyItem.getHistoryItemId() == null || historyItem.getHistoryItemId().isBlank()) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].historyItemId"));
+    }
+    if (historyItem.getLoopIteration() == null) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].loopIteration"));
+    }
+    if (historyItem.getRole() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].role"));
+    }
+    if (historyItem.getContent() == null || historyItem.getContent().isEmpty()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].content"));
+    }
+    if (historyItem.getProducedAt() == null || historyItem.getProducedAt().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].producedAt"));
+    } else {
+      validateDate(historyItem.getProducedAt(), "history[" + index + "].producedAt", violations);
+    }
   }
 
   private void validateDocumentContentItem(
