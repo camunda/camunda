@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -102,7 +103,7 @@ public final class AgentDefinitionDeploymentTest {
         .hasProcessDefinitionVersionTag("")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-    assertAgentDefinitionCreatedImmediatelyBeforeProcessCreated(processDefinitionKey);
+    assertAgentDefinitionCreatedAfterProcessCreated(deployment.getKey());
   }
 
   @Test
@@ -432,22 +433,23 @@ public final class AgentDefinitionDeploymentTest {
         .isNotEqualTo(agentDefinitionKeyV1);
   }
 
-  private static void assertAgentDefinitionCreatedImmediatelyBeforeProcessCreated(
-      final long processDefinitionKey) {
-    final var recordsUpToProcessCreated =
+  private static void assertAgentDefinitionCreatedAfterProcessCreated(final long deploymentKey) {
+    final var processAndAgentDefinitionRecords =
         RecordingExporter.records()
             .onlyEvents()
+            .limit(r -> r.getIntent() == DeploymentIntent.CREATED && r.getKey() == deploymentKey)
             .withValueTypes(ValueType.AGENT_DEFINITION, ValueType.PROCESS)
-            .limit(
-                r -> r.getIntent() == ProcessIntent.CREATED && r.getKey() == processDefinitionKey)
             .asList();
 
-    assertThat(recordsUpToProcessCreated)
-        .describedAs("Should emit AgentDefinition:CREATED immediately before ProcessIntent.CREATED")
+    assertThat(processAndAgentDefinitionRecords)
+        .describedAs(
+            "Should emit AgentDefinition:CREATED after ProcessIntent.CREATED, so"
+                + " that a consumer sees the process an AgentDefinition references already"
+                + " created by the time it observes the AgentDefinition itself")
         .extracting(Record::getValueType, Record::getIntent)
-        .endsWith(
-            tuple(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.CREATED),
-            tuple(ValueType.PROCESS, ProcessIntent.CREATED));
+        .containsExactly(
+            tuple(ValueType.PROCESS, ProcessIntent.CREATED),
+            tuple(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.CREATED));
   }
 
   private static long processDefinitionKeyOf(

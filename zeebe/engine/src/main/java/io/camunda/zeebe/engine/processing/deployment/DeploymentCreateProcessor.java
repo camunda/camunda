@@ -282,7 +282,6 @@ public final class DeploymentCreateProcessor
                 final var resourceChecksum =
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
-                  createAgentDefinitions(deploymentEvent, metadata);
                   final var processRecord =
                       new ProcessRecord()
                           .wrap(metadata, resource.getResource())

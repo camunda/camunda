@@ -211,11 +211,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                   new ProcessRecord()
                       .wrap(metadata, resource.getResource())
                       .setTransformerVersions(bpmnTransformer.currentVersionsById());
+              stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
               agentDefinitionTransformer.writeRecords(
                   deployment,
                   findExecutableProcess(resource, metadata.getBpmnProcessId()),
                   metadata);
-              stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
