@@ -911,6 +911,153 @@ class AgentInstanceControllerTest extends RestControllerTest {
     }
 
     @Test
+    void shouldAcceptHistoryBatchWithoutJobLease() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2));
+      when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "history": [
+              %s,
+              %s
+            ]
+          }
+          """
+              .formatted(
+                  ELEMENT_INSTANCE_KEY,
+                  JOB_KEY,
+                  historyItemJson("item-1", "USER", "hello"),
+                  historyItemJson("item-2", "ASSISTANT", "hi there"));
+
+      // when / then
+      webClient
+          .patch()
+          .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "createdHistory": [
+                  { "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemKey": "%d", "isDuplicate": false }
+                ]
+              }
+              """
+                  .formatted(HISTORY_ITEM_KEY_1, HISTORY_ITEM_KEY_2),
+              JsonCompareMode.STRICT);
+
+      verify(agentInstanceServices)
+          .updateAgentInstance(
+              assertArg(
+                  record -> {
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEmpty();
+                    assertThat(record.getHistory()).hasSize(2);
+                  }),
+              any());
+    }
+
+    @Test
+    void shouldReturn200WhenHistoryBatchCombinedWithStatusMetricsAndTools() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2));
+      when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "status": "THINKING",
+            "metrics": {
+              "inputTokens": 1000,
+              "outputTokens": 500,
+              "modelCalls": 3,
+              "toolCalls": 7
+            },
+            "tools": [
+              {
+                "name": "searchDatabase",
+                "description": "Searches the database",
+                "elementId": "searchTask"
+              }
+            ],
+            "jobKey": "%d",
+            "jobLease": "lease-abc",
+            "history": [
+              %s,
+              %s
+            ]
+          }
+          """
+              .formatted(
+                  ELEMENT_INSTANCE_KEY,
+                  JOB_KEY,
+                  historyItemJson("item-1", "USER", "hello"),
+                  historyItemJson("item-2", "ASSISTANT", "hi there"));
+
+      // when / then
+      webClient
+          .patch()
+          .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "createdHistory": [
+                  { "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemKey": "%d", "isDuplicate": false }
+                ]
+              }
+              """
+                  .formatted(HISTORY_ITEM_KEY_1, HISTORY_ITEM_KEY_2),
+              JsonCompareMode.STRICT);
+
+      verify(agentInstanceServices)
+          .updateAgentInstance(
+              assertArg(
+                  record -> {
+                    assertThat(record.getStatus().name()).isEqualTo("THINKING");
+                    assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
+                    assertThat(record.getTools()).hasSize(1);
+                    assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getHistory()).hasSize(2);
+                    assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
+                    assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
+                    assertThat(record.getChangedAttributes())
+                        .containsExactlyInAnyOrder("status", "metrics", "tools");
+                  }),
+              any());
+    }
+
+    @Test
     void shouldReturnEmptyCreatedHistoryWhenHistoryIsEmptyArray() {
       // given
       when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
