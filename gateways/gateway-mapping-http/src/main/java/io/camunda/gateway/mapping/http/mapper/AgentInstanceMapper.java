@@ -149,6 +149,7 @@ public class AgentInstanceMapper {
             .map(
                 item ->
                     AgentInstanceCreatedHistoryItem.Builder.create()
+                        .historyItemId(item.getHistoryItemId())
                         .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
                         .isDuplicate(item.isDuplicate())
                         .build())

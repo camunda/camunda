@@ -842,11 +842,18 @@ class AgentInstanceControllerTest extends RestControllerTest {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_1)
+              .setHistoryItemId("item-1"));
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2).setDuplicate(true));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_2)
+              .setHistoryItemId("item-2")
+              .setDuplicate(true));
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_3));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_3)
+              .setHistoryItemId("item-3"));
       when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
           .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
@@ -885,9 +892,9 @@ class AgentInstanceControllerTest extends RestControllerTest {
               """
               {
                 "createdHistory": [
-                  { "historyItemKey": "%d", "isDuplicate": false },
-                  { "historyItemKey": "%d", "isDuplicate": true },
-                  { "historyItemKey": "%d", "isDuplicate": false }
+                  { "historyItemId": "item-1", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-2", "historyItemKey": "%d", "isDuplicate": true },
+                  { "historyItemId": "item-3", "historyItemKey": "%d", "isDuplicate": false }
                 ]
               }
               """
@@ -915,9 +922,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_1)
+              .setHistoryItemId("item-1"));
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_2)
+              .setHistoryItemId("item-2"));
       when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
           .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
@@ -953,8 +964,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
               """
               {
                 "createdHistory": [
-                  { "historyItemKey": "%d", "isDuplicate": false },
-                  { "historyItemKey": "%d", "isDuplicate": false }
+                  { "historyItemId": "item-1", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-2", "historyItemKey": "%d", "isDuplicate": false }
                 ]
               }
               """
@@ -977,9 +988,13 @@ class AgentInstanceControllerTest extends RestControllerTest {
       // given
       final var responseRecord = new AgentInstanceRecord();
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_1));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_1)
+              .setHistoryItemId("item-1"));
       responseRecord.addHistoryItem(
-          new AgentHistoryRecord().setAgentHistoryKey(HISTORY_ITEM_KEY_2));
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_2)
+              .setHistoryItemId("item-2"));
       when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
           .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
@@ -1030,8 +1045,8 @@ class AgentInstanceControllerTest extends RestControllerTest {
               """
               {
                 "createdHistory": [
-                  { "historyItemKey": "%d", "isDuplicate": false },
-                  { "historyItemKey": "%d", "isDuplicate": false }
+                  { "historyItemId": "item-1", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-2", "historyItemKey": "%d", "isDuplicate": false }
                 ]
               }
               """

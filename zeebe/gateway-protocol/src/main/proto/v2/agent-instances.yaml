@@ -785,9 +785,15 @@ components:
         history batch.
       type: object
       required:
+        - historyItemId
         - historyItemKey
         - isDuplicate
       properties:
+        historyItemId:
+          description: |
+            The historyItemId of the corresponding item in the request, echoed back
+            so callers can correlate response entries with request items by id.
+          type: string
         historyItemKey:
           description: |
             The system-generated key for the history item. When isDuplicate is true,
