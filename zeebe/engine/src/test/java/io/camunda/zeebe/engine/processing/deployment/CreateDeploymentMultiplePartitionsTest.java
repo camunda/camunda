@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -605,6 +606,50 @@ public final class CreateDeploymentMultiplePartitionsTest {
               .extracting(DecisionRecordValue::getDeploymentKey)
               .isEqualTo(deployment.getKey());
         });
+  }
+
+  @Test
+  public void shouldWriteAgentDefinitionCreatedEventsWithSameKeysOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = "agent-task";
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    elementId, t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .withBpmnProcessId(processId)
+                  .getFirst();
+          assertThat(record)
+              .describedAs(
+                  "Should replicate AgentDefinition:CREATED to every partition, not only the"
+                      + " deployment partition")
+              .isNotNull();
+        });
+
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(PARTITION_COUNT)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs("All created events get the same agentDefinitionKey on every partition")
+        .hasSize(1);
   }
 
   @Test
