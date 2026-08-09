@@ -216,6 +216,7 @@ public class CompactRecordLogger {
           entry("EVENT", "EVNT"), // partial matches in ValueType
           entry(DECISION_REQUIREMENTS.name(), "DRG"),
           entry(DECISION_EVALUATION.name(), "DECISION_EVAL"),
+          entry("DEFINITION", "DEF"), // partial matches AGENT_DEFINITION ValueType
           entry(SIGNAL_SUBSCRIPTION.name(), "SIG_SUB"),
           entry(SIGNAL.name(), "SIG"),
           entry(COMMAND_DISTRIBUTION.name(), "DSTR"),
