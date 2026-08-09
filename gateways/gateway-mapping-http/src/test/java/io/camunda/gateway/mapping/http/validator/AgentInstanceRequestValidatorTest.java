@@ -57,6 +57,41 @@ class AgentInstanceRequestValidatorTest {
         .build();
   }
 
+  private static AgentInstanceHistoryItem historyItemWithoutRole(final String historyItemId) {
+    final AgentInstanceMessageContent content =
+        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(1)
+        .role(null)
+        .content(List.of(content))
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceHistoryItem historyItemWithoutContent(final String historyItemId) {
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(null)
+        .producedAt("2025-06-01T12:00:00Z")
+        .build();
+  }
+
+  private static AgentInstanceHistoryItem historyItemWithProducedAt(
+      final String historyItemId, final String producedAt) {
+    final AgentInstanceMessageContent content =
+        AgentInstanceTextContent.Builder.create().contentType("TEXT").text("hello").build();
+    return AgentInstanceHistoryItem.Builder.create()
+        .historyItemId(historyItemId)
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRoleEnum.USER)
+        .content(List.of(content))
+        .producedAt(producedAt)
+        .build();
+  }
+
   @Nested
   @DisplayName("Existing update rules")
   class ExistingUpdateRuleTest {
@@ -226,6 +261,97 @@ class AgentInstanceRequestValidatorTest {
 
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No jobKey provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch with a non-numeric jobKey")
+    void shouldRejectHistoryBatchWithMalformedJobKey() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey("not-a-number");
+      request.setHistory(List.of(historyItem("item-1")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo(
+              "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
+                  + " Did you pass an entity id instead of an entity key?.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a missing role")
+    void shouldRejectHistoryItemWithMissingRole() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithoutRole("item-1")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].role provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with missing content")
+    void shouldRejectHistoryItemWithMissingContent() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithoutContent("item-1")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].content provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a missing producedAt")
+    void shouldRejectHistoryItemWithMissingProducedAt() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithProducedAt("item-1", null)));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].producedAt provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a malformed producedAt")
+    void shouldRejectHistoryItemWithMalformedProducedAt() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItemWithProducedAt("item-1", "not-a-date")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo(
+              "The provided history[0].producedAt 'not-a-date' cannot be parsed as a date"
+                  + " according to RFC 3339, section 5.6.");
     }
   }
 }
