@@ -28,6 +28,7 @@ import io.camunda.client.impl.response.UpdateAgentInstanceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.AgentInstanceMetricsDelta;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateStatusEnum;
 import java.time.Duration;
 import java.util.List;
@@ -126,6 +127,7 @@ public class UpdateAgentInstanceCommandImpl
         "/agent-instances/" + agentInstanceKey,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
+        AgentInstanceUpdateResult.class,
         UpdateAgentInstanceResponseImpl::new,
         result);
     return result;
