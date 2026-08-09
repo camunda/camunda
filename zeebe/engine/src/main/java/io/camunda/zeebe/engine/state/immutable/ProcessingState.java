@@ -48,6 +48,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   AgentInstanceState getAgentInstanceState();
 
+  AgentDefinitionState getAgentDefinitionState();
+
   TimerInstanceState getTimerState();
 
   ElementInstanceState getElementInstanceState();
