@@ -20,6 +20,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
@@ -241,6 +242,37 @@ class AgentInstanceMapperTest {
       final var record = result.get();
       assertThat(record.getHistory().get(0).getLoopIteration()).isEqualTo(2);
       assertThat(record.getHistory().get(1).getLoopIteration()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class UpdateResultMappingTest {
+
+    @Test
+    void shouldMapCreatedHistoryFromRecordWithHistoryItemIdKeyAndDuplicateFlag() {
+      // given
+      final var record = new AgentInstanceRecord();
+      record.addHistoryItem(
+          new AgentHistoryRecord().setHistoryItemId("item-1").setAgentHistoryKey(100L));
+      record.addHistoryItem(
+          new AgentHistoryRecord()
+              .setHistoryItemId("item-2")
+              .setAgentHistoryKey(101L)
+              .setDuplicate(true));
+
+      // when
+      final var result = mapper.toAgentInstanceUpdateResult(record);
+
+      // then
+      assertThat(result.getCreatedHistory()).hasSize(2);
+      final var first = result.getCreatedHistory().get(0);
+      assertThat(first.getHistoryItemId()).isEqualTo("item-1");
+      assertThat(first.getHistoryItemKey()).isEqualTo("100");
+      assertThat(first.getIsDuplicate()).isFalse();
+      final var second = result.getCreatedHistory().get(1);
+      assertThat(second.getHistoryItemId()).isEqualTo("item-2");
+      assertThat(second.getHistoryItemKey()).isEqualTo("101");
+      assertThat(second.getIsDuplicate()).isTrue();
     }
   }
 
