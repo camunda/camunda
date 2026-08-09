@@ -18,7 +18,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Rule;
@@ -33,8 +35,9 @@ import org.junit.Test;
  * an additional {@code AgentDefinition}, while a mixed deployment that reassigns a duplicate BPMN
  * resource to a new process version must mint a new one for it.
  *
- * <p>These minting scenarios are red until {@code AgentDefinitionTransformer} is wired into {@code
- * BpmnResourceTransformer.writeRecords} to actually mint and emit the records asserted here.
+ * <p>Also covers a single BPMN resource containing more than one executable, agent-marked {@code
+ * <process>} element, pinning down that {@code BpmnResourceTransformer} always finds the right
+ * {@code ExecutableProcess} to scan for agent markers, for every process it emits metadata for.
  */
 public final class AgentDefinitionDeploymentTest {
 
@@ -179,6 +182,68 @@ public final class AgentDefinitionDeploymentTest {
                         .exists()))
         .describedAs("Should not create any AgentDefinition for a process without an agent marker")
         .isFalse();
+  }
+
+  @Test
+  public void shouldCreateAgentDefinitionForEachMarkedProcessInMultiProcessResource() {
+    // given — MULTI_PROCESS_RESOURCE: two independent, executable, agent-marked processes sharing
+    // a single BPMN resource
+    final var firstProcessId = "process-multi-marked-first";
+    final var firstElementId = "agent-task-first";
+    final var secondProcessId = "process-multi-marked-second";
+    final var secondElementId = "agent-task-second";
+
+    // when
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlClasspathResource("/processes/agent-definition-multi-process.bpmn")
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getProcessesMetadata())
+        .describedAs("Should deploy both executable processes contained in the same resource")
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
+        .containsExactlyInAnyOrder(firstProcessId, secondProcessId);
+
+    final var firstProcessDefinitionKey = processDefinitionKeyOf(deployment, firstProcessId);
+    final var secondProcessDefinitionKey = processDefinitionKeyOf(deployment, secondProcessId);
+
+    assertThat(secondProcessDefinitionKey)
+        .describedAs(
+            "Should assign each sibling process its own processDefinitionKey, even though both"
+                + " are deployed from the same resource")
+        .isNotEqualTo(firstProcessDefinitionKey);
+
+    final var firstAgentDefinition =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(firstProcessDefinitionKey)
+            .getFirst();
+    final var secondAgentDefinition =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(secondProcessDefinitionKey)
+            .getFirst();
+
+    Assertions.assertThat(firstAgentDefinition.getValue())
+        .describedAs(
+            "Should mint an AgentDefinition for the first sibling process's own agent-marked"
+                + " element, correctly resolved among several processes sharing a resource")
+        .hasElementId(firstElementId)
+        .hasBpmnProcessId(firstProcessId)
+        .hasProcessDefinitionKey(firstProcessDefinitionKey);
+
+    Assertions.assertThat(secondAgentDefinition.getValue())
+        .describedAs(
+            "Should mint an AgentDefinition for the second sibling process's own agent-marked"
+                + " element, independently from the first")
+        .hasElementId(secondElementId)
+        .hasBpmnProcessId(secondProcessId)
+        .hasProcessDefinitionKey(secondProcessDefinitionKey);
+
+    assertThat(secondAgentDefinition.getValue().getAgentDefinitionKey())
+        .describedAs(
+            "Should mint a distinct agentDefinitionKey for each sibling process's AgentDefinition")
+        .isNotEqualTo(firstAgentDefinition.getValue().getAgentDefinitionKey());
   }
 
   @Test
@@ -383,5 +448,14 @@ public final class AgentDefinitionDeploymentTest {
         .endsWith(
             tuple(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.CREATED),
             tuple(ValueType.PROCESS, ProcessIntent.CREATED));
+  }
+
+  private static long processDefinitionKeyOf(
+      final Record<DeploymentRecordValue> deployment, final String bpmnProcessId) {
+    return deployment.getValue().getProcessesMetadata().stream()
+        .filter(metadata -> metadata.getBpmnProcessId().equals(bpmnProcessId))
+        .findFirst()
+        .orElseThrow()
+        .getProcessDefinitionKey();
   }
 }
