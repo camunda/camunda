@@ -94,11 +94,6 @@ public class AgentInstanceRequestValidator {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          // TODO: validate jobLease once job leasing is implemented (#55033)
-          // if (request.getJobLease() == null || request.getJobLease().isBlank()) {
-          //   violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
-          // }
-
           if (request.getRole() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
           }
