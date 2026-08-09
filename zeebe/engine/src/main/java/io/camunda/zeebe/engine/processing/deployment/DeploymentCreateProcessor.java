@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -281,6 +282,7 @@ public final class DeploymentCreateProcessor
                 final var resourceChecksum =
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
+                  createAgentDefinitions(deploymentEvent, metadata);
                   final var processRecord =
                       new ProcessRecord()
                           .wrap(metadata, resource.getResource())
@@ -288,6 +290,7 @@ public final class DeploymentCreateProcessor
                               deploymentTransformer.getTransformerVersionsById());
                   stateWriter.appendFollowUpEvent(
                       metadata.getKey(), ProcessIntent.CREATED, processRecord);
+                  createAgentDefinitions(deploymentEvent, metadata);
                   processDefinitionMetrics.processDefinitionDeployed(
                       metadata.getKey(),
                       processRecord.getBpmnProcessId(),
@@ -295,6 +298,18 @@ public final class DeploymentCreateProcessor
                 }
               }
             });
+  }
+
+  private void createAgentDefinitions(
+      final DeploymentRecord deploymentEvent, final ProcessMetadata metadata) {
+    deploymentEvent.agentDefinitionsMetadata().stream()
+        .filter(agentDefinition -> agentDefinition.getProcessDefinitionKey() == metadata.getKey())
+        .forEach(
+            agentDefinition ->
+                stateWriter.appendFollowUpEvent(
+                    agentDefinition.getAgentDefinitionKey(),
+                    AgentDefinitionIntent.CREATED,
+                    agentDefinition));
   }
 
   private void createDmnResources(final DeploymentRecord deploymentEvent) {
