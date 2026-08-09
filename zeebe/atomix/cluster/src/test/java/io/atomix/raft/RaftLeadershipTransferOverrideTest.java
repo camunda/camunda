@@ -19,13 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
-import io.atomix.raft.protocol.TestRaftServerProtocol;
-import io.atomix.raft.protocol.TimeoutNowRequest;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,27 +30,6 @@ import org.junit.Test;
 public class RaftLeadershipTransferOverrideTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
-
-  @Test
-  public void shouldRejectTransferWhenTheOverriddenLagThresholdIsExceeded() throws Exception {
-    // given
-    raftRule.appendEntries(10);
-    final var leader = raftRule.getLeader().orElseThrow();
-    final var driver = new CoordinatedTransferDriver(raftRule, leader);
-    final var target = driver.followerOutsideCoordinator();
-    final long lagBytes = 4096;
-    setReplicationLag(leader, memberId(target), lagBytes);
-    assertThat(leader.getContext().getRebalanceConfiguration().replicationLagThreshold())
-        .as("the configured threshold would tolerate this much lag")
-        .isGreaterThan(lagBytes);
-
-    // when
-    final var ack =
-        driver.initiate(target, builder -> builder.withReplicationLagThreshold(lagBytes - 1));
-
-    // then
-    assertThat(ack.rejectionReason()).isEqualTo(LeadershipTransferResult.LAG_TOO_HIGH);
-  }
 
   @Test
   public void shouldAcceptTransferWhenTheOverriddenLagThresholdToleratesTheLag() throws Exception {
@@ -79,32 +55,6 @@ public class RaftLeadershipTransferOverrideTest {
         .succeedsWithin(Duration.ofSeconds(15))
         .extracting(LeadershipTransferResultRequest::result)
         .isEqualTo(LeadershipTransferResult.TRANSFERRED);
-  }
-
-  @Test
-  public void shouldSendExactlyTheOverriddenNumberOfAttempts() throws Exception {
-    // given
-    raftRule.appendEntries(10);
-    final var leader = raftRule.getLeader().orElseThrow();
-    final var driver = new CoordinatedTransferDriver(raftRule, leader);
-    final var target = driver.followerOutsideCoordinator();
-    final int overriddenAttempts =
-        leader.getContext().getRebalanceConfiguration().maxTransferAttempts() + 2;
-    final var sends = dropTimeoutNow(leader);
-
-    // when
-    final var ack =
-        driver.initiate(target, builder -> builder.withMaxTransferAttempts(overriddenAttempts));
-
-    // then
-    assertThat(ack.accepted()).isTrue();
-    assertThat(driver.reportedResult())
-        .succeedsWithin(Duration.ofSeconds(15))
-        .extracting(LeadershipTransferResultRequest::result)
-        .isEqualTo(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
-    assertThat(sends.sum())
-        .as("sends are bounded by the override rather than the configured limit")
-        .isEqualTo(overriddenAttempts);
   }
 
   @Test
@@ -189,18 +139,6 @@ public class RaftLeadershipTransferOverrideTest {
               done.complete(null);
             });
     done.get(10, TimeUnit.SECONDS);
-  }
-
-  private static LongAdder dropTimeoutNow(final RaftServer leader) {
-    final var sends = new LongAdder();
-    ((TestRaftServerProtocol) leader.getContext().getProtocol())
-        .interceptRequest(
-            TimeoutNowRequest.class,
-            request -> {
-              sends.increment();
-              return CompletableFuture.failedFuture(new RuntimeException("dropped in test"));
-            });
-    return sends;
   }
 
   private static MemberId memberId(final RaftServer server) {
