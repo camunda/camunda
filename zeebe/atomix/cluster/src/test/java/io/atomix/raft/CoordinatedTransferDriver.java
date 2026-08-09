@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /** Drives a coordinated leadership transfer the way a coordinator would. */
 final class CoordinatedTransferDriver {
@@ -76,17 +77,28 @@ final class CoordinatedTransferDriver {
 
   /** Requests a transfer to {@code desiredLeader} on the coordinator's behalf. */
   LeadershipTransferInitiateResponse initiate(final RaftServer desiredLeader) throws Exception {
-    final var request =
+    return initiate(desiredLeader, builder -> {});
+  }
+
+  /**
+   * Requests a transfer to {@code desiredLeader} with {@code overrides} applied to the request, the
+   * way a coordinator overriding the leader's rebalance settings would.
+   */
+  LeadershipTransferInitiateResponse initiate(
+      final RaftServer desiredLeader,
+      final Consumer<LeadershipTransferInitiateRequest.Builder> overrides)
+      throws Exception {
+    final var builder =
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(memberId(desiredLeader))
             .withCoordinator(coordinatorId)
             .withCoordinatorConfigIndex(leader.getContext().getCluster().getConfiguration().index())
-            .withCorrelationId(nextCorrelationId++)
-            .build();
+            .withCorrelationId(nextCorrelationId++);
+    overrides.accept(builder);
     return leader
         .getContext()
         .getProtocol()
-        .leadershipTransferInitiate(memberId(leader), request)
+        .leadershipTransferInitiate(memberId(leader), builder.build())
         .get(5, TimeUnit.SECONDS);
   }
 

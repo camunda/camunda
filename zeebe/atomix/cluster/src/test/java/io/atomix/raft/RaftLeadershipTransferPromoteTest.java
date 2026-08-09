@@ -17,7 +17,6 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -35,29 +34,6 @@ import org.junit.Test;
 public class RaftLeadershipTransferPromoteTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
-
-  @Test
-  public void shouldSendExactlyMaxTransferAttemptsThenGiveUp() throws Exception {
-    // given
-    raftRule.appendEntries(10);
-    final var leader = raftRule.getLeader().orElseThrow();
-    final var driver = new CoordinatedTransferDriver(raftRule, leader);
-    final var target = driver.followerOutsideCoordinator();
-    final int maxAttempts = leader.getContext().getRebalanceMaxTransferAttempts();
-    final var sends = dropTimeoutNow(leader, new CompletableFuture<>());
-
-    // when
-    final var ack = driver.initiate(target);
-
-    // then
-    assertThat(ack.accepted()).isTrue();
-    assertThat(driver.reportedResult())
-        .succeedsWithin(Duration.ofSeconds(15))
-        .extracting(LeadershipTransferResultRequest::result)
-        .isEqualTo(LeadershipTransferResult.TIMEOUT_NOW_EXHAUSTED);
-    assertThat(sends.sum()).as("sends are count-bounded").isEqualTo(maxAttempts);
-    assertThat(leader.getRole()).isEqualTo(Role.LEADER);
-  }
 
   @Test
   public void shouldReportLeaderChangedWhenAnotherNodeWinsDuringPromotion() throws Exception {

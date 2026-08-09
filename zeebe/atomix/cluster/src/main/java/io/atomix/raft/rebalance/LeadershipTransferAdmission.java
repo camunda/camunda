@@ -17,6 +17,7 @@ package io.atomix.raft.rebalance;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
+import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import java.util.Optional;
@@ -55,9 +56,13 @@ final class LeadershipTransferAdmission {
    * @param desiredLeader the desired leader
    * @param coordinator the node that requested the transfer
    * @param coordinatorConfigIndex the Raft configuration index the coordinator based its request on
+   * @param configuration the settings this transfer is bounded by
    */
   Optional<LeadershipTransferResult> precheck(
-      final MemberId desiredLeader, final MemberId coordinator, final long coordinatorConfigIndex) {
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long coordinatorConfigIndex,
+      final RebalanceConfiguration configuration) {
     raft.checkThread();
     final var localMember = raft.getCluster().getLocalMember().memberId();
 
@@ -98,7 +103,7 @@ final class LeadershipTransferAdmission {
     }
     // Point-in-time lag sample: the threshold should be tuned so a passing desired leader reliably
     // catches up within replicationTimeout once the pause begins.
-    if (desiredContext.getReplicationLagBytes() > raft.getRebalanceReplicationLagThreshold()) {
+    if (desiredContext.getReplicationLagBytes() > configuration.replicationLagThreshold()) {
       return Optional.of(LeadershipTransferResult.LAG_TOO_HIGH);
     }
     return Optional.empty();

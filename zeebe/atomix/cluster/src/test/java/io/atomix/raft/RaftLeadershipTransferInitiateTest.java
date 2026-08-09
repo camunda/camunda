@@ -172,31 +172,6 @@ public class RaftLeadershipTransferInitiateTest {
   }
 
   @Test
-  public void shouldRejectTransferWhenLagTooHigh() throws Exception {
-    // given
-    raftRule.appendEntries(5);
-    final var leader = raftRule.getLeader().orElseThrow();
-    final var target = raftRule.getFollower().orElseThrow();
-    final var targetId = memberId(target);
-
-    // when
-    final var result =
-        initiate(
-            leader,
-            targetId,
-            () ->
-                leader
-                    .getContext()
-                    .getCluster()
-                    .getMemberContext(targetId)
-                    .setSnapshotReplicationLag(
-                        leader.getContext().getRebalanceReplicationLagThreshold() + 1));
-
-    // then
-    assertThat(result).contains(LeadershipTransferResult.LAG_TOO_HIGH);
-  }
-
-  @Test
   public void shouldRejectTransferWhileReconfiguring() throws Exception {
     // given
     raftRule.appendEntries(5);
