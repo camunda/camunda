@@ -50,10 +50,9 @@ import org.slf4j.Logger;
 /**
  * Coordinates exporting on a partition. Each configured exporter runs on its own {@link
  * ExporterActor}: its own {@link LogStreamReader}, its own retry/backoff, and its own health,
- * entirely decoupled from every other exporter. This class no longer reads the log or exports
- * records itself; it owns exporter lifecycle (configure/open/close, enable/disable, pause/resume),
- * aggregates the exporters' health into one report, and distributes their combined positions to
- * followers.
+ * entirely decoupled from every other exporter. This class owns exporter lifecycle
+ * (configure/open/close, enable/disable, pause/resume), aggregates the exporters' health into one
+ * report, and distributes their combined positions to followers.
  */
 public final class ExporterDirector extends Actor implements HealthMonitorable {
 
@@ -69,7 +68,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   private final LogStream logStream;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
-  private final ExporterExportedPositions exportedPositions;
+  private final ExporterPositionMonitor exportedPositions;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final Function<RecordExporter, RecordExporter> recordExporterWrapper;
   private ExportersState state;
@@ -123,7 +122,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     initialDescriptors = context.getDescriptors();
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
-    exportedPositions = new ExporterExportedPositions(logStream.getFlowControl());
+    exportedPositions = new ExporterPositionMonitor(logStream.getFlowControl());
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
@@ -242,10 +241,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     containers.remove(container);
 
     if (exporterActor != null) {
-      // The actor closes its own container itself, from within its own close sequence (see
-      // ExporterActor#onActorCloseRequested) - closing it here too would close the exporter twice.
-      // Wait for that close to finish, then hop back onto this actor's own thread before touching
-      // the (not thread-safe) ExportersState.
       exporterActor
           .closeAsync()
           .onComplete(
@@ -336,12 +331,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
             meterRegistry,
             clock,
             position -> {
-              // Replay may be requested at any time once the reader exists - both during the
-              // initial open handshake and while exporting is already under way, e.g. when
-              // ExporterContainer#reopenExporter reopens the exporter mid-stream to let it re-sync
-              // a wrong position. It is only ever invoked from this exporter's own actor thread
-              // (synchronously, as part of ExporterContainer#exportRecord), so seeking the reader
-              // here never races with that same actor's own read loop.
               if (reader == null) {
                 return false;
               }
@@ -415,8 +404,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
             recordExporterWrapper);
     exporterActors.put(container.getId(), exporterActor);
     exporterHealthReports.put(container.getId(), HealthReport.healthy(exporterActor));
-    // addFailureListener does actor.run(...) under the hood, which needs the actor to already be
-    // submitted to the scheduler - so this must come after startAsync, not before.
+
     exporterActor.startAsync(actorSchedulingService);
     exporterActor.addFailureListener(
         new FailureListener() {
@@ -507,12 +495,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   @Override
   public ActorFuture<Void> closeAsync() {
     // This orchestrates the close sequence across multiple actors (this director's own actor plus
-    // every child ExporterActor). Every callback here MUST use the explicit two-argument
-    // onComplete(consumer, executor) form: the single-argument overload auto-detects "am I
-    // currently running on an actor thread" and, if so, silently drops the registration once that
-    // specific actor is already CLOSE_REQUESTED/CLOSED - which is exactly the state a just-closed
-    // child actor's thread is in when it runs the next step of this chain. Using Runnable::run
-    // makes every step run synchronously wherever the previous step completed, avoiding that trap.
+    // every child ExporterActor).
     final ActorFuture<Void> result = new CompletableActorFuture<>();
     final List<ActorFuture<Void>> childCloseFutures =
         exporterActors.values().stream().map(ExporterActor::closeAsync).toList();
@@ -524,9 +507,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
                   ? CompletableActorFuture.completed(null)
                   : actor.call(
                       () -> {
-                        // Containers with their own ExporterActor already closed themselves (from
-                        // within that actor's own close sequence, so that
-                        // Controller#updateLastExportedRecordPosition still works during close).
+                        // Containers with their own ExporterActor already closed themselves.
                         // Only containers without an actor (e.g. passive-mode, or one that never
                         // finished opening) need to be closed here.
                         containers.stream()

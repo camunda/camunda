@@ -1,8 +1,8 @@
 # Concurrent, decoupled exporters: one actor per exporter
 
-**DRI**: TBD
+**DRI**: Christian Thiel
 
-**Status**: Proposed
+**Status**: Accepted (8.10)
 
 **Purpose**: Defines how exporters are decoupled so that one exporter's failure, stall, or backlog
 no longer blocks any other exporter on the same partition, and how their progress and failure
@@ -112,5 +112,4 @@ each other, not a change to what an exporter implementation does or receives.
 ## Source
 
 - [Decouple and parallelize exporters (camunda/camunda#44931)](https://github.com/camunda/camunda/issues/44931)
-- [Concurrent exporters: solution proposal](../design/0007-concurrent-exporters-design.md)
 
