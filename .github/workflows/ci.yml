@@ -2517,7 +2517,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
       - name: Install test dependencies
-        run: pip install --quiet pytest pyyaml
+        run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Run unit tests
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
       - name: Observe build status
