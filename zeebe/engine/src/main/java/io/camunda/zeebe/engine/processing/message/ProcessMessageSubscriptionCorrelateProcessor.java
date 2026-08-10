@@ -149,7 +149,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         () -> {
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
-          return true;
         });
 
     final var catchEvent = getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());

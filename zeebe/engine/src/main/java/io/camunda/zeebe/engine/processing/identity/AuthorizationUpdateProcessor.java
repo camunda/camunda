@@ -111,7 +111,6 @@ public class AuthorizationUpdateProcessor
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationScopeStateAdapter.invalidateAll();
-                    return true;
                   });
             },
             rejection ->
@@ -141,7 +140,6 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           authorizationScopeStateAdapter.invalidateAll();
-          return true;
         });
   }
 }
