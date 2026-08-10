@@ -85,4 +85,15 @@ public class ExportUtil {
   public static Long nullIfNegative(final long value) {
     return value < 0 ? null : value;
   }
+
+  /**
+   * Returns {@code null} when {@code value} is negative (i.e., the protocol sentinel for "not
+   * set"), otherwise returns the boxed value.
+   *
+   * <p>Treats {@code 0} as a valid explicit value — callers that use it must not conflate zero with
+   * "absent".
+   */
+  public static Integer nullIfNegative(final int value) {
+    return value < 0 ? null : value;
+  }
 }

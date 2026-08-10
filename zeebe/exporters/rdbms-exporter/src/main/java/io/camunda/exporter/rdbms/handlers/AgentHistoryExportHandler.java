@@ -128,22 +128,19 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
   }
 
   /**
-   * The operational limits, as of this entry. CONFIGURATION items only. Leaves the three DB columns
-   * null (rather than writing {@code -1} literally) when none of the sub-fields are configured —
-   * {@link io.camunda.db.rdbms.read.mapper.AgentHistoryEntityMapper} defaults each back to {@code
-   * -1} on read.
+   * The operational limits, as of this entry. CONFIGURATION items only. Leaves a DB column null
+   * (rather than writing {@code -1} literally) when its sub-field isn't configured, independently
+   * per sub-field — {@link io.camunda.db.rdbms.read.mapper.AgentHistoryEntityMapper} defaults each
+   * back to {@code -1} on read.
    */
   private static void applyLimits(final Builder builder, final AgentInstanceLimitsValue limits) {
-    if (limits == null
-        || (limits.getMaxTokens() < 0
-            && limits.getMaxModelCalls() < 0
-            && limits.getMaxToolCalls() < 0)) {
+    if (limits == null) {
       return;
     }
     builder
-        .maxTokens(limits.getMaxTokens())
-        .maxModelCalls(limits.getMaxModelCalls())
-        .maxToolCalls(limits.getMaxToolCalls());
+        .maxTokens(ExportUtil.nullIfNegative(limits.getMaxTokens()))
+        .maxModelCalls(ExportUtil.nullIfNegative(limits.getMaxModelCalls()))
+        .maxToolCalls(ExportUtil.nullIfNegative(limits.getMaxToolCalls()));
   }
 
   /** The system prompt, as content blocks, as of this entry. CONFIGURATION items only. */

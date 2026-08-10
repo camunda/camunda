@@ -634,6 +634,38 @@ class AgentHistoryExportHandlerTest {
   }
 
   @Test
+  void shouldMapPartiallyConfiguredLimitsIndependently() {
+    // given — a CONFIGURATION item that only set maxTokens, leaving maxModelCalls/maxToolCalls at
+    // the protocol sentinel (-1)
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withRole(AgentHistoryRole.CONFIGURATION)
+            .withLimits(
+                ImmutableAgentInstanceLimitsValue.builder()
+                    .withMaxTokens(1000L)
+                    .withMaxModelCalls(-1)
+                    .withMaxToolCalls(-1)
+                    .build())
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(66L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then — the configured field is stored as-is; the untouched ones stay null (not -1), same as
+    // a fully-untouched item
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.maxTokens()).isEqualTo(1000L);
+    assertThat(model.maxModelCalls()).isNull();
+    assertThat(model.maxToolCalls()).isNull();
+  }
+
+  @Test
   void shouldMapUnsetMetricsToNull() {
     // given — -1L is the protocol sentinel meaning "metrics not provided"
     final var recordValue =
