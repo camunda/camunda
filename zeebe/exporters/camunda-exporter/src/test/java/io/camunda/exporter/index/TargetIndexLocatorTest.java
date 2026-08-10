@@ -34,4 +34,13 @@ class TargetIndexLocatorTest {
     final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
     assertThat(targetIndex.name()).isEqualTo("test-index");
   }
+
+  @Test
+  void shouldLocateOrdinalIndexFromNegativeOrdinal() {
+    final var ordinalRelated = mock(StorageOrdinalKeyRelated.class);
+    when(ordinalRelated.getStorageOrdinalKey()).thenReturn(-1);
+
+    final var targetIndex = targetIndexLocator.locateOrdinalIndex("test-index", ordinalRelated);
+    assertThat(targetIndex.name()).isEqualTo("test-index");
+  }
 }

@@ -16,6 +16,12 @@ record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implement
   static final Pattern ORDINAL_INDEX_PATTERN =
       Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX) + "(\\d{5})$");
 
+  OrdinalIndex {
+    if (ordinal <= 0) {
+      throw new IllegalArgumentException("Ordinal must be greater than 0");
+    }
+  }
+
   static Optional<TargetIndex> fromName(final String indexName) {
     final var matcher = ORDINAL_INDEX_PATTERN.matcher(indexName);
     if (!matcher.matches()) {
@@ -27,6 +33,9 @@ record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implement
   }
 
   static OrdinalIndex of(final String prefix, final int ordinal) {
+    if (prefix == null || prefix.isBlank()) {
+      throw new IllegalArgumentException("Ordinal index prefix must not be null or blank");
+    }
     final var name = prefix + ORDINAL_SUFFIX + Strings.padStart(String.valueOf(ordinal), 5, '0');
     return new OrdinalIndex(new IndexFamilyImpl(prefix), ordinal, name);
   }

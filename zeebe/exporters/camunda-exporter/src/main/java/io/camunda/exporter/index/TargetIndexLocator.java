@@ -15,7 +15,7 @@ public class TargetIndexLocator {
   public TargetIndex locateOrdinalIndex(
       final String indexName, final StorageOrdinalKeyRelated ordinalKeyRelated) {
     final var ordinal = ordinalKeyRelated.getStorageOrdinalKey();
-    if (ordinal == DEFAULT_ORDINAL) {
+    if (ordinal <= DEFAULT_ORDINAL) {
       return TargetIndex.mainIndex(indexName);
     }
     return TargetIndex.ordinalIndex(indexName, ordinal);
