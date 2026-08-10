@@ -541,7 +541,8 @@ public final class RequestMapper extends RequestUtil {
                 .collect(Collectors.toUnmodifiableSet()))
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter)
-        .setClaims(claims);
+        .setClaims(claims)
+        .setWithLease(request.getWithLease());
 
     return jobActivationProperties;
   }
