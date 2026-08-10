@@ -375,7 +375,7 @@ describe('Filters', () => {
 
   it('should enable the reset button', async () => {
     const {user} = render(<Filters />, {
-      wrapper: getWrapper('/?active=true&incidents=true'),
+      wrapper: getWrapper('/?active=true&suspended=true&incidents=true'),
     });
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeDisabled();
@@ -383,7 +383,9 @@ describe('Filters', () => {
     await user.click(screen.getByLabelText('Incidents'));
 
     await waitFor(() =>
-      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/),
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?active=true&suspended=true$/,
+      ),
     );
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();

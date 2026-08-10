@@ -112,7 +112,8 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const hasBusinessId = !isNil(businessId);
-  const processInstanceState = hasIncident ? 'INCIDENT' : state;
+  const processInstanceState =
+    state === 'SUSPENDED' ? 'SUSPENDED' : hasIncident ? 'INCIDENT' : state;
   const processLevelWaitingCount =
     waitStateStatistics?.find(
       ({elementId}) => elementId === processDefinitionId,
@@ -151,6 +152,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                 processDefinitionVersion: processDefinitionVersion?.toString(),
                 processDefinitionId,
                 active: true,
+                suspended: true,
                 incidents: true,
                 ...(isMultiTenancyEnabled
                   ? {
@@ -214,6 +216,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   to={Locations.processes({
                     parentProcessInstanceKey: processInstanceKey,
                     active: true,
+                    suspended: true,
                     incidents: true,
                     canceled: true,
                     completed: true,

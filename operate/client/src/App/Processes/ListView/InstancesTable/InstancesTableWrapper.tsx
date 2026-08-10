@@ -43,6 +43,7 @@ type ProcessInstancesHandle = {
 const InstancesTableWrapper: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
   const hasActiveFilter = searchParams.get('active') === 'true';
+  const hasSuspendedFilter = searchParams.get('suspended') === 'true';
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
   const conditions = variableFilterStore.conditions;
@@ -50,7 +51,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =
-    (hasActiveFilter || hasIncidentsFilter) &&
+    (hasActiveFilter || hasSuspendedFilter || hasIncidentsFilter) &&
     !batchModificationStore.state.isEnabled;
 
   const result = useProcessInstancesPaginated({

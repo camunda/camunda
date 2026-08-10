@@ -351,6 +351,7 @@ const DetailsTab: React.FC = () => {
                 to={Locations.processes({
                   parentProcessInstanceKey: processInstance!.processInstanceKey,
                   active: true,
+                  suspended: true,
                   incidents: true,
                   completed: true,
                   canceled: true,

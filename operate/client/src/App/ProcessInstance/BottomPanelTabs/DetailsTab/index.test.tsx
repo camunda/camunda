@@ -543,7 +543,7 @@ describe('<DetailsTab />', () => {
     expect(link).toHaveTextContent('View all (2)');
     expect(link).toHaveAttribute(
       'href',
-      `/processes?parentProcessInstanceKey=${PROCESS_INSTANCE_ID}&active=true&incidents=true&completed=true&canceled=true`,
+      `/processes?parentProcessInstanceKey=${PROCESS_INSTANCE_ID}&active=true&suspended=true&incidents=true&completed=true&canceled=true`,
     );
   });
 

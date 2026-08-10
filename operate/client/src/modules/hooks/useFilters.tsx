@@ -31,6 +31,7 @@ const useFilters = () => {
 
     return (
       filters.active ||
+      filters.suspended ||
       filters.incidents ||
       filters.completed ||
       filters.canceled
