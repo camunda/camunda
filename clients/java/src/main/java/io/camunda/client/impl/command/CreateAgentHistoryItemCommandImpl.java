@@ -18,9 +18,6 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
-import io.camunda.client.api.command.AgentInstanceHistoryContent.DocumentContent;
-import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
-import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
@@ -30,27 +27,15 @@ import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAg
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAgentHistoryItemCommandStep5;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAgentHistoryItemFinalCommandStep;
 import io.camunda.client.api.response.CreateAgentHistoryItemResponse;
-import io.camunda.client.api.response.DocumentMetadata;
-import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAgentHistoryItemResponseImpl;
-import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
-import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemRequest;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
-import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
-import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
-import io.camunda.client.protocol.rest.AgentInstanceTextContent;
-import io.camunda.client.protocol.rest.AgentInstanceToolCall;
-import io.camunda.client.protocol.rest.DocumentMetadataResponse;
-import io.camunda.client.protocol.rest.DocumentReference;
-import io.camunda.client.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -109,81 +94,8 @@ public class CreateAgentHistoryItemCommandImpl
   public CreateAgentHistoryItemCommandStep5 content(
       final List<AgentInstanceHistoryContent> content) {
     ArgumentUtil.ensureNotNull("content", content);
-    final List<AgentInstanceMessageContent> protocolContent = new ArrayList<>(content.size());
-    for (final AgentInstanceHistoryContent item : content) {
-      if (item == null) {
-        throw new IllegalArgumentException("content must not contain null elements");
-      }
-      if (item instanceof TextContent) {
-        final String text = ((TextContent) item).getText();
-        if (text == null || text.trim().isEmpty()) {
-          throw new IllegalArgumentException("text content value must not be null or blank");
-        }
-        protocolContent.add(new AgentInstanceTextContent().text(text));
-      } else if (item instanceof ObjectContent) {
-        final Object obj = ((ObjectContent) item).getObject();
-        if (obj == null) {
-          throw new IllegalArgumentException("object content value must not be null");
-        }
-        protocolContent.add(
-            new AgentInstanceObjectContent()._object(((ObjectContent) item).getObject()));
-      } else if (item instanceof DocumentContent) {
-        protocolContent.add(toProtocolDocumentContent((DocumentContent) item));
-      } else {
-        throw new IllegalArgumentException("Unsupported AgentInstanceHistoryContent type: " + item);
-      }
-    }
-    request.content(protocolContent);
+    request.content(AgentInstanceHistoryMapper.toProtocolContent(content));
     return this;
-  }
-
-  private AgentInstanceDocumentContent toProtocolDocumentContent(final DocumentContent item) {
-    final DocumentReferenceResponse ref = item.getDocumentReference();
-    if (ref == null) {
-      throw new IllegalArgumentException("documentReference must not be null");
-    }
-    if (ref.getDocumentId() == null || ref.getDocumentId().trim().isEmpty()) {
-      throw new IllegalArgumentException("documentReference.documentId must not be null or blank");
-    }
-    final DocumentReference protocolRef =
-        new DocumentReference()
-            .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-            .documentId(ref.getDocumentId())
-            .storeId(ref.getStoreId());
-    if (ref.getContentHash() != null) {
-      protocolRef.contentHash(ref.getContentHash());
-    }
-    final DocumentMetadata metadata = ref.getMetadata();
-    if (metadata != null) {
-      protocolRef.metadata(toProtocolDocumentMetadata(metadata));
-    }
-    return new AgentInstanceDocumentContent().documentReference(protocolRef);
-  }
-
-  private DocumentMetadataResponse toProtocolDocumentMetadata(final DocumentMetadata metadata) {
-    final DocumentMetadataResponse protocolMeta = new DocumentMetadataResponse();
-    if (metadata.getFileName() != null) {
-      protocolMeta.fileName(metadata.getFileName());
-    }
-    if (metadata.getContentType() != null) {
-      protocolMeta.contentType(metadata.getContentType());
-    }
-    if (metadata.getSize() != null) {
-      protocolMeta.size(metadata.getSize());
-    }
-    if (metadata.getExpiresAt() != null) {
-      protocolMeta.expiresAt(metadata.getExpiresAt().toString());
-    }
-    if (metadata.getProcessDefinitionId() != null) {
-      protocolMeta.processDefinitionId(metadata.getProcessDefinitionId());
-    }
-    if (metadata.getProcessInstanceKey() != null) {
-      protocolMeta.processInstanceKey(String.valueOf(metadata.getProcessInstanceKey()));
-    }
-    if (metadata.getCustomProperties() != null && !metadata.getCustomProperties().isEmpty()) {
-      protocolMeta.customProperties(metadata.getCustomProperties());
-    }
-    return protocolMeta;
   }
 
   @Override
@@ -216,25 +128,7 @@ public class CreateAgentHistoryItemCommandImpl
     if (toolCalls == null) {
       return this;
     }
-    final List<AgentInstanceToolCall> protocolToolCalls = new ArrayList<>(toolCalls.size());
-    for (final AgentInstanceHistoryToolCall tc : toolCalls) {
-      if (tc == null) {
-        throw new IllegalArgumentException("toolCalls must not contain null elements");
-      }
-      if (tc.getToolCallId() == null || tc.getToolCallId().trim().isEmpty()) {
-        throw new IllegalArgumentException("toolCallId must not be null or blank");
-      }
-      if (tc.getToolName() == null || tc.getToolName().trim().isEmpty()) {
-        throw new IllegalArgumentException("toolName must not be null or blank");
-      }
-      protocolToolCalls.add(
-          new AgentInstanceToolCall()
-              .toolCallId(tc.getToolCallId())
-              .toolName(tc.getToolName())
-              .elementId(tc.getElementId())
-              .arguments(tc.getArguments()));
-    }
-    request.toolCalls(protocolToolCalls);
+    request.toolCalls(AgentInstanceHistoryMapper.toProtocolToolCalls(toolCalls));
     return this;
   }
 
@@ -243,11 +137,7 @@ public class CreateAgentHistoryItemCommandImpl
     if (metrics == null) {
       return this;
     }
-    request.metrics(
-        new AgentInstanceHistoryItemMetrics()
-            .inputTokens(metrics.getInputTokens())
-            .outputTokens(metrics.getOutputTokens())
-            .durationMs(metrics.getDurationMs()));
+    request.metrics(AgentInstanceHistoryMapper.toProtocolMetrics(metrics));
     return this;
   }
 
