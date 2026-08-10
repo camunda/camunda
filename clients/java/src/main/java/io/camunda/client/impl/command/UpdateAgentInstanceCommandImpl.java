@@ -20,6 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.HistoryItem;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -111,6 +112,24 @@ public class UpdateAgentInstanceCommandImpl
                 })
             .collect(Collectors.toList());
     request.tools(protocolTools);
+    return this;
+  }
+
+  @Override
+  public UpdateAgentInstanceCommandStep2 jobKey(final long jobKey) {
+    // TODO(#58793): validate and map jobKey onto the request in the green phase.
+    return this;
+  }
+
+  @Override
+  public UpdateAgentInstanceCommandStep2 jobLease(final String jobLease) {
+    // TODO(#58793): validate and map jobLease onto the request in the green phase.
+    return this;
+  }
+
+  @Override
+  public UpdateAgentInstanceCommandStep2 history(final List<HistoryItem> history) {
+    // TODO(#58793): validate and map the history batch onto the request in the green phase.
     return this;
   }
 

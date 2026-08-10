@@ -17,8 +17,14 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
+import java.util.List;
 
 public class UpdateAgentInstanceResponseImpl implements UpdateAgentInstanceResponse {
 
   public UpdateAgentInstanceResponseImpl(final AgentInstanceUpdateResult result) {}
+
+  @Override
+  public List<CreatedHistoryItem> getCreatedHistory() {
+    return null;
+  }
 }
