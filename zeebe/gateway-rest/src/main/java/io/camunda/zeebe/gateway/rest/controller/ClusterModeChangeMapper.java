@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
 import io.camunda.service.exception.ServiceException;
@@ -49,7 +51,7 @@ final class ClusterModeChangeMapper {
 
   private static List<ClusterModeChangeOperation> toPlannedChanges(
       final ClusterConfigurationChangeResponse response) {
-    return response.legacyResponse().plannedChanges().stream()
+    return requireNonNull(response.response()).plannedChanges().stream()
         .map(ClusterModeChangeMapper::toClusterModeChangeOperation)
         .toList();
   }

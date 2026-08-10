@@ -32,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
@@ -73,14 +74,19 @@ public class RecoveryControllerTest extends RestControllerTest {
 
   private void stubValidationSuccess() {
     Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.right(
-                    new ClusterConfigurationChangeResponse(
-                        0L,
-                        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                            Map.of(), Map.of(), List.of()),
-                        null))));
+        .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse(0L, List.of()))));
+  }
+
+  private static ClusterConfigurationChangeResponse changeResponse(
+      final long changeId, final List<ClusterConfigurationChangeOperation> plannedChanges) {
+    return new ClusterConfigurationChangeResponse(
+        changeId,
+        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+            Map.of(), Map.of(), plannedChanges),
+        new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+            CurrentClusterConfiguration.uninitialized(),
+            CurrentClusterConfiguration.uninitialized(),
+            plannedChanges));
   }
 
   @ParameterizedTest
@@ -88,13 +94,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   void shouldChangeClusterModeAndReturnPlannedChanges(final String baseUrl) {
     // given
     final var changeResponse =
-        new ClusterConfigurationChangeResponse(
-            7L,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(),
-                Map.of(),
-                List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING))),
-            null);
+        changeResponse(7L, List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     Mockito.when(
             recoveryServices.changeMode(
                 Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))
