@@ -12,6 +12,7 @@ import '@testing-library/jest-dom';
 import {cleanup} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from 'modules/testing-library';
+import {notificationsStore} from 'modules/stores/notifications';
 import MockDmnJsSharedManager from '__mocks__/dmn-js-shared/lib/base/Manager';
 import MockDmnJsSharedDiUtil from '__mocks__/dmn-js-shared/lib/util/DiUtil';
 import MockDmnJsSharedModelUtil from '__mocks__/dmn-js-shared/lib/util/ModelUtil';
@@ -152,6 +153,7 @@ beforeAll(() => {
 });
 afterEach(() => {
   cleanup();
+  notificationsStore.reset();
   mockServer.resetHandlers();
 });
 afterAll(() => mockServer.close());
