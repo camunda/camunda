@@ -27,6 +27,8 @@ public class Processing {
   private static final boolean DEFAULT_ENABLE_ASYNC_TIMER_DUEDATE_CHECKER = false;
   private static final boolean DEFAULT_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+  private static final boolean DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE =
+      false;
 
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
@@ -53,6 +55,10 @@ public class Processing {
           Set.of("zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector");
   private static final Set<String> LEGACY_FEATURES_ENABLE_MESSAGE_BODY_ON_EXPIRED_PROPERTIES =
       Set.of("zeebe.broker.experimental.features.enableMessageBodyOnExpired");
+  private static final Set<String>
+      LEGACY_FEATURES_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE_PROPERTIES =
+          Set.of(
+              "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope");
 
   /**
    * Configure flow control for user requests. This setting takes precedence over the backpressure
@@ -166,6 +172,16 @@ public class Processing {
    * default value is false, meaning message bodies will not be appended unless explicitly enabled.
    */
   private boolean enableMessageBodyOnExpired = DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED;
+
+  /**
+   * Controls the scope used to evaluate the {@code correlationKey} expression of a message boundary
+   * event. When enabled, the expression is evaluated in the activity's own (element instance)
+   * scope, consistent with timer duration, message name, and signal name expressions. When disabled
+   * (default), restores the previous behavior where the expression is evaluated in the flow scope
+   * instead.
+   */
+  private boolean evaluateBoundaryEventCorrelationKeyInActivityScope =
+      DEFAULT_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE;
 
   public Integer getMaxCommandsInBatch() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -317,6 +333,21 @@ public class Processing {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public boolean isEvaluateBoundaryEventCorrelationKeyInActivityScope() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".evaluate-boundary-event-correlation-key-in-activity-scope",
+        evaluateBoundaryEventCorrelationKeyInActivityScope,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_FEATURES_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE_PROPERTIES);
+  }
+
+  public void setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
+    this.evaluateBoundaryEventCorrelationKeyInActivityScope =
+        evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
   public FlowControl getFlowControl() {
