@@ -51,6 +51,7 @@ final class ClusterEndpointResponseIT {
                 "partitions": [
                   {
                     "id": 1,
+                    "physicalTenant": "default",
                     "state": "ACTIVE",
                     "priority": 1,
                     "config":{
@@ -58,6 +59,12 @@ final class ClusterEndpointResponseIT {
                           "exporters": []
                        }
                     }
+                  }
+                ],
+                "physicalTenants":[
+                  {
+                    "id":"default",
+                    "mode":"PROCESSING"
                   }
                 ]
               }
