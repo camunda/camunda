@@ -145,9 +145,7 @@ test('should match the start-process form validation and submission-error notifi
 
 	await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
 	await tasklistProcessesPage.startProcessFormButton.click();
-	await expect(
-		tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed'),
-	).toBeVisible();
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed')).toBeVisible();
 	await expect(page).toHaveScreenshot('start-process-form-submission-error.png');
 });
 

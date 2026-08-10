@@ -237,11 +237,7 @@ test.describe('Tasklist processes page', () => {
 		);
 	});
 
-	test('should close the form and notify after submission failure', async ({
-		network,
-		tasklistProcessesPage,
-		page,
-	}) => {
+	test('should close the form and notify after submission failure', async ({network, tasklistProcessesPage, page}) => {
 		const processDefinitionKey = '2251799813685279';
 		network.use(
 			mockGetProcessDefinitionEndpoint({
