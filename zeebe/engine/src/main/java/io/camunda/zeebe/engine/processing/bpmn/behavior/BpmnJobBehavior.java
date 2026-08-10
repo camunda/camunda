@@ -113,7 +113,8 @@ public final class BpmnJobBehavior {
           State.ACTIVATED,
           State.FAILED,
           State.ERROR_THROWN,
-          State.WAITING_FOR_SECRET_RESOLUTION);
+          State.WAITING_FOR_SECRET_RESOLUTION,
+          State.SUSPENDED);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
