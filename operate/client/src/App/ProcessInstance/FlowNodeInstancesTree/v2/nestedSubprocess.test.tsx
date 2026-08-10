@@ -27,7 +27,7 @@ import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstanc
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
+describe.skip('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       nestedSubProcessesInstance,

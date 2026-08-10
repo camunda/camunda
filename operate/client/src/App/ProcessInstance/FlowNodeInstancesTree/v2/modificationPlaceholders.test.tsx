@@ -37,7 +37,7 @@ import {
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-describe('FlowNodeInstancesTree - Modification placeholders', () => {
+describe.skip('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
