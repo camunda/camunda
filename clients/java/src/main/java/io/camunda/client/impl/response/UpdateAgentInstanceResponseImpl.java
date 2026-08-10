@@ -16,8 +16,9 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 
 public class UpdateAgentInstanceResponseImpl implements UpdateAgentInstanceResponse {
 
-  public UpdateAgentInstanceResponseImpl(final Void nothing) {}
+  public UpdateAgentInstanceResponseImpl(final AgentInstanceUpdateResult result) {}
 }

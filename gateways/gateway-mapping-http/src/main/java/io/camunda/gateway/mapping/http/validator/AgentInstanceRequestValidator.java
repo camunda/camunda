@@ -16,7 +16,9 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
@@ -94,11 +96,6 @@ public class AgentInstanceRequestValidator {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          // TODO: validate jobLease once job leasing is implemented (#55033)
-          // if (request.getJobLease() == null || request.getJobLease().isBlank()) {
-          //   violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
-          // }
-
           if (request.getRole() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
           }
@@ -107,20 +104,7 @@ public class AgentInstanceRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
           } else {
             for (int i = 0; i < request.getContent().size(); i++) {
-              final var content = request.getContent().get(i);
-              if (content instanceof final AgentInstanceTextContent text) {
-                if (text.getText() == null || text.getText().isBlank()) {
-                  violations.add(
-                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].text"));
-                }
-              } else if (content instanceof final AgentInstanceDocumentContent doc) {
-                validateDocumentContentItem(i, doc, violations);
-              } else if (content instanceof final AgentInstanceObjectContent obj) {
-                if (obj.getObject() == null) {
-                  violations.add(
-                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].object"));
-                }
-              }
+              validateContentItem("content[" + i + "]", request.getContent().get(i), violations);
             }
           }
 
@@ -168,22 +152,93 @@ public class AgentInstanceRequestValidator {
             }
           }
 
+          if (request.getJobKey() != null) {
+            validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
+          }
+
+          if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+            if (request.getJobKey() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+            }
+
+            for (int i = 0; i < request.getHistory().size(); i++) {
+              validateHistoryItem(i, request.getHistory().get(i), violations);
+            }
+          }
+
           return violations;
         });
   }
 
+  private void validateHistoryItem(
+      final int index,
+      final @Nullable AgentInstanceHistoryItem historyItem,
+      final List<String> violations) {
+    if (historyItem == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "]"));
+      return;
+    }
+    if (historyItem.getHistoryItemId() == null || historyItem.getHistoryItemId().isBlank()) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].historyItemId"));
+    }
+    if (historyItem.getLoopIteration() == null) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].loopIteration"));
+    } else if (historyItem.getLoopIteration() < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "history[" + index + "].loopIteration", historyItem.getLoopIteration(), "> 0"));
+    }
+    if (historyItem.getRole() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].role"));
+    }
+    if (historyItem.getContent() == null || historyItem.getContent().isEmpty()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].content"));
+    } else {
+      for (int i = 0; i < historyItem.getContent().size(); i++) {
+        validateContentItem(
+            "history[" + index + "].content[" + i + "]",
+            historyItem.getContent().get(i),
+            violations);
+      }
+    }
+    if (historyItem.getProducedAt() == null || historyItem.getProducedAt().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].producedAt"));
+    } else {
+      validateDate(historyItem.getProducedAt(), "history[" + index + "].producedAt", violations);
+    }
+  }
+
+  private void validateContentItem(
+      final String fieldPrefix,
+      final AgentInstanceMessageContent content,
+      final List<String> violations) {
+    if (content instanceof final AgentInstanceTextContent text) {
+      if (text.getText() == null || text.getText().isBlank()) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + ".text"));
+      }
+    } else if (content instanceof final AgentInstanceDocumentContent doc) {
+      validateDocumentContentItem(fieldPrefix, doc, violations);
+    } else if (content instanceof final AgentInstanceObjectContent obj) {
+      if (obj.getObject() == null) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + ".object"));
+      }
+    }
+  }
+
   private void validateDocumentContentItem(
-      final int index, final AgentInstanceDocumentContent doc, final List<String> violations) {
+      final String fieldPrefix,
+      final AgentInstanceDocumentContent doc,
+      final List<String> violations) {
     final var ref = doc.getDocumentReference();
     if (ref == null) {
-      violations.add(
-          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + index + "].documentReference"));
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + ".documentReference"));
       return;
     }
     if (ref.getDocumentId() == null || ref.getDocumentId().isBlank()) {
       violations.add(
-          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(
-              "content[" + index + "].documentReference.documentId"));
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + ".documentReference.documentId"));
       return;
     }
     if (ref.getMetadata() == null) {
@@ -191,8 +246,7 @@ public class AgentInstanceRequestValidator {
     }
     final var expiresAt = ref.getMetadata().getExpiresAt();
     if (expiresAt != null && !expiresAt.isBlank()) {
-      validateDate(
-          expiresAt, "content[" + index + "].documentReference.metadata.expiresAt", violations);
+      validateDate(expiresAt, fieldPrefix + ".documentReference.metadata.expiresAt", violations);
     }
   }
 

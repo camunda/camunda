@@ -114,9 +114,11 @@ paths:
         - basicAuth: []
       summary: Update agent instance
       description: |
-        Updates the mutable fields of an agent instance: status, metric counters, and
-        tools. Metric values are treated as deltas and applied immediately to the
-        aggregate counters. Tool updates replace the existing tool list.
+        Updates the mutable fields of an agent instance (status, metric counters, and
+        tools) and appends a batch of history items to its conversation history. Metric
+        values are treated as deltas and applied immediately to the aggregate counters.
+        Tool updates replace the existing tool list. Each history item created for this
+        request is echoed back in the response.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -131,8 +133,12 @@ paths:
             schema:
               $ref: '#/components/schemas/AgentInstanceUpdateRequest'
       responses:
-        "204":
+        "200":
           description: The agent instance was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceUpdateResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -734,6 +740,71 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AgentTool'
+        jobKey:
+          description: |
+            The key of the job activation during which this update is being made.
+            Required whenever history is provided.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        jobLease:
+          description: |
+            Opaque lease token received from the job activation response. Disambiguates
+            this activation from any other activation of the same job: if the job is
+            later retried, history items submitted under a superseded lease are discarded
+            rather than committed.
+          nullable: true
+          type: string
+        history:
+          description: |
+            A batch of history items to append to the agent instance's conversation
+            history, in request order. Each created item is echoed back in the
+            response's createdHistory, positionally correlated.
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryItem'
+
+    AgentInstanceUpdateResult:
+      description: Response returned after successfully updating an agent instance.
+      type: object
+      required:
+        - createdHistory
+      properties:
+        createdHistory:
+          description: |
+            One entry per history item submitted in the request, in request order.
+            Empty when no history items were submitted.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
+
+    AgentInstanceCreatedHistoryItem:
+      description: |
+        The outcome of appending a single history item from an update request's
+        history batch.
+      type: object
+      required:
+        - historyItemId
+        - historyItemKey
+        - isDuplicate
+      properties:
+        historyItemId:
+          description: |
+            The historyItemId of the corresponding item in the request, echoed back
+            so callers can correlate response entries with request items by id.
+          type: string
+        historyItemKey:
+          description: |
+            The system-generated key for the history item. When isDuplicate is true,
+            this is the key of the original entry, not a new one.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
+        isDuplicate:
+          description: |
+            True if this item had already been recorded and no new AGENT_HISTORY event
+            was created for it; false if a new event was created.
+          type: boolean
 
     ## Filters
 
@@ -798,9 +869,8 @@ components:
           type: string
         loopIteration:
           description: |
-            The loopIteration this item belongs to. A loopIteration is one pass through the agent
-            feedback loop: one LLM call, its tool dispatches, and their results. Omit if not grouping
-            items by loopIteration.
+            The loop iteration this item belongs to. Omit if not grouping items by
+            loopIteration.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
@@ -816,8 +886,8 @@ components:
         toolCalls:
           description: |
             Tool calls associated with this history item.
-            For ASSISTANT items: tool calls dispatched by this LLM response, with arguments populated.
-            For TOOL_RESULT items: single-entry array referencing the originating tool call, with arguments null.
+            For ASSISTANT items: tool calls dispatched by this LLM response.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call.
             Omit for USER items.
           type: array
           nullable: true
@@ -829,7 +899,59 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
         producedAt:
-          description: The connector-side timestamp of when this message was produced.
+          description: The agent-side timestamp of when this message was produced.
+          type: string
+          format: date-time
+
+    AgentInstanceHistoryItem:
+      description: |
+        A single history item to append to the agent instance's conversation history,
+        submitted as part of the batch on an agent instance update request.
+      type: object
+      required:
+        - historyItemId
+        - loopIteration
+        - role
+        - content
+        - producedAt
+      properties:
+        historyItemId:
+          description: |
+            Caller-assigned identifier used to detect and dedupe retries of the same
+            item. For example, when a retried job activation resubmits history items
+            it already sent in an earlier attempt, those items are not rejected; they
+            are flagged via isDuplicate in the response instead. Must be non-blank.
+          type: string
+        loopIteration:
+          description: The loop iteration this item belongs to.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
+        role:
+          description: The role of this history item in the conversation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        content:
+          description: The content blocks of this history item.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
+        toolCalls:
+          description: |
+            Tool calls associated with this history item.
+            For ASSISTANT items: tool calls dispatched by this LLM response.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call.
+            Omit for USER items.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AgentInstanceToolCall'
+        metrics:
+          description: Per-call token and latency metrics. Present on ASSISTANT items only.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+        producedAt:
+          description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
 
@@ -899,7 +1021,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
         loopIteration:
-          description: Filter by loopIteration number. A loopIteration is one pass through the agent feedback loop (one LLM call, its tool dispatches, and their results).
+          description: Filter by loop iteration number.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
         commitStatus:
@@ -964,9 +1086,7 @@ components:
           description: The lease token of the activation that produced this item.
           type: string
         loopIteration:
-          description: |
-            The loopIteration this item belongs to. A loopIteration is one pass through the agent
-            feedback loop: one LLM call, its tool dispatches, and their results.
+          description: The loop iteration this item belongs to.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
         role:
@@ -981,8 +1101,8 @@ components:
         toolCalls:
           description: |
             Tool calls for this item. Empty for USER items and ASSISTANT items with no tool dispatches.
-            ASSISTANT items: dispatched tool calls with arguments populated.
-            TOOL_RESULT items: single-entry array referencing the originating tool call (arguments null).
+            ASSISTANT items: dispatched tool calls.
+            TOOL_RESULT items: single-entry array referencing the originating tool call.
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceToolCall'
@@ -996,7 +1116,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
         producedAt:
-          description: The connector-side timestamp of when this message was produced.
+          description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
     AgentInstanceHistoryRoleEnum:
@@ -1099,7 +1219,6 @@ components:
     AgentInstanceToolCall:
       description: |
         A tool call associated with a history item. Used in both ASSISTANT and TOOL_RESULT items.
-        ASSISTANT items carry arguments; TOOL_RESULT items carry arguments as null.
       type: object
       required:
         - toolCallId
@@ -1118,7 +1237,9 @@ components:
           type: string
           nullable: true
         arguments:
-          description: The tool call arguments as provided by the LLM. Null on TOOL_RESULT items.
+          description: |
+            The tool call arguments as provided by the LLM. May be null or populated on
+            any item, including TOOL_RESULT.
           type: object
           nullable: true
           additionalProperties: true

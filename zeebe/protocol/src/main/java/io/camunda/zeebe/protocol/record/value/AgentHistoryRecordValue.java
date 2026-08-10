@@ -71,8 +71,10 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   String getJobLease();
 
   /**
-   * Returns the loopIteration counter: one pass through the agent feedback loop (one LLM call, its
-   * tool dispatches, and their results).
+   * Returns the loopIteration counter. A loop iteration is one pass through an AI agent's loop,
+   * during which the model reasons, selects tools, evaluates the result, and decides whether to
+   * continue. One iteration covers the input for the LLM call, the call itself, and the tools it
+   * dispatches; the results of those tool calls are input to the next iteration.
    */
   int getLoopIteration();
 

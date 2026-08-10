@@ -10,9 +10,11 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
+import io.camunda.gateway.protocol.model.AgentInstanceCreatedHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
@@ -22,6 +24,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateResult;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
@@ -115,6 +118,20 @@ public class AgentInstanceMapper {
             record.addChangedAttribute("tools");
           }
 
+          if (request.getJobKey() != null) {
+            record.setJobKey(Long.parseLong(request.getJobKey()));
+          }
+
+          if (request.getJobLease() != null) {
+            record.setJobLease(request.getJobLease());
+          }
+
+          if (request.getHistory() != null) {
+            for (final AgentInstanceHistoryItem historyItem : request.getHistory()) {
+              record.addHistoryItem(mapHistoryItem(historyItem));
+            }
+          }
+
           return record;
         });
   }
@@ -124,6 +141,20 @@ public class AgentInstanceMapper {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
         .build();
+  }
+
+  public AgentInstanceUpdateResult toAgentInstanceUpdateResult(final AgentInstanceRecord record) {
+    final List<AgentInstanceCreatedHistoryItem> createdHistory =
+        record.getHistory().stream()
+            .map(
+                item ->
+                    AgentInstanceCreatedHistoryItem.Builder.create()
+                        .historyItemId(item.getHistoryItemId())
+                        .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
+                        .isDuplicate(item.isDuplicate())
+                        .build())
+            .collect(Collectors.toList());
+    return AgentInstanceUpdateResult.Builder.create().createdHistory(createdHistory).build();
   }
 
   public Either<ProblemDetail, AgentHistoryRecord> toCreateAgentHistoryRecord(
@@ -178,6 +209,42 @@ public class AgentInstanceMapper {
     return AgentInstanceHistoryItemCreationResult.Builder.create()
         .historyItemKey(KeyUtil.keyToString(record.getAgentHistoryKey()))
         .build();
+  }
+
+  private AgentHistoryRecord mapHistoryItem(final AgentInstanceHistoryItem historyItem) {
+    final var record = new AgentHistoryRecord();
+
+    record.setHistoryItemId(historyItem.getHistoryItemId());
+    record.setLoopIteration(historyItem.getLoopIteration());
+    record.setRole(mapHistoryRole(historyItem.getRole()));
+    record.setProducedAt(
+        OffsetDateTime.parse(historyItem.getProducedAt()).toInstant().toEpochMilli());
+
+    for (final AgentInstanceMessageContent content : historyItem.getContent()) {
+      record.addContent(mapContent(content));
+    }
+
+    if (historyItem.getToolCalls() != null) {
+      for (final AgentInstanceToolCall toolCall : historyItem.getToolCalls()) {
+        record.addToolCall(mapToolCall(toolCall));
+      }
+    }
+
+    if (historyItem.getMetrics() != null) {
+      final var metrics = historyItem.getMetrics();
+      final var recordMetrics = record.getMetrics();
+      if (metrics.getInputTokens() != null) {
+        recordMetrics.setInputTokens(metrics.getInputTokens());
+      }
+      if (metrics.getOutputTokens() != null) {
+        recordMetrics.setOutputTokens(metrics.getOutputTokens());
+      }
+      if (metrics.getDurationMs() != null) {
+        recordMetrics.setDurationMs(metrics.getDurationMs());
+      }
+    }
+
+    return record;
   }
 
   private AgentHistoryRole mapHistoryRole(final AgentInstanceHistoryRoleEnum role) {
