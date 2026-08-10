@@ -18,3 +18,9 @@ process-execution data path). These are module-scoped decisions; see the
 | [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
 | [0007](0007-810-job-waiting-for-secret-resolution-state.md)         | Persisted `WAITING_FOR_SECRET_RESOLUTION` job state for jobs parked while their secret references resolve     |
 
+### Proposed
+
+|                   ADR                    |                                 Decision                                 |
+|------------------------------------------|--------------------------------------------------------------------------|
+| [0007](0007-TBD-concurrent-exporters.md) | One actor per exporter: decouple readers, positions, and failure domains |
+
