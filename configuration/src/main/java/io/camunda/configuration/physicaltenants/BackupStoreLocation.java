@@ -46,19 +46,32 @@ record BackupStoreLocation(String store, List<String> namespace, String keyPrefi
     };
   }
 
-  /** Region is excluded because S3 bucket names are globally unique across regions. */
+  /**
+   * Region is excluded because S3 bucket names are globally unique across regions. The base path is
+   * compared as configured, since {@code S3BackupConfig} rejects one that starts or ends with
+   * {@code /} rather than accepting and trimming it.
+   */
   private static BackupStoreLocation s3(final S3 s3) {
     return new BackupStoreLocation(
         "s3",
-        List.of(normalize(s3.getBucketName()), normalize(s3.getEndpoint())),
+        List.of(
+            DocumentStoreLocation.normalizeName(s3.getBucketName()),
+            DocumentStoreLocation.normalizeEndpoint(s3.getEndpoint())),
         keyPrefixOf(s3.getBasePath()));
   }
 
+  /**
+   * The base path is stripped of surrounding {@code /} the way {@code
+   * GcsBackupConfig#sanitizeBasePath} strips it, so that {@code /backups} and {@code backups} are
+   * recognized as the one prefix they both resolve to.
+   */
   private static BackupStoreLocation gcs(final Gcs gcs) {
     return new BackupStoreLocation(
         "gcs",
-        List.of(normalize(gcs.getBucketName()), normalize(gcs.getHost())),
-        keyPrefixOf(gcs.getBasePath()));
+        List.of(
+            DocumentStoreLocation.normalizeName(gcs.getBucketName()),
+            DocumentStoreLocation.normalizeEndpoint(gcs.getHost())),
+        stripSurroundingSlashes(keyPrefixOf(gcs.getBasePath())));
   }
 
   /**
@@ -70,9 +83,9 @@ record BackupStoreLocation(String store, List<String> namespace, String keyPrefi
     return new BackupStoreLocation(
         "azure",
         List.of(
-            normalize(azure.getBasePath()),
-            normalize(azure.getEndpoint()),
-            normalize(azure.getAccountName())),
+            DocumentStoreLocation.normalizeName(azure.getBasePath()),
+            DocumentStoreLocation.normalizeEndpoint(azure.getEndpoint()),
+            DocumentStoreLocation.normalizeName(azure.getAccountName())),
         "");
   }
 
@@ -140,12 +153,18 @@ record BackupStoreLocation(String store, List<String> namespace, String keyPrefi
     }
   }
 
-  /** Bucket and container names are restricted to lower case, so folding case cannot merge two. */
-  private static String normalize(final @Nullable String value) {
-    return value == null ? "" : value.trim().toLowerCase();
-  }
-
   private static String keyPrefixOf(final @Nullable String basePath) {
     return Objects.requireNonNullElse(basePath, "").trim();
+  }
+
+  private static String stripSurroundingSlashes(final String basePath) {
+    var stripped = basePath;
+    while (stripped.startsWith("/")) {
+      stripped = stripped.substring(1);
+    }
+    while (stripped.endsWith("/")) {
+      stripped = stripped.substring(0, stripped.length() - 1);
+    }
+    return stripped;
   }
 }

@@ -111,8 +111,11 @@ record DocumentStoreLocation(String provider, List<String> namespace, String key
     }
   }
 
-  /** AWS and Azure restrict these names to lower case, so folding case cannot merge two. */
-  private static String normalizeName(final @Nullable String value) {
+  /**
+   * AWS and Azure restrict these names to lower case, so folding case cannot merge two. Shared with
+   * {@link BackupStoreLocation}, which describes the same kinds of value.
+   */
+  static String normalizeName(final @Nullable String value) {
     return value == null ? "" : value.trim().toLowerCase();
   }
 
@@ -124,7 +127,7 @@ record DocumentStoreLocation(String provider, List<String> namespace, String key
    * three parts — an unparseable URL is usually one whose token needed escaping, which is exactly
    * the value that must not be kept.
    */
-  private static String normalizeEndpoint(final @Nullable String value) {
+  static String normalizeEndpoint(final @Nullable String value) {
     final String endpoint = normalizeName(value);
     if (endpoint.isEmpty()) {
       return "";

@@ -9,9 +9,12 @@ package io.camunda.configuration.physicaltenants;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import io.camunda.configuration.Azure;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
+import io.camunda.configuration.Gcs;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.S3;
@@ -20,9 +23,13 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
@@ -71,6 +78,62 @@ class PrimaryStorageBackupIsolationValidationTest {
         .isThrownBy(() -> validation.validate(resolved))
         .withMessageContaining("tenanta")
         .withMessageContaining("tenantb");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("sharedLocationsPerStore")
+  void shouldRejectTenantsSharingALocation(
+      final String store, final Consumer<PrimaryStorageBackup> shared) {
+    // given both tenants resolve to the same location, whichever store they use
+    final var resolved = tenants("tenanta", shared, "tenantb", shared);
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb")
+        .withMessageContaining("store=" + store);
+  }
+
+  static Stream<Arguments> sharedLocationsPerStore() {
+    return Stream.of(
+        arguments("filesystem", filesystem("/backups")),
+        arguments("s3", s3("shared-bucket", "backups")),
+        arguments("gcs", gcs("shared-bucket", "backups")),
+        arguments("azure", azure("shared-container")));
+  }
+
+  @Test
+  void shouldNormalizeTheGcsBasePathTheWayTheStoreDoes() {
+    // given base paths that differ only in the surrounding slashes GcsBackupConfig strips, so both
+    // resolve to the same prefix
+    final var resolved =
+        tenants(
+            "tenanta", gcs("shared-bucket", "/backups/"),
+            "tenantb", gcs("shared-bucket", "backups"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldNotReportCredentialsCarriedInAnEndpoint() {
+    // given an endpoint that carries a token, as a SAS-style URL does
+    final var resolved =
+        tenants(
+            "tenanta",
+                azure("shared-container", "https://account.blob.core.windows.net?sig=secret"),
+            "tenantb",
+                azure("shared-container", "https://account.blob.core.windows.net?sig=secret"));
+
+    // when / then the collision is reported without the query string it was configured with
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("account.blob.core.windows.net")
+        .withMessageNotContaining("sig=secret");
   }
 
   @Test
@@ -142,7 +205,7 @@ class PrimaryStorageBackupIsolationValidationTest {
     assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
   }
 
-  private Map<String, Camunda> tenants(
+  private static Map<String, Camunda> tenants(
       final String firstId,
       final Consumer<PrimaryStorageBackup> first,
       final String secondId,
@@ -153,13 +216,13 @@ class PrimaryStorageBackupIsolationValidationTest {
     return resolved;
   }
 
-  private Camunda camunda(final Consumer<PrimaryStorageBackup> backupConfig) {
+  private static Camunda camunda(final Consumer<PrimaryStorageBackup> backupConfig) {
     final var camunda = new Camunda();
     backupConfig.accept(camunda.getData().getPrimaryStorage().getBackup());
     return camunda;
   }
 
-  private Consumer<PrimaryStorageBackup> filesystem(final String basePath) {
+  private static Consumer<PrimaryStorageBackup> filesystem(final String basePath) {
     return backup -> {
       backup.setStore(BackupStoreType.FILESYSTEM);
       final var filesystem = new Filesystem();
@@ -168,7 +231,7 @@ class PrimaryStorageBackupIsolationValidationTest {
     };
   }
 
-  private Consumer<PrimaryStorageBackup> s3(final String bucketName, final String basePath) {
+  private static Consumer<PrimaryStorageBackup> s3(final String bucketName, final String basePath) {
     return backup -> {
       backup.setStore(BackupStoreType.S3);
       final var s3 = new S3();
@@ -178,7 +241,34 @@ class PrimaryStorageBackupIsolationValidationTest {
     };
   }
 
-  private Consumer<PrimaryStorageBackup> noStore() {
+  private static Consumer<PrimaryStorageBackup> gcs(
+      final String bucketName, final String basePath) {
+    return backup -> {
+      backup.setStore(BackupStoreType.GCS);
+      final var gcs = new Gcs();
+      gcs.setBucketName(bucketName);
+      gcs.setBasePath(basePath);
+      backup.setGcs(gcs);
+    };
+  }
+
+  private static Consumer<PrimaryStorageBackup> azure(final String containerName) {
+    return azure(containerName, "https://account.blob.core.windows.net");
+  }
+
+  /** Azure names its container with the base path, so that is what identifies the location. */
+  private static Consumer<PrimaryStorageBackup> azure(
+      final String containerName, final String endpoint) {
+    return backup -> {
+      backup.setStore(BackupStoreType.AZURE);
+      final var azure = new Azure();
+      azure.setBasePath(containerName);
+      azure.setEndpoint(endpoint);
+      backup.setAzure(azure);
+    };
+  }
+
+  private static Consumer<PrimaryStorageBackup> noStore() {
     return backup -> backup.setStore(BackupStoreType.NONE);
   }
 }
