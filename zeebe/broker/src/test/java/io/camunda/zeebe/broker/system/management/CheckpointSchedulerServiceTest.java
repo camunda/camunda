@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -33,12 +36,16 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.awaitility.Awaitility;
@@ -51,8 +58,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.SAME_THREAD)
 public class CheckpointSchedulerServiceTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final String OTHER_TENANT_ID = "tenant-a";
+
   private CheckpointSchedulingService schedulingService;
-  private final BrokerCfg brokerConfig = new BrokerCfg();
+  private final Map<String, BackupCfg> backupCfgByTenant = new LinkedHashMap<>();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private BrokerClient brokerClient;
   private DefaultClusterMembershipService membershipService;
   private ActorScheduler scheduler;
@@ -78,15 +88,7 @@ public class CheckpointSchedulerServiceTest {
     scheduler = spy(ActorScheduler.newActorScheduler().build());
     scheduler.start();
 
-    brokerConfig.getData().setBackup(new BackupCfg());
-    brokerConfig.getData().getBackup().setSchedule("PT10M");
-    brokerConfig.getData().getBackup().setCheckpointInterval(Duration.ofMinutes(1L));
-    brokerConfig.getData().getBackup().setContinuous(true);
-    brokerConfig.getData().getBackup().setRetention(new BackupSchedulerRetentionCfg());
-    brokerConfig.getData().getBackup().getRetention().setCleanupSchedule("PT10M");
-    brokerConfig.getData().getBackup().getRetention().setWindow(Duration.ofHours(1L));
-    brokerConfig.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
-    brokerConfig.getData().getBackup().getFilesystem().setBasePath("base-path");
+    backupCfgByTenant.put(DEFAULT_PHYSICAL_TENANT_ID, backupCfg("base-path"));
 
     doReturn(MemberId.from("0")).when(member1).id();
     doReturn(MemberId.from("1")).when(member2).id();
@@ -96,13 +98,7 @@ public class CheckpointSchedulerServiceTest {
 
     doReturn(CONCURRENCY_CONTROL.completedFuture(null)).when(scheduler).submitActor(any());
 
-    schedulingService =
-        new CheckpointSchedulingService(
-            membershipService,
-            scheduler,
-            brokerConfig.getData().getBackup(),
-            brokerClient,
-            new SimpleMeterRegistry());
+    schedulingService = createSchedulingService();
   }
 
   @Test
@@ -128,6 +124,85 @@ public class CheckpointSchedulerServiceTest {
         .submitActor(
             argThat(BackupRetention.class::isInstance),
             argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
+  }
+
+  @Test
+  void shouldStartSchedulersForEveryPhysicalTenant() {
+    // given
+    backupCfgByTenant.put(OTHER_TENANT_ID, backupCfg("other-base-path"));
+    schedulingService = createSchedulingService();
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(scheduler, times(2))
+                  .submitActor(
+                      argThat(CheckpointScheduler.class::isInstance), eq(SchedulingHints.IO_BOUND));
+              verify(scheduler, times(2))
+                  .submitActor(
+                      argThat(BackupRetention.class::isInstance), eq(SchedulingHints.IO_BOUND));
+            });
+  }
+
+  @Test
+  void shouldReportMetricsPerPhysicalTenant() {
+    // given
+    backupCfgByTenant.put(OTHER_TENANT_ID, backupCfg("other-base-path"));
+    schedulingService = createSchedulingService();
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then — the tenants report the same metrics, told apart by the physical tenant tag
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("camunda.checkpoint.scheduler.last.checkpoint.id")
+                            .gauges())
+                    .extracting(gauge -> gauge.getId().getTag("physicalTenant"))
+                    .contains(DEFAULT_PHYSICAL_TENANT_ID, OTHER_TENANT_ID));
+    assertThat(meterRegistry.find("camunda.backup.retention.next.execution.millis").gauges())
+        .extracting(gauge -> gauge.getId().getTag("physicalTenant"))
+        .containsExactlyInAnyOrder(DEFAULT_PHYSICAL_TENANT_ID, OTHER_TENANT_ID);
+  }
+
+  @Test
+  void shouldOnlyStartSchedulersConfiguredForTheTenant() {
+    // given — the other tenant only schedules checkpoints, it has no retention configured
+    final var otherCfg = backupCfg("other-base-path");
+    otherCfg.setRetention(new BackupSchedulerRetentionCfg());
+    backupCfgByTenant.put(OTHER_TENANT_ID, otherCfg);
+    schedulingService = createSchedulingService();
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              verify(scheduler, times(2))
+                  .submitActor(
+                      argThat(CheckpointScheduler.class::isInstance), eq(SchedulingHints.IO_BOUND));
+              verify(scheduler, times(1))
+                  .submitActor(
+                      argThat(BackupRetention.class::isInstance), eq(SchedulingHints.IO_BOUND));
+            });
   }
 
   @Test
@@ -225,34 +300,32 @@ public class CheckpointSchedulerServiceTest {
   }
 
   @Test
-  void shouldStopSchedulerOnLowestAdded() throws NoSuchFieldException, IllegalAccessException {
+  void shouldStopSchedulersOfAllTenantsOnLowestAdded() {
     // given
-
+    backupCfgByTenant.put(OTHER_TENANT_ID, backupCfg("other-base-path"));
+    schedulingService = createSchedulingService();
     doReturn(member2).when(membershipService).getLocalMember();
     doReturn(Set.of(member2, member3)).when(membershipService).getMembers();
     schedulingService.onActorStarting();
     schedulingService.onActorStarted();
-    verify(scheduler, times(1))
+    verify(scheduler, times(2))
         .submitActor(
             argThat(CheckpointScheduler.class::isInstance),
             argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
-    final var checkpointCreatorSpy = getCheckpointCreator(schedulingService);
-    final var retentionJobSpy = getRetentionJob(schedulingService);
 
     // when
     doReturn(Set.of(member1, member2, member3)).when(membershipService).getMembers();
     schedulingService.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member1));
 
     // then
-    assertThat(checkpointCreatorSpy.isActorClosed()).isTrue();
-    assertThat(retentionJobSpy.isActorClosed()).isTrue();
+    assertThat(schedulingService.schedulerActors()).allMatch(Actor::isActorClosed);
   }
 
   @Test
   void shouldOnlyStartCheckpointSchedulerOnEmptyString()
       throws NoSuchFieldException, IllegalAccessException {
     // given
-    brokerConfig.getData().getBackup().setSchedule("");
+    backupCfgByTenant.get(DEFAULT_PHYSICAL_TENANT_ID).setSchedule("");
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
@@ -279,16 +352,8 @@ public class CheckpointSchedulerServiceTest {
   void shouldOnlyStartCheckpointSchedulerOnNone()
       throws NoSuchFieldException, IllegalAccessException {
     // given
-
-    brokerConfig.getData().getBackup().setSchedule("none");
-
-    schedulingService =
-        new CheckpointSchedulingService(
-            membershipService,
-            scheduler,
-            brokerConfig.getData().getBackup(),
-            brokerClient,
-            new SimpleMeterRegistry());
+    backupCfgByTenant.get(DEFAULT_PHYSICAL_TENANT_ID).setSchedule("none");
+    schedulingService = createSchedulingService();
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
@@ -316,7 +381,7 @@ public class CheckpointSchedulerServiceTest {
   void shouldOnlyStartBackupScheduler() throws NoSuchFieldException, IllegalAccessException {
     // given
 
-    brokerConfig.getData().getBackup().setCheckpointInterval(null);
+    backupCfgByTenant.get(DEFAULT_PHYSICAL_TENANT_ID).setCheckpointInterval(null);
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
@@ -344,7 +409,7 @@ public class CheckpointSchedulerServiceTest {
   void shouldNotRegisterRetentionJobOnEmptySchedule() {
 
     // given
-    brokerConfig.getData().getBackup().getRetention().setCleanupSchedule(null);
+    backupCfgByTenant.get(DEFAULT_PHYSICAL_TENANT_ID).getRetention().setCleanupSchedule(null);
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
     doReturn(MemberId.from("0")).when(member).id();
@@ -370,7 +435,7 @@ public class CheckpointSchedulerServiceTest {
   void shouldNotRegisterRetentionJobOnNullSchedule() {
 
     // given
-    brokerConfig.getData().getBackup().getRetention().setWindow(null);
+    backupCfgByTenant.get(DEFAULT_PHYSICAL_TENANT_ID).getRetention().setWindow(null);
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();
     doReturn(MemberId.from("0")).when(member).id();
@@ -392,34 +457,36 @@ public class CheckpointSchedulerServiceTest {
     verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
-  private CheckpointScheduler getCheckpointCreator(
-      final CheckpointSchedulingService schedulingService)
-      throws NoSuchFieldException, IllegalAccessException {
-    final Field checkpointCreatorField =
-        CheckpointSchedulingService.class.getDeclaredField("checkpointScheduler");
-    checkpointCreatorField.setAccessible(true);
-    return (CheckpointScheduler) checkpointCreatorField.get(schedulingService);
+  private CheckpointSchedulingService createSchedulingService() {
+    return new CheckpointSchedulingService(
+        membershipService, scheduler, backupCfgByTenant, brokerClient, meterRegistry);
   }
 
-  private BackupRetention getRetentionJob(final CheckpointSchedulingService schedulingService)
-      throws NoSuchFieldException, IllegalAccessException {
-    final Field retentionJobField =
-        CheckpointSchedulingService.class.getDeclaredField("backupRetentionJob");
-    retentionJobField.setAccessible(true);
-    return (BackupRetention) retentionJobField.get(schedulingService);
+  private BackupCfg backupCfg(final String basePath) {
+    final var brokerConfig = new BrokerCfg();
+    brokerConfig.getData().setBackup(new BackupCfg());
+    final var backupCfg = brokerConfig.getData().getBackup();
+    backupCfg.setSchedule("PT10M");
+    backupCfg.setCheckpointInterval(Duration.ofMinutes(1L));
+    backupCfg.setContinuous(true);
+    backupCfg.setRetention(new BackupSchedulerRetentionCfg());
+    backupCfg.getRetention().setCleanupSchedule("PT10M");
+    backupCfg.getRetention().setWindow(Duration.ofHours(1L));
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath(basePath);
+    return backupCfg;
   }
 
   private Schedule getSchedule(
       final CheckpointSchedulingService schedulingService, final String scheduleName)
       throws NoSuchFieldException, IllegalAccessException {
-    final Field checkpointCreatorField =
-        CheckpointSchedulingService.class.getDeclaredField("checkpointScheduler");
     final Field scheduleField = CheckpointScheduler.class.getDeclaredField(scheduleName);
-    checkpointCreatorField.setAccessible(true);
     scheduleField.setAccessible(true);
-    final CheckpointScheduler creator =
-        (CheckpointScheduler) checkpointCreatorField.get(schedulingService);
-
-    return (Schedule) scheduleField.get(creator);
+    final var scheduler =
+        schedulingService.schedulerActors().stream()
+            .filter(CheckpointScheduler.class::isInstance)
+            .findFirst()
+            .orElseThrow();
+    return (Schedule) scheduleField.get(scheduler);
   }
 }

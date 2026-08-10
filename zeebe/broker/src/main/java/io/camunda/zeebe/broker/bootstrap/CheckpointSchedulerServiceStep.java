@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
 
@@ -19,9 +22,19 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
-    final var backupCfg = brokerStartupContext.getBrokerConfiguration().getData().getBackup();
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final var meterRegistry = brokerStartupContext.getMeterRegistry();
+
+    final Map<String, BackupCfg> backupCfgByPhysicalTenant = new LinkedHashMap<>();
+    for (final var physicalTenantId : brokerStartupContext.getPhysicalTenantIds().known()) {
+      backupCfgByPhysicalTenant.put(
+          physicalTenantId,
+          brokerStartupContext
+              .getPhysicalTenantContext(physicalTenantId)
+              .config()
+              .getData()
+              .getBackup());
+    }
 
     concurrencyControl.run(
         () -> {
@@ -29,7 +42,7 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
               new CheckpointSchedulingService(
                   brokerStartupContext.getClusterServices().getMembershipService(),
                   scheduler,
-                  backupCfg,
+                  backupCfgByPhysicalTenant,
                   brokerStartupContext.getBrokerClient(),
                   meterRegistry);
 
