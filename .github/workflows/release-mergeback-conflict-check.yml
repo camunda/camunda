@@ -263,6 +263,15 @@ jobs:
           # secret and POSTs — no rendering logic in the workflow.
           while IFS= read -r doc; do
             [ -z "$doc" ] && continue
+
+            # Log the FULL untruncated triage for this pair before rendering. The Slack post is a
+            # single message capped to Slack's 50-block / 3000-char limits, so a very large conflict
+            # set can be truncated there; the alert's notice points back here. Keeping the complete
+            # doc in the run log means nothing actionable is ever lost, only relocated.
+            echo "::group::Full merge-back triage — $(jq -r '.release_ref + " → " + .target_ref' <<< "$doc")"
+            jq . <<< "$doc"
+            echo "::endgroup::"
+
             body="$(RUN_URL="$RUN_URL" bash .github/scripts/mergeback/render-slack-message.sh <<< "$doc")"
 
             # Incoming webhooks answer HTTP 200 with the literal body "ok" on success.

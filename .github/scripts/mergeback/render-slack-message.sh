@@ -17,7 +17,12 @@
 # LIMITS: Slack rejects >50 blocks or a section >3000 chars — which would drop the ONLY
 # notification for exactly the biggest conflicts. Cap paths per list (max_paths) and commits per
 # path (max_commits), clip each section, and append a truncation notice — a bounded message always
-# ships.
+# ships. max_paths alone is a PER-bucket cap: three fully-populated buckets each render up to
+# (1 header + max_paths) sections, so their sum can blow the 50-block limit even when no single
+# bucket overflows. A single GLOBAL block budget (max_blocks) clips the concatenated actionable
+# sections after the per-bucket caps, so the total message can never exceed 50 blocks. When any clip
+# happens the notice points to the workflow run, whose log prints the full, untruncated triage doc
+# for every pair — so nothing actionable is ever lost, only relocated.
 set -euo pipefail
 
 triage_json_file="${1:-}"
@@ -27,7 +32,7 @@ footer="Triggered by GitHub Actions${run_url:+ • <${run_url}|view workflow run
 doc="$(if [ -n "$triage_json_file" ]; then cat "$triage_json_file"; else cat; fi)"
 
 jq -c --arg footer "$footer" --arg run_url "$run_url" \
-  --argjson max_paths 20 --argjson max_commits 5 '
+  --argjson max_paths 20 --argjson max_commits 5 --argjson max_blocks 50 '
   def slack_safe: gsub("&";"&amp;") | gsub("<";"&lt;") | gsub(">";"&gt;");
   def clip(n): if (. | length) > n then (.[:n] + "…") else . end;
 
@@ -68,21 +73,31 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
     or (((.needs_review // []) | length) > $max_paths)
     or ([.source_missing[], .version_build_gap[]] | any(.commits | length > $max_commits))
     or ([ (.source_missing[], .version_build_gap[]) | path_body($max_commits) | length > 2900 ] | any)
-  ) as $truncated
+  ) as $content_truncated
+
+  # ONE global block budget. The per-bucket max_paths cap does not see the cross-bucket total, so
+  # concatenate every actionable section first, then clip the whole run to whatever the fixed chrome
+  # leaves. Reserve 4 chrome blocks (header + intro section + truncation notice + footer) so the
+  # final message is header+intro (2) + actionable (≤max_blocks-4) + notice (≤1) + footer (1) ≤ max_blocks.
+  | ( actionable_list(":blob_detective:"; "Source changes maybe missing on target or release"; .source_missing)
+      + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
+      + actionable_list(":mag:"; "Conflicts needing manual review — no commit to attribute; resolve at merge-back"; (.needs_review // [])) ) as $actionable
+  | ($max_blocks - 4) as $actionable_budget
+  | ($actionable | length > $actionable_budget) as $block_overflow
+  # $truncated also fires on a global block clip, so the notice ships whenever ANYTHING is cut.
+  | ($content_truncated or $block_overflow) as $truncated
   | { text: (.verdict | slack_safe),
       blocks: (
         [ { type: "header",
             text: { type: "plain_text", text: ":human-robot-heart: Merge-back needs a human", emoji: true } },
           { type: "section",
             text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)) } } ]
-        + actionable_list(":blob_detective:"; "Source changes maybe missing on target or release"; .source_missing)
-        + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
-        + actionable_list(":mag:"; "Conflicts needing manual review — no commit to attribute; resolve at merge-back"; (.needs_review // []))
+        + $actionable[:$actionable_budget]
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",
-                  text: (":warning: Output truncated to fit Slack limits — see the "
-                         + (if $run_url != "" then "<" + $run_url + "|workflow run>" else "workflow run" end)
-                         + " for the complete list.") } ] } ]
+                  text: (":warning: Too many changes to fit one Slack message — this is a partial list. The complete, untruncated detail is in the "
+                         + (if $run_url != "" then "<" + $run_url + "|GitHub Actions run>" else "GitHub Actions run" end)
+                         + " log.") } ] } ]
            else [] end)
         + [ { type: "context", elements: [ { type: "mrkdwn", text: $footer } ] } ]
       ) }' <<< "$doc"

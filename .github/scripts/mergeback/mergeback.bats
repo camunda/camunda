@@ -317,6 +317,22 @@ make_remote() {
   }' > t.json
   run_json "$RENDER" t.json
   [ "$status" -eq 0 ]
-  [[ "$output" == *"truncated"* ]]
+  [[ "$output" == *"GitHub Actions run"* ]]
+}
+
+@test "render: all three buckets full stays within Slack's 50-block limit and flags truncation" {
+  # Each bucket alone (1 header + max_paths sections) fits, but three together would blow the
+  # 50-block cap — the exact mixed-bucket case that dropped the only alert. Fill every bucket past
+  # max_paths so the global budget MUST clip, then prove the total never exceeds 50.
+  paths=$(jq -nc '[range(30) | {path:("p"+(.|tostring)+".java"), owner:"", commits:[{sha:"c",author:"d",subject:"s"}]}]')
+  jq -nc --argjson paths "$paths" '{
+    release_ref:"r", target_ref:"t", conflicting_paths:90, action_count:90, verdict:"v",
+    source_missing:$paths, version_build_gap:$paths, needs_review:$paths,
+    source_drift:[], version_build:[]
+  }' > t.json
+  run_json "$RENDER" t.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.blocks | length <= 50' <<<"$output")" = true ]
+  [[ "$output" == *"GitHub Actions run"* ]]
 }
 
