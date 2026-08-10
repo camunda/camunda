@@ -9,6 +9,7 @@
 import {shallow} from 'enzyme';
 
 import {TextInput} from '@carbon/react';
+import {runAllEffects} from '__mocks__/react';
 
 import EntityNameForm from './EntityNameForm';
 
@@ -17,6 +18,10 @@ jest.mock('hooks', () => ({
     mightFail: (promise: Promise<unknown>, cb: ((response: unknown) => unknown) | undefined) =>
       cb?.(promise),
   }),
+}));
+
+jest.mock('config', () => ({
+  getEntityNameMaxLength: jest.fn().mockResolvedValue(256),
 }));
 
 const props = {
@@ -32,6 +37,16 @@ it('should provide name edit input', () => {
   const node = shallow(<EntityNameForm {...props} />);
 
   expect(node.find(TextInput)).toExist();
+});
+
+it('should cap the name input at the configured server limit', async () => {
+  const node = shallow(<EntityNameForm {...props} />);
+
+  runAllEffects();
+  await flushPromises();
+  node.update();
+
+  expect(node.find(TextInput).prop('maxLength')).toBe(256);
 });
 
 it('should provide a link to view mode', () => {

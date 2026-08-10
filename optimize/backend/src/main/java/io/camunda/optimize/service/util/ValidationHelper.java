@@ -55,9 +55,48 @@ import org.slf4j.LoggerFactory;
 
 public final class ValidationHelper {
 
+  /**
+   * Mirrors {@code EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH} in the orchestration cluster.
+   */
+  public static final int DEFAULT_MAX_ENTITY_NAME_LENGTH = 32 * 1024;
+
   protected static final Logger LOG = LoggerFactory.getLogger(ValidationHelper.class);
 
   private ValidationHelper() {}
+
+  /**
+   * A {@code null} name is accepted, as unnamed entities fall back to a default name when saved.
+   */
+  public static void validateEntityName(
+      final String entityLabel, final String name, final Integer maxLength) {
+    final int limit = resolveMaxNameLength(maxLength);
+    if (name != null && name.length() > limit) {
+      throw new OptimizeValidationException(
+          String.format("%s names cannot be greater than %d characters", entityLabel, limit));
+    }
+  }
+
+  /**
+   * Names Optimize generates itself are clamped, as the user cannot correct what they didn't type.
+   */
+  public static String clampGeneratedEntityName(final String name, final Integer maxLength) {
+    final int limit = resolveMaxNameLength(maxLength);
+    if (name == null || name.length() <= limit) {
+      return name;
+    }
+    // drop the whole character when the cut would land between the halves of a surrogate pair
+    final int end =
+        Character.isHighSurrogate(name.charAt(limit - 1))
+                && Character.isLowSurrogate(name.charAt(limit))
+            ? limit - 1
+            : limit;
+    return name.substring(0, end);
+  }
+
+  /** Falls back to the default when the limit is unset or misconfigured to a non-positive value. */
+  private static int resolveMaxNameLength(final Integer maxLength) {
+    return maxLength != null && maxLength > 0 ? maxLength : DEFAULT_MAX_ENTITY_NAME_LENGTH;
+  }
 
   public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
