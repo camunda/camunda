@@ -142,7 +142,6 @@ public final class JobFailProcessor
       sideEffectWriter.appendSideEffect(
           () -> {
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
-            return true;
           });
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);

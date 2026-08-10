@@ -210,7 +210,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStream.push(activatedJob);
           jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
-          return true;
         });
     return true;
   }
@@ -320,7 +319,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
-          return true;
         });
   }
 

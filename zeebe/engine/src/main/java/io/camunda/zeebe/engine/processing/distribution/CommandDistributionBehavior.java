@@ -311,7 +311,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           () -> {
             interPartitionCommandSender.sendCommand(
                 partition, valueType, intent, distributionKey, commandValue, authInfo);
-            return true;
           });
     }
   }
@@ -340,7 +339,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
               CommandDistributionIntent.ACKNOWLEDGE,
               distributionKey,
               acknowledgeRecord);
-          return true;
         });
 
     getMetrics().sentAcknowledgeDistribution(receiverPartitionId);

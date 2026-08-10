@@ -150,7 +150,7 @@ final class SideEffectRunner implements CommittedPositionListener {
     }
 
     @Override
-    public boolean flush() {
+    public void flush() {
       for (final PostCommitTask task : postCommitTasks) {
         try {
           task.flush();
@@ -161,7 +161,6 @@ final class SideEffectRunner implements CommittedPositionListener {
               e);
         }
       }
-      return true;
     }
   }
 }

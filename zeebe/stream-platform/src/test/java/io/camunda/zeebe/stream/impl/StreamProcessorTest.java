@@ -673,7 +673,6 @@ public final class StreamProcessorTest {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
-    when(mockPostCommitTask.flush()).thenReturn(true);
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
@@ -698,7 +697,6 @@ public final class StreamProcessorTest {
     logStorage.deferCommits();
 
     final var postCommitTask = mock(PostCommitTask.class);
-    when(postCommitTask.flush()).thenReturn(true);
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder
         .appendRecord(
@@ -756,7 +754,7 @@ public final class StreamProcessorTest {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
-    when(mockPostCommitTask.flush()).thenThrow(new RuntimeException("expected"));
+    doThrow(new RuntimeException("expected")).when(mockPostCommitTask).flush();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
@@ -793,7 +791,7 @@ public final class StreamProcessorTest {
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult =
         new BufferedProcessingResultBuilder((c, s) -> true)
-            .appendPostCommitTask(() -> true)
+            .appendPostCommitTask(() -> {})
             .build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
@@ -1266,7 +1264,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.appendPostCommitTask(() -> true);
+    resultBuilder.appendPostCommitTask(() -> {});
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
@@ -1306,7 +1304,7 @@ public final class StreamProcessorTest {
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.appendPostCommitTask(() -> true);
+    resultBuilder.appendPostCommitTask(() -> {});
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
