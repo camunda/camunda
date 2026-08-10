@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -92,6 +94,7 @@ public class RetentionTest {
             CompletableFuture.completedFuture(new BrokerResponse<>(new BackupStatusResponse())))
         .when(brokerClient)
         .sendRequestWithRetry(any());
+    lenient().doReturn(CompletableFuture.completedFuture(null)).when(backupStore).closeAsync();
 
     actorScheduler.getClock().pinCurrentTime();
   }
@@ -143,6 +146,60 @@ public class RetentionTest {
     // then
     backupsPerPartition.forEach(
         (partition, backups) -> verifyDeleteCommandsSent(partition, backups.subList(0, 4)));
+  }
+
+  @Test
+  void shouldReleaseTheBackupStoreWhenStopped() {
+    // given a store that closes asynchronously, as the real ones do — no retention round runs, so
+    // the topology is never consulted
+    reset(topologyManager, clusterState);
+    final var storeClosing = new CompletableFuture<Void>();
+    doReturn(storeClosing).when(backupStore).closeAsync();
+    actorScheduler.submitActor(backupRetention);
+    actorScheduler.workUntilDone();
+
+    // when
+    final var closed = backupRetention.closeAsync();
+    actorScheduler.workUntilDone();
+
+    // then the store is released, and the actor does not wait for it to drain — waiting would
+    // deadlock, since the store completes its future outside the actor
+    verify(backupStore).closeAsync();
+    assertThat(closed.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldBuildANewBackupStoreEachTimeItStarts() {
+    // given a retention job that is stopped and started again, as it is whenever this broker loses
+    // and regains the lowest member id; no retention round runs, so the topology is never consulted
+    reset(topologyManager, clusterState);
+    final var stores = List.of(mock(BackupStore.class), mock(BackupStore.class));
+    stores.forEach(
+        store ->
+            lenient().doReturn(CompletableFuture.completedFuture(null)).when(store).closeAsync());
+    final var built = new AtomicInteger();
+    backupRetention =
+        new BackupRetention(
+            () -> stores.get(built.getAndIncrement()),
+            brokerClient,
+            new IntervalSchedule(Duration.ofSeconds(10)),
+            Duration.ofMinutes(1),
+            topologyManager,
+            meterRegistry);
+
+    actorScheduler.submitActor(backupRetention);
+    actorScheduler.workUntilDone();
+    backupRetention.closeAsync();
+    actorScheduler.workUntilDone();
+
+    // when
+    actorScheduler.submitActor(backupRetention);
+    actorScheduler.workUntilDone();
+
+    // then — the restarted job runs with a fresh store, not the one it just released
+    assertThat(built.get()).isEqualTo(2);
+    verify(stores.get(0)).closeAsync();
+    verify(stores.get(1), never()).closeAsync();
   }
 
   @Test
@@ -265,7 +322,7 @@ public class RetentionTest {
 
   private BackupRetention createBackupRetention() {
     return new BackupRetention(
-        backupStore,
+        () -> backupStore,
         brokerClient,
         new IntervalSchedule(Duration.ofSeconds(10)),
         Duration.ofMinutes(1),
