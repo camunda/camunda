@@ -72,6 +72,19 @@ final class InMemorySecretCacheTest {
   }
 
   @Test
+  void shouldRemoveValue() {
+    // given
+    final var reference = "token";
+    cache.put(reference, "secret-value");
+
+    // when
+    cache.remove(reference);
+
+    // then
+    assertThat(cache.get(reference)).isEmpty();
+  }
+
+  @Test
   void shouldIsolateDistinctReferences() {
     // given
     cache.put("token", "token-value");

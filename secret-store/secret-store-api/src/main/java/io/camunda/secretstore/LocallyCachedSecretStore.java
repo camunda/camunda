@@ -49,12 +49,17 @@ public interface LocallyCachedSecretStore extends SecretStore {
 
   /**
    * Resolves the given names against the backing store even where a value for them is already held,
-   * holding on to what the store answers with just as {@link #resolve} does.
+   * holding on to a resolved value just as {@link #resolve} does.
    *
    * <p>For the caller whose outcome outlives the value: the background resolution writes a durable,
    * exported record stating that a secret resolved, which an exporter and a later activation both
    * act on, so it has to ask the store rather than trust a value held since before the secret may
    * have been deleted. Every other caller wants {@link #resolve}, which is cache-first.
+   *
+   * <p>This is also the only read whose failure clears an already-held value, since it is the one
+   * caller treating the store's answer as authoritative: {@link #resolve} only ever reaches the
+   * store for a name it does not hold, so a failure there has nothing of this store's own to
+   * invalidate.
    */
   Map<String, SecretResolutionResult> resolveFromStore(Set<String> names);
 }

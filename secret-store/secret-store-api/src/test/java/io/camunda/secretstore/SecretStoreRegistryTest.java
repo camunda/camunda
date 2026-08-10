@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -177,6 +179,70 @@ class SecretStoreRegistryTest {
     assertThat(lookupLocal(registry, "default", "token")).isEmpty();
   }
 
+  @Test
+  void shouldExpireTheDefaultCacheOfAStoreAfterTheTtl() {
+    // given a registry using the default cache, driven by an injected time source instead of the
+    // system clock
+    final var timeSource = new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z"));
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("default", storeHolding("token", "value")), Map.of(), timeSource);
+    registry.getStores().get("default").resolve(Set.of("token"));
+    assertThat(lookupLocal(registry, "default", "token")).contains("value");
+
+    // when the default cache's TTL elapses
+    timeSource.advance(CaffeineSecretCache.DEFAULT_TTL);
+
+    // then the cached value is gone, proving the registry's construction site actually wires the
+    // injected time source into the default cache
+    assertThat(lookupLocal(registry, "default", "token")).isEmpty();
+  }
+
+  @Test
+  void shouldKeepTheDefaultCachesOfTwoStoresApart() {
+    // given two stores holding a different value under the same name, both on the default cache
+    // (as opposed to shouldKeepTheCachedValuesOfTwoStoresApart, which covers the no-time-source
+    // one-argument constructor)
+    final var timeSource = new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z"));
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeHolding("token", "a"), "store-b", storeHolding("token", "b")),
+            Map.of(),
+            timeSource);
+
+    // when only one of them resolves it
+    registry.getStores().get("store-a").resolve(Set.of("token"));
+
+    // then the other one holds nothing: what a store caches is its own
+    assertThat(lookupLocal(registry, "store-a", "token")).contains("a");
+    assertThat(lookupLocal(registry, "store-b", "token")).isEmpty();
+  }
+
+  @Test
+  void shouldResolveARotatedValueAfterTheTtlThroughTheRegistry() {
+    // given a store whose value changes, resolved through the registry's default cache
+    final var timeSource = new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z"));
+    final var store = new MutableSecretStore("token", "v1");
+    final var registry = new SecretStoreRegistry(Map.of("default", store), Map.of(), timeSource);
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // when the store's value changes before the TTL elapses
+    store.holds("token", "v2");
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then the registry still answers with the cached value, and the store was not asked again
+    assertThat(lookupLocal(registry, "default", "token")).contains("v1");
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"));
+
+    // when the TTL elapses
+    timeSource.advance(CaffeineSecretCache.DEFAULT_TTL);
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then the rotated value is picked up, with no restart required
+    assertThat(lookupLocal(registry, "default", "token")).contains("v2");
+    assertThat(store.resolveCalls).containsExactly(Set.of("token"), Set.of("token"));
+  }
+
   private static Optional<String> lookupLocal(
       final SecretStoreRegistry registry, final String storeId, final String name) {
     return registry.getStores().get(storeId).lookupLocal(name);
@@ -210,6 +276,32 @@ class SecretStoreRegistryTest {
                   : new Resolved(value));
         });
     return results;
+  }
+
+  /** A store whose set of secrets can change, to tell a held value apart from the store's own. */
+  private static final class MutableSecretStore implements SecretStore {
+
+    private final Map<String, String> values = new LinkedHashMap<>();
+    private final List<Set<String>> resolveCalls = new ArrayList<>();
+
+    private MutableSecretStore(final String name, final String value) {
+      values.put(name, value);
+    }
+
+    @Override
+    public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+      resolveCalls.add(Set.copyOf(names));
+      return resultsFor(names, values);
+    }
+
+    @Override
+    public List<String> list() {
+      return List.copyOf(values.keySet());
+    }
+
+    void holds(final String name, final String value) {
+      values.put(name, value);
+    }
   }
 
   /**

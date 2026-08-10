@@ -7,6 +7,8 @@
  */
 package io.camunda.secretstore;
 
+import io.camunda.secretstore.SecretResolutionResult.Failed;
+import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,9 +23,15 @@ import org.jspecify.annotations.NullMarked;
  * cache itself. The cache is this store's own: no caller is handed one alongside it, and nothing
  * reaches the wrapped store except through here.
  *
- * <p>Only a resolved value is cached: a failure has to stay retryable, or a secret that was briefly
- * unreadable would stay unresolvable until the process restarts. {@link #list()} goes straight to
- * the store, since a cache holds the values read so far rather than the store's set of secrets.
+ * <p>A resolved value is cached by either read, but only {@link #resolveFromStore} treats a failure
+ * as authoritative: a permanent {@link SecretErrorCode} there clears any stale cached value for
+ * that name, while a {@link SecretErrorCode#UNREADABLE} failure is transient and leaves the stale
+ * value in place rather than dropping a still-healthy secret over a read blip. A failure from
+ * {@link #resolve}'s own cache-miss read never clears anything: that read only ever runs for a name
+ * already absent from the cache, so treating it as authoritative would let a request-time read that
+ * failed for reasons of its own erase a value {@link #resolveFromStore} just established as
+ * current. {@link #list()} goes straight to the store, since a cache holds the values read so far
+ * rather than the store's set of secrets.
  *
  * <p>What the cache holds is also what {@link #lookupLocal} answers with, so a value read by one
  * caller is what a later cache-only lookup of another sees.
@@ -46,7 +54,10 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
    * Resolves the given names, serving the cached ones and asking the store only for the rest.
    *
    * <p>A name the store answers without a result for is left out of the returned map, exactly as
-   * the store left it out, so a caller can still tell an unanswered name apart from a failed one.
+   * the store left it out, so a caller can still tell an unanswered name apart from a failed one. A
+   * store failure here is returned but never clears a cached value: this read only ever reaches the
+   * store for a name already absent from the cache, so it is not the authoritative source a stale
+   * value should be invalidated against — {@link #resolveFromStore} is.
    */
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
@@ -57,20 +68,62 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
       if (cached == null) {
         misses.add(name);
       } else {
-        results.put(name, new SecretResolutionResult.Resolved(cached));
+        results.put(name, new Resolved(cached));
       }
     }
     if (misses.isEmpty()) {
       return results;
     }
 
-    results.putAll(resolveAndCache(misses));
+    store
+        .resolve(misses)
+        .forEach(
+            (name, result) -> {
+              if (result instanceof Resolved(final var value)) {
+                cache.put(name, value);
+              }
+              results.put(name, result);
+            });
     return results;
   }
 
+  /**
+   * Asks the store for the given names regardless of what the cache holds, and updates the cache
+   * with what it answers: a resolved value replaces what was held, and a permanent failure clears
+   * it. This is the one path allowed to invalidate a stale cached value, since it is the only
+   * caller that treats the store's answer as authoritative rather than a request-time convenience.
+   */
   @Override
   public Map<String, SecretResolutionResult> resolveFromStore(final Set<String> names) {
-    return resolveAndCache(names);
+    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>();
+    store
+        .resolve(names)
+        .forEach(
+            (name, result) -> {
+              switch (result) {
+                case Resolved(final var value) -> cache.put(name, value);
+                case final Failed failed -> invalidateOnPermanentFailure(name, failed.code());
+              }
+              results.put(name, result);
+            });
+    return results;
+  }
+
+  /**
+   * Clears a cached value only for a permanent failure. {@link SecretErrorCode#UNREADABLE} is
+   * transient, so the stale value is left in place rather than dropping a still-healthy secret over
+   * a read blip. The switch is exhaustive and without a {@code default}, so a code added later has
+   * to be classified here explicitly instead of silently falling into either branch.
+   */
+  private void invalidateOnPermanentFailure(final String name, final SecretErrorCode code) {
+    final boolean permanent =
+        switch (code) {
+          case NOT_FOUND, ACCESS_DENIED, INVALID_REF -> true;
+          case UNREADABLE -> false;
+        };
+    if (permanent) {
+      cache.remove(name);
+    }
   }
 
   /** Serves what the cache holds, never reading the wrapped store. */
@@ -94,20 +147,5 @@ public final class CachingSecretStore implements LocallyCachedSecretStore {
   @Override
   public boolean is(final Class<? extends SecretStore> storeType) {
     return store.is(storeType);
-  }
-
-  /** Asks the store for the given names and caches every value it answers with. */
-  private Map<String, SecretResolutionResult> resolveAndCache(final Set<String> names) {
-    final Map<String, SecretResolutionResult> results = new LinkedHashMap<>();
-    store
-        .resolve(names)
-        .forEach(
-            (name, result) -> {
-              if (result instanceof final SecretResolutionResult.Resolved resolved) {
-                cache.put(name, resolved.value());
-              }
-              results.put(name, result);
-            });
-    return results;
   }
 }
