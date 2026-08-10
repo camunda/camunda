@@ -46,6 +46,7 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -330,6 +331,18 @@ public class BpmnJobActivationBehavior {
     final var deadline = clock.millis() + properties.timeout();
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
+    if (properties.withLease()) {
+      jobRecord.setLeaseToken(generateLeaseToken());
+    }
+  }
+
+  /**
+   * Generates a lease token for a single pushed job. The token is an opaque string that callers
+   * must not parse; it is random with enough entropy that collisions between leased jobs are
+   * negligible.
+   */
+  private static String generateLeaseToken() {
+    return UUID.randomUUID().toString();
   }
 
   private JobBatchRecord createJobBatchRecord(
