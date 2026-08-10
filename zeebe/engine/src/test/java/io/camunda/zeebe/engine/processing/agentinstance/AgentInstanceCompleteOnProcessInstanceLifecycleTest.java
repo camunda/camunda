@@ -53,7 +53,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -106,6 +107,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
                 .adHocSubProcess(
                     AGENT_TASK_ID,
                     ahsp -> {
+                      ahsp.zeebeAiAgentSubProcessDefinition();
                       ahsp.task("tool");
                       ahsp.zeebeJobType(AGENT_JOB_TYPE);
                     })
@@ -170,7 +172,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -208,7 +211,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(agenticJobType))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(agenticJobType).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -271,11 +275,14 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .parallelGateway("fork")
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .parallelGateway("join")
                 .endEvent()
                 .moveToNode("fork")
-                .serviceTask(otherAgentTaskId, t -> t.zeebeJobType(otherAgentJobType))
+                .serviceTask(
+                    otherAgentTaskId,
+                    t -> t.zeebeJobType(otherAgentJobType).zeebeAiAgentTaskDefinition())
                 .connectTo("join")
                 .done())
         .deploy();
@@ -304,7 +311,9 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(unrelatedProcessId)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(unrelatedAgentJobType))
+                .serviceTask(
+                    AGENT_TASK_ID,
+                    t -> t.zeebeJobType(unrelatedAgentJobType).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -391,7 +400,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(childProcessId)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -489,7 +499,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(childProcessId)
                 .startEvent()
-                .serviceTask(AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask(
+                    AGENT_TASK_ID, t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();

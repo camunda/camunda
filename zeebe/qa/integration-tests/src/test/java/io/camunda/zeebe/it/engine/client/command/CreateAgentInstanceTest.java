@@ -105,7 +105,9 @@ public final class CreateAgentInstanceTest {
         resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("conflict-test-process")
                 .startEvent()
-                .serviceTask("service-task", t -> t.zeebeJobType("agent-conflict-job"))
+                .serviceTask(
+                    "service-task",
+                    t -> t.zeebeJobType("agent-conflict-job").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done());
     resourcesHelper.createProcessInstance(processDefinitionKey);

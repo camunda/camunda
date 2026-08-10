@@ -147,7 +147,8 @@ public final class AgentHistoryCreateAuthorizationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .withTenantId(tenantId)
