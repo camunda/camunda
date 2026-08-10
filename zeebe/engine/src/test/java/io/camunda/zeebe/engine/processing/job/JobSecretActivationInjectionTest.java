@@ -8,18 +8,15 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 
 import io.camunda.secretstore.NoopSecretStore;
-import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.SecretActivationResponseCapture;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,21 +29,15 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 public final class JobSecretActivationInjectionTest {
 
@@ -54,33 +45,32 @@ public final class JobSecretActivationInjectionTest {
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "task-type";
 
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withSecretStoreRegistry(
-              new SecretStoreRegistry(
-                  Map.of("default", new NoopSecretStore()),
-                  Map.of("default", new TestSecretCache())));
+  @Rule public final EngineRule engine;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private final Map<String, String> cachedSecrets = new HashMap<>();
-  private boolean failResolution;
-  private CommandResponseWriter mockResponseWriter;
-  private volatile JobBatchRecord activationResponse;
+  private final SecretActivationResponseCapture secretActivation =
+      new SecretActivationResponseCapture();
+
+  public JobSecretActivationInjectionTest() {
+    engine =
+        EngineRule.singlePartition()
+            .withSecretStoreRegistry(
+                new SecretStoreRegistry(
+                    Map.of("default", new NoopSecretStore()), Map.of("default", secretActivation)));
+  }
 
   @Before
   public void setUp() {
-    mockResponseWriter = engine.getCommandResponseWriter();
-    interceptResponseWriter();
+    secretActivation.install(engine.getCommandResponseWriter());
   }
 
   @Test
   public void shouldInjectCachedSecretIntoResponseOnly() {
     // given
-    cachedSecrets.put("token", "resolved-secret");
+    secretActivation.putSecret("token", "resolved-secret");
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     createInstanceAndAwaitJob();
 
@@ -93,10 +83,7 @@ public final class JobSecretActivationInjectionTest {
         .containsEntry("authorization", "Bearer camunda.secrets.token");
 
     // and - the worker response carries the resolved secret value
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs().get(0).getVariables())
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
         .containsEntry("authorization", "Bearer resolved-secret");
 
     // and - no exported record (state, log) leaks the resolved secret value
@@ -118,10 +105,7 @@ public final class JobSecretActivationInjectionTest {
     // then - the job is not handed out, neither in the event nor in the response
     assertThat(activated.getValue().getJobs()).isEmpty();
     assertThat(activated.getValue().getJobKeys()).isEmpty();
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs()).isEmpty();
+    assertThat(secretActivation.awaitActivationResponse().getJobs()).isEmpty();
 
     // and - a RESOLUTION_REQUESTED event is written for the missing reference with the job key
     final Record<SecretReferenceRecordValue> requested =
@@ -133,7 +117,7 @@ public final class JobSecretActivationInjectionTest {
 
     // and - the job is parked: a later activation does not hand it out again, even once the value
     // is cached (it is reactivated only after the background resolution completes, see #57852)
-    cachedSecrets.put("token", "resolved-secret");
+    secretActivation.putSecret("token", "resolved-secret");
     final Record<JobBatchRecordValue> secondAttempt =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     assertThat(secondAttempt.getValue().getJobs()).isEmpty();
@@ -189,7 +173,7 @@ public final class JobSecretActivationInjectionTest {
   @Test
   public void shouldNotRequestResolutionWhenSecretIsCached() {
     // given
-    cachedSecrets.put("token", "resolved-secret");
+    secretActivation.putSecret("token", "resolved-secret");
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     final long processInstanceKey = createInstanceAndAwaitJob();
 
@@ -207,7 +191,7 @@ public final class JobSecretActivationInjectionTest {
   @Test
   public void shouldFailActivationWhenSecretCacheLookupThrows() {
     // given
-    failResolution = true;
+    secretActivation.failResolution(true);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     createInstanceAndAwaitJob();
 
@@ -225,8 +209,8 @@ public final class JobSecretActivationInjectionTest {
         .isEmpty();
 
     // and - the job stays activatable: with a working cache the next activation hands it out
-    failResolution = false;
-    cachedSecrets.put("token", "resolved-secret");
+    secretActivation.failResolution(false);
+    secretActivation.putSecret("token", "resolved-secret");
     final Record<JobBatchRecordValue> secondAttempt = engine.jobs().withType(JOB_TYPE).activate();
     assertThat(secondAttempt.getValue().getJobs()).hasSize(1);
   }
@@ -254,18 +238,16 @@ public final class JobSecretActivationInjectionTest {
     assertThat(activated.getValue().getJobs()).hasSize(1);
     assertThat(activated.getValue().getJobs().get(0).getVariables())
         .containsEntry("authorization", "plain-value");
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs()).hasSize(1);
-    assertThat(activationResponse.getJobs().get(0).getVariables())
+    final var response = secretActivation.awaitActivationResponse();
+    assertThat(response.getJobs()).hasSize(1);
+    assertThat(response.getJobs().get(0).getVariables())
         .containsEntry("authorization", "plain-value");
   }
 
   @Test
   public void shouldNotChangeVariablesForJobWithoutSecrets() {
     // given
-    cachedSecrets.put("token", "resolved-secret");
+    secretActivation.putSecret("token", "resolved-secret");
     deploy(t -> t.zeebeInputExpression("\"plain-value\"", "authorization"));
     createInstanceAndAwaitJob();
 
@@ -276,10 +258,7 @@ public final class JobSecretActivationInjectionTest {
     // then - variables are unchanged in both the event and the response
     assertThat(activated.getValue().getJobs().get(0).getVariables())
         .containsEntry("authorization", "plain-value");
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs().get(0).getVariables())
+    assertThat(secretActivation.awaitActivationResponse().getJobs().get(0).getVariables())
         .containsEntry("authorization", "plain-value");
   }
 
@@ -288,7 +267,7 @@ public final class JobSecretActivationInjectionTest {
     // given - two jobs referencing the same secret; the injected value fits the batch growth
     // budget once, but not twice
     final var value = "x".repeat(EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER / 2 + 1000);
-    cachedSecrets.put("token", value);
+    secretActivation.putSecret("token", value);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     createInstanceAndAwaitJob();
     createInstanceAndAwaitJob();
@@ -301,15 +280,16 @@ public final class JobSecretActivationInjectionTest {
     // truncated so the client polls again right away
     assertThat(activated.getValue().getJobs()).hasSize(1);
     assertThat(activated.getValue().isTruncated()).isTrue();
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs()).hasSize(1);
-    assertThat(activationResponse.getTruncated()).isTrue();
-    assertThat(activationResponse.getJobs().get(0).getVariables())
+    final var response = secretActivation.awaitActivationResponse();
+    assertThat(response.getJobs()).hasSize(1);
+    assertThat(response.getTruncated()).isTrue();
+    assertThat(response.getJobs().get(0).getVariables())
         .containsEntry("authorization", "Bearer " + value);
 
-    // and - the dropped job stays activatable: the next activation hands it out with the value
+    // and - the dropped job stays activatable: the next activation hands it out with the value.
+    // This polls on the RESPONSE'S CONTENT (not just non-null, since the field already holds the
+    // first, stale response above) via the plain getter, unlike the awaitActivationResponse() calls
+    // elsewhere in this file.
     final Record<JobBatchRecordValue> secondAttempt =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     assertThat(secondAttempt.getValue().getJobs()).hasSize(1);
@@ -317,7 +297,7 @@ public final class JobSecretActivationInjectionTest {
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () ->
-                assertThat(activationResponse.getJobs().get(0).getVariables())
+                assertThat(secretActivation.getActivationResponse().getJobs().get(0).getVariables())
                     .containsEntry("authorization", "Bearer " + value));
 
     // and - no exported record leaks the resolved secret value
@@ -330,7 +310,7 @@ public final class JobSecretActivationInjectionTest {
     // given - the injected value alone exceeds the whole batch growth budget, so no activation
     // batch could ever carry this job
     final var value = "x".repeat(EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER + 1000);
-    cachedSecrets.put("token", value);
+    secretActivation.putSecret("token", value);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     final long processInstanceKey = createInstanceAndAwaitJob();
     final long jobKey =
@@ -346,10 +326,7 @@ public final class JobSecretActivationInjectionTest {
     // then - the job is not handed out and a message-size incident is raised for it, like for a
     // job that is too large to activate without secrets
     assertThat(activated.getValue().getJobs()).isEmpty();
-    Awaitility.await("until the activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse).isNotNull());
-    assertThat(activationResponse.getJobs()).isEmpty();
+    assertThat(secretActivation.awaitActivationResponse().getJobs()).isEmpty();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
@@ -401,44 +378,5 @@ public final class JobSecretActivationInjectionTest {
             .endEvent()
             .done();
     engine.deployment().withXmlResource(process).deploy();
-  }
-
-  private void interceptResponseWriter() {
-    doAnswer(
-            (Answer<CommandResponseWriter>)
-                invocation -> {
-                  final var arguments = invocation.getArguments();
-                  if (arguments != null
-                      && arguments.length == 1
-                      && arguments[0] instanceof final JobBatchRecord jobBatchRecord) {
-                    // copy the record: engine record objects are reused across commands, so the
-                    // captured reference could otherwise be overwritten by a later command
-                    final var copy = new JobBatchRecord();
-                    final MutableDirectBuffer buffer =
-                        new UnsafeBuffer(new byte[jobBatchRecord.getLength()]);
-                    jobBatchRecord.write(buffer, 0);
-                    copy.wrap(buffer);
-                    activationResponse = copy;
-                  }
-                  return mockResponseWriter;
-                })
-        .when(mockResponseWriter)
-        .valueWriter(any());
-  }
-
-  /** Serves the test's cached secrets and simulates a broken cache when the flag is set. */
-  private final class TestSecretCache implements SecretCache {
-    @Override
-    public Optional<String> get(final String name) {
-      if (failResolution) {
-        throw new IllegalStateException("resolver exploded");
-      }
-      return Optional.ofNullable(cachedSecrets.get(name));
-    }
-
-    @Override
-    public void put(final String name, final String value) {
-      cachedSecrets.put(name, value);
-    }
   }
 }

@@ -338,7 +338,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   /**
    * Raises an incident for a job whose secret value injection failed. The incident message is a
    * fixed text: the failure details are only logged, so no secret-related data (the exception may
-   * quote the variables document) can end up in persisted records.
+   * quote the variables document) can end up in persisted records. The job is also excluded from
+   * activation until this incident is resolved (see IncidentCreatedApplier's
+   * SECRET_RESOLUTION_ERROR handling), so it does not loop through repeated failing injections.
    */
   private void raiseIncidentJobSecretInjectionFailed(final FailedInjectionJob failed) {
     raiseJobIncident(
@@ -346,8 +348,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
         failed.job(),
         ErrorType.SECRET_RESOLUTION_ERROR,
         String.format(
-            "The job with key '%s' can not be activated, because injecting its secret values into the job variables failed. "
-                + "The error details are only logged, to keep possible secret data out of persisted records.",
+            "The job with key '%s' can not be activated, because its secret reference no longer "
+                + "matches the job's variables. Correct the mismatched variable and resolve the "
+                + "incident, or use process instance modification to reactivate the element and "
+                + "create a fresh job.",
             failed.jobKey()));
   }
 

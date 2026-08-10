@@ -746,6 +746,73 @@ final class JobSecretInjectorTest {
     }
 
     @Test
+    void shouldDropAndReportJobWhoseSecretPlaceholderDoesNotMatch() {
+      // given - the second job's variables hold a text leaf that does not contain the reference's
+      // placeholder, as if the referenced value changed between input mapping evaluation and job
+      // creation; a job with a matching placeholder precedes it and a plain job follows it
+      final Map<String, Object> fitting = Map.of("auth", "camunda.secrets.token");
+      final var response =
+          batchWith(
+              job(fitting, ref("token", "/auth")),
+              job(Map.of("auth", "camunda.secrets.other"), ref("token", "/auth")),
+              job(Map.of("foo", "bar")));
+      final var activated = copyOf(response);
+
+      // when
+      final var droppedJob = inject(response, activated, Map.of("token", "resolved"));
+
+      // then - the mismatched job and every job after it are dropped from both batches; the job
+      // before it keeps its injected value on the response only
+      assertThat(variablesOfAllJobs(response)).containsExactly(Map.of("auth", "resolved"));
+      assertThat(jobKeysOf(response)).containsExactly(100L);
+      assertThat(variablesOfAllJobs(activated)).containsExactly(fitting);
+      assertThat(jobKeysOf(activated)).containsExactly(100L);
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+
+      // and - the mismatched job is reported for an incident
+      assertThat(droppedJob)
+          .hasValueSatisfying(
+              dropped -> {
+                assertThat(dropped).isInstanceOf(FailedInjectionJob.class);
+                assertThat(dropped.jobKey()).isEqualTo(101L);
+              });
+    }
+
+    @Test
+    void shouldDropJobWithOneMismatchedSecretAmongSeveralAtDifferentPaths() {
+      // given - two references at different paths on the same job; one placeholder is present in
+      // the variables, the other isn't
+      final var response =
+          batchWith(
+              job(
+                  Map.of("auth", "camunda.secrets.token", "key", "camunda.secrets.other"),
+                  ref("token", "/auth"),
+                  ref("apiKey", "/key")));
+      final var activated = copyOf(response);
+
+      // when
+      final var droppedJob = inject(response, activated, Map.of("token", "t", "apiKey", "k"));
+
+      // then - the whole job is dropped, not a partial injection that leaves the mismatched leaf
+      // stale on the response
+      assertThat(variablesOfAllJobs(response)).isEmpty();
+      assertThat(jobKeysOf(response)).isEmpty();
+      assertThat(variablesOfAllJobs(activated)).isEmpty();
+      assertThat(jobKeysOf(activated)).isEmpty();
+      assertThat(response.getTruncated()).isTrue();
+      assertThat(activated.getTruncated()).isTrue();
+
+      // and - the job is reported for an incident
+      assertThat(droppedJob)
+          .hasValueSatisfying(
+              dropped -> {
+                assertThat(dropped).isInstanceOf(FailedInjectionJob.class);
+                assertThat(dropped.jobKey()).isEqualTo(100L);
+              });
+    }
+
+    @Test
     void shouldDropExceedingAndRemainingJobsFromBothBatches() {
       // given - the first job's value fits, the second job's value exceeds the remaining budget,
       // and a third job without secret references follows
