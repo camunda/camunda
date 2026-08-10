@@ -166,6 +166,31 @@ export async function activateJobsByType(
     }));
 }
 
+/**
+ * Retries until a job of the given type is available for the process instance and
+ * returns its variables. Only retrieval retries, so caller assertions on the
+ * returned variables fail immediately rather than being retried to timeout.
+ */
+export async function activateFirstJobVariables(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<Record<string, unknown>> {
+  let variables: Record<string, unknown> | undefined;
+
+  await expect(async () => {
+    const jobs = await activateJobsByType(request, jobType, processInstanceKey);
+    expect(jobs.length).toBeGreaterThan(0);
+    variables = jobs[0].variables;
+  }).toPass(assertionOptions);
+
+  return variables!;
+}
+
 export function setupProcessInstanceForTests(
   processFileName: string,
   options?: {
