@@ -164,7 +164,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   private void rebuildGroupTopology(final String physicalTenantId) {
     final var groupMembers =
         memberPropertiesPerGroup.getOrDefault(physicalTenantId, Map.of()).values();
-    final var configuredState = currentConfiguredState();
+    final var configuredState = currentConfiguredState(physicalTenantId);
     final var newGroupTopology =
         BrokerClientTopologyImpl.fromMemberProperties(groupMembers, configuredState);
 
@@ -176,11 +176,10 @@ public final class BrokerTopologyManagerImpl extends Actor
     updateMetrics(physicalTenantId, newGroupTopology);
   }
 
-  private ConfiguredClusterState currentConfiguredState() {
-    return topologyPerGroup.values().stream()
-        .findFirst()
-        .map(BrokerClientTopologyImpl::configuredClusterState)
-        .orElse(BrokerClientTopologyImpl.uninitialized().configuredClusterState());
+  private ConfiguredClusterState currentConfiguredState(final String physicalTenantId) {
+    return topologyPerGroup
+        .getOrDefault(physicalTenantId, BrokerClientTopologyImpl.uninitialized())
+        .configuredClusterState();
   }
 
   @Override
@@ -261,11 +260,8 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private void applyClusterConfiguration(final CurrentClusterConfiguration clusterConfiguration) {
     // For each known group, update the configured cluster state and notify listeners if anything
-    // changed. The default group is always updated, even if no broker has joined it yet, since the
-    // cluster configuration can be gossiped before the local membership events for that group are
-    // observed.
-    final Set<String> groupIds = new HashSet<>(memberPropertiesPerGroup.keySet());
-    groupIds.add(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    // changed.
+    final Set<String> groupIds = clusterConfiguration.partitionGroups().keySet();
 
     final var allGroups =
         groupIds.stream()
