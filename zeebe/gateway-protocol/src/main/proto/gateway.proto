@@ -24,6 +24,13 @@ message StreamActivatedJobsRequest {
   repeated string tenantIds = 6;
   // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
   TenantFilter tenantFilter = 7;
+  // whether to stream jobs with a lease; when true, each job pushed on this stream is
+  // assigned a distinct, opaque lease token, returned as ActivatedJob.leaseToken. The lease
+  // fences the complete, fail, and throw-error commands against a superseded activation of
+  // the same job (e.g. after the job timed out or failed and was re-activated by another
+  // worker): a command carrying a stale lease token is rejected rather than racing with the
+  // newer activation. Defaults to false, which pushes jobs without a lease.
+  bool withLease = 8;
 }
 
 message ActivateJobsRequest {
