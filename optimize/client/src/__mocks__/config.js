@@ -8,6 +8,7 @@
 
 export const isEmailEnabled = () => true;
 export const isSharingEnabled = () => true;
+export const getEntityNameMaxLength = () => 32768;
 export const getOptimizeVersion = () => '2.7.0';
 export const getHeader = () => ({
   textColor: 'dark', // or "light"
