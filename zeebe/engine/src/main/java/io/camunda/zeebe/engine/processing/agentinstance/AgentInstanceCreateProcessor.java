@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -57,6 +58,7 @@ public final class AgentInstanceCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AgentDefinitionState agentDefinitionState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
 
@@ -70,6 +72,7 @@ public final class AgentInstanceCreateProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
+    agentDefinitionState = processingState.getAgentDefinitionState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
   }
@@ -151,6 +154,11 @@ public final class AgentInstanceCreateProcessor
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
 
+    final var agentDefinitionKey =
+        agentDefinitionState.getAgentDefinitionKey(
+            elementInstanceValue.getProcessDefinitionKey(),
+            elementInstanceValue.getElementIdBuffer());
+
     final var agentInstanceKey = keyGenerator.nextKey();
     final var event =
         new AgentInstanceRecord()
@@ -163,6 +171,7 @@ public final class AgentInstanceCreateProcessor
             .setRootProcessInstanceKey(elementInstanceValue.getRootProcessInstanceKey())
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
+            .setAgentDefinitionKey(agentDefinitionKey == null ? -1L : agentDefinitionKey)
             .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTo
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -199,6 +200,65 @@ public class AgentInstanceCreateTest {
 
     // then
     assertThat(created.getValue().getVersionTag()).isEqualTo(versionTag);
+  }
+
+  @Test
+  public void shouldStampAgentDefinitionKeyResolvedFromAgentDefinition() {
+    // given -- a service task carrying an agent marker mints an AgentDefinition at deploy time,
+    // keyed by (processDefinitionKey, elementId) in the AgentDefinitionState column family.
+    final var processMetadata =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final var agentDefinitionKey =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(processMetadata.getProcessDefinitionKey())
+            .getFirst()
+            .getValue()
+            .getAgentDefinitionKey();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when
+    final var created =
+        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+
+    // then -- the CREATED event links back to the element's AgentDefinition version.
+    assertThat(created.getValue().getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
+  }
+
+  @Test
+  public void shouldDefaultAgentDefinitionKeyToMinusOneWithoutAgentDefinition() {
+    // given -- a plain service task with no agent marker mints no AgentDefinition at deploy time.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when
+    final var created =
+        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+
+    // then -- there is no AgentDefinition to resolve, so the key falls back to -1.
+    assertThat(created.getValue().getAgentDefinitionKey()).isEqualTo(-1L);
   }
 
   @Test
