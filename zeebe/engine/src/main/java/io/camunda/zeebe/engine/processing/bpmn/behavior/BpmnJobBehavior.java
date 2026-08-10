@@ -604,15 +604,9 @@ public final class BpmnJobBehavior {
       return priorityFailure(priority, scopeKey, "'NUMBER', but was '" + result.getType() + "'");
     }
     final Number number = result.getNumber();
-    final BigDecimal asDecimal;
     try {
-      asDecimal = new BigDecimal(number.toString());
-    } catch (final NumberFormatException e) {
-      return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
-    }
-    try {
-      // stripTrailingZeros so `1.0` is accepted as integer 1.
-      return Either.right(asDecimal.stripTrailingZeros().intValueExact());
+      // stripTrailingZeros so 1.0 is accepted as integer 1.
+      return Either.right(new BigDecimal(number.toString()).stripTrailingZeros().intValueExact());
     } catch (final ArithmeticException e) {
       return priorityFailure(
           priority,
