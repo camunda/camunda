@@ -74,7 +74,6 @@ public final class ProcessMessageSubscriptionCreateProcessor
           () -> {
             transientProcessMessageSubscriptionState.remove(
                 new PendingSubscription(elementInstanceKey, messageName, tenantId));
-            return true;
           });
     } else {
       rejectCommand(command, subscription);

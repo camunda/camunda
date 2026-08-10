@@ -101,7 +101,7 @@ public class BpmnJobActivationBehavior {
     this.clock = clock;
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
-    this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
+    jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
     this.incidentBehavior = incidentBehavior;
   }
@@ -172,7 +172,6 @@ public class BpmnJobActivationBehavior {
         sideEffectWriter.appendSideEffect(
             () -> {
               jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
-              return true;
             });
       }
       // the job stays activatable; a long poll checks its secret references when it collects it
@@ -226,7 +225,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStream.push(activatedJob);
           jobMetrics.countJobEvent(JobAction.PUSHED, jobKind, jobType);
-          return true;
         });
     return true;
   }
@@ -337,7 +335,6 @@ public class BpmnJobActivationBehavior {
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
-          return true;
         });
   }
 

@@ -152,7 +152,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     sideEffectWriter.appendSideEffect(
         () -> {
           membershipStateAdapter.invalidateAll();
-          return true;
         });
   }
 
