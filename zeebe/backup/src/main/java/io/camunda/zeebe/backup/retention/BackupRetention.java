@@ -32,6 +32,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,22 +99,24 @@ public class BackupRetention extends Actor {
             }
           });
 
-  private final BackupStore backupStore;
+  private final Supplier<BackupStore> backupStoreFactory;
   private final BrokerClient brokerClient;
   private final Schedule retentionSchedule;
   private final Duration retentionWindow;
   private final BrokerTopologyManager topologyManager;
   private final RetentionMetrics metrics;
 
+  private @Nullable BackupStore backupStore;
+
   public BackupRetention(
-      final BackupStore backupStore,
+      final Supplier<BackupStore> backupStoreFactory,
       final BrokerClient brokerClient,
       final Schedule retentionSchedule,
       final Duration retentionWindow,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     metrics = new RetentionMetrics(meterRegistry);
-    this.backupStore = backupStore;
+    this.backupStoreFactory = backupStoreFactory;
     this.brokerClient = brokerClient;
     this.retentionSchedule = retentionSchedule;
     this.retentionWindow = retentionWindow;
@@ -122,6 +126,7 @@ public class BackupRetention extends Actor {
   @Override
   protected void onActorStarted() {
     LOG.debug("Retention scheduler started");
+    backupStore = backupStoreFactory.get();
     metrics.register();
     final var next =
         retentionSchedule.nextExecution(Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
@@ -134,6 +139,11 @@ public class BackupRetention extends Actor {
   protected void onActorClosed() {
     LOG.debug("Retention scheduler stopped");
     metrics.close();
+    if (backupStore != null) {
+      // Initiated but not awaited because it's a resource leak only, not a fatal error.
+      backupStore.closeAsync();
+      backupStore = null;
+    }
   }
 
   private void reschedulingTask() {
