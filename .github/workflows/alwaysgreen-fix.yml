@@ -19,7 +19,7 @@ on:
         description: 'Branch to fix against (main, stable/8.x)'
         required: true
       surface:
-        description: 'Failing surface (sm-smoke-e2e, saas-smoke-e2e)'
+        description: 'Failing surface (sm-smoke-e2e, saas-smoke-e2e, saas-ci, helm-install)'
         required: true
       test_specs:
         description: 'JSON array of failing specs with retry history'
@@ -114,7 +114,7 @@ jobs:
             *) echo "::error::unsupported base_ref '$BASE_REF'"; exit 1 ;;
           esac
           case "$SURFACE" in
-            sm-smoke-e2e|saas-smoke-e2e|helm-install) ;;
+            sm-smoke-e2e|saas-smoke-e2e|saas-ci|helm-install) ;;
             *) echo "::error::unsupported surface '$SURFACE'"; exit 1 ;;
           esac
           # main carries the next unreleased minor; stable/X.Y carries X.Y. Bump this
@@ -402,6 +402,16 @@ jobs:
           a Playwright timeout: the assertion is correct and the environment is broken.
           Read the diagnostics dump before concluding the test is at fault. Never mask a
           real failure with a timeout bump, a weakened assertion, or a selector swap.
+
+          On surface 'saas-ci' there is no failing test to read: every Playwright spec
+          passed and the downstream run went red on a job around them (org cleanup,
+          report merge, an upload). Each entry in /tmp/test_specs.json is that job —
+          'file' is the workflow in c8-cross-component-e2e-tests that owns it, 'test_name'
+          is the job, 'error' names the failing step. Read the step from the run log
+          (gh run view <id> --repo camunda/c8-cross-component-e2e-tests --log-failed) and
+          fix the step itself. A transient external call gets retry-with-backoff and a
+          per-attempt timeout; a real defect gets the real fix. continue-on-error is never
+          the answer, and neither is telling the on-call to re-run.
 
           "No fix determined" is a legitimate outcome. Write it to /tmp/fix-meta.json
           with the evidence rather than guessing.

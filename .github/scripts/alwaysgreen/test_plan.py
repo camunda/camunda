@@ -53,6 +53,34 @@ def test_helm_install_reaches_the_agent():
     assert len(result.dispatches) == 1
 
 
+def test_saas_ci_job_failure_reaches_the_agent():
+    # A downstream run whose specs all passed still has a fixable defect: the
+    # failing job stands in for a spec, with the workflow that owns it as `file`.
+    ci_spec = classify.ci_job_spec(
+        "Delete created organizations",
+        workflow_path=".github/workflows/playwright_saas_pr_trigger_monorepo.yml",
+        failing_steps=["Delete orgs"],
+    )
+    result = _plan([_cand(surface=classify.SURFACE_SAAS_CI, specs=[ci_spec])])
+    assert len(result.dispatches) == 1
+    assert result.dispatches[0].key == "main:saas-ci"
+    assert result.dispatches[0].deterministic_specs == [ci_spec]
+
+
+def test_saas_ci_dedupes_per_job_not_per_run():
+    # Two different jobs failing must produce two fingerprints, so a PR that
+    # fixes one does not suppress dispatch for the other.
+    a = classify.ci_job_spec("Delete created organizations", workflow_path="w.yml", failing_steps=[])
+    b = classify.ci_job_spec("merge-reports", workflow_path="w.yml", failing_steps=[])
+    cand = _cand(surface=classify.SURFACE_SAAS_CI, specs=[a, b])
+    assert len(set(cand.spec_fingerprints)) == 2
+
+    covered = {cand.spec_fingerprints[0]}
+    result = _plan([cand], covered_fingerprints=covered)
+    assert len(result.dispatches) == 1
+    assert [s.test_name for s in result.dispatches[0].specs] == ["merge-reports"]
+
+
 def test_in_flight_agent_blocks_the_same_surface():
     # The 2026-07-23 case: consecutive runs, same cause, agent still working.
     cand = _cand()
