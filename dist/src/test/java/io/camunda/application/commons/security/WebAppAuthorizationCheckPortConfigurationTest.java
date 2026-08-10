@@ -8,8 +8,11 @@
 package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -22,6 +25,7 @@ import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.authz.AuthorizationCheckerConfiguration;
 import io.camunda.security.spring.authz.AuthorizationConfiguration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
@@ -55,9 +59,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
 
     // when / then
     runner
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -85,9 +87,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -125,9 +125,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
-        .withUserConfiguration(
-            AuthorizationCheckerProviderConfiguration.class,
-            WebAppAuthorizationCheckPortConfiguration.class)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
@@ -159,5 +157,82 @@ class WebAppAuthorizationCheckPortConfigurationTest {
           assertThat(ctx.getBean(AuthorizationCheckPort.class))
               .isInstanceOf(AuthorizationService.class);
         });
+  }
+
+  @Test
+  void shouldFailHardWhenPerTenantScopesConfiguredButNoPhysicalTenantResolved() {
+    // given: a PhysicalTenantSearchClientReaders bean is present, so this bean wires one scope per
+    // physical tenant instead of the single "default" entry -- and this test runs outside any
+    // request scope or propagated tenant, so PhysicalTenantContext.currentOrNull() returns null
+    final var readersStub = mock(SearchClientReaders.class);
+    final var perTenantReaders =
+        new PhysicalTenantSearchClientReaders(Map.of("tenant-a", readersStub));
+
+    // when / then: CSL's fail-hard forScope(null) surfaces rather than silently resolving against
+    // tenant-a's storage, proving this bean method actually wires the per-tenant branch (not just
+    // the single-default-entry one every other test in this class exercises)
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> perTenantReaders)
+        .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
+        .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx).hasSingleBean(AuthorizationCheckPort.class);
+              final AuthorizationCheckPort port = ctx.getBean(AuthorizationCheckPort.class);
+
+              final RequiredAuthorization<Void> authorization =
+                  RequiredAuthorization.<Void>of(
+                          b ->
+                              b.resourceType(AuthorizationResourceType.COMPONENT)
+                                  .permissionType(PermissionType.ACCESS))
+                      .withResourceId("operate");
+              assertThatIllegalStateException()
+                  .isThrownBy(
+                      () ->
+                          port.check(
+                              CamundaAuthentication.of(b -> b.user("alice")), authorization));
+            });
+  }
+
+  @Test
+  void shouldFailFastAtStartupWhenPerTenantScopesReportedButNoTenantsDeclared() {
+    // given: a PhysicalTenantSearchClientReaders bean is present but backed by an empty map --
+    // simulating a broken PhysicalTenantResolver invariant (it is expected to always synthesize a
+    // "default" entry, see PhysicalTenantResolverTest), which this bean has no way to verify itself
+    final var emptyReaders = new PhysicalTenantSearchClientReaders(Map.of());
+
+    // when / then: construction fails loudly at startup instead of leaving every authorization
+    // check -- including default-tenant ones -- to fail hard on every subsequent request
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> emptyReaders)
+        .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
+        .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx).hasFailed();
+              assertThat(ctx.getStartupFailure())
+                  .hasRootCauseInstanceOf(IllegalStateException.class)
+                  .hasRootCauseMessage(
+                      "PhysicalTenantSearchClientReaders is present but declares no physical "
+                          + "tenants; expected PhysicalTenantResolver to always synthesize a "
+                          + "'default' entry. This indicates a broken invariant between "
+                          + "PhysicalTenantResolver and this bean -- every authorization check, "
+                          + "including default-tenant ones, would otherwise fail hard per request "
+                          + "instead of at startup.");
+            });
   }
 }

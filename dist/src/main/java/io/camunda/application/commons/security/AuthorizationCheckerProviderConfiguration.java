@@ -20,14 +20,18 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Builds the single {@link AuthorizationCheckerProvider} injected into the service registry.
  *
- * <p>Gated on the same condition as its only consumer ({@link
- * io.camunda.application.commons.service.CamundaServicesConfiguration}) rather than on secondary
- * storage, so it constructs in every storage mode: the required, default-tenant-pinned {@link
- * AuthorizationChecker} bean is always present here, while the per-tenant checkers are derived only
- * when {@link PhysicalTenantSearchClientReaders} exists (i.e. secondary storage is enabled). Each
- * per-tenant checker is built through {@link AuthorizationCheckerFactory}, the same factory {@link
- * io.camunda.application.commons.search.ResourceAccessControllerConfiguration} uses, so the two
- * checker-construction sites stay in sync.
+ * <p>Gated on the same condition as its only consumer ({@code CamundaServicesConfiguration}) rather
+ * than on secondary storage, so it constructs in every storage mode: the required,
+ * default-tenant-pinned {@link AuthorizationChecker} bean is always present here, while the
+ * per-tenant checkers are derived only when {@link PhysicalTenantSearchClientReaders} exists (i.e.
+ * secondary storage is enabled). Each per-tenant checker is built through {@link
+ * AuthorizationCheckerFactory} — the only remaining consumer of that factory, since it exists so
+ * {@code CamundaServicesConfiguration} can hand a raw {@link AuthorizationChecker} to services
+ * ({@code DocumentServices}, {@code SecretServices}) that query it directly, bypassing the {@code
+ * ResourceAccessController}/data-plane path. {@code ResourceAccessControllerConfiguration} no
+ * longer shares this factory — it builds its {@code ResourceAccessProvider}s via {@code
+ * DefaultResourceAccessProvider.forScopeRepository(...)} instead, which depends only on the {@code
+ * AuthorizationScopeRepositoryPort} outbound port.
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnAnyHttpGatewayEnabled
