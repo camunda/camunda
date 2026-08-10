@@ -2247,6 +2247,7 @@ public final class SearchQueryResponseMapper {
 
     return AgentInstanceHistoryItemResult.Builder.create()
         .historyItemKey(keyToString(entity.historyItemKey()))
+        .historyItemId(entity.historyItemId())
         .agentInstanceKey(keyToString(entity.agentInstanceKey()))
         .elementInstanceKey(keyToString(entity.elementInstanceKey()))
         .jobKey(keyToString(entity.jobKey()))
@@ -2258,7 +2259,6 @@ public final class SearchQueryResponseMapper {
         .metrics(metrics)
         .commitStatus(AgentInstanceHistoryCommitStatusEnum.fromValue(entity.commitStatus().name()))
         .producedAt(formatDate(entity.producedAt()))
-        .historyItemId(entity.historyItemId())
         .tools(tools)
         .model(entity.model())
         .provider(entity.provider())

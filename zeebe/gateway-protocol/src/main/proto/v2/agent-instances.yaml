@@ -1054,6 +1054,7 @@ components:
       type: object
       required:
         - historyItemKey
+        - historyItemId
         - agentInstanceKey
         - elementInstanceKey
         - jobKey
@@ -1065,7 +1066,6 @@ components:
         - metrics
         - commitStatus
         - producedAt
-        - historyItemId
         - tools
         - model
         - provider
@@ -1076,6 +1076,11 @@ components:
           description: The unique key for this history item. Stable and sortable by creation order.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
+        historyItemId:
+          description: |
+            The client-supplied identifier this item was created with. Empty for items that don't
+            carry one.
+          type: string
         agentInstanceKey:
           description: The key of the agent instance this item belongs to.
           allOf:
@@ -1125,11 +1130,6 @@ components:
           description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
-        historyItemId:
-          description: |
-            The client-supplied identifier this item was created with. Empty for items that don't
-            carry one.
-          type: string
         tools:
           description: |
             The complete list of tools available to the agent as of this entry. CONFIGURATION
