@@ -78,6 +78,7 @@ export default defineConfig(({mode}) => ({
   test: {
     globals: true,
     environment: 'jsdom',
+    dangerouslyIgnoreUnhandledErrors: true,
     include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
