@@ -27,13 +27,17 @@ import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.HistoryItem;
+import io.camunda.client.api.response.UpdateAgentInstanceResponse;
+import io.camunda.client.api.response.UpdateAgentInstanceResponse.CreatedHistoryItem;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
+import io.camunda.client.protocol.rest.AgentInstanceCreatedHistoryItem;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentInstanceToolCall;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateStatusEnum;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.client.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
@@ -646,5 +650,64 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                     .execute())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("jobKey must be set when history is not empty");
+  }
+
+  // ── Response parsing: createdHistory ──────────────────────────────────────
+
+  @Test
+  void shouldParseCreatedHistoryInResponseOrderWithDuplicateFlag() {
+    // given
+    final AgentInstanceUpdateResult response =
+        new AgentInstanceUpdateResult()
+            .createdHistory(
+                Arrays.asList(
+                    new AgentInstanceCreatedHistoryItem()
+                        .historyItemId("item-1")
+                        .historyItemKey("100")
+                        .isDuplicate(false),
+                    new AgentInstanceCreatedHistoryItem()
+                        .historyItemId("item-2")
+                        .historyItemKey("101")
+                        .isDuplicate(true),
+                    new AgentInstanceCreatedHistoryItem()
+                        .historyItemId("item-3")
+                        .historyItemKey("102")
+                        .isDuplicate(false)));
+    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY, response);
+
+    // when
+    final UpdateAgentInstanceResponse result =
+        client
+            .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+            .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+            .execute();
+
+    // then
+    assertThat(result.getCreatedHistory())
+        .isNotNull()
+        .extracting(
+            CreatedHistoryItem::getHistoryItemId,
+            CreatedHistoryItem::getHistoryItemKey,
+            CreatedHistoryItem::isDuplicate)
+        .containsExactly(
+            tuple("item-1", 100L, false),
+            tuple("item-2", 101L, true),
+            tuple("item-3", 102L, false));
+  }
+
+  @Test
+  void shouldReturnEmptyCreatedHistoryWhenResponseHasNoBody() {
+    // given
+    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+    // when
+    final UpdateAgentInstanceResponse result =
+        client
+            .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+            .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+            .execute();
+
+    // then
+    assertThat(result.getCreatedHistory()).isNotNull().isEmpty();
   }
 }
