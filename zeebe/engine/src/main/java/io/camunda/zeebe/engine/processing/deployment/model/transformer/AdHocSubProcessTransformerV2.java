@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.AgentElementTypeTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.feel.tagged.impl.TaggedParameter;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -49,6 +51,8 @@ public final class AdHocSubProcessTransformerV2
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
   private final TaggedParameterExtractor taggedParameterExtractor = new TaggedParameterExtractor();
+  private final AgentElementTypeTransformer agentElementTypeTransformer =
+      new AgentElementTypeTransformer();
 
   @Override
   public Class<AdHocSubProcess> getType() {
@@ -78,6 +82,7 @@ public final class AdHocSubProcessTransformerV2
     setImplementationType(executableAdHocSubProcess, element);
     setInnerInstance(executableAdHocSubProcess, childElements, process);
     setJobWorkerProperties(executableAdHocSubProcess, context, element);
+    setAgentDefinitionType(executableAdHocSubProcess, element);
     setAdHocActivitiesMetadata(executableAdHocSubProcess);
     setOutputCollectionAndElement(executableAdHocSubProcess, element, context);
   }
@@ -152,6 +157,13 @@ public final class AdHocSubProcessTransformerV2
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
+  }
+
+  private void setAgentDefinitionType(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
+    final var agentDefinition = element.getSingleExtensionElement(ZeebeAgentDefinition.class);
+    agentElementTypeTransformer.transform(
+        executableAdHocSubProcess, agentDefinition, element.getModelerTemplate());
   }
 
   private void setAdHocActivitiesMetadata(

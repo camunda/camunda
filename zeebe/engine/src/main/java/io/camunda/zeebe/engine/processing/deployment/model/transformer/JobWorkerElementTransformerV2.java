@@ -11,12 +11,14 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.AgentElementTypeTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.JobPriorityDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.LinkedResourcesTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
@@ -38,6 +40,8 @@ public final class JobWorkerElementTransformerV2<T extends FlowElement>
       new JobPriorityDefinitionTransformer();
   private final LinkedResourcesTransformer linkedResourcesTransformer =
       new LinkedResourcesTransformer();
+  private final AgentElementTypeTransformer agentElementTypeTransformer =
+      new AgentElementTypeTransformer();
 
   public JobWorkerElementTransformerV2(final Class<T> type) {
     this.type = type;
@@ -68,6 +72,10 @@ public final class JobWorkerElementTransformerV2<T extends FlowElement>
     if (type.equals(ServiceTask.class)) {
       final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
       linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);
+
+      final var agentDefinition = element.getSingleExtensionElement(ZeebeAgentDefinition.class);
+      final var modelerTemplate = ((ServiceTask) element).getModelerTemplate();
+      agentElementTypeTransformer.transform(jobWorkerElement, agentDefinition, modelerTemplate);
     }
   }
 }
