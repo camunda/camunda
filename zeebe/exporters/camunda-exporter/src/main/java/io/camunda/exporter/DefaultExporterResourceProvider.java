@@ -101,10 +101,6 @@ import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncident
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceModificationOperationHandler;
-import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandler;
-import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
-import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
-import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.usage.UsageMetricTUExportedHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateHandlerBuilder;
@@ -355,14 +351,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold(),
                 objectMapper),
-            new OperationFromProcessInstanceHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new OperationFromVariableDocumentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new OperationFromIncidentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new OperationFromHistoryDeletionHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new MappingRuleCreatedUpdatedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
