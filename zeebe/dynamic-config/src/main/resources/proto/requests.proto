@@ -118,6 +118,9 @@ message ExporterEnableRequest {
   string exporterId = 1;
   optional string initializeFrom = 2;
   bool dryRun = 3;
+  // When physicalTenantId is set, the exporter will be enabled only for that tenant.
+  // If not set, the exporter will be enabled for all tenants.
+  optional string physicalTenantId = 4;
 }
 
 enum Mode {

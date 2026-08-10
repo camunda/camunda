@@ -789,7 +789,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final String exporterId = "exporterId";
     final var request =
         new ClusterConfigurationManagementRequest.ExporterEnableRequest(
-            exporterId, Optional.empty(), false);
+            exporterId, Optional.empty(), Optional.empty(), false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(

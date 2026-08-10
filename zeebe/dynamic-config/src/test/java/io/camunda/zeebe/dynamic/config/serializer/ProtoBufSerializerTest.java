@@ -256,7 +256,22 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecodeExporterEnableRequest() {
     // given
     final var exporterEnableRequest =
-        new ExporterEnableRequest("expId", Optional.of("expId2"), false);
+        new ExporterEnableRequest("expId", Optional.of("expId2"), Optional.of("tenant-a"), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterEnableRequest(exporterEnableRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterEnableRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExporterEnableRequestWithoutPhysicalTenantId() {
+    // given
+    final var exporterEnableRequest =
+        new ExporterEnableRequest("expId", Optional.empty(), Optional.empty(), false);
 
     // when
     final var encodedRequest =

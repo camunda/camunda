@@ -100,6 +100,15 @@ public final class PartitionEnableExporterApplier
                   .formatted(exporterId)));
     }
 
+    if (partitionHasExporter
+        && exportersInPartition.get(exporterId).state() == State.CONFIG_NOT_FOUND) {
+      return Either.left(
+          new IllegalStateException(
+              String.format(
+                  "Expected to enable exporter, but the exporter '%s' is not configured in broker '%s'",
+                  exporterId, memberId)));
+    }
+
     if (partitionHasExporter) {
       // Increment by one when re-enabling the exporter so that the ExporterDirector can verify
       // whether the runtime state has the latest state. This is useful when the operation is
