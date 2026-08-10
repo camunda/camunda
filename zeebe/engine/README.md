@@ -54,6 +54,8 @@ There are three sources of commands.
 - Command processors can request next steps by appending commands, e.g. flow to the next element in the process after completing a task.
 - Scheduled tasks that run periodically inside the engine can append commands, e.g. to remove a message from the buffer after its TTL has expired.
 
+Commands are processed as soon as they are appended to the log, without waiting for them to be committed. This overlaps processing with replication and reduces the latency of command responses. The stream processor rebuilds its state from committed records on recovery, so processing records that are later truncated is harmless: the state is discarded and rebuilt from the committed log.
+
 ### Relation to other components
 
 The workflow engine is built on top of the `protocol` and `stream-platform` modules.
