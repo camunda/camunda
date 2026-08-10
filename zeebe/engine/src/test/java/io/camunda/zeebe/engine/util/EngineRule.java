@@ -80,7 +80,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -105,6 +104,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -129,7 +129,7 @@ public final class EngineRule extends ExternalResource {
       ResetRecordingExporterMode.AFTER_IDENTITY_SETUP;
   private boolean initializeRoutingState = true;
 
-  private Consumer<TypedRecord> onProcessedCallback = record -> {};
+  private LongConsumer onProcessedCallback = position -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
 
   private long lastProcessedPosition = -1L;
@@ -261,7 +261,7 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
+  public EngineRule withOnProcessedCallback(final LongConsumer onProcessedCallback) {
     this.onProcessedCallback = this.onProcessedCallback.andThen(onProcessedCallback);
     return this;
   }
@@ -391,14 +391,15 @@ public final class EngineRule extends ExternalResource {
               Optional.of(
                   new StreamProcessorListener() {
                     @Override
-                    public void onProcessed(final TypedRecord<?> processedCommand) {
-                      lastProcessedPosition = processedCommand.getPosition();
-                      onProcessedCallback.accept(processedCommand);
+                    public void onProcessed(final long processedPosition) {
+                      lastProcessedPosition = Math.max(lastProcessedPosition, processedPosition);
+                      onProcessedCallback.accept(processedPosition);
                     }
 
                     @Override
                     public void onSkipped(final LoggedEvent skippedRecord) {
-                      lastProcessedPosition = skippedRecord.getPosition();
+                      lastProcessedPosition =
+                          Math.max(lastProcessedPosition, skippedRecord.getPosition());
                       onSkippedCallback.accept(skippedRecord);
                     }
                   }),
