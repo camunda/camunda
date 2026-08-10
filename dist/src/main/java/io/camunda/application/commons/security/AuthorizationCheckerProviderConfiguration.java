@@ -25,9 +25,7 @@ import org.springframework.context.annotation.Configuration;
  * default-tenant-pinned {@link AuthorizationChecker} bean is always present here, while the
  * per-tenant checkers are derived only when {@link PhysicalTenantSearchClientReaders} exists (i.e.
  * secondary storage is enabled). Each per-tenant checker is built through {@link
- * AuthorizationCheckerFactory}.
- *
- * <p>This is the only remaining consumer of {@link AuthorizationCheckerFactory}: it exists so
+ * AuthorizationCheckerFactory} — the only remaining consumer of that factory, since it exists so
  * {@code CamundaServicesConfiguration} can hand a raw {@link AuthorizationChecker} to services
  * ({@code DocumentServices}, {@code SecretServices}) that query it directly, bypassing the {@code
  * ResourceAccessController}/data-plane path. {@code ResourceAccessControllerConfiguration} no
