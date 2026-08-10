@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -30,10 +31,12 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
@@ -77,6 +80,7 @@ import io.camunda.zeebe.management.cluster.PartitionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandling;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
@@ -91,6 +95,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.concurrent.CompletionException;
@@ -175,11 +180,12 @@ final class ClusterApiUtils {
       final ClusterConfigurationChangeResponse response) {
     // response.response() is absent when the responding peer hasn't populated the new
     // multi-partition-group data (e.g. a peer still running old code); fall back to the
-    // legacy plannedChanges in that case.
+    // legacy data in that case.
+    final var multiConfigResponse = response.response();
     final List<Operation> operations =
-        response.response() == null
+        multiConfigResponse == null
             ? mapOperations(response.legacyResponse().plannedChanges())
-            : response.response().phases().stream()
+            : multiConfigResponse.phases().stream()
                 .flatMap(
                     phase ->
                         switch (phase) {
@@ -192,10 +198,18 @@ final class ClusterApiUtils {
                                           mapOperations(entry.getKey(), entry.getValue()).stream());
                         })
                 .toList();
+    final List<BrokerState> currentTopology =
+        multiConfigResponse == null
+            ? mapBrokerStates(response.legacyResponse().currentConfiguration())
+            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.currentConfiguration());
+    final List<BrokerState> expectedTopology =
+        multiConfigResponse == null
+            ? mapBrokerStates(response.legacyResponse().expectedConfiguration())
+            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.expectedConfiguration());
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.legacyResponse().currentConfiguration()))
-        .expectedTopology(mapBrokerStates(response.legacyResponse().expectedConfiguration()))
+        .currentTopology(currentTopology)
+        .expectedTopology(expectedTopology)
         .plannedChanges(operations);
   }
 
@@ -338,6 +352,68 @@ final class ClusterApiUtils {
         .toList();
   }
 
+  /**
+   * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
+   * the REST response: each broker's partitions from every physical tenant it participates in are
+   * merged onto that one broker entry, tagged with their owning tenant.
+   */
+  private static List<BrokerState> mapBrokerStatesFromPhysicalTenantsConfig(
+      final CurrentClusterConfiguration configuration) {
+    final Map<String, PartitionGroupConfiguration> partitionGroups =
+        configuration.partitionGroups();
+    return configuration.globalConfiguration().members().entrySet().stream()
+        .map(
+            entry ->
+                mapBrokerStateFromPhysicalTenantsConfig(
+                    entry.getKey(), entry.getValue(), partitionGroups))
+        .toList();
+  }
+
+  private static BrokerState mapBrokerStateFromPhysicalTenantsConfig(
+      final MemberId memberId,
+      final io.camunda.zeebe.dynamic.config.state.BrokerState brokerState,
+      final Map<String, PartitionGroupConfiguration> partitionGroups) {
+    final List<PartitionState> partitions = new ArrayList<>();
+    final List<PhysicalTenantState> physicalTenants = new ArrayList<>();
+    partitionGroups.forEach(
+        (physicalTenantId, group) -> {
+          final var brokerPartitionState = group.members().get(memberId);
+          if (brokerPartitionState != null) {
+            physicalTenants.add(
+                new PhysicalTenantState()
+                    .id(physicalTenantId)
+                    .mode(mapPhysicalTenantMode(brokerPartitionState.mode())));
+            partitions.addAll(
+                mapPartitionStates(physicalTenantId, brokerPartitionState.partitions()));
+          }
+        });
+    return new BrokerState()
+        .id(brokerIdValue(memberId))
+        .state(mapBrokerLifecycleState(brokerState.state()))
+        .lastUpdatedAt(mapInstantToDateTime(brokerState.lastUpdated()))
+        .version(brokerState.version())
+        .partitions(partitions)
+        .physicalTenants(physicalTenants);
+  }
+
+  private static BrokerStateCode mapBrokerLifecycleState(
+      final io.camunda.zeebe.dynamic.config.state.BrokerState.State state) {
+    return switch (state) {
+      case ACTIVE -> BrokerStateCode.ACTIVE;
+      case JOINING -> BrokerStateCode.JOINING;
+      case LEAVING -> BrokerStateCode.LEAVING;
+      case LEFT -> BrokerStateCode.LEFT;
+      case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
+    };
+  }
+
+  private static PhysicalTenantState.ModeEnum mapPhysicalTenantMode(final Mode mode) {
+    return switch (mode) {
+      case PROCESSING -> PhysicalTenantState.ModeEnum.PROCESSING;
+      case RECOVERING -> PhysicalTenantState.ModeEnum.RECOVERING;
+    };
+  }
+
   private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
     // Instant.MIN ("-1000000000-01-01T00:00Z") is not compliant with rfc3339 parsers
     // as year field has is not 4 digits, so we replace here with the min possible.
@@ -360,11 +436,18 @@ final class ClusterApiUtils {
 
   private static List<PartitionState> mapPartitionStates(
       final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
+    return mapPartitionStates(null, partitions);
+  }
+
+  private static List<PartitionState> mapPartitionStates(
+      final String physicalTenantId,
+      final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
             entry ->
                 new PartitionState()
                     .id(entry.getKey())
+                    .physicalTenant(physicalTenantId)
                     .priority(entry.getValue().priority())
                     .state(mapPartitionState(entry.getValue().state()))
                     .config(mapPartitionConfig(entry.getValue().config())))
@@ -415,7 +498,10 @@ final class ClusterApiUtils {
 
   private static GetTopologyResponse mapClusterTopology(final ClusterConfiguration topology) {
     final var response = new GetTopologyResponse();
-    final List<BrokerState> brokers = mapBrokerStates(topology.members());
+    // temp: convert to new model from legacy, because the query response from the coordinator now
+    // only returns the legacy format.
+    final List<BrokerState> brokers =
+        mapBrokerStatesFromPhysicalTenantsConfig(CurrentClusterConfiguration.fromLegacy(topology));
 
     response.version(topology.version()).brokers(brokers);
     topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
