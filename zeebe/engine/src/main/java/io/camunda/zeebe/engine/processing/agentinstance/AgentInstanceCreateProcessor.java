@@ -49,6 +49,8 @@ public final class AgentInstanceCreateProcessor
       "Expected to create agent instance for element instance with key '%d', but it is not active.";
   private static final String ERROR_MSG_UNSUPPORTED_ELEMENT_TYPE =
       "Expected to create agent instance for element instance with key '%d', but its BPMN element type '%s' is not supported. Supported types are: %s.";
+  private static final String ERROR_MSG_NO_AGENT_DEFINITION =
+      "Expected to create agent instance for element instance with key '%d', but element '%s' has no agent definition. Mark the element with 'zeebe:agentDefinition' at deploy time.";
 
   private static final List<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       List.of(BpmnElementType.AD_HOC_SUB_PROCESS, BpmnElementType.SERVICE_TASK);
@@ -150,14 +152,22 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    final var deployedProcess =
-        processState.getProcessByKeyAndTenant(
-            elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
-
     final var agentDefinitionKey =
         agentDefinitionState.getAgentDefinitionKey(
             elementInstanceValue.getProcessDefinitionKey(),
             elementInstanceValue.getElementIdBuffer());
+    if (agentDefinitionKey == null) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_NO_AGENT_DEFINITION.formatted(
+              elementInstanceKey, elementInstanceValue.getElementId()));
+      return;
+    }
+
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(
+            elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
 
     final var agentInstanceKey = keyGenerator.nextKey();
     final var event =
@@ -171,7 +181,7 @@ public final class AgentInstanceCreateProcessor
             .setRootProcessInstanceKey(elementInstanceValue.getRootProcessInstanceKey())
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
-            .setAgentDefinitionKey(agentDefinitionKey == null ? -1L : agentDefinitionKey)
+            .setAgentDefinitionKey(agentDefinitionKey)
             .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);

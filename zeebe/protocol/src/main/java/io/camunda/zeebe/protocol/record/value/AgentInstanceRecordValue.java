@@ -61,12 +61,6 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getProcessInstanceKey();
 
   /**
-   * @return the key of the process definition
-   */
-  @Override
-  long getProcessDefinitionKey();
-
-  /**
    * @return the key of the root process instance in the hierarchy; for top-level process instances,
    *     this is equal to {@link #getProcessInstanceKey()}
    */
@@ -76,6 +70,12 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * @return the BPMN process ID of the process definition containing this agent
    */
   String getBpmnProcessId();
+
+  /**
+   * @return the key of the process definition
+   */
+  @Override
+  long getProcessDefinitionKey();
 
   /**
    * @return the version of the process definition
