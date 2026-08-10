@@ -6,14 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Button} from '@carbon/react';
 import {OperationItem} from 'modules/components/OperationItem';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
+import {Resume} from './Resume';
+import {Suspend} from './Suspend';
 import type {OperationConfig} from './types';
 
 type Props = {
-  operation: OperationConfig;
+  operation: OperationConfig | null;
   processInstanceKey: string;
 };
 
@@ -21,6 +24,22 @@ const OperationRenderer: React.FC<Props> = ({
   operation,
   processInstanceKey,
 }) => {
+  if (operation === null) {
+    return (
+      <li aria-hidden="true">
+        <Button
+          kind="ghost"
+          hasIconOnly
+          size="sm"
+          iconDescription=""
+          tabIndex={-1}
+          disabled
+          style={{visibility: 'hidden'}}
+        />
+      </li>
+    );
+  }
+
   const baseProps = {
     processInstanceKey,
     onExecute: operation.onExecute,
@@ -32,6 +51,10 @@ const OperationRenderer: React.FC<Props> = ({
       return <ResolveIncident {...baseProps} />;
     case 'CANCEL_PROCESS_INSTANCE':
       return <Cancel {...baseProps} />;
+    case 'SUSPEND_PROCESS_INSTANCE':
+      return <Suspend {...baseProps} />;
+    case 'RESUME_PROCESS_INSTANCE':
+      return <Resume {...baseProps} />;
     case 'DELETE_PROCESS_INSTANCE':
       return <Delete {...baseProps} />;
     case 'ENTER_MODIFICATION_MODE':
