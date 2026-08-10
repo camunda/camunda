@@ -134,6 +134,9 @@ final class AgentInstanceHistoryMapper {
 
   static List<AgentInstanceToolCall> toProtocolToolCalls(
       final List<AgentInstanceHistoryToolCall> toolCalls) {
+    if (toolCalls == null) {
+      return null;
+    }
     final List<AgentInstanceToolCall> protocolToolCalls = new ArrayList<>(toolCalls.size());
     for (final AgentInstanceHistoryToolCall tc : toolCalls) {
       if (tc == null) {
@@ -157,6 +160,9 @@ final class AgentInstanceHistoryMapper {
 
   static AgentInstanceHistoryItemMetrics toProtocolMetrics(
       final AgentInstanceHistoryMetrics metrics) {
+    if (metrics == null) {
+      return null;
+    }
     return new AgentInstanceHistoryItemMetrics()
         .inputTokens(metrics.getInputTokens())
         .outputTokens(metrics.getOutputTokens())

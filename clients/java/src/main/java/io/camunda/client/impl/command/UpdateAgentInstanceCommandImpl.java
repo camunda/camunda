@@ -27,11 +27,14 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateAgentInstanceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryItem;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceMetricsDelta;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateStatusEnum;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -117,20 +120,62 @@ public class UpdateAgentInstanceCommandImpl
 
   @Override
   public UpdateAgentInstanceCommandStep2 jobKey(final long jobKey) {
-    // TODO(#58793): validate and map jobKey onto the request in the green phase.
+    ArgumentUtil.ensureGreaterThan("jobKey", jobKey, 0);
+    request.jobKey(String.valueOf(jobKey));
     return this;
   }
 
   @Override
   public UpdateAgentInstanceCommandStep2 jobLease(final String jobLease) {
-    // TODO(#58793): validate and map jobLease onto the request in the green phase.
+    ArgumentUtil.ensureNotNull("jobLease", jobLease);
+    if (jobLease.trim().isEmpty()) {
+      throw new IllegalArgumentException("jobLease must not be blank");
+    }
+    request.jobLease(jobLease);
     return this;
   }
 
   @Override
   public UpdateAgentInstanceCommandStep2 history(final List<HistoryItem> history) {
-    // TODO(#58793): validate and map the history batch onto the request in the green phase.
+    ArgumentUtil.ensureNotNull("history", history);
+    final List<AgentInstanceHistoryItem> protocolHistory = new ArrayList<>(history.size());
+    for (final HistoryItem item : history) {
+      if (item == null) {
+        throw new IllegalArgumentException("history must not contain null elements");
+      }
+      protocolHistory.add(toProtocolHistoryItem(item));
+    }
+    request.history(protocolHistory);
     return this;
+  }
+
+  private AgentInstanceHistoryItem toProtocolHistoryItem(final HistoryItem item) {
+    ArgumentUtil.ensureNotNull("historyItemId", item.getHistoryItemId());
+    if (item.getHistoryItemId().trim().isEmpty()) {
+      throw new IllegalArgumentException("historyItemId must not be blank");
+    }
+    ArgumentUtil.ensureGreaterThan("loopIteration", item.getLoopIteration(), 0);
+    ArgumentUtil.ensureNotNull("role", item.getRole());
+    ArgumentUtil.ensureNotNull("content", item.getContent());
+    if (item.getContent().isEmpty()) {
+      throw new IllegalArgumentException("content must not be empty");
+    }
+    ArgumentUtil.ensureNotNull("producedAt", item.getProducedAt());
+
+    final AgentInstanceHistoryRoleEnum protoRole =
+        AgentInstanceHistoryRoleEnum.fromValue(item.getRole().name());
+    if (protoRole == null) {
+      throw new IllegalArgumentException("Invalid role: " + item.getRole());
+    }
+
+    return new AgentInstanceHistoryItem()
+        .historyItemId(item.getHistoryItemId())
+        .loopIteration(item.getLoopIteration())
+        .role(protoRole)
+        .content(AgentInstanceHistoryMapper.toProtocolContent(item.getContent()))
+        .toolCalls(AgentInstanceHistoryMapper.toProtocolToolCalls(item.getToolCalls()))
+        .metrics(AgentInstanceHistoryMapper.toProtocolMetrics(item.getMetrics()))
+        .producedAt(item.getProducedAt().toString());
   }
 
   @Override
@@ -141,6 +186,11 @@ public class UpdateAgentInstanceCommandImpl
 
   @Override
   public CamundaFuture<UpdateAgentInstanceResponse> send() {
+    if (request.getHistory() != null
+        && !request.getHistory().isEmpty()
+        && request.getJobKey() == null) {
+      throw new IllegalArgumentException("jobKey must be set when history is not empty");
+    }
     final HttpCamundaFuture<UpdateAgentInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/agent-instances/" + agentInstanceKey,
