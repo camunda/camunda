@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -154,9 +154,9 @@ final class ModeChangeRequestTransformerTest {
     // when
     final var result = transformer.phases(twoTenantCluster(Mode.PROCESSING, Mode.PROCESSING));
 
-    // then — a bad request, so the caller gets 400 rather than 500
+    // then — the tenant does not exist, so the caller gets 404 rather than 500
     EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class).hasMessageContaining("unknown");
+    assertThat(result.getLeft()).isInstanceOf(NotFound.class).hasMessageContaining("unknown");
   }
 
   @Test

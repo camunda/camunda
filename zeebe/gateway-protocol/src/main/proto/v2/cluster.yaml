@@ -151,6 +151,12 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: >-
             The mode change conflicts with the cluster state, for example because another

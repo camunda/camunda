@@ -9,7 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -68,8 +68,8 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
     if (physicalTenantId.isPresent()
         && !clusterConfiguration.hasPartitionGroup(physicalTenantId.get())) {
       return Either.left(
-          new InvalidRequest(
-              "Expected to change the mode of physical tenant '%s', but it has no partition group in this cluster"
+          new NotFound(
+              "Expected to change the mode of physical tenant '%s', but there's no such tenant"
                   .formatted(physicalTenantId.get())));
     }
 

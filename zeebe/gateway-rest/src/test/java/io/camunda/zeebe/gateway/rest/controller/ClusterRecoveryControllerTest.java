@@ -13,9 +13,12 @@ import io.atomix.cluster.MemberId;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -120,13 +123,34 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
     webClient.patch().uri(MODE_URL + "?mode=RECOVERING").exchange().expectStatus().isBadRequest();
   }
 
+  @Test
+  void shouldMapUnknownPhysicalTenantToNotFound() {
+    // given
+    when(clusterRecoveryServices.changeMode(
+            Mockito.eq("tenant-b"), Mockito.eq(Mode.RECOVERING), Mockito.eq(false)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.NOT_FOUND, "it has no partition group"))));
+
+    // when / then
+    webClient
+        .patch()
+        .uri(MODE_URL + "?mode=RECOVERING&physicalTenantId=tenant-b")
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+  }
+
   private ClusterConfigurationChangeResponse plannedChange(final long changeId) {
+    final var plannedChanges =
+        List.<ClusterConfigurationChangeOperation>of(
+            new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING));
     return new ClusterConfigurationChangeResponse(
         changeId,
-        new LegacyConfigurationChangeResponse(
-            Map.of(),
-            Map.of(),
-            List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING))),
-        null);
+        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), plannedChanges),
+        new CurrentConfigurationChangeResponse(
+            CurrentClusterConfiguration.uninitialized(),
+            CurrentClusterConfiguration.uninitialized(),
+            plannedChanges));
   }
 }
