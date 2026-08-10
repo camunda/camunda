@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.retention;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.backup.retention.RetentionMetrics.BACKUPS_DELETED_ROUND;
 import static io.camunda.zeebe.backup.retention.RetentionMetrics.EARLIEST_BACKUP_ID;
 import static io.camunda.zeebe.backup.retention.RetentionMetrics.PARTITION_TAG;
@@ -86,7 +87,7 @@ public class RetentionTest {
     meterRegistry.clear();
     backupRetention = createBackupRetention();
 
-    doReturn(clusterState).when(topologyManager).getTopology();
+    doReturn(clusterState).when(topologyManager).getTopology(DEFAULT_PHYSICAL_TENANT_ID);
     doReturn(List.of(1)).when(clusterState).getPartitions();
 
     lenient()
@@ -180,6 +181,7 @@ public class RetentionTest {
     final var built = new AtomicInteger();
     backupRetention =
         new BackupRetention(
+            DEFAULT_PHYSICAL_TENANT_ID,
             () -> stores.get(built.getAndIncrement()),
             brokerClient,
             new IntervalSchedule(Duration.ofSeconds(10)),
@@ -200,6 +202,29 @@ public class RetentionTest {
     assertThat(built.get()).isEqualTo(2);
     verify(stores.get(0)).closeAsync();
     verify(stores.get(1), never()).closeAsync();
+  }
+
+  @Test
+  void shouldDeleteOnlyWithinItsOwnPhysicalTenant() {
+    // given
+    reset(topologyManager, clusterState);
+    doReturn(List.of(2)).when(clusterState).getPartitions();
+    doReturn(clusterState).when(topologyManager).getTopology("tenant-a");
+    backupRetention = createBackupRetention("tenant-a");
+
+    final var now = actorScheduler.getClock().instant();
+    final List<BackupStatus> backups = createDefaultBackups(2, 1, now);
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
+
+    // when
+    runRetentionCycle();
+
+    // then
+    verify(topologyManager, never()).getTopology(DEFAULT_PHYSICAL_TENANT_ID);
+    backups.subList(0, 4).stream()
+        .mapToLong(backup -> backup.id().checkpointId())
+        .distinct()
+        .forEach(checkpointId -> verifyDeleteCommandSent("tenant-a", 2, checkpointId));
   }
 
   @Test
@@ -321,7 +346,12 @@ public class RetentionTest {
   }
 
   private BackupRetention createBackupRetention() {
+    return createBackupRetention(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  private BackupRetention createBackupRetention(final String physicalTenantId) {
     return new BackupRetention(
+        physicalTenantId,
         () -> backupStore,
         brokerClient,
         new IntervalSchedule(Duration.ofSeconds(10)),
@@ -385,14 +415,20 @@ public class RetentionTest {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private void verifyDeleteCommandSent(final int partitionId, final long checkpointId) {
+    verifyDeleteCommandSent(DEFAULT_PHYSICAL_TENANT_ID, partitionId, checkpointId);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void verifyDeleteCommandSent(
+      final String physicalTenantId, final int partitionId, final long checkpointId) {
     verify(brokerClient)
         .sendRequestWithRetry(
             (BrokerRequest<BackupStatusResponse>)
                 argThat(
                     req ->
-                        req instanceof BackupDeleteRequest deleteReq
+                        req instanceof final BackupDeleteRequest deleteReq
+                            && deleteReq.getPartitionGroup().equals(physicalTenantId)
                             && deleteReq.getPartitionId() == partitionId
                             && deleteReq.getBackupId() == checkpointId));
   }
@@ -404,7 +440,7 @@ public class RetentionTest {
             (BrokerRequest<BackupStatusResponse>)
                 argThat(
                     req ->
-                        req instanceof BackupDeleteRequest deleteReq
+                        req instanceof final BackupDeleteRequest deleteReq
                             && deleteReq.getBackupId() == checkpointId));
   }
 
@@ -415,7 +451,7 @@ public class RetentionTest {
             (BrokerRequest<BackupStatusResponse>)
                 argThat(
                     req ->
-                        req instanceof BackupDeleteRequest deleteReq
+                        req instanceof final BackupDeleteRequest deleteReq
                             && deleteReq.getPartitionId() == partitionId
                             && deleteReq.getBackupId() == checkpointId));
   }

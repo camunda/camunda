@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -86,6 +88,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       // stops, so it keeps working across the stop/start cycles that follow the lowest member id.
       backupRetentionJob =
           new BackupRetention(
+              DEFAULT_PHYSICAL_TENANT_ID,
               () -> BackupStoreFactory.createStore(backupCfg),
               brokerClient,
               retentionCfg.getCleanupSchedule(),
@@ -100,7 +103,11 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     if (checkpointSchedule != null || backupSchedule != null) {
       checkpointScheduler =
           new CheckpointScheduler(
-              checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
+              DEFAULT_PHYSICAL_TENANT_ID,
+              checkpointSchedule,
+              backupSchedule,
+              backupRequestHandler,
+              meterRegistry);
     }
   }
 

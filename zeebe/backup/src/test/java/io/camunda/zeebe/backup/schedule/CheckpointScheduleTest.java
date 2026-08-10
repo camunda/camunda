@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -123,6 +124,33 @@ public class CheckpointScheduleTest {
     // initially stopped the clock
     assertThat(Instant.ofEpochMilli(recordedCheckpointIdValue))
         .isCloseTo(now, within(1, ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void shouldRequestCheckpointsOnlyForItsOwnPhysicalTenant() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(
+            "tenant-a",
+            new Schedule.IntervalSchedule(Duration.ofSeconds(5)),
+            new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+    when(backupRequestHandler.getCheckpointState("tenant-a"))
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(now.toEpochMilli(), now.toEpochMilli())));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, times(1)).checkpoint("tenant-a", CheckpointType.MARKER);
+    verify(backupRequestHandler, times(1)).checkpoint("tenant-a", CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never()).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+    verify(backupRequestHandler, never()).checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
   }
 
   @Test
@@ -532,8 +560,15 @@ public class CheckpointScheduleTest {
 
   private CheckpointScheduler createScheduler(
       final Schedule checkpointSchedule, final Schedule backupSchedule) {
+    return createScheduler(DEFAULT_PHYSICAL_TENANT_ID, checkpointSchedule, backupSchedule);
+  }
+
+  private CheckpointScheduler createScheduler(
+      final String physicalTenantId,
+      final Schedule checkpointSchedule,
+      final Schedule backupSchedule) {
     return new CheckpointScheduler(
-        checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
+        physicalTenantId, checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
   }
 
   private Gauge getGauge(final String gaugeName, final CheckpointType type) {
