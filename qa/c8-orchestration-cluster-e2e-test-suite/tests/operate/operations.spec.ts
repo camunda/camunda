@@ -160,10 +160,13 @@ test.describe('Operations', () => {
 
       await expect(operateOperationPanelPage.operationList).toBeVisible();
 
-      const retryEntry = operateOperationPanelPage
-        .getAllOperationEntries()
-        .filter({hasText: 'Retry'})
-        .first();
+      // The operations panel is a global, time-ordered list shared across all
+      // instances and parallel tests. It is polluted by the 51 demo
+      // "no incidents to retry" operations created in beforeAll (on
+      // demoOperationsInstance) and by other tests' operations, so picking the
+      // newest "Retry" entry can select a foreign operation and filter to the
+      // wrong instance. Match this test's own retry by its unique success text.
+      const retryEntry = operateOperationPanelPage.getRetryOperationEntry(1);
 
       await expect(retryEntry).toBeVisible();
       await expect(retryEntry.getByText(DATE_REGEX)).toBeVisible();
