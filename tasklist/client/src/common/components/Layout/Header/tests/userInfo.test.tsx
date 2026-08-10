@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {act} from 'react';
 import {
   render,
   screen,
@@ -48,6 +49,15 @@ describe('User info', () => {
     );
 
     mockGetClientConfig.mockReturnValue(actualGetClientConfig());
+  });
+
+  afterEach(async () => {
+    // Opening the settings sidebar schedules a real 120ms resize timeout
+    // inside @camunda/camunda-composite-components that is never cancelled
+    // on unmount in this version. Letting it fire here, while jsdom is
+    // still alive, avoids it firing after teardown and crashing with
+    // "window is not defined".
+    await act(() => new Promise((resolve) => setTimeout(resolve, 150)));
   });
 
   it('should render user display name', async () => {
