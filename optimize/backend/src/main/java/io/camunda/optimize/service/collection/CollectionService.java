@@ -56,7 +56,7 @@ public class CollectionService {
     return collectionReader.getAllCollections();
   }
 
-  public void validateCollectionName(final String collectionName) {
+  private void validateCollectionName(final String collectionName) {
     ValidationHelper.validateEntityName("Collection", collectionName, getNameMaxLength());
   }
 
@@ -177,10 +177,10 @@ public class CollectionService {
 
   public IdResponseDto copyCollection(
       final String userId, final String collectionId, final String newCollectionName) {
-    validateCollectionName(newCollectionName);
     final AuthorizedCollectionDefinitionDto oldCollection =
         authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
             userId, collectionId);
+    validateCollectionName(newCollectionName);
 
     final String copyName =
         newCollectionName != null
