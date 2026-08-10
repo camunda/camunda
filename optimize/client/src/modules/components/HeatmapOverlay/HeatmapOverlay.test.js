@@ -46,6 +46,11 @@ global.CSS = {
 };
 const data = 'some heatmap data';
 
+beforeEach(() => {
+  escapeMock.mockClear();
+  selectorSpy.mockClear();
+});
+
 it('create get a heatmap', () => {
   shallow(<HeatmapOverlay viewer={viewer} data={data} />);
 
@@ -78,12 +83,13 @@ it('should update heatmap if data changes', () => {
 
 it('should attach onClick with sanitized ids if passed', () => {
   // given
-  const idOfFirstProcess = 0;
+  const dottedId = 'flow.with.dot';
+  const heatmapData = {[dottedId]: 1};
   const spy = jest.fn();
   // when
-  shallow(<HeatmapOverlay viewer={viewer} data={data} onNodeClick={spy} />);
+  shallow(<HeatmapOverlay viewer={viewer} data={heatmapData} onNodeClick={spy} />);
   // then
-  expect(escapeMock).toHaveBeenNthCalledWith(1, `${idOfFirstProcess}`);
+  expect(escapeMock).toHaveBeenCalledWith(dottedId);
   expect(eventSpy).toHaveBeenCalledWith('element.click', spy);
-  expect(selectorSpy).toHaveBeenNthCalledWith(1, `[data-element-id=${MOCKED_ESCAPE_RESULT}]`);
+  expect(selectorSpy).toHaveBeenCalledWith(`[data-element-id=${MOCKED_ESCAPE_RESULT}]`);
 });
