@@ -100,6 +100,11 @@ public class TestLogStream implements LogStream {
   }
 
   @Override
+  public LogStreamReader newUncommittedLogStreamReader() {
+    return logStream.newUncommittedLogStreamReader();
+  }
+
+  @Override
   public LogStreamWriter newLogStreamWriter() {
     return logStream.newLogStreamWriter();
   }

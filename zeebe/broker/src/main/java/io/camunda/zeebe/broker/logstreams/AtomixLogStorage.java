@@ -25,10 +25,12 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class AtomixLogStorage implements LogStorage, RaftCommitListener {
 
   private final AtomixReaderFactory readerFactory;
+  private final AtomixReaderFactory uncommittedReaderFactory;
   private final ZeebeLogAppender logAppender;
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<CommittedPositionListener> committedPositionListeners =
       new CopyOnWriteArraySet<>();
+  private final Set<AppendedListener> appendedListeners = new CopyOnWriteArraySet<>();
 
   /**
    * Raft notifies committed indexes and committed application entry positions through two separate
@@ -39,14 +41,19 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
       this::onCommittedPosition;
 
   public AtomixLogStorage(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender logAppender) {
     this.readerFactory = readerFactory;
+    this.uncommittedReaderFactory = uncommittedReaderFactory;
     this.logAppender = logAppender;
   }
 
   public static AtomixLogStorage ofPartition(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender appender) {
-    return new AtomixLogStorage(readerFactory, appender);
+      final AtomixReaderFactory readerFactory,
+      final AtomixReaderFactory uncommittedReaderFactory,
+      final ZeebeLogAppender appender) {
+    return new AtomixLogStorage(readerFactory, uncommittedReaderFactory, appender);
   }
 
   @Override
@@ -55,12 +62,30 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   }
 
   @Override
+  public AtomixLogStorageReader newUncommittedReader() {
+    return new AtomixLogStorageReader(uncommittedReaderFactory.create());
+  }
+
+  @Override
   public void append(
       final long lowestPosition,
       final long highestPosition,
       final BufferWriter bufferWriter,
       final AppendListener listener) {
-    final var adapter = new AtomixAppendListenerAdapter(listener);
+    final var adapter =
+        new AtomixAppendListenerAdapter(
+            new AppendListener() {
+              @Override
+              public void onWrite(final long index, final long highestPosition) {
+                listener.onWrite(index, highestPosition);
+                appendedListeners.forEach(l -> l.onAppend(highestPosition));
+              }
+
+              @Override
+              public void onCommit(final long index, final long highestPosition) {
+                listener.onCommit(index, highestPosition);
+              }
+            });
     logAppender.appendEntry(lowestPosition, highestPosition, bufferWriter, adapter);
   }
 
@@ -82,6 +107,16 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   @Override
   public void removeCommittedPositionListener(final CommittedPositionListener listener) {
     committedPositionListeners.remove(listener);
+  }
+
+  @Override
+  public void addAppendedListener(final AppendedListener listener) {
+    appendedListeners.add(listener);
+  }
+
+  @Override
+  public void removeAppendedListener(final AppendedListener listener) {
+    appendedListeners.remove(listener);
   }
 
   /**
