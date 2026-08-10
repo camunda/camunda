@@ -187,6 +187,12 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createPaginatedResponse()),
+			}),
 		);
 
 		await page.goto('/operate/nonexistent');
