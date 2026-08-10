@@ -39,6 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class ClusterAdminBasicAuthenticationIT {
 
   public static final String PATH_CLUSTER_TOPOLOGY = "cluster/v2/topology";
+  public static final String PATH_CLUSTER_MODE = "cluster/v2/mode?mode=RECOVERING&dryRun=true";
   public static final String PATH_CLUSTER_STATUS = "cluster/v2/status";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
 
@@ -110,6 +111,20 @@ public class ClusterAdminBasicAuthenticationIT {
         send(clusterUri(PATH_CLUSTER_TOPOLOGY), basicAuth(DB_USERNAME, DB_PASSWORD));
 
     // then — the cluster-admin chain has its own isolated store; a DB user is not known to it
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
+  void shouldRejectModeChangeWithoutCredentials() throws Exception {
+    // when — the mode change is a state-changing cluster-admin endpoint, so it must sit inside the
+    // protected chain rather than under a pattern the chain does not match
+    final HttpRequest.Builder builder =
+        HttpRequest.newBuilder(clusterUri(PATH_CLUSTER_MODE))
+            .method("PATCH", HttpRequest.BodyPublishers.noBody());
+    final HttpResponse<String> response =
+        httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+
+    // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
   }
 
