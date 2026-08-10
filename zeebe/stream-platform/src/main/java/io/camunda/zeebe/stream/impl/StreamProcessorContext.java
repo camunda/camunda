@@ -191,6 +191,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return requireNonNull(actor);
   }
 
+  /**
+   * Returns the reader that replay reads committed records from.
+   *
+   * <p>Only valid while replay is running. In {@link StreamProcessorMode#PROCESSING} the stream
+   * processor closes this reader once replay completes, so that it stops pinning log positions that
+   * nothing needs any more. Consumers that outlive replay must use {@link
+   * #getProcessingLogStreamReader()}.
+   */
   public LogStreamReader getLogStreamReader() {
     return requireNonNull(logStreamReader);
   }
