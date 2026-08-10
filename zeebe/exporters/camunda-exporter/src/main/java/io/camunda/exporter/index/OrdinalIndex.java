@@ -12,13 +12,14 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implements TargetIndex {
+  static final int DEFAULT_ORDINAL = 0;
   static final String ORDINAL_SUFFIX = "ord";
   static final Pattern ORDINAL_INDEX_PATTERN =
       Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX) + "(\\d{5})$");
 
   OrdinalIndex {
-    if (ordinal <= 0) {
-      throw new IllegalArgumentException("Ordinal must be greater than 0");
+    if (ordinal <= DEFAULT_ORDINAL) {
+      throw new IllegalArgumentException("Ordinal must be greater than " + DEFAULT_ORDINAL);
     }
   }
 
