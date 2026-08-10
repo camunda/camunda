@@ -8,7 +8,7 @@
 #
 # Buckets:
 #   version_build      - pom.xml / lockfiles with only mechanical version bumps. Quiet.
-#   version_build_gap  - a version/build file carrying a REAL missing dep change. Actionable.
+#   version_build_gap  - a version/build file touched by a non-noise commit missing on target.
 #   source_missing     - a substantive commit may be missing from one side. Two directions, forward
 #                        first (cheap), reverse only if forward is empty:
 #                          forward (missing_on:target)  - a commit touching this path is on RELEASE
@@ -19,7 +19,7 @@
 #   needs_review       - merge-tree flagged a conflict but no commit can be blamed (a deletion or an
 #                        insertion on the clashing lines). No missing-commit claim; a human just
 #                        resolves it. Keeps modify/delete and add/add out of source_drift.
-#   source_drift       - conflicting lines proven already on both sides by patch-id. Benign. Quiet.
+#   source_drift       - no actionable missing commit identified after noise filtering. Quiet.
 #
 # action_count = |source_missing| + |version_build_gap| + |needs_review|; gate downstream on > 0.
 #
@@ -246,7 +246,7 @@ reverse_conflict_blindspot() {
 }
 
 version_build=()
-version_build_gap=()   # version/build files carrying a REAL missing dep change
+version_build_gap=()   # version/build files touched by a non-noise commit missing on target
 source_missing=()   # "path" entries; commit detail JSON accumulated per path below
 needs_review=()   # merge-tree conflicts with no blamable commit (blind spot) — a human must resolve
 source_drift=()
@@ -255,7 +255,7 @@ declare -A missing_detail   # path -> newline-separated JSON objects {sha,author
 for p in "${paths[@]}"; do
   [ -z "$p" ] && continue
   if is_version_build "$p"; then
-    # Usually mechanical bumps, but a real dep change (renovate, backported bump) can hide here.
+    # Usually mechanical bumps, but a human-authored build change can hide here.
     # Same patch-id test, ignoring release-plugin version-bump noise.
     vb_hits=""
     while IFS= read -r sha; do
@@ -282,6 +282,7 @@ for p in "${paths[@]}"; do
   hits=""
   while IFS= read -r sha; do
     [ -z "$sha" ] && continue
+    commit_is_release_noise "$sha" && continue
     if commit_touches "$sha" "$p"; then
       hits+="$(commit_detail_json "$sha" target)"$'\n'
     fi
@@ -328,9 +329,9 @@ build_string_array() {
 conflicting_paths="${#paths[@]}"
 action_count=$(( ${#source_missing[@]} + ${#version_build_gap[@]} + ${#needs_review[@]} ))
 if [ "$action_count" -eq 0 ]; then
-  verdict="no mid-release action required — all conflicts are mechanical or text drift."
+  verdict="no mid-release review identified — conflicts are known noise or text drift."
 else
-  verdict="$action_count path(s) need a human to confirm nothing is lost on merge-back."
+  verdict="$action_count path(s) need human review before merge-back."
 fi
 
 # Guard empty-array expansion under set -u; pass nothing when a bucket is empty.

@@ -88,7 +88,8 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
         [ { type: "header",
             text: { type: "plain_text", text: ":human-robot-heart: Merge-back needs a human", emoji: true } },
           { type: "section",
-            text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)) } } ]
+            text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)
+              + "\nReview both branches: act now on a missing required change; otherwise record the later merge resolution or escalate to the owner.") } } ]
         + $actionable[:$actionable_budget]
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",

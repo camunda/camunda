@@ -282,6 +282,19 @@ make_remote() {
   [ "$(jq -r '.version_build[0]' <<<"$output")" = pom.xml ]
 }
 
+@test "triage: a github-actions-authored source conflict is filtered as automation noise" {
+  commit base "app.js=v0"
+  git checkout -q -b release
+  commit_as "github-actions[bot] <github-actions[bot]@users.noreply.github.com>" "update generated source" "app.js=release"
+  git checkout -q main
+  commit_as "github-actions[bot] <github-actions[bot]@users.noreply.github.com>" "update generated source differently" "app.js=main"
+  echo '{"status":"conflict","paths":["app.js"]}' > c.json
+  run_json "$TRIAGE" main release c.json
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.action_count' <<<"$output")" -eq 0 ]
+  [ "$(jq -r '.source_missing | length' <<<"$output")" -eq 0 ]
+}
+
 @test "triage: a real human dependency change on a pom is an actionable gap" {
   commit base "pom.xml=v0"
   git checkout -q -b release && commit "build: bump elasticsearch to 8.15" "pom.xml=release"
@@ -304,6 +317,7 @@ make_remote() {
   [[ "$output" != *"<!here>"* ]]
   [[ "$output" != *"<!channel>"* ]]
   [[ "$output" != *"<@U1>"* ]]
+  [[ "$output" == *"act now on a missing required change"* ]]
 }
 
 @test "render: flags truncation when a path carries more than max_commits" {
