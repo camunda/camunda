@@ -438,6 +438,9 @@ public final class EventAppliers implements EventApplier {
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
     register(ProcessInstanceIntent.CANCELING, NOOP_EVENT_APPLIER);
     register(
+        ProcessInstanceIntent.RESUMING,
+        new ProcessInstanceResumingApplier(state.getSuspensionState()));
+    register(
         ProcessInstanceIntent.RESUMED,
         new ProcessInstanceResumedApplier(state.getSuspensionState()));
     register(

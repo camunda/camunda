@@ -339,7 +339,8 @@ public final class EngineProcessors {
             asyncRequestBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
-            processEngineMetrics);
+            processEngineMetrics,
+            incidentMetrics);
 
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
@@ -659,7 +660,8 @@ public final class EngineProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final IncidentMetrics incidentMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -676,7 +678,8 @@ public final class EngineProcessors {
         asyncRequestBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
-        processEngineMetrics);
+        processEngineMetrics,
+        incidentMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

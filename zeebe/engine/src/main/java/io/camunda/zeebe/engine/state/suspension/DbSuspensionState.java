@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class DbSuspensionState implements MutableSuspensionState {
 
@@ -108,6 +109,33 @@ public final class DbSuspensionState implements MutableSuspensionState {
           }
           visitor.visit(bufferedKey, stored.getRecord());
         });
+  }
+
+  @Override
+  public @Nullable BufferedCommand getOldestBufferedCommand(final long key) {
+    processInstanceKey.wrapLong(key);
+    final var oldest = new BufferedCommand[1];
+    bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
+        processInstanceKey,
+        (compositeKey, nil) -> {
+          final long bufferedKey = compositeKey.second().getValue();
+          bufferedCommandKey.wrapLong(bufferedKey);
+          final var stored =
+              bufferedCommandColumnFamily.get(
+                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+          if (stored == null) {
+            // see #visitBufferedCommands: a dangling secondary-index entry is a broken invariant
+            throw new IllegalStateException(
+                String.format(
+                    "Expected to find buffered command with key '%d' for process instance '%d', "
+                        + "but none was stored; the buffered-command index is inconsistent",
+                    bufferedKey, key));
+          }
+          oldest[0] = new BufferedCommand(bufferedKey, stored.getRecord());
+          // the secondary index is ordered by bufferedCommandKey, so the first hit is the oldest
+          return false;
+        });
+    return oldest[0];
   }
 
   @Override

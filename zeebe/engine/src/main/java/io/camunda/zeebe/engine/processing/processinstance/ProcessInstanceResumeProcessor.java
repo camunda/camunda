@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -22,8 +23,10 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -44,6 +47,7 @@ public final class ProcessInstanceResumeProcessor
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
@@ -55,6 +59,7 @@ public final class ProcessInstanceResumeProcessor
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     suspensionState = processingState.getSuspensionState();
@@ -70,11 +75,21 @@ public final class ProcessInstanceResumeProcessor
 
     final ProcessInstanceRecord value = elementInstance.getValue();
 
-    // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
-    // draining of buffered commands is implemented.
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
+    // switch the marker to RESUMING before the first DRAIN so the commands it replays are let
+    // through by the suspension gate instead of being buffered again
+    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMING, value);
+    commandWriter.appendFollowUpCommand(
+        command.getKey(),
+        ProcessInstanceBufferedCommandIntent.DRAIN,
+        new ProcessInstanceBufferedCommandRecord()
+            .setProcessInstanceKey(command.getKey())
+            .setProcessDefinitionKey(value.getProcessDefinitionKey())
+            .setTenantId(value.getTenantId()));
+
+    // the request is answered as soon as resuming has started: draining the buffer spans several
+    // command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
-        command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
+        command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
   }
 
   @Override
