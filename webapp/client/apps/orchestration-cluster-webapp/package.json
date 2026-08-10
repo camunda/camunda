@@ -85,7 +85,7 @@
 		"msw": "2.15.0",
 		"rollup-plugin-sbom": "4.0.0",
 		"typescript": "7.0.2",
-		"vite": "8.1.5",
+		"vite": "8.2.1",
 		"vitest": "4.1.10",
 		"vitest-browser-react": "2.2.0"
 	}
