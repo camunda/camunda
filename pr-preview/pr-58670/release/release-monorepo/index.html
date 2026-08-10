@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Monorepo Release | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-58670/release/release-monorepo/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Monorepo Release | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-58670/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-58670/release/release-monorepo/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58670/release/release-monorepo/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-58670/release/release-monorepo/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-58670/release/"},{"@type":"ListItem","position":2,"name":"Monorepo Release","item":"https://camunda.github.io/camunda/pr-preview/pr-58670/release/release-monorepo"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-58670/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-58670/assets/js/runtime~main.70d027bf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-58670/assets/js/main.557f73fc.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58670/assets/js/runtime~main.ec94e1aa.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-58670/assets/js/main.389c8bb5.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -374,7 +374,8 @@
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Enforce bug-fix backport rule after last alpha branch cut: fixes merged to <code>main</code> must be backported to <code>stable/&lt;minor&gt;</code> to ship in that minor.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->For critical fixes after branch cut, backport to both <code>stable/&lt;minor&gt;</code> and active alpha/minor release branch; trigger a new RC if needed.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Track minor backports via labels/board to avoid missing required fixes.</li>
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Simulate release-branch merge-back to <code>stable/&lt;minor&gt;</code> early to detect predictable conflicts. The <a href="#merge-back-divergence-handling" class="">Release Merge-back Conflict Check</a> runs this automatically in the RC window; confirm it is green (or that any alert has been triaged) before the final merge-back.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Simulate release-branch merge-back to <code>stable/&lt;minor&gt;</code> early to detect predictable conflicts.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->The <a href="#merge-back-divergence-handling" class="">Release Merge-back Conflict Check</a> runs this automatically in the release window; confirm it is green and free of conflicts before the final merge-back.</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-documentation-and-communication-hygiene">6. Documentation and communication hygiene<a href="#6-documentation-and-communication-hygiene" class="hash-link" aria-label="Direct link to 6. Documentation and communication hygiene" title="Direct link to 6. Documentation and communication hygiene" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
@@ -412,13 +413,12 @@
 </li>
 <li class=""><strong>Notify</strong> the configured Slack channel <strong>only</strong> when the actionable bucket is non-empty. A clean or mechanical-only result is a quiet success. An in-flight release always conflicts on version bumps, so the gate is the actionable count, not the raw conflict.</li>
 </ol>
-<p><strong>A/B classification</strong> underpins the triage. Divergence is two populations with opposite safe treatment:</p>
+<p><strong>A/B classification is a human judgment, not something the check computes.</strong> Every residual alarm is one of two kinds, with opposite safe treatment:</p>
 <ul>
-<li class=""><strong>(A) accidental drift</strong> (silently-failed backport, independent Renovate bump) — the missing change should be forward-ported.</li>
-<li class=""><strong>(B) intentional asymmetry</strong> (a release-only workaround deliberately reverted on the target) — re-applying it onto the target would be <strong>harmful</strong>. Never auto-apply a B change.</li>
+<li class=""><strong>(A) accidental drift</strong> (a silently-failed backport, an independent Renovate bump) — the missing change should be forward-ported.</li>
+<li class=""><strong>(B) intentional asymmetry</strong> (a release-only workaround deliberately reverted on the target) — re-applying it onto the target would be <strong>harmful</strong>.</li>
 </ul>
-<p>The automation-author / patch-id filter suppresses mechanical noise; the residual alarm is what a human classifies as A vs B.</p>
-<p><strong>Out of scope:</strong> semantic breakage that is CI-red but not a textual conflict — e.g. cross-component version skew (CPT/ZPT built against an older API). <code>git merge-tree</code> cannot see these; route them straight to escalation (see the <a href="#others" class="">CPT Medic</a> trigger for merge-back PRs failing CI on API incompatibility).</p>
+<p>The check only strips mechanical noise (automation-author / patch-id filter) and surfaces the residual alarm. Deciding A vs B — and acting on it — is the release manager&#x27;s call; see the escalation path below.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="escalation-path">Escalation path<a href="#escalation-path" class="hash-link" aria-label="Direct link to Escalation path" title="Direct link to Escalation path" translate="no">​</a></h4>
 <p>When an alert fires and the MRM cannot safely resolve the missing change:</p>
 <ol>
