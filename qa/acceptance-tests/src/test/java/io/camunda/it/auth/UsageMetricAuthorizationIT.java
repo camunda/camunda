@@ -64,8 +64,8 @@ public class UsageMetricAuthorizationIT {
           .withAuthorizationsEnabled()
           .withUnifiedConfig(
               cfg ->
-                  cfg.getProcessing()
-                      .getEngine()
+                  cfg.getMonitoring()
+                      .getMetrics()
                       .getUsageMetrics()
                       .setExportInterval(EXPORT_INTERVAL));
 
