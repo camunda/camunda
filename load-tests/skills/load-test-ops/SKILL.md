@@ -6,8 +6,8 @@ description: Trigger, monitor, update, profile, and stop Camunda load tests usin
 # Camunda Load Test Operations
 
 For the full operational reference (architecture, scenarios, scheduling, secondary storage,
-Helm value typing pitfalls), see [`load-tests/README.md`](https://github.com/camunda/camunda/blob/main/load-tests/README.md). For metrics
-definitions, SLO targets, and Prometheus queries, see
+Helm value typing pitfalls), see [`load-tests/README.md`](../../README.md). For metrics
+definitions, SLO targets, and Prometheus queries, see the canonical `metrics.md` on `main`:
 [`load-tests/docs/metrics.md`](https://github.com/camunda/camunda/blob/main/load-tests/docs/metrics.md). For the canonical schema of every
 available chart value (beyond what `load-tests/setup/default/values/camunda-platform-values-defaults.yaml` overrides), see
 the upstream chart at [`camunda/camunda-platform-helm`](https://github.com/camunda/camunda-platform-helm/tree/main/charts/camunda-platform).
