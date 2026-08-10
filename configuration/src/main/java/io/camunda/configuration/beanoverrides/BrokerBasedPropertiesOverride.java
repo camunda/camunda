@@ -1198,12 +1198,6 @@ public class BrokerBasedPropertiesOverride {
     jobMetricsCfg.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
     jobMetricsCfg.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
     jobMetricsCfg.setEnabled(jobMetrics.isEnabled());
-
-    override
-        .getExperimental()
-        .getEngine()
-        .getUsageMetrics()
-        .setExportInterval(metrics.getUsageMetrics().getExportInterval());
   }
 
   private void setArgIfNotNull(
