@@ -29,7 +29,7 @@ class CustomFiltersModal extends View {
 	}
 
 	get processSelect() {
-		return this.dialog.getByRole('combobox', {name: /process/i});
+		return this.dialog.getByRole('combobox', {name: 'Tasks for latest process version'});
 	}
 
 	get assignedToInput() {
