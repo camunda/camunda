@@ -42,6 +42,15 @@ describe('User info', () => {
     );
   });
 
+  afterEach(async () => {
+    // Opening the settings sidebar schedules a real 120ms resize timeout
+    // inside @camunda/camunda-composite-components that isn't reliably
+    // cancelled on unmount. Letting it fire here, while jsdom is still
+    // alive, avoids it firing after teardown and crashing with
+    // "window is not defined".
+    await act(() => new Promise((resolve) => setTimeout(resolve, 150)));
+  });
+
   it('should render user display name', async () => {
     nodeMockServer.use(
       http.get(
