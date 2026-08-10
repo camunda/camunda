@@ -57,7 +57,7 @@ public final class CslTenantCheck {
    * io.camunda.security.api.model.CamundaAuthentication}.
    */
   public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+    if (isAnonymousCommand(authorizations)) {
       return TenantAccess.wildcard(List.of());
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
@@ -71,6 +71,15 @@ public final class CslTenantCheck {
     final var tenantIds =
         Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
     return TenantAccess.allowed(tenantIds);
+  }
+
+  /**
+   * True when the command's claims mark it as an anonymous caller. Checked against the raw map
+   * because the map is the command record's wire format — there is no resolved {@link
+   * io.camunda.security.api.model.CamundaAuthentication} yet at this point in the write path.
+   */
+  static boolean isAnonymousCommand(final Map<String, Object> authorizations) {
+    return Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
   }
 
   public boolean isMultiTenancyChecksEnabled() {
