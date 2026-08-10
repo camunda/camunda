@@ -15,7 +15,7 @@ import {
   nestedSubProcessesInstance,
   nestedSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstance,
-  Wrapper,
+  getWrapper,
   mockNestedSubProcessesInstance,
 } from './mocks';
 import {FlowNodeInstancesTree} from '.';
@@ -70,7 +70,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -135,7 +135,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

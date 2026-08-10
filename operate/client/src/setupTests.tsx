@@ -7,8 +7,12 @@
  */
 
 import '@testing-library/jest-dom';
+// We had issues with the Mobx store resets executing before the React component unmounts
+// eslint-disable-next-line testing-library/no-manual-cleanup
+import {cleanup} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from 'modules/testing-library';
+import {notificationsStore} from 'modules/stores/notifications';
 import MockDmnJsSharedManager from '__mocks__/dmn-js-shared/lib/base/Manager';
 import MockDmnJsSharedDiUtil from '__mocks__/dmn-js-shared/lib/util/DiUtil';
 import MockDmnJsSharedModelUtil from '__mocks__/dmn-js-shared/lib/util/ModelUtil';
@@ -144,8 +148,14 @@ beforeAll(() => {
   mockServer.listen({
     onUnhandledRequest: 'error',
   });
+
+  window.prompt = vi.fn();
 });
-afterEach(() => mockServer.resetHandlers());
+afterEach(() => {
+  cleanup();
+  notificationsStore.reset();
+  mockServer.resetHandlers();
+});
 afterAll(() => mockServer.close());
 beforeEach(async () => {
   vi.stubEnv('TZ', 'UTC');

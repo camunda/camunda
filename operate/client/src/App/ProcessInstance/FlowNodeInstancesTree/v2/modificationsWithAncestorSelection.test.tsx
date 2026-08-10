@@ -17,7 +17,7 @@ import {
   processInstanceId,
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
-  Wrapper,
+  getWrapper,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
@@ -57,7 +57,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -151,7 +151,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -317,7 +317,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -500,7 +500,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

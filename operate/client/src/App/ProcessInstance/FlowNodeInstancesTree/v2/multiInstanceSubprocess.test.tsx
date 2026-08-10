@@ -17,7 +17,7 @@ import {
   flowNodeInstances,
   mockFlowNodeInstance,
   processInstanceId,
-  Wrapper,
+  getWrapper,
   mockMultiInstanceProcessInstance,
 } from './mocks';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
@@ -72,7 +72,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -102,7 +102,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -180,7 +180,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         isRoot
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
