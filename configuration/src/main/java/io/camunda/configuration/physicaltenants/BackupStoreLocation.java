@@ -29,8 +29,8 @@ import org.jspecify.annotations.Nullable;
  * each tenant's retention lists and deletes by partition wildcard, so it also deletes the other
  * tenant's backups. Comparing key spaces is what keeps that from being expressible.
  *
- * <p>Mirrors {@link DocumentStoreLocation}, including its treatment of {@code /} as an ordinary
- * character in object keys rather than a boundary.
+ * <p>Mirrors {@link DocumentStoreLocation}, except that {@code /} does bound a base path here — see
+ * {@link #sharesKeySpaceWith}.
  */
 @NullMarked
 record BackupStoreLocation(String store, List<String> namespace, String keyPrefix) {
@@ -89,13 +89,15 @@ record BackupStoreLocation(String store, List<String> namespace, String keyPrefi
   }
 
   /**
-   * Whether the two stores could address a common key: whenever one key prefix contains the other,
-   * equal prefixes included.
+   * Whether the two stores could address a common key: whenever one base path contains the other,
+   * equal paths included. A store at a bucket root is therefore not isolated from a base path
+   * inside it.
    *
-   * <p>For object stores a separator bounds nothing — {@code /} is an ordinary character in S3 keys
-   * and GCS object names — so a store at a bucket root is not isolated from a base path inside it.
-   * For the file system the containment is checked per path segment instead, because there {@code
-   * /backups} and {@code /backups-archive} really are two directories.
+   * <p>The separator is what bounds a base path here, unlike in {@link DocumentStoreLocation}: a
+   * backup key always continues as {@code <basePath>/<partitionId>/…}, and the stores build both
+   * their keys and their list prefixes as {@code basePath + "/"}, so nothing a store writes or
+   * lists can reach a sibling whose name merely starts with the same characters. {@code backups}
+   * contains {@code backups/tenanta} but not {@code backups-tenanta}.
    */
   boolean sharesKeySpaceWith(final BackupStoreLocation other) {
     if (!store.equals(other.store) || !namespace.equals(other.namespace)) {
@@ -104,7 +106,12 @@ record BackupStoreLocation(String store, List<String> namespace, String keyPrefi
     if ("filesystem".equals(store)) {
       return pathContains(keyPrefix, other.keyPrefix) || pathContains(other.keyPrefix, keyPrefix);
     }
-    return keyPrefix.startsWith(other.keyPrefix) || other.keyPrefix.startsWith(keyPrefix);
+    return keyContains(keyPrefix, other.keyPrefix) || keyContains(other.keyPrefix, keyPrefix);
+  }
+
+  /** Whether every key below {@code inner} is also addressed by {@code outer}. */
+  private static boolean keyContains(final String outer, final String inner) {
+    return outer.isEmpty() || inner.equals(outer) || inner.startsWith(outer + "/");
   }
 
   String describe() {

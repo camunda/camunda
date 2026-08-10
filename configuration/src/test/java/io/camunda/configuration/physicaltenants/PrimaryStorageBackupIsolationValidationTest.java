@@ -89,6 +89,19 @@ class PrimaryStorageBackupIsolationValidationTest {
   }
 
   @Test
+  void shouldAllowBasePathsThatOnlyShareAStringPrefix() {
+    // given base paths where one string starts with the other, but the keys below them cannot
+    // overlap: every backup key continues as `<basePath>/<partitionId>/…`
+    final var resolved =
+        tenants(
+            "tenanta", s3("shared-bucket", "backups"),
+            "tenantb", s3("shared-bucket", "backups-tenantb"));
+
+    // when / then
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldAllowTenantsWithDistinctBasePaths() {
     // given each tenant has its own directory, neither inside the other
     final var resolved =
