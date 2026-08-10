@@ -173,7 +173,7 @@ public final class EventAppliers implements EventApplier {
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
     registerAgentHistoryEventAppliers(state);
-    registerAgentDefinitionEventAppliers();
+    registerAgentDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
     return this;
   }
@@ -203,8 +203,10 @@ public final class EventAppliers implements EventApplier {
     register(AgentHistoryIntent.DISCARDED, new AgentHistoryDiscardedApplier(state));
   }
 
-  private void registerAgentDefinitionEventAppliers() {
-    register(AgentDefinitionIntent.CREATED, NOOP_EVENT_APPLIER);
+  private void registerAgentDefinitionEventAppliers(final MutableProcessingState state) {
+    register(
+        AgentDefinitionIntent.CREATED,
+        new AgentDefinitionCreatedApplier(state.getAgentDefinitionState()));
     register(AgentDefinitionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 

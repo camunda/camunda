@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
@@ -55,7 +56,16 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final boolean enableStraightThroughProcessingLoopDetector;
   private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final AgentDefinitionTransformer agentDefinitionTransformer;
   private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
+
+  /**
+   * Executable processes parsed for each resource in {@link #createMetadata}, kept around for
+   * {@link #writeRecords} to scan for agent-marked elements once the process' final key/version are
+   * known.
+   */
+  private final Map<DeploymentResource, List<ExecutableProcess>> executableProcessesByResource =
+      new IdentityHashMap<>();
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -79,6 +89,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
+    agentDefinitionTransformer = new AgentDefinitionTransformer(keyGenerator, stateWriter);
     this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
@@ -104,6 +115,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
+    agentDefinitionTransformer = new AgentDefinitionTransformer(keyGenerator, stateWriter);
     this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
@@ -132,16 +144,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public void reset() {
-    parsedModels.clear();
-  }
-
-  @VisibleForTesting
-  boolean hasParsedModelFor(final DeploymentResource resource) {
-    return parsedModels.containsKey(resource);
-  }
-
-  @Override
   public Either<Failure, DeploymentResourceContext> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
@@ -157,6 +159,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             // transform the model to avoid unexpected failures that are not covered by the
             // validator
             final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+            executableProcessesByResource.put(resource, executableProcesses);
 
             return UnsupportedMultiTenantFeaturesValidator.validate(
                     resource, executableProcesses, deployment.getTenantId())
@@ -209,9 +212,39 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                       .wrap(metadata, resource.getResource())
                       .setTransformerVersions(bpmnTransformer.currentVersionsById());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
+              agentDefinitionTransformer.writeRecords(
+                  deployment,
+                  findExecutableProcess(resource, metadata.getBpmnProcessId()),
+                  metadata);
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
+  }
+
+  @Override
+  public void reset() {
+    parsedModels.clear();
+    executableProcessesByResource.clear();
+  }
+
+  @VisibleForTesting
+  boolean hasParsedModelFor(final DeploymentResource resource) {
+    return parsedModels.containsKey(resource);
+  }
+
+  private ExecutableProcess findExecutableProcess(
+      final DeploymentResource resource, final String bpmnProcessId) {
+    final var idBuffer = wrapString(bpmnProcessId);
+    return executableProcessesByResource.getOrDefault(resource, List.of()).stream()
+        .filter(process -> BufferUtil.equals(process.getId(), idBuffer))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    ("Expected an executable process for bpmnProcessId '%s' parsed from '%s', but"
+                            + " none was found. This process metadata should have been created"
+                            + " from the very same executable processes.")
+                        .formatted(bpmnProcessId, resource.getResourceName())));
   }
 
   private Either<Failure, BpmnModelInstance> readProcessDefinition(

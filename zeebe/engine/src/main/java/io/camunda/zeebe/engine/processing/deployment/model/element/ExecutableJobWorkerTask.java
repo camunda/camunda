@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
+
 public class ExecutableJobWorkerTask extends ExecutableActivity
     implements ExecutableJobWorkerElement {
 
   private JobWorkerProperties jobWorkerProperties;
+  private AgentDefinitionType agentDefinitionType;
 
   public ExecutableJobWorkerTask(final String id) {
     super(id);
+    agentDefinitionType = AgentDefinitionType.UNSPECIFIED;
   }
 
   @Override
@@ -24,5 +28,15 @@ public class ExecutableJobWorkerTask extends ExecutableActivity
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  @Override
+  public AgentDefinitionType getAgentDefinitionType() {
+    return agentDefinitionType;
+  }
+
+  @Override
+  public void setAgentDefinitionType(final AgentDefinitionType agentDefinitionType) {
+    this.agentDefinitionType = agentDefinitionType;
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,4 +36,25 @@ public interface ExecutableJobWorkerElement extends ExecutableFlowElement {
    * input mapping references a cluster variable.
    */
   Map<String, Set<ClusterVariableReference>> getClusterVariableReferences();
+
+  /**
+   * Returns the agent definition type detected at deploy time, either from the explicit {@code
+   * zeebe:agentDefinition} marker or, when absent, derived from a recognized {@code
+   * zeebe:modelerTemplate} value. Defaults to {@link AgentDefinitionType#UNSPECIFIED} when this
+   * element is not an agent element.
+   */
+  default AgentDefinitionType getAgentDefinitionType() {
+    return AgentDefinitionType.UNSPECIFIED;
+  }
+
+  /** Sets the agent definition type detected at deploy time. */
+  default void setAgentDefinitionType(final AgentDefinitionType agentDefinitionType) {}
+
+  /**
+   * @return {@code true} if this element was detected as an agent element at deploy time, i.e. its
+   *     {@link #getAgentDefinitionType()} is not {@link AgentDefinitionType#UNSPECIFIED}.
+   */
+  default boolean isAgentDefinition() {
+    return getAgentDefinitionType() != AgentDefinitionType.UNSPECIFIED;
+  }
 }

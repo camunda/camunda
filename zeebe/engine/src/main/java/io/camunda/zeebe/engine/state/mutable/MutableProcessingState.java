@@ -65,6 +65,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableAgentInstanceState getAgentInstanceState();
 
   @Override
+  MutableAgentDefinitionState getAgentDefinitionState();
+
+  @Override
   MutableTimerInstanceState getTimerState();
 
   @Override

@@ -19,5 +19,5 @@ public enum AgentDefinitionType {
   UNSPECIFIED,
   AI_AGENT_SUB_PROCESS,
   AI_AGENT_TASK,
-  EXTERNAL
+  EXTERNAL_AGENT
 }

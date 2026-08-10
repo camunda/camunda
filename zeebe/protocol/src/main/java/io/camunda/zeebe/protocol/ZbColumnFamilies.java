@@ -361,7 +361,12 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // Present only on P_B — the symmetric STARTED on P_K writes nothing here. See
   // CrossPartitionMessageStartHolderOrigin and the STARTED / PUSHED appliers for the full
   // write/delete lifecycle and the migration rationale.
-  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL);
+  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL),
+
+  // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
+  // deploy time and replicated identically to every partition (like process/decision/form
+  // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
