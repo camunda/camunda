@@ -1526,6 +1526,7 @@
     "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
     "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden.",
     "importDescriptionInvalid": "Importierung ist fehlgeschlagen weil die gegebene Beschreibung fehlerhaft ist. Die Beschreibung muss entweder null oder nicht größer als 400 Charaktere sein.",
+    "importNameInvalid": "Importierung ist fehlgeschlagen weil der gegebene Name fehlerhaft ist. Der Name muss entweder null sein oder darf die konfigurierte maximale Namenslänge nicht überschreiten.",
     "invalidAlertEmailAddresses": "Benutzer mit den folgenden Email-Addressen können keine Alarme empfange: {invalidAlertEmails}",
     "payloadTooLarge": "Die Anforderungslast ist zu groß.",
     "reportNotSupportedForOpenSearch": "Dieser Berichtstyp wird derzeit nicht für OpenSearch unterstützt."

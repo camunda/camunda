@@ -194,9 +194,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public IdResponseDto copyDashboard(
       final String dashboardId, final String userId, final String name) {
-    validateDashboardName(name);
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard =
         getDashboardDefinition(dashboardId, userId);
+    validateDashboardName(name);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
