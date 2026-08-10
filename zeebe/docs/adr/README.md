@@ -8,7 +8,7 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.10
 
-|                                 ADR                                 |                                                   Decision                                                    |
+| ADR                                                                 | Decision                                                                                                      |
 |---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [0001](0001-810-message-correlation-business-id-cross-partition.md) | Business ID message correlation: `P_K` owns messages, `P_B` enforces uniqueness, `P_K` pulls for lock release |
 | [0002](0002-810-message-start-rejection-retry.md)                   | Retry rejected message-starts until they start or their TTL expires                                           |
@@ -17,10 +17,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0005](0005-810-job-lease.md)                                       | Job lease: opt-in random opaque fencing token per activation, monotonic, fencing worker lifecycle commands    |
 | [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
 | [0007](0007-810-job-waiting-for-secret-resolution-state.md)         | Persisted `WAITING_FOR_SECRET_RESOLUTION` job state for jobs parked while their secret references resolve     |
-
-### Proposed
-
-|                   ADR                    |                                 Decision                                 |
-|------------------------------------------|--------------------------------------------------------------------------|
-| [0007](0007-TBD-concurrent-exporters.md) | One actor per exporter: decouple readers, positions, and failure domains |
+| [0008](0008-TBD-concurrent-exporters.md)                            | One actor per exporter: decouple readers, positions, and failure domains                                      |
 

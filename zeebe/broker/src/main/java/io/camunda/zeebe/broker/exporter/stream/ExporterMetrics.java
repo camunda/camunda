@@ -29,9 +29,6 @@ public final class ExporterMetrics {
   private static final String LABEL_NAME_ACTION = "action";
   private static final String LABEL_NAME_VALUE_TYPE = "valueType";
 
-  // Each configured exporter now runs on its own actor and calls into this shared instance
-  // concurrently, so every one of these must be safe for concurrent computeIfAbsent-style access -
-  // a plain HashMap/Table.simple()/Table.ofEnum() (array-backed) is not.
   private final Map<String, AtomicLong> lastExportedPositions = new ConcurrentHashMap<>();
   private final Map<String, AtomicLong> lastUpdatedExportedPositions = new ConcurrentHashMap<>();
   private final AtomicInteger exporterState = new AtomicInteger();
