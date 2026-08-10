@@ -56,8 +56,8 @@ public class UsageMetricsIT {
           .withAuthenticatedAccess()
           .withUnifiedConfig(
               cfg ->
-                  cfg.getProcessing()
-                      .getEngine()
+                  cfg.getMonitoring()
+                      .getMetrics()
                       .getUsageMetrics()
                       .setExportInterval(EXPORT_INTERVAL))
           .withProperty("zeebe.clock.controlled", "true");

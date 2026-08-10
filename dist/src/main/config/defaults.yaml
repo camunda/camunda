@@ -1019,6 +1019,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The maximum length of the worker name used in job metrics labels.
         max-worker-name-length: 100 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXWORKERNAMELENGTH
 
+      usage-metrics: # Type: io.camunda.configuration.UsageMetricsConfig
+        # The interval at which usage metrics are exported.
+        #
+        # Defaults to {@link EngineConfiguration#DEFAULT_USAGE_METRICS_EXPORT_INTERVAL}.
+        export-interval: null # Type: Duration, Env: CAMUNDA_MONITORING_METRICS_USAGEMETRICS_EXPORTINTERVAL
+
   operate: # Type: io.camunda.configuration.beanoverrides.LegacyOperateProperties
     backup: # Type: io.camunda.operate.property.BackupProperties
       incomplete-check-timeout-in-seconds: null # Type: Long, Env: CAMUNDA_OPERATE_BACKUP_INCOMPLETECHECKTIMEOUTINSECONDS
@@ -1300,10 +1306,6 @@ camunda: # Type: io.camunda.configuration.Camunda
         ttl-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
         # Configures the interval at which buffered messages are checked for expiry.
         ttl-checker-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERINTERVAL
-
-      usage-metrics: # Type: io.camunda.configuration.EngineUsageMetrics
-        # Configures the interval at which usage metrics are exported.
-        export-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_USAGEMETRICS_EXPORTINTERVAL
 
       validators: # Type: io.camunda.configuration.EngineValidators
         # Configures the maximum size, in bytes, of the validation error output produced when deploying an

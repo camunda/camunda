@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
 
@@ -32,7 +33,7 @@ public class UsageMetricsConfig {
         PREFIX + ".export-interval",
         exportInterval,
         Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        BackwardsCompatibilityMode.SUPPORTED,
         LEGACY_EXPORT_INTERVAL_PROPERTIES);
   }
 
