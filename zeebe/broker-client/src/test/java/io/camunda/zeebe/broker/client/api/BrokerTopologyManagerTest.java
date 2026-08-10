@@ -947,6 +947,37 @@ final class BrokerTopologyManagerTest {
   }
 
   @Test
+  void shouldUseOwnGroupsConfiguredStateWhenBrokerJoinsAfterMultiTenantConfiguration() {
+    // given -- the cluster configuration is applied for both default (3 partitions) and tenant1
+    // (1 partition), before any broker has locally joined tenant1's group
+    final var global = globalConfigWithMember(MemberId.from("1"));
+    final var defaultGroup = singleMemberGroup(MemberId.from("1"), Map.of(1, 1, 2, 1, 3, 1));
+    final var tenant1Group = singleMemberGroup(MemberId.from("1"), Map.of(5, 1));
+    topologyManager.onClusterConfigurationUpdated(
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, defaultGroup, "tenant1", tenant1Group),
+            PhasedChangeState.empty()));
+    actorSchedulerRule.workUntilDone();
+    assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(3);
+
+    // when -- a broker later joins tenant1's group locally, triggering a topology rebuild for
+    // tenant1
+    final var brokerId = BrokerMemberId.from(0);
+    notifyEvent(createMemberAddedEvent(createBrokerWithGroup(brokerId, "tenant1")));
+
+    // then -- tenant1 keeps reporting its own configured partition, not the default group's
+    assertThat(topologyManager.getTopology("tenant1").getPartitionsCount())
+        .describedAs("tenant1 must report its own partition count, not the default group's")
+        .isEqualTo(1);
+    assertThat(topologyManager.getTopology("tenant1").getPartitions()).isEqualTo(List.of(5));
+
+    // and -- the default group is unaffected
+    assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(3);
+  }
+
+  @Test
   void shouldReturnUninitializedTopologyForUnknownGroup() {
     // given / when — no brokers added
     // then

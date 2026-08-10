@@ -260,9 +260,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private void applyClusterConfiguration(final CurrentClusterConfiguration clusterConfiguration) {
     // For each known group, update the configured cluster state and notify listeners if anything
-    // changed. The default group is always updated, even if no broker has joined it yet, since the
-    // cluster configuration can be gossiped before the local membership events for that group are
-    // observed.
+    // changed.
     final Set<String> groupIds = clusterConfiguration.partitionGroups().keySet();
 
     final var allGroups =
