@@ -36,9 +36,6 @@ public class Engine {
   /** Configuration properties for the engine's message TTL checker. */
   @NestedConfigurationProperty private EngineMessages messages = new EngineMessages();
 
-  /** Configuration properties for the engine's usage metrics export. */
-  @NestedConfigurationProperty private EngineUsageMetrics usageMetrics = new EngineUsageMetrics();
-
   /** Configuration properties for the engine's BPMN/DMN validators. */
   @NestedConfigurationProperty private EngineValidators validators = new EngineValidators();
 
@@ -102,14 +99,6 @@ public class Engine {
 
   public void setMessages(final EngineMessages messages) {
     this.messages = messages;
-  }
-
-  public EngineUsageMetrics getUsageMetrics() {
-    return usageMetrics;
-  }
-
-  public void setUsageMetrics(final EngineUsageMetrics usageMetrics) {
-    this.usageMetrics = usageMetrics;
   }
 
   public EngineValidators getValidators() {

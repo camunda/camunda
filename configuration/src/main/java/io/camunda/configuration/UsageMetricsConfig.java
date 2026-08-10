@@ -13,13 +13,19 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.time.Duration;
 import java.util.Set;
 
-public class EngineUsageMetrics {
-  private static final String PREFIX = "camunda.processing.engine.usage-metrics";
+public class UsageMetricsConfig {
+
+  private static final String PREFIX = "camunda.monitoring.metrics.usage-metrics";
 
   private static final Set<String> LEGACY_EXPORT_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.usageMetrics.exportInterval");
 
-  /** Configures the interval at which usage metrics are exported. */
+  /**
+   * The interval at which usage metrics are exported.
+   *
+   * <p>Defaults to {@link
+   * io.camunda.zeebe.engine.EngineConfiguration#DEFAULT_USAGE_METRICS_EXPORT_INTERVAL}.
+   */
   private Duration exportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
   public Duration getExportInterval() {

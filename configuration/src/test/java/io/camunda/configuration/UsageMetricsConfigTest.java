@@ -26,9 +26,9 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class
 })
 @ActiveProfiles("broker")
-public class EngineUsageMetricsTest {
+public class UsageMetricsConfigTest {
   @Nested
-  @TestPropertySource(properties = {"camunda.processing.engine.usage-metrics.export-interval=10m"})
+  @TestPropertySource(properties = {"camunda.monitoring.metrics.usage-metrics.export-interval=15s"})
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
 
@@ -39,13 +39,13 @@ public class EngineUsageMetricsTest {
     @Test
     void shouldSetUsageMetrics() {
       assertThat(brokerCfg.getExperimental().getEngine().getUsageMetrics())
-          .returns(Duration.ofMinutes(10), UsageMetricsCfg::getExportInterval);
+          .returns(Duration.ofSeconds(15), UsageMetricsCfg::getExportInterval);
     }
   }
 
   @Nested
   @TestPropertySource(
-      properties = {"zeebe.broker.experimental.engine.usageMetrics.exportInterval=10m"})
+      properties = {"zeebe.broker.experimental.engine.usageMetrics.exportInterval=15s"})
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
 
@@ -56,7 +56,7 @@ public class EngineUsageMetricsTest {
     @Test
     void shouldSetUsageMetricsFromLegacy() {
       assertThat(brokerCfg.getExperimental().getEngine().getUsageMetrics())
-          .returns(Duration.ofMinutes(10), UsageMetricsCfg::getExportInterval);
+          .returns(Duration.ofSeconds(15), UsageMetricsCfg::getExportInterval);
     }
   }
 
@@ -64,9 +64,9 @@ public class EngineUsageMetricsTest {
   @TestPropertySource(
       properties = {
         // new
-        "camunda.processing.engine.usage-metrics.export-interval=10m",
+        "camunda.monitoring.metrics.usage-metrics.export-interval=15s",
         // legacy
-        "zeebe.broker.experimental.engine.usageMetrics.exportInterval=100m",
+        "zeebe.broker.experimental.engine.usageMetrics.exportInterval=150s",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -78,7 +78,7 @@ public class EngineUsageMetricsTest {
     @Test
     void shouldSetUsageMetricsFromNew() {
       assertThat(brokerCfg.getExperimental().getEngine().getUsageMetrics())
-          .returns(Duration.ofMinutes(10), UsageMetricsCfg::getExportInterval);
+          .returns(Duration.ofSeconds(15), UsageMetricsCfg::getExportInterval);
     }
   }
 }

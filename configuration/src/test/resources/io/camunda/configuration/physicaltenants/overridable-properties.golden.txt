@@ -254,6 +254,7 @@ monitoring.metrics.job-metrics.max-job-type-length
 monitoring.metrics.job-metrics.max-tenant-id-length
 monitoring.metrics.job-metrics.max-unique-keys
 monitoring.metrics.job-metrics.max-worker-name-length
+monitoring.metrics.usage-metrics.export-interval
 process-instance-creation.business-id-uniqueness-enabled
 process-instance-creation.message-start-ask-retry-interval
 process-instance-creation.message-start-dedup-expiration-sweep-batch-limit
@@ -299,7 +300,6 @@ processing.engine.secrets.retry-backoff-factor
 processing.engine.secrets.retry-initial-delay
 processing.engine.secrets.retry-max-attempts
 processing.engine.secrets.retry-max-delay
-processing.engine.usage-metrics.export-interval
 processing.engine.validators.results-output-max-size
 processing.evaluate-boundary-event-correlation-key-in-activity-scope
 processing.flow-control.request.aimd.backoff-ratio
