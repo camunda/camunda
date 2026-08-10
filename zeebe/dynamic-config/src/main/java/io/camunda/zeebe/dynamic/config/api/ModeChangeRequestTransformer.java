@@ -91,9 +91,14 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
     return Either.right(List.of(new PartitionGroupParallelPhase(operationsPerGroup)));
   }
 
-  /** The brokers of the group that are not in the target mode yet. */
+  /**
+   * The brokers active in the group that are not in the target mode yet. A broker is active in a
+   * group iff it holds partitions there; one that holds none has nothing to transition, and
+   * awaiting a mode change from it would never complete.
+   */
   private List<MemberId> membersToTransition(final PartitionGroupConfiguration partitionGroup) {
     return partitionGroup.members().entrySet().stream()
+        .filter(member -> !member.getValue().partitions().isEmpty())
         .filter(member -> member.getValue().mode() != request.mode())
         .map(Entry::getKey)
         .toList();

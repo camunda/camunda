@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class ModeChangeRequestTransformerTest {
@@ -80,6 +81,52 @@ final class ModeChangeRequestTransformerTest {
     EitherAssert.assertThat(scoped).isRight();
     EitherAssert.assertThat(unscoped).isRight();
     assertThat(scoped.get()).isNotEmpty().isEqualTo(unscoped.get());
+  }
+
+  @Test
+  void shouldNotTransitionABrokerThatHostsNoPartitionOfTheGroup() {
+    // given — both brokers are listed in the default group and both are still PROCESSING, but only
+    // id0 hosts a partition there; id1 holds nothing and merely lingers in the member map. Both are
+    // ACTIVE cluster-wide, so only the group can tell them apart.
+    final var transformer = recoveringTransformer(Optional.empty());
+    final var clusterConfiguration =
+        cluster(
+            Map.of(
+                DEFAULT_GROUP,
+                group(
+                    Map.of(
+                        id0, hostingAPartition(Mode.PROCESSING),
+                        id1, hostingNothing(Mode.PROCESSING)))));
+
+    // when
+    final var result = transformer.phases(clusterConfiguration);
+
+    // then — id1 is left out: it has no partition to transition, and awaiting a mode change from it
+    // would never complete and would stall the whole plan
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new PartitionGroupParallelPhase(
+                Map.of(
+                    DEFAULT_GROUP,
+                    List.of(
+                        new ModeChangeOperation(id0, Mode.RECOVERING),
+                        new AwaitModeChangeOperation(id0, Mode.RECOVERING)))));
+  }
+
+  @Test
+  void shouldSucceedWithNoPhasesWhenNoBrokerToTransitionHostsAPartitionOfTheGroup() {
+    // given — the only broker still PROCESSING in the group hosts nothing there
+    final var transformer = recoveringTransformer(Optional.empty());
+    final var clusterConfiguration =
+        cluster(Map.of(DEFAULT_GROUP, group(Map.of(id0, hostingNothing(Mode.PROCESSING)))));
+
+    // when
+    final var result = transformer.phases(clusterConfiguration);
+
+    // then — nothing to plan, rather than a plan that can never complete
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isEmpty();
   }
 
   @Test
@@ -178,39 +225,43 @@ final class ModeChangeRequestTransformerTest {
         new ModeChangeRequest(physicalTenantId, Mode.RECOVERING, false));
   }
 
-  /**
-   * A cluster with one partition group per physical tenant: the default group hosted by member 0
-   * and {@link #TENANT_B}'s group hosted by member 1, each in the given mode.
-   */
   private CurrentClusterConfiguration twoTenantCluster(
       final Mode defaultGroupMode, final Mode tenantBMode) {
+    return cluster(
+        Map.of(
+            DEFAULT_GROUP, group(Map.of(id0, hostingAPartition(defaultGroupMode))),
+            TENANT_B, group(Map.of(id1, hostingAPartition(tenantBMode)))));
+  }
+
+  private CurrentClusterConfiguration cluster(
+      final Map<String, PartitionGroupConfiguration> partitionGroups) {
+    final var brokers =
+        partitionGroups.values().stream()
+            .flatMap(group -> group.members().keySet().stream())
+            .distinct()
+            .collect(
+                Collectors.toMap(
+                    memberId -> memberId,
+                    memberId -> new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE)));
     return new CurrentClusterConfiguration(
         CurrentClusterConfiguration.INITIAL_VERSION,
         new GlobalConfiguration(
-            1,
-            Optional.empty(),
-            Map.of(
-                id0, new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE),
-                id1, new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE)),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty()),
-        Map.of(
-            DEFAULT_GROUP, singleMemberGroup(id0, defaultGroupMode),
-            TENANT_B, singleMemberGroup(id1, tenantBMode)),
+            1, Optional.empty(), brokers, Optional.empty(), Optional.empty(), Optional.empty()),
+        partitionGroups,
         PhasedChangeState.empty());
   }
 
-  private PartitionGroupConfiguration singleMemberGroup(final MemberId memberId, final Mode mode) {
+  private PartitionGroupConfiguration group(final Map<MemberId, BrokerPartitionState> members) {
     return new PartitionGroupConfiguration(
-        1,
-        0,
-        Map.of(
-            memberId,
-            BrokerPartitionState.initialize(Map.of(1, PartitionState.active(1, partitionConfig)))
-                .setMode(mode)),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty());
+        1, 0, members, Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  private BrokerPartitionState hostingAPartition(final Mode mode) {
+    return BrokerPartitionState.initialize(Map.of(1, PartitionState.active(1, partitionConfig)))
+        .setMode(mode);
+  }
+
+  private BrokerPartitionState hostingNothing(final Mode mode) {
+    return BrokerPartitionState.initialize(Map.of()).setMode(mode);
   }
 }
