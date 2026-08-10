@@ -20,7 +20,7 @@ jest.mock('./service', () => {
 
 jest.mock('./Tooltip', () => 'foo');
 
-jest.spyOn(document.body, 'querySelector').mockReturnValue({
+const selectorSpy = jest.spyOn(document.body, 'querySelector').mockReturnValue({
   classList: {
     add: jest.fn(),
   },
@@ -37,6 +37,12 @@ const viewer = {
       on: eventSpy,
     };
   },
+};
+
+const MOCKED_ESCAPE_RESULT = 'MockedEscapeResult';
+const escapeMock = jest.fn(() => MOCKED_ESCAPE_RESULT);
+global.CSS = {
+  escape: escapeMock,
 };
 const data = 'some heatmap data';
 
@@ -70,8 +76,14 @@ it('should update heatmap if data changes', () => {
   expect(appendSpy).toHaveBeenLastCalledWith(anotherHeatmap);
 });
 
-it('should attach onClick if passed', () => {
+it('should attach onClick with sanitized ids if passed', () => {
+  // given
+  const idOfFirstProcess = 0;
   const spy = jest.fn();
+  // when
   shallow(<HeatmapOverlay viewer={viewer} data={data} onNodeClick={spy} />);
+  // then
+  expect(escapeMock).toHaveBeenNthCalledWith(1, `${idOfFirstProcess}`);
   expect(eventSpy).toHaveBeenCalledWith('element.click', spy);
+  expect(selectorSpy).toHaveBeenNthCalledWith(1, `[data-element-id=${MOCKED_ESCAPE_RESULT}]`);
 });
