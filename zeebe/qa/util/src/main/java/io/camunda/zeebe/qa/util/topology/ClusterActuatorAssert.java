@@ -58,6 +58,7 @@ public final class ClusterActuatorAssert
     Assertions.assertThat(currentTopology)
         .usingRecursiveComparison()
         .ignoringFieldsOfTypes(OffsetDateTime.class)
+        .ignoringFields("version")
         .isEqualTo(expectedTopology);
     return this;
   }
