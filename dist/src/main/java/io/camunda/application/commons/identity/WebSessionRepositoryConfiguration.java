@@ -17,6 +17,7 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.security.core.port.out.SessionStorePort;
 import io.camunda.security.spring.annotation.ConditionalOnPersistentWebSessionEnabled;
 import io.camunda.security.spring.session.WebSessionAttributeConverter;
@@ -89,9 +90,12 @@ public class WebSessionRepositoryConfiguration {
   })
   public PhysicalTenantScoped<PersistentWebSessionClient> persistentWebSessionClientProviderSearch(
       final Map<String, DocumentBasedSearchClient> physicalTenantDocumentSearchClients,
-      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
+      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
+      final SchemaManagerContainer schemaManagerContainer) {
     return PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
-        physicalTenantDocumentSearchClients, physicalTenantScopedIndexDescriptors);
+        physicalTenantDocumentSearchClients,
+        physicalTenantScopedIndexDescriptors,
+        schemaManagerContainer);
   }
 
   @Bean("persistentWebSessionClientProvider")

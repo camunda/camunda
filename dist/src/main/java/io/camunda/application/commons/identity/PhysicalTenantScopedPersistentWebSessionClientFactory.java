@@ -16,6 +16,7 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import java.util.LinkedHashMap;
@@ -33,14 +34,17 @@ public final class PhysicalTenantScopedPersistentWebSessionClientFactory {
 
   /**
    * Builds a provider for Elasticsearch/OpenSearch: one {@link PersistentWebSessionSearchImpl} per
-   * physical tenant from that tenant's document search client and index descriptors.
+   * physical tenant from that tenant's document search client and index descriptors, each guarded
+   * by {@link SchemaGatedPersistentWebSessionClient} against writing before that tenant's schema is
+   * initialized (issue #58509).
    *
    * @throws IllegalStateException if a tenant has no {@link IndexDescriptors}, or its search client
    *     does not also implement {@link DocumentBasedWriteClient}
    */
   public static PhysicalTenantScopedPersistentWebSessionClient fromDocumentSearchClients(
       final Map<String, DocumentBasedSearchClient> physicalTenantDocumentSearchClients,
-      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
+      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
+      final SchemaManagerContainer schemaManagerContainer) {
     final var byTenant = new LinkedHashMap<String, PersistentWebSessionClient>();
     physicalTenantDocumentSearchClients.forEach(
         (tenantId, client) -> {
@@ -57,8 +61,12 @@ public final class PhysicalTenantScopedPersistentWebSessionClientFactory {
                     + client.getClass().getName());
           }
           final var descriptor = descriptors.get(PersistentWebSessionIndexDescriptor.class);
+          final PersistentWebSessionClient searchClient =
+              new PersistentWebSessionSearchImpl(client, writeClient, descriptor);
           byTenant.put(
-              tenantId, new PersistentWebSessionSearchImpl(client, writeClient, descriptor));
+              tenantId,
+              new SchemaGatedPersistentWebSessionClient(
+                  searchClient, tenantId, () -> schemaManagerContainer.isInitialized(tenantId)));
         });
     return new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
   }
