@@ -200,4 +200,39 @@ class WebAppAuthorizationCheckPortConfigurationTest {
                               CamundaAuthentication.of(b -> b.user("alice")), authorization));
             });
   }
+
+  @Test
+  void shouldFailFastAtStartupWhenPerTenantScopesReportedButNoTenantsDeclared() {
+    // given: a PhysicalTenantSearchClientReaders bean is present but backed by an empty map --
+    // simulating a broken PhysicalTenantResolver invariant (it is expected to always synthesize a
+    // "default" entry, see PhysicalTenantResolverTest), which this bean has no way to verify itself
+    final var emptyReaders = new PhysicalTenantSearchClientReaders(Map.of());
+
+    // when / then: construction fails loudly at startup instead of leaving every authorization
+    // check -- including default-tenant ones -- to fail hard on every subsequent request
+    new WebApplicationContextRunner()
+        .withBean(
+            AuthorizationScopeRepositoryPort.class,
+            () -> mock(AuthorizationScopeRepositoryPort.class))
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> emptyReaders)
+        .withBean(MembershipPort.class, () -> mock(MembershipPort.class))
+        .withBean(CamundaSecurityLibraryProperties.class, CamundaSecurityLibraryProperties::new)
+        .withConfiguration(
+            AutoConfigurations.of(
+                AuthorizationCheckerConfiguration.class, AuthorizationConfiguration.class))
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx).hasFailed();
+              assertThat(ctx.getStartupFailure())
+                  .hasRootCauseInstanceOf(IllegalStateException.class)
+                  .hasRootCauseMessage(
+                      "PhysicalTenantSearchClientReaders is present but declares no physical "
+                          + "tenants; expected PhysicalTenantResolver to always synthesize a "
+                          + "'default' entry. This indicates a broken invariant between "
+                          + "PhysicalTenantResolver and this bean -- every authorization check, "
+                          + "including default-tenant ones, would otherwise fail hard per request "
+                          + "instead of at startup.");
+            });
+  }
 }

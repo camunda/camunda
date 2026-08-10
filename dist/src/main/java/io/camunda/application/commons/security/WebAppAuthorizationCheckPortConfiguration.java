@@ -82,6 +82,15 @@ public class WebAppAuthorizationCheckPortConfiguration {
         hasPerTenantScopes
             ? perTenantScopeRepositories(physicalTenantSearchClientReaders.get())
             : Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultScopeRepository);
+    if (hasPerTenantScopes && scopeRepositoriesByScope.isEmpty()) {
+      throw new IllegalStateException(
+          "PhysicalTenantSearchClientReaders is present but declares no physical tenants; "
+              + "expected PhysicalTenantResolver to always synthesize a '"
+              + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
+              + "' entry. This indicates a broken invariant between PhysicalTenantResolver and "
+              + "this bean -- every authorization check, including default-tenant ones, would "
+              + "otherwise fail hard per request instead of at startup.");
+    }
     final var checkPorts =
         ScopedAuthorizationCheckPortFactory.create(
             scopeRepositoriesByScope,
