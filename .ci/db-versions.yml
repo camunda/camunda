@@ -3,6 +3,9 @@
 # Single source of truth for all database versions tested in CI and deployed to SaaS.
 # Versions are specified as Docker image tags. Earlier versions *must* be listed before
 # later versions so that the last entry in each list resolves to the newest supported minor.
+# A version with a trailing `# LTS` comment has materially longer upstream support than
+# its neighbors — don't remove it from its list until it's actually out of support, even
+# once newer minors exist above it.
 #
 # ── How to use this file in CI workflows ────────────────────────────────────────
 #   CI workflows read versions from this file via the reusable action:
@@ -28,7 +31,7 @@ opensearch:
     - '2.19.6'
   os3:
     - "3.5.0"
-    - "3.6.0"
+    - "3.6.0"  # LTS (min. 18mo support) - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
     - "3.7.0"
     - "3.8.0"
 
