@@ -388,7 +388,7 @@ describe('ProcessInstanceOperations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render no operations for a suspended non-root instance', () => {
+  it('should render cancel but not resume for a suspended non-root instance', () => {
     const suspendedChildInstance = createProcessInstance({
       state: 'SUSPENDED',
       parentProcessInstanceKey: '111111111',
@@ -399,7 +399,12 @@ describe('ProcessInstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Resume Instance/}),
+    ).not.toBeInTheDocument();
   });
 
   it('should show error notification on suspend error', async () => {

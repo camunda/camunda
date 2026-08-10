@@ -108,8 +108,19 @@ describe('parseProcessInstancesSearchFilter', () => {
       $or: [
         {state: {$eq: 'ACTIVE'}, hasIncident: false},
         {state: {$eq: 'SUSPENDED'}},
-        {hasIncident: true},
+        {hasIncident: true, state: {$neq: 'SUSPENDED'}},
       ],
+    });
+  });
+
+  it('should exclude suspended instances when only incidents is set', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({incidents: 'true'}),
+    );
+
+    expect(result).toEqual({
+      hasIncident: true,
+      state: {$neq: 'SUSPENDED'},
     });
   });
 

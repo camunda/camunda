@@ -268,4 +268,26 @@ describe('Footer', () => {
       ).toBeDisabled(),
     );
   });
+
+  it('should keep add and edit variable controls enabled for a suspended instance', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+
+    const [firstEditVariableButton] = screen.getAllByRole('button', {
+      name: /edit/i,
+    });
+    expect(firstEditVariableButton).toBeEnabled();
+  });
 });

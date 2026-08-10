@@ -194,23 +194,21 @@ const ProcessInstanceOperations: React.FC<Props> = ({
   }
 
   if (processInstance.state === 'SUSPENDED') {
-    if (processInstance.parentProcessInstanceKey !== null) {
-      return null;
-    }
-
     return (
       <>
         <CollapsibleOperationsToolbar isCollapsed={isCollapsed}>
-          <CollapsibleOperationTrigger
-            isCollapsed={isCollapsed}
-            status={resumeStatus}
-            label="Resume"
-            pendingLabel="Resuming..."
-            icon={Play}
-            title={`Resume Instance ${processInstanceKey}`}
-            onClick={() => resumeProcessInstance()}
-            onReset={resetResume}
-          />
+          {processInstance.parentProcessInstanceKey === null && (
+            <CollapsibleOperationTrigger
+              isCollapsed={isCollapsed}
+              status={resumeStatus}
+              label="Resume"
+              pendingLabel="Resuming..."
+              icon={Play}
+              title={`Resume Instance ${processInstanceKey}`}
+              onClick={() => resumeProcessInstance()}
+              onReset={resetResume}
+            />
+          )}
           <CollapsibleOperationTrigger
             isCollapsed={isCollapsed}
             status={cancelStatus}

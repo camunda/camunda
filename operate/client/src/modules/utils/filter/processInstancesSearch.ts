@@ -130,7 +130,7 @@ const parseProcessInstancesSearchFilter = (
     stateFilters.push({state: {$eq: 'SUSPENDED'}});
   }
   if (filter.incidents) {
-    stateFilters.push({hasIncident: true});
+    stateFilters.push({hasIncident: true, state: {$neq: 'SUSPENDED'}});
   }
 
   if (stateFilters.length === 1) {
