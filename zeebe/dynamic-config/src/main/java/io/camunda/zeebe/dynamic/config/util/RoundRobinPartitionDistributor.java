@@ -15,7 +15,6 @@ import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,32 +113,7 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
       final MemberId primary,
       final int clusterSize,
       final int replicationFactor) {
-    final Map<MemberId, Integer> priority = new HashMap<>();
-    final int lowestPriority = 1;
-
-    priority.put(primary, replicationFactor);
-    // To ensure that secondary priorities are distributed evenly, we alternate the nodes for which
-    // second priority is assigned. Example, clusterSize = 3 partitionCount = 12. Node 0 has highest
-    // priority (=3) for partition 1,4,7 and 10. For partition 1 and 7, node 1 gets priority 2. For
-    // partition 4 and 10, node 2 gets priority 2. This is done so that if node 0 dies, the
-    // leadership is evenly distributed on the rest of the followers.
-    if ((partitionId.number() - 1) / clusterSize % 2 == 0) {
-      int nextPriority = replicationFactor - 1;
-      for (final MemberId member : membersForPartition) {
-        if (!member.equals(primary)) {
-          priority.put(member, nextPriority);
-          nextPriority--;
-        }
-      }
-    } else {
-      int nextPriority = lowestPriority;
-      for (final MemberId member : membersForPartition) {
-        if (!member.equals(primary)) {
-          priority.put(member, nextPriority);
-          nextPriority++;
-        }
-      }
-    }
-    return priority;
+    return PartitionPriorityAssigner.assignPriorities(
+        partitionId, membersForPartition, primary, clusterSize, replicationFactor);
   }
 }
