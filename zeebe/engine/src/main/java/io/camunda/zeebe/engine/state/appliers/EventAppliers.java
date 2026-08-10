@@ -403,6 +403,15 @@ public final class EventAppliers implements EventApplier {
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
     register(
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        3,
+        new ProcessInstanceElementTerminatedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier,
+            state.getSuspensionState()));
+    register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
     register(
