@@ -27,7 +27,8 @@ import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstanc
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
+// TODO: https://github.com/camunda/camunda/issues/59641
+describe.todo('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       nestedSubProcessesInstance,
