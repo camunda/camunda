@@ -26,6 +26,7 @@ import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AuditLogResult;
 import io.camunda.client.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.client.protocol.rest.AuthorizationCreateResult;
@@ -220,6 +221,10 @@ public class RestGatewayService {
 
   private void registerPut(final String url, final Object response) {
     register(WireMock.put(url), response);
+  }
+
+  private void registerPatch(final String url, final Object response) {
+    register(WireMock.patch(url), response);
   }
 
   private void register(final MappingBuilder builder, final Object response) {
@@ -421,6 +426,11 @@ public class RestGatewayService {
             WireMock.patch(
                     WireMock.urlEqualTo(RestGatewayPaths.getAgentInstanceUrl(agentInstanceKey)))
                 .willReturn(WireMock.noContent()));
+  }
+
+  public void onUpdateAgentInstanceRequest(
+      final long agentInstanceKey, final AgentInstanceUpdateResult response) {
+    registerPatch(RestGatewayPaths.getAgentInstanceUrl(agentInstanceKey), response);
   }
 
   public void onAgentInstanceGetRequest(

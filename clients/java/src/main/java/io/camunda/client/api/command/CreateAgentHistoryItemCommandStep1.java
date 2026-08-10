@@ -83,7 +83,7 @@ public interface CreateAgentHistoryItemCommandStep1 {
   interface CreateAgentHistoryItemCommandStep5 {
 
     /**
-     * Sets the connector-side timestamp when this message was produced.
+     * Sets the agent-side timestamp when this message was produced.
      *
      * @param producedAt the production timestamp. Must not be null.
      * @return this builder for method chaining
@@ -95,9 +95,9 @@ public interface CreateAgentHistoryItemCommandStep1 {
       extends FinalCommandStep<CreateAgentHistoryItemResponse> {
 
     /**
-     * Sets the opaque job lease token received from the job activation response.
-     *
-     * <p>Job leasing is not yet enforced (#55033); this field is optional until support is added.
+     * Sets the opaque job lease token received from the job activation response. Disambiguates this
+     * activation from any other activation of the same job: if the job is later retried, history
+     * items submitted under a superseded lease are discarded rather than committed.
      *
      * @param jobLease the lease token. Must not be null or empty.
      * @return this builder for method chaining
