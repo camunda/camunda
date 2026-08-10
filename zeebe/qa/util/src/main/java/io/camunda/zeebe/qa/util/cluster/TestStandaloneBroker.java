@@ -83,12 +83,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
-    // this is required to prevent default spring boot 4.0 security setup to kick in
-    withProperty(
-        "spring.autoconfigure.exclude",
-        "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
-            + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
-
     withAdditionalProfile(Profile.BROKER);
 
     unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
