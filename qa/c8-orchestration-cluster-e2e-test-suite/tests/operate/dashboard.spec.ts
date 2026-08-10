@@ -282,18 +282,24 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
   }) => {
     await test.step('Expand first error and navigate to verify incident count', async () => {
-      // Dashboard badge counts and the filtered Process Instances heading
-      // are computed from independent queries, so they can disagree under
-      // active load (observed 1395 on the badge vs 1549 on the destination
-      // page on shared CI). The expand step makes this race worse by adding
-      // latency between reading the badge and clicking through. Retry the
-      // read + expand + click + verify cycle until they agree.
+      // Target the error row created by this beforeAll execution's runTag
+      // rather than the global first row. The first row on the shared nightly
+      // cluster is the largest error group, whose population is constantly
+      // mutated by parallel specs, so the badge count read here and the
+      // filtered Process Instances heading on the destination page disagree
+      // (observed 1519 on the badge vs a different count on the page) and
+      // never converge within the retry budget. The runTag-scoped row is a
+      // stable population owned solely by this spec, matching the isolation
+      // the sibling 'Select process instances by error message' test uses.
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-          const firstInstanceByError =
-            operateDashboardPage.incidentsByErrorItem(0);
+          const firstInstanceByError = operateDashboardPage
+            .incidentsByErrorItemByMessage(new RegExp(runTag, 'i'))
+            .first();
+
+          await expect(firstInstanceByError).toBeVisible();
 
           const incidentCount = Number(
             await operateDashboardPage
