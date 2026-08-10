@@ -12,8 +12,19 @@ const isInstanceRunning = (processInstance: ProcessInstance): boolean => {
   return processInstance.state === 'ACTIVE' || processInstance.hasIncident;
 };
 
+// Variable modification is allowed while SUSPENDED (unlike other operations,
+// e.g. modification mode) since it isn't gated by the engine's suspension
+// mechanism and supports fixing data before resuming.
+const isVariableEditable = (processInstance: ProcessInstance): boolean => {
+  return (
+    processInstance.state === 'ACTIVE' ||
+    processInstance.state === 'SUSPENDED' ||
+    processInstance.hasIncident
+  );
+};
+
 const getProcessDefinitionName = (instance: ProcessInstance) => {
   return instance.processDefinitionName ?? instance.processDefinitionId;
 };
 
-export {getProcessDefinitionName, isInstanceRunning};
+export {getProcessDefinitionName, isInstanceRunning, isVariableEditable};
