@@ -18,11 +18,11 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-final class ExporterExportedPositionsTest {
+final class ExporterPositionMonitorTest {
 
   private final FlowControl flowControl = mock(FlowControl.class);
-  private final ExporterExportedPositions exportedPositions =
-      new ExporterExportedPositions(flowControl);
+  private final ExporterPositionMonitor exportedPositions =
+      new ExporterPositionMonitor(flowControl);
 
   @Test
   void shouldNotNotifyFlowControlWhenNoExporterIsTracked() {
