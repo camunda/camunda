@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.logstreams;
 
+import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -26,6 +27,16 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   private final AtomixReaderFactory readerFactory;
   private final ZeebeLogAppender logAppender;
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
+  private final Set<CommittedPositionListener> committedPositionListeners =
+      new CopyOnWriteArraySet<>();
+
+  /**
+   * Raft notifies committed indexes and committed application entry positions through two separate
+   * listeners with the same method signature, so this cannot be a second interface implemented by
+   * this class.
+   */
+  private final RaftApplicationEntryCommittedPositionListener committedPositionNotifier =
+      this::onCommittedPosition;
 
   public AtomixLogStorage(
       final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
@@ -64,7 +75,33 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   }
 
   @Override
+  public void addCommittedPositionListener(final CommittedPositionListener listener) {
+    committedPositionListeners.add(listener);
+  }
+
+  @Override
+  public void removeCommittedPositionListener(final CommittedPositionListener listener) {
+    committedPositionListeners.remove(listener);
+  }
+
+  /**
+   * Notified by Raft on every role, whenever the commit index advances. This is the only commit
+   * signal a follower receives, because it never appends entries itself.
+   */
+  @Override
   public void onCommit(final long index) {
     commitListeners.forEach(CommitListener::onCommit);
+  }
+
+  /**
+   * The listener to register for committed application entry positions. Raft only notifies it on
+   * the leader, and only for entries the leader appended itself.
+   */
+  public RaftApplicationEntryCommittedPositionListener committedPositionNotifier() {
+    return committedPositionNotifier;
+  }
+
+  private void onCommittedPosition(final long highestPosition) {
+    committedPositionListeners.forEach(listener -> listener.onCommittedPosition(highestPosition));
   }
 }

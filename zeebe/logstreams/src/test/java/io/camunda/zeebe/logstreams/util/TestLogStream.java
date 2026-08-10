@@ -16,6 +16,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
@@ -126,6 +127,16 @@ public class TestLogStream implements LogStream {
   @Override
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     logStream.removeRecordAvailableListener(recordAwaiter);
+  }
+
+  @Override
+  public void registerCommittedPositionListener(final CommittedPositionListener listener) {
+    logStream.registerCommittedPositionListener(listener);
+  }
+
+  @Override
+  public void removeCommittedPositionListener(final CommittedPositionListener listener) {
+    logStream.removeCommittedPositionListener(listener);
   }
 
   private Either<WriteFailure, Long> syncTryWrite(
