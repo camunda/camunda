@@ -513,7 +513,7 @@ class DefaultResourceAccessProviderTest {
   }
 
   @Test
-  void forScopeRepositoryShouldBuildDefaultProviderWhenAuthorizationsEnabled() {
+  void shouldBuildDefaultProviderForScopeRepositoryWhenAuthorizationsEnabled() {
     // given
     final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
@@ -533,7 +533,7 @@ class DefaultResourceAccessProviderTest {
   }
 
   @Test
-  void forScopeRepositoryShouldBuildDisabledProviderWhenAuthorizationsDisabled() {
+  void shouldBuildDisabledProviderForScopeRepositoryWhenAuthorizationsDisabled() {
     // given
     final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
 
