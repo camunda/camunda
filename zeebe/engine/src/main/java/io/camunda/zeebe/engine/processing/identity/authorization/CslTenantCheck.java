@@ -74,9 +74,9 @@ public final class CslTenantCheck {
   }
 
   /**
-   * True when the command's claims mark it as an anonymous caller. Checked against the raw map
-   * because the map is the command record's wire format — there is no resolved {@link
-   * io.camunda.security.api.model.CamundaAuthentication} yet at this point in the write path.
+   * True when the raw claims/authorizations map marks the caller as an anonymous user. Checked on
+   * the raw map because some write-path call sites run before (or without) building a {@link
+   * io.camunda.security.api.model.CamundaAuthentication}.
    */
   static boolean isAnonymousCommand(final Map<String, Object> authorizations) {
     return Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
