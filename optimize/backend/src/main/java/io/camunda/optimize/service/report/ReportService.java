@@ -187,9 +187,9 @@ public class ReportService implements CollectionReferencingService {
 
   public IdResponseDto copyReport(
       final String reportId, final String userId, final String newReportName) {
-    validateReportName(newReportName);
     final AuthorizedReportDefinitionResponseDto authorizedReportDefinition =
         getReportDefinition(reportId, userId);
+    validateReportName(newReportName);
     final ReportDefinitionDto oldReportDefinition = authorizedReportDefinition.getDefinitionDto();
 
     return copyAndMoveReport(
@@ -201,6 +201,8 @@ public class ReportService implements CollectionReferencingService {
       final String userId,
       final String collectionId,
       final String newReportName) {
+    // authorize first, so the name check cannot answer whether the report exists
+    getReportDefinition(reportId, userId);
     validateReportName(newReportName);
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
   }

@@ -42,6 +42,7 @@ import io.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExi
 import io.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 import io.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import io.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
+import io.camunda.optimize.service.exceptions.OptimizeImportNameNotValidException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
@@ -119,6 +120,7 @@ public class ReportImportService {
     final Set<ConflictedItemDto> definitionsNotInScope = new HashSet<>();
     final Set<ConflictedItemDto> tenantsNotInScope = new HashSet<>();
     final Set<String> invalidReportIds = new HashSet<>();
+    final Set<String> invalidReportNameIds = new HashSet<>();
 
     reportsToImport.forEach(
         reportExportDto -> {
@@ -136,6 +138,8 @@ public class ReportImportService {
             tenantsNotInScope.addAll(e.getConflictedItems());
           } catch (OptimizeImportDescriptionNotValidException e) {
             invalidReportIds.addAll(e.getInvalidEntityIds());
+          } catch (final OptimizeImportNameNotValidException e) {
+            invalidReportNameIds.addAll(e.getInvalidEntityIds());
           }
         });
 
@@ -170,6 +174,10 @@ public class ReportImportService {
 
     if (!invalidReportIds.isEmpty()) {
       throw new OptimizeImportDescriptionNotValidException(invalidReportIds);
+    }
+
+    if (!invalidReportNameIds.isEmpty()) {
+      throw new OptimizeImportNameNotValidException(invalidReportNameIds);
     }
   }
 
@@ -380,7 +388,11 @@ public class ReportImportService {
     } catch (OptimizeValidationException ex) {
       throw new OptimizeImportDescriptionNotValidException(Set.of(reportToImport.getId()));
     }
-    reportService.validateReportName(reportToImport.getName());
+    try {
+      reportService.validateReportName(reportToImport.getName());
+    } catch (final OptimizeValidationException ex) {
+      throw new OptimizeImportNameNotValidException(Set.of(reportToImport.getId()));
+    }
     switch (reportToImport.getExportEntityType()) {
       case SINGLE_PROCESS_REPORT:
         final SingleProcessReportDefinitionExportDto processExport =

@@ -17,6 +17,7 @@ import ThresholdInput from './ThresholdInput';
 
 jest.mock('config', () => ({
   isEmailEnabled: jest.fn().mockReturnValue(true),
+  getEntityNameMaxLength: jest.fn().mockResolvedValue(256),
   getOptimizeVersion: jest.fn().mockReturnValue('2.7.0'),
 }));
 
