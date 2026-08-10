@@ -78,6 +78,7 @@ test('should match the custom filters modal', async ({tasklistIndexPage, page}) 
 	await tasklistIndexPage.newFilterButton.click();
 
 	await expect(tasklistIndexPage.customFiltersModal.heading).toBeVisible();
+	await expect(tasklistIndexPage.customFiltersModal.processSelect).toBeVisible();
 	await expect(page).toHaveScreenshot();
 
 	await tasklistIndexPage.customFiltersModal.assigneeOption('User and group').click();
@@ -93,6 +94,7 @@ test('should match the custom filters modal with advanced filters open', async (
 	await tasklistIndexPage.customFiltersModal.advancedFiltersToggle.click();
 	await tasklistIndexPage.customFiltersModal.businessIdField.fill('ORDER-2024-0042');
 
+	await expect(tasklistIndexPage.customFiltersModal.processSelect).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
