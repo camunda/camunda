@@ -179,6 +179,8 @@
 			"processesStartProcessSuccess": "Proceso iniciado",
 			"processesStartProcessFailed": "Fallo en el inicio del proceso",
 			"processesStartProcessNotificationSuccess": "El proceso ha comenzado",
+			"processesNewTaskNotification": "El proceso \"{{processName}}\" alcanzó la tarea \"{{taskName}}\"",
+			"processesNewTaskNotificationAction": "Abrir tarea",
 			"processesProcessTileAttributes": "Atributos del proceso",
 			"processesStartProcessFailedMissingTenant": "Fallo en el inicio del proceso. Por favor seleccione un Arrendatario.",
 			"processesProcessTileAttributeRequiresForm": "Requiere formulario de entrada",

@@ -179,6 +179,8 @@
 			"processesStartProcessSuccess": "Process started",
 			"processesStartProcessFailed": "Process start failed",
 			"processesStartProcessNotificationSuccess": "Process has started",
+			"processesNewTaskNotification": "Process \"{{processName}}\" reached task \"{{taskName}}\"",
+			"processesNewTaskNotificationAction": "Open task",
 			"processesProcessTileAttributes": "Process Attributes",
 			"processesStartProcessFailedMissingTenant": "Process start failed. Please select a tenant.",
 			"processesProcessTileAttributeRequiresForm": "Requires form input",

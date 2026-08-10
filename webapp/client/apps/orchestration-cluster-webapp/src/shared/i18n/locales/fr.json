@@ -179,6 +179,8 @@
 			"processesStartProcessSuccess": "Processus démarré",
 			"processesStartProcessFailed": "Échec du démarrage du processus",
 			"processesStartProcessNotificationSuccess": "Processus démarré",
+			"processesNewTaskNotification": "Le processus \"{{processName}}\" a atteint la tâche \"{{taskName}}\"",
+			"processesNewTaskNotificationAction": "Ouvrir la tâche",
 			"processesProcessTileAttributes": "Attributs du processus",
 			"processesStartProcessFailedMissingTenant": "Échec du démarrage du processus. Veuillez sélectionner un client.",
 			"processesProcessTileAttributeRequiresForm": "Nécessite une saisie",

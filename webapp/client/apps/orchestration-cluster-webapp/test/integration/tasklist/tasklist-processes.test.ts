@@ -14,9 +14,11 @@ import {
 	mockCreateProcessInstanceEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryUserTasksEndpoint,
+	mockQueryVariablesByUserTaskEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
@@ -29,14 +31,25 @@ import {
 	createQueryProcessDefinitionsResponse,
 	START_PROCESS_FORM_WITH_DOCUMENT_SCHEMA,
 } from '#/shared-test-modules/api-mocks/process-definitions';
-import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createProcessInstanceResponse} from '#/shared-test-modules/api-mocks/process-instances';
+import {createQueryVariablesByUserTaskResponse} from '#/shared-test-modules/api-mocks/variables';
 import {z} from 'zod';
 
 function createProcessDefinitionsRequestSchema(filter: Record<string, z.ZodType> = {}) {
 	return z.strictObject({
 		filter: z.strictObject({isLatestVersion: z.literal(true), ...filter}),
 		page: z.strictObject({limit: z.literal(12)}),
+	});
+}
+
+function createNewProcessInstanceTasksRequestSchema(processInstanceKey: string) {
+	return z.strictObject({
+		filter: z.strictObject({
+			processInstanceKey: z.literal(processInstanceKey),
+			state: z.literal('CREATED'),
+		}),
+		page: z.strictObject({limit: z.literal(10)}),
 	});
 }
 
@@ -174,7 +187,16 @@ test.describe('Tasklist processes page', () => {
 				successResponse: HttpResponse.json({createdDocuments: [], failedDocuments: []}),
 			}),
 			mockCreateProcessInstanceEndpoint({
+				schema: z.strictObject({
+					processDefinitionKey: z.literal(processDefinitionKey),
+					tenantId: z.literal('tenant-a'),
+					variables: z.object({
+						customerName: z.literal('Jane Doe'),
+						invoiceAmount: z.literal(125.5),
+					}),
+				}),
 				successResponse: HttpResponse.json(createProcessInstanceResponse({processDefinitionKey, tenantId: 'tenant-a'})),
+				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
 		);
 
@@ -193,6 +215,7 @@ test.describe('Tasklist processes page', () => {
 			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
 		).toBeVisible();
 		await expect(page).toHaveURL('/tasklist/processes?tenantId=tenant-a');
+		await expect(tasklistProcessesPage.startProcessDialog).not.toBeVisible();
 	});
 
 	test('should prevent process creation when form validation fails', async ({network, tasklistProcessesPage}) => {
@@ -214,7 +237,7 @@ test.describe('Tasklist processes page', () => {
 		);
 	});
 
-	test('should keep the form open and allow retry after submission failure', async ({
+	test('should close the form and notify after submission failure', async ({
 		network,
 		tasklistProcessesPage,
 		page,
@@ -236,22 +259,11 @@ test.describe('Tasklist processes page', () => {
 		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
 		await tasklistProcessesPage.startProcessFormButton.click();
 
-		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
-			'Form could not be submitted. Please try again later.',
-		);
-		await expect(page).toHaveURL(`/tasklist/processes/${processDefinitionKey}/start`);
-
-		network.use(
-			mockCreateProcessInstanceEndpoint({
-				successResponse: HttpResponse.json(createProcessInstanceResponse()),
-			}),
-		);
-		await tasklistProcessesPage.startProcessFormButton.click();
-
-		await expect(
-			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
-		).toBeVisible();
 		await expect(page).toHaveURL('/tasklist/processes');
+		await expect(tasklistProcessesPage.startProcessDialog).not.toBeVisible();
+		await expect(
+			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed'),
+		).toBeVisible();
 	});
 
 	test('should show non-retryable errors for missing, form-less, forbidden, and invalid-schema processes', async ({
@@ -323,8 +335,21 @@ test.describe('Tasklist processes page', () => {
 		await expect(tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'})).toBeVisible();
 	});
 
-	test('should start a process without a form using the selected tenant', async ({network, tasklistProcessesPage}) => {
+	test('should start a process without a form using the selected tenant and open its task', async ({
+		network,
+		tasklistProcessesPage,
+		taskDetailPage,
+		page,
+	}) => {
 		const processDefinitionKey = '2251799813685279';
+		const processInstanceKey = '2251799813685280';
+		const userTaskKey = '2251799813685281';
+		const task = createUserTask({
+			userTaskKey,
+			processInstanceKey,
+			name: 'Review invoice',
+			processName: 'Invoice review',
+		});
 		const tenants = [
 			{tenantId: '<default>', name: 'Default', description: null},
 			{tenantId: 'tenant-a', name: 'Tenant A', description: null},
@@ -354,6 +379,16 @@ test.describe('Tasklist processes page', () => {
 				successResponse: HttpResponse.json(createProcessInstanceResponse({processDefinitionKey, tenantId: 'tenant-a'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
+			mockQueryUserTasksEndpoint({
+				schema: createNewProcessInstanceTasksRequestSchema(processInstanceKey),
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [task]})),
+				failureResponse: new HttpResponse(null, {status: 400}),
+				delay: 500,
+			}),
+			mockGetUserTaskEndpoint({successResponse: HttpResponse.json(task)}),
+			mockQueryVariablesByUserTaskEndpoint({
+				successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
+			}),
 		);
 
 		await tasklistProcessesPage.goto('?tenantId=tenant-a');
@@ -362,6 +397,85 @@ test.describe('Tasklist processes page', () => {
 		await expect(
 			tasklistProcessesPage.header.notifications.getByNotificationTitle('Process has started'),
 		).toBeVisible();
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [task]})),
+			}),
+		);
+		await expect(tasklistProcessesPage.waitingForTasksStatus).toBeVisible();
+		await expect(tasklistProcessesPage.startProcessButton).toHaveCount(0);
+		await expect(page).toHaveURL(`/tasklist/${userTaskKey}`);
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
+	});
+
+	test('should notify about multiple new tasks and open a selected task', async ({
+		network,
+		tasklistProcessesPage,
+		taskDetailPage,
+		page,
+	}) => {
+		const processDefinitionKey = '2251799813685279';
+		const processInstanceKey = '2251799813685280';
+		const reviewTask = createUserTask({
+			userTaskKey: '2251799813685281',
+			processInstanceKey,
+			name: 'Review invoice',
+			processName: 'Invoice review',
+		});
+		const approveTask = createUserTask({
+			userTaskKey: '2251799813685282',
+			processInstanceKey,
+			name: null,
+			elementId: 'approve-invoice',
+			processName: null,
+			processDefinitionId: 'invoice-review',
+		});
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				schema: createProcessDefinitionsRequestSchema(),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Invoice review', processDefinitionKey})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockCreateProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstanceResponse({processDefinitionKey, processInstanceKey})),
+			}),
+			mockQueryUserTasksEndpoint({
+				schema: createNewProcessInstanceTasksRequestSchema(processInstanceKey),
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [reviewTask, approveTask]})),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetUserTaskEndpoint({successResponse: HttpResponse.json(approveTask)}),
+			mockQueryVariablesByUserTaskEndpoint({
+				successResponse: HttpResponse.json(createQueryVariablesByUserTaskResponse()),
+			}),
+		);
+
+		await tasklistProcessesPage.goto();
+		await tasklistProcessesPage.startProcessButton.click();
+
+		const reviewNotificationTitle = 'Process "Invoice review" reached task "Review invoice"';
+		const approveNotificationTitle = 'Process "invoice-review" reached task "approve-invoice"';
+		await expect(
+			tasklistProcessesPage.header.notifications.getByActionableNotificationTitle(reviewNotificationTitle),
+		).toBeVisible();
+		await expect(
+			tasklistProcessesPage.header.notifications.getByActionableNotificationTitle(approveNotificationTitle),
+		).toBeVisible();
+		await expect(page).toHaveURL('/tasklist/processes');
+
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [reviewTask, approveTask]})),
+			}),
+		);
+		await tasklistProcessesPage.header.notifications.getActionButton(approveNotificationTitle, 'Open task').click();
+
+		await expect(page).toHaveURL(`/tasklist/${approveTask.userTaskKey}`);
+		await expect(taskDetailPage.detailsInfo).toBeVisible();
 	});
 
 	test('should notify the user when starting a process fails', async ({network, tasklistProcessesPage}) => {

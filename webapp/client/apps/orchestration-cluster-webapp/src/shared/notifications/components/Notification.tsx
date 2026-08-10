@@ -10,7 +10,6 @@ import {ActionableNotification, ToastNotification} from '@carbon/react';
 import {CSSTransition} from 'react-transition-group';
 import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
-import {useTranslation} from 'react-i18next';
 import type {Notification as NotificationType} from '#/shared/notifications/notifications.store';
 import {useRelativeDate} from '#/shared/notifications/useRelativeDate';
 import styles from '#/shared/notifications/components/Notifications.module.scss';
@@ -34,7 +33,6 @@ const Notification: React.FC<Props> = observer(
 		},
 		...props
 	}) => {
-		const {t} = useTranslation();
 		const nodeRef = useRef<HTMLDivElement | null>(null);
 		const relativeDate = useRelativeDate(date);
 
@@ -63,7 +61,7 @@ const Notification: React.FC<Props> = observer(
 								hideNotification();
 								return false;
 							}}
-							actionButtonLabel={actionButtonLabel ? t('notificationActionButtonLabel') : ''}
+							actionButtonLabel={actionButtonLabel ?? ''}
 							onActionButtonClick={onActionButtonClick}
 						/>
 					) : (

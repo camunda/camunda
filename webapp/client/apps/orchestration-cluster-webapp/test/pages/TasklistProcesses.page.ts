@@ -74,6 +74,10 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.getByRole('button', {name: 'Start process'});
 	}
 
+	get waitingForTasksStatus() {
+		return this.page.getByText('Waiting for tasks...');
+	}
+
 	get startProcessDialog() {
 		return this.page.getByRole('dialog', {name: /Start process/});
 	}
