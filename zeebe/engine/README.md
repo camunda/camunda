@@ -398,7 +398,7 @@ guide on golden files, common scenarios, and porting pitfalls.
 
 ### Side-effects are not guaranteed to be executed
 
-- Side-effects are executed before the next command is picked up, but if execution fails or if failover occurs the side-effect may not be executed.
+- Side-effects are executed asynchronously after their processing results are committed, but if execution fails or if failover occurs the side-effect may not be executed.
 - **Don't** do things that must happen in a side-effect.
 - **Do** use side-effects for things like updating caches or sending responses.
 

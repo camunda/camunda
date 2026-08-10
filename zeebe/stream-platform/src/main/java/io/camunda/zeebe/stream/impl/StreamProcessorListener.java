@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * A listener for the {@link StreamProcessor}. Allows retrieving insides of the processing and
@@ -21,9 +20,9 @@ public interface StreamProcessorListener {
   /**
    * Is called when a command is processed.
    *
-   * @param processedCommand the command that is processed
+   * @param processedPosition the position of the command that was processed
    */
-  void onProcessed(TypedRecord<?> processedCommand);
+  void onProcessed(long processedPosition);
 
   /**
    * Is called when a record is skipped and not processed.
