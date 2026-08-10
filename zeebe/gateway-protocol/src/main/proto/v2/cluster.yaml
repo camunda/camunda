@@ -161,6 +161,8 @@ paths:
         or by a time range (`from`/`to`) that selects the backups to restore. This endpoint is only
         accessible while the cluster is in recovery mode; requests are rejected otherwise. The
         request is validated and acknowledged, but the restore itself is performed asynchronously.
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
       requestBody:
         content:
           application/json:
