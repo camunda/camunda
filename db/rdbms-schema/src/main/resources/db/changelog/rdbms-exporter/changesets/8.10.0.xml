@@ -479,6 +479,14 @@
       <column name="DURATION_MS" type="BIGINT"/>
       <column name="CONTENT" type="CLOB"/>
       <column name="TOOL_CALLS" type="CLOB"/>
+      <column name="HISTORY_ITEM_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="TOOLS" type="CLOB"/>
+      <column name="MODEL" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROVIDER" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="MAX_TOKENS" type="BIGINT"/>
+      <column name="MAX_MODEL_CALLS" type="INTEGER"/>
+      <column name="MAX_TOOL_CALLS" type="INTEGER"/>
+      <column name="SYSTEM_PROMPT" type="CLOB"/>
     </createTable>
 
     <modifySql dbms="mariadb,mysql">
@@ -541,100 +549,6 @@
       <column name="TENANT_ID"/>
     </createIndex>
   </changeSet>
-
-  <changeSet id="add_agent_history_history_item_id_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="HISTORY_ITEM_ID"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="HISTORY_ITEM_ID" type="NVARCHAR(${userCharColumnSize})"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_tools_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="TOOLS"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="TOOLS" type="CLOB"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_model_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="MODEL"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="MODEL" type="NVARCHAR(${userCharColumnSize})"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_provider_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="PROVIDER"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="PROVIDER" type="NVARCHAR(${userCharColumnSize})"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_max_tokens_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="MAX_TOKENS"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="MAX_TOKENS" type="BIGINT"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_max_model_calls_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="MAX_MODEL_CALLS"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="MAX_MODEL_CALLS" type="INTEGER"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_max_tool_calls_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="MAX_TOOL_CALLS"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="MAX_TOOL_CALLS" type="INTEGER"/>
-    </addColumn>
-  </changeSet>
-
-  <changeSet id="add_agent_history_system_prompt_column" author="camunda">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="${prefix}AGENT_HISTORY" columnName="SYSTEM_PROMPT"/>
-      </not>
-    </preConditions>
-    <addColumn tableName="${prefix}AGENT_HISTORY">
-      <column name="SYSTEM_PROMPT" type="CLOB"/>
-    </addColumn>
-  </changeSet>
-
-
-
-
-
-
 
   <changeSet id="create_wait_state_keyset_index" author="camunda">
     <preConditions onFail="MARK_RAN">

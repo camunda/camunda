@@ -95,10 +95,7 @@ public final class AgentHistoryEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String historyItemId;
 
-  /**
-   * CONFIGURATION items only — empty when this item didn't touch the tool list. May still be null
-   * for documents exported before this field existed.
-   */
+  /** CONFIGURATION items only — empty when this item didn't touch the tool list. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<AgentHistoryToolValue> tools;
 
@@ -112,15 +109,12 @@ public final class AgentHistoryEntity
 
   /**
    * CONFIGURATION items only — the {@code -1} sentinel ("no limit configured") when this item
-   * didn't touch the limits. May still be null for documents exported before this field existed.
+   * didn't touch the limits.
    */
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private AgentHistoryLimitsValue limits;
 
-  /**
-   * CONFIGURATION items only — empty when this item didn't touch the system prompt. May still be
-   * null for documents exported before this field existed.
-   */
+  /** CONFIGURATION items only — empty when this item didn't touch the system prompt. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<AgentHistoryContentValue> systemPrompt;
 
