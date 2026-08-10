@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -40,17 +42,20 @@ public final class ProcessInstanceBatchActivateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final TypedRejectionWriter rejectionWriter;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
 
   public ProcessInstanceBatchActivateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
-      final ProcessState processState) {
+      final ProcessState processState,
+      final BpmnLoopDetectionBehavior loopDetectionBehavior) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.loopDetectionBehavior = loopDetectionBehavior;
     rejectionWriter = writers.rejection();
   }
 
@@ -70,15 +75,28 @@ public final class ProcessInstanceBatchActivateProcessor
     }
 
     if (remainingChildrenToActivate > 0) {
-      writeActivateChildCommand(parentElementInstance);
+      final var childElement = getInnerActivity(parentElementInstance);
+      if (loopDetectionBehavior.isChildActivationThresholdExceeded(
+          parentElementInstance.getValue().getProcessInstanceKey(),
+          parentElementInstance.getValue().getElementIdBuffer(),
+          childElement.getElementType())) {
+        // A previously activated child has already crossed the loop-detection threshold (and raised
+        // an incident). Stop spawning the remaining children so the batch is bounded, instead of
+        // flooding the process instance with one incident per remaining child.
+        stateWriter.appendFollowUpEvent(
+            record.getKey(), ProcessInstanceBatchIntent.ACTIVATED, recordValue);
+        return;
+      }
+      writeActivateChildCommand(parentElementInstance, childElement);
     }
 
     writeNextBatchCommand(remainingChildrenToActivate - 1, record);
   }
 
-  private void writeActivateChildCommand(final ElementInstance parentElementInstance) {
+  private void writeActivateChildCommand(
+      final ElementInstance parentElementInstance, final ExecutableActivity childElement) {
     final ProcessInstanceRecord childInstanceRecord =
-        createChildInstanceRecord(parentElementInstance);
+        createChildInstanceRecord(parentElementInstance, childElement);
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
@@ -112,18 +130,7 @@ public final class ProcessInstanceBatchActivateProcessor
   }
 
   private ProcessInstanceRecord createChildInstanceRecord(
-      final ElementInstance parentElementInstance) {
-    final var processDefinition =
-        processState
-            .getProcessByKeyAndTenant(
-                parentElementInstance.getValue().getProcessDefinitionKey(),
-                parentElementInstance.getValue().getTenantId())
-            .getProcess();
-
-    final var parentElement =
-        processDefinition.getElementById(parentElementInstance.getValue().getElementId());
-    final var childElement = ((ExecutableMultiInstanceBody) parentElement).getInnerActivity();
-
+      final ElementInstance parentElementInstance, final ExecutableActivity childElement) {
     final var childInstanceRecord = new ProcessInstanceRecord();
     childInstanceRecord.wrap(parentElementInstance.getValue());
     childInstanceRecord
@@ -138,5 +145,18 @@ public final class ProcessInstanceBatchActivateProcessor
   public SuspensionBehavior suspensionBehavior(
       final TypedRecord<ProcessInstanceBatchRecord> record) {
     return SuspensionBehavior.BUFFER;
+  }
+
+  private ExecutableActivity getInnerActivity(final ElementInstance parentElementInstance) {
+    final var processDefinition =
+        processState
+            .getProcessByKeyAndTenant(
+                parentElementInstance.getValue().getProcessDefinitionKey(),
+                parentElementInstance.getValue().getTenantId())
+            .getProcess();
+
+    final var parentElement =
+        processDefinition.getElementById(parentElementInstance.getValue().getElementId());
+    return ((ExecutableMultiInstanceBody) parentElement).getInnerActivity();
   }
 }

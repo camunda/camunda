@@ -405,6 +405,39 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldRemoveElementActivationCountersOnProcessInstanceRemoval() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var processInstanceKey = 101L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final DirectBuffer firstElementId = wrapString("task-a");
+    final DirectBuffer secondElementId = wrapString("task-b");
+    elementInstanceState.incrementElementActivationCounter(processInstanceKey, firstElementId);
+    elementInstanceState.incrementElementActivationCounter(processInstanceKey, firstElementId);
+    elementInstanceState.incrementElementActivationCounter(processInstanceKey, secondElementId);
+
+    // sanity check: counters are tracked before removal
+    assertThat(elementInstanceState.getElementActivationCounter(processInstanceKey, firstElementId))
+        .isEqualTo(2L);
+    assertThat(
+            elementInstanceState.getElementActivationCounter(processInstanceKey, secondElementId))
+        .isEqualTo(1L);
+
+    // when
+    elementInstanceState.removeInstance(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getElementActivationCounter(processInstanceKey, firstElementId))
+        .isZero();
+    assertThat(
+            elementInstanceState.getElementActivationCounter(processInstanceKey, secondElementId))
+        .isZero();
+  }
+
+  @Test
   public void shouldNotLeakMemoryOnRemoval() {
     // given
     final int parent = 100;
