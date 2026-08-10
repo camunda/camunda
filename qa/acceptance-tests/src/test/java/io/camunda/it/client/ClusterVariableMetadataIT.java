@@ -642,29 +642,35 @@ public class ClusterVariableMetadataIT {
   void shouldNotLeakMetadataIntoRuntimeValue() {
     // given - a variable with both a value and metadata
     final var name = "runtimeVar_" + UUID.randomUUID().toString().replace("-", "");
+    final var metadata = otherMetadata("testValue", "CREDENTIAL", "schemaVersion", 2);
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
         .create(name, Map.of("user", "alice"))
-        .metadata(otherMetadata("testValue", "CREDENTIAL", "schemaVersion", 2))
+        .metadata(metadata)
         .send()
         .join();
 
     // when / then - the FEEL-accessible value exposes only the value contents
-    final var valueResult =
-        camundaClient
-            .newEvaluateExpressionCommand()
-            .expression("=camunda.vars.cluster." + name + ".user")
-            .send()
-            .join();
-    assertThat(valueResult.getResult()).isEqualTo("alice");
+    for (final var namespace : List.of("camunda.vars.cluster", "camunda.vars.env")) {
+      assertThat(evaluateExpression(namespace + "." + name + ".user"))
+          .as("value contents must stay reachable via %s", namespace)
+          .isEqualTo("alice");
 
-    // metadata keys are not reachable through the runtime value
-    final var metadataResult =
-        camundaClient
-            .newEvaluateExpressionCommand()
-            .expression("=camunda.vars.cluster." + name + ".kind")
-            .send()
-            .join();
-    assertThat(metadataResult.getResult()).isNull();
+      // every key the metadata bag actually carries must be unreachable
+      for (final var metadataKey : metadata.keySet()) {
+        assertThat(evaluateExpression(namespace + "." + name + "." + metadataKey))
+            .as("metadata key '%s' must not be reachable via %s", metadataKey, namespace)
+            .isNull();
+      }
+    }
+  }
+
+  private Object evaluateExpression(final String path) {
+    return camundaClient
+        .newEvaluateExpressionCommand()
+        .expression("=" + path)
+        .send()
+        .join()
+        .getResult();
   }
 }
