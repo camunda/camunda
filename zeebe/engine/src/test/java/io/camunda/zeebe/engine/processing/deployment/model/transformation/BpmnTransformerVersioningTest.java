@@ -57,7 +57,9 @@ class BpmnTransformerVersioningTest {
     // when
     final List<ExecutableProcess> result = transformer.transformDefinitions(model);
 
-    // then — the default (v1) pipeline produces the expected element types
+    // then — the default (latest-registered) pipeline produces the expected element types; the
+    // ServiceTask now resolves via the production SERVICE_TASK_JOB_WORKER v2 handler, which
+    // behaves identically to v1 for a plain service task with no agent marker
     assertThat(result).hasSize(1);
     final ExecutableFlowElement task =
         result.get(0).getElementById("t", ExecutableFlowElement.class);
@@ -137,36 +139,52 @@ class BpmnTransformerVersioningTest {
   }
 
   @Test
-  void shouldReturnEmptyCurrentVersionsByIdByDefault() {
-    // given / when / then — no v2+ handlers registered → nothing to stamp into ProcessRecord
+  void shouldReturnOnlyProductionRegisteredVersionsByDefault() {
+    // given / when / then — only the real production v2 handlers are registered by default; every
+    // other slot stays implicit v1 and is omitted (sparse representation)
     assertThat(new BpmnTransformer(expressionLanguage(), Integer.MAX_VALUE).currentVersionsById())
-        .isEmpty();
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 
   @Test
   void shouldReturnOnlySlotsAboveDefaultVersionInCurrentVersionsById() {
-    // given — one slot bumped to v2, all others at implicit v1
+    // given — one extra slot bumped to v2, on top of the production-registered v2 slots
     final var transformer = new BpmnTransformer(expressionLanguage(), Integer.MAX_VALUE);
     transformer.registerHandlerVersion(TransformerSlot.SIGNAL, 2, SignalTransformer::new);
 
     // when
     final var result = transformer.currentVersionsById();
 
-    // then — only the v2 slot appears; v1 slots are omitted (sparse representation)
-    assertThat(result).containsExactly(Map.entry(TransformerSlot.SIGNAL.id(), 2));
+    // then — the probe slot appears alongside the production v2 slots; all other v1 slots are
+    // omitted (sparse representation)
+    assertThat(result)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                TransformerSlot.SIGNAL.id(), 2,
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 
   @Test
   void shouldExposeRegisteredVersionsViaBpmnTransformerInstance() {
-    // given — a transformer with a probe v2 for SIGNAL
+    // given — a transformer with a probe v2 for SIGNAL, on top of the production v2 slots
     final var transformer = new BpmnTransformer(expressionLanguage(), Integer.MAX_VALUE);
     transformer.registerHandlerVersion(TransformerSlot.SIGNAL, 2, SignalTransformer::new);
 
     // when — the same instance that transforms is the one that stamps
     final var stampedVersions = transformer.currentVersionsById();
 
-    // then — the stamped map carries the probe registration, matching what writeRecords would stamp
-    assertThat(stampedVersions).containsExactly(Map.entry(TransformerSlot.SIGNAL.id(), 2));
+    // then — the stamped map carries the probe registration plus the production v2 slots,
+    // matching what writeRecords would stamp
+    assertThat(stampedVersions)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                TransformerSlot.SIGNAL.id(), 2,
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 
   /** Delegating marker handler — SignalTransformer is final, so we wrap rather than subclass. */

@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformerV2;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BusinessRuleTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CallActivityTransformer;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.Inclusive
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateCatchEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateThrowEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformerV2;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MessageTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MultiInstanceActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ProcessTransformer;
@@ -145,6 +147,12 @@ public final class BpmnTransformer {
 
     // Versions > 1 are registered here as sub-transformers evolve, e.g.:
     // registerHandlerVersion(TransformerSlot.SIGNAL, 2, SignalTransformerV2::new);
+    registerHandlerVersion(
+        TransformerSlot.SERVICE_TASK_JOB_WORKER,
+        2,
+        () -> new JobWorkerElementTransformerV2<>(ServiceTask.class));
+    registerHandlerVersion(
+        TransformerSlot.AD_HOC_SUB_PROCESS, 2, AdHocSubProcessTransformerV2::new);
   }
 
   /**
