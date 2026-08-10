@@ -60,9 +60,15 @@ class TargetIndexTest {
     assertThat(TargetIndex.getIndexFamilyFromName("index-name1").name()).isEqualTo("index-name1");
   }
 
-  @Test
-  void shouldReturnIndexFamilyFromNameForOrdinalIndex() {
-    assertThat(TargetIndex.getIndexFamilyFromName("index-name2ord00012").name())
-        .isEqualTo("index-name2");
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "index-name2ord00012",
+        "index-name2ord00001",
+        "index-name2ord00099",
+        "index-name2ord999999"
+      })
+  void shouldReturnIndexFamilyFromNameForOrdinalIndex(final String indexName) {
+    assertThat(TargetIndex.getIndexFamilyFromName(indexName).name()).isEqualTo("index-name2");
   }
 }

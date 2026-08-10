@@ -15,7 +15,7 @@ record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implement
   static final int DEFAULT_ORDINAL = 0;
   static final String ORDINAL_SUFFIX = "ord";
   static final Pattern ORDINAL_INDEX_PATTERN =
-      Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX) + "(\\d{5})$");
+      Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX) + "(\\d{5,})$");
 
   OrdinalIndex {
     if (ordinal <= DEFAULT_ORDINAL) {
