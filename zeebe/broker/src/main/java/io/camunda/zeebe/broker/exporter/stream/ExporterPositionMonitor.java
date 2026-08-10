@@ -12,23 +12,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tracks each configured exporter's own last-exported position and reports the minimum across all
- * of them to {@link FlowControl}. Before exporters were decoupled onto their own actors, {@link
- * FlowControl#onExported(long)} was only ever called once a record had been accepted by every
- * exporter, so the write-rate throttle was implicitly gated by the slowest one. Now each {@link
- * ExporterActor} reports its own position independently, so without this aggregation {@code
- * FlowControl} would just see whichever exporter last happened to report - typically the fastest -
- * defeating the point of throttling writes based on exporting lag.
+ * of them to {@link FlowControl}.
  *
  * <p>One instance is shared by every {@link ExporterActor} on a partition (mirroring how {@link
  * ExporterMetrics} is already shared), so {@link #onExported(String, long)} is called concurrently
  * from each exporter's own actor thread.
  */
-final class ExporterExportedPositions {
+final class ExporterPositionMonitor {
 
   private final ConcurrentHashMap<String, Long> positionsByExporterId = new ConcurrentHashMap<>();
   private final FlowControl flowControl;
 
-  ExporterExportedPositions(final FlowControl flowControl) {
+  ExporterPositionMonitor(final FlowControl flowControl) {
     this.flowControl = flowControl;
   }
 
