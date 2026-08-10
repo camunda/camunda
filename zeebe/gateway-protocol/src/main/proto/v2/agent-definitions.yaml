@@ -1,0 +1,197 @@
+## Schema definitions
+
+components:
+  schemas:
+    AgentDefinitionSearchQuerySortRequest:
+      type: object
+      required:
+        - field
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - agentDefinitionKey
+            - agentType
+            - name
+            - elementId
+            - processDefinitionId
+            - processDefinitionKey
+            - processDefinitionVersion
+            - processDefinitionVersionTag
+            - tenantId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+
+    AgentDefinitionSearchQuery:
+      description: Agent definition search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentDefinitionSearchQuerySortRequest'
+        filter:
+          description: The agent definition search filters.
+          allOf:
+            - $ref: '#/components/schemas/AgentDefinitionFilter'
+
+    AgentDefinitionFilter:
+      description: Agent definition search filter.
+      type: object
+      properties:
+        agentDefinitionKey:
+          description: The unique key of the agent definition.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKeyFilterProperty'
+        agentType:
+          description: The kind of agent this definition describes.
+          allOf:
+            - $ref: '#/components/schemas/AgentDefinitionTypeFilterProperty'
+        name:
+          description: The human-readable name of the process element that owns the agent.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        elementId:
+          description: The BPMN element ID of the process element that owns the agent.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+        processDefinitionId:
+          description: The BPMN process ID of the process definition that owns the agent.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionIdFilterProperty'
+        processDefinitionKey:
+          description: The key of the process definition that owns the agent.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+        processDefinitionVersion:
+          description: The version of the process definition that owns the agent.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        processDefinitionVersionTag:
+          description: The version tag of the process definition that owns the agent.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        tenantId:
+          description: The tenant ID of the agent definition.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    AgentDefinitionSearchQueryResult:
+      description: Agent definition search response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching agent definitions.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentDefinitionResult'
+
+    AgentDefinitionResult:
+      description: An agent definition, minted at deploy time for a process element that owns an agent.
+      type: object
+      required:
+        - agentDefinitionKey
+        - agentType
+        - name
+        - elementId
+        - processDefinitionId
+        - processDefinitionKey
+        - processDefinitionVersion
+        - processDefinitionVersionTag
+        - tenantId
+      properties:
+        agentDefinitionKey:
+          description: The unique key for this agent definition.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKey'
+        agentType:
+          $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        name:
+          description: |
+            The human-readable name of the process element that owns the agent. Falls back to
+            elementId when the element has no BPMN name configured.
+          type: string
+        elementId:
+          description: The BPMN element ID of the process element that owns the agent.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        processDefinitionId:
+          description: The BPMN process ID of the process definition that owns the agent.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionKey:
+          description: The key of the process definition that owns the agent.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        processDefinitionVersion:
+          type: integer
+          format: int32
+          description: The version of the process definition that owns the agent.
+        processDefinitionVersionTag:
+          type: string
+          nullable: true
+          description: The version tag of the process definition that owns the agent.
+        tenantId:
+          description: The tenant ID of this agent definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
+    ## Enums
+
+    AgentDefinitionTypeEnum:
+      description: The kind of agent an agent definition describes.
+      type: string
+      enum:
+        - AI_AGENT_SUB_PROCESS
+        - AI_AGENT_TASK
+        - EXTERNAL_AGENT
+
+    ## Filters
+
+    AgentDefinitionTypeFilterProperty:
+      description: AgentDefinitionTypeEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        - $ref: '#/components/schemas/AdvancedAgentDefinitionTypeFilter'
+
+    AdvancedAgentDefinitionTypeFilter:
+      title: Advanced filter
+      description: Advanced AgentDefinitionTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentDefinitionTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
