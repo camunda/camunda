@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -81,4 +82,14 @@ public interface LogStream extends AutoCloseable {
    * @param recordAwaiter the listener to remove
    */
   void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  /**
+   * Registers a listener that is notified with the highest committed position of the records that
+   * this node appended itself. See {@link CommittedPositionListener} for the cases in which it is
+   * not notified.
+   */
+  void registerCommittedPositionListener(CommittedPositionListener listener);
+
+  /** Removes a committed position listener. */
+  void removeCommittedPositionListener(CommittedPositionListener listener);
 }
