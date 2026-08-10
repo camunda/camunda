@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -15,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 
 /**
  * Mints {@code AgentDefinition} records for elements carrying a recognized agent marker (explicit
@@ -37,6 +40,11 @@ final class AgentDefinitionTransformer {
    * deployment.agentDefinitionsMetadata()} and emitting an {@code AgentDefinition:CREATED}
    * follow-up event keyed with a freshly minted {@code agentDefinitionKey}.
    *
+   * <p>A multi-instance activity is represented in {@link ExecutableProcess#getFlowElements()} by
+   * its wrapping {@link ExecutableMultiInstanceBody}, which replaces the original element outright
+   * rather than merely decorating it, so the marker must be looked up on {@link
+   * ExecutableMultiInstanceBody#getInnerActivity()} instead of the body itself.
+   *
    * @param deployment the deployment record to append minted agent definitions to
    * @param process the executable process to scan for agent-marked elements
    * @param processMetadata the (already finalized) metadata of the process version these agent
@@ -47,10 +55,28 @@ final class AgentDefinitionTransformer {
       final ExecutableProcess process,
       final ProcessMetadata processMetadata) {
     process.getFlowElements().stream()
-        .filter(ExecutableJobWorkerElement.class::isInstance)
-        .map(ExecutableJobWorkerElement.class::cast)
+        .map(AgentDefinitionTransformer::resolveJobWorkerElement)
+        .filter(Objects::nonNull)
         .filter(ExecutableJobWorkerElement::isAgentDefinition)
         .forEach(element -> mintAgentDefinition(deployment, processMetadata, element));
+  }
+
+  /**
+   * Resolves {@code element} to the {@link ExecutableJobWorkerElement} it should be checked for an
+   * agent marker on, unwrapping a multi-instance body to its inner activity first.
+   *
+   * @return the resolved job-worker element, or {@code null} if neither {@code element} nor (for a
+   *     multi-instance body) its inner activity is a job-worker element
+   */
+  private static ExecutableJobWorkerElement resolveJobWorkerElement(
+      final ExecutableFlowElement element) {
+    final var activity =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+    return activity instanceof final ExecutableJobWorkerElement jobWorkerElement
+        ? jobWorkerElement
+        : null;
   }
 
   private void mintAgentDefinition(
