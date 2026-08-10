@@ -60,7 +60,6 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 			refetchInterval: 5000,
 		});
 		const processes = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
-		const selectedTenantId = processDefinitionsRequestBody.filter?.tenantId;
 		const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
 
 		return (
@@ -84,7 +83,7 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 							return;
 						}
 
-						startProcess(process, selectedTenantId);
+						startProcess(process, process.tenantId);
 					}}
 				/>
 				<Outlet />

@@ -254,39 +254,6 @@ test.describe('Tasklist processes page', () => {
 		await expect(page).toHaveURL('/tasklist/processes');
 	});
 
-	test('should show the missing-tenant error when submission fails without a selected tenant', async ({
-		network,
-		tasklistProcessesPage,
-	}) => {
-		const processDefinitionKey = '2251799813685279';
-		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: []}))}),
-			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({
-						components: {active: ['tasklist']},
-						deployment: {isMultiTenancyEnabled: true, maxRequestSize: 4_194_304},
-					}),
-				),
-			}),
-			mockGetProcessDefinitionEndpoint({
-				successResponse: HttpResponse.json(createGetProcessDefinitionResponse({processDefinitionKey})),
-			}),
-			mockGetProcessStartFormEndpoint({
-				successResponse: HttpResponse.json(createProcessStartFormResponse()),
-			}),
-			mockCreateProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
-		);
-
-		await tasklistProcessesPage.gotoStartForm(processDefinitionKey);
-		await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
-		await tasklistProcessesPage.startProcessFormButton.click();
-
-		await expect(tasklistProcessesPage.startProcessFormError).toContainText(
-			'You must first select a tenant to start a process.',
-		);
-	});
-
 	test('should show non-retryable errors for missing, form-less, forbidden, and invalid-schema processes', async ({
 		network,
 		tasklistProcessesPage,

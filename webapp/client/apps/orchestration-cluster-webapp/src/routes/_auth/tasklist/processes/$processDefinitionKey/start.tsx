@@ -21,7 +21,6 @@ import {
 import {useStartProcessFromForm} from '#/tasklist/modules/processes/useStartProcessFromForm';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
-import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
 import {ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
 
 const HTTP_STATUS_FORBIDDEN = 403;
@@ -98,15 +97,12 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 	},
 	component: function StartProcessFormRoute() {
 		const {processDefinitionKey} = Route.useParams();
-		const search = Route.useSearch();
 		const {data: process} = useSuspenseQuery(queries.getProcessDefinition(processDefinitionKey));
 		const {data: form} = useSuspenseQuery({
 			...queries.getProcessStartForm(processDefinitionKey),
 			refetchOnReconnect: false,
 			refetchOnWindowFocus: false,
 		});
-		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const selectedTenantId = getProcessDefinitionsRequestBody(search, currentUser.tenants).filter?.tenantId;
 		const {mutateAsync: startProcess} = useStartProcessFromForm();
 		const {mutateAsync: uploadDocuments} = useUploadDocuments();
 		const close = useCloseStartProcessForm();
@@ -116,7 +112,7 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 				processDisplayName={process.name ?? process.processDefinitionId}
 				schema={form.schema}
 				isMultiTenancyEnabled={getClientConfig().deployment.isMultiTenancyEnabled}
-				tenantId={selectedTenantId}
+				tenantId={process.tenantId}
 				onClose={close}
 				onFileUpload={uploadDocuments}
 				onSubmit={async (partialVariables) => {
@@ -125,7 +121,7 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 						return result;
 					}, {});
 
-					await startProcess({processDefinitionKey, tenantId: selectedTenantId, variables});
+					await startProcess({processDefinitionKey, tenantId: process.tenantId, variables});
 					close();
 				}}
 			/>
