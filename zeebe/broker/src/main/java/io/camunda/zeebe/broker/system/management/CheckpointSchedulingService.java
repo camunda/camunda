@@ -28,6 +28,7 @@ import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -86,10 +87,14 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
     final var retentionCfg = backupCfg.getRetention();
     if (shouldRegisterRetentionJob()) {
-      final var backupStore = buildBackupStore(backupCfg);
+      if (backupCfg.getStore() == BackupStoreType.NONE) {
+        throw new IllegalStateException("No backup store configured");
+      }
+      // The retention job owns the store: it builds one whenever it starts and releases it when it
+      // stops, so it keeps working across the stop/start cycles that follow the lowest member id.
       backupRetentionJob =
           new BackupRetention(
-              backupStore,
+              () -> buildBackupStore(backupCfg),
               brokerClient,
               retentionCfg.getCleanupSchedule(),
               retentionCfg.getWindow(),
