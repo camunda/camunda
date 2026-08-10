@@ -360,7 +360,8 @@ Ownership model:
 - [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
 - [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
 - [ ] Track minor backports via labels/board to avoid missing required fixes.
-- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts. The [Release Merge-back Conflict Check](#merge-back-divergence-handling) runs this automatically in the RC window; confirm it is green (or that any alert has been triaged) before the final merge-back.
+- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
+- [ ] The [Release Merge-back Conflict Check](#merge-back-divergence-handling) runs this automatically in the release window; confirm it is green and free of conflicts before the final merge-back.
 
 #### 6. Documentation and communication hygiene
 
@@ -397,14 +398,12 @@ The **[Release Merge-back Conflict Check](https://github.com/camunda/camunda/blo
    - **needs review (no commit to attribute)** — merge-tree reported a real conflict, but neither direction can name a commit because the clash has no line to blame: the target **deleted** lines the release still edits (modify/delete), or both sides **inserted** at the same spot (add/add). This is NOT a "missing commit" claim — nothing was necessarily forgotten — but it is also NOT benign drift, so it is surfaced for a human to resolve the conflict directly rather than being silently swallowed.
 4. **Notify** the configured Slack channel **only** when the actionable bucket is non-empty. A clean or mechanical-only result is a quiet success. An in-flight release always conflicts on version bumps, so the gate is the actionable count, not the raw conflict.
 
-**A/B classification** underpins the triage. Divergence is two populations with opposite safe treatment:
+**A/B classification is a human judgment, not something the check computes.** Every residual alarm is one of two kinds, with opposite safe treatment:
 
-- **(A) accidental drift** (silently-failed backport, independent Renovate bump) — the missing change should be forward-ported.
-- **(B) intentional asymmetry** (a release-only workaround deliberately reverted on the target) — re-applying it onto the target would be **harmful**. Never auto-apply a B change.
+- **(A) accidental drift** (a silently-failed backport, an independent Renovate bump) — the missing change should be forward-ported.
+- **(B) intentional asymmetry** (a release-only workaround deliberately reverted on the target) — re-applying it onto the target would be **harmful**.
 
-The automation-author / patch-id filter suppresses mechanical noise; the residual alarm is what a human classifies as A vs B.
-
-**Out of scope:** semantic breakage that is CI-red but not a textual conflict — e.g. cross-component version skew (CPT/ZPT built against an older API). `git merge-tree` cannot see these; route them straight to escalation (see the [CPT Medic](#others) trigger for merge-back PRs failing CI on API incompatibility).
+The check only strips mechanical noise (automation-author / patch-id filter) and surfaces the residual alarm. Deciding A vs B — and acting on it — is the release manager's call; see the escalation path below.
 
 #### Escalation path
 

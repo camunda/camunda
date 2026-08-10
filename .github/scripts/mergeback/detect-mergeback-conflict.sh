@@ -2,26 +2,19 @@
 # Detect whether merging <release_ref> back into <target_ref> would conflict.
 # Read-only: uses git merge-tree, never mutates any branch.
 #
-# CONTRACT (single source of truth for triage): prints ONE JSON object to stdout; human context
-# goes to stderr only, so triage never scrapes prose:
+# Output contract (consumed by triage-mergeback.sh): ONE JSON object on stdout, human context on
+# stderr only. A pathless conflict is expressed explicitly, not via a sentinel:
 #   {"status":"clean","paths":[]}
 #   {"status":"conflict","paths":["Makefile","zeebe/engine/Foo.java"]}
-#   {"status":"conflict","paths":[]}          # pathless conflict — explicit, no sentinel
+#   {"status":"conflict","paths":[]}
 #
-# Exit codes stay meaningful so an operational failure can't be laundered into a false clean:
-#   0 = clean     -> {"status":"clean", ...}
-#   2 = conflict  -> {"status":"conflict", ...}
-#   3 = operational error (bad ref, git failure) — NOT a conflict; caller must fail loud
+# Exit codes let the caller tell a real result from an operational failure (never a false clean):
+#   0 = clean, 2 = conflict, 3 = operational error (bad ref / git failure) — caller must fail loud.
 #
-# WHY -z --no-messages --name-only: merge-tree emits the toplevel tree OID then a NUL-delimited
-# list of conflicted paths and nothing else. NUL framing keeps paths with spaces/newlines intact
-# and unconfusable with prose. A real result (clean OR conflict) always emits the tree OID; when
-# merge-tree exits 1 with EMPTY stdout it could not merge (bad ref) — that maps to exit 3, never a
-# conflict. A pathless conflict (exit 1, tree OID only) becomes {"status":"conflict","paths":[]}.
-#
-# LIVE USE, NOT HISTORICAL REPLAY: no frozen pre-merge parent — we compare the two current tips
-# directly. No merge-back commit exists yet, so there's nothing to launder (no temporal-window /
-# parent-order caveat). Don't re-import that.
+# merge-tree flags (-z --no-messages --name-only): output is the tree OID followed by a NUL-
+# delimited list of conflicted paths. NUL framing keeps paths with spaces/newlines intact. A real
+# result always emits the tree OID, so exit 1 with empty stdout means "could not merge" (exit 3),
+# not a conflict.
 set -euo pipefail
 target_ref="${1:?usage: detect-mergeback-conflict.sh <target_ref> <release_ref>}"
 release_ref="${2:?usage: detect-mergeback-conflict.sh <target_ref> <release_ref>}"

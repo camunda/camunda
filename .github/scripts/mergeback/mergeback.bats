@@ -164,10 +164,9 @@ make_remote() {
 }
 
 @test "triage: modify/delete blind spot (target deletes a line release edits) is flagged needs_review" {
-  # Reviewer repro. A patch-equivalent shared edit on the clashing line, then a TARGET-only deletion.
-  # merge-tree reports a modify/delete conflict, but the reverse blame has no surviving target line to
-  # blame, so before the blind-spot check the path fell silently into source_drift (action_count 0).
-  # It must NOT be a source_missing alarm (nothing was forgotten) — just a conflict a human resolves.
+  # Fixture: a patch-equivalent shared edit on the clashing line, then a TARGET-only deletion. The
+  # reverse blame has no surviving target line to blame, so the path must land in needs_review — a
+  # conflict a human resolves, not a source_missing alarm (nothing was forgotten) and not source_drift.
   commit base $'app.js=X\nY\nZ'
   git branch release
   commit "shared: bump Y on main" $'app.js=X\nY2\nZ'        # main P
@@ -183,10 +182,9 @@ make_remote() {
 }
 
 @test "triage: add/add blind spot (same insertion both sides, target then modifies it) is flagged needs_review" {
-  # Reviewer repro. Both branches independently apply the SAME insertion (patch-identical, so the
-  # forward check sees it present), then the target modifies the inserted line. merge-tree reports a
-  # conflict, but the release-side pure insertion carries no base span to overlap, so the reverse blame
-  # found nothing and the path fell silently into source_drift. Surface it for manual resolution.
+  # Fixture: both branches independently apply the SAME insertion (patch-identical, so the forward
+  # check sees it present), then the target modifies the inserted line. The release-side pure insertion
+  # carries no base span to overlap, so it must land in needs_review rather than source_drift.
   commit base $'app.js=X\nZ'
   git branch release
   commit "shared: insert Y on main" $'app.js=X\nY\nZ'       # main P (insertion)

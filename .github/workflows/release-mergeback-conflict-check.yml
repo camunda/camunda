@@ -1,23 +1,11 @@
 # description: Read-only early detection of release->target merge-back conflicts (issue #51430).
-#   For every currently-active release branch (version not yet released on its X.Y line), checks
+#   For every currently-active release branch (version not yet released on its X.Y line), it checks
 #   whether merging it forward into its target (stable/X.Y, or main for a pre-branch alpha) would
-#   conflict, and — only when a human actually needs to act — posts a Block Kit alert to Slack.
-#   The triage script emits a JSON contract (single source of truth); render-slack-message.sh turns
-#   it into the message. A clean or mechanical-only result is a quiet success (no post). No active
-#   release branch -> no-op. If an actionable gap IS found but Slack config is missing, the job
-#   fails loud rather than silently dropping the alert. Dispatch with dry_run: true to render the
-#   alert into the run summary instead of posting.
-#
-#   LIVE USE, NOT HISTORICAL REPLAY: the merge-back commit doesn't exist yet, so we compare the two
-#   current branch tips directly. There is NO frozen pre-merge parent and the temporal-window /
-#   parent-order caveats of the historical spike do NOT apply — nothing to launder. Don't re-import
-#   that complexity.
+#   conflict, and posts a Block Kit alert to Slack only when a human actually needs to act. A clean
+#   or mechanical-only result is a quiet success; no active release branch is a no-op. If an
+#   actionable gap is found but Slack config is missing, the job fails loud rather than dropping the
+#   alert. Dispatch with dry_run: true to render the alert into the run summary instead of posting.
 # test location: .github/scripts/mergeback/mergeback.bats (run in ci.yml “Shell / Script Tests”).
-#   Regression suite pinning bugs actually hit: detector operational-vs-clean mapping and
-#   extensionless paths, triage fail-loud on a malformed contract, pathless conflict staying
-#   actionable, a pipe in a commit subject, the version_max -alpha/release ordering, the triage
-#   automation-author noise filter, the Slack renderer's injection-neutralisation + truncation, and
-#   the resolver failing closed on remote errors.
 # type: CI Helper
 # owner: @camunda/engineering-operations
 ---
@@ -95,9 +83,9 @@ jobs:
             target="${INPUT_TARGET_REF}"
             if [ -z "$target" ]; then
               minor="${INPUT_RELEASE_REF#release-}"; minor="${minor%.*}"; minor="${minor%%-*}"
-              # Fail CLOSED, exactly like resolve-active-release-pairs.sh: distinguish "stable
-              # branch absent" from "ls-remote failed". Collapsing a transient lookup failure to
-              # `main` could check the WRONG merge direction for a maintenance release.
+              # Fail CLOSED: distinguish "stable branch absent" from "ls-remote failed" — collapsing
+              # a lookup failure to `main` could check the WRONG merge direction for a maintenance
+              # release.
               if ! stable_ls="$(git ls-remote --heads origin "stable/${minor}")"; then
                 echo "::error::Failed to look up stable/${minor} (ls-remote error) — cannot derive merge-back target."
                 exit 1
@@ -120,9 +108,8 @@ jobs:
             echo "No active release branch — nothing to check (quiet no-op)."
           fi
 
-      # Canonical ownership resolution for actionable alerts. The triage step shells out to
-      # `codeowners-cli owner <path>` against the repo's .codeowners file (codeowners-plus,
-      # last-match-wins); this puts that binary on PATH. Only needed when there is a pair to check.
+      # Puts codeowners-cli on PATH for the triage step's ownership lookup against `.codeowners`.
+      # Only needed when there is a pair to check.
       - name: Setup codeowners-cli
         if: ${{ steps.pairs.outputs.count != '0' }}
         uses: ./.github/actions/codeowners-setup-cli
@@ -137,10 +124,10 @@ jobs:
             [ -z "$release_ref" ] && continue
             echo "::group::${release_ref} -> ${target_ref}"
 
-            # Bring both tips into the local object store as namespaced local refs so
-            # merge-tree / cherry can read them. Local ref writes only — the remote is
-            # never mutated. A fetch failure is an OPERATIONAL error, not "no conflict": fail
-            # loud rather than let an unavailable ref masquerade as a clean/quiet result.
+            # ── Fetch refs ──
+            # Fetch both tips into namespaced local refs so merge-tree / cherry can read them (local
+            # ref writes only, remote never mutated). A fetch failure is operational, not "no
+            # conflict" — fail loud rather than let an unavailable ref look clean.
             if ! git fetch --no-tags origin "${release_ref}:refs/mergeback/${release_ref}" >/dev/null 2>&1; then
               echo "::error::Failed to fetch release ref ${release_ref} from origin — cannot assess merge-back."
               exit 1
@@ -152,7 +139,8 @@ jobs:
             rel="refs/mergeback/${release_ref}"
             tgt="refs/mergeback/${target_ref}"
 
-            # Belt-and-suspenders: both refs must resolve to real commits before analysis.
+            # ── Validate refs ──
+            # Both refs must resolve to real commits before analysis.
             if ! git rev-parse --verify --quiet "${rel}^{commit}" >/dev/null; then
               echo "::error::Release ref ${release_ref} did not resolve to a commit after fetch."
               exit 1
@@ -162,10 +150,10 @@ jobs:
               exit 1
             fi
 
-            # Invoke via `bash` so a lost exec bit can't break the run (mirrors add-release-comments.sh
-            # / rc-delta-slack-summary.sh). Detector prints its {status,paths} JSON to stdout and human
-            # context to stderr — keep them separate (stdout -> detect.json, stderr -> run log).
-            # Exit codes: 0 = clean, 2 = conflict, else = operational (fail loud).
+            # ── Detect ──
+            # Invoke via `bash` so a lost exec bit can't break the run. Detector writes {status,paths}
+            # JSON to stdout, human context to stderr; keep them separate. Exit codes: 0 = clean,
+            # 2 = conflict, else operational (fail loud).
             detect_rc=0
             bash .github/scripts/mergeback/detect-mergeback-conflict.sh "$tgt" "$rel" \
               > detect.json 2> detect.err || detect_rc=$?
@@ -180,10 +168,10 @@ jobs:
               exit 1
             fi
 
-            # Conflict exists. Triage consumes the detector JSON and emits its own JSON (single
-            # source of truth). An in-flight release ALWAYS conflicts on poms (version bumps), so
-            # gate on action_count (does a human need to confirm nothing is lost?), not the raw
-            # conflict. Mechanical / text-drift-only stays quiet.
+            # ── Triage ──
+            # Conflict exists. Triage emits its own JSON. An in-flight release always conflicts on
+            # poms (version bumps), so gate on action_count, not the raw conflict — mechanical /
+            # drift-only stays quiet.
             triage_json="$(bash .github/scripts/mergeback/triage-mergeback.sh "$tgt" "$rel" detect.json)"
             echo "$triage_json" | jq .
             if echo "$triage_json" | jq -e '.action_count > 0' >/dev/null; then
@@ -204,8 +192,8 @@ jobs:
           fi
 
       - name: Render alert to run summary (dry run)
-        # Dry run: render each actionable alert with the SAME script the post step uses and write it
-        # to the run summary instead of posting. Previews the exact Slack message without touching a
+        # Dry run: render each actionable alert with the same script the post step uses and write it
+        # to the run summary instead of posting — previews the exact Slack message without touching a
         # channel.
         if: ${{ inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
         env:
@@ -226,9 +214,8 @@ jobs:
 
       - name: Get Slack webhook from Vault
         id: slack-secrets
-        # The producing step is skipped when there is no active pair, leaving `actionable` empty.
-        # Require a real positive count so an empty output ('' != '0') can't wake the alert path.
-        # Skipped on dry runs — no secret is needed when we only render to the summary.
+        # Require a real positive count: the producing step is skipped when there is no pair, leaving
+        # `actionable` empty ('' != '0'), and dry runs need no secret.
         if: ${{ !inputs.dry_run && steps.triage.outputs.actionable != '' && steps.triage.outputs.actionable != '0' }}
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
@@ -250,24 +237,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fail loud: we HAVE an actionable gap to report. If the webhook is missing, dropping the
-          # alert silently would defeat the purpose of the whole check. Do not degrade to a no-op.
+          # Fail loud: we have an actionable gap. Dropping the alert because the webhook is missing
+          # would defeat the whole check.
           if [ -z "${SLACK_WEBHOOK_URL}" ]; then
             echo "::error::Actionable merge-back gap detected but the Slack webhook is missing. Refusing to silently drop the alert."
             exit 1
           fi
 
-          # One message per actionable release/target pair. render-slack-message.sh turns the triage
-          # JSON contract into the Block Kit body (JSON is the source of truth; the script is pure
-          # presentation and neutralises Slack mention/link injection). This step only fetches the
-          # secret and POSTs — no rendering logic in the workflow.
+          # One message per actionable pair. render-slack-message.sh turns the triage JSON into the
+          # Block Kit body; this step only renders and POSTs, no logic in the workflow.
           while IFS= read -r doc; do
             [ -z "$doc" ] && continue
 
-            # Log the FULL untruncated triage for this pair before rendering. The Slack post is a
-            # single message capped to Slack's 50-block / 3000-char limits, so a very large conflict
-            # set can be truncated there; the alert's notice points back here. Keeping the complete
-            # doc in the run log means nothing actionable is ever lost, only relocated.
+            # Log the full untruncated triage before rendering: the Slack post is capped at 50 blocks
+            # / 3000 chars, so a large conflict set can be truncated there — the run log keeps the
+            # complete doc.
             echo "::group::Full merge-back triage — $(jq -r '.release_ref + " → " + .target_ref' <<< "$doc")"
             jq . <<< "$doc"
             echo "::endgroup::"

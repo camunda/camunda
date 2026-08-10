@@ -1,26 +1,21 @@
 #!/usr/bin/env bash
 # Resolve the currently-active release branches and their merge-back targets.
 #
-# ACTIVE signal (no allowlist, no cleanup needed):
-#   A branch `release-X.Y.Z[-alphaN]` is ACTIVE when its version is strictly greater than
-#   the highest release tag already published on its X.Y line — i.e. it has not been released
-#   yet. Every stale/abandoned release branch is stale *precisely because* its version has
-#   already been tagged, so this single version comparison filters the release-* graveyard
-#   without maintaining an explicit list.
+# A branch `release-X.Y.Z[-alphaN]` is ACTIVE when its version is strictly greater than the highest
+# release tag on its X.Y line — i.e. not yet released. A stale branch is stale precisely because its
+# version is already tagged, so this one comparison filters them out with no allowlist.
 #
-# TARGET mapping:
-#   - if `stable/X.Y` exists  -> target = stable/X.Y   (normal maintenance release merges back to its stable line)
-#   - else                    -> target = main          (pre-branch alpha of the next minor merges back to main)
+# Target mapping:
+#   - stable/X.Y exists -> target = stable/X.Y  (maintenance release merges back to its stable line)
+#   - else              -> target = main        (pre-branch alpha of the next minor merges to main)
 #
-# Read-only: git ls-remote only. Prints one "release_ref<TAB>target_ref" pair per line.
-# No output = no active release = nothing to check (quiet no-op).
+# Read-only: git ls-remote only. Prints one "release_ref<TAB>target_ref" per line; no output means
+# no active release (quiet no-op).
 set -euo pipefail
 
-# Compare two versions; echo the greater under semver-ish ordering, treating an
-# -alpha suffix as LESS than the same core release (X.Y.Z-alphaN < X.Y.Z). GNU
-# `sort -V` gets the -alpha-vs-release ordering wrong, so handle equal cores here.
-# Defined at top-level (before the guarded entrypoint) so mergeback.bats can `source` this file
-# and unit-test it without triggering any network (ls-remote) call.
+# Echo the greater of two versions, treating an -alpha suffix as LESS than the same core release
+# (X.Y.Z-alphaN < X.Y.Z). `sort -V` gets that ordering wrong, so equal cores are handled here.
+# Defined before the entrypoint guard so the test suite can source and unit-test it offline.
 version_max() {
   local a="$1" b="$2"
   local a_core="${a%%-*}" b_core="${b%%-*}"
@@ -32,9 +27,8 @@ version_max() {
   printf '%s\n%s\n' "$a" "$b" | sort -V | tail -1
 }
 
-# Entrypoint guard: run the resolver only when executed directly (`bash resolve-...sh`), not when
-# sourced by the test suite. Everything below does network I/O; the guard lets tests source the
-# file purely for its functions.
+# Entrypoint guard: run the resolver only when executed directly, not when sourced by the test
+# suite (everything below does network I/O).
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   # shellcheck disable=SC2317  # reached only when the script is executed, not sourced
   return 0 2>/dev/null || exit 0
@@ -46,10 +40,9 @@ remote="${1:-origin}"
 # (release-*-benchmark, release-*-workflow, backport/release-*, docs/release-*, etc.).
 release_regex='^release-[0-9]+\.[0-9]+\.[0-9]+(-alpha[0-9]+)?$'
 
-# Fail CLOSED on remote errors: a failed ls-remote is "unknown", not "none". Capturing the
-# command status separately keeps a network/auth failure from silently collapsing to an empty
-# result (which would hide every active release). The trailing `grep || true` is intentional —
-# once ls-remote SUCCEEDS, zero matching branches is a legitimate answer.
+# Fail CLOSED: a failed ls-remote is "unknown", not "none" — collapsing it to empty would hide
+# every active release. The trailing `grep || true` is fine: once ls-remote succeeds, zero matching
+# branches is a legitimate answer.
 if ! raw_branches="$(git ls-remote --heads "$remote" 'release-*')"; then
   echo "resolve-active-release-pairs: 'git ls-remote --heads $remote release-*' failed" >&2
   exit 1
@@ -66,7 +59,9 @@ declare -A active_for_minor
 while IFS= read -r branch; do
   [ -z "$branch" ] && continue
   version="${branch#release-}"
-  minor="${version%.*}"; minor="${minor%%-*}"   # X.Y from X.Y.Z or X.Y.Z-alphaN
+  # Reduce X.Y.Z or X.Y.Z-alphaN to its X.Y minor.
+  minor="${version%.*}"    # strip the trailing .Z
+  minor="${minor%%-*}"     # strip any -alphaN suffix
 
   # Highest tag on this X.Y line (plain X.Y.Z and X.Y.Z-alphaN tags), semver-ordered.
   # Fail CLOSED: a failed tag listing would leave highest_tag empty, which the check below
@@ -95,11 +90,9 @@ while IFS= read -r branch; do
     [ "$version" = "$highest_tag" ] && continue   # already released
   fi
 
-  # Keep only the HIGHEST active branch per X.Y line. Multiple untagged release branches can
-  # coexist on one line (e.g. an abandoned release-8.9.11 lingering after release-8.9.12
-  # branched); without this, the abandoned one stays "active" forever and emits recurring false
-  # alerts. Two in-flight patch releases never run on the same line simultaneously, so the
-  # greatest untagged version is the real in-flight release and the rest are presumed abandoned.
+  # Keep only the HIGHEST active branch per X.Y line. Multiple untagged release branches can coexist
+  # (e.g. an abandoned release-8.9.11 after release-8.9.12 branched); the greatest is the real
+  # in-flight release, the rest are presumed abandoned and would otherwise alert forever.
   existing="${active_for_minor[$minor]:-}"
   if [ -z "$existing" ]; then
     active_for_minor[$minor]="$version"
@@ -113,9 +106,8 @@ for minor in "${!active_for_minor[@]}"; do
   version="${active_for_minor[$minor]}"
   branch="release-${version}"
 
-  # Map to target: stable/X.Y if it exists, else main. Fail CLOSED: if this existence check
-  # errored we could silently pick `main` and merge the release in the WRONG direction, so a
-  # failed ls-remote must abort rather than fall through to the else branch.
+  # Map to target: stable/X.Y if it exists, else main. Fail CLOSED: a failed check must abort, not
+  # fall through to main and merge the release in the WRONG direction.
   if ! stable_ls="$(git ls-remote --heads "$remote" "stable/${minor}")"; then
     echo "resolve-active-release-pairs: 'git ls-remote --heads $remote stable/${minor}' failed" >&2
     exit 1
