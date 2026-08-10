@@ -226,10 +226,88 @@ def saas_candidate(run_id: str, base_ref: str, job_name: str, workdir: Path) -> 
         f"saas counts total={counts.total} failed={counts.failed} "
         f"flaky={counts.flaky} setup_failed={counts.setup_failed} -> {cand.surface}"
     )
-    if cand.surface != classify.SURFACE_SAAS_E2E:
+    if cand.surface == classify.SURFACE_SAAS_CI:
+        # Every spec passed, so the report-derived specs describe nothing that
+        # failed; the failing downstream jobs are the evidence instead.
+        cand.specs = downstream_ci_specs(downstream_id)
+        if not cand.specs:
+            log("::warning::no diagnosable failing downstream job; withholding saas-ci")
+            cand.surface = classify.SURFACE_SAAS_INFRA
+    elif cand.surface != classify.SURFACE_SAAS_E2E:
         # Only a genuine non-setup test failure is actionable in test code.
         cand.specs = []
     return cand
+
+
+#: How far back to look for the attempt that actually failed. Triage runs while
+#: that attempt is still the latest, so this only matters when a run is replayed
+#: after someone re-ran the downstream — walking the whole history would cost an
+#: API call per attempt for no benefit.
+MAX_ATTEMPT_LOOKBACK = 5
+
+
+def downstream_failing_jobs(downstream_id: str, attempts: int) -> list[dict]:
+    """Failing jobs of the most recent downstream attempt that had any.
+
+    A re-run turns every job of the latest attempt green while the parent run
+    keeps the conclusion triage reacted to, so reading only the latest attempt
+    silently loses the evidence.
+    """
+    for attempt in range(attempts, max(attempts - MAX_ATTEMPT_LOOKBACK, 0), -1):
+        data = gh_json(
+            [
+                "api",
+                f"repos/{E2E_REPO}/actions/runs/{downstream_id}"
+                f"/attempts/{attempt}/jobs?per_page=100",
+            ],
+            {},
+        )
+        failing = [
+            j
+            for j in (data.get("jobs") or [])
+            if isinstance(j, dict) and j.get("conclusion") == "failure"
+        ]
+        if failing:
+            if attempt != attempts:
+                log(f"downstream re-run since triage; reading attempt {attempt}")
+            return failing
+    return []
+
+
+def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
+    """Describe the failing jobs of a downstream run whose specs all passed.
+
+    The same noise prefilter as the parent run applies: a downstream job killed
+    by a GitHub platform error or a cancellation carries no evidence and must not
+    reach the agent.
+    """
+    run = gh_json(["api", f"repos/{E2E_REPO}/actions/runs/{downstream_id}"], {})
+    workflow_path = run.get("path") or ""
+    attempts = run.get("run_attempt") or 1
+
+    specs: list[classify.FailingSpec] = []
+    for job in downstream_failing_jobs(downstream_id, int(attempts)):
+        steps = job.get("steps") or []
+        verdict = classify.noise_verdict(
+            conclusion="failure",
+            step_count=len(steps),
+            failure_annotations=failure_annotations(job.get("check_run_url")),
+        )
+        if verdict:
+            log(f"downstream noise ({verdict}): {job.get('name')}")
+            continue
+        specs.append(
+            classify.ci_job_spec(
+                job.get("name") or "",
+                workflow_path=workflow_path,
+                failing_steps=[
+                    s.get("name") or ""
+                    for s in steps
+                    if isinstance(s, dict) and s.get("conclusion") == "failure"
+                ],
+            )
+        )
+    return specs
 
 
 # ---------------------------------------------------------------------------

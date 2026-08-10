@@ -113,10 +113,14 @@ def test_helm_install_and_cleanup_are_distinct_surfaces():
 def test_dispatchable_surfaces():
     assert classify.SURFACE_SM_E2E in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_SAAS_E2E in classify.DISPATCHABLE_SURFACES
+    # A downstream run that went red on a job rather than a spec is still a bug
+    # in a workflow this org owns, so it goes to the agent like any other.
+    assert classify.SURFACE_SAAS_CI in classify.DISPATCHABLE_SURFACES
     # Dispatchable, but gated further by helm_install_verdict.
     assert classify.SURFACE_HELM_INSTALL in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_BUILD not in classify.DISPATCHABLE_SURFACES
     assert classify.SURFACE_HELM_CLEANUP not in classify.DISPATCHABLE_SURFACES
+    assert classify.SURFACE_SAAS_INFRA not in classify.DISPATCHABLE_SURFACES
 
 
 # ---------------------------------------------------------------------------
@@ -197,11 +201,13 @@ def test_real_test_failures_are_saas_e2e():
     )
 
 
-def test_no_failing_specs_is_infra_not_dispatchable():
+def test_no_failing_specs_with_reports_is_a_ci_job_failure():
+    # Downstream run 31357325723: 15 specs, all green, red because the
+    # `Delete created organizations` job died on a transient curl error.
     counts = classify.SpecCounts(total=15, failed=0)
     assert (
         classify.saas_surface_from_counts(counts, has_artifacts=True)
-        == classify.SURFACE_SAAS_INFRA
+        == classify.SURFACE_SAAS_CI
     )
 
 
@@ -210,6 +216,49 @@ def test_missing_artifacts_is_infra():
         classify.saas_surface_from_counts(classify.SpecCounts(), has_artifacts=False)
         == classify.SURFACE_SAAS_INFRA
     )
+
+
+def test_reports_present_but_empty_is_infra():
+    # Reports uploaded with no specs in them means Playwright never ran; the
+    # failure is upstream of anything a CI-job fix could address.
+    counts = classify.SpecCounts(total=0, failed=0)
+    assert (
+        classify.saas_surface_from_counts(counts, has_artifacts=True)
+        == classify.SURFACE_SAAS_INFRA
+    )
+
+
+# ---------------------------------------------------------------------------
+# CI-job specs
+# ---------------------------------------------------------------------------
+
+
+def test_ci_job_spec_points_at_the_owning_workflow():
+    spec = classify.ci_job_spec(
+        "Delete created organizations",
+        workflow_path=".github/workflows/playwright_saas_pr_trigger_monorepo.yml",
+        failing_steps=["Delete orgs"],
+    )
+    assert spec.file == ".github/workflows/playwright_saas_pr_trigger_monorepo.yml"
+    assert spec.test_name == "Delete created organizations"
+    assert "Delete orgs" in spec.error
+
+
+def test_ci_job_spec_is_deterministic_not_flaky():
+    # A CI-job failure must never read as flaky, or the agent "fixes" it with a
+    # longer wait instead of repairing the step.
+    spec = classify.ci_job_spec("merge-reports", workflow_path="w.yml", failing_steps=[])
+    assert spec.deterministic is True
+    assert spec.attempts == 1
+
+
+def test_ci_job_spec_uses_the_leaf_of_a_nested_job_name():
+    spec = classify.ci_job_spec(
+        "Helm chart Integration Tests / agrn / Merge E2E Reports",
+        workflow_path="w.yml",
+        failing_steps=[],
+    )
+    assert spec.test_name == "Merge E2E Reports"
 
 
 # ---------------------------------------------------------------------------

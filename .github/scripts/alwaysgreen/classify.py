@@ -100,6 +100,7 @@ def normalise_base_ref(ref: str) -> str:
 SURFACE_SM_E2E = "sm-smoke-e2e"
 SURFACE_SAAS_E2E = "saas-smoke-e2e"
 SURFACE_SAAS_PROVISIONING = "saas-provisioning"
+SURFACE_SAAS_CI = "saas-ci"
 SURFACE_SAAS_INFRA = "saas-infra"
 SURFACE_HELM_INSTALL = "helm-install"
 SURFACE_HELM_CLEANUP = "helm-cleanup"
@@ -109,7 +110,9 @@ SURFACE_CI_INFRA = "ci-infra"
 #: Surfaces dispatched to the agent. Everything else is recorded and reported but not
 #: handed over. helm-install is gated further by helm_install_verdict: the failure has
 #: to look like the chart rather than the cluster.
-DISPATCHABLE_SURFACES = frozenset({SURFACE_SM_E2E, SURFACE_SAAS_E2E, SURFACE_HELM_INSTALL})
+DISPATCHABLE_SURFACES = frozenset(
+    {SURFACE_SM_E2E, SURFACE_SAAS_E2E, SURFACE_SAAS_CI, SURFACE_HELM_INSTALL}
+)
 
 #: A pure propagator: it fails whenever the reusable helm workflow failed and
 #: carries no independent signal.
@@ -221,11 +224,19 @@ def saas_surface_from_counts(counts: SpecCounts, *, has_artifacts: bool) -> str:
     `downstream_category`: that value is produced by a one-level spec walk, so
     `product` and `mixed` are unreachable and every failure reads as
     `infrastructure`.
+
+    Zero failing specs is not the same as nothing to fix. When the reports exist
+    and every spec passed, the run went red on a job around the tests — org
+    cleanup, report merge, a TestRail upload — which is a bug in a workflow this
+    org owns and is dispatched as `saas-ci`. Only a run with no reports at all
+    stays `saas-infra`: there the downstream died before Playwright produced any
+    evidence, and the failing job is as likely to be the provisioning API as
+    anything in the repository.
     """
     if not has_artifacts or counts.total == 0:
         return SURFACE_SAAS_INFRA
     if counts.failed == 0:
-        return SURFACE_SAAS_INFRA
+        return SURFACE_SAAS_CI
     if counts.setup_failed == counts.failed:
         return SURFACE_SAAS_PROVISIONING
     return SURFACE_SAAS_E2E
@@ -360,6 +371,30 @@ class FailingSpec:
         retry fix rather than a behavioural change.
         """
         return bool(self.statuses) and all(s == "failed" for s in self.statuses)
+
+
+def ci_job_spec(
+    job_name: str, *, workflow_path: str, failing_steps: Iterable[str]
+) -> FailingSpec:
+    """Represent a failing CI job as a spec, for a run that had no failing test.
+
+    A `saas-ci` failure has no Playwright spec to name, so the job stands in for
+    one: `file` is the workflow that owns the job, which is the file the fix has
+    to change. `statuses` is a single failed attempt, so `deterministic` is True
+    and a CI bug is never mistaken for flakiness and "fixed" with a longer wait.
+    """
+    steps = [s for s in failing_steps if s]
+    return FailingSpec(
+        file=workflow_path,
+        test_name=job_leaf_name(job_name),
+        error=(
+            f"CI job failed at step: {', '.join(steps)}"
+            if steps
+            else "CI job failed with no failing step recorded"
+        ),
+        attempts=1,
+        statuses=["failed"],
+    )
 
 
 def failing_specs(report: Any, *, suite: str | None = None) -> list[FailingSpec]:
