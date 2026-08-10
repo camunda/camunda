@@ -345,6 +345,40 @@ describe('<DetailsTab />', () => {
     expect(screen.queryByText('Process ID')).not.toBeInTheDocument();
   });
 
+  it('should show the process-level wait state while suspended', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: PROCESS_INSTANCE_ID,
+          elementId: 'process-def-1',
+          elementType: 'PROCESS',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'process-start-listener',
+            jobKind: 'EXECUTION_LISTENER',
+            listenerEventType: 'START',
+            retries: 3,
+          },
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
+  });
+
   it('should show multi-instance message when multiple instances exist', async () => {
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance, mockElementInstance], 2),

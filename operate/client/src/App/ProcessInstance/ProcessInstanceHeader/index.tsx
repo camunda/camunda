@@ -9,9 +9,13 @@
 import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
-import {getProcessDefinitionName} from 'modules/utils/instance';
+import {
+  getProcessDefinitionName,
+  getProcessInstanceDisplayState,
+} from 'modules/utils/instance';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/Routes';
+import {defaultProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
@@ -77,7 +81,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     tenantId,
     startDate,
     endDate,
-    state,
     hasIncident,
     processDefinitionId,
   } = processInstance;
@@ -112,8 +115,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const hasBusinessId = !isNil(businessId);
-  const processInstanceState =
-    state === 'SUSPENDED' ? 'SUSPENDED' : hasIncident ? 'INCIDENT' : state;
+  const processInstanceState = getProcessInstanceDisplayState(processInstance);
   const processLevelWaitingCount =
     waitStateStatistics?.find(
       ({elementId}) => elementId === processDefinitionId,
@@ -151,9 +153,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               to={Locations.processes({
                 processDefinitionVersion: processDefinitionVersion?.toString(),
                 processDefinitionId,
-                active: true,
-                suspended: true,
-                incidents: true,
+                ...defaultProcessInstanceFilters,
                 ...(isMultiTenancyEnabled
                   ? {
                       tenantId,
@@ -215,9 +215,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                 <Link
                   to={Locations.processes({
                     parentProcessInstanceKey: processInstanceKey,
-                    active: true,
-                    suspended: true,
-                    incidents: true,
+                    ...defaultProcessInstanceFilters,
                     canceled: true,
                     completed: true,
                   })}

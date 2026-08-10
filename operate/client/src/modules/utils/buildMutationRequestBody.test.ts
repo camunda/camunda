@@ -147,10 +147,7 @@ describe('buildMutationRequestBody', () => {
       filter: {
         elementId: {$eq: 'taskA'},
         elementInstanceState: {$eq: 'ACTIVE'},
-        $or: [
-          {state: {$eq: 'ACTIVE'}, hasIncident: false},
-          {hasIncident: true},
-        ],
+        $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
       },
     });
   });

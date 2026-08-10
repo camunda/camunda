@@ -131,6 +131,29 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
+  it('should display suspended state instead of incident state', async () => {
+    const suspendedInstance = {
+      ...mockInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    } satisfies typeof mockInstance;
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchIncidentsByProcessInstance(
+      suspendedInstance.processInstanceKey,
+    ).withSuccess(searchResult([]));
+
+    render(<ProcessInstanceHeader processInstance={suspendedInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(screen.getByTestId('SUSPENDED-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
+  });
+
   it('should not render an incidents count after incidents are resolved', async () => {
     const failedInstance = {
       ...mockInstance,
@@ -376,6 +399,24 @@ describe('InstanceHeader', () => {
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-header-skeleton'),
     );
+
+    expect(await screen.findByText('Waiting')).toBeInTheDocument();
+  });
+
+  it('should render a process-level wait state while suspended', async () => {
+    const suspendedInstance = {
+      ...mockInstance,
+      state: 'SUSPENDED',
+    } satisfies typeof mockInstance;
+    mockFetchProcessInstance().withSuccess(suspendedInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: mockInstance.processDefinitionId, waitingCount: 1}],
+    });
+
+    render(<ProcessInstanceHeader processInstance={suspendedInstance} />, {
+      wrapper: Wrapper,
+    });
 
     expect(await screen.findByText('Waiting')).toBeInTheDocument();
   });

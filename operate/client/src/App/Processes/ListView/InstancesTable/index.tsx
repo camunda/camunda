@@ -19,7 +19,6 @@ import {useFilters} from 'modules/hooks/useFilters';
 import type {
   ProcessInstance,
   BatchOperationItem,
-  ProcessInstanceState,
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -29,7 +28,10 @@ import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {InstanceOperations} from './InstanceOperations';
-import {getProcessDefinitionName} from 'modules/utils/instance';
+import {
+  getProcessDefinitionName,
+  getProcessInstanceDisplayState,
+} from 'modules/utils/instance';
 import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
 import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
 import {InlineLoading} from '@carbon/react';
@@ -155,12 +157,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
-            const instanceState: ProcessInstanceState | 'INCIDENT' =
-              instance.state === 'SUSPENDED'
-                ? 'SUSPENDED'
-                : instance.hasIncident
-                  ? 'INCIDENT'
-                  : instance.state;
+            const instanceState = getProcessInstanceDisplayState(instance);
 
             const operationItem = operationItemsMap.get(
               instance.processInstanceKey,

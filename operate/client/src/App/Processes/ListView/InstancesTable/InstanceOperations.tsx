@@ -126,6 +126,7 @@ const InstanceOperations: React.FC<Props> = ({
 
   const isActive = state === 'ACTIVE';
   const isSuspended = state === 'SUSPENDED';
+  const isFinished = state === 'COMPLETED' || state === 'TERMINATED';
   const isRoot = parentProcessInstanceKey === null;
   const isLoading =
     activeOperations.length > 0 ||
@@ -135,56 +136,69 @@ const InstanceOperations: React.FC<Props> = ({
     isSuspendProcessInstancePending ||
     isResumeProcessInstancePending;
 
-  const incidentSlot: OperationConfig | null =
-    isActive && hasIncident
-      ? {
-          type: 'RESOLVE_INCIDENT',
-          onExecute: () => resolveProcessInstanceIncidents(),
-          disabled:
-            isResolveIncidentsPending ||
-            activeOperations.includes('RESOLVE_INCIDENT'),
-        }
-      : null;
+  const resolveIncidentOperation: OperationConfig = {
+    type: 'RESOLVE_INCIDENT',
+    onExecute: () => resolveProcessInstanceIncidents(),
+    disabled:
+      isResolveIncidentsPending ||
+      activeOperations.includes('RESOLVE_INCIDENT'),
+  };
+  const suspendOperation: OperationConfig = {
+    type: 'SUSPEND_PROCESS_INSTANCE',
+    onExecute: () => suspendProcessInstance(),
+    disabled:
+      isSuspendProcessInstancePending ||
+      activeOperations.includes('SUSPEND_PROCESS_INSTANCE'),
+  };
+  const resumeOperation: OperationConfig = {
+    type: 'RESUME_PROCESS_INSTANCE',
+    onExecute: () => resumeProcessInstance(),
+    disabled:
+      isResumeProcessInstancePending ||
+      activeOperations.includes('RESUME_PROCESS_INSTANCE'),
+  };
+  const cancelOperation: OperationConfig = {
+    type: 'CANCEL_PROCESS_INSTANCE',
+    onExecute: () => cancelProcessInstance(),
+    disabled:
+      isCancelProcessInstancePending ||
+      activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
+  };
+  const deleteOperation: OperationConfig = {
+    type: 'DELETE_PROCESS_INSTANCE',
+    onExecute: () => deleteProcessInstance(),
+    disabled:
+      isDeletePending || activeOperations.includes('DELETE_PROCESS_INSTANCE'),
+  };
 
-  const toggleSlot: OperationConfig | null =
-    isActive && isRoot
-      ? {
-          type: 'SUSPEND_PROCESS_INSTANCE',
-          onExecute: () => suspendProcessInstance(),
-          disabled:
-            isSuspendProcessInstancePending ||
-            activeOperations.includes('SUSPEND_PROCESS_INSTANCE'),
-        }
-      : isSuspended && isRoot
-        ? {
-            type: 'RESUME_PROCESS_INSTANCE',
-            onExecute: () => resumeProcessInstance(),
-            disabled:
-              isResumeProcessInstancePending ||
-              activeOperations.includes('RESUME_PROCESS_INSTANCE'),
-          }
-        : null;
+  const getStateChangeOperation = (): OperationConfig | null => {
+    if (!isRoot) {
+      return null;
+    }
+    if (isActive) {
+      return suspendOperation;
+    }
+    if (isSuspended) {
+      return resumeOperation;
+    }
+    return null;
+  };
 
-  const destructiveSlot: OperationConfig | null =
-    isActive || isSuspended
-      ? {
-          type: 'CANCEL_PROCESS_INSTANCE',
-          onExecute: () => cancelProcessInstance(),
-          disabled:
-            isCancelProcessInstancePending ||
-            activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
-        }
-      : state === 'COMPLETED' || state === 'TERMINATED'
-        ? {
-            type: 'DELETE_PROCESS_INSTANCE',
-            onExecute: () => deleteProcessInstance(),
-            disabled:
-              isDeletePending ||
-              activeOperations.includes('DELETE_PROCESS_INSTANCE'),
-          }
-        : null;
+  const getDestructiveOperation = (): OperationConfig | null => {
+    if (isActive || isSuspended) {
+      return cancelOperation;
+    }
+    if (isFinished) {
+      return deleteOperation;
+    }
+    return null;
+  };
 
-  const operations = [incidentSlot, toggleSlot, destructiveSlot];
+  const operations = [
+    isActive && hasIncident ? resolveIncidentOperation : null,
+    getStateChangeOperation(),
+    getDestructiveOperation(),
+  ];
 
   return (
     <Operations

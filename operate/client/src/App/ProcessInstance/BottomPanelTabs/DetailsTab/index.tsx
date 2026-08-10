@@ -10,7 +10,8 @@ import {useMemo} from 'react';
 import {StructuredListSkeleton} from '@carbon/react';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
-import {Paths, Locations} from 'modules/Routes';
+import {Locations, Paths} from 'modules/Routes';
+import {defaultProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {tracking} from 'modules/tracking';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -36,6 +37,7 @@ import {
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {isInstanceRunningOrSuspended} from 'modules/utils/instance';
 import {useAgentInstancesForElement} from 'modules/queries/agentInstances/useAgentInstancesForElement';
 import {AgentDetails} from './AgentDetails';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
@@ -74,6 +76,9 @@ const DetailsTab: React.FC = () => {
 
   const {data: processInstance} = useProcessInstance();
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+  const canInspectProcessInstance =
+    processInstance !== undefined &&
+    isInstanceRunningOrSuspended(processInstance);
   const {data: xmlData} = useProcessInstanceXml({
     processDefinitionKey: processInstance?.processDefinitionKey,
   });
@@ -99,7 +104,7 @@ const DetailsTab: React.FC = () => {
     enabled:
       clientConfig.waitStatesEnabled &&
       !!inspectionElementInstanceKey &&
-      isProcessInstanceRunning &&
+      canInspectProcessInstance &&
       (isProcessScope || resolvedElementInstance?.state === 'ACTIVE'),
   });
 
@@ -350,9 +355,7 @@ const DetailsTab: React.FC = () => {
               <Link
                 to={Locations.processes({
                   parentProcessInstanceKey: processInstance!.processInstanceKey,
-                  active: true,
-                  suspended: true,
-                  incidents: true,
+                  ...defaultProcessInstanceFilters,
                   completed: true,
                   canceled: true,
                 })}

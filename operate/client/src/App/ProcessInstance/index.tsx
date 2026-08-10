@@ -47,6 +47,7 @@ import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelectio
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate, matchPath, type Location} from 'react-router-dom';
 import {Locations, Paths} from 'modules/Routes';
+import {defaultProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {BottomPanelTabs} from './BottomPanelTabs';
 import {
@@ -154,8 +155,7 @@ const ProcessInstance: React.FC = observer(() => {
       });
       navigate(
         Locations.processes({
-          active: true,
-          incidents: true,
+          ...defaultProcessInstanceFilters,
         }),
         {replace: true},
       );

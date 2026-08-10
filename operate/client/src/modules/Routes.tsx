@@ -8,7 +8,10 @@
 
 import type {To} from 'react-router-dom';
 import type {DecisionsFilter} from 'modules/utils/filter/decisionsFilter';
-import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {
+  defaultProcessInstanceFilters,
+  type ProcessInstanceFilters,
+} from 'modules/utils/filter/shared';
 
 const Paths = {
   login() {
@@ -89,15 +92,11 @@ const Locations = {
   processes(filters?: ProcessInstanceFilters): To {
     const params = new URLSearchParams();
 
-    if (filters !== undefined) {
-      Object.entries(filters).forEach(([key, value]) => {
+    Object.entries(filters ?? defaultProcessInstanceFilters).forEach(
+      ([key, value]) => {
         params.set(key, value.toString());
-      });
-    } else {
-      params.set('active', 'true');
-      params.set('suspended', 'true');
-      params.set('incidents', 'true');
-    }
+      },
+    );
 
     return {
       pathname: Paths.processes(),
@@ -123,4 +122,4 @@ const Locations = {
   },
 } as const;
 
-export {Paths, Locations};
+export {Locations, Paths};

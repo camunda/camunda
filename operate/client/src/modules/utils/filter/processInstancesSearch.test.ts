@@ -79,6 +79,7 @@ describe('parseProcessInstancesSearchFilter', () => {
   it('should return a filter with the SUSPENDED state when only suspended is set', () => {
     const result = parseProcessInstancesSearchFilter(
       params({suspended: 'true'}),
+      {includeSuspended: true},
     );
 
     expect(result).toEqual({
@@ -89,6 +90,7 @@ describe('parseProcessInstancesSearchFilter', () => {
   it('should combine active and suspended into an $or clause', () => {
     const result = parseProcessInstancesSearchFilter(
       params({active: 'true', suspended: 'true'}),
+      {includeSuspended: true},
     );
 
     expect(result).toEqual({
@@ -102,31 +104,22 @@ describe('parseProcessInstancesSearchFilter', () => {
   it('should combine active, suspended and incidents into a three-clause $or', () => {
     const result = parseProcessInstancesSearchFilter(
       params({active: 'true', suspended: 'true', incidents: 'true'}),
+      {includeSuspended: true},
     );
 
     expect(result).toEqual({
       $or: [
         {state: {$eq: 'ACTIVE'}, hasIncident: false},
         {state: {$eq: 'SUSPENDED'}},
-        {hasIncident: true, state: {$neq: 'SUSPENDED'}},
+        {hasIncident: true},
       ],
-    });
-  });
-
-  it('should exclude suspended instances when only incidents is set', () => {
-    const result = parseProcessInstancesSearchFilter(
-      params({incidents: 'true'}),
-    );
-
-    expect(result).toEqual({
-      hasIncident: true,
-      state: {$neq: 'SUSPENDED'},
     });
   });
 
   it('should combine suspended with other finished states into an $or clause', () => {
     const result = parseProcessInstancesSearchFilter(
       params({suspended: 'true', completed: 'true', canceled: 'true'}),
+      {includeSuspended: true},
     );
 
     expect(result).toEqual({

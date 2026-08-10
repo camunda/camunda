@@ -6,25 +6,44 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ProcessInstance,
+  ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const isInstanceRunning = (processInstance: ProcessInstance): boolean => {
   return processInstance.state === 'ACTIVE' || processInstance.hasIncident;
 };
 
-// Variable modification is allowed while SUSPENDED (unlike other operations,
-// e.g. modification mode) since it isn't gated by the engine's suspension
-// mechanism and supports fixing data before resuming.
-const isVariableEditable = (processInstance: ProcessInstance): boolean => {
+const isInstanceRunningOrSuspended = (
+  processInstance: ProcessInstance,
+): boolean => {
   return (
-    processInstance.state === 'ACTIVE' ||
-    processInstance.state === 'SUSPENDED' ||
-    processInstance.hasIncident
+    isInstanceRunning(processInstance) || processInstance.state === 'SUSPENDED'
   );
+};
+
+const isVariableEditable = (processInstance: ProcessInstance): boolean => {
+  return isInstanceRunningOrSuspended(processInstance);
+};
+
+const getProcessInstanceDisplayState = (
+  processInstance: ProcessInstance,
+): ProcessInstanceState | 'INCIDENT' => {
+  if (processInstance.state === 'SUSPENDED') {
+    return 'SUSPENDED';
+  }
+  return processInstance.hasIncident ? 'INCIDENT' : processInstance.state;
 };
 
 const getProcessDefinitionName = (instance: ProcessInstance) => {
   return instance.processDefinitionName ?? instance.processDefinitionId;
 };
 
-export {getProcessDefinitionName, isInstanceRunning, isVariableEditable};
+export {
+  getProcessDefinitionName,
+  getProcessInstanceDisplayState,
+  isInstanceRunning,
+  isInstanceRunningOrSuspended,
+  isVariableEditable,
+};

@@ -27,8 +27,8 @@ const Operations: React.FC<Props> = ({
 }) => {
   return (
     <OperationsContainer orientation="horizontal">
-      {isLoading ? (
-        <LoadingIndicatorContainer>
+      <LoadingIndicatorContainer>
+        {isLoading ? (
           <InlineLoading
             data-testid="operation-spinner"
             title={
@@ -36,8 +36,8 @@ const Operations: React.FC<Props> = ({
               `Instance ${processInstanceKey} has scheduled Operations`
             }
           />
-        </LoadingIndicatorContainer>
-      ) : null}
+        ) : null}
+      </LoadingIndicatorContainer>
       <OperationItems>
         {operations.map((operation, index) => (
           <OperationRenderer

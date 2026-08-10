@@ -44,7 +44,9 @@ const useProcessInstanceStatisticsFilters = (
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
-    const fullFilter = parseProcessInstancesSearchFilter(searchParams);
+    const fullFilter = parseProcessInstancesSearchFilter(searchParams, {
+      includeSuspended: true,
+    });
 
     if (!fullFilter) {
       return {filter: undefined};

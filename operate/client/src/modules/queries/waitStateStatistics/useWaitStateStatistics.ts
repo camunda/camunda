@@ -15,6 +15,8 @@ import type {RequestError} from 'modules/request';
 import {fetchProcessInstanceWaitStateStatistics} from 'modules/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {isInstanceRunningOrSuspended} from 'modules/utils/instance';
 import {queryKeys} from '../queryKeys';
 
 type UseWaitStateStatisticsParams = {
@@ -25,9 +27,13 @@ const useWaitStateStatistics = (params: UseWaitStateStatisticsParams = {}) => {
   const {enabled = true} = params;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+  const {data: processInstance} = useProcessInstance();
 
   const isEnabled =
-    enabled && !!processInstanceId && !!isProcessInstanceRunning;
+    enabled &&
+    !!processInstanceId &&
+    processInstance !== undefined &&
+    isInstanceRunningOrSuspended(processInstance);
 
   return useQuery<
     GetProcessInstanceWaitStateStatisticsResponseBody,

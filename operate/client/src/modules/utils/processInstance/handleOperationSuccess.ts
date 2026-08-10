@@ -11,6 +11,7 @@ import {useNavigate} from 'react-router-dom';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
+import {defaultProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {queryKeys} from 'modules/queries/queryKeys';
 import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -47,8 +48,7 @@ function useHandleOperationSuccess() {
       if (source === 'instance-header') {
         navigate(
           Locations.processes({
-            active: true,
-            incidents: true,
+            ...defaultProcessInstanceFilters,
           }),
           {replace: true},
         );

@@ -10,19 +10,19 @@ import {Stack} from '@carbon/react';
 import styled from 'styled-components';
 
 const OperationsContainer = styled(Stack)`
-  position: relative;
-
   .cds--popover[role='tooltip'] {
     display: none;
   }
 `;
 
 const LoadingIndicatorContainer = styled.div`
-  position: absolute;
-  inset-inline-end: 100%;
-  top: 50%;
-  width: var(--cds-spacing-07);
-  transform: translateY(-50%);
+  display: flex;
+  flex: 0 0 var(--cds-spacing-07);
+  align-items: center;
 `;
 
-export {LoadingIndicatorContainer, OperationsContainer};
+const OperationPlaceholder = styled.li`
+  visibility: hidden;
+`;
+
+export {LoadingIndicatorContainer, OperationPlaceholder, OperationsContainer};

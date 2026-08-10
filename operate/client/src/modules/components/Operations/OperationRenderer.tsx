@@ -13,6 +13,7 @@ import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
 import {Resume} from './Resume';
 import {Suspend} from './Suspend';
+import {OperationPlaceholder} from './styled';
 import type {OperationConfig} from './types';
 
 type Props = {
@@ -26,7 +27,7 @@ const OperationRenderer: React.FC<Props> = ({
 }) => {
   if (operation === null) {
     return (
-      <li aria-hidden="true">
+      <OperationPlaceholder aria-hidden="true">
         <Button
           kind="ghost"
           hasIconOnly
@@ -34,9 +35,8 @@ const OperationRenderer: React.FC<Props> = ({
           iconDescription=""
           tabIndex={-1}
           disabled
-          style={{visibility: 'hidden'}}
         />
-      </li>
+      </OperationPlaceholder>
     );
   }
 

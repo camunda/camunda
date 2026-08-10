@@ -55,6 +55,12 @@ type ProcessInstanceFilters = {
   businessId?: string;
 };
 
+const defaultProcessInstanceFilters = {
+  active: true,
+  suspended: true,
+  incidents: true,
+} as const satisfies ProcessInstanceFilters;
+
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'processDefinitionId',
   'processDefinitionVersion',
@@ -91,4 +97,8 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
 
 export type {ProcessInstanceFilterField, ProcessInstanceFilters};
 
-export {PROCESS_INSTANCE_FILTER_FIELDS, BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS};
+export {
+  BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
+  defaultProcessInstanceFilters,
+  PROCESS_INSTANCE_FILTER_FIELDS,
+};

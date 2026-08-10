@@ -408,7 +408,12 @@ describe('ProcessInstanceOperations', () => {
   });
 
   it('should show error notification on suspend error', async () => {
+    const verificationRequested = vi.fn();
     mockSuspendProcessInstance().withServerError();
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({state: 'SUSPENDED'}),
+      {mockResolverFn: verificationRequested},
+    );
 
     const {user} = render(
       <ProcessInstanceOperations processInstance={mockProcessInstance} />,
@@ -423,6 +428,7 @@ describe('ProcessInstanceOperations', () => {
       subtitle: 'Internal Server Error',
       isDismissable: true,
     });
+    expect(verificationRequested).not.toHaveBeenCalled();
   });
 
   it('should show success notification on suspend success', async () => {
@@ -446,6 +452,38 @@ describe('ProcessInstanceOperations', () => {
         isDismissable: true,
       });
     });
+  });
+
+  it('should wait for the instance to be suspended before showing success', async () => {
+    const verificationRequested = vi.fn();
+    mockSuspendProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess(
+      {...mockProcessInstance, state: 'SUSPENDED'},
+      {mockResolverFn: verificationRequested},
+    );
+    mockFetchProcessInstance().withSuccess(
+      {...mockProcessInstance, state: 'ACTIVE'},
+      {mockResolverFn: verificationRequested},
+    );
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Suspend Instance/}));
+
+    await waitFor(
+      () => {
+        expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+          kind: 'info',
+          title: 'Instance suspended',
+          isDismissable: true,
+        });
+      },
+      {timeout: 5000},
+    );
+    expect(verificationRequested).toHaveBeenCalledTimes(2);
   });
 
   it('should show error notification on resume error', async () => {
@@ -479,6 +517,33 @@ describe('ProcessInstanceOperations', () => {
     mockFetchProcessInstance().withSuccess({
       ...suspendedInstance,
       state: 'ACTIVE',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={suspendedInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Resume Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    });
+  });
+
+  it('should finish resuming when the instance reaches a terminal state', async () => {
+    const suspendedInstance = createProcessInstance({
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: null,
+    });
+    mockResumeProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...suspendedInstance,
+      state: 'COMPLETED',
     });
 
     const {user} = render(

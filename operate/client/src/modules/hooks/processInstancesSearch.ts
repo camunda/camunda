@@ -28,7 +28,9 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
-    const filter = parseProcessInstancesSearchFilter(searchParams);
+    const filter = parseProcessInstancesSearchFilter(searchParams, {
+      includeSuspended: true,
+    });
 
     if (filter && conditions && conditions.length > 0) {
       const entries = conditions

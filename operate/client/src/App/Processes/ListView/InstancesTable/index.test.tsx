@@ -199,6 +199,35 @@ describe('<InstancesTable />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should display suspended state instead of incident state', () => {
+    const suspendedInstance = {
+      ...mockProcessInstances[0]!,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    } satisfies ProcessInstance;
+
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={[suspendedInstance]}
+        totalCount={1}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByTestId(
+        `SUSPENDED-icon-${suspendedInstance.processInstanceKey}`,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId(
+        `INCIDENT-icon-${suspendedInstance.processInstanceKey}`,
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it('should display empty state message when there are no process instances', async () => {
     render(
       <InstancesTable

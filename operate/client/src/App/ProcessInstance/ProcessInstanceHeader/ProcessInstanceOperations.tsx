@@ -46,6 +46,7 @@ import {
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Locations} from 'modules/Routes';
+import {defaultProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 type Props = {
   isCollapsed?: boolean;
@@ -179,8 +180,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({
     tracking.track({eventName: 'process-instance-migration-mode-entered'});
     navigate(
       Locations.processes({
-        active: true,
-        incidents: true,
+        ...defaultProcessInstanceFilters,
         processDefinitionId: processInstance.processDefinitionId,
         processDefinitionVersion:
           processInstance.processDefinitionVersion.toString(),

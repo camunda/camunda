@@ -203,6 +203,7 @@ describe('Filters', () => {
       batchOperationKey: '90fdfe82-090b-4d84-af31-5db612514191',
       businessId: 'eq_order-12345',
       active: 'true',
+      suspended: 'true',
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
@@ -241,6 +242,7 @@ describe('Filters', () => {
       }),
     ).toHaveValue('');
     expect(screen.getByRole('checkbox', {name: 'Active'})).not.toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Suspended'})).not.toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).not.toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Completed'})).not.toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Canceled'})).not.toBeChecked();
@@ -294,6 +296,7 @@ describe('Filters', () => {
     );
 
     await user.click(screen.getByRole('checkbox', {name: 'Active'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Suspended'}));
     await user.click(screen.getByRole('checkbox', {name: 'Incidents'}));
     await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
     await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));

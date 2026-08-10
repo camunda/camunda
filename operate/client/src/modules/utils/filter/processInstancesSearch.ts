@@ -61,12 +61,14 @@ const parseProcessInstancesFilter = (
 
 const parseProcessInstancesSearchFilter = (
   search: URLSearchParams,
+  {includeSuspended = false}: {includeSuspended?: boolean} = {},
 ): ProcessInstancesSearchFilter | undefined => {
   const filter = parseProcessInstancesFilter(search);
+  const isSuspendedFilterEnabled = includeSuspended && filter.suspended;
 
   const hasStateFilters =
     filter.active ||
-    filter.suspended ||
+    isSuspendedFilterEnabled ||
     filter.completed ||
     filter.canceled ||
     filter.incidents;
@@ -119,24 +121,33 @@ const parseProcessInstancesSearchFilter = (
     states.push('TERMINATED');
   }
 
-  const stateFilters: ProcessInstancesSearchFilter[] = [];
-  if (states.length > 0) {
-    stateFilters.push({
-      state: states.length === 1 ? {$eq: states[0]} : {$in: states},
-      hasIncident: false,
-    });
-  }
-  if (filter.suspended) {
+  if (isSuspendedFilterEnabled) {
+    const stateFilters: ProcessInstancesSearchFilter[] = [];
+    if (states.length > 0) {
+      stateFilters.push({
+        state: states.length === 1 ? {$eq: states[0]} : {$in: states},
+        hasIncident: false,
+      });
+    }
     stateFilters.push({state: {$eq: 'SUSPENDED'}});
-  }
-  if (filter.incidents) {
-    stateFilters.push({hasIncident: true, state: {$neq: 'SUSPENDED'}});
-  }
+    if (filter.incidents) {
+      stateFilters.push({hasIncident: true});
+    }
 
-  if (stateFilters.length === 1) {
-    Object.assign(apiFilter, stateFilters[0]);
-  } else if (stateFilters.length > 1) {
-    apiFilter.$or = stateFilters;
+    if (stateFilters.length === 1) {
+      Object.assign(apiFilter, stateFilters[0]);
+    } else {
+      apiFilter.$or = stateFilters;
+    }
+  } else if (filter.incidents) {
+    if (states.length > 0) {
+      apiFilter.$or = [{state: {$in: states}}, {hasIncident: true}];
+    } else {
+      apiFilter.hasIncident = true;
+    }
+  } else if (states.length > 0) {
+    apiFilter.state = states.length === 1 ? {$eq: states[0]} : {$in: states};
+    apiFilter.hasIncident = false;
   }
 
   if (filter.elementId) {
