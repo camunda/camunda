@@ -198,4 +198,39 @@ RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
 
+### AOT cache ###
+# Train an AOT cache (JEP 483/514) on a real boot, so that at runtime the JVM can
+# skip loading, parsing, verifying and linking the classes a startup touches.
+#
+# There is no secondary storage to talk to during a build, but it does not need to
+# be reachable -- only reached for. create-schema=false makes SchemaManager.startup()
+# return before it touches the client, which is the one thing that would otherwise
+# block context refresh indefinitely; the exporter's connection attempts fail and
+# retry in the background without holding refresh up. Leaving secondary storage
+# *configured* is what matters: it keeps Operate, Tasklist and the search clients in
+# the context, all of which disabling it would drop from the cache.
+#
+# spring.context.exit makes the run stop at the end of context refresh rather than
+# serve traffic. Only one storage mode can be trained -- a training run emits a
+# binary configuration that cannot be merged across runs -- but the choice barely
+# matters: the archived bulk is Spring, Tomcat, Netty, Jackson and the engine. An
+# Elasticsearch-trained cache still cuts an RDBMS startup by 29%, against 37% for
+# Elasticsearch itself.
+#
+# A cache the JVM cannot validate is ignored and startup falls back to the uncached
+# path. That happens when the classpath changes (a JDBC driver mounted into
+# /driver-lib), when compressed oops are off (a heap above ~32G, or ZGC), or when
+# UseCompactObjectHeaders is overridden.
+ARG AOT_CACHE="true"
+RUN if [ "${AOT_CACHE}" = "true" ]; then \
+      cd "${CAMUNDA_HOME}" && \
+      CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \
+      JAVA_OPTS="-XX:AOTCacheOutput=${CAMUNDA_HOME}/camunda.aot -Dspring.context.exit=onRefresh" \
+        "${CAMUNDA_HOME}/bin/camunda" && \
+      rm -rf "${CAMUNDA_HOME}/data"/* "${CAMUNDA_HOME}/logs"/* && \
+      printf -- '-XX:AOTCache=%s/camunda.aot\n' "${CAMUNDA_HOME}" \
+        >> "${CAMUNDA_HOME}/config/jvm.options" && \
+      echo "AOT cache: $(du -h "${CAMUNDA_HOME}/camunda.aot" | cut -f1)"; \
+    fi
+
 ENTRYPOINT ["/usr/local/camunda/bin/camunda"]
