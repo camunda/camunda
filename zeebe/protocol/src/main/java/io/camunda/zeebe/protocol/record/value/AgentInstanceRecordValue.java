@@ -30,6 +30,15 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getAgentInstanceKey();
 
   /**
+   * @return the key of the agent definition this instance runs on, or {@code -1} if unset.
+   *     <p>A successfully created agent instance always resolves to a real key, since creation is
+   *     rejected for elements that have no agent definition; {@code -1} therefore only appears on
+   *     the create command before the engine stamps the value, or on legacy records predating this
+   *     field.
+   */
+  long getAgentDefinitionKey();
+
+  /**
    * @return the unique key of the element instance that the agent instance was last associated with
    */
   long getElementInstanceKey();
@@ -52,6 +61,12 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getProcessInstanceKey();
 
   /**
+   * @return the key of the process definition
+   */
+  @Override
+  long getProcessDefinitionKey();
+
+  /**
    * @return the key of the root process instance in the hierarchy; for top-level process instances,
    *     this is equal to {@link #getProcessInstanceKey()}
    */
@@ -61,12 +76,6 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * @return the BPMN process ID of the process definition containing this agent
    */
   String getBpmnProcessId();
-
-  /**
-   * @return the key of the process definition
-   */
-  @Override
-  long getProcessDefinitionKey();
 
   /**
    * @return the version of the process definition

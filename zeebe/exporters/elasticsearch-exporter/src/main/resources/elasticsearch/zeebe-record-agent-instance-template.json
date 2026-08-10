@@ -22,6 +22,9 @@
             "agentInstanceKey": {
               "type": "long"
             },
+            "agentDefinitionKey": {
+              "type": "long"
+            },
             "elementInstanceKey": {
               "type": "long"
             },

@@ -42,6 +42,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_LIMITS = "limits";
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
+  private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final ArrayProperty<LongValue> elementInstanceKeysProp =
       new ArrayProperty<>("elementInstanceKeys", LongValue::new);
@@ -76,8 +77,9 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("history", AgentHistoryRecord::new);
 
   public AgentInstanceRecord() {
-    super(21);
+    super(22);
     declareProperty(agentInstanceKeyProp)
+        .declareProperty(agentDefinitionKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
         .declareProperty(elementIdProp)
@@ -107,6 +109,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setAgentInstanceKey(final long agentInstanceKey) {
     agentInstanceKeyProp.setValue(agentInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getAgentDefinitionKey() {
+    return agentDefinitionKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setAgentDefinitionKey(final long agentDefinitionKey) {
+    agentDefinitionKeyProp.setValue(agentDefinitionKey);
     return this;
   }
 
