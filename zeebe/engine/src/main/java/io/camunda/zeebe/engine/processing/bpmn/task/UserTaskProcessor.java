@@ -138,8 +138,10 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         userTaskBehavior.userTaskCanceling(elementInstance);
     if (cancelingUserTask.isPresent()) {
       final var firstCancelingListener =
-          taskListeners.stream()
-              .filter(l -> l.getEventType() == ZeebeTaskListenerEventType.canceling)
+          userTaskBehavior
+              .getTaskListeners(
+                  element, elementInstance.getUserTaskKey(), ZeebeTaskListenerEventType.canceling)
+              .stream()
               .findFirst();
       if (firstCancelingListener.isPresent()) {
         jobBehavior.createNewTaskListenerJob(
