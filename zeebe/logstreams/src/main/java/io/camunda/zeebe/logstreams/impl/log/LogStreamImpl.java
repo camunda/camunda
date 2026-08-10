@@ -18,6 +18,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
@@ -125,6 +127,17 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     ensureOpen();
     recordAwaiters.remove(recordAwaiter);
+  }
+
+  @Override
+  public void registerCommittedPositionListener(final CommittedPositionListener listener) {
+    ensureOpen();
+    logStorage.addCommittedPositionListener(listener);
+  }
+
+  @Override
+  public void removeCommittedPositionListener(final CommittedPositionListener listener) {
+    logStorage.removeCommittedPositionListener(listener);
   }
 
   @Override
