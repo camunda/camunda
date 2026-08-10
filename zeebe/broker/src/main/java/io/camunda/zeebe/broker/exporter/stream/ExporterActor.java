@@ -69,7 +69,7 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
   private final LogStreamReader logStreamReader;
   private final AtomicBoolean hasStartedExporting;
   private final ExporterMetrics metrics;
-  private final ExporterExportedPositions exportedPositions;
+  private final ExporterPositionMonitor exportedPositions;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final EventFilter eventFilter;
@@ -93,7 +93,7 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
       final LogStreamReader logStreamReader,
       final AtomicBoolean hasStartedExporting,
       final ExporterMetrics metrics,
-      final ExporterExportedPositions exportedPositions,
+      final ExporterPositionMonitor exportedPositions,
       final EventFilter positionsToSkipFilter,
       final InstantSource clock,
       final ExporterPhase initialPhase,
@@ -127,24 +127,48 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
         recordExporterWrapper.apply(
             new RecordExporter(metrics, List.of(container), partitionIdNumber, clock));
 
-    // Rebind the container's Controller (scheduleCancellableTask, updateLastExportedRecordPosition,
-    // etc.) to this actor's own ActorControl and its own independent ExportersState/
-    // TransactionContext before the exporter is opened. This must happen before open(), not after:
-    // an exporter may synchronously schedule a periodic task from within open() (e.g.
-    // RdbmsExporter's
-    // flush timer), and ActorControl.schedule(...) binds that task to whichever actor owns the
-    // ActorControl at call time - rebinding afterwards would leave that first task permanently
-    // bound to the wrong actor. RocksDB TransactionContexts are also not thread-safe for concurrent
-    // use, so from this point on the exporter is driven exclusively through this actor's own
-    // resources.
     final var ownState = new ExportersState(zeebeDb, zeebeDb.createContext());
     container.initContainer(actor, metrics, ownState, phase);
-    // Seed this exporter's starting position immediately, so it's accounted for in the
-    // cross-exporter minimum reported to FlowControl from the very start, not only once it
-    // exports its first record.
     exportedPositions.recover(container.getId(), container.getPosition());
 
     openWithRetry();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    logStreamReader.close();
+    logStream.removeRecordAvailableListener(this);
+  }
+
+  @Override
+  protected void onActorClosed() {
+    LOG.debug("Closed exporter actor '{}'.", getName());
+    phase = ExporterPhase.CLOSED;
+  }
+
+  @Override
+  protected void onActorCloseRequested() {
+    isOpened.set(false);
+    // Close the exporter itself from within this actor's own close sequence (not from the
+    // director, after this actor has already fully terminated): exporter.close() may call
+    // controller.updateLastExportedRecordPosition(...), which does actor.run(...) against this
+    // same actor - that only still works while this actor is mid-close, not once it is dead.
+    container.close();
+    // Stop pinning the cross-exporter minimum reported to FlowControl once this exporter is no
+    // longer part of the exporting set (removed, disabled, or the whole partition closing).
+    exportedPositions.remove(container.getId());
+  }
+
+  @Override
+  protected void handleFailure(final Throwable failure) {
+    LOG.error(
+        "Actor '{}' failed in phase {} with: {} .",
+        getName(),
+        actor.getLifecyclePhase(),
+        failure,
+        failure);
+    actor.fail(failure);
+    updateHealthStatusWithError(failure);
   }
 
   /**
@@ -327,43 +351,6 @@ final class ExporterActor extends Actor implements HealthMonitorable, LogRecordA
             actor.submit(this::readNextEvent);
           }
         });
-  }
-
-  @Override
-  protected void handleFailure(final Throwable failure) {
-    LOG.error(
-        "Actor '{}' failed in phase {} with: {} .",
-        getName(),
-        actor.getLifecyclePhase(),
-        failure,
-        failure);
-    actor.fail(failure);
-    updateHealthStatusWithError(failure);
-  }
-
-  @Override
-  protected void onActorClosing() {
-    logStreamReader.close();
-    logStream.removeRecordAvailableListener(this);
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    isOpened.set(false);
-    // Close the exporter itself from within this actor's own close sequence (not from the
-    // director, after this actor has already fully terminated): exporter.close() may call
-    // controller.updateLastExportedRecordPosition(...), which does actor.run(...) against this
-    // same actor - that only still works while this actor is mid-close, not once it is dead.
-    container.close();
-    // Stop pinning the cross-exporter minimum reported to FlowControl once this exporter is no
-    // longer part of the exporting set (removed, disabled, or the whole partition closing).
-    exportedPositions.remove(container.getId());
-  }
-
-  @Override
-  protected void onActorClosed() {
-    LOG.debug("Closed exporter actor '{}'.", getName());
-    phase = ExporterPhase.CLOSED;
   }
 
   @Override
