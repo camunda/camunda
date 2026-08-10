@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactNode, useState} from 'react';
+import {ReactNode, useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 import {Button, Form, TextInput} from '@carbon/react';
 
 import {Modal} from 'components';
+import {getEntityNameMaxLength} from 'config';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {addSources} from 'services';
@@ -42,8 +43,13 @@ export function CollectionModal({
   const [loading, setLoading] = useState(false);
   const [redirect, setRedirect] = useState<string | null>(null);
   const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
+  const [nameMaxLength, setNameMaxLength] = useState<number>();
   const {mightFail} = useErrorHandling();
   const history = useHistory();
+
+  useEffect(() => {
+    getEntityNameMaxLength().then(setNameMaxLength);
+  }, []);
 
   const confirm = () => {
     if (!name || loading) {
@@ -95,6 +101,7 @@ export function CollectionModal({
               onChange={({target: {value}}) => setName(value)}
               disabled={loading}
               autoComplete="off"
+              maxLength={nameMaxLength}
               data-modal-primary-focus
             />
           </Form>
