@@ -38,4 +38,25 @@ class TruncatedVariableError extends Error {
 	}
 }
 
-export {ComponentNotAvailableError, EmptyProcessXmlError, ForbiddenError, TruncatedVariableError};
+class ProcessStartFormNotFoundError extends Error {
+	constructor() {
+		super('Process does not have a start form');
+		this.name = 'ProcessStartFormNotFoundError';
+	}
+}
+
+class ProcessStartFormImportError extends Error {
+	constructor(cause: unknown) {
+		super('Process start form schema could not be imported', {cause});
+		this.name = 'ProcessStartFormImportError';
+	}
+}
+
+export {
+	ComponentNotAvailableError,
+	EmptyProcessXmlError,
+	ForbiddenError,
+	ProcessStartFormImportError,
+	ProcessStartFormNotFoundError,
+	TruncatedVariableError,
+};
