@@ -20,5 +20,6 @@ public enum AgentInstanceHistoryRole {
   USER,
   ASSISTANT,
   TOOL_RESULT,
+  CONFIGURATION,
   UNKNOWN_ENUM_VALUE
 }

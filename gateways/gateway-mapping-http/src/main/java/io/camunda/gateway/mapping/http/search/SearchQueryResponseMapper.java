@@ -2221,8 +2221,33 @@ public final class SearchQueryResponseMapper {
               .build();
     }
 
+    final var tools =
+        entity.tools().stream()
+            .map(
+                t ->
+                    AgentTool.Builder.create()
+                        .name(t.name())
+                        .description(t.description())
+                        .elementId(t.elementId())
+                        .build())
+            .toList();
+
+    final var l = entity.limits();
+    final var limits =
+        AgentInstanceLimits.Builder.create()
+            .maxModelCalls(l.maxModelCalls())
+            .maxTokens(l.maxTokens())
+            .maxToolCalls(l.maxToolCalls())
+            .build();
+
+    final var systemPrompt =
+        entity.systemPrompt().stream()
+            .map(SearchQueryResponseMapper::toAgentInstanceMessageContent)
+            .toList();
+
     return AgentInstanceHistoryItemResult.Builder.create()
         .historyItemKey(keyToString(entity.historyItemKey()))
+        .historyItemId(entity.historyItemId())
         .agentInstanceKey(keyToString(entity.agentInstanceKey()))
         .elementInstanceKey(keyToString(entity.elementInstanceKey()))
         .jobKey(keyToString(entity.jobKey()))
@@ -2234,6 +2259,11 @@ public final class SearchQueryResponseMapper {
         .metrics(metrics)
         .commitStatus(AgentInstanceHistoryCommitStatusEnum.fromValue(entity.commitStatus().name()))
         .producedAt(formatDate(entity.producedAt()))
+        .tools(tools)
+        .model(entity.model())
+        .provider(entity.provider())
+        .limits(limits)
+        .systemPrompt(systemPrompt)
         .build();
   }
 

@@ -19,12 +19,15 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceLimitsValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import java.time.Instant;
 import java.util.List;
@@ -65,28 +68,35 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
     final long producedAtMillis =
         value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp();
 
-    return new Builder()
-        .agentHistoryKey(record.getKey())
-        .agentInstanceKey(value.getAgentInstanceKey())
-        .elementInstanceKey(value.getElementInstanceKey())
-        .processInstanceKey(value.getProcessInstanceKey())
-        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
-        .processDefinitionId(value.getBpmnProcessId())
-        .processDefinitionKey(value.getProcessDefinitionKey())
-        .tenantId(value.getTenantId())
-        .partitionId(record.getPartitionId())
-        .jobKey(value.getJobKey())
-        .jobLease(value.getJobLease())
-        .loopIteration(value.getLoopIteration())
-        .role(mapRole(value.getRole()))
-        .commitStatus(mapCommitStatus(intent))
-        .producedAt(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMillis)))
-        .inputTokens(ExportUtil.nullIfNegative(value.getMetrics().getInputTokens()))
-        .outputTokens(ExportUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
-        .durationMs(ExportUtil.nullIfNegative(value.getMetrics().getDurationMs()))
-        .contentItems(mapContent(value.getContent()))
-        .toolCallValues(mapToolCalls(value.getToolCalls()))
-        .build();
+    final var builder =
+        new Builder()
+            .agentHistoryKey(record.getKey())
+            .agentInstanceKey(value.getAgentInstanceKey())
+            .elementInstanceKey(value.getElementInstanceKey())
+            .processInstanceKey(value.getProcessInstanceKey())
+            .rootProcessInstanceKey(value.getRootProcessInstanceKey())
+            .processDefinitionId(value.getBpmnProcessId())
+            .processDefinitionKey(value.getProcessDefinitionKey())
+            .tenantId(value.getTenantId())
+            .partitionId(record.getPartitionId())
+            .jobKey(value.getJobKey())
+            .jobLease(value.getJobLease())
+            .loopIteration(value.getLoopIteration())
+            .role(mapRole(value.getRole()))
+            .commitStatus(mapCommitStatus(intent))
+            .producedAt(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMillis)))
+            .inputTokens(ExportUtil.nullIfNegative(value.getMetrics().getInputTokens()))
+            .outputTokens(ExportUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+            .durationMs(ExportUtil.nullIfNegative(value.getMetrics().getDurationMs()))
+            .contentItems(mapContent(value.getContent()))
+            .toolCallValues(mapToolCalls(value.getToolCalls()))
+            .historyItemId(ExportUtil.emptyToNull(value.getHistoryItemId()))
+            .toolValues(mapTools(value.getTools()))
+            .model(ExportUtil.emptyToNull(value.getModel()))
+            .provider(ExportUtil.emptyToNull(value.getProvider()))
+            .systemPromptItems(mapSystemPrompt(value.getSystemPrompt()));
+    applyLimits(builder, value.getLimits());
+    return builder.build();
   }
 
   private static AgentInstanceHistoryRole mapRole(
@@ -95,10 +105,51 @@ public class AgentHistoryExportHandler implements RdbmsExportHandler<AgentHistor
       case USER -> AgentInstanceHistoryRole.USER;
       case ASSISTANT -> AgentInstanceHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentInstanceHistoryRole.TOOL_RESULT;
+      case CONFIGURATION -> AgentInstanceHistoryRole.CONFIGURATION;
       case UNSPECIFIED ->
           throw new IllegalStateException(
               "should never happen — protocol UNSPECIFIED is always overwritten before export");
     };
+  }
+
+  /** The tools available to the agent, as of this entry. CONFIGURATION items only. */
+  private static List<Tool> mapTools(final List<? extends AgentInstanceToolValue> tools) {
+    if (tools == null || tools.isEmpty()) {
+      return List.of();
+    }
+    return tools.stream()
+        .map(
+            t ->
+                new Tool(
+                    t.getName(),
+                    ExportUtil.emptyToNull(t.getDescription()),
+                    ExportUtil.emptyToNull(t.getElementId())))
+        .toList();
+  }
+
+  /**
+   * The operational limits, as of this entry. CONFIGURATION items only. Leaves a DB column null
+   * (rather than writing {@code -1} literally) when its sub-field isn't configured, independently
+   * per sub-field — {@link io.camunda.db.rdbms.read.mapper.AgentHistoryEntityMapper} defaults each
+   * back to {@code -1} on read.
+   */
+  private static void applyLimits(final Builder builder, final AgentInstanceLimitsValue limits) {
+    if (limits == null) {
+      return;
+    }
+    builder
+        .maxTokens(ExportUtil.nullIfNegative(limits.getMaxTokens()))
+        .maxModelCalls(ExportUtil.nullIfNegative(limits.getMaxModelCalls()))
+        .maxToolCalls(ExportUtil.nullIfNegative(limits.getMaxToolCalls()));
+  }
+
+  /** The system prompt, as content blocks, as of this entry. CONFIGURATION items only. */
+  private static List<ContentItem> mapSystemPrompt(
+      final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
+    if (systemPrompt == null || systemPrompt.isEmpty()) {
+      return List.of();
+    }
+    return mapContent(systemPrompt);
   }
 
   private static AgentInstanceHistoryCommitStatus mapCommitStatus(final AgentHistoryIntent intent) {

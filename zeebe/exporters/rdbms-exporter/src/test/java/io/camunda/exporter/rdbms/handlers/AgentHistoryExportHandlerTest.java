@@ -27,6 +27,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolC
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceLimitsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -542,6 +544,125 @@ class AgentHistoryExportHandlerTest {
     assertThat(mappedItem.text()).isNull();
     assertThat(mappedItem.documentReference()).isNull();
     assertThat(mappedItem.object()).isEqualTo(arrayValue);
+  }
+
+  @Test
+  void shouldMapConfigurationFields() {
+    // given — a CONFIGURATION item that touched
+    // historyItemId/tools/model/provider/limits/systemPrompt
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withRole(AgentHistoryRole.CONFIGURATION)
+            .withHistoryItemId("history-item-1")
+            .withTools(
+                List.of(
+                    ImmutableAgentInstanceToolValue.builder()
+                        .withName("search")
+                        .withDescription("Searches the web")
+                        .withElementId("Task_1")
+                        .build()))
+            .withModel("gpt-4o")
+            .withProvider("openai")
+            .withLimits(
+                ImmutableAgentInstanceLimitsValue.builder()
+                    .withMaxTokens(1000L)
+                    .withMaxModelCalls(10)
+                    .withMaxToolCalls(5)
+                    .build())
+            .withSystemPrompt(
+                List.of(
+                    ImmutableAgentHistoryMessageContentValue.builder()
+                        .withContentType(AgentHistoryContentType.TEXT)
+                        .withText("You are a helpful assistant.")
+                        .build()))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(64L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.historyItemId()).isEqualTo("history-item-1");
+    assertThat(model.toolValues()).hasSize(1);
+    assertThat(model.toolValues().getFirst().name()).isEqualTo("search");
+    assertThat(model.toolValues().getFirst().description()).isEqualTo("Searches the web");
+    assertThat(model.toolValues().getFirst().elementId()).isEqualTo("Task_1");
+    assertThat(model.model()).isEqualTo("gpt-4o");
+    assertThat(model.provider()).isEqualTo("openai");
+    assertThat(model.maxTokens()).isEqualTo(1000L);
+    assertThat(model.maxModelCalls()).isEqualTo(10);
+    assertThat(model.maxToolCalls()).isEqualTo(5);
+    assertThat(model.systemPromptItems()).hasSize(1);
+    assertThat(model.systemPromptItems().getFirst().text())
+        .isEqualTo("You are a helpful assistant.");
+  }
+
+  @Test
+  void shouldMapUntouchedConfigurationFields() {
+    // given — a non-CONFIGURATION item (protocol defaults: empty historyItemId/tools/model/
+    // provider/systemPrompt, all-sentinel limits)
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r ->
+                r.withIntent(AgentHistoryIntent.CREATED)
+                    .withKey(65L)
+                    .withValue(buildRecordValue()));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.historyItemId()).isNull();
+    assertThat(model.toolValues()).isEmpty();
+    assertThat(model.model()).isNull();
+    assertThat(model.provider()).isNull();
+    // the three DB columns stay null (not -1) — a storage-only optimization; the read mapper
+    // defaults them back to -1 (AgentHistoryEntityMapper.toLimits())
+    assertThat(model.maxTokens()).isNull();
+    assertThat(model.maxModelCalls()).isNull();
+    assertThat(model.maxToolCalls()).isNull();
+    assertThat(model.systemPromptItems()).isEmpty();
+  }
+
+  @Test
+  void shouldMapPartiallyConfiguredLimitsIndependently() {
+    // given — a CONFIGURATION item that only set maxTokens, leaving maxModelCalls/maxToolCalls at
+    // the protocol sentinel (-1)
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withRole(AgentHistoryRole.CONFIGURATION)
+            .withLimits(
+                ImmutableAgentInstanceLimitsValue.builder()
+                    .withMaxTokens(1000L)
+                    .withMaxModelCalls(-1)
+                    .withMaxToolCalls(-1)
+                    .build())
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(66L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then — the configured field is stored as-is; the untouched ones stay null (not -1), same as
+    // a fully-untouched item
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.maxTokens()).isEqualTo(1000L);
+    assertThat(model.maxModelCalls()).isNull();
+    assertThat(model.maxToolCalls()).isNull();
   }
 
   @Test

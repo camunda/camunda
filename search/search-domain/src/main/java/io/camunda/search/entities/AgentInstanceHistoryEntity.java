@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentInstanceHistoryEntity(
     Long historyItemKey,
+    String historyItemId,
     Long agentInstanceKey,
     Long elementInstanceKey,
     Long processInstanceKey,
@@ -37,12 +38,18 @@ public record AgentInstanceHistoryEntity(
     List<ContentItem> content,
     List<ToolCall> toolCalls,
     @Nullable Metrics metrics,
+    List<Tool> tools,
+    @Nullable String model,
+    @Nullable String provider,
+    Limits limits,
+    List<ContentItem> systemPrompt,
     AgentInstanceHistoryCommitStatus commitStatus,
     OffsetDateTime producedAt)
     implements TenantOwnedEntity {
 
   public AgentInstanceHistoryEntity {
     Objects.requireNonNull(historyItemKey, "historyItemKey");
+    Objects.requireNonNull(historyItemId, "historyItemId");
     Objects.requireNonNull(agentInstanceKey, "agentInstanceKey");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
@@ -58,12 +65,16 @@ public record AgentInstanceHistoryEntity(
     // Mutable lists required — readers may hydrate by calling .add()
     content = content != null ? new ArrayList<>(content) : new ArrayList<>();
     toolCalls = toolCalls != null ? new ArrayList<>(toolCalls) : new ArrayList<>();
+    tools = tools != null ? new ArrayList<>(tools) : new ArrayList<>();
+    systemPrompt = systemPrompt != null ? new ArrayList<>(systemPrompt) : new ArrayList<>();
+    limits = limits != null ? limits : new Limits(-1, -1, -1);
   }
 
   public enum AgentInstanceHistoryRole {
     USER,
     ASSISTANT,
-    TOOL_RESULT
+    TOOL_RESULT,
+    CONFIGURATION
   }
 
   public enum AgentInstanceHistoryCommitStatus {
@@ -145,4 +156,20 @@ public record AgentInstanceHistoryEntity(
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Metrics(
       @Nullable Long inputTokens, @Nullable Long outputTokens, @Nullable Long durationMs) {}
+
+  /** A tool made available to the agent by a CONFIGURATION item. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Tool(String name, @Nullable String description, @Nullable String elementId) {
+    public Tool {
+      Objects.requireNonNull(name, "name");
+    }
+  }
+
+  /**
+   * The limits set by a CONFIGURATION item. {@code -1} on any field means "no limit configured" for
+   * that dimension — same convention as {@link
+   * io.camunda.search.entities.AgentInstanceEntity.AgentInstanceLimits}.
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Limits(long maxTokens, int maxModelCalls, int maxToolCalls) {}
 }

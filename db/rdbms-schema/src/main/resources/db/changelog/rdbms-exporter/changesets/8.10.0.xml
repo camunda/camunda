@@ -479,6 +479,14 @@
       <column name="DURATION_MS" type="BIGINT"/>
       <column name="CONTENT" type="CLOB"/>
       <column name="TOOL_CALLS" type="CLOB"/>
+      <column name="HISTORY_ITEM_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="TOOLS" type="CLOB"/>
+      <column name="MODEL" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROVIDER" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="MAX_TOKENS" type="BIGINT"/>
+      <column name="MAX_MODEL_CALLS" type="INTEGER"/>
+      <column name="MAX_TOOL_CALLS" type="INTEGER"/>
+      <column name="SYSTEM_PROMPT" type="CLOB"/>
     </createTable>
 
     <modifySql dbms="mariadb,mysql">

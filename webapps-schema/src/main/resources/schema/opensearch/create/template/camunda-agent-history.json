@@ -160,6 +160,125 @@
             "enabled": false
           }
         }
+      },
+      "historyItemId": {
+        "type": "keyword"
+      },
+      "tools": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "description": {
+            "type": "text",
+            "index": false
+          },
+          "elementId": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          }
+        }
+      },
+      "model": {
+        "type": "keyword"
+      },
+      "provider": {
+        "type": "keyword"
+      },
+      "limits": {
+        "type": "object",
+        "properties": {
+          "maxTokens": {
+            "type": "long"
+          },
+          "maxModelCalls": {
+            "type": "integer"
+          },
+          "maxToolCalls": {
+            "type": "integer"
+          }
+        }
+      },
+      "systemPrompt": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "text": {
+            "type": "text",
+            "index": false
+          },
+          "documentReference": {
+            "type": "object",
+            "properties": {
+              "documentId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "storeId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "contentHash": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "fileName": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "expiresAt": {
+                    "type": "date",
+                    "format": "date_time || epoch_millis",
+                    "index": false
+                  },
+                  "size": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processDefinitionId": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processInstanceKey": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "customProperties": {
+                    "type": "object",
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          },
+          "object": {
+            "type": "object",
+            "enabled": false
+          }
+        }
       }
     }
   }

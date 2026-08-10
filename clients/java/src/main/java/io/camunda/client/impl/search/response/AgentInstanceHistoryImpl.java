@@ -23,6 +23,7 @@ import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
+import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
@@ -30,10 +31,12 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemResult;
+import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
 import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
 import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentInstanceToolCall;
+import io.camunda.client.protocol.rest.AgentTool;
 import io.camunda.client.protocol.rest.DocumentReference;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -55,6 +58,12 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
   private final AgentInstanceHistoryMetrics metrics;
   private final AgentInstanceHistoryCommitStatus commitStatus;
   private final OffsetDateTime producedAt;
+  private final String historyItemId;
+  private final List<AgentInstance.Tool> tools;
+  private final String model;
+  private final String provider;
+  private final AgentInstance.Limits limits;
+  private final List<AgentInstanceHistoryContent> systemPrompt;
 
   public AgentInstanceHistoryImpl(final AgentInstanceHistoryItemResult result) {
     historyItemKey = Long.parseLong(result.getHistoryItemKey());
@@ -80,6 +89,20 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     commitStatus =
         EnumUtil.convert(result.getCommitStatus(), AgentInstanceHistoryCommitStatus.class);
     producedAt = ParseUtil.parseOffsetDateTimeOrNull(result.getProducedAt());
+    historyItemId = result.getHistoryItemId();
+    tools =
+        result.getTools() != null
+            ? result.getTools().stream().map(ToolImpl::new).collect(Collectors.toList())
+            : Collections.emptyList();
+    model = result.getModel();
+    provider = result.getProvider();
+    limits = result.getLimits() != null ? new LimitsImpl(result.getLimits()) : null;
+    systemPrompt =
+        result.getSystemPrompt() != null
+            ? result.getSystemPrompt().stream()
+                .map(AgentInstanceHistoryImpl::toContent)
+                .collect(Collectors.toList())
+            : Collections.emptyList();
   }
 
   @Override
@@ -142,6 +165,36 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     return producedAt;
   }
 
+  @Override
+  public String getHistoryItemId() {
+    return historyItemId;
+  }
+
+  @Override
+  public List<AgentInstance.Tool> getTools() {
+    return tools;
+  }
+
+  @Override
+  public String getModel() {
+    return model;
+  }
+
+  @Override
+  public String getProvider() {
+    return provider;
+  }
+
+  @Override
+  public AgentInstance.Limits getLimits() {
+    return limits;
+  }
+
+  @Override
+  public List<AgentInstanceHistoryContent> getSystemPrompt() {
+    return systemPrompt;
+  }
+
   private static AgentInstanceHistoryContent toContent(final AgentInstanceMessageContent proto) {
     if (proto instanceof AgentInstanceTextContent) {
       return new TextContent(((AgentInstanceTextContent) proto).getText());
@@ -174,5 +227,61 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
         .inputTokens(proto.getInputTokens())
         .outputTokens(proto.getOutputTokens())
         .durationMs(proto.getDurationMs());
+  }
+
+  private static class LimitsImpl implements AgentInstance.Limits {
+
+    private final int maxModelCalls;
+    private final int maxToolCalls;
+    private final long maxTokens;
+
+    LimitsImpl(final AgentInstanceLimits proto) {
+      maxModelCalls = proto.getMaxModelCalls();
+      maxToolCalls = proto.getMaxToolCalls();
+      maxTokens = proto.getMaxTokens();
+    }
+
+    @Override
+    public int getMaxModelCalls() {
+      return maxModelCalls;
+    }
+
+    @Override
+    public int getMaxToolCalls() {
+      return maxToolCalls;
+    }
+
+    @Override
+    public long getMaxTokens() {
+      return maxTokens;
+    }
+  }
+
+  private static class ToolImpl implements AgentInstance.Tool {
+
+    private final String name;
+    private final String description;
+    private final String elementId;
+
+    ToolImpl(final AgentTool proto) {
+      name = proto.getName();
+      description = proto.getDescription();
+      elementId = proto.getElementId();
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+
+    @Override
+    public String getDescription() {
+      return description;
+    }
+
+    @Override
+    public String getElementId() {
+      return elementId;
+    }
   }
 }

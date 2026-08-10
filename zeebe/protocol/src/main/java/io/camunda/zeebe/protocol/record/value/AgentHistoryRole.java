@@ -19,5 +19,6 @@ public enum AgentHistoryRole {
   USER,
   ASSISTANT,
   TOOL_RESULT,
+  CONFIGURATION,
   UNSPECIFIED
 }

@@ -31,7 +31,7 @@ public class AgentHistoryWriter extends ProcessInstanceDependant implements Rdbm
 
   public void create(final AgentHistoryDbModel model) {
     final var truncated =
-        model.truncateJobLease(
+        model.truncate(
             vendorDatabaseProperties.userCharColumnSize(),
             vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(

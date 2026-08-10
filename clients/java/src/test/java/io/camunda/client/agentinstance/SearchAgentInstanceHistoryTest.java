@@ -39,10 +39,12 @@ import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQuery;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQuerySortRequest;
+import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
 import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
 import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentInstanceToolCall;
+import io.camunda.client.protocol.rest.AgentTool;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -282,7 +284,20 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             .content(
                 Collections.singletonList(
                     (AgentInstanceMessageContent)
-                        new AgentInstanceTextContent().contentType("TEXT").text("hello")));
+                        new AgentInstanceTextContent().contentType("TEXT").text("hello")))
+            .historyItemId("history-item-1")
+            .tools(
+                Collections.singletonList(
+                    new AgentTool().name("search").description("Searches the web")))
+            .model("gpt-4o")
+            .provider("openai")
+            .limits(new AgentInstanceLimits().maxTokens(1000L).maxModelCalls(10).maxToolCalls(5))
+            .systemPrompt(
+                Collections.singletonList(
+                    (AgentInstanceMessageContent)
+                        new AgentInstanceTextContent()
+                            .contentType("TEXT")
+                            .text("You are a helpful assistant.")));
 
     gatewayService.onAgentInstanceHistorySearchRequest(
         AGENT_INSTANCE_KEY,
@@ -337,6 +352,27 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(content.getContentType()).as("contentType").isEqualTo("TEXT");
           softly.assertThat(content).as("content is TextContent").isInstanceOf(TextContent.class);
           softly.assertThat(((TextContent) content).getText()).as("text").isEqualTo("hello");
+
+          softly
+              .assertThat(item.getHistoryItemId())
+              .as("historyItemId")
+              .isEqualTo("history-item-1");
+          softly.assertThat(item.getTools()).as("tools").hasSize(1);
+          softly.assertThat(item.getTools().get(0).getName()).as("tool name").isEqualTo("search");
+          softly
+              .assertThat(item.getTools().get(0).getDescription())
+              .as("tool description")
+              .isEqualTo("Searches the web");
+          softly.assertThat(item.getModel()).as("model").isEqualTo("gpt-4o");
+          softly.assertThat(item.getProvider()).as("provider").isEqualTo("openai");
+          softly.assertThat(item.getLimits().getMaxTokens()).as("maxTokens").isEqualTo(1000L);
+          softly.assertThat(item.getLimits().getMaxModelCalls()).as("maxModelCalls").isEqualTo(10);
+          softly.assertThat(item.getLimits().getMaxToolCalls()).as("maxToolCalls").isEqualTo(5);
+          softly.assertThat(item.getSystemPrompt()).as("systemPrompt").hasSize(1);
+          softly
+              .assertThat(((TextContent) item.getSystemPrompt().get(0)).getText())
+              .as("systemPrompt text")
+              .isEqualTo("You are a helpful assistant.");
         });
   }
 

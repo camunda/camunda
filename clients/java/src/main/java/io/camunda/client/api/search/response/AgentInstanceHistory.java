@@ -49,4 +49,22 @@ public interface AgentInstanceHistory {
   AgentInstanceHistoryCommitStatus getCommitStatus();
 
   OffsetDateTime getProducedAt();
+
+  /** Returns the client-supplied identifier this item was created with, or empty if none. */
+  String getHistoryItemId();
+
+  /** Returns the tools available to the agent as of this entry. CONFIGURATION items only. */
+  List<AgentInstance.Tool> getTools();
+
+  /** Returns the LLM model identifier as of this entry, or {@code null} for other roles. */
+  String getModel();
+
+  /** Returns the LLM provider as of this entry, or {@code null} for other roles. */
+  String getProvider();
+
+  /** Returns the operational limits as of this entry. CONFIGURATION items only. */
+  AgentInstance.Limits getLimits();
+
+  /** Returns the system prompt, as content blocks, as of this entry. CONFIGURATION items only. */
+  List<AgentInstanceHistoryContent> getSystemPrompt();
 }
