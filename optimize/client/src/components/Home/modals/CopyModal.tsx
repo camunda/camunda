@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MouseEvent, useState} from 'react';
+import {MouseEvent, useEffect, useState} from 'react';
 import {Button, TextInput, Form, Checkbox, Stack} from '@carbon/react';
 
 import {Modal} from 'components';
+import {getEntityNameMaxLength} from 'config';
 import {t} from 'translation';
 import {EntityListEntity} from 'types';
 
@@ -34,6 +35,11 @@ export default function CopyModal({
   const [moving, setMoving] = useState(false);
   const [collection, setCollection] = useState<EntityListEntity | CollectionsHome | null>(null);
   const [gotoNew, setGotoNew] = useState(true);
+  const [nameMaxLength, setNameMaxLength] = useState<number>();
+
+  useEffect(() => {
+    getEntityNameMaxLength().then(setNameMaxLength);
+  }, []);
 
   const handleConfirm = () => {
     if (name && (!moving || collection)) {
@@ -58,6 +64,7 @@ export default function CopyModal({
               labelText={t('home.copy.inputLabel')}
               value={name}
               autoComplete="off"
+              maxLength={nameMaxLength}
               onChange={({target: {value}}) => setName(value)}
               helperText={isCollection() && t('home.copy.copyCollectionInfo')}
             />

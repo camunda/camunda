@@ -47,6 +47,7 @@ export type UiConfig = {
   logoutHidden: boolean;
   cslEnabled: boolean;
   exportCsvLimit: number;
+  entityNameMaxLength: number;
   maxNumDataSourcesForReport: number;
   onboarding: Onboarding;
   notificationsUrl: string;
@@ -120,6 +121,7 @@ export const getOptimizeProfile =
 export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');
 export const isCslEnabled = createAccessorFunction<boolean>('cslEnabled');
 export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit');
+export const getEntityNameMaxLength = createAccessorFunction<number>('entityNameMaxLength');
 export const getMaxNumDataSourcesForReport = createAccessorFunction<number>(
   'maxNumDataSourcesForReport'
 );
