@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
@@ -47,6 +49,11 @@ public final class ClusterRecoveryController {
       @RequestParam final Mode mode,
       @RequestParam(required = false) final @Nullable String physicalTenantId,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
+    if (physicalTenantId != null && physicalTenantId.isBlank()) {
+      throw new ServiceException(
+          "Expected physicalTenantId to identify a physical tenant, but it was empty.",
+          Status.INVALID_ARGUMENT);
+    }
     LOG.debug(
         "Requested cluster mode change to {} for {}",
         mode,

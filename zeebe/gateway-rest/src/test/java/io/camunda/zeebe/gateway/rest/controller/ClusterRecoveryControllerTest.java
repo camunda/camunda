@@ -141,6 +141,20 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
         .isNotFound();
   }
 
+  @Test
+  void shouldRejectABlankPhysicalTenantAsAMalformedRequest() {
+    // when / then
+    webClient
+        .patch()
+        .uri(MODE_URL + "?mode=RECOVERING&physicalTenantId=")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    Mockito.verify(clusterRecoveryServices, Mockito.never())
+        .changeMode(Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+  }
+
   private ClusterConfigurationChangeResponse plannedChange(final long changeId) {
     final var plannedChanges =
         List.<ClusterConfigurationChangeOperation>of(
