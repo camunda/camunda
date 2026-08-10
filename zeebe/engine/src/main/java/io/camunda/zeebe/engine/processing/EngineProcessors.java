@@ -187,9 +187,15 @@ public final class EngineProcessors {
     // Build CSL authorization ports for identity, UserTask, and Job domain processors
     final var membershipStateAdapter =
         new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
+            processingState.getMappingRuleState(),
+            processingState.getMembershipState(),
+            config,
+            typedRecordProcessorContext.getMeterRegistry());
     final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
+        new AuthorizationScopeStateAdapter(
+            processingState.getAuthorizationState(),
+            config,
+            typedRecordProcessorContext.getMeterRegistry());
     final var ports =
         AuthorizationPortsFactory.create(
             authorizationScopeStateAdapter,

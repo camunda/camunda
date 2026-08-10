@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +33,8 @@ import org.slf4j.Logger;
 @NullMarked
 public final class MembershipStateAdapter implements MembershipPort {
 
+  private static final String NAMESPACE = "zeebe.authorization";
+
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final MappingRuleState mappingRuleState;
@@ -40,13 +44,16 @@ public final class MembershipStateAdapter implements MembershipPort {
   public MembershipStateAdapter(
       final MappingRuleState mappingRuleState,
       final MembershipState membershipState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final MeterRegistry meterRegistry) {
     this.mappingRuleState = mappingRuleState;
     this.membershipState = membershipState;
+    final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "membership", meterRegistry);
     membershipCache =
-        CacheBuilder.newBuilder()
+        Caffeine.newBuilder()
             .expireAfterWrite(config.getAuthorizationsCacheTtl())
             .maximumSize(config.getAuthorizationsCacheCapacity())
+            .recordStats(() -> statsCounter)
             .build(new MembershipCacheLoader(membershipState));
   }
 
@@ -153,7 +160,7 @@ public final class MembershipStateAdapter implements MembershipPort {
   /** Returns cached memberships, loading from state on cache miss. */
   private List<String> getMemberships(
       final EntityType entityType, final String entityId, final RelationType relationType) {
-    return membershipCache.getUnchecked(new MembershipCacheKey(entityType, entityId, relationType));
+    return membershipCache.get(new MembershipCacheKey(entityType, entityId, relationType));
   }
 
   /** Converts a {@link PrincipalType} to the Zeebe {@link EntityType}. */
@@ -169,7 +176,7 @@ public final class MembershipStateAdapter implements MembershipPort {
 
   /** Loads memberships from {@link MembershipState}, bypassing the cache. */
   private static final class MembershipCacheLoader
-      extends CacheLoader<MembershipCacheKey, List<String>> {
+      implements CacheLoader<MembershipCacheKey, List<String>> {
 
     private final MembershipState membershipState;
 

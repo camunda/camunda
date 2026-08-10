@@ -29,10 +29,12 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +46,7 @@ final class MembershipStateAdapterTest {
   private MutableProcessingState processingState;
 
   private MembershipStateAdapter adapter;
+  private SimpleMeterRegistry meterRegistry;
   private MappingRuleCreatedApplier mappingRuleCreatedApplier;
   private GroupCreatedApplier groupCreatedApplier;
   private GroupEntityAddedApplier groupEntityAddedApplier;
@@ -55,11 +58,13 @@ final class MembershipStateAdapterTest {
 
   @BeforeEach
   void setup() {
+    meterRegistry = new SimpleMeterRegistry();
     adapter =
         new MembershipStateAdapter(
             processingState.getMappingRuleState(),
             processingState.getMembershipState(),
-            new EngineConfiguration());
+            new EngineConfiguration(),
+            meterRegistry);
     mappingRuleCreatedApplier =
         new MappingRuleCreatedApplier(processingState.getMappingRuleState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
@@ -68,6 +73,11 @@ final class MembershipStateAdapterTest {
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     tenantCreatedApplier = new TenantCreatedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
+  }
+
+  @AfterEach
+  void tearDown() {
+    meterRegistry.close();
   }
 
   @Test
@@ -280,6 +290,41 @@ final class MembershipStateAdapterTest {
 
     // then
     assertThat(result).containsExactly(tenantId);
+  }
+
+  @Test
+  void shouldRecordCacheMissThenHitOnRepeatedGroupIdsLookup() {
+    // given
+    final var userId = Strings.newRandomValidIdentityId();
+    createGroupAndAssignEntity(userId, EntityType.USER);
+    final var query = new MembershipQuery(Map.of(), userId, PrincipalType.USER);
+
+    // when — first lookup misses and loads, second lookup hits the cache
+    adapter.groupIds(query);
+    adapter.groupIds(query);
+
+    // then
+    assertThat(
+            meterRegistry
+                .get("zeebe.authorization.membership.result")
+                .tag("type", "MISS")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+    assertThat(
+            meterRegistry
+                .get("zeebe.authorization.membership.result")
+                .tag("type", "HIT")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+    assertThat(meterRegistry.get("zeebe.authorization.membership.load.duration.success").timer())
+        .isNotNull();
+  }
+
+  @Test
+  void shouldRegisterEvictionsMeter() {
+    assertThat(meterRegistry.get("zeebe.authorization.membership.evictions").counter()).isNotNull();
   }
 
   // --- helpers ---
