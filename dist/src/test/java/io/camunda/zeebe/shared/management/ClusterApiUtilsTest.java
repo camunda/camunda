@@ -370,7 +370,9 @@ final class ClusterApiUtilsTest {
                     Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
 
     // when
-    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+    final var response =
+        ClusterApiUtils.mapClusterTopologyResponse(
+            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -396,7 +398,9 @@ final class ClusterApiUtilsTest {
                     Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
 
     // when
-    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+    final var response =
+        ClusterApiUtils.mapClusterTopologyResponse(
+            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -421,7 +425,9 @@ final class ClusterApiUtilsTest {
                         PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering())));
 
     // when
-    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+    final var response =
+        ClusterApiUtils.mapClusterTopologyResponse(
+            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
 
     // then
     final var body = (GetTopologyResponse) response.getBody();
@@ -469,7 +475,9 @@ final class ClusterApiUtilsTest {
             .setPartitionDistributorConfig(partitionDistributorConfig);
 
     // when
-    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+    final var response =
+        ClusterApiUtils.mapClusterTopologyResponse(
+            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);

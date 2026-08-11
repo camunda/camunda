@@ -177,7 +177,7 @@ final class ClusterApiUtils {
   }
 
   static ResponseEntity<?> mapClusterTopologyResponse(
-      final Either<ErrorResponse, ClusterConfiguration> response) {
+      final Either<ErrorResponse, CurrentClusterConfiguration> response) {
     if (response.isRight()) {
       return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
     } else {
@@ -660,21 +660,23 @@ final class ClusterApiUtils {
     };
   }
 
-  private static GetTopologyResponse mapClusterTopology(final ClusterConfiguration topology) {
+  private static GetTopologyResponse mapClusterTopology(
+      final CurrentClusterConfiguration configuration) {
     final var response = new GetTopologyResponse();
-    // temp: convert to new model from legacy, because the query response from the coordinator now
-    // only returns the legacy format.
-    final List<BrokerState> brokers =
-        mapBrokerStatesFromPhysicalTenantsConfig(CurrentClusterConfiguration.fromLegacy(topology));
+    final List<BrokerState> brokers = mapBrokerStatesFromPhysicalTenantsConfig(configuration);
+    // the legacy scalar fields (version, change tracking, routing, cluster id, partition
+    // distribution) are not yet tracked per physical tenant, so they still come off the
+    // default-group projection.
+    final var legacy = configuration.toLegacyDefault();
 
-    response.version(topology.version()).brokers(brokers);
-    topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
-    topology.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
-    topology
+    response.version(legacy.version()).brokers(brokers);
+    legacy.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
+    legacy.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
+    legacy
         .routingState()
         .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
-    topology.clusterId().ifPresent(response::clusterId);
-    topology
+    legacy.clusterId().ifPresent(response::clusterId);
+    legacy
         .partitionDistributorConfig()
         .ifPresent(
             config -> response.partitionDistribution(mapPartitionDistributionConfig(config)));

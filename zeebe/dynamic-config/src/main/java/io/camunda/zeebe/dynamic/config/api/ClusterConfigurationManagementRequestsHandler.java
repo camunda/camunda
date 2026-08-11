@@ -34,7 +34,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -271,13 +271,13 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> cancelTopologyChange(
+  public ActorFuture<CurrentClusterConfiguration> cancelTopologyChange(
       final CancelChangeRequest changeRequest) {
     return coordinator.cancelChange(changeRequest.changeId());
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> getTopology() {
+  public ActorFuture<CurrentClusterConfiguration> getTopology() {
     return coordinator.getClusterConfiguration();
   }
 

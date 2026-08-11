@@ -21,7 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 
 public interface ClusterConfigurationRequestsSerializer {
@@ -118,14 +118,15 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeResponse(ClusterConfigurationChangeResponse response);
 
-  byte[] encodeResponse(ClusterConfiguration response);
+  byte[] encodeResponse(CurrentClusterConfiguration response);
 
   byte[] encodeResponse(ErrorResponse response);
 
   Either<ErrorResponse, ClusterConfigurationChangeResponse> decodeTopologyChangeResponse(
       byte[] encodedResponse);
 
-  Either<ErrorResponse, ClusterConfiguration> decodeClusterTopologyResponse(byte[] encodedResponse);
+  Either<ErrorResponse, CurrentClusterConfiguration> decodeClusterConfigurationResponse(
+      byte[] encodedResponse);
 
   UpdateRoutingStateRequest decodeUpdateRoutingStateRequest(byte[] bytes);
 

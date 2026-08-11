@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -158,7 +159,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     clientApi =
         new ClusterConfigurationManagementRequestSender(
             gateway.getCommunicationService(),
-            ClusterConfigurationCoordinatorSupplier.of(
+            ClusterConfigurationCoordinatorSupplier.from(
                 () -> recordingCoordinator.getClusterConfiguration().join()),
             new ProtoBufSerializer());
 
@@ -254,7 +255,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var topology = clientApi.getTopology().join();
 
     // then
-    assertThat(topology.get()).isEqualTo(expectedTopology);
+    assertThat(topology.get()).isEqualTo(CurrentClusterConfiguration.fromLegacy(expectedTopology));
   }
 
   @Test

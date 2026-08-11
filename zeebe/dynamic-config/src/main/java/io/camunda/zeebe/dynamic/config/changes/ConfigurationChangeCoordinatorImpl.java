@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopCluster
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -53,8 +52,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
-    return clusterTopologyManager.getClusterConfiguration();
+  public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {
+    return clusterTopologyManager.getMultiConfiguration();
   }
 
   @Override
@@ -70,7 +69,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> cancelChange(final long changeId) {
+  public ActorFuture<CurrentClusterConfiguration> cancelChange(final long changeId) {
     return cancelChangeNewModel(changeId);
   }
 
@@ -89,8 +88,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     }
   }
 
-  private ActorFuture<ClusterConfiguration> cancelChangeNewModel(final long changeId) {
-    final ActorFuture<ClusterConfiguration> future = executor.createFuture();
+  private ActorFuture<CurrentClusterConfiguration> cancelChangeNewModel(final long changeId) {
+    final ActorFuture<CurrentClusterConfiguration> future = executor.createFuture();
     executor.run(
         () ->
             clusterTopologyManager
@@ -109,7 +108,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         return;
                       }
                       if (!future.isDone()) {
-                        future.complete(updatedConfiguration.toLegacyDefault());
+                        future.complete(updatedConfiguration);
                       }
                     },
                     executor));
@@ -119,7 +118,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private boolean validateCancelNewModel(
       final long changeId,
       final CurrentClusterConfiguration currentConfiguration,
-      final ActorFuture<ClusterConfiguration> future) {
+      final ActorFuture<CurrentClusterConfiguration> future) {
     if (currentConfiguration.isUninitialized()) {
       failFuture(
           future,

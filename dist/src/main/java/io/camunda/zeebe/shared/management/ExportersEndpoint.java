@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -75,7 +76,10 @@ public class ExportersEndpoint {
 
   @GetMapping(produces = "application/json")
   public CompletableFuture<ResponseEntity<?>> listExporters() {
-    return requestSender.getTopology().handle(this::mapQueryResponse);
+    return requestSender
+        .getTopology()
+        .thenApply(result -> result.map(CurrentClusterConfiguration::toLegacyDefault))
+        .handle(this::mapQueryResponse);
   }
 
   private ResponseEntity<?> mapQueryResponse(

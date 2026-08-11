@@ -28,7 +28,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /** Defines the API for the configuration management requests. */
@@ -99,10 +99,10 @@ public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> modeChange(ModeChangeRequest modeChangeRequest);
 
-  ActorFuture<ClusterConfiguration> cancelTopologyChange(
+  ActorFuture<CurrentClusterConfiguration> cancelTopologyChange(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
 
-  ActorFuture<ClusterConfiguration> getTopology();
+  ActorFuture<CurrentClusterConfiguration> getTopology();
 
   ActorFuture<ClusterConfigurationChangeResponse> restore(RestoreRequest request);
 }
