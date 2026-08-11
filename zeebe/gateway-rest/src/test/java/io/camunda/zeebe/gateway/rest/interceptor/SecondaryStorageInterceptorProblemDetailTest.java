@@ -19,6 +19,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.exception.SecondaryStorageDegradedException;
+import io.camunda.service.exception.SecondaryStorageTypeNotSupportedException;
 import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.junit.jupiter.api.Test;
@@ -30,8 +31,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Asserts the HTTP 503 problem-detail body shape produced when {@link SecondaryStorageInterceptor}
- * rejects a request because its physical tenant is degraded, exercised end-to-end through {@link
+ * Asserts the problem-detail body shapes produced when {@link SecondaryStorageInterceptor} rejects
+ * a request — 503 because its physical tenant is degraded, 403 because the tenant's secondary
+ * storage is not one the endpoint declares — exercised end-to-end through {@link
  * GlobalControllerExceptionHandler} via MockMvc (no Spring context).
  */
 class SecondaryStorageInterceptorProblemDetailTest {
@@ -43,11 +45,7 @@ class SecondaryStorageInterceptorProblemDetailTest {
     when(readiness.isReady(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(false);
     final var interceptor =
         new SecondaryStorageInterceptor(t -> DatabaseType.ELASTICSEARCH, readiness);
-    final MockMvc mockMvc =
-        MockMvcBuilders.standaloneSetup(new TestController())
-            .addInterceptors(interceptor)
-            .setControllerAdvice(new GlobalControllerExceptionHandler())
-            .build();
+    final MockMvc mockMvc = mockMvcFor(new TestController(), interceptor);
 
     // when/then
     mockMvc
@@ -63,10 +61,49 @@ class SecondaryStorageInterceptorProblemDetailTest {
                         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)));
   }
 
+  @Test
+  void shouldReturnForbiddenProblemDetailWhenConfiguredStorageIsNotDeclared() throws Exception {
+    // given
+    final var interceptor =
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.RDBMS, SecondaryStorageReadiness.ALWAYS_READY);
+    final MockMvc mockMvc = mockMvcFor(new DocumentStorageController(), interceptor);
+
+    // when/then
+    mockMvc
+        .perform(get("/test-document-storage-endpoint"))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.title").value("FORBIDDEN"))
+        .andExpect(
+            jsonPath("$.detail")
+                .value(
+                    SecondaryStorageTypeNotSupportedException
+                        .UNSUPPORTED_SECONDARY_STORAGE_TYPE_MESSAGE
+                        .formatted("elasticsearch, opensearch", "rdbms")));
+  }
+
+  private static MockMvc mockMvcFor(
+      final Object controller, final SecondaryStorageInterceptor interceptor) {
+    return MockMvcBuilders.standaloneSetup(controller)
+        .addInterceptors(interceptor)
+        .setControllerAdvice(new GlobalControllerExceptionHandler())
+        .build();
+  }
+
   @RestController
   @RequiresSecondaryStorage
   static class TestController {
     @GetMapping("/test-secondary-storage-endpoint")
+    String get() {
+      return "ok";
+    }
+  }
+
+  @RestController
+  @RequiresSecondaryStorage({DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH})
+  static class DocumentStorageController {
+    @GetMapping("/test-document-storage-endpoint")
     String get() {
       return "ok";
     }
