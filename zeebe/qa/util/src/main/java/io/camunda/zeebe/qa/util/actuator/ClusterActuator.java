@@ -172,6 +172,16 @@ public interface ClusterActuator {
   GetTopologyResponse getTopology();
 
   /**
+   * Queries the current cluster topology, scoped to the given physical tenant.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("GET ?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  GetTopologyResponse getTopology(@Param final String physicalTenant);
+
+  /**
    * Scales the given brokers up or down and reassigns partitions to the new brokers.
    *
    * @param ids

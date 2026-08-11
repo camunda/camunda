@@ -86,6 +86,7 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -317,7 +318,11 @@ final class ClusterApiUtilsTest {
   @Test
   void shouldPopulateLegacyFieldsAndOmitPhysicalTenantsForSingleTenant() {
     // given — a single physical tenant (the default group); the multi-tenant field must not
-    // appear, and the response must stay byte-identical to the pre-physical-tenant shape.
+    // appear, and the response must keep the top-level field set of the pre-physical-tenant shape.
+    // The broker's two version counters are set apart deliberately: BrokerState.version counts
+    // lifecycle transitions only and BrokerPartitionState.version counts partition and mode
+    // changes, so brokers[].version must report the higher of the two the way the legacy
+    // MemberState projection did, or a partition join would stop bumping it.
     final var member1 = member(1);
     final var globalConfiguration =
         new GlobalConfiguration(
@@ -326,7 +331,7 @@ final class ClusterApiUtilsTest {
             Map.of(
                 member1,
                 new io.camunda.zeebe.dynamic.config.state.BrokerState(
-                    0,
+                    2,
                     Instant.ofEpochSecond(1),
                     io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE)),
             Optional.empty(),
@@ -338,8 +343,11 @@ final class ClusterApiUtilsTest {
             0,
             Map.of(
                 member1,
-                BrokerPartitionState.initialize(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))),
+                new BrokerPartitionState(
+                    9,
+                    Instant.ofEpochSecond(3),
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                    Mode.PROCESSING)),
             Optional.of(
                 new RoutingState(
                     1,
@@ -364,6 +372,10 @@ final class ClusterApiUtilsTest {
     assertThat(body.getPhysicalTenants()).isNull();
     assertThat(body.getLastChange()).isNull();
     assertThat(body.getPendingChange()).isNull();
+    assertThat(body.getBrokers())
+        .singleElement()
+        .extracting(BrokerState::getVersion, BrokerState::getLastUpdatedAt)
+        .containsExactly(9L, Instant.ofEpochSecond(3).atOffset(ZoneOffset.UTC));
   }
 
   @Test
@@ -443,6 +455,11 @@ final class ClusterApiUtilsTest {
             io.camunda.zeebe.management.cluster.PhysicalTenantInfo::getId,
             info -> info.getRouting().getVersion())
         .containsExactly(tuple("tenant-a", 2L), tuple("tenant-b", 3L));
+    // per-broker version is omitted alongside the top-level one: the maximum across counters that
+    // each tenant advances independently is not the version of anything. lastUpdatedAt survives.
+    assertThat(body.getBrokers())
+        .allSatisfy(broker -> assertThat(broker.getVersion()).isNull())
+        .allSatisfy(broker -> assertThat(broker.getLastUpdatedAt()).isNotNull());
 
     final var broker1 =
         body.getBrokers().stream()
@@ -529,11 +546,18 @@ final class ClusterApiUtilsTest {
     // when
     final var body = ClusterApiUtils.mapClusterTopology(config, "tenant-b");
 
-    // then
-    assertThat(body.getPhysicalTenants()).isNull();
+    // then — a scoped request gets the single-tenant top-level shape, and additionally reports the
+    // requested tenant under physicalTenants, so a caller reads a tenant's routing state the same
+    // way whether or not it scoped. Both routing views are the same group's, so they agree.
     assertThat(body.getVersion()).isEqualTo(5); // max(global=5, tenant-b=4)
     assertThat(body.getRouting()).isNotNull();
     assertThat(body.getRouting().getVersion()).isEqualTo(3);
+    assertThat(body.getPhysicalTenants())
+        .extracting(
+            io.camunda.zeebe.management.cluster.PhysicalTenantInfo::getId,
+            info -> info.getRouting().getVersion())
+        .containsExactly(tuple("tenant-b", 3L));
+    assertThat(body.getBrokers()).allSatisfy(b -> assertThat(b.getVersion()).isNotNull());
 
     final var broker1 =
         body.getBrokers().stream()
@@ -566,6 +590,21 @@ final class ClusterApiUtilsTest {
     // then
     assertThat(body.getVersion()).isEqualTo(-1);
     assertThat(body.getPhysicalTenants()).isNull();
+  }
+
+  @Test
+  void shouldReportNoPhysicalTenantsWhenScopedAgainstUninitializedConfiguration() {
+    // given — an uninitialized configuration has zero partition groups, so a request naming one
+    // finds nothing to report. The key stays present, unlike for an unscoped request: the caller
+    // asked about physical tenants, and an empty list answers that the named one is not there yet.
+    final var config = CurrentClusterConfiguration.uninitialized();
+
+    // when
+    final var body = ClusterApiUtils.mapClusterTopology(config, "tenant-a");
+
+    // then
+    assertThat(body.getPhysicalTenants()).isEmpty();
+    assertThat(body.getVersion()).isEqualTo(-1);
   }
 
   @Test
