@@ -221,16 +221,24 @@ USER 1001:1001
 # path. That happens when the classpath changes (a JDBC driver mounted into
 # /driver-lib), when compressed oops are off (a heap above ~32G, or ZGC), or when
 # UseCompactObjectHeaders is overridden.
+#
+# The training run boots a broker, so it leaves a data directory and a log file
+# behind, and both have to be put back exactly as the setup step left them. The
+# cleanup uses `find -delete` rather than a glob because the topology metadata is
+# a dotfile a glob would miss, and the mode is reset explicitly because writing
+# into data/ and logs/ leaves them at the default 0755. Either one alone is
+# enough to break an OpenShift-style deployment, which runs as an arbitrary uid
+# in group 0 and so needs these group-writable and empty.
 ARG AOT_CACHE="true"
 RUN if [ "${AOT_CACHE}" = "true" ]; then \
-      cd "${CAMUNDA_HOME}" && \
       CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \
       JAVA_OPTS="-XX:AOTCacheOutput=${CAMUNDA_HOME}/camunda.aot -Dspring.context.exit=onRefresh" \
         "${CAMUNDA_HOME}/bin/camunda" && \
-      rm -rf "${CAMUNDA_HOME}/data"/* "${CAMUNDA_HOME}/logs"/* && \
+      find "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" -mindepth 1 -delete && \
+      chmod 0775 "${CAMUNDA_HOME}/data" "${CAMUNDA_HOME}/logs" && \
       printf -- '-XX:AOTCache=%s/camunda.aot\n' "${CAMUNDA_HOME}" \
         >> "${CAMUNDA_HOME}/config/jvm.options" && \
-      echo "AOT cache: $(du -h "${CAMUNDA_HOME}/camunda.aot" | cut -f1)"; \
+      du -h "${CAMUNDA_HOME}/camunda.aot"; \
     fi
 
 ENTRYPOINT ["/usr/local/camunda/bin/camunda"]
