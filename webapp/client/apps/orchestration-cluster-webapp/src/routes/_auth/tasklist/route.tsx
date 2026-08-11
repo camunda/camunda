@@ -20,12 +20,17 @@ export const Route = createFileRoute('/_auth/tasklist')({
 	},
 	errorComponent: ({error}) => {
 		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
-			return <ForbiddenPage />;
+			return (
+				<main id="main-content" className="cds--content">
+					<ForbiddenPage />
+				</main>
+			);
 		}
+
 		throw error;
 	},
 	notFoundComponent: () => (
-		<main className="cds--content">
+		<main id="main-content" className="cds--content">
 			<NotFoundPage />
 		</main>
 	),
