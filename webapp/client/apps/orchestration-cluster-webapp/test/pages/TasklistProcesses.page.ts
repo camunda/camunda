@@ -30,6 +30,18 @@ class TasklistProcessesPage extends BasePage {
 		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
 
+	get firstTimeWarningDialog() {
+		return this.page.getByRole('dialog', {name: 'Start your process on demand'});
+	}
+
+	get continueFromFirstTimeWarningButton() {
+		return this.firstTimeWarningDialog.getByRole('button', {name: 'Continue'});
+	}
+
+	get cancelFirstTimeWarningButton() {
+		return this.firstTimeWarningDialog.getByRole('button', {name: 'Cancel'});
+	}
+
 	get tasksNavItem() {
 		return this.page.getByRole('link', {name: 'Tasks'});
 	}

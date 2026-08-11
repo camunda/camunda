@@ -17,16 +17,19 @@ import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
+import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {TasklistProcessesPage} from './TasklistProcessesPage';
 
 describe('<TasklistProcessesPage />', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		storeStateLocally('tasklist.hasConsentedToStartProcess', true);
 	});
 
 	afterEach(async () => {
 		await cleanup();
 		sessionStorage.clear();
+		localStorage.clear();
 	});
 
 	it('should display all available processes', async () => {

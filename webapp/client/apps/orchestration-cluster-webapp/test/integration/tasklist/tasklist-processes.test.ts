@@ -53,7 +53,10 @@ function createNewProcessInstanceTasksRequestSchema(processInstanceKey: string) 
 	});
 }
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('tasklist.hasConsentedToStartProcess', JSON.stringify(true));
+	});
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
