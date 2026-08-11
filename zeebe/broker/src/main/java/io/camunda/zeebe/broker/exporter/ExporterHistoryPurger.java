@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.changes.ExporterPurgeException;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,10 @@ public final class ExporterHistoryPurger {
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
     final Exporter exporter = descriptor.newInstance();
 
-    final var exporterContext =
+    // The exporter is closed before the context, as closing it may deregister meters from the
+    // context's registry. Both are released even when purging fails, because the operation is
+    // retried until it succeeds and an exporter may well have opened clients before failing.
+    try (final var exporterContext =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
@@ -60,18 +64,21 @@ public final class ExporterHistoryPurger {
             "",
             exporterRepository.getLicenseKey(),
             meterRegistry,
-            StreamClock.system());
-
-    try {
-      exporter.configure(exporterContext);
-      exporter.purge();
-      LOG.info("Purged history of physical tenant {} for {}", physicalTenantId, id);
-      exporter.close();
-    } catch (final Exception e) {
-      throw new ExporterPurgeException(
-          "Failed to purge C8 data from exporter %s of type %s; operation will be retried."
-              .formatted(id, exporter.getClass()),
-          e);
+            StreamClock.system())) {
+      try {
+        exporter.configure(exporterContext);
+        exporter.purge();
+        LOG.info("Purged history of physical tenant {} for {}", physicalTenantId, id);
+      } catch (final Exception e) {
+        throw new ExporterPurgeException(
+            "Failed to purge C8 data from exporter %s of type %s; operation will be retried."
+                .formatted(id, exporter.getClass()),
+            e);
+      } finally {
+        CloseHelper.close(
+            error -> LOG.warn("Failed to close exporter {} after purging; ignoring", id, error),
+            exporter::close);
+      }
     }
   }
 }

@@ -32,7 +32,6 @@ final class ExporterHistoryPurgerTest {
   @BeforeEach
   void resetAudits() {
     clearAudits();
-    FailingExporter.purgeCalls = 0;
   }
 
   @Test
@@ -81,13 +80,28 @@ final class ExporterHistoryPurgerTest {
     assertThat(FailingExporter.purgeCalls).isOne();
   }
 
+  @Test
+  void shouldReleaseExporterWhenPurgeFails() throws ExporterLoadException {
+    // given
+    register("failing", FailingExporter.class);
+    final var purger = purger();
+
+    // when
+    assertThatThrownBy(purger::purgeAll).isInstanceOf(ExporterPurgeException.class);
+
+    // then — the purge is retried until it succeeds, so anything the exporter opened before
+    // failing has to be released rather than leaked once per attempt
+    assertThat(FailingExporter.closeCalls).isOne();
+  }
+
   private ExporterHistoryPurger purger() {
     return new ExporterHistoryPurger(PHYSICAL_TENANT_ID, repository, new SimpleMeterRegistry());
   }
 
   /**
    * Registers an exporter and discards the audit trail of the validation that {@link
-   * ExporterRepository} performs on registration, so that the assertions only see what purging did.
+   * ExporterRepository} performs on registration — it configures and closes one instance — so that
+   * the assertions only see what purging did.
    */
   private void register(final String id, final Class<? extends Exporter> exporterClass)
       throws ExporterLoadException {
@@ -98,6 +112,8 @@ final class ExporterHistoryPurgerTest {
   private static void clearAudits() {
     AuditExporter.AUDITS.clear();
     AuditExporter.PHYSICAL_TENANT_IDS.clear();
+    FailingExporter.purgeCalls = 0;
+    FailingExporter.closeCalls = 0;
   }
 
   public static class AuditExporter implements Exporter {
@@ -135,6 +151,12 @@ final class ExporterHistoryPurgerTest {
 
   public static class FailingExporter implements Exporter {
     static int purgeCalls;
+    static int closeCalls;
+
+    @Override
+    public void close() {
+      closeCalls++;
+    }
 
     @Override
     public void export(final Record<?> record) {}
