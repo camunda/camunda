@@ -734,13 +734,35 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      // This step is not sharing data with anything else and already retries
-      // with reload — it failed in CI anyway after 3, then 5 attempts (run
-      // 30438261914). Unlike the other fixes in this file, this isn't a
-      // data-uniqueness issue; it's backend contention from concurrently-running
-      // specs outlasting the retry budget. Bumping retries / adding a settle
-      // sleep is a stopgap, not a fix for that — the durable fix is reducing
-      // Operate import/backend contention under the concurrent E2E load.
+      // This step failed in CI after 3, then 5, then 8 attempts (runs
+      // 30438261914, 30726115387, 31459158807). The last failure's page
+      // snapshot shows why: the popover was open on the right flow node, but
+      // its instance was still `running` with an empty `Retries Left` and no
+      // Incident section, while the instance banner reported only the two
+      // incidents raised on other flow nodes. So the DMN incident had not been
+      // raised on Business rule task 2 yet — every attempt spent its full 30s
+      // popover budget, plus a reload, waiting on a precondition that had not
+      // happened. Wait for the flow node's own incidents overlay first. Operate
+      // repolls the per-flow-node statistics that drive the overlay every 5s
+      // while the instance is running, so the wait absorbs engine/import lag on
+      // its own; a reload only helps in the narrow case where that store has
+      // wedged into an error state. Hence a long poll with a single reload
+      // recovery rather than reloading on every attempt, which would add load
+      // to the backend the step is already waiting on.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDiagramPage.getIncidentsOverlay('BusinessRuleTask2'),
+          ).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 2,
+      });
+
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -749,8 +771,6 @@ test.describe.serial('Process Instance Migration', () => {
           );
         },
         onFailure: async () => {
-          // Let the contended import/backend catch up before re-reading rather
-          // than immediately reloading into the same contention window.
           await sleep(5000);
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();

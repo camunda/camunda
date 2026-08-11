@@ -99,29 +99,39 @@ export class OperateOperationPanelPage {
 
   async operationIdsEntries(): Promise<{id: string; type: string}[]> {
     const wasCollapsed = await this.expandOperationsPanel();
-    const operationEntries = this.getAllOperationEntries();
-    const operationIds: OperationEntry[] = [];
 
-    const count = await operationEntries.count();
-    for (let i = 0; i < count; i++) {
-      const operationEntry = operationEntries.nth(i);
-      const operationId =
-        await OperateOperationPanelPage.getOperationID(
-          operationEntry,
-        ).innerText();
-      const operatioType =
-        await OperateOperationPanelPage.getOperationType(
-          operationEntry,
-        ).innerText();
-      operationIds.push({
-        id: operationId,
-        type: operatioType,
-      });
-    }
+    // Read every entry's id and type together in a single atomic DOM pass.
+    // operations-list is a cluster-wide feed that other concurrently-running
+    // specs mutate continuously (e.g. operations.spec floods Cancel entries).
+    // Resolving the id and the type as two separate locator queries — each
+    // re-resolving nth(i) — lets a refetch reorder the list between the two
+    // reads, so nth(i) points at a different entry each time and one entry's
+    // id gets paired with another entry's type (e.g. a Cancel id tagged
+    // "Migrate"). That mislabeled pair then leaks into the wrong operationId
+    // filter downstream. evaluateAll reads both fields from the same DOM
+    // snapshot, so id and type always come from the same entry.
+    //
+    // The type selector mirrors what getOperationType's getByRole('heading')
+    // resolves to — h1-h6 plus an explicit role="heading" — because Playwright's
+    // role engine is not available inside evaluateAll.
+    const operationIds = await this.getAllOperationEntries().evaluateAll(
+      (entries) =>
+        entries.map((entry) => ({
+          id:
+            entry
+              .querySelector('[data-testid="operation-id"]')
+              ?.textContent?.trim() ?? '',
+          type:
+            entry
+              .querySelector('h1, h2, h3, h4, h5, h6, [role="heading"]')
+              ?.textContent?.trim() ?? '',
+        })),
+    );
+
     if (wasCollapsed) {
       await this.collapseOperationsPanel();
     }
-    return operationIds;
+    return operationIds.filter((entry) => entry.id.length > 0);
   }
 
   async clickOperationEntryById(operationId: string): Promise<void> {
