@@ -15,8 +15,10 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Secrets;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.CaffeineSecretCache;
+import io.camunda.secretstore.LocallyCachedSecretStore;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -31,8 +33,11 @@ import io.camunda.zeebe.shared.management.ControlledActorClockService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -406,6 +411,228 @@ class SecretStoreConfigurationTest {
       // not leak
       verify(construction.constructed().get(0)).close();
     }
+  }
+
+  @Test
+  void shouldExpireACachedSecretAfterAConfiguredTtlShorterThanTheDefault(
+      @TempDir final Path secretsDir) throws IOException {
+    // given a file store with a one-minute cache ttl, resolved once so the value is cached
+    Files.writeString(secretsDir.resolve("token"), "token-value");
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.default.path",
+                secretsDir.toString(),
+                "camunda.secrets.cache.ttl",
+                "1m"));
+    final var clockService = new ControlledActorClockService(new ControlledActorClock());
+    final var store = defaultTenantStore(resolver, clockService);
+    store.resolve(Set.of("token"));
+    assertThat(store.lookupLocal("token")).contains("token-value");
+
+    // when the clock travels forward two minutes — past the configured ttl but well short of the
+    // 20-minute default, which would still serve the value
+    travelForward(clockService, Duration.ofMinutes(2));
+
+    // then the configured ttl is what governed the entry, so it has expired
+    assertThat(store.lookupLocal("token")).isEmpty();
+  }
+
+  @Test
+  void shouldServeACachedSecretPastTheDefaultTtlWhenTheConfiguredTtlIsLonger(
+      @TempDir final Path secretsDir) throws IOException {
+    // given a file store with a thirty-minute cache ttl, resolved once so the value is cached
+    Files.writeString(secretsDir.resolve("token"), "token-value");
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.default.path",
+                secretsDir.toString(),
+                "camunda.secrets.cache.ttl",
+                "30m"));
+    final var clockService = new ControlledActorClockService(new ControlledActorClock());
+    final var store = defaultTenantStore(resolver, clockService);
+    store.resolve(Set.of("token"));
+
+    // when the clock travels forward past the 20-minute default but not past the configured ttl
+    travelForward(clockService, Duration.ofMinutes(21));
+
+    // then the value is still cached — together with the shorter-ttl test this rules out the
+    // configured value being read but the default silently applied, in either direction
+    assertThat(store.lookupLocal("token")).contains("token-value");
+  }
+
+  @Test
+  void shouldUseThePhysicalTenantsOwnCacheTtl(@TempDir final Path secretsDir) throws IOException {
+    // given two tenants, each with its own file store, and a tenant that shortens the root ttl
+    final var tenantaDir = Files.createDirectory(secretsDir.resolve("tenanta"));
+    final var tenantbDir = Files.createDirectory(secretsDir.resolve("tenantb"));
+    Files.writeString(tenantaDir.resolve("token"), "tenanta-value");
+    Files.writeString(tenantbDir.resolve("token"), "tenantb-value");
+    final var resolver =
+        resolverFor(
+            Map.ofEntries(
+                Map.entry("camunda.secrets.cache.ttl", "30m"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
+                    tenantaDir.toString()),
+                Map.entry("camunda.physical-tenants.tenanta.secrets.cache.ttl", "1m"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                    "tenanta-admin"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                    "tenanta"),
+                Map.entry(
+                    "camunda.physical-tenants.tenantb.secrets.stores.file.default.path",
+                    tenantbDir.toString()),
+                Map.entry(
+                    "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                    "tenantb-admin"),
+                Map.entry(
+                    "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                    "tenantb")));
+    final var clockService = new ControlledActorClockService(new ControlledActorClock());
+    final var registries = CONFIG.secretStoreRegistries(resolver, clockService).byPhysicalTenant();
+    final var tenanta =
+        registries.get("tenanta").getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID);
+    final var tenantb =
+        registries.get("tenantb").getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID);
+    tenanta.resolve(Set.of("token"));
+    tenantb.resolve(Set.of("token"));
+
+    // when the clock travels forward past tenanta's ttl and past the 20-minute default, but short
+    // of tenantb's inherited 30 minutes — anything under 20 would leave tenantb cached whether it
+    // inherited the root ttl or silently fell back to the default
+    travelForward(clockService, Duration.ofMinutes(21));
+
+    // then only tenanta's entry expired, so both the per-tenant override and the root value it
+    // overrides reached the registry rather than stopping at the configuration object
+    assertThat(tenanta.lookupLocal("token")).isEmpty();
+    assertThat(tenantb.lookupLocal("token")).contains("tenantb-value");
+  }
+
+  @Test
+  void shouldBoundEachStoresCacheByTheConfiguredMaxSize(@TempDir final Path secretsDir)
+      throws IOException {
+    // given a store holding three secrets and a cache configured to hold one
+    for (final String name : Set.of("first", "second", "third")) {
+      Files.writeString(secretsDir.resolve(name), name + "-value");
+    }
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.default.path",
+                secretsDir.toString(),
+                "camunda.secrets.cache.max-size",
+                "1"));
+    final var store = defaultTenantStore(resolver, CLOCK_SERVICE);
+
+    // when all three are resolved
+    store.resolve(Set.of("first", "second", "third"));
+
+    // then exactly the configured maximum is left cached — one, not zero, so a cache that stopped
+    // holding anything at all would fail this too. Asserted eventually because eviction is
+    // asynchronous and the cache's own cleanUp() is not reachable through the registry; once it has
+    // run, the count is deterministic.
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        Stream.of("first", "second", "third")
+                            .filter(name -> store.lookupLocal(name).isPresent())
+                            .count())
+                    .isEqualTo(1));
+  }
+
+  @Test
+  void shouldFailToBuildRegistriesWhenTheCacheTtlIsBelowOneMinute() {
+    // given a sub-minute cache ttl and no stores configured at all
+    final var resolver = resolverFor(Map.of("camunda.secrets.cache.ttl", "30s"));
+
+    // when / then the registries fail to build, naming the offending property — so the check runs
+    // at startup, and on the noop-fallback path too
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.cache.ttl");
+  }
+
+  @Test
+  void shouldFailToBuildRegistriesWhenTheCacheMaxSizeIsBelowOne() {
+    // given a max size below 1 and no stores configured at all
+    final var resolver = resolverFor(Map.of("camunda.secrets.cache.max-size", "0"));
+
+    // when / then the registries fail to build, naming the offending property — the same startup
+    // check the ttl gets, rather than max-size being validated only at the configuration layer
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.cache.max-size");
+  }
+
+  @Test
+  void shouldNameThePhysicalTenantWhoseCacheConfigurationIsInvalid() {
+    // given two tenants, only one of which overrides the cache ttl with a sub-minute value
+    final var resolver =
+        resolverFor(
+            Map.ofEntries(
+                Map.entry("camunda.physical-tenants.tenanta.secrets.cache.ttl", "30s"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                    "tenanta-admin"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                    "tenanta"),
+                Map.entry(
+                    "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                    "tenantb-admin"),
+                Map.entry(
+                    "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                    "tenantb")));
+
+    // when / then the failure names the tenant as well as the property — the config object reports
+    // the canonical path whichever tenant it came from, so without the tenant an operator running
+    // several cannot tell whose override is at fault
+    assertThatThrownBy(() -> registries(resolver))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenanta")
+        .hasMessageContaining("camunda.secrets.cache.ttl");
+  }
+
+  @Test
+  void shouldDefaultToTheProductionCacheDefaults() {
+    // given the configuration module restates the cache defaults as literals, since it does not
+    // depend on secret-store-api
+    // when the unconfigured defaults are read
+    final var cache = new Secrets().getCache();
+
+    // then they match the cache implementation's own defaults; dist is the only module that sees
+    // both, so this is where the two can be pinned together
+    assertThat(cache.getTtl()).isEqualTo(CaffeineSecretCache.DEFAULT_TTL);
+    assertThat(cache.getMaxSize()).isEqualTo(CaffeineSecretCache.DEFAULT_MAX_SIZE);
+  }
+
+  /**
+   * Travels the clock forward through the real {@code /actuator/clock} endpoint rather than
+   * mutating the clock directly, since {@link ControlledActorClock} only reflects a mutation once
+   * update() runs, which is exactly what the endpoint does for every write. Adding (never pinning)
+   * keeps the ticker moving forward relative to the write timestamp already recorded for a cached
+   * entry.
+   */
+  private static void travelForward(
+      final ControlledActorClockService clockService, final Duration offset) {
+    final var response =
+        new ActorClockEndpoint(clockService).modify("add", null, offset.toMillis());
+    assertThat(response.getStatus()).isEqualTo(200);
+  }
+
+  private static LocallyCachedSecretStore defaultTenantStore(
+      final PhysicalTenantResolver resolver, final ActorClockService clockService) {
+    return CONFIG
+        .secretStoreRegistries(resolver, clockService)
+        .byPhysicalTenant()
+        .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID);
   }
 
   /**

@@ -1425,9 +1425,28 @@ camunda: # Type: io.camunda.configuration.Camunda
     max-name-field-length: null # Type: Integer, Env: CAMUNDA_REST_MAXNAMEFIELDLENGTH
 
   secrets: # Type: io.camunda.configuration.Secrets
+    cache: # Type: io.camunda.configuration.Secrets$Cache
+      # Maximum number of secrets each store's cache holds; once it is reached, caching another secret
+      # evicts one already held. Which one is the cache implementation's choice, so no secret is guaranteed
+      # to stay resident — an evicted secret is re-read from the store on its next resolution. Must be at
+      # least 1.
+      # This is a per-cache limit, not a budget shared across stores, so the worst-case memory footprint is
+      # the number of configured stores times this value — each cached entry holding one secret's name and
+      # its value.
+      # Defaults to `1000`.
+      max-size: 1000 # Type: Integer, Env: CAMUNDA_SECRETS_CACHE_MAXSIZE
+      # How long a resolved secret is served from a store's cache before it is fetched from the store again,
+      # so a secret rotated in the store is picked up without a restart. Minute granularity only: a value
+      # below `1m`, or one that is not a whole number of minutes, is rejected at startup — the value is a
+      # staleness budget measured in minutes, and expressing it in seconds invites a cache so short that it
+      # turns cache-only lookups into store round trips.
+      # Defaults to `20m`.
+      ttl: "20m" # Type: Duration, Env: CAMUNDA_SECRETS_CACHE_TTL
+
     stores: # Type: io.camunda.configuration.Secrets$Stores
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE
+      gcp: null # Type: Map<String,io.camunda.configuration.Secrets$GcpSecretManagerStore>, Env: CAMUNDA_SECRETS_STORES_GCP
 
   security: # Type: io.camunda.configuration.Security
     authentication: null # Type: io.camunda.security.api.model.config.AuthenticationConfiguration, Env: CAMUNDA_SECURITY_AUTHENTICATION
