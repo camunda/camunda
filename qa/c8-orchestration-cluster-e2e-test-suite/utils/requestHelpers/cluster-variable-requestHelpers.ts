@@ -24,7 +24,11 @@ export async function createGlobalClusterVariable(
   request: APIRequestContext,
   state: Record<string, unknown>,
   stateKey: string,
-  variableData?: {name: string; value: unknown},
+  variableData?: {
+    name: string;
+    value: unknown;
+    metadata?: Record<string, unknown>;
+  },
 ): Promise<void> {
   const data = variableData || CREATE_CLUSTER_VARIABLE();
 
@@ -47,6 +51,7 @@ export async function createGlobalClusterVariable(
     state[`${stateKey}Name`] = json.name;
     state[`${stateKey}Value`] = json.value;
     state[`${stateKey}Scope`] = json.scope;
+    state[`${stateKey}Metadata`] = json.metadata;
   }).toPass(defaultAssertionOptions);
 }
 
@@ -58,7 +63,11 @@ export async function createTenantClusterVariable(
   state: Record<string, unknown>,
   stateKey: string,
   tenantId: string,
-  variableData?: {name: string; value: unknown},
+  variableData?: {
+    name: string;
+    value: unknown;
+    metadata?: Record<string, unknown>;
+  },
 ): Promise<void> {
   const data = variableData || CREATE_CLUSTER_VARIABLE();
 
@@ -85,6 +94,7 @@ export async function createTenantClusterVariable(
     state[`${stateKey}Value`] = json.value;
     state[`${stateKey}Scope`] = json.scope;
     state[`${stateKey}TenantId`] = json.tenantId;
+    state[`${stateKey}Metadata`] = json.metadata;
   }).toPass(defaultAssertionOptions);
 }
 
@@ -161,6 +171,59 @@ export function assertClusterVariableInResponse(
   expect(found).toBeDefined();
   for (const key of Object.keys(expectedBody)) {
     expect(found![key]).toEqual(expectedBody[key]);
+  }
+}
+
+// Collects every object key and leaf value in a payload. Preferred over substring
+// matching on serialized JSON, which can collide with generated base36 ids.
+function collectKeysAndValues(payload: unknown): {
+  keys: string[];
+  values: unknown[];
+} {
+  const keys: string[] = [];
+  const values: unknown[] = [];
+
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (node !== null && typeof node === 'object') {
+      for (const [key, child] of Object.entries(node)) {
+        keys.push(key);
+        walk(child);
+      }
+      return;
+    }
+    values.push(node);
+  };
+
+  walk(payload);
+  return {keys, values};
+}
+
+/**
+ * Asserts a FEEL-resolved cluster variable carries only its value, and that no
+ * metadata key or value appears anywhere in the surrounding runtime payload.
+ */
+export function assertNoMetadataLeak(
+  resolved: unknown,
+  expectedValue: Record<string, unknown>,
+  runtimePayload: unknown,
+  metadata: Record<string, string | number>,
+): void {
+  expect(resolved).toEqual(expectedValue);
+
+  const resolvedKeys = Object.keys(resolved as Record<string, unknown>);
+  expect(resolvedKeys).not.toContain('metadata');
+  expect(resolvedKeys).not.toContain('value');
+
+  const {keys, values} = collectKeysAndValues(runtimePayload);
+  for (const metadataKey of Object.keys(metadata)) {
+    expect(keys).not.toContain(metadataKey);
+  }
+  for (const metadataValue of Object.values(metadata)) {
+    expect(values).not.toContain(metadataValue);
   }
 }
 

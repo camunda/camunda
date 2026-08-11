@@ -788,23 +788,23 @@ export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
 }
 
 // Cluster Variable beans
-export const clusterVariableRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-];
-export const clusterVariableSearchItemRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-  'isTruncated',
-];
-
 export function CREATE_CLUSTER_VARIABLE() {
   const uid = generateUniqueId();
   return {
     name: `cluster-var-${uid}`,
     value: {testKey: `testValue-${uid}`},
+  };
+}
+
+// Name is alphanumeric: a hyphen makes camunda.vars.env.<name> parse as subtraction in FEEL.
+export function CREATE_CLUSTER_VARIABLE_WITH_METADATA(
+  metadata: Record<string, string | number>,
+) {
+  const uid = generateUniqueId();
+  return {
+    name: `clusterVar${uid}`,
+    value: {testKey: `testValue-${uid}`},
+    metadata,
   };
 }
 

@@ -60,6 +60,7 @@ export {
   activateJobToObtainAValidJobKey,
   activateJobAndGetHeaders,
   activateJobsByType,
+  activateFirstJobVariables,
   completeJob,
   countJobsByType,
   expectJobsByType,
@@ -76,6 +77,7 @@ export {
   deleteTenantClusterVariable,
   assertClusterVariableInResponse,
   assertClusterVariableUpdate,
+  assertNoMetadataLeak,
 } from './cluster-variable-requestHelpers';
 export {
   createProcessInstanceWithAJob,
