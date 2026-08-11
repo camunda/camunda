@@ -16,6 +16,10 @@ inputs:
       repository root and ignores `working-directory`, so this must be passed
       explicitly.
     required: true
+  args:
+    description: Extra arguments to pass to `yarn`, e.g. `--frozen-lockfile`.
+    required: false
+    default: ""
   max_attempts:
     description: Maximum number of attempts before giving up.
     required: false
@@ -41,5 +45,10 @@ runs:
         # Pin to bash so a forward-slash `directory` works consistently on
         # Linux, container images, and Windows runners (git-bash).
         shell: bash
+        # yarn installs incrementally, so a killed attempt can leave a partially
+        # extracted node_modules that the next one would install on top of. The
+        # GHA cache holds the global yarn dir, not node_modules, so discarding it
+        # costs a re-link rather than a re-download.
+        on_retry_command: rm -rf "${{ inputs.directory }}/node_modules"
         command: |
-          cd "${{ inputs.directory }}" && yarn
+          cd "${{ inputs.directory }}" && yarn ${{ inputs.args }}
