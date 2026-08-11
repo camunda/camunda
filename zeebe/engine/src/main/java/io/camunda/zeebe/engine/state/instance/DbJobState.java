@@ -267,8 +267,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void makeActivatableAfterSecretResolution(final long key) {
     if (!isInState(key, State.WAITING_FOR_SECRET_RESOLUTION)) {
-      // the job is gone, or was already reactivated by another resolved reference of the same
-      // activation; re-inserting it in either case corrupts the activatable index
+      // no-op unless waiting; re-inserting otherwise corrupts the activatable index
       return;
     }
     final JobRecord record = getJob(key);
