@@ -161,6 +161,8 @@ public final class ConfigurationServiceConstants {
 
   public static final String ENTITY_CONFIGURATION = "$.entity";
 
+  public static final String BUSINESS_VALUE_CONFIGURATION = "$.businessValue";
+
   public static final String CSV_CONFIGURATION = "$.export.csv";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";

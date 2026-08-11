@@ -578,6 +578,11 @@ entity:
   # character takes up to 3 bytes in UTF-8. Existing longer names remain readable.
   nameMaxLength: ${CAMUNDA_OPTIMIZE_ENTITY_NAME_MAX_LENGTH:32768}
 
+businessValue:
+  # How often the business-value overview index is refreshed for all definitions and all range
+  # presets (7d, 30d, 3m, 6m). The given number is the interval in seconds. Default: 24h.
+  overviewRefreshInterval: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_REFRESH_INTERVAL:86400}
+
 export:
   csv:
     # which users are authorized to download CSVs. Available options: 'all', 'none'
