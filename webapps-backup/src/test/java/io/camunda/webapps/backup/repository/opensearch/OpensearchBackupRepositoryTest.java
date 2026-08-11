@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.webapps.backup.BackupException;
-import io.camunda.webapps.backup.BackupException.InvalidRequestException;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
@@ -369,7 +369,7 @@ class OpensearchBackupRepositoryTest {
                                             .uuid("test"))))));
 
     final var exception =
-        assertThatExceptionOfType(InvalidRequestException.class)
+        assertThatExceptionOfType(DuplicateBackupIdException.class)
             .isThrownBy(() -> repository.validateNoDuplicateBackupId("repo", 42L))
             .actual();
     assertThat(exception.getMessage())

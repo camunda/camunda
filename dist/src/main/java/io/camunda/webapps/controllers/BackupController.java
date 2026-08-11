@@ -256,6 +256,11 @@ public class BackupController {
       errorCode =
           switch (exception) {
             case final InvalidRequestException ignored -> WebEndpointResponse.STATUS_BAD_REQUEST;
+            // Split out of InvalidRequestException for the v2 endpoints, which answer 409. The
+            // actuator keeps its 400 so the split is not observable here.
+            case final DuplicateBackupIdException ignored -> WebEndpointResponse.STATUS_BAD_REQUEST;
+            case final BackupAlreadyRunningException ignored ->
+                WebEndpointResponse.STATUS_BAD_REQUEST;
             case final ResourceNotFoundException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
             case final MissingRepositoryException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
             case final BackupRepositoryConnectionException ignored -> 502;

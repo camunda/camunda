@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch.snapshot.SnapshotShardFailure;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotSort;
 import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupException.MissingRepositoryException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
@@ -151,7 +152,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                 "A backup with ID [%s] already exists. Found snapshots: [%s]",
                 backupId,
                 response.snapshots().stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
-        throw new InvalidRequestException(reason);
+        throw new DuplicateBackupIdException(reason);
       }
     } catch (final IOException ex) {
       final String reason =

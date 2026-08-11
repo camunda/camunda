@@ -159,7 +159,7 @@ public class OpensearchBackupRepository implements BackupRepository {
               "A backup with ID [%s] already exists. Found snapshots: [%s]",
               backupId,
               response.snapshots().stream().map(SnapshotInfo::uuid).collect(joining(", ")));
-      throw new InvalidRequestException(reason);
+      throw new DuplicateBackupIdException(reason);
     }
   }
 

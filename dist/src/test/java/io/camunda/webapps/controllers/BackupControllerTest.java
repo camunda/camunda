@@ -27,7 +27,9 @@ import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryBackupTenantInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
+import io.camunda.webapps.backup.BackupException.BackupAlreadyRunningException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
@@ -134,6 +136,14 @@ public abstract sealed class BackupControllerTest {
 
   private void mockGenericException() {
     mockErrorWith(new RuntimeException("generic error"));
+  }
+
+  private void mockDuplicateBackupId() {
+    mockErrorWith(new DuplicateBackupIdException("A backup with ID [11] already exists"));
+  }
+
+  private void mockBackupAlreadyRunning() {
+    mockErrorWith(new BackupAlreadyRunningException("Another backup is running at the moment"));
   }
 
   private void mockRepositoryNotSet() {
@@ -351,6 +361,26 @@ public abstract sealed class BackupControllerTest {
   class RepositoryNotSet extends ErrorTest {
     RepositoryNotSet() {
       super(400, BackupControllerTest.this::mockRepositoryNotSet);
+    }
+  }
+
+  /**
+   * Both types were split out of {@link
+   * io.camunda.webapps.backup.BackupException.InvalidRequestException} so the v2 endpoints can
+   * answer 409. The actuator's 400 must not move with them — {@code mapErrorResponse} falls through
+   * to 500 for any subtype it does not name, so these pin the mapping.
+   */
+  @Nested
+  class DuplicateBackupIdError extends ErrorTest {
+    DuplicateBackupIdError() {
+      super(400, BackupControllerTest.this::mockDuplicateBackupId);
+    }
+  }
+
+  @Nested
+  class BackupAlreadyRunningError extends ErrorTest {
+    BackupAlreadyRunningError() {
+      super(400, BackupControllerTest.this::mockBackupAlreadyRunning);
     }
   }
 
