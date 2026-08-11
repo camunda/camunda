@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMess
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -32,12 +33,15 @@ import org.junit.Test;
 
 /**
  * Covers the embedded {@code history[]} batch processing on {@code AGENT_INSTANCE:CREATE}/{@code
- * UPDATE} (#58791). So far: the job-context precondition, checked whenever a jobKey is provided and
- * required once a history batch is present, that keeps the existing PENDING/COMMITTED/DISCARDED
- * lifecycle safe.
+ * UPDATE} (#58791). So far: the job-context precondition (checked whenever a jobKey is provided,
+ * and required once a history batch is present) that keeps the existing PENDING/COMMITTED/DISCARDED
+ * lifecycle safe, and whole-batch shape validation — every item needs a non-empty {@code
+ * historyItemId}, a declared role, and a positive {@code loopIteration}, and a {@code
+ * CONFIGURATION} item's {@code changedAttributes} may only name attributes this helper actually
+ * knows how to apply.
  *
- * <p>Per-item shape validation, batch application, and whole-batch atomicity are covered by
- * follow-up commits' own test coverage, not here.
+ * <p>Batch application and whole-batch atomicity are covered by follow-up commits' own test
+ * coverage, not here.
  */
 public class AgentInstanceHistoryBatchProcessingTest {
 
@@ -68,6 +72,105 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).contains("jobKey");
+  }
+
+  @Test
+  public void shouldRejectWholeBatchWhenAnItemIsMissingHistoryItemId() {
+    // given
+    final var context = deployCreateAgentInstanceAndActivateJob();
+    final var validItem = userItem("item-user", "hi");
+    final var invalidItem = new AgentHistoryRecord().setRole(AgentHistoryRole.USER);
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(context.agentInstanceKey())
+            .withElementInstanceKey(context.elementInstanceKey())
+            .withJobKey(context.jobKey())
+            .withHistory(List.of(validItem, invalidItem))
+            .expectRejection()
+            .update();
+
+    // then — the whole batch is rejected, referencing the offending item's index; nothing created
+    // (the command was rejected before any AGENT_HISTORY:CREATED event could be appended).
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("index 1", "historyItemId is missing");
+  }
+
+  @Test
+  public void shouldRejectWholeBatchWhenRoleUnspecified() {
+    // given
+    final var context = deployCreateAgentInstanceAndActivateJob();
+    final var invalidItem = new AgentHistoryRecord().setHistoryItemId("item-1");
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(context.agentInstanceKey())
+            .withElementInstanceKey(context.elementInstanceKey())
+            .withJobKey(context.jobKey())
+            .withHistory(List.of(invalidItem))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("item-1", "UNSPECIFIED");
+  }
+
+  @Test
+  public void shouldRejectWholeBatchWhenLoopIterationMissing() {
+    // given — the 0 default (loopIteration left unset) is rejected the same as an explicit 0 or a
+    // negative value: none of those are valid loopIteration numbers.
+    final var context = deployCreateAgentInstanceAndActivateJob();
+    final var invalidItem =
+        new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER);
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(context.agentInstanceKey())
+            .withElementInstanceKey(context.elementInstanceKey())
+            .withJobKey(context.jobKey())
+            .withHistory(List.of(invalidItem))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("item-1", "loopIteration is missing");
+  }
+
+  @Test
+  public void shouldRejectWholeBatchWhenConfigurationItemHasUnknownChangedAttribute() {
+    // given — a CONFIGURATION item naming an attribute this helper doesn't know how to apply (as
+    // opposed to a request-level unknown attribute, which is a different check entirely).
+    final var context = deployCreateAgentInstanceAndActivateJob();
+    final var invalidItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1)
+            .setChangedAttributes(List.of("model", "elementInstanceKey"));
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(context.agentInstanceKey())
+            .withElementInstanceKey(context.elementInstanceKey())
+            .withJobKey(context.jobKey())
+            .withHistory(List.of(invalidItem))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("item-config", "elementInstanceKey");
   }
 
   @Test
