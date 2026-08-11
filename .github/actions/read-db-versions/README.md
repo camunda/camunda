@@ -55,6 +55,9 @@ Edit `.ci/db-versions.yml`. The YAML anchor on the SaaS entry (`&saas`) ensures
 `saas` always references a version that is also present in the `es8` test list —
 update the anchor value when promoting SaaS to a new minor.
 
+A trailing `# LTS` comment flags longer upstream support (human-readable only,
+no tooling reads it) — don't remove that entry early.
+
 ## Owner
 
 @camunda/data-layer
