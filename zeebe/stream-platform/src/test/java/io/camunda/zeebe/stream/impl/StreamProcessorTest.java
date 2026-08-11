@@ -49,6 +49,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -747,6 +748,52 @@ public final class StreamProcessorTest {
     sideEffectOrder.verify(processorListener).onProcessed(1);
     sideEffectOrder.verify(postCommitTask).flush();
     sideEffectOrder.verify(processorListener).onProcessed(2);
+  }
+
+  @Test
+  public void shouldReportPendingSideEffects() {
+    // given
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    logStorage.deferCommits();
+
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .appendRecord(
+            3,
+            Records.processInstance(3),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""))
+        .appendPostCommitTask(mock(PostCommitTask.class));
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when - both commands are processed but their results are not committed
+    // then - their side effects are reported as pending
+    await("side effects of both processed commands are pending")
+        .untilAsserted(() -> assertThat(pendingSideEffects()).isEqualTo(2));
+
+    // when - the results are committed
+    logStorage.commitPendingEntries();
+
+    // then - no side effects are left pending
+    await("no side effects are pending anymore")
+        .untilAsserted(() -> assertThat(pendingSideEffects()).isZero());
+  }
+
+  private double pendingSideEffects() {
+    return streamPlatform
+        .getProcessorMeterRegistry()
+        .get(StreamMetricsDoc.PENDING_SIDE_EFFECTS.getName())
+        .gauge()
+        .value();
   }
 
   @Test
