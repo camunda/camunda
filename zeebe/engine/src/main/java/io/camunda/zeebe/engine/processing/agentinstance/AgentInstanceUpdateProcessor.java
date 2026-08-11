@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -68,9 +70,7 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance with key '%d' for element instance with key '%d', but the process instance key '%d' does not match the agent instance's process instance key '%d'.";
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
-
   private static final long METRIC_NOT_PROVIDED = -1L;
-
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
           AgentInstanceStatus.INITIALIZING,
@@ -227,7 +227,30 @@ public final class AgentInstanceUpdateProcessor
     }
     current.setElementInstanceKey(newElementInstanceKey);
 
-    final var changedAttributes = applyRequestLevelChanges(current, commandValue, validPatch.get());
+    final var changedAttributes = new HashSet<String>();
+
+    if (!commandValue.getHistory().isEmpty()) {
+      final var historyChanges =
+          historyBatchHelper.apply(
+              current,
+              commandValue.getJobKey(),
+              commandValue.getJobLease(),
+              commandValue.getElementInstanceKey(),
+              commandValue.getHistory());
+
+      current
+          .getHistory()
+          .forEach(
+              item ->
+                  stateWriter.appendFollowUpEvent(
+                      item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+
+      changedAttributes.addAll(historyChanges);
+    }
+
+    final var requestLevelChanges =
+        applyRequestLevelChanges(current, commandValue, validPatch.get());
+    changedAttributes.addAll(requestLevelChanges);
 
     current.setChangedAttributes(changedAttributes.stream().sorted().toList());
 

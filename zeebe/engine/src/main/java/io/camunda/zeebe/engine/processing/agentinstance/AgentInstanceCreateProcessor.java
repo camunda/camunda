@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -216,7 +217,24 @@ public final class AgentInstanceCreateProcessor
         .setMaxModelCalls(commandValue.getLimits().getMaxModelCalls())
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
+    if (!commandValue.getHistory().isEmpty()) {
+      historyBatchHelper.apply(
+          event,
+          commandValue.getJobKey(),
+          commandValue.getJobLease(),
+          commandValue.getElementInstanceKey(),
+          commandValue.getHistory());
+    }
+
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
+
+    event
+        .getHistory()
+        .forEach(
+            item ->
+                stateWriter.appendFollowUpEvent(
+                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
   }
