@@ -375,18 +375,31 @@ describe('Filters', () => {
 
   it('should enable the reset button', async () => {
     const {user} = render(<Filters />, {
-      wrapper: getWrapper('/?active=true&incidents=true'),
+      wrapper: getWrapper('/?active=true&suspended=true&incidents=true'),
     });
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeDisabled();
+    expect(screen.getByRole('checkbox', {name: 'Suspended'})).toBeChecked();
 
     await user.click(screen.getByLabelText('Incidents'));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/),
-    );
+    expect(
+      await screen.findByText('?active=true&suspended=true'),
+    ).toBeInTheDocument();
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();
+  });
+
+  it('should add the suspended state filter to the URL', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&incidents=true'),
+    });
+
+    await user.click(screen.getByRole('checkbox', {name: 'Suspended'}));
+
+    expect(
+      await screen.findByText('?active=true&incidents=true&suspended=true'),
+    ).toBeInTheDocument();
   });
 
   it('should not submit an invalid form after deleting an optional filter', async () => {

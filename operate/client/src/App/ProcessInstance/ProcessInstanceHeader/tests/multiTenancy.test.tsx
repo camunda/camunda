@@ -94,6 +94,7 @@ describe('InstanceHeader', () => {
         processDefinitionVersion: '1',
         processDefinitionId: 'someKey',
         active: 'true',
+        suspended: 'true',
         incidents: 'true',
         tenantId: '<default>',
       })}`,

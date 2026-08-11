@@ -28,6 +28,10 @@ const ProcessInstancesFilterSchema = z
     processInstanceKey: z.string().optional(),
     parentProcessInstanceKey: z.string().optional(),
     active: z.coerce.boolean().optional(),
+    suspended: z
+      .string()
+      .transform((value) => value === 'true')
+      .optional(),
     incidents: z.coerce.boolean().optional(),
     completed: z.coerce.boolean().optional(),
     canceled: z.coerce.boolean().optional(),
@@ -58,13 +62,19 @@ const parseProcessInstancesFilter = (
   return ProcessInstancesFilterSchema.parse(Object.fromEntries(search));
 };
 
-const parseProcessInstancesSearchFilter = (
+const parseProcessInstancesSearchFilterInternal = (
   search: URLSearchParams,
+  includeSuspended: boolean,
 ): ProcessInstancesSearchFilter | undefined => {
   const filter = parseProcessInstancesFilter(search);
+  const hasSuspendedFilter = includeSuspended && filter.suspended;
 
   const hasStateFilters =
-    filter.active || filter.completed || filter.canceled || filter.incidents;
+    filter.active ||
+    hasSuspendedFilter ||
+    filter.completed ||
+    filter.canceled ||
+    filter.incidents;
 
   if (!hasStateFilters && !filter.batchOperationKey && !filter.elementId) {
     return undefined;
@@ -114,7 +124,25 @@ const parseProcessInstancesSearchFilter = (
     states.push('TERMINATED');
   }
 
-  if (filter.incidents) {
+  if (hasSuspendedFilter) {
+    const stateFilters: ProcessInstancesSearchFilter[] = [];
+    if (states.length > 0) {
+      stateFilters.push({
+        state: states.length === 1 ? {$eq: states[0]} : {$in: states},
+        hasIncident: false,
+      });
+    }
+    stateFilters.push({state: {$eq: 'SUSPENDED'}});
+    if (filter.incidents) {
+      stateFilters.push({hasIncident: true, state: {$neq: 'SUSPENDED'}});
+    }
+
+    if (stateFilters.length === 1) {
+      Object.assign(apiFilter, stateFilters[0]);
+    } else {
+      apiFilter.$or = stateFilters;
+    }
+  } else if (filter.incidents) {
     if (states.length > 0) {
       apiFilter.$or = [{state: {$in: states}}, {hasIncident: true}];
     } else {
@@ -180,6 +208,12 @@ const parseProcessInstancesSearchFilter = (
   return apiFilter;
 };
 
+const parseProcessInstancesSearchFilter = (search: URLSearchParams) =>
+  parseProcessInstancesSearchFilterInternal(search, false);
+
+const parseProcessInstancesListSearchFilter = (search: URLSearchParams) =>
+  parseProcessInstancesSearchFilterInternal(search, true);
+
 type ProcessInstancesSearchSort = NonNullable<
   QueryProcessInstancesRequestBody['sort']
 >;
@@ -205,6 +239,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
   ProcessInstancesFilterSchema.unwrap()
     .pick({
       active: true,
+      suspended: true,
       incidents: true,
       completed: true,
       canceled: true,
@@ -230,6 +265,7 @@ function updateProcessInstancesFilterSearchString(
 
 export {
   parseProcessInstancesFilter,
+  parseProcessInstancesListSearchFilter,
   parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
   updateProcessInstancesFilterSearchString,

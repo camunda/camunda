@@ -239,7 +239,7 @@ describe('Footer', () => {
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true&processDefinitionId=bigVarProcess&processDefinitionVersion=1',
+      '?active=true&suspended=true&incidents=true&processDefinitionId=bigVarProcess&processDefinitionVersion=1',
     );
 
     expect(tracking.track).toHaveBeenCalledWith({

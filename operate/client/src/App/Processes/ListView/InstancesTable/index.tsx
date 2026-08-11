@@ -63,6 +63,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const filters = useFilters();
     const location = useLocation();
     const [searchParams] = useSearchParams();
+    const isBatchSelectionEnabled = searchParams.get('suspended') !== 'true';
 
     const {canceled, completed, tenantId} = getProcessInstanceFilters(
       location.search,
@@ -119,16 +120,21 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           count={totalCount}
           hasMoreTotalItems={hasMoreTotalItems}
         />
-        <Toolbar
-          selectedInstancesCount={processInstancesSelectionStore.selectedCount}
-          isSelectedCountTruncated={
-            processInstancesSelectionStore.isSelectedCountTruncated
-          }
-        />
+        {isBatchSelectionEnabled && (
+          <Toolbar
+            selectedInstancesCount={
+              processInstancesSelectionStore.selectedCount
+            }
+            isSelectedCountTruncated={
+              processInstancesSelectionStore.isSelectedCountTruncated
+            }
+          />
+        )}
         <SortableTable
           state={state}
+          stickyHeader
           columnsWithNoContentPadding={['operations']}
-          selectionType="checkbox"
+          selectionType={isBatchSelectionEnabled ? 'checkbox' : undefined}
           onSelectAll={processInstancesSelectionStore.selectAll}
           onSelect={(rowId) => {
             processInstancesSelectionStore.select(rowId);
@@ -156,7 +162,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
             const instanceState: ProcessInstanceState | 'INCIDENT' =
-              instance.hasIncident ? 'INCIDENT' : instance.state;
+              instance.state === 'SUSPENDED'
+                ? 'SUSPENDED'
+                : instance.hasIncident
+                  ? 'INCIDENT'
+                  : instance.state;
 
             const operationItem = operationItemsMap.get(
               instance.processInstanceKey,
@@ -228,11 +238,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               ),
               operations: (
                 <InstanceOperations
-                  processInstanceKey={instance.processInstanceKey}
-                  isInstanceActive={
-                    instance.state === 'ACTIVE' || instance.hasIncident
-                  }
-                  hasIncident={instance.hasIncident}
+                  processInstance={instance}
                   activeOperations={
                     activeOperationsMap.get(instance.processInstanceKey) ?? []
                   }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {createProcessInstance} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -18,6 +18,9 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
+import {mockSuspendProcessInstance} from 'modules/mocks/api/v2/processInstances/suspendProcessInstance';
+import {mockResumeProcessInstance} from 'modules/mocks/api/v2/processInstances/resumeProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -317,5 +320,96 @@ describe('ProcessInstanceOperations', () => {
       title: 'Instance is scheduled for deletion',
       isDismissable: true,
     });
+  });
+
+  it('should suspend an active root instance', async () => {
+    mockSuspendProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Suspend Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    });
+  });
+
+  it('should not allow suspending an active child instance', () => {
+    const activeChildInstance = createProcessInstance({
+      state: 'ACTIVE',
+      parentProcessInstanceKey: '111111111',
+    });
+
+    render(
+      <ProcessInstanceOperations processInstance={activeChildInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /Suspend Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+  });
+
+  it('should resume a suspended root instance', async () => {
+    const suspendedInstance = createProcessInstance({
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: null,
+    });
+    mockResumeProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...suspendedInstance,
+      state: 'ACTIVE',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={suspendedInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /Resume Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    });
+  });
+
+  it('should only allow cancellation for a suspended child instance', () => {
+    const suspendedChildInstance = createProcessInstance({
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: '111111111',
+    });
+
+    render(
+      <ProcessInstanceOperations processInstance={suspendedChildInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /Resume Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
   });
 });

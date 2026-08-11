@@ -8,27 +8,40 @@
 
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError} from 'modules/utils/notifications';
+import {
+  handleOperationError,
+  handleProcessInstanceStateChangeError,
+} from 'modules/utils/notifications';
 import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
-import type {OperationConfig} from 'modules/components/Operations/types';
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useResumeProcessInstance} from 'modules/mutations/processInstance/useResumeProcessInstance';
+import {useSuspendProcessInstance} from 'modules/mutations/processInstance/useSuspendProcessInstance';
+import type {
+  OperationConfig,
+  OperationSlot,
+} from 'modules/components/Operations/types';
+import type {
+  BatchOperationType,
+  ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useMemo} from 'react';
 
 type Props = {
-  processInstanceKey: string;
-  hasIncident: boolean;
-  isInstanceActive: boolean;
+  processInstance: Pick<
+    ProcessInstance,
+    'processInstanceKey' | 'state' | 'hasIncident' | 'parentProcessInstanceKey'
+  >;
   activeOperations: BatchOperationType[];
 };
 
 const InstanceOperations: React.FC<Props> = ({
-  processInstanceKey,
-  hasIncident,
-  isInstanceActive,
+  processInstance,
   activeOperations,
 }) => {
+  const {processInstanceKey, state, hasIncident, parentProcessInstanceKey} =
+    processInstance;
   const handleOperationSuccess = useHandleOperationSuccess();
 
   const {
@@ -85,42 +98,116 @@ const InstanceOperations: React.FC<Props> = ({
     },
   });
 
+  const {
+    mutate: suspendProcessInstance,
+    isPending: isSuspendProcessInstancePending,
+  } = useSuspendProcessInstance(processInstanceKey, {
+    onSuccess: () => {
+      handleOperationSuccess({
+        operationType: 'SUSPEND_PROCESS_INSTANCE',
+        source: 'instances-list',
+      });
+    },
+    onError: (error) => handleProcessInstanceStateChangeError(error, 'suspend'),
+  });
+
+  const {
+    mutate: resumeProcessInstance,
+    isPending: isResumeProcessInstancePending,
+  } = useResumeProcessInstance(processInstanceKey, {
+    onSuccess: () => {
+      handleOperationSuccess({
+        operationType: 'RESUME_PROCESS_INSTANCE',
+        source: 'instances-list',
+      });
+    },
+    onError: (error) => handleProcessInstanceStateChangeError(error, 'resume'),
+  });
+
+  const isActive = state === 'ACTIVE';
+  const isSuspended = state === 'SUSPENDED';
+  const isRoot = parentProcessInstanceKey === null;
   const isLoading =
     activeOperations.length > 0 ||
     isCancelProcessInstancePending ||
     isResolveIncidentsPending ||
-    isDeletePending;
+    isDeletePending ||
+    isSuspendProcessInstancePending ||
+    isResumeProcessInstancePending;
 
-  const operations: OperationConfig[] = [];
+  const operations = useMemo<OperationSlot[]>(() => {
+    const incidentOperation: OperationConfig | null =
+      isActive && hasIncident
+        ? {
+            type: 'RESOLVE_INCIDENT',
+            onExecute: () => resolveProcessInstanceIncidents(),
+            disabled:
+              isResolveIncidentsPending ||
+              activeOperations.includes('RESOLVE_INCIDENT'),
+          }
+        : null;
 
-  if (isInstanceActive && hasIncident) {
-    operations.push({
-      type: 'RESOLVE_INCIDENT',
-      onExecute: () => resolveProcessInstanceIncidents(),
-      disabled:
-        isResolveIncidentsPending ||
-        activeOperations.includes('RESOLVE_INCIDENT'),
-    });
-  }
+    let stateChangeOperation: OperationConfig | null = null;
+    if (isRoot && isActive) {
+      stateChangeOperation = {
+        type: 'SUSPEND_PROCESS_INSTANCE',
+        onExecute: () => suspendProcessInstance(),
+        disabled:
+          isSuspendProcessInstancePending ||
+          activeOperations.includes('SUSPEND_PROCESS_INSTANCE'),
+      };
+    }
 
-  if (isInstanceActive) {
-    operations.push({
-      type: 'CANCEL_PROCESS_INSTANCE',
-      onExecute: () => cancelProcessInstance(),
-      disabled:
-        isCancelProcessInstancePending ||
-        activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
-    });
-  }
+    if (isRoot && isSuspended) {
+      stateChangeOperation = {
+        type: 'RESUME_PROCESS_INSTANCE',
+        onExecute: () => resumeProcessInstance(),
+        disabled:
+          isResumeProcessInstancePending ||
+          activeOperations.includes('RESUME_PROCESS_INSTANCE'),
+      };
+    }
 
-  if (!isInstanceActive) {
-    operations.push({
-      type: 'DELETE_PROCESS_INSTANCE',
-      onExecute: () => deleteProcessInstance(),
-      disabled:
-        isDeletePending || activeOperations.includes('DELETE_PROCESS_INSTANCE'),
-    });
-  }
+    let destructiveOperation: OperationConfig | null = null;
+    if (isActive || isSuspended) {
+      destructiveOperation = {
+        type: 'CANCEL_PROCESS_INSTANCE',
+        onExecute: () => cancelProcessInstance(),
+        disabled:
+          isCancelProcessInstancePending ||
+          activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
+      };
+    }
+
+    if (state === 'COMPLETED' || state === 'TERMINATED') {
+      destructiveOperation = {
+        type: 'DELETE_PROCESS_INSTANCE',
+        onExecute: () => deleteProcessInstance(),
+        disabled:
+          isDeletePending ||
+          activeOperations.includes('DELETE_PROCESS_INSTANCE'),
+      };
+    }
+
+    return [incidentOperation, stateChangeOperation, destructiveOperation];
+  }, [
+    activeOperations,
+    cancelProcessInstance,
+    deleteProcessInstance,
+    hasIncident,
+    isActive,
+    isCancelProcessInstancePending,
+    isDeletePending,
+    isResolveIncidentsPending,
+    isResumeProcessInstancePending,
+    isRoot,
+    isSuspendProcessInstancePending,
+    isSuspended,
+    resolveProcessInstanceIncidents,
+    resumeProcessInstance,
+    state,
+    suspendProcessInstance,
+  ]);
 
   return (
     <Operations

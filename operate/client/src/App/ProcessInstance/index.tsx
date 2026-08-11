@@ -155,6 +155,7 @@ const ProcessInstance: React.FC = observer(() => {
       navigate(
         Locations.processes({
           active: true,
+          suspended: true,
           incidents: true,
         }),
         {replace: true},

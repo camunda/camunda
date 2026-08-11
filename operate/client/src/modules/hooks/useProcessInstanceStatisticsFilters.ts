@@ -12,7 +12,7 @@ import {
   type GetProcessDefinitionStatisticsRequestBody,
   type QueryProcessInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
+import {parseProcessInstancesListSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 import {buildVariableEntry} from 'modules/hooks/processInstancesSearch';
 
@@ -44,7 +44,7 @@ const useProcessInstanceStatisticsFilters = (
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
-    const fullFilter = parseProcessInstancesSearchFilter(searchParams);
+    const fullFilter = parseProcessInstancesListSearchFilter(searchParams);
 
     if (!fullFilter) {
       return {filter: undefined};

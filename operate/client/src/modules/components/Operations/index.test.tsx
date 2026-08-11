@@ -163,7 +163,11 @@ describe('OperationsPresentational', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: `Instance ${PROCESS_INSTANCE_KEY} has scheduled Operations`,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('should hide loading state', () => {
@@ -176,7 +180,11 @@ describe('OperationsPresentational', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: `Instance ${PROCESS_INSTANCE_KEY} has scheduled Operations`,
+      }),
+    ).toBeInTheDocument();
 
     rerender(
       <Operations
@@ -186,7 +194,11 @@ describe('OperationsPresentational', () => {
       />,
     );
 
-    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {
+        name: `Instance ${PROCESS_INSTANCE_KEY} has scheduled Operations`,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('should show cancel confirmation modal', async () => {

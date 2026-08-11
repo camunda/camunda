@@ -165,6 +165,29 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId(`ACTIVE-icon`)).toBeInTheDocument();
   });
 
+  it('should display the suspended state before an incident state', async () => {
+    const suspendedInstance = {
+      ...mockInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    } satisfies typeof mockInstance;
+    mockSearchIncidentsByProcessInstance(
+      suspendedInstance.processInstanceKey,
+    ).withSuccess(searchResult([createIncident()]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={suspendedInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByRole('img', {name: 'suspended state'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {name: 'incident state'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should render "View All" link for call activity process', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 

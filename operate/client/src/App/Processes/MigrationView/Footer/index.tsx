@@ -196,6 +196,7 @@ const Footer: React.FC = observer(() => {
                         navigate(
                           Locations.processes({
                             active: true,
+                            suspended: true,
                             incidents: true,
                             processDefinitionId:
                               targetProcessDefinition.processDefinitionId,

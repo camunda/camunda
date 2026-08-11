@@ -18,6 +18,7 @@ import {processInstancesSelectionStore} from 'modules/stores/instancesSelection'
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import * as clientConfig from 'modules/utils/getClientConfig';
+import {createProcessInstance} from 'modules/testUtils';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/hooks/useCallbackPrompt', () => {
@@ -162,6 +163,45 @@ describe('<InstancesTable />', () => {
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should display the suspended state for an instance with an incident', () => {
+    const suspendedInstance = createProcessInstance({
+      processInstanceKey: 'suspended-instance',
+      state: 'SUSPENDED',
+      hasIncident: true,
+    });
+
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={[suspendedInstance]}
+        totalCount={1}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('img', {name: 'suspended state'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {name: 'incident state'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not offer batch selection while suspended instances are filtered', () => {
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalCount={1}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper(`${Paths.processes()}?suspended=true`)},
+    );
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
   it('should render batch modification footer', async () => {
