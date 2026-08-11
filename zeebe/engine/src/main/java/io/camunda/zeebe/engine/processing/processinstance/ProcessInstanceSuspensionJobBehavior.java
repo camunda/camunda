@@ -15,12 +15,14 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.ArrayDeque;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Parks activatable jobs of a process instance so they are no longer handed out while the instance
- * is suspended.
+ * Parks jobs of a process instance so they are no longer handed out while the instance is
+ * suspended.
  *
  * <p>The element-instance walk never reaches a called child instance: {@link
  * ElementInstanceState#getChildren} is driven by an element instance's {@code parentKey}, and a
@@ -38,6 +40,14 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ProcessInstanceSuspensionJobBehavior {
 
+  /**
+   * States that {@link JobIntent#SUSPENDED} may leave. Matches {@code JobSuspendedApplier}: secret
+   * waiting is overridden so a later secret reactivation cannot put the job back into the hand-out
+   * index while the process instance is still suspended.
+   */
+  private static final Set<State> SUSPENDABLE_STATES =
+      EnumSet.of(State.ACTIVATABLE, State.WAITING_FOR_SECRET_RESOLUTION);
+
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
   private final StateWriter stateWriter;
@@ -52,19 +62,20 @@ public final class ProcessInstanceSuspensionJobBehavior {
   }
 
   /**
-   * Appends {@link JobIntent#SUSPENDED} for every activatable job of the process instance, which
-   * removes each job from the hand-out index.
+   * Appends {@link JobIntent#SUSPENDED} for every suspendable job of the process instance ({@link
+   * State#ACTIVATABLE} and {@link State#WAITING_FOR_SECRET_RESOLUTION}), which parks each job out
+   * of the hand-out index.
    */
   public void suspendJobs(final long processInstanceKey) {
-    forEachJobInState(
+    forEachJobInStates(
         processInstanceKey,
-        State.ACTIVATABLE,
+        SUSPENDABLE_STATES,
         (jobKey, job) -> stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job));
   }
 
-  private void forEachJobInState(
+  private void forEachJobInStates(
       final long processInstanceKey,
-      final State state,
+      final Set<State> states,
       final BiConsumer<Long, JobRecord> consumer) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
@@ -76,7 +87,7 @@ public final class ProcessInstanceSuspensionJobBehavior {
     elementInstances.add(processInstance);
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      visitJob(elementInstance, state, consumer);
+      visitJob(elementInstance, states, consumer);
       // defensive invariant, see class javadoc: getChildren never returns a child instance's root
       elementInstanceState.getChildren(elementInstance.getKey()).stream()
           .filter(child -> child.getValue().getProcessInstanceKey() == processInstanceKey)
@@ -86,10 +97,10 @@ public final class ProcessInstanceSuspensionJobBehavior {
 
   private void visitJob(
       final ElementInstance elementInstance,
-      final State state,
+      final Set<State> states,
       final BiConsumer<Long, JobRecord> consumer) {
     final long jobKey = elementInstance.getJobKey();
-    if (jobKey <= 0 || jobState.getState(jobKey) != state) {
+    if (jobKey <= 0 || !states.contains(jobState.getState(jobKey))) {
       return;
     }
     final var job = jobState.getJob(jobKey);

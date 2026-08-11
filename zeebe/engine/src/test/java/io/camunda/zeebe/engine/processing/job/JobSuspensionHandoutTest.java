@@ -145,7 +145,7 @@ public final class JobSuspensionHandoutTest {
         .await();
     final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
     assertThat(batch.getValue().getJobKeys()).hasSize(1);
-    final long activatedJobKey = batch.getValue().getJobKeys().get(0);
+    final long activatedJobKey = batch.getValue().getJobKeys().getFirst();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
