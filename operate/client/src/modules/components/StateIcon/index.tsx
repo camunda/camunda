@@ -37,7 +37,14 @@ type Props = {
 
 const StateIcon: React.FC<Props> = ({state, ...props}) => {
   const TargetComponent = stateIconsMap[state];
-  return <TargetComponent data-testid={`${state}-icon`} {...props} />;
+  return (
+    <TargetComponent
+      role="img"
+      aria-label={`${state.toLowerCase()} state`}
+      data-testid={`${state}-icon`}
+      {...props}
+    />
+  );
 };
 
 export {StateIcon};

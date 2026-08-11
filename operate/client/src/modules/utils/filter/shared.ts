@@ -18,6 +18,7 @@ type ProcessInstanceFilterField =
   | 'variableValues'
   | 'batchOperationKey'
   | 'active'
+  | 'suspended'
   | 'incidents'
   | 'completed'
   | 'canceled'
@@ -41,6 +42,7 @@ type ProcessInstanceFilters = {
   variableValues?: string;
   batchOperationKey?: string;
   active?: boolean;
+  suspended?: boolean;
   incidents?: boolean;
   completed?: boolean;
   canceled?: boolean;
@@ -65,6 +67,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'variableValues',
   'batchOperationKey',
   'active',
+  'suspended',
   'incidents',
   'completed',
   'canceled',
@@ -79,6 +82,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'active',
+  'suspended',
   'incidents',
   'completed',
   'canceled',

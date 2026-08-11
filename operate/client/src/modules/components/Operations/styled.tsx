@@ -15,4 +15,20 @@ const OperationsContainer = styled(Stack)`
   }
 `;
 
-export {OperationsContainer};
+const LoadingSlot = styled.li`
+  align-items: center;
+  block-size: 2rem;
+  display: flex;
+  flex: 0 0 2rem;
+  inline-size: 2rem;
+`;
+
+const EmptyOperationSlot = styled.li.attrs({
+  'aria-hidden': true,
+})`
+  block-size: 2rem;
+  flex: 0 0 2rem;
+  inline-size: 2rem;
+`;
+
+export {EmptyOperationSlot, LoadingSlot, OperationsContainer};

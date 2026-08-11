@@ -10,10 +10,13 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
-import type {OperationConfig} from './types';
+import {Resume} from './Resume';
+import {Suspend} from './Suspend';
+import {EmptyOperationSlot} from './styled';
+import type {OperationSlot} from './types';
 
 type Props = {
-  operation: OperationConfig;
+  operation: OperationSlot;
   processInstanceKey: string;
 };
 
@@ -21,6 +24,10 @@ const OperationRenderer: React.FC<Props> = ({
   operation,
   processInstanceKey,
 }) => {
+  if (operation === null) {
+    return <EmptyOperationSlot />;
+  }
+
   const baseProps = {
     processInstanceKey,
     onExecute: operation.onExecute,
@@ -34,6 +41,10 @@ const OperationRenderer: React.FC<Props> = ({
       return <Cancel {...baseProps} />;
     case 'DELETE_PROCESS_INSTANCE':
       return <Delete {...baseProps} />;
+    case 'SUSPEND_PROCESS_INSTANCE':
+      return <Suspend {...baseProps} />;
+    case 'RESUME_PROCESS_INSTANCE':
+      return <Resume {...baseProps} />;
     case 'ENTER_MODIFICATION_MODE':
       return (
         <OperationItem
@@ -45,7 +56,7 @@ const OperationRenderer: React.FC<Props> = ({
         />
       );
     default:
-      return null;
+      return operation.type satisfies never;
   }
 };
 

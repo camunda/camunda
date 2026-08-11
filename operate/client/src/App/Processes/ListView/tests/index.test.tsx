@@ -139,6 +139,56 @@ describe('Instances', () => {
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
+  it('should display suspended instances when the suspended filter is selected', async () => {
+    const suspendedInstance = createProcessInstance({
+      processInstanceKey: 'suspended-instance',
+      processDefinitionName: 'Suspended Process',
+      state: 'SUSPENDED',
+    });
+    mockSearchProcessInstances().withSuccess(searchResult([suspendedInstance]));
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}?suspended=true`),
+    });
+
+    expect(await screen.findByText('Suspended Process')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', {name: 'Suspended'})).toBeChecked();
+  });
+
+  it('should display active, suspended, and incident instances together', async () => {
+    mockSearchProcessInstances().withSuccess(
+      searchResult([
+        createProcessInstance({
+          processInstanceKey: 'active-instance',
+          processDefinitionName: 'Active Process',
+          state: 'ACTIVE',
+          hasIncident: false,
+        }),
+        createProcessInstance({
+          processInstanceKey: 'suspended-instance',
+          processDefinitionName: 'Suspended Process',
+          state: 'SUSPENDED',
+        }),
+        createProcessInstance({
+          processInstanceKey: 'incident-instance',
+          processDefinitionName: 'Incident Process',
+          state: 'ACTIVE',
+          hasIncident: true,
+        }),
+      ]),
+    );
+
+    render(<ListView />, {
+      wrapper: getWrapper(
+        `${Paths.processes()}?active=true&suspended=true&incidents=true`,
+      ),
+    });
+
+    expect(await screen.findByText('Active Process')).toBeInTheDocument();
+    expect(screen.getByText('Suspended Process')).toBeInTheDocument();
+    expect(screen.getByText('Incident Process')).toBeInTheDocument();
+  });
+
   it('should render title and document title', async () => {
     mockSearchProcessInstances().withSuccess(mockProcessInstances);
     mockSearchProcessInstances().withSuccess(mockProcessInstances);

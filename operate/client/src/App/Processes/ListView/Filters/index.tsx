@@ -29,6 +29,7 @@ import {
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {
   CheckmarkOutline,
+  PauseOutlineFilled,
   RadioButtonChecked,
   WarningFilled,
 } from 'modules/components/StateIcon/styled';
@@ -49,6 +50,7 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const initialValues: ProcessInstancesFilter = {
   active: true,
+  suspended: true,
   incidents: true,
 };
 
@@ -114,6 +116,7 @@ const Filters: React.FC = observer(() => {
                   'processDefinitionVersion',
                   'elementId',
                   'active',
+                  'suspended',
                   'incidents',
                   'completed',
                   'canceled',
@@ -151,6 +154,11 @@ const Filters: React.FC = observer(() => {
                           label: 'Active',
                           name: 'active',
                           Icon: RadioButtonChecked,
+                        },
+                        {
+                          label: 'Suspended',
+                          name: 'suspended',
+                          Icon: PauseOutlineFilled,
                         },
                         {
                           label: 'Incidents',

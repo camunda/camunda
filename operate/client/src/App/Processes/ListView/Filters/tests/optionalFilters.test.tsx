@@ -580,7 +580,7 @@ describe('Optional Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /\?active=true&incidents=true$/,
+        /\?active=true&incidents=true&suspended=true$/,
       ),
     );
 

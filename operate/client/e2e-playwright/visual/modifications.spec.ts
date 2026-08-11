@@ -47,11 +47,8 @@ test.describe('modifications', () => {
       key: runningInstance.detail.processInstanceKey,
     });
 
-    await page
-      .getByRole('button', {
-        name: /modify instance/i,
-      })
-      .click();
+    await page.getByRole('button', {name: 'Actions'}).click();
+    await page.getByRole('menuitem', {name: 'Modify'}).click();
 
     await expect(page).toHaveScreenshot();
   });
@@ -74,11 +71,8 @@ test.describe('modifications', () => {
       key: runningInstance.detail.processInstanceKey,
     });
 
-    await page
-      .getByRole('button', {
-        name: /modify instance/i,
-      })
-      .click();
+    await page.getByRole('button', {name: 'Actions'}).click();
+    await page.getByRole('menuitem', {name: 'Modify'}).click();
 
     await page
       .getByRole('button', {
@@ -118,11 +112,8 @@ test.describe('modifications', () => {
       key: instanceWithIncident.detail.processInstanceKey,
     });
 
-    await page
-      .getByRole('button', {
-        name: /modify instance/i,
-      })
-      .click();
+    await page.getByRole('button', {name: 'Actions'}).click();
+    await page.getByRole('menuitem', {name: 'Modify'}).click();
 
     await page
       .getByRole('button', {
@@ -190,11 +181,8 @@ test.describe('modifications', () => {
       key: instanceWithIncident.detail.processInstanceKey,
     });
 
-    await page
-      .getByRole('button', {
-        name: /modify instance/i,
-      })
-      .click();
+    await page.getByRole('button', {name: 'Actions'}).click();
+    await page.getByRole('menuitem', {name: 'Modify'}).click();
 
     await page
       .getByRole('button', {

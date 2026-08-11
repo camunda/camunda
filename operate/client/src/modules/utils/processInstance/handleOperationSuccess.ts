@@ -48,6 +48,7 @@ function useHandleOperationSuccess() {
         navigate(
           Locations.processes({
             active: true,
+            suspended: true,
             incidents: true,
           }),
           {replace: true},
