@@ -51,7 +51,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.time.Instant;
@@ -356,6 +358,21 @@ final class ProtoBufSerializerTest {
             new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
             new PartitionRestoreOperation(MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))));
+    final List<Phase> phases =
+        List.of(
+            new GlobalPhase(List.of(new MemberLeaveOperation(MemberId.from("1")))),
+            new PartitionGroupParallelPhase(
+                Map.of(
+                    "default",
+                    List.of(
+                        new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+                        new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                        new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)),
+                    "anothertenant",
+                    List.of(
+                        new PartitionPreRestoreOperation(MemberId.from("1"), 1),
+                        new PartitionRestoreOperation(
+                            MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))))));
     final var currentMultiConfiguration = CurrentClusterConfiguration.init();
     final var expectedMultiConfiguration =
         CurrentClusterConfiguration.fromLegacy(
@@ -373,7 +390,7 @@ final class ProtoBufSerializerTest {
                 Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
                 plannedChanges),
             new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                currentMultiConfiguration, expectedMultiConfiguration, plannedChanges));
+                currentMultiConfiguration, expectedMultiConfiguration, phases));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);

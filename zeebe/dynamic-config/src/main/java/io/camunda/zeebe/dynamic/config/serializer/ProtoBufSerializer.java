@@ -1718,6 +1718,7 @@ public class ProtoBufSerializer
               encodeCurrentClusterConfigurationProto(response.currentConfiguration()))
           .setExpectedConfiguration(
               encodeCurrentClusterConfigurationProto(response.expectedConfiguration()));
+      response.phases().forEach(phase -> builder.addPhases(encodePhase(phase)));
     }
 
     return builder;
@@ -1740,7 +1741,7 @@ public class ProtoBufSerializer
                 decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
                 decodeCurrentClusterConfiguration(
                     topologyChangeResponse.getExpectedConfiguration()),
-                legacyResponse.plannedChanges())
+                topologyChangeResponse.getPhasesList().stream().map(this::decodePhase).toList())
             : null;
 
     return new ClusterConfigurationChangeResponse(

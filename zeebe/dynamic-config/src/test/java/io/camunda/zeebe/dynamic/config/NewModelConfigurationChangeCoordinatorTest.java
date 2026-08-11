@@ -178,7 +178,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.applyOperations(request).join();
 
     // then — the generated operations are returned, the plan drains phase by phase and completes
-    assertThat(result.operations())
+    assertThat(result.legacyOperations())
         .containsExactly(
             new PreScalingOperation(MEMBER_0, Set.of(MEMBER_0, MEMBER_1)),
             new PartitionLeaveOperation(MEMBER_0, 1, 1));
@@ -248,7 +248,8 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.simulateOperations(request).join();
 
     // then — the operations are returned but no plan is started
-    assertThat(result.operations()).containsExactly(new PartitionLeaveOperation(MEMBER_0, 1, 1));
+    assertThat(result.legacyOperations())
+        .containsExactly(new PartitionLeaveOperation(MEMBER_0, 1, 1));
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
     final var defaultGroup =
         configuration().partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
@@ -286,7 +287,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.applyOperations(request).join();
 
     // then
-    assertThat(result.operations()).isEmpty();
+    assertThat(result.legacyOperations()).isEmpty();
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
   }
 

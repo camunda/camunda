@@ -12,6 +12,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,12 +52,12 @@ public record ClusterConfigurationChangeResponse(
   public record CurrentConfigurationChangeResponse(
       CurrentClusterConfiguration currentConfiguration,
       CurrentClusterConfiguration expectedConfiguration,
-      List<ClusterConfigurationChangeOperation> plannedChanges) {
+      List<Phase> phases) {
 
     public CurrentConfigurationChangeResponse {
       Objects.requireNonNull(currentConfiguration, "currentConfiguration must not be null");
       Objects.requireNonNull(expectedConfiguration, "expectedConfiguration must not be null");
-      Objects.requireNonNull(plannedChanges, "plannedChanges must not be null");
+      Objects.requireNonNull(phases, "phases must not be null");
     }
   }
 }

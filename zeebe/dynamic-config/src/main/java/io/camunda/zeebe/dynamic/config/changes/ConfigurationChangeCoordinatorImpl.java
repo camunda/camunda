@@ -203,6 +203,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                   .lastChange()
                   .map(CompletedPhasedChange::id)
                   .orElse(0L),
+              List.of(),
               List.of()));
       return;
     }
@@ -232,7 +233,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                     currentConfiguration,
                     simulatedFinalConfiguration,
                     changeId,
-                    operations));
+                    operations,
+                    phases));
             return;
           }
 
@@ -257,7 +259,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                             currentConfiguration,
                             simulatedFinalConfiguration,
                             changeId,
-                            operations));
+                            operations,
+                            phases));
                   },
                   executor);
         });

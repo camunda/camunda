@@ -307,11 +307,11 @@ public final class ClusterConfigurationManagementRequestsHandler
                     new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
                         result.currentConfiguration().members(),
                         result.finalConfiguration().members(),
-                        result.operations()),
+                        result.legacyOperations()),
                     new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
                         result.currentMultiConfiguration(),
                         result.finalMultiConfiguration(),
-                        result.operations())),
+                        result.phases())),
             executor);
   }
 }

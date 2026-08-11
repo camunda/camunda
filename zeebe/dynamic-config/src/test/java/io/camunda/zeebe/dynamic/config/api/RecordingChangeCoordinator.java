@@ -58,7 +58,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
             CurrentClusterConfiguration.fromLegacy(currentTopology),
             CurrentClusterConfiguration.fromLegacy(newTopology),
             newTopology.pendingChanges().map(ClusterChangePlan::id).orElse(0L),
-            operations));
+            operations,
+            List.of()));
   }
 
   @Override
