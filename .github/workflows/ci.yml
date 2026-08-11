@@ -515,30 +515,30 @@ jobs:
         with:
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
-      # instead of rebuilding (see issue #52693). Short retention: consumed within the same run.
+      # instead of rebuilding (see issue #52693).
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
-          retention-days: 1
+          retention-days: 2
           if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fe-tasklist-${{ github.run_id }}
           path: tasklist/client/build
-          retention-days: 1
+          retention-days: 2
           if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
-          retention-days: 1
+          retention-days: 2
           if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
-          retention-days: 1
+          retention-days: 2
           if-no-files-found: error
       - name: Observe build status
         if: always()
