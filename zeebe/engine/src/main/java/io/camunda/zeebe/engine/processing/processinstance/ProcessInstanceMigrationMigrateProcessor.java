@@ -199,6 +199,9 @@ public class ProcessInstanceMigrationMigrateProcessor
         mapElementIds(
             mappingInstructions, processInstance, sourceProcessDefinition, targetProcessDefinition);
 
+    migrationAgentInstanceBehaviour.validateAgentInstanceMigrations(
+        processInstanceKey, sourceProcessDefinition, targetProcessDefinition, mappedElementIds);
+
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
@@ -468,12 +471,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSameAgentDefinitionType(
-        sourceProcessDefinition,
-        targetProcessDefinition,
-        elementId,
-        targetElementId,
-        processInstanceKey);
     requireSupportedUserTaskMigration(
         sourceProcessDefinition,
         targetProcessDefinition,

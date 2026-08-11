@@ -148,9 +148,9 @@ public final class ProcessInstanceMigrationPreconditions {
   private static final String ERROR_AGENT_DEFINITION_TYPE_CHANGED =
       """
       Expected to migrate process instance '%s' \
-      but active element with id '%s' has agent definition type '%s' \
+      but the agent instance element with id '%s' has agent definition type '%s' \
       while the mapped target element with id '%s' has a different agent definition type '%s'. \
-      Agent elements must be mapped to elements of the same agent definition type.""";
+      An agent instance's agent definition type must not change on migration.""";
   private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
       """
       Expected to migrate process instance '%s' \
@@ -607,16 +607,17 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the agent definition type is unchanged across the migration. An agent element
-   * (one carrying an agent definition) may only be mapped to an element with the same agent
-   * definition type, or to a plain element without an agent definition (in either direction).
-   * Mapping between two different agent definition types is rejected, because the migrated agent
-   * instance could not be re-resolved to a compatible agent definition on the target.
+   * Checks whether the agent definition type is unchanged for an agent instance across the
+   * migration. An agent instance whose element carries an agent definition may only be migrated
+   * onto an element with the same agent definition type, or onto a plain element without an agent
+   * definition (in either direction). Migrating between two different agent definition types is
+   * rejected, because the migrated agent instance could not be re-resolved to a compatible agent
+   * definition on the target.
    *
    * @param sourceProcessDefinition source process definition to resolve the source agent type
    * @param targetProcessDefinition target process definition to resolve the target agent type
-   * @param sourceElementId source element id
-   * @param targetElementId target element id
+   * @param sourceElementId the agent instance's source element id
+   * @param targetElementId the mapped target element id
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameAgentDefinitionType(

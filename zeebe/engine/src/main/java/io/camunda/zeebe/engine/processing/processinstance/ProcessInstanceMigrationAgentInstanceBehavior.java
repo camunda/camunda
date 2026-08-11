@@ -34,6 +34,53 @@ public class ProcessInstanceMigrationAgentInstanceBehavior {
   }
 
   /**
+   * Rejects the migration when it would change the {@code AgentDefinitionType} backing any agent
+   * instance of the process instance. Every agent instance is validated, including orphaned ones
+   * whose owning element already completed and is therefore no longer part of the migrated element
+   * tree that {@link ProcessInstanceMigrationMigrateProcessor}'s per-element validation walks.
+   *
+   * @param mappedElementIds the source-to-target element id mapping resolved for this migration; an
+   *     agent instance whose {@code elementId} has no entry keeps its current id
+   */
+  public void validateAgentInstanceMigrations(
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> mappedElementIds) {
+    agentInstanceState
+        .getAgentInstanceKeysByProcessInstanceKey(processInstanceKey)
+        .forEach(
+            agentInstanceKey ->
+                validateAgentInstanceMigration(
+                    agentInstanceKey,
+                    processInstanceKey,
+                    sourceProcessDefinition,
+                    targetProcessDefinition,
+                    mappedElementIds));
+  }
+
+  private void validateAgentInstanceMigration(
+      final long agentInstanceKey,
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> mappedElementIds) {
+    final var record = agentInstanceState.getRecord(agentInstanceKey);
+    if (record == null) {
+      // a missing record is surfaced as a bug by the re-resolution pass; nothing to validate here
+      return;
+    }
+    final var sourceElementId = record.getElementId();
+    final var targetElementId = mappedElementIds.getOrDefault(sourceElementId, sourceElementId);
+    ProcessInstanceMigrationPreconditions.requireSameAgentDefinitionType(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementId,
+        targetElementId,
+        processInstanceKey);
+  }
+
+  /**
    * Re-points every agent instance of the given process instance at the target process definition,
    * re-resolving its {@code agentDefinitionKey} to the target version's agent definition.
    *
