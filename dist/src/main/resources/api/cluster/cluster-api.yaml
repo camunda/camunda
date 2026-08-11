@@ -127,6 +127,38 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /changes/{changeId}:
+    get:
+      summary: Get a configuration change
+      description: Returns the status and operations of one configuration change.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      responses:
+        '200':
+          $ref: "#/components/responses/GetConfigurationChangeResponse"
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+  /changes:
+    get:
+      summary: List configuration changes
+      description: Returns every configuration change currently known to this broker.
+      responses:
+        '200':
+          $ref: "#/components/responses/GetConfigurationChangesResponse"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
     patch:
       summary: Reconfigure cluster
       description: Reconfigure cluster by adding or removing brokers, adding more partitions, or
@@ -337,6 +369,13 @@ components:
       description: Name of the zone
       schema:
         type: string
+    ChangeId:
+      name: changeId
+      required: true
+      in: path
+      description: Id of the configuration change
+      schema:
+        $ref: 'components.yaml#/schemas/ChangeId'
     DryRunParameter:
       name: dryRun
       description: If true, requested changes are only simulated and not actually applied.
@@ -406,3 +445,17 @@ components:
         application/json:
           schema:
             $ref: "components.yaml#/schemas/GetTopologyResponse"
+
+    GetConfigurationChangeResponse:
+      description: response body for getting one configuration change
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/ConfigurationChange"
+
+    GetConfigurationChangesResponse:
+      description: response body for listing configuration changes
+      content:
+        application/json:
+          schema:
+            $ref: "components.yaml#/schemas/GetConfigurationChangesResponse"

@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -58,8 +59,12 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
@@ -67,11 +72,13 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPar
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.ExporterConfig;
 import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
+import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
@@ -94,9 +101,11 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
@@ -176,6 +185,158 @@ final class ClusterApiUtils {
     }
   }
 
+  static ResponseEntity<?> mapConfigurationChangeResponse(
+      final CurrentClusterConfiguration configuration, final long changeId) {
+    return findConfigurationChange(configuration, changeId)
+        .<ResponseEntity<?>>map(change -> ResponseEntity.status(200).body(change))
+        .orElseGet(
+            () -> {
+              final var error = new Error();
+              error.setMessage("No configuration change found with id " + changeId);
+              return ResponseEntity.status(404).body(error);
+            });
+  }
+
+  static ResponseEntity<?> mapConfigurationChangesResponse(
+      final CurrentClusterConfiguration configuration) {
+    final var phasedChangeState = configuration.phasedChangeState();
+    final List<ConfigurationChange> changes = new ArrayList<>();
+    phasedChangeState
+        .pending()
+        .map(plan -> mapConfigurationChange(configuration, plan))
+        .ifPresent(changes::add);
+    phasedChangeState
+        .lastChange()
+        .map(ClusterApiUtils::mapConfigurationChange)
+        .ifPresent(changes::add);
+
+    final var sortedChanges =
+        changes.stream().sorted(Comparator.comparingLong(ConfigurationChange::getId)).toList();
+    return ResponseEntity.status(200)
+        .body(new GetConfigurationChangesResponse().changes(sortedChanges));
+  }
+
+  /**
+   * Resolves {@code changeId} against the two changes {@link PhasedChangeState} currently retains
+   * (the pending plan and the last completed change) — there is no persisted change history beyond
+   * those two, so any other id is reported as not found.
+   */
+  private static Optional<ConfigurationChange> findConfigurationChange(
+      final CurrentClusterConfiguration configuration, final long changeId) {
+    final var phasedChangeState = configuration.phasedChangeState();
+    final var pendingMatch = phasedChangeState.pending().filter(plan -> plan.id() == changeId);
+    if (pendingMatch.isPresent()) {
+      return pendingMatch.map(plan -> mapConfigurationChange(configuration, plan));
+    }
+    return phasedChangeState
+        .lastChange()
+        .filter(change -> change.id() == changeId)
+        .map(ClusterApiUtils::mapConfigurationChange);
+  }
+
+  /**
+   * Maps a pending plan's operations to completed/pending, using the actual progress of whichever
+   * sub-config (global or physical tenant) the currently active phase targets: phases before {@code
+   * currentPhaseIndex} are fully done, phases after it are entirely untouched, but the active
+   * phase's own operations may be partially done already — activating a phase copies its operations
+   * into the target sub-config's {@link ClusterChangePlan}, which independently tracks which of
+   * those operations have completed so far.
+   */
+  private static ConfigurationChange mapConfigurationChange(
+      final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
+    final var phases = plan.phases();
+    final var completedPhases = phases.subList(0, plan.currentPhaseIndex());
+    final var remainingPhases = phases.subList(plan.currentPhaseIndex(), phases.size());
+
+    final List<Operation> completed = new ArrayList<>(mapPhaseOperations(completedPhases));
+    final List<Operation> pending = new ArrayList<>();
+    if (!remainingPhases.isEmpty()) {
+      splitActivePhase(configuration, remainingPhases.get(0), completed, pending);
+      pending.addAll(mapPhaseOperations(remainingPhases.subList(1, remainingPhases.size())));
+    }
+
+    return new ConfigurationChange()
+        .id(plan.id())
+        .status(ConfigurationChange.StatusEnum.IN_PROGRESS)
+        .startedAt(mapInstantToDateTime(plan.startedAt()))
+        .completed(completed)
+        .pending(pending);
+  }
+
+  private static void splitActivePhase(
+      final CurrentClusterConfiguration configuration,
+      final Phase activePhase,
+      final List<Operation> completed,
+      final List<Operation> pending) {
+    switch (activePhase) {
+      case final GlobalPhase globalPhase ->
+          splitSubConfigOperations(
+              null,
+              globalPhase.operations(),
+              configuration.globalConfiguration().pendingChanges(),
+              completed,
+              pending);
+      case final PartitionGroupParallelPhase parallelPhase ->
+          parallelPhase
+              .groupOperations()
+              .forEach(
+                  (groupId, operations) ->
+                      splitSubConfigOperations(
+                          groupId,
+                          operations,
+                          Optional.ofNullable(configuration.partitionGroups().get(groupId))
+                              .flatMap(PartitionGroupConfiguration::pendingChanges),
+                          completed,
+                          pending));
+    }
+  }
+
+  /**
+   * Splits one sub-config's share of the active phase's operations between {@code completed} and
+   * {@code pending}. {@code subConfigPlan} is absent when the phase hasn't actually been activated
+   * into the sub-config yet (e.g. a plan reconstructed via {@link
+   * CurrentClusterConfiguration#fromLegacy}, which builds the pending plan at phase 0 without
+   * activating it) — in that case nothing has completed yet, so the whole phase is still pending.
+   */
+  private static void splitSubConfigOperations(
+      final String physicalTenantId,
+      final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
+      final Optional<ClusterChangePlan> subConfigPlan,
+      final List<Operation> completed,
+      final List<Operation> pending) {
+    if (subConfigPlan.isEmpty()) {
+      pending.addAll(mapOperations(physicalTenantId, phaseOperations));
+      return;
+    }
+    final var plan = subConfigPlan.get();
+    plan.completedOperations()
+        .forEach(
+            completedOperation ->
+                completed.add(mapOperation(physicalTenantId, completedOperation.operation())));
+    pending.addAll(mapOperations(physicalTenantId, plan.pendingOperations()));
+  }
+
+  private static ConfigurationChange mapConfigurationChange(final CompletedPhasedChange change) {
+    // CompletedPhasedChange retains only id/status/timestamps, not the operations that made up the
+    // change, so completed/pending are necessarily empty here.
+    return new ConfigurationChange()
+        .id(change.id())
+        .status(mapPhasedChangeStatus(change.status()))
+        .startedAt(mapInstantToDateTime(change.startedAt()))
+        .completedAt(mapInstantToDateTime(change.completedAt()))
+        .completed(List.of())
+        .pending(List.of());
+  }
+
+  private static ConfigurationChange.StatusEnum mapPhasedChangeStatus(
+      final PhasedChangePlanStatus status) {
+    return switch (status) {
+      case COMPLETED -> ConfigurationChange.StatusEnum.COMPLETED;
+      case FAILED -> ConfigurationChange.StatusEnum.FAILED;
+      case CANCELLED -> ConfigurationChange.StatusEnum.CANCELLED;
+    };
+  }
+
   private static PlannedOperationsResponse mapResponseType(
       final ClusterConfigurationChangeResponse response) {
     // response.response() is absent when the responding peer hasn't populated the new
@@ -185,19 +346,7 @@ final class ClusterApiUtils {
     final List<Operation> operations =
         multiConfigResponse == null
             ? mapOperations(response.legacyResponse().plannedChanges())
-            : multiConfigResponse.phases().stream()
-                .flatMap(
-                    phase ->
-                        switch (phase) {
-                          case final GlobalPhase globalPhase ->
-                              mapOperations(null, globalPhase.operations()).stream();
-                          case final PartitionGroupParallelPhase partitionGroupPhase ->
-                              partitionGroupPhase.groupOperations().entrySet().stream()
-                                  .flatMap(
-                                      entry ->
-                                          mapOperations(entry.getKey(), entry.getValue()).stream());
-                        })
-                .toList();
+            : mapPhaseOperations(multiConfigResponse.phases());
     final List<BrokerState> currentTopology =
         multiConfigResponse == null
             ? mapBrokerStates(response.legacyResponse().currentConfiguration())
@@ -222,6 +371,21 @@ final class ClusterApiUtils {
       final String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> operations) {
     return operations.stream().map(op -> mapOperation(physicalTenantId, op)).toList();
+  }
+
+  private static List<Operation> mapPhaseOperations(final List<Phase> phases) {
+    return phases.stream()
+        .flatMap(
+            phase ->
+                switch (phase) {
+                  case final GlobalPhase globalPhase ->
+                      mapOperations(null, globalPhase.operations()).stream();
+                  case final PartitionGroupParallelPhase partitionGroupPhase ->
+                      partitionGroupPhase.groupOperations().entrySet().stream()
+                          .flatMap(
+                              entry -> mapOperations(entry.getKey(), entry.getValue()).stream());
+                })
+        .toList();
   }
 
   static Operation mapOperation(

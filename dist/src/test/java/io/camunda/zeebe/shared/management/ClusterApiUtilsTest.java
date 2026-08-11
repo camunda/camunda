@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static io.camunda.zeebe.management.cluster.Operation.OperationEnum.BROKER_REMOVE;
+import static io.camunda.zeebe.management.cluster.Operation.OperationEnum.PARTITION_JOIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -15,9 +17,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -59,15 +64,21 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.BrokerState;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
+import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
+import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
@@ -200,7 +211,7 @@ final class ClusterApiUtilsTest {
     assertThat(body).isNotNull();
     assertThat(body.getPlannedChanges())
         .extracting(op -> op.getOperation(), op -> op.getPhysicalTenant())
-        .containsExactly(tuple(OperationEnum.BROKER_REMOVE, null));
+        .containsExactly(tuple(BROKER_REMOVE, null));
   }
 
   @Test
@@ -639,6 +650,15 @@ final class ClusterApiUtilsTest {
     return MemberId.from(String.valueOf(id));
   }
 
+  private static CurrentClusterConfiguration configWithPhasedChangeState(
+      final PhasedChangeState phasedChangeState) {
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(),
+        phasedChangeState);
+  }
+
   /**
    * Generates all implementations of ClusterConfigurationChangeOperation interface. This method
    * creates instances of all concrete record implementations with sample data.
@@ -703,6 +723,169 @@ final class ClusterApiUtilsTest {
   /** Provides all ClusterConfigurationChangeOperation implementations as test arguments. */
   public static Stream<Arguments> generateAllClusterConfigurationChangeOperationsAsArguments() {
     return generateAllClusterConfigurationChangeOperations().stream().map(Arguments::of);
+  }
+
+  @Test
+  void shouldReturnEmptyChangeListWhenNoChanges() {
+    // given
+    final var config = CurrentClusterConfiguration.init();
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangesResponse(config);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (GetConfigurationChangesResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getChanges()).isEmpty();
+  }
+
+  @Test
+  void shouldListPendingAndLastCompletedChange() {
+    // given
+    final var startedAt = Instant.ofEpochSecond(1000);
+    final var lastCompletedAt = Instant.ofEpochSecond(500);
+    final var pendingPlan =
+        new PhasedChangePlan(
+            2, 0, List.of(new GlobalPhase(List.of(new MemberJoinOperation(member(1))))), startedAt);
+    final var lastChange =
+        new CompletedPhasedChange(1, PhasedChangePlanStatus.COMPLETED, startedAt, lastCompletedAt);
+    final var config =
+        configWithPhasedChangeState(
+            new PhasedChangeState(Optional.of(pendingPlan), Optional.of(lastChange)));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangesResponse(config);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (GetConfigurationChangesResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getChanges())
+        .extracting(ConfigurationChange::getId, ConfigurationChange::getStatus)
+        .containsExactlyInAnyOrder(
+            tuple(2L, ConfigurationChange.StatusEnum.IN_PROGRESS),
+            tuple(1L, ConfigurationChange.StatusEnum.COMPLETED));
+  }
+
+  @Test
+  void shouldMapPendingOperationsOfInProgressChange() {
+    // given
+    final var memberId1 = member(1);
+    final List<Phase> phases =
+        List.of(
+            new PartitionGroupParallelPhase(
+                Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3)))),
+            new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
+    final var config =
+        configWithPhasedChangeState(
+            new PhasedChangeState(
+                Optional.of(new PhasedChangePlan(2, 0, phases, Instant.now())), Optional.empty()));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 2);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (ConfigurationChange) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getId()).isEqualTo(2L);
+    assertThat(body.getStatus()).isEqualTo(ConfigurationChange.StatusEnum.IN_PROGRESS);
+    assertThat(body.getCompleted()).isEmpty();
+    assertThat(body.getPending())
+        .extracting(Operation::getOperation)
+        .containsExactly(PARTITION_JOIN, BROKER_REMOVE);
+  }
+
+  @Test
+  void shouldSplitActivePhaseOperationsUsingSubConfigProgress() {
+    // given: the active phase targets physical tenant "tenant-a" with two operations, but the
+    // tenant's own ClusterChangePlan shows the join already completed and only the leave pending
+    final var memberId1 = member(1);
+    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
+    final var leaveOperation = new PartitionLeaveOperation(memberId1, 3, 0);
+    final var tenantPlan =
+        new ClusterChangePlan(
+            1,
+            1,
+            Status.IN_PROGRESS,
+            Instant.now(),
+            List.of(new CompletedOperation(joinOperation, Instant.now())),
+            List.of(leaveOperation));
+    final var tenantGroup =
+        new PartitionGroupConfiguration(
+            1, 0, Map.of(), Optional.empty(), Optional.of(tenantPlan), Optional.empty());
+    final List<Phase> phases =
+        List.of(
+            new PartitionGroupParallelPhase(
+                Map.of("tenant-a", List.of(joinOperation, leaveOperation))),
+            new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
+    final var config =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", tenantGroup),
+            new PhasedChangeState(
+                Optional.of(new PhasedChangePlan(7, 0, phases, Instant.now())), Optional.empty()));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 7);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (ConfigurationChange) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getCompleted())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(tuple(PARTITION_JOIN, "tenant-a"));
+    assertThat(body.getPending())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(
+            tuple(Operation.OperationEnum.PARTITION_LEAVE, "tenant-a"), tuple(BROKER_REMOVE, null));
+  }
+
+  @Test
+  void shouldReturnCompletedChangeWithoutOperations() {
+    // given
+    final var startedAt = Instant.ofEpochSecond(1000);
+    final var completedAt = Instant.ofEpochSecond(2000);
+    final var lastChange =
+        new CompletedPhasedChange(5, PhasedChangePlanStatus.FAILED, startedAt, completedAt);
+    final var config =
+        configWithPhasedChangeState(
+            new PhasedChangeState(Optional.empty(), Optional.of(lastChange)));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 5);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (ConfigurationChange) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getId()).isEqualTo(5L);
+    assertThat(body.getStatus()).isEqualTo(ConfigurationChange.StatusEnum.FAILED);
+    assertThat(body.getCompleted()).isEmpty();
+    assertThat(body.getPending()).isEmpty();
+  }
+
+  @Test
+  void shouldReturn404WhenChangeIdIsUnknown() {
+    // given
+    final List<Phase> phases =
+        List.of(new GlobalPhase(List.of(new MemberJoinOperation(member(1)))));
+    final var config =
+        configWithPhasedChangeState(
+            new PhasedChangeState(
+                Optional.of(new PhasedChangePlan(2, 0, phases, Instant.now())), Optional.empty()));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 999);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(404);
+    final var body = (Error) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getMessage()).contains("999");
   }
 
   private record ExporterConfigParam(

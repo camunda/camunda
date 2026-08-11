@@ -15,10 +15,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
@@ -176,6 +181,85 @@ final class ClusterEndpointTest {
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(400);
       verifyNoInteractions(sender);
+    }
+  }
+
+  @Nested
+  class ConfigurationChangesEndpoint {
+
+    // ClusterConfiguration.init() starts at version 1, so a change started from it always gets
+    // changeId 2 (version + 1); tests below query that fixed id.
+    private static ClusterConfiguration configWithPendingChange() {
+      return ClusterConfiguration.init()
+          .startConfigurationChange(List.of(new MemberJoinOperation(MemberId.from("1"))));
+    }
+
+    @Test
+    void shouldGetConfigurationChangeById() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+
+      // when
+      final var response = endpoint.getConfigurationChange("2");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+      final var body = (ConfigurationChange) response.getBody();
+      assertThat(body).isNotNull();
+      assertThat(body.getId()).isEqualTo(2L);
+      assertThat(body.getStatus()).isEqualTo(ConfigurationChange.StatusEnum.IN_PROGRESS);
+      verify(sender).getTopology();
+    }
+
+    @Test
+    void shouldReturn404WhenChangeIdIsUnknown() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+
+      // when
+      final var response = endpoint.getConfigurationChange("999");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void shouldRejectNonNumericChangeId() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      final var response = endpoint.getConfigurationChange("not-a-number");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(400);
+      verifyNoInteractions(sender);
+    }
+
+    @Test
+    void shouldListConfigurationChanges() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+
+      // when
+      final var response = endpoint.listConfigurationChanges();
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+      final var body = (GetConfigurationChangesResponse) response.getBody();
+      assertThat(body).isNotNull();
+      assertThat(body.getChanges()).extracting(ConfigurationChange::getId).containsExactly(2L);
+      verify(sender).getTopology();
     }
   }
 }
