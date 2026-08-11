@@ -155,6 +155,15 @@ components:
       format: int64
       minimum: 1
 
+    AgentDefinitionKey:
+      description: System-generated key for an agent definition.
+      format: AgentDefinitionKey
+      x-semantic-type: AgentDefinitionKey
+      example: "2251799813691958"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
     AgentInstanceKey:
       description: System-generated key for an agent instance.
       format: AgentInstanceKey
@@ -548,6 +557,43 @@ components:
           addedInVersion: "8.9"
         - propertyName: "$notIn"
           addedInVersion: "8.9"
+
+    AgentDefinitionKeyFilterProperty:
+      description: AgentDefinitionKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        - $ref: '#/components/schemas/AdvancedAgentDefinitionKeyFilter'
+
+    AdvancedAgentDefinitionKeyFilter:
+      title: Advanced filter
+      description: Advanced AgentDefinitionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentDefinitionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentDefinitionKey"
 
     AgentInstanceKeyFilterProperty:
       description: AgentInstanceKey property with full advanced search capabilities.

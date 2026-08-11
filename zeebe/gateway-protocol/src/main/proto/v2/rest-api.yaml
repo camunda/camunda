@@ -42,6 +42,7 @@ servers:
         description: The schema of the Orchestration Cluster REST API server.
 tags:
   - name: Ad-hoc sub-process
+  - name: Agent definition
   - name: Agent instance
   - name: Audit Log
   - name: Authentication
@@ -84,6 +85,12 @@ tags:
   - name: Variable
 
 paths:
+  # Agent definition endpoints
+  /agent-definitions/{agentDefinitionKey}:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1{agentDefinitionKey}'
+  /agent-definitions/search:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1search'
+
   # Agent instance endpoints
   /agent-instances:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances'
