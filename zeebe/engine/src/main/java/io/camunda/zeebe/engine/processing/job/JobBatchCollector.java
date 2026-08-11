@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -144,7 +143,7 @@ final class JobBatchCollector {
           // adding it to the batch
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
           if (value.isWithLease()) {
-            jobRecord.setLeaseToken(generateLeaseToken());
+            jobRecord.setLeaseToken(LeaseTokens.generate());
           }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
 
@@ -219,15 +218,6 @@ final class JobBatchCollector {
     final JobRecord appendedJob = jobIterator.add();
     appendedJob.copyFrom(jobRecord);
     return appendedJob;
-  }
-
-  /**
-   * Generates a lease token for a single activated job. The token is an opaque string that callers
-   * must not parse; it is random with enough entropy that collisions between leased jobs are
-   * negligible.
-   */
-  private static String generateLeaseToken() {
-    return UUID.randomUUID().toString();
   }
 
   private Collection<DirectBuffer> collectVariableNames(final JobBatchRecord batchRecord) {

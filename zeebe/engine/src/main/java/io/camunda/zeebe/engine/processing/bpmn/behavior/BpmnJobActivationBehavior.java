@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -46,7 +47,6 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,17 +332,8 @@ public class BpmnJobActivationBehavior {
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
     if (properties.withLease()) {
-      jobRecord.setLeaseToken(generateLeaseToken());
+      jobRecord.setLeaseToken(LeaseTokens.generate());
     }
-  }
-
-  /**
-   * Generates a lease token for a single pushed job. The token is an opaque string that callers
-   * must not parse; it is random with enough entropy that collisions between leased jobs are
-   * negligible.
-   */
-  private static String generateLeaseToken() {
-    return UUID.randomUUID().toString();
   }
 
   private JobBatchRecord createJobBatchRecord(
