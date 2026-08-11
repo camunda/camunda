@@ -99,10 +99,10 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      # Wrapped in Wandalen/wretry.action because this step pulls moby/buildkit from Docker Hub and
-      # is exposed to the same 5xx outages as the build below, though no incident has been traced to
-      # it so far. It's a `uses:` step, so nick-fields/retry (our usual retry action, shell-command
-      # only) can't wrap it.
+      # Wrapped in Wandalen/wretry.action: booting the builder pulls moby/buildkit from Docker Hub,
+      # which has answered 502 often enough to be the most frequent form of this failure
+      # (INC-6773, INC-7055, INC-7056, INC-7057, INC-7089). It's a `uses:` step, so
+      # nick-fields/retry (our usual retry action, shell-command only) can't wrap it.
       uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
       with:
         action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
@@ -186,8 +186,9 @@ runs:
 
     - name: Build Docker image
       # Wrapped for the same reason as the buildx setup above: BuildKit resolves the Dockerfile
-      # frontend and the base images through Docker Hub, whose token endpoint intermittently answers
-      # 5xx (INC-7065, INC-6769, INC-6731), failing the build before a single layer is built.
+      # frontend and the base images through Docker Hub, whose token endpoint answers 5xx or drops
+      # the connection often enough to fail the build before a single layer is built
+      # (INC-6847, INC-7065, and the closed INC-6769 and INC-6731).
       uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
       env:
         DOCKER_BUILD_SUMMARY: false
