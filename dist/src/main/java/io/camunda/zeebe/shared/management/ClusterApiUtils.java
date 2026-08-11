@@ -101,6 +101,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -208,7 +209,11 @@ final class ClusterApiUtils {
         .lastChange()
         .map(ClusterApiUtils::mapConfigurationChange)
         .ifPresent(changes::add);
-    return ResponseEntity.status(200).body(new GetConfigurationChangesResponse().changes(changes));
+
+    final var sortedChanges =
+        changes.stream().sorted(Comparator.comparingLong(ConfigurationChange::getId)).toList();
+    return ResponseEntity.status(200)
+        .body(new GetConfigurationChangesResponse().changes(sortedChanges));
   }
 
   /**
