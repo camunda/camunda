@@ -15,10 +15,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -636,5 +638,119 @@ public class MigrateAgentInstanceTest {
         .getFirst()
         .getValue()
         .getAgentDefinitionKey();
+  }
+
+  @Test
+  public void shouldRejectMigrationWhenAgentDefinitionTypeChanges() {
+    // given — an AI agent task "A" is mapped to an external agent task "A2"; both are service
+    // tasks, so the element type is unchanged and only the agent definition type differs
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A2")
+        .expectRejection()
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%d' \
+                but active element with id 'A' has agent definition type 'AI_AGENT_TASK' \
+                while the mapped target element with id 'A2' has a different agent definition \
+                type 'EXTERNAL_AGENT'. \
+                Agent elements must be mapped to elements of the same agent definition type.""",
+                processInstanceKey));
+  }
+
+  @Test
+  public void shouldAllowMigrationFromNonAgentToAgentElement() {
+    // given — a plain service task "A" (no agent definition) is mapped to an AI agent task "A2";
+    // the no-type-to-type direction must be allowed
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A2")
+        .migrate();
+
+    // then — the migration is accepted
+    Assertions.assertThat(
+            RecordingExporter.processInstanceMigrationRecords(
+                    ProcessInstanceMigrationIntent.MIGRATED)
+                .withRecordKey(processInstanceKey)
+                .getFirst())
+        .describedAs("migrating a plain element onto an agent element is allowed")
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 }

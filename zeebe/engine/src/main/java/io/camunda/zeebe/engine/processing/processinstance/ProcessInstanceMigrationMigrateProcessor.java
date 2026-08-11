@@ -468,6 +468,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
+    requireSameAgentDefinitionType(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId,
+        targetElementId,
+        processInstanceKey);
     requireSupportedUserTaskMigration(
         sourceProcessDefinition,
         targetProcessDefinition,

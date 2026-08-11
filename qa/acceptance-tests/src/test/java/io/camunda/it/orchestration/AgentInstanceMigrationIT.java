@@ -13,11 +13,13 @@ import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -134,6 +136,57 @@ public class AgentInstanceMigrationIT {
 
     // then
     assertAgentInstanceMigratedTo(agentInstanceKey, targetProcess, targetElementId);
+  }
+
+  @Test
+  void shouldRejectMigrationWhenAgentDefinitionTypeChanges() {
+    // given — an active AI agent task is mapped onto an external agent task; both are service
+    // tasks, so the element type is unchanged and only the agent definition type differs
+    final String sourceElementId = "agentTask";
+    final String targetElementId = "agentTask2";
+    final String agentJobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+
+    final var sourceProcess =
+        deployProcessAndWaitForIt(
+            client,
+            Bpmn.createExecutableProcess("migration-agent-type-change_v1")
+                .startEvent()
+                .serviceTask(
+                    sourceElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done(),
+            "migration-agent-type-change_v1.bpmn");
+    final var targetProcess =
+        deployProcessAndWaitForIt(
+            client,
+            Bpmn.createExecutableProcess("migration-agent-type-change_v2")
+                .startEvent()
+                .serviceTask(
+                    targetElementId,
+                    t -> t.zeebeJobType(agentJobType).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done(),
+            "migration-agent-type-change_v2.bpmn");
+
+    final var processInstanceKey =
+        startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
+    // the agent instance's job is left running so its owning element stays active and is part of
+    // the migrated element tree that gets validated
+    createAgentInstance(processInstanceKey, sourceElementId);
+
+    // when / then — the migration is rejected because the agent definition type changes
+    assertThatThrownBy(
+            () ->
+                client
+                    .newMigrateProcessInstanceCommand(processInstanceKey)
+                    .migrationPlan(
+                        MigrationPlan.newBuilder()
+                            .withTargetProcessDefinitionKey(targetProcess.getProcessDefinitionKey())
+                            .addMappingInstruction(sourceElementId, targetElementId)
+                            .build())
+                    .execute())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("different agent definition type");
   }
 
   private long createAgentInstance(final long processInstanceKey, final String elementId) {
