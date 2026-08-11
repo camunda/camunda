@@ -79,8 +79,10 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final ProcessInstanceRecord value = elementInstance.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
+    // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
+    // marker is written. A later SUSPENDING intermediate state can chunk this work first.
     suspensionJobBehavior.suspendJobs(command.getKey());
+    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
   }

@@ -53,56 +53,45 @@ Each guard returns silently instead of throwing, because an exception in an even
 process instance, or fails the partition on replay. The precondition is enforced by the guard, not
 documented as a caller obligation.
 
-**D2. The suspend and resume processors walk the element instance tree of the process instance and
-write one job event per affected job.** `ProcessInstanceSuspendProcessor` appends
-`Job.SUSPENDED` for every job in `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION`;
-`ProcessInstanceResumeProcessor` appends `Job.RESUMED` for every job in `SUSPENDED`. Both use
-`ProcessInstanceSuspensionJobBehavior`, an `ArrayDeque` walk of `ElementInstanceState` (the pattern
-of `ProcessInstanceMigrationMigrateProcessor`), so the cost is paid once per suspend or resume
-rather than on every poll.
+**D2. Suspend and resume walk the element instance tree and write one job event per affected job.**
+Both use `ProcessInstanceSuspensionJobBehavior` (same `ArrayDeque` walk pattern as migration). Cost
+is paid once per suspend/resume, not on every poll.
 
-The walk never crosses into a called child instance: `ElementInstanceState.getChildren` is driven by
-an element instance's `parentKey`, and a called child instance's root element has no such parent
-link, so there is no tree edge to follow into it. This matters because the suspension marker is
-keyed by the suspended instance alone — a called child instance's own commands are not gated by it,
-so parking the child's jobs too would let the child un-park them on its own while the parent is
-still suspended. The `processInstanceKey` filter in the behavior is a defensive check of that
-invariant, not the mechanism that enforces it.
+- **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job,
+  then append `ProcessInstance.SUSPENDED`. Job parking finishes before the instance marker is set.
+- **Resume:** append `Job.RESUMED` for every `SUSPENDED` job, then call
+  `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again.
+- **Child instances:** left untouched. `ElementInstanceState.getChildren` does not return a child
+  instance root, so the walk never reaches those jobs.
+- **Other job states at suspend time:** `ACTIVATED`, `FAILED`, and `ERROR_THROWN` stay as they are
+  (already off the activatable index). An `ACTIVATED` job that times out while the instance is still
+  `SUSPENDED` is parked by `JobTimeOutProcessor` (see D3) so it does not loop on rejected timeouts.
+- **Secret-waiting:** overridden to `SUSPENDED` so a later secret resolution cannot put the job back
+  into the hand-out index while the instance is suspended.
 
-On resume, after each `Job.RESUMED` the processor calls `BpmnJobActivationBehavior.publishWork`, the
-same call `JobRecurAfterBackoffProcessor` makes after its own reactivation event. A job stream is
-push-only: without this call a stream worker would never learn the job is available again. A
-poll-only worker gets the job-available notification from the same call.
-
-Jobs in `ACTIVATED`, `FAILED`, and `ERROR_THROWN` are left alone. They are already absent from the
-activatable index, and every path that would re-publish them — fail, recur after backoff, incident
-resolution, activation time-out — is already rejected or buffered by the suspension gate.
-
-Jobs in `WAITING_FOR_SECRET_RESOLUTION` are overridden to `SUSPENDED`. Secret reactivation
-(`makeActivatableAfterSecretResolution`) acts only while the job is still waiting for secrets, so
-moving the job to `SUSPENDED` stops a later secret completion from putting it back into the
-activatable index while the process instance is suspended. On resume the job becomes `ACTIVATABLE`
-again; if secrets are still required, the next activation path re-parks it for resolution.
-
-**D3. Worker lifecycle commands need no new handling; only the exhaustive `State` switches gain a
-branch.**
+**D3. Most worker lifecycle commands need no new handling; `JobTimeOut` is the exception that parks
+an already-activated job.**
 
 Command surface table:
 
-|                           Command                            |                                                                 Behavior while a job is `SUSPENDED`                                                                 |
-|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ActivateJobs` (poll or stream)                              | job is absent from the index; not handed out                                                                                                                        |
-| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob`, `Yield` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                    |
-| `JobFail` (immediate retry)                                  | rejected by the gate                                                                                                                                                |
-| `JobRecurAfterBackoff`                                       | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present |
-| `JobTimeOut`                                                 | rejected by the gate; `JobTimeOutProcessor`'s exhaustive switch gains the same kind of branch                                                                       |
-| `CancelJob`                                                  | deletes the job, same as any other state                                                                                                                            |
-| process instance termination                                 | deletes the job, same as any other state                                                                                                                            |
+|                           Command                            |                                                                 Behavior while a job is `SUSPENDED` / instance is suspended                                                                  |
+|--------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ActivateJobs` (poll or stream)                              | job is absent from the index; not handed out                                                                                                                                                 |
+| `CompleteJob`, `FailJob`, `ThrowError`, `UpdateJob`, `Yield` | not reached — the suspension gate on the process instance rejects or buffers the command before it dispatches to a job processor                                                             |
+| `JobFail` (immediate retry)                                  | rejected by the gate                                                                                                                                                                         |
+| `JobRecurAfterBackoff`                                       | buffered by the gate; `JobRecurAfterBackoffProcessor`'s exhaustive switch gains a `SUSPENDED` branch naming the suspension, unreachable while the marker is present                          |
+| `JobTimeOut`                                                 | processed while the instance marker is present (`SuspensionBehavior.PROCESS`); after `TIMED_OUT`, if `getSuspensionState == SUSPENDED`, append `Job.SUSPENDED` instead of notifying hand-out |
+| `CancelJob`                                                  | deletes the job, same as any other state                                                                                                                                                     |
+| process instance termination                                 | deletes the job, same as any other state                                                                                                                                                     |
 
-`BpmnJobBehavior.CANCELABLE_STATES` gains `SUSPENDED`, so terminating a suspended instance still
-deletes its parked jobs instead of leaving orphaned records. The two switch branches exist only
-because the switches are exhaustive; both processors are already gated before they would run, so the
-branch is a correctness net for if the gate order ever changes, not a live path today.
+Notes:
+
+- `JobTimeOut` checks `getSuspensionState == SUSPENDED`, not `isSuspended`, so a job is not re-parked
+  during `RESUMING`. `Job.SUSPENDED` is a follow-up event (same batch, bypasses the gate). Exporters
+  still see `TIMED_OUT` only; that matches D4.
+- `CANCELABLE_STATES` includes `SUSPENDED` so termination deletes parked jobs.
+- The `JobRecurAfterBackoff` `SUSPENDED` switch branch is a safety net only; the gate already blocks
+  that processor while suspended.
 
 **D4. `Job.SUSPENDED` and `Job.RESUMED` are exported but not consumed.** Both exporters filter by an
 allow-list (`JobHandler.JOB_EVENTS`, `JobExportHandler.EXPORTABLE_INTENTS`) that does not include
@@ -132,20 +121,20 @@ instance level only.
 
 ## Consequences
 
-- Suspend writes one event per parked job in the same command's batch as
-  `ProcessInstance.SUSPENDED`. An instance with very many activatable jobs can exceed the maximum
-  record batch size and have the command rejected. This is the same known limitation as process
-  instance migration, which also writes one event per migrated entity. Chunking the suspend batch is
-  a follow-up if this is ever hit in practice.
-- There is no downgrade path once a job has been parked. A broker that has written `SUSPENDED` for
-  at least one job cannot be downgraded to a version that does not know the state: the state is
-  encoded by name, and an older broker fails on `Enum.valueOf`. This follows the general 8.10 state
-  rule.
-- `JobState.State` now carries parked-ness alongside the worker lifecycle it used to represent
-  alone. Every future exhaustive switch over it has to decide what `SUSPENDED` means for that
-  switch, as the two branches in D3 already had to.
-- Extending suspension to called child instances, exporting the new state to secondary storage or
-  Operate, and chunking a very large suspend batch are all out of scope for this change.
+- One `Job.SUSPENDED` / `Job.RESUMED` event per affected job in the same batch as the instance
+  marker. A very large instance can hit the max record batch size (same limit as migration).
+  Chunking via a `SUSPENDING` intermediate state is a possible later extension.
+- The walk visits every active element of the instance, not only job-backed ones, and blocks the
+  partition while it runs. Accepted because suspend/resume are rare; the same cost on activation
+  would not be. We run on the same path as process instance migration which is fine so far.
+- No downgrade once a job is parked: older brokers fail on the unknown `SUSPENDED` enum name.
+- Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
+- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking.
+
+## Open questions
+
+- D4 leaves suspended jobs in their last exported state (for example `CREATED`) in secondary storage
+  and `search-jobs`. Whether job-level suspension should be visible there is undecided.
 
 ## Source
 
@@ -157,4 +146,7 @@ instance level only.
   is drawn from.
 - [#59338](https://github.com/camunda/camunda/pull/59338) — `WAITING_FOR_SECRET_RESOLUTION`, the
   pattern reference for a new persisted job state plus the appliers that write it.
+- [PR #59617 review thread](https://camunda.slack.com/archives/C08CKAP10DQ/p1786428784267579) —
+  discussion of the element instance walk cost, log stream blocking, and API visibility that this
+  ADR's Consequences and Open questions capture.
 

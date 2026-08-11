@@ -24,18 +24,10 @@ import org.jspecify.annotations.NullMarked;
  * Parks jobs of a process instance so they are no longer handed out while the instance is
  * suspended.
  *
- * <p>The element-instance walk never reaches a called child instance: {@link
- * ElementInstanceState#getChildren} is driven by an element instance's {@code parentKey}, and a
- * called child instance's root element has no such parent link (its {@code flowScopeKey} defaults
- * to {@code -1}, which resolves to no element instance). There is simply no tree edge from the call
- * activity to the child's root to walk across.
- *
- * <p>The boundary matters because a suspension marker is keyed by the suspended instance alone: a
- * called child instance's own commands are not gated by it, so if this behavior parked the child's
- * jobs too, the child would un-park them again on its own.
- *
- * <p>The {@code processInstanceKey} filter below is a defensive invariant check for that boundary,
- * not the mechanism that enforces it.
+ * <p>Jobs of called child instances are left untouched. {@link ElementInstanceState#getChildren}
+ * does not return a child instance's root for the given element instance key, so the walk never
+ * reaches those jobs. The {@code processInstanceKey} filter below is only a defensive check of that
+ * boundary.
  */
 @NullMarked
 public final class ProcessInstanceSuspensionJobBehavior {

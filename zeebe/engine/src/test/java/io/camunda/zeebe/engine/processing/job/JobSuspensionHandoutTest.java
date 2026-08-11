@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -107,16 +108,54 @@ public final class JobSuspensionHandoutTest {
     // when
     ENGINE.processInstance().withInstanceKey(parentInstanceKey).suspend();
 
-    // then - the child instance's job is still handed out. This holds because the behavior never
-    // reaches the child instance at all (its root has no parent link in the element instance
-    // tree), not because of the processInstanceKey filter - see
-    // ProcessInstanceSuspensionJobBehavior's class javadoc.
+    // then - the child instance's job is still handed out. getChildren never returns the child
+    // instance root, so the suspend walk does not reach this job.
     final Record<JobBatchRecordValue> batch = ENGINE.jobs().withType(jobType).activate();
     assertThat(batch.getValue().getJobKeys()).containsExactly(childJob.getKey());
   }
 
   @Test
-  public void shouldNotSuspendActivatedJob() {
+  public void shouldNotSuspendParentJobWhenChildInstanceIsSuspended() {
+    // given
+    final String parentJobType = Strings.newRandomValidBpmnId();
+    final String childJobType = Strings.newRandomValidBpmnId();
+    final String childProcessId = Strings.newRandomValidBpmnId();
+    final String parentProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask("childTask", t -> t.zeebeJobType(childJobType))
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("parentTask", t -> t.zeebeJobType(parentJobType))
+                .moveToNode("fork")
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+                .done())
+        .deploy();
+    ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final Record<JobRecordValue> parentJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(parentJobType).getFirst();
+    final Record<JobRecordValue> childJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(childJobType).getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(childJob.getValue().getProcessInstanceKey()).suspend();
+
+    // then - only the suspended child parks its job; the parent's job is still handed out
+    final Record<JobBatchRecordValue> parentBatch =
+        ENGINE.jobs().withType(parentJobType).activate();
+    assertThat(parentBatch.getValue().getJobKeys()).containsExactly(parentJob.getKey());
+    final Record<JobBatchRecordValue> childBatch = ENGINE.jobs().withType(childJobType).activate();
+    assertThat(childBatch.getValue().getJobKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotSuspendActivatedJobAtSuspendTime() {
     // given
     final String jobType = Strings.newRandomValidBpmnId();
     final String otherJobType = Strings.newRandomValidBpmnId();
@@ -150,10 +189,9 @@ public final class JobSuspensionHandoutTest {
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
-    // then - of the two jobs of this instance, only the still-activatable sibling is parked; the
-    // activated one is not. Read the already-exported records directly (no further wait) so the
-    // check covers every Job.SUSPENDED record the suspend command produced, not just the first one
-    // a blocking record stream happens to hand back.
+    // then - of the two jobs of this instance, only the still-activatable sibling is parked at
+    // suspend time; the activated one is not. It is parked later on time-out (see
+    // shouldParkActivatedJobWhenItTimesOutWhileSuspended).
     final List<Long> suspendedJobKeys =
         RecordingExporter.getRecords().stream()
             .filter(record -> record.getIntent() == JobIntent.SUSPENDED)
@@ -164,6 +202,35 @@ public final class JobSuspensionHandoutTest {
             .map(Record::getKey)
             .collect(Collectors.toList());
     assertThat(suspendedJobKeys).containsExactly(parkedJobKey).doesNotContain(activatedJobKey);
+  }
+
+  @Test
+  public void shouldParkActivatedJobWhenItTimesOutWhileSuspended() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createInstanceWithJob(jobType);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withTimeout(10L).activate();
+    assertThat(batch.getValue().getJobKeys()).hasSize(1);
+    final long activatedJobKey = batch.getValue().getJobKeys().getFirst();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when - the activated job times out while the instance is still suspended
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+
+    // then - timed out, then parked in the same processing path; not handed out again
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
+                .withRecordKey(activatedJobKey)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.SUSPENDED)
+                .withRecordKey(activatedJobKey)
+                .exists())
+        .isTrue();
+    final Record<JobBatchRecordValue> reactivated = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivated.getValue().getJobKeys()).isEmpty();
   }
 
   @Test
