@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-
 import io.camunda.cluster.SecondaryStorageReadiness;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
@@ -17,7 +16,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
+import java.util.function.Function;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -28,8 +27,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * with {@link RequiresSecondaryStorage}.
  *
  * <ul>
- *   <li>HTTP 403 Forbidden when secondary storage is not configured at all (camunda.database.type =
- *       none).
+ *   <li>HTTP 403 Forbidden when secondary storage is not configured at all
+ *       (camunda.data.secondary-storage.type = none).
  *   <li>HTTP 503 Service Unavailable, with a {@code Retry-After} hint, when secondary storage is
  *       configured but the request's physical tenant's secondary storage is currently degraded (see
  *       {@link SecondaryStorageReadiness}).
@@ -44,13 +43,13 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
    */
   private static final String RETRY_AFTER_SECONDS = "5";
 
-  private final boolean secondaryStorageDisabled;
+  private final Function<String, DatabaseType> databaseTypeProvider;
   private final SecondaryStorageReadiness secondaryStorageReadiness;
 
   public SecondaryStorageInterceptor(
-      @Value("${camunda.database.type:elasticsearch}") final String databaseType,
+      final Function<String, DatabaseType> databaseTypeProvider,
       final SecondaryStorageReadiness secondaryStorageReadiness) {
-    secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
+    this.databaseTypeProvider = databaseTypeProvider;
     this.secondaryStorageReadiness = secondaryStorageReadiness;
   }
 
@@ -73,7 +72,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   private void validateSecondaryStorageReady(
       final HttpServletRequest request, final HttpServletResponse response) {
-    if (secondaryStorageDisabled) {
+    final String physicalTenantId = PhysicalTenantContext.current();
+    if (databaseTypeProvider.apply(physicalTenantId) == DatabaseType.NONE) {
       throw new SecondaryStorageUnavailableException();
     }
     // Only checked on the initial dispatch: CompletableFuture-returning controllers resume on an
@@ -82,7 +82,7 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
     if (request.getDispatcherType() != DispatcherType.REQUEST) {
       return;
     }
-    final String physicalTenantId = PhysicalTenantContext.current();
+
     if (!secondaryStorageReadiness.isReady(physicalTenantId)) {
       // Set before throwing: the exception handler only writes status and problem-detail body, so
       // headers already set on the response survive.
