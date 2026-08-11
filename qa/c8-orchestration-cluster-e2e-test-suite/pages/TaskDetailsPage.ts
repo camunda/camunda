@@ -266,26 +266,21 @@ class TaskDetailsPage {
     const input = this.page.getByRole('textbox', {name: label});
     await expect(input).toBeVisible();
     await input.click();
-    // Form-js datetime sub-fields (e.g. the Time sub-field of a combined
-    // datetime component) render the underlying <input> as readonly and
-    // route keystrokes through flatpickr — so .fill() throws "element is
-    // not editable". The readonly attribute also flips on/off during the
-    // component's re-renders, so a one-shot isEditable() check is racy.
-    // Try fill() first and only fall back to keyboard typing when the
-    // failure is the specific not-editable error; rethrow anything else
-    // so we don't mask detached-element / locator-mismatch bugs.
-    try {
-      await input.fill(value);
-    } catch (error) {
-      const message = (error as Error)?.message ?? '';
-      if (!message.includes('not editable')) {
-        throw error;
-      }
-      // ControlOrMeta+A is cross-platform (Cmd on macOS, Ctrl elsewhere).
-      await this.page.keyboard.press('ControlOrMeta+A');
-      await this.page.keyboard.press('Backspace');
-      await this.page.keyboard.type(value, {delay: 30});
-    }
+    // Form-js datetime sub-fields (Date and Time) route input through
+    // flatpickr. Setting the value with .fill() updates only the visible
+    // text — it does not feed characters through flatpickr's keydown parser,
+    // so flatpickr's internal date model is never updated. The visible value
+    // therefore passes the toHaveValue check below but is dropped on the
+    // component's next re-render and on task completion, leaving the reopened
+    // completed task with a blank field. Type the value character by
+    // character so flatpickr parses and commits each keystroke, then press
+    // Enter to confirm. This is also the only path that works for the Time
+    // sub-field, whose <input> renders readonly (making .fill() throw
+    // "element is not editable").
+    // ControlOrMeta+A is cross-platform (Cmd on macOS, Ctrl elsewhere).
+    await this.page.keyboard.press('ControlOrMeta+A');
+    await this.page.keyboard.press('Backspace');
+    await this.page.keyboard.type(value, {delay: 30});
     await this.page.keyboard.press('Enter');
     await expect(input).toHaveValue(value);
   }
