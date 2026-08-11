@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.backup.schedule.Schedule.CronSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
@@ -23,6 +24,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -497,6 +502,42 @@ public class PrimaryStorageBackupPropertiesTest {
 
       // when/then - application startup should succeed
       assertThatCode(app::run).doesNotThrowAnyException();
+    }
+  }
+
+  @Nested
+  class BackupLocationIsolation {
+
+    @Test
+    void shouldRejectPhysicalTenantsResolvingToOneBackupLocation() {
+      // given a tenant that inherits the root backup store because it does not override it
+      final var environment = new MockEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of(
+                      "camunda.data.primary-storage.backup.store", "FILESYSTEM",
+                      "camunda.data.primary-storage.backup.filesystem.base-path", "/backups",
+                      "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                          "tenanta",
+                      "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                          "tenanta-admin")));
+      UnifiedConfigurationHelper.setCustomEnvironment(environment);
+
+      final var camunda = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+
+      // when / then
+      try {
+        assertThatThrownBy(() -> PhysicalTenantResolver.of(environment, camunda))
+            .isInstanceOf(UnifiedConfigurationException.class)
+            .hasMessageContaining("must not share a primary-storage backup location")
+            .hasMessageContaining("tenanta");
+      } finally {
+        UnifiedConfigurationHelper.setCustomEnvironment(null);
+      }
     }
   }
 }

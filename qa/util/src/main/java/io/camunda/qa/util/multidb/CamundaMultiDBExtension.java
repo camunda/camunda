@@ -15,6 +15,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -551,6 +552,10 @@ public class CamundaMultiDBExtension
         tenantId,
         camunda -> {
           configurePtStorage.accept(camunda.getData().getSecondaryStorage());
+          isolateBackupLocation(
+              springApplication.unifiedConfig().getData().getPrimaryStorage().getBackup(),
+              camunda.getData().getPrimaryStorage().getBackup(),
+              tenantId);
 
           final var init = camunda.getSecurity().getInitialization();
           init.setUsers(rootInit.getUsers());
@@ -589,6 +594,40 @@ public class CamundaMultiDBExtension
         && springApplication.property(assignedProviderProperty, String.class, null) == null) {
       springApplication.withProperty(assignedProviderProperty, "oidc");
     }
+  }
+
+  /**
+   * Gives the physical tenant its own backup location, the way it gets its own secondary storage. A
+   * tenant inherits the root backup configuration it does not override, and two tenants sharing one
+   * location would write their partition 1 backups to the same keys, which
+   * PrimaryStorageBackupIsolationValidation rejects at boot. The tenant id is appended to the
+   * configured base path rather than nested inside it, since a base path contains everything below
+   * its separator.
+   *
+   * <p>The store to isolate is read from the root configuration, not the tenant's: {@code
+   * withPtConfig} hands out a pristine {@link Camunda} whose values are only the ones this test
+   * explicitly overrides, and which is flattened into properties by diffing against a pristine
+   * instance. Everything else — including the backup store the tenant collides on — is inherited
+   * from the root at resolve time and is not visible here.
+   */
+  private static void isolateBackupLocation(
+      final PrimaryStorageBackup root, final PrimaryStorageBackup tenant, final String tenantId) {
+    switch (root.getStore()) {
+      case NONE -> {}
+      case FILESYSTEM ->
+          tenant
+              .getFilesystem()
+              .setBasePath(suffixed(root.getFilesystem().getBasePath(), tenantId));
+      case S3 -> tenant.getS3().setBasePath(suffixed(root.getS3().getBasePath(), tenantId));
+      case GCS -> tenant.getGcs().setBasePath(suffixed(root.getGcs().getBasePath(), tenantId));
+      case AZURE ->
+          tenant.getAzure().setBasePath(suffixed(root.getAzure().getBasePath(), tenantId));
+      default -> throw new IllegalArgumentException("Unsupported backup store: " + root.getStore());
+    }
+  }
+
+  private static String suffixed(final String basePath, final String tenantId) {
+    return basePath == null || basePath.isBlank() ? tenantId : basePath + "-" + tenantId;
   }
 
   private static Consumer<SecondaryStorage> configureRdbmsStorage(
