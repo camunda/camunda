@@ -618,14 +618,34 @@ public class DrainingProcessDefinitionTest {
 
   @Test
   public void shouldMintNewVersionWhenRedeployingIdenticalResourceWhileDraining() {
-    // given - a definition kept draining by a still-running instance
+    // given - a definition kept draining by a still-running instance.
     final var processId = helper.getBpmnProcessId();
-    final var v1 = deployWithJob(processId);
+    final var resource =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    final var v1 =
+        engine
+            .deployment()
+            .withXmlResource(resource)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
     drainViaDeletion(v1.getProcessDefinitionKey());
 
     // when - the identical resource is redeployed while v1 is still draining
-    final var redeployed = deployWithJob(processId);
+    final var redeployed =
+        engine
+            .deployment()
+            .withXmlResource(resource)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
 
     // then - it is not deduplicated onto the draining v1 (which would make the redeploy vanish once
     // the drain finalizes); a fresh version is minted with a new key
@@ -634,6 +654,10 @@ public class DrainingProcessDefinitionTest {
         .isFalse();
     assertThat(redeployed.getVersion()).isEqualTo(2);
     assertThat(redeployed.getProcessDefinitionKey()).isNotEqualTo(v1.getProcessDefinitionKey());
+    // and - the resource is byte-identical to v1
+    assertThat(redeployed.getChecksum())
+        .describedAs("the redeployed resource must be byte-identical to the draining v1")
+        .isEqualTo(v1.getChecksum());
   }
 
   @Test
@@ -760,10 +784,7 @@ public class DrainingProcessDefinitionTest {
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
     awaitJobCreated(processInstanceKey);
-    engine
-        .resourceDeletion()
-        .withResourceKey(processDefinitionKey)
-        .delete();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
     RecordingExporter.processRecords()
         .withIntent(ProcessIntent.DRAINING)
         .withProcessDefinitionKey(processDefinitionKey)
@@ -933,10 +954,7 @@ public class DrainingProcessDefinitionTest {
   }
 
   private void drainViaDeletion(final long processDefinitionKey, final boolean deleteHistory) {
-    engine
-        .resourceDeletion()
-        .withResourceKey(processDefinitionKey)
-        .delete();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
     RecordingExporter.processRecords()
         .withIntent(ProcessIntent.DRAINING)
         .withProcessDefinitionKey(processDefinitionKey)

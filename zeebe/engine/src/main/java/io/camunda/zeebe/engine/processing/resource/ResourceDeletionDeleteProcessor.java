@@ -350,16 +350,14 @@ public class ResourceDeletionDeleteProcessor
 
       // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
       // reject new instances so must stay unsubscribed.
-      final var previousProcess =
-          findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId);
-      if (previousProcess != null) {
-        startEventSubscriptions.resubscribeToStartEvents(previousProcess);
-      }
+      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
+          .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
     }
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
     final boolean finalizedImmediately =
         !elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
+
     if (finalizedImmediately) {
       finalizeDeletion(processRecord);
     }
@@ -384,7 +382,7 @@ public class ResourceDeletionDeleteProcessor
   }
 
   // Skip DRAINING/deleted versions — they must not hold start-event subscriptions.
-  private DeployedProcess findLatestActiveVersionBelow(
+  private Optional<DeployedProcess> findLatestActiveVersionBelow(
       final DirectBuffer processIdBuffer,
       final String processId,
       final int version,
@@ -395,11 +393,11 @@ public class ResourceDeletionDeleteProcessor
       final var process =
           processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
       if (process != null && process.getState() == PersistedProcessState.ACTIVE) {
-        return process;
+        return Optional.of(process);
       }
       candidate = processState.findProcessVersionBefore(processId, candidateVersion, tenantId);
     }
-    return null;
+    return Optional.empty();
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
