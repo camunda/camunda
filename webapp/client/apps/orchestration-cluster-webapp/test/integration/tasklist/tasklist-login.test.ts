@@ -74,8 +74,7 @@ test('should preserve a nested Tasklist URL through login', async ({
 
 	await expect(page).toHaveURL((url) => {
 		return (
-			url.pathname === '/tasklist/login' &&
-			url.searchParams.get('redirect') === '/tasklist/processes?search=invoice'
+			url.pathname === '/tasklist/login' && url.searchParams.get('redirect') === '/tasklist/processes?search=invoice'
 		);
 	});
 	await expect(tasklistLoginPage.usernameInput).toBeVisible();

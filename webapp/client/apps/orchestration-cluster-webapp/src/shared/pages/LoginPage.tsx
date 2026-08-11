@@ -96,9 +96,7 @@ const LoginPage: React.FC<Props> = ({title}) => {
 								<div className={styles.logo}>
 									<CamundaLogo aria-label={t('loginLogoLabel')} />
 								</div>
-								<h1 className={title === undefined ? 'cds--visually-hidden' : styles.title}>
-									{title ?? 'Login'}
-								</h1>
+								<h1 className={title === undefined ? 'cds--visually-hidden' : styles.title}>{title ?? 'Login'}</h1>
 							</Stack>
 							<Stack gap={3}>
 								<div className={styles.error}>
