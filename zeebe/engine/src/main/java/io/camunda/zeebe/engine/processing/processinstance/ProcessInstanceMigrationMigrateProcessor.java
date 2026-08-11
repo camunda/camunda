@@ -136,7 +136,9 @@ public class ProcessInstanceMigrationMigrateProcessor
             keyGenerator, stateWriter, elementInstanceState);
     migrationAgentInstanceBehaviour =
         new ProcessInstanceMigrationAgentInstanceBehavior(
-            stateWriter, processingState.getAgentInstanceState());
+            stateWriter,
+            processingState.getAgentInstanceState(),
+            processingState.getAgentDefinitionState());
   }
 
   @Override

@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -423,5 +424,217 @@ public class MigrateAgentInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("ahsp2");
+  }
+
+  @Test
+  public void shouldReResolveAgentDefinitionKeyWhenElementIsRemapped() {
+    // given — an agent-marked service task "A" is remapped to an agent-marked service task "A2" in
+    // a different target process definition, so the target element has its own, distinct agent
+    // definition minted at deploy time
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final long targetAgentDefinitionKey = agentDefinitionKey(targetProcessDefinitionKey, "A2");
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var agentTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final long agentInstanceKey =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(agentTaskInstance.getKey())
+            .create()
+            .getKey();
+    final long sourceAgentDefinitionKey =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CREATED)
+            .withRecordKey(agentInstanceKey)
+            .getFirst()
+            .getValue()
+            .getAgentDefinitionKey();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A2")
+        .migrate();
+
+    // then — the agent instance points at the target element's own agent definition, not the
+    // source one it was created with
+    Assertions.assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
+                .withRecordKey(agentInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("elementId is remapped to the target element")
+        .hasElementId("A2")
+        .describedAs(
+            "agentDefinitionKey is re-resolved to the remapped target element's definition")
+        .hasAgentDefinitionKey(targetAgentDefinitionKey);
+    assertThat(targetAgentDefinitionKey)
+        .describedAs("the target agent definition differs from the source one")
+        .isNotEqualTo(sourceAgentDefinitionKey);
+  }
+
+  @Test
+  public void shouldReResolveAgentDefinitionKeyWhenElementKeepsItsId() {
+    // given — an agent-marked service task "A" is migrated to another process definition that keeps
+    // the same element id "A" (a self-mapping); the target still mints its own agent definition
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final long targetAgentDefinitionKey = agentDefinitionKey(targetProcessDefinitionKey, "A");
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var agentTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final long agentInstanceKey =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(agentTaskInstance.getKey())
+            .create()
+            .getKey();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .migrate();
+
+    // then — even without an element id change, the key is re-resolved to the target definition's
+    // own agent definition
+    Assertions.assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
+                .withRecordKey(agentInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId("A")
+        .describedAs(
+            "agentDefinitionKey is re-resolved to the target definition's agent definition")
+        .hasAgentDefinitionKey(targetAgentDefinitionKey);
+  }
+
+  @Test
+  public void shouldResetAgentDefinitionKeyWhenTargetElementHasNoAgentDefinition() {
+    // given — an agent-marked service task "A" is migrated onto a plain service task "A2" that
+    // carries no agent definition, the allowed agent-to-non-agent direction
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("A2", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var agentTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final long agentInstanceKey =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(agentTaskInstance.getKey())
+            .create()
+            .getKey();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A2")
+        .migrate();
+
+    // then — the agent instance no longer references any agent definition
+    Assertions.assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
+                .withRecordKey(agentInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId("A2")
+        .describedAs(
+            "agentDefinitionKey is reset because the target element has no agent definition")
+        .hasAgentDefinitionKey(-1L);
+  }
+
+  private long agentDefinitionKey(final long processDefinitionKey, final String elementId) {
+    return RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withElementId(elementId)
+        .getFirst()
+        .getValue()
+        .getAgentDefinitionKey();
   }
 }
