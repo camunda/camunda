@@ -63,6 +63,7 @@ public final class AgentInstanceCreateProcessor
   private final AgentDefinitionState agentDefinitionState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
+  private final AgentHistoryBatchHelper historyBatchHelper;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
@@ -77,6 +78,7 @@ public final class AgentInstanceCreateProcessor
     agentDefinitionState = processingState.getAgentDefinitionState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
+    historyBatchHelper = new AgentHistoryBatchHelper(processingState);
   }
 
   @Override
@@ -162,6 +164,16 @@ public final class AgentInstanceCreateProcessor
           RejectionType.INVALID_ARGUMENT,
           ERROR_MSG_NO_AGENT_DEFINITION.formatted(
               elementInstanceKey, elementInstanceValue.getElementId()));
+      return;
+    }
+
+    final var validJob =
+        historyBatchHelper.validateJobContext(
+            commandValue.getJobKey(), commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(), commandValue.getHistory());
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 

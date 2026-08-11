@@ -85,6 +85,7 @@ public final class AgentInstanceUpdateProcessor
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
+  private final AgentHistoryBatchHelper historyBatchHelper;
 
   public AgentInstanceUpdateProcessor(
       final Writers writers,
@@ -96,6 +97,7 @@ public final class AgentInstanceUpdateProcessor
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
+    historyBatchHelper = new AgentHistoryBatchHelper(processingState);
   }
 
   @Override
@@ -192,6 +194,16 @@ public final class AgentInstanceUpdateProcessor
           RejectionType.ALREADY_EXISTS,
           ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
               newElementInstanceKey, existingAgentInstanceKey));
+      return;
+    }
+
+    final var validJob =
+        historyBatchHelper.validateJobContext(
+            commandValue.getJobKey(), commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(), commandValue.getHistory());
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 

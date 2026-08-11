@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.List;
 
 public final class AgentHistoryCreateProcessor
     implements TypedRecordProcessor<AgentHistoryRecord>, SuspensionAware<AgentHistoryRecord> {
@@ -105,7 +106,8 @@ public final class AgentHistoryCreateProcessor
         historyHelper.validateJobContext(
             commandValue.getJobKey(),
             commandValue.getJobLease(),
-            commandValue.getElementInstanceKey());
+            commandValue.getElementInstanceKey(),
+            List.of(commandValue));
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
