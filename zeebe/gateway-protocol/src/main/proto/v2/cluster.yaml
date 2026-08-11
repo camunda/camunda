@@ -514,7 +514,30 @@ components:
           type: string
           example: "7"
         plannedChanges:
-          description: The ordered list of operations that will be applied to complete the change.
+          description: >-
+            The operations that will be applied to complete the change, grouped by the physical
+            tenant they belong to. Groups are transitioned in parallel; the operations within a
+            group are applied in the given order.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterModeChangePlannedChange'
+
+    ClusterModeChangePlannedChange:
+      description: The operations of a cluster mode change that apply to one physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - operations
+      properties:
+        physicalTenantId:
+          description: >-
+            The physical tenant the operations apply to; null for operations that are not scoped to
+            a single physical tenant, such as broker lifecycle operations.
+          type: string
+          nullable: true
+          example: default
+        operations:
+          description: The ordered list of operations that will be applied to the physical tenant.
           type: array
           items:
             $ref: '#/components/schemas/ClusterModeChangeOperation'

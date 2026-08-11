@@ -31,6 +31,8 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -104,15 +106,28 @@ final class ClusterAdminMultiBrokerModeChangeIT {
       // awaited, so no broker and no tenant is silently left behind
       final var plannedChanges = plannedChanges(response.body());
       assertThat(plannedChanges)
-          .as("one ModeChangeOperation and one AwaitModeChangeOperation per broker per group")
-          .hasSize(2 * BROKERS_COUNT * GROUPS.size())
-          .allSatisfy(change -> assertThat(change.get("mode").asText()).isEqualTo("RECOVERING"));
-      assertThat(plannedChanges)
-          .filteredOn(change -> "ModeChangeOperation".equals(change.get("operation").asText()))
-          .hasSize(BROKERS_COUNT * GROUPS.size());
-      assertThat(plannedChanges)
-          .filteredOn(change -> "AwaitModeChangeOperation".equals(change.get("operation").asText()))
-          .hasSize(BROKERS_COUNT * GROUPS.size());
+          .as("the plan names every physical tenant")
+          .containsOnlyKeys(GROUPS.toArray(String[]::new));
+      assertThat(plannedChanges.values())
+          .allSatisfy(
+              operations -> {
+                assertThat(operations)
+                    .as("one ModeChangeOperation and one AwaitModeChangeOperation per broker")
+                    .hasSize(2 * BROKERS_COUNT)
+                    .allSatisfy(
+                        operation ->
+                            assertThat(operation.get("mode").asText()).isEqualTo("RECOVERING"));
+                assertThat(operations)
+                    .filteredOn(
+                        operation ->
+                            "ModeChangeOperation".equals(operation.get("operation").asText()))
+                    .hasSize(BROKERS_COUNT);
+                assertThat(operations)
+                    .filteredOn(
+                        operation ->
+                            "AwaitModeChangeOperation".equals(operation.get("operation").asText()))
+                    .hasSize(BROKERS_COUNT);
+              });
 
       // and — both tenants really stop processing, on every broker
       awaitCommandsRejected(defaultClient, defaultProcessId);
@@ -147,7 +162,9 @@ final class ClusterAdminMultiBrokerModeChangeIT {
       // tenant
       assertThat(plannedChanges(response.body()))
           .as("one ModeChangeOperation and one AwaitModeChangeOperation per broker, one group only")
-          .hasSize(2 * BROKERS_COUNT);
+          .containsOnlyKeys(TENANT_A)
+          .hasEntrySatisfying(
+              TENANT_A, operations -> assertThat(operations).hasSize(2 * BROKERS_COUNT));
 
       // and — the isolation holds across brokers: tenant A stops, the default tenant does not
       awaitCommandsRejected(tenantAClient, tenantAProcessId);
@@ -176,10 +193,16 @@ final class ClusterAdminMultiBrokerModeChangeIT {
     return httpClient.send(request, BodyHandlers.ofString());
   }
 
-  private static List<JsonNode> plannedChanges(final String body) throws Exception {
+  /** The planned operations of the change, keyed by the physical tenant they apply to. */
+  private static Map<String, List<JsonNode>> plannedChanges(final String body) throws Exception {
     final var changes = JSON.readTree(body).get("plannedChanges");
     assertThat(changes).as("response carries a plan: %s", body).isNotNull();
-    return StreamSupport.stream(changes.spliterator(), false).toList();
+    return StreamSupport.stream(changes.spliterator(), false)
+        .collect(
+            Collectors.toMap(
+                change -> change.get("physicalTenantId").asText(),
+                change ->
+                    StreamSupport.stream(change.get("operations").spliterator(), false).toList()));
   }
 
   private static String basicAuth(final String user, final String password) {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
+import io.camunda.gateway.protocol.model.ClusterModeChangePlannedChange;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -18,8 +19,14 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -49,11 +56,52 @@ final class ClusterModeChangeMapper {
         .build();
   }
 
-  private static List<ClusterModeChangeOperation> toPlannedChanges(
+  /**
+   * Flattens the phases of the change plan into one entry per physical tenant, keyed by the
+   * partition group the operations were planned for. Sorted by tenant so that a response never
+   * depends on the iteration order of the plan's group map.
+   */
+  private static List<ClusterModeChangePlannedChange> toPlannedChanges(
       final ClusterConfigurationChangeResponse response) {
-    return requireNonNull(response.response()).plannedChanges().stream()
-        .map(ClusterModeChangeMapper::toClusterModeChangeOperation)
-        .toList();
+    final Map<String, List<ClusterModeChangeOperation>> operationsPerTenant = new TreeMap<>();
+    final List<ClusterModeChangeOperation> clusterWideOperations = new ArrayList<>();
+    for (final Phase phase : requireNonNull(response.response()).phases()) {
+      switch (phase) {
+        case final PartitionGroupParallelPhase parallelPhase ->
+            parallelPhase
+                .groupOperations()
+                .forEach(
+                    (physicalTenantId, operations) ->
+                        operationsPerTenant
+                            .computeIfAbsent(physicalTenantId, tenant -> new ArrayList<>())
+                            .addAll(toClusterModeChangeOperations(operations)));
+        // Broker lifecycle operations belong to the cluster, not to any single physical tenant.
+        case final GlobalPhase globalPhase ->
+            clusterWideOperations.addAll(toClusterModeChangeOperations(globalPhase.operations()));
+      }
+    }
+
+    final var plannedChanges = new ArrayList<ClusterModeChangePlannedChange>();
+    operationsPerTenant.forEach(
+        (physicalTenantId, operations) ->
+            plannedChanges.add(toPlannedChange(physicalTenantId, operations)));
+    if (!clusterWideOperations.isEmpty()) {
+      plannedChanges.add(toPlannedChange(null, clusterWideOperations));
+    }
+    return plannedChanges;
+  }
+
+  private static ClusterModeChangePlannedChange toPlannedChange(
+      final @Nullable String physicalTenantId, final List<ClusterModeChangeOperation> operations) {
+    return ClusterModeChangePlannedChange.Builder.create()
+        .physicalTenantId(physicalTenantId)
+        .operations(operations)
+        .build();
+  }
+
+  private static List<ClusterModeChangeOperation> toClusterModeChangeOperations(
+      final List<? extends ClusterConfigurationChangeOperation> operations) {
+    return operations.stream().map(ClusterModeChangeMapper::toClusterModeChangeOperation).toList();
   }
 
   private static Status mapErrorStatus(final ErrorResponse.ErrorCode code) {

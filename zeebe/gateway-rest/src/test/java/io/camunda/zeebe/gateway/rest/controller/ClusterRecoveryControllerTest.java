@@ -20,9 +20,12 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -48,12 +51,15 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
 
   @Test
   void shouldReportThePlannedChangeCoveringEveryPhysicalTenant() {
-    // given
+    // given — a plan that transitions two physical tenants at once
     when(clusterRecoveryServices.changeMode(
             Mockito.isNull(), Mockito.eq(Mode.RECOVERING), Mockito.eq(false)))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(plannedChange(7L))));
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(plannedChange(7L, "tenant-b", "default"))));
 
-    // when / then
+    // when / then — every tenant keeps its own operations, ordered by tenant so that the response
+    // does not depend on the iteration order of the plan
     webClient
         .patch()
         .uri(MODE_URL + "?mode=RECOVERING")
@@ -66,7 +72,18 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
             {
               "changeId": "7",
               "plannedChanges": [
-                { "operation": "ModeChangeOperation", "mode": "RECOVERING" }
+                {
+                  "physicalTenantId": "default",
+                  "operations": [
+                    { "operation": "ModeChangeOperation", "mode": "RECOVERING" }
+                  ]
+                },
+                {
+                  "physicalTenantId": "tenant-b",
+                  "operations": [
+                    { "operation": "ModeChangeOperation", "mode": "RECOVERING" }
+                  ]
+                }
               ]
             }
             """,
@@ -78,9 +95,9 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
     // given
     when(clusterRecoveryServices.changeMode(
             Mockito.eq("tenant-b"), Mockito.eq(Mode.RECOVERING), Mockito.eq(false)))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(plannedChange(8L))));
+        .thenReturn(CompletableFuture.completedFuture(Either.right(plannedChange(8L, "tenant-b"))));
 
-    // when / then
+    // when / then — the plan names the requested tenant and no other
     webClient
         .patch()
         .uri(MODE_URL + "?mode=RECOVERING&physicalTenantId=tenant-b")
@@ -88,8 +105,21 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .jsonPath("$.changeId")
-        .isEqualTo("8");
+        .json(
+            """
+            {
+              "changeId": "8",
+              "plannedChanges": [
+                {
+                  "physicalTenantId": "tenant-b",
+                  "operations": [
+                    { "operation": "ModeChangeOperation", "mode": "RECOVERING" }
+                  ]
+                }
+              ]
+            }
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -155,16 +185,20 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
         .changeMode(Mockito.any(), Mockito.any(), Mockito.anyBoolean());
   }
 
-  private ClusterConfigurationChangeResponse plannedChange(final long changeId) {
-    final var plannedChanges =
-        List.<ClusterConfigurationChangeOperation>of(
-            new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING));
+  private ClusterConfigurationChangeResponse plannedChange(
+      final long changeId, final String... physicalTenantIds) {
+    final var operation = new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING);
+    final Map<String, List<PartitionGroupOperation>> operationsPerTenant = new HashMap<>();
+    for (final var physicalTenantId : physicalTenantIds) {
+      operationsPerTenant.put(physicalTenantId, List.of(operation));
+    }
     return new ClusterConfigurationChangeResponse(
         changeId,
-        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), plannedChanges),
+        new LegacyConfigurationChangeResponse(
+            Map.of(), Map.of(), List.<ClusterConfigurationChangeOperation>of(operation)),
         new CurrentConfigurationChangeResponse(
             CurrentClusterConfiguration.uninitialized(),
             CurrentClusterConfiguration.uninitialized(),
-            plannedChanges));
+            List.of(new PartitionGroupParallelPhase(operationsPerTenant))));
   }
 }

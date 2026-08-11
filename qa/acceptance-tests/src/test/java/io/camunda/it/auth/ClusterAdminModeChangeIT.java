@@ -47,17 +47,29 @@ final class ClusterAdminModeChangeIT {
         changeMode(
             "mode=RECOVERING&dryRun=true", basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
 
-    // then — one change covering the whole request, with the transition planned per broker
+    // then — one change covering the whole request, with the transition planned per broker of the
+    // only physical tenant this cluster has
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     final var body = new ObjectMapper().readTree(response.body());
     assertThat(body.get("changeId").asText()).isNotBlank();
     assertThat(body.get("plannedChanges"))
-        .allSatisfy(change -> assertThat(change.get("mode").asText()).isEqualTo("RECOVERING"))
-        .anySatisfy(
-            change -> assertThat(change.get("operation").asText()).isEqualTo("ModeChangeOperation"))
-        .anySatisfy(
-            change ->
-                assertThat(change.get("operation").asText()).isEqualTo("AwaitModeChangeOperation"));
+        .singleElement()
+        .satisfies(
+            change -> {
+              assertThat(change.get("physicalTenantId").asText()).isEqualTo("default");
+              assertThat(change.get("operations"))
+                  .allSatisfy(
+                      operation ->
+                          assertThat(operation.get("mode").asText()).isEqualTo("RECOVERING"))
+                  .anySatisfy(
+                      operation ->
+                          assertThat(operation.get("operation").asText())
+                              .isEqualTo("ModeChangeOperation"))
+                  .anySatisfy(
+                      operation ->
+                          assertThat(operation.get("operation").asText())
+                              .isEqualTo("AwaitModeChangeOperation"));
+            });
   }
 
   @Test
