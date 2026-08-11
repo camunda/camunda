@@ -79,7 +79,7 @@ jobs:
         with:
           name: distball-${{ github.run_id }}
           path: ${{ steps.build-zeebe.outputs.distball }}
-          retention-days: 1
+          retention-days: 2
           compression-level: 0  # tarball is already gzipped
           if-no-files-found: error
       - name: Upload local Maven SNAPSHOT artifacts (artifact)
@@ -88,7 +88,7 @@ jobs:
         with:
           name: m2-installed-${{ github.run_id }}
           path: m2-installed.tar
-          retention-days: 1
+          retention-days: 2
           compression-level: 6
           if-no-files-found: error
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
