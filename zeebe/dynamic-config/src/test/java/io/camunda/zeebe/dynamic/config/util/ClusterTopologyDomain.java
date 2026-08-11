@@ -37,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -244,11 +245,26 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var pendingChanges =
         Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
+    final var availability = tenantAvailabilities();
     return Combinators.combine(
-            version, incarnationNumber, members, routingState, pendingChanges, lastChange)
+            version,
+            incarnationNumber,
+            members,
+            routingState,
+            pendingChanges,
+            lastChange,
+            availability)
         .as(
-            (v, inc, m, routing, pending, last) ->
-                new PartitionGroupConfiguration(v, inc, m, routing, pending, last));
+            (v, inc, m, routing, pending, last, tenantAvailability) ->
+                new PartitionGroupConfiguration(
+                    v, inc, m, routing, pending, last, tenantAvailability));
+  }
+
+  @Provide
+  Arbitrary<TenantAvailability> tenantAvailabilities() {
+    final var version = Arbitraries.longs().greaterOrEqual(0);
+    final var disabled = Arbitraries.of(true, false);
+    return Combinators.combine(version, disabled).as(TenantAvailability::new);
   }
 
   @Provide

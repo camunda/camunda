@@ -49,6 +49,8 @@ import org.jspecify.annotations.Nullable;
  * @param routingState routing state scoped to this group, if any
  * @param pendingChanges the ongoing change plan for this group, if any
  * @param lastChange the last completed change plan for this group, if any
+ * @param availability whether this tenant is currently disabled; carries its own version,
+ *     independent of {@code version} — see {@link TenantAvailability}
  */
 @NullMarked
 public record PartitionGroupConfiguration(
@@ -57,7 +59,8 @@ public record PartitionGroupConfiguration(
     SortedMap<MemberId, BrokerPartitionState> members,
     Optional<RoutingState> routingState,
     Optional<ClusterChangePlan> pendingChanges,
-    Optional<CompletedChange> lastChange) {
+    Optional<CompletedChange> lastChange,
+    TenantAvailability availability) {
 
   public static final long INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
@@ -67,6 +70,7 @@ public record PartitionGroupConfiguration(
     Objects.requireNonNull(routingState, "routingState must not be null");
     Objects.requireNonNull(pendingChanges, "pendingChanges must not be null");
     Objects.requireNonNull(lastChange, "lastChange must not be null");
+    Objects.requireNonNull(availability, "availability must not be null");
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }
@@ -87,7 +91,27 @@ public record PartitionGroupConfiguration(
         ImmutableSortedMap.copyOf(members),
         routingState,
         pendingChanges,
-        lastChange);
+        lastChange,
+        TenantAvailability.enabled());
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public PartitionGroupConfiguration(
+      final long version,
+      final long incarnationNumber,
+      final Map<MemberId, BrokerPartitionState> members,
+      final Optional<RoutingState> routingState,
+      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<CompletedChange> lastChange,
+      final TenantAvailability availability) {
+    this(
+        version,
+        incarnationNumber,
+        ImmutableSortedMap.copyOf(members),
+        routingState,
+        pendingChanges,
+        lastChange,
+        availability);
   }
 
   /** Creates an empty group configuration at the given version with no members and no changes. */
@@ -128,7 +152,8 @@ public record PartitionGroupConfiguration(
         members,
         routingState,
         Optional.of(ClusterChangePlan.init(newVersion, operations)),
-        lastChange);
+        lastChange,
+        availability);
   }
 
   /**
@@ -158,7 +183,8 @@ public record PartitionGroupConfiguration(
             members,
             routingState,
             Optional.of(pendingChanges.orElseThrow().advance()),
-            lastChange);
+            lastChange,
+            availability);
 
     if (result.hasPendingChanges()) {
       return result;
@@ -178,7 +204,8 @@ public record PartitionGroupConfiguration(
         remainingMembers,
         routingState,
         Optional.empty(),
-        Optional.of(completedChange));
+        Optional.of(completedChange),
+        availability);
   }
 
   /**
@@ -190,14 +217,39 @@ public record PartitionGroupConfiguration(
    * operating mode); {@code pendingChanges} by plan-internal version; {@code routingState} by the
    * higher version; and {@code incarnationNumber} via {@link Math#max}.
    *
+   * <p>{@code availability} is always merged by its own version ({@link
+   * TenantAvailability#merge(TenantAvailability)}), independently of which branch above is taken —
+   * its version is deliberately kept out of {@code version}, so without this it could be silently
+   * overwritten by an unrelated top-level version bump in the whole-record-wins branch.
+   *
    * @param other the configuration to merge with
    * @return the merged configuration
    */
   public PartitionGroupConfiguration merge(final PartitionGroupConfiguration other) {
+    final var mergedAvailability = availability.merge(other.availability);
+
     if (version > other.version) {
-      return this;
+      return this.availability.equals(mergedAvailability)
+          ? this
+          : new PartitionGroupConfiguration(
+              version,
+              incarnationNumber,
+              members,
+              routingState,
+              pendingChanges,
+              lastChange,
+              mergedAvailability);
     } else if (other.version > version) {
-      return other;
+      return other.availability.equals(mergedAvailability)
+          ? other
+          : new PartitionGroupConfiguration(
+              other.version,
+              other.incarnationNumber,
+              other.members,
+              other.routingState,
+              other.pendingChanges,
+              other.lastChange,
+              mergedAvailability);
     }
 
     final var mergedMembers =
@@ -220,7 +272,8 @@ public record PartitionGroupConfiguration(
         mergedMembers,
         mergedRoutingState,
         mergedChanges,
-        lastChange);
+        lastChange,
+        mergedAvailability);
   }
 
   /**
@@ -278,7 +331,45 @@ public record PartitionGroupConfiguration(
         members,
         Optional.of(updatedRoutingState),
         pendingChanges,
-        lastChange);
+        lastChange,
+        availability);
+  }
+
+  public boolean isDisabled() {
+    return availability.disabled();
+  }
+
+  /**
+   * Marks this tenant as disabled, e.g. because it was removed from the local static configuration.
+   * Does not change {@code version} or touch {@code members} — the partition assignment is retained
+   * so the tenant can resume where it left off if re-enabled. Returns {@code this} if already
+   * disabled.
+   */
+  public PartitionGroupConfiguration disable() {
+    return withAvailability(availability.disable());
+  }
+
+  /**
+   * Marks this tenant as enabled again. Does not change {@code version} or touch {@code members}.
+   * Returns {@code this} if already enabled.
+   */
+  public PartitionGroupConfiguration enable() {
+    return withAvailability(availability.enable());
+  }
+
+  private PartitionGroupConfiguration withAvailability(
+      final TenantAvailability updatedAvailability) {
+    if (updatedAvailability.equals(availability)) {
+      return this;
+    }
+    return new PartitionGroupConfiguration(
+        version,
+        incarnationNumber,
+        members,
+        routingState,
+        pendingChanges,
+        lastChange,
+        updatedAvailability);
   }
 
   public boolean hasPendingChanges() {
@@ -334,7 +425,8 @@ public record PartitionGroupConfiguration(
         members,
         routingState,
         Optional.empty(),
-        Optional.of(cancelledChange));
+        Optional.of(cancelledChange),
+        availability);
   }
 
   public boolean hasMember(final MemberId memberId) {
@@ -388,7 +480,13 @@ public record PartitionGroupConfiguration(
   private PartitionGroupConfiguration withMembers(
       final Map<MemberId, BrokerPartitionState> updatedMembers) {
     return new PartitionGroupConfiguration(
-        version, incarnationNumber, updatedMembers, routingState, pendingChanges, lastChange);
+        version,
+        incarnationNumber,
+        updatedMembers,
+        routingState,
+        pendingChanges,
+        lastChange,
+        availability);
   }
 
   public int partitionCount() {
