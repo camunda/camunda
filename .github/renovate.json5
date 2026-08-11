@@ -917,5 +917,16 @@
       depNameTemplate: "camunda/connectors-bundle",
       datasourceTemplate: "docker",
     },
+    {
+      description: "Track actions wrapped by Wandalen/wretry.action. The github-actions manager only extracts refs from `uses:` keys, so an action passed through wretry's `action:` input is invisible to it and its pinned digest would never be updated.",
+      customType: "regex",
+      managerFilePatterns: [
+        "/^\\.github/.+\\.ya?ml$/",
+      ],
+      matchStrings: [
+        "action:\\s+(?<depName>[\\w.-]+/[\\w.-]+)@(?<currentDigest>[a-f0-9]{40})\\s+#\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+      ],
+      datasourceTemplate: "github-tags",
+    },
   ],
 }
