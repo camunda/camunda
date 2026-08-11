@@ -22,6 +22,14 @@ import java.util.Objects;
  */
 public final class AgentHistoryBatchHelper {
 
+  static final String ERROR_MSG_JOB_NOT_ACTIVE =
+      "Expected job with key '%d' to be active, but it was not.";
+  static final String ERROR_MSG_JOB_LEASE_MISMATCH =
+      "Expected job with key '%d' to hold the supplied lease, but it did not match. The job may "
+          + "have been re-activated.";
+  static final String ERROR_MSG_JOB_ELEMENT_MISMATCH =
+      "Expected job '%d' to be associated with element instance '%d', but it is associated with element instance '%d'";
+
   private final ProcessingState processingState;
 
   public AgentHistoryBatchHelper(final ProcessingState processingState) {
@@ -41,19 +49,13 @@ public final class AgentHistoryBatchHelper {
     final var jobState = processingState.getJobState();
     if (jobState.getState(jobKey) != JobState.State.ACTIVATED) {
       return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              "Expected to create agent history entry for job with key '%d', but the job is not active."
-                  .formatted(jobKey)));
+          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_NOT_ACTIVE.formatted(jobKey)));
     }
 
     final var job = jobState.getJob(jobKey);
     if (job.hasLeaseToken() && !Objects.equals(jobLease, job.getLeaseToken())) {
       return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
-                  .formatted(jobKey)));
+          new Rejection(RejectionType.NOT_FOUND, ERROR_MSG_JOB_LEASE_MISMATCH.formatted(jobKey)));
     }
 
     final var jobElementInstanceKey = job.getElementInstanceKey();
@@ -61,8 +63,8 @@ public final class AgentHistoryBatchHelper {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
-              "Expected element instance key '%d' for agent history entry, but job '%d' is associated with element instance '%d'."
-                  .formatted(elementInstanceKey, jobKey, jobElementInstanceKey)));
+              ERROR_MSG_JOB_ELEMENT_MISMATCH.formatted(
+                  jobKey, elementInstanceKey, jobElementInstanceKey)));
     }
 
     return Either.right(job);
