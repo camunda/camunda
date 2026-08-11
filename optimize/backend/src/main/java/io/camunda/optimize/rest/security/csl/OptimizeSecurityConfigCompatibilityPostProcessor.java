@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -71,7 +69,6 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
 
     final Map<String, Object> derived = new HashMap<>();
     applyAlwaysOnDefaults(derived);
-    applySessionPersistence(env, derived);
     bridgeIdentityOidc(env, derived);
     bridgeAuth0Cloud(env, derived);
     bridgePublicApiJwt(env, derived);
@@ -99,25 +96,11 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // (ADR-0038). CCSM reuses Optimize's existing /api/authentication/callback (no Identity-client
     // change); bridgeAuth0Cloud overrides it for Auth0. putIfAbsent so an explicit value wins.
     derived.putIfAbsent(OIDC_PREFIX + "redirect-uri", "{baseUrl}/api/authentication/callback");
-  }
-
-  /**
-   * Turns on CSL's server-side sessions, which {@code OptimizeSessionStoreAdapter} persists in the
-   * {@code web-session} index. Only for the Elasticsearch edition: the store has no OpenSearch
-   * implementation yet, and CSL's session repository requires a {@code SessionStorePort} bean once
-   * the property is set, so enabling it on OpenSearch would fail startup. OpenSearch therefore
-   * keeps CSL's in-memory sessions (single-node only) until the OpenSearch store lands.
-   */
-  private void applySessionPersistence(
-      final ConfigurableEnvironment env, final Map<String, Object> derived) {
-    if (ConfigurationService.getDatabaseType(env) == DatabaseType.ELASTICSEARCH) {
-      derived.putIfAbsent(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY, "true");
-    } else {
-      LOG.warn(
-          "Persistent web sessions are not enabled: the CSL session store is currently"
-              + " Elasticsearch-only. Sessions are kept in memory, so they are lost on restart and"
-              + " are not shared across Optimize instances.");
-    }
+    // Turns on CSL's server-side sessions, which OptimizeSessionStoreAdapter persists in the
+    // web-session index. Applies to both editions: the store has an Elasticsearch and an OpenSearch
+    // implementation, so CSL's session repository always finds the SessionStorePort bean it
+    // requires. putIfAbsent so an operator can still opt out.
+    derived.putIfAbsent(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY, "true");
   }
 
   // OIDC / Identity (CCSM), from the CAMUNDA_OPTIMIZE_IDENTITY_* env vars. Skipped when Auth0 is

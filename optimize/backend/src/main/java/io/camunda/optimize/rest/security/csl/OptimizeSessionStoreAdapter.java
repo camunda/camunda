@@ -9,7 +9,6 @@ package io.camunda.optimize.rest.security.csl;
 
 import io.camunda.optimize.dto.optimize.query.WebSessionDto;
 import io.camunda.optimize.service.db.repository.PersistentWebSessionRepository;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,18 +28,18 @@ import org.springframework.stereotype.Component;
  * <p>OC's adapter cannot be reused: it lives in a module Optimize does not depend on and is bound
  * to that host's search clients.
  *
- * <p>Active only under Elasticsearch and when {@code optimize.security.csl.enabled=true}. CSL
- * routes sessions here only while {@code camunda.security.session.persistent.enabled=true}, which
- * {@link OptimizeSecurityConfigCompatibilityPostProcessor} sets for the Elasticsearch edition;
- * OpenSearch keeps CSL's in-memory sessions until the OpenSearch store lands.
+ * <p>Database-agnostic: it talks only to {@link PersistentWebSessionRepository}, whose
+ * Elasticsearch and OpenSearch implementations are selected by the configured database. Active when
+ * {@code optimize.security.csl.enabled=true}. CSL routes sessions here only while {@code
+ * camunda.security.session.persistent.enabled=true}, which {@link
+ * OptimizeSecurityConfigCompatibilityPostProcessor} sets for both editions.
  *
  * <p>A failed {@link #upsert(PersistentSession)} is logged and swallowed. Spring Session saves the
- * session while the response is being committed, so letting a storage failure through would turn an
- * Elasticsearch blip into failed requests. The reads stay strict: a session that cannot be loaded
- * must not be mistaken for one that does not exist.
+ * session while the response is being committed, so letting a storage failure through would turn a
+ * database blip into failed requests. The reads stay strict: a session that cannot be loaded must
+ * not be mistaken for one that does not exist.
  */
 @Component
-@Conditional(ElasticSearchCondition.class)
 @ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
 public class OptimizeSessionStoreAdapter implements SessionStorePort {
 
@@ -68,7 +66,7 @@ public class OptimizeSessionStoreAdapter implements SessionStorePort {
     } catch (final RuntimeException e) {
       // The session stays valid on the instance that handled the request, but it is not shared and
       // it does not survive a restart, so the user may have to log in again.
-      LOG.warn("Could not save web session {} to Elasticsearch.", session.id(), e);
+      LOG.warn("Could not save web session {} to the database.", session.id(), e);
     }
   }
 
