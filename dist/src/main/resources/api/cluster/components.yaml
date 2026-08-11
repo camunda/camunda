@@ -34,6 +34,13 @@ responses:
         schema:
           "$ref": "components.yaml#/schemas/Error"
 
+  NotFound:
+    description: The requested resource was not found.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
 schemas:
   Error:
     title: Error response
@@ -421,6 +428,63 @@ schemas:
         type: array
         items:
           $ref: "components.yaml#/schemas/Operation"
+
+  ConfigurationChange:
+    title: ConfigurationChange
+    description: >
+      One configuration change plan, identified by its changeId, together with its status and the
+      operations it consists of. A change may target the global broker configuration, a single
+      physical tenant, or several physical tenants in parallel; each operation carries its own
+      `physicalTenant` (absent for a global operation) so operations belonging to different tenants
+      can still be told apart.
+
+
+      `completed`/`pending` reflect only what is currently available from the underlying
+      configuration state, not a persisted history: for the in-progress change, `completed` lists
+      operations from phases already advanced past, and `pending` lists the rest; for a change that
+      has already finished, the individual operations are no longer retained, so both lists are
+      empty and only `id`/`status`/`startedAt`/`completedAt` are meaningful.
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the configuration change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the configuration change was completed, if it has completed
+        example: "2020-01-01T00:00:00Z"
+      completed:
+        description: The list of operations that have been completed so far.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+      pending:
+        description: The list of operations that are pending.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+
+  GetConfigurationChangesResponse:
+    title: GetConfigurationChangesResponse
+    description: All configuration changes currently known to this broker.
+    type: object
+    properties:
+      changes:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/ConfigurationChange"
 
   Operation:
     type: object
