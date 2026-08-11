@@ -108,7 +108,11 @@ runs:
     # composite action. A later step that does not declare one of these inputs itself would read the
     # stale value instead of that action's own default; `version`, `name` and `platforms` are common
     # enough input names to collide. GITHUB_ENV cannot unset, so blank them out.
+    # Runs even when the step above exhausted its attempts: that is exactly when the variables have
+    # been exported and no later step will overwrite them, so any `always()` or post step in the job
+    # would otherwise inherit them.
     - name: Clear buildx inputs leaked into the job environment by wretry
+      if: always()
       shell: bash
       run: |
         env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
@@ -138,17 +142,26 @@ runs:
       shell: bash
       run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
 
-    # docker/metadata-action emits one tag per line, and callers that pass several versions (the
-    # snapshot deploy jobs in ci.yml do) therefore produce a multi-line value. wretry re-parses the
-    # build step's inputs as YAML, where the second line would land at column 0 and break the block,
-    # so the list is joined onto one line here. build-push-action accepts a comma-separated list
-    # just as well -- `platforms` is already passed to it that way.
-    - name: Join image tags onto a single line
-      id: get-tags
+    # The `version` input accepts a list, and the snapshot deploy jobs in ci.yml pass two versions.
+    # Both values derived from it reach the wrapped build step, whose inputs wretry re-parses as
+    # YAML: a second line would land at column 0 and break the block before build-push-action ever
+    # runs. Both are reduced to a single line here.
+    - name: Reduce the multi-valued build inputs to a single line
+      id: get-build-inputs
       shell: bash
       env:
         TAGS: ${{ steps.get-image.outputs.tags }}
-      run: echo "result=$(echo "$TAGS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+        VERSION_INPUT: ${{ inputs.version }}
+        MAVEN_VERSION: ${{ steps.get-version.outputs.result }}
+      run: |
+        # build-push-action parses `tags` with the same list helper as `platforms`, which this action
+        # already passes comma-separated, so joining is equivalent to the newline-separated form.
+        echo "tags=$(echo "$TAGS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+        # The VERSION build arg takes a single version. Keeping the first one matches both the image
+        # name output above and what build-push-action already resolved this to: it splits build args
+        # on newlines, so any further line was never a VERSION value to begin with.
+        version="${VERSION_INPUT:-$MAVEN_VERSION}"
+        echo "version=$(echo "$version" | head -n 1)" >> "$GITHUB_OUTPUT"
 
     - name: Set DISTBALL path relative to the build context
       id: get-distball
@@ -195,7 +208,7 @@ runs:
         with: |
           context: .
           file: ${{ inputs.dockerfile }}
-          tags: ${{ steps.get-tags.outputs.result }}
+          tags: ${{ steps.get-build-inputs.outputs.tags }}
           load: ${{ inputs.push != 'true' }}
           push: false
           platforms: ${{ inputs.platforms }}
@@ -205,11 +218,13 @@ runs:
             DISTBALL=${{ steps.get-distball.outputs.result }}
             DATE=${{ steps.get-date.outputs.result }}
             REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
-            VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+            VERSION=${{ steps.get-build-inputs.outputs.version }}
             ${{ steps.get-additional-build-args.outputs.result }}
           target: app
 
+    # As above: a build that fails every attempt is the case where this matters most.
     - name: Clear build-push inputs leaked into the job environment by wretry
+      if: always()
       shell: bash
       run: |
         env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
