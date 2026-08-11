@@ -11,8 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheKeyNames;
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -241,6 +244,85 @@ class SecretStoreRegistryTest {
     // then the rotated value is picked up, with no restart required
     assertThat(lookupLocal(registry, "default", "token")).contains("v2");
     assertThat(store.resolveCalls).containsExactly(Set.of("token"), Set.of("token"));
+  }
+
+  @Test
+  void shouldPublishWhatTheDefaultCacheOfEachStoreDoes() {
+    // given two stores, each on a default cache built by the registry
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeHolding("token", "a"), "store-b", storeHolding("token", "b")),
+            Map.of(),
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+            meterRegistry);
+
+    // when only one of them resolves the name
+    registry.getStores().get("store-a").resolve(Set.of("token"));
+    registry.getStores().get("store-a").lookupLocal("token");
+
+    // then each cache reports under its own store ID, so one store's numbers never answer for
+    // another's — the registry is the only place that knows which cache belongs to which store
+    assertThat(cacheResults(meterRegistry, "store-a", SecretCacheResult.MISS)).isOne();
+    assertThat(cacheResults(meterRegistry, "store-a", SecretCacheResult.HIT)).isOne();
+    assertThat(cacheResults(meterRegistry, "store-b", SecretCacheResult.MISS)).isZero();
+  }
+
+  @Test
+  void shouldPublishNothingForAStoreThatCachesNatively() {
+    // given a store that holds what it resolves itself, so the registry builds it no cache
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("default", new NativelyCachingSecretStore()),
+            Map.of(),
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+            meterRegistry);
+
+    // when it is resolved through
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then no cache meter exists for it at all: there is nothing here to measure, its cache being
+    // its SDK's business
+    assertThat(cacheMeterNames(meterRegistry)).isEmpty();
+  }
+
+  @Test
+  void shouldPublishNothingForACacheTheCallerSupplied() {
+    // given a store whose cache the caller chose instead of the default one
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("default", storeHolding("token", "value")),
+            Map.of("default", new InMemorySecretCache()),
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+            meterRegistry);
+
+    // when it is resolved through
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then nothing is published: an arbitrary SecretCache exposes nothing to measure, so this seam
+    // stays a plain test double rather than half-instrumenting one
+    assertThat(cacheMeterNames(meterRegistry)).isEmpty();
+  }
+
+  private static List<String> cacheMeterNames(final SimpleMeterRegistry meterRegistry) {
+    return meterRegistry.getMeters().stream()
+        .map(meter -> meter.getId().getName())
+        .filter(name -> name.startsWith("camunda.secret.cache."))
+        .toList();
+  }
+
+  private static double cacheResults(
+      final SimpleMeterRegistry meterRegistry,
+      final String storeId,
+      final SecretCacheResult result) {
+    return meterRegistry
+        .get(SecretCacheMetricsDoc.CACHE_RESULT.getName())
+        .tag(SecretCacheKeyNames.STORE.asString(), storeId)
+        .tag(SecretCacheKeyNames.RESULT.asString(), result.name())
+        .counter()
+        .count();
   }
 
   private static Optional<String> lookupLocal(
