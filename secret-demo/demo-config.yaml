@@ -1,0 +1,81 @@
+# Camunda 8 Run overlay for the centralized secret resolution demo.
+#
+# c8run loads its own configuration/application.yaml first and this file last, so every value
+# here wins. Start with:
+#
+#   export SECRET_DEMO_DIR="<path-to>/secret-demo/secrets"
+#   ./c8run start --config ../secret-demo/demo-config.yaml --disable-connectors
+#
+# run-demo.sh sets SECRET_DEMO_DIR itself, so this is only needed when driving c8run by hand.
+
+camunda:
+  secrets:
+    cache:
+      # How long a resolved value is served from the cache before the store is read again.
+      # Minimum accepted is 1m (default 20m). Short here so a rotated file is picked up
+      # during the demo without a restart.
+      ttl: 1m
+      max-size: 1000
+    stores:
+      file:
+        # The store id must be "default": that is the store a camunda.secrets.<name>
+        # reference addresses. Any other id is rejected at startup.
+        default:
+          # One file per secret: file name is the secret name, file contents are the value.
+          # Same shape as a mounted Kubernetes Secret volume.
+          path: ${SECRET_DEMO_DIR}
+
+  # Per-physical-tenant override (not exercised in this demo, shown for completeness):
+  #
+  # physical-tenants:
+  #   risk-production:
+  #     secrets:
+  #       stores:
+  #         file:
+  #           default:
+  #             path: /etc/camunda/secrets/risk-production
+
+  api:
+    long-polling:
+      enabled: true
+      # A long-polling request that finds no job is held open and re-checks the partitions every
+      # probe-timeout. Nothing wakes it earlier: the secret-resolution path makes a parked job
+      # activatable again without notifying workers, so the probe is what picks it up. The default
+      # of 10s would make a job wait up to ten seconds after its secret resolved; 2s keeps the
+      # single activation request in the demo feeling immediate.
+      probe-timeout: 2000
+
+  security:
+    authentication:
+      method: BASIC
+      # c8run defaults this to true, which leaves the API open. The permission scenes need
+      # real authentication, so it is turned off here.
+      unprotected-api: false
+    # c8run defaults this to false, in which case every authenticated caller is treated as
+    # authorized for every secret reference. The permission scenes need it on.
+    authorizations:
+      enabled: true
+    initialization:
+      users:
+        - username: demo
+          password: demo
+          name: Demo
+          email: demo@example.com
+      defaultRoles:
+        admin:
+          users:
+            - demo
+
+zeebe:
+  broker:
+    experimental:
+      engine:
+        secretResolution:
+          # Defaults are interval 5s, 3 attempts, 5s initial delay backing off to 30s, which
+          # puts the incident up to ~45s after the first activation. Tightened so the demo
+          # does not wait on a timer.
+          interval: 1s
+          retryMaxAttempts: 3
+          retryInitialDelay: 1s
+          retryMaxDelay: 2s
+          retryBackoffFactor: 2

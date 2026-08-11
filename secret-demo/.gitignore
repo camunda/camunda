@@ -1,0 +1,6 @@
+# The file-based secret store, created by scripts/01-create-secrets.sh. Demo values, but a secret
+# file is still never committed.
+secrets/
+
+# Per-run output of run-demo.sh: captured responses and the c8run startup log.
+output/
