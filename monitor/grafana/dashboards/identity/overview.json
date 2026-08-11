@@ -997,7 +997,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Rate of authorization cache hits and misses, per cache (membership, scope)",
+      "description": "Rate of authorization cache hits and misses, per cache (membership, scope). These caches avoid a RocksDB state read on every authorization check; a rising miss rate means checks increasingly fall through to the slower state-read path, which shows up as higher Authorization Check Latency.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1110,7 +1110,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Rate of evictions from the authorization caches, per cache",
+      "description": "Rate of evictions from the authorization caches, per cache. Entries are evicted once the configured size or TTL limit (authorizationsCacheCapacity/authorizationsCacheTtl) is exceeded; sustained evictions mean the cache is undersized for the number of distinct principals/scopes in use, causing churn where entries get reloaded shortly after being evicted.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1223,7 +1223,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "p99 duration of successful authorization cache loads (state read on a cache miss), per cache",
+      "description": "p99 duration of successful authorization cache loads (state read on a cache miss), per cache. This load happens synchronously inside the authorization check, so a growing p99 here directly inflates Authorization Check Latency and Slow Authorization Checks; use it to tell whether tail latency comes from the state read itself rather than from cache misses or the check logic.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1336,7 +1336,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Rate of successful authorization cache loads (i.e. cache-miss state reads), per cache",
+      "description": "Rate of successful authorization cache loads (i.e. cache-miss state reads), per cache. Concurrent misses for the same key are de-duplicated into a single load, so this can run lower than the miss rate above under contention; track it alongside Eviction Rate to see how much churn turns into actual state reads.",
       "fieldConfig": {
         "defaults": {
           "color": {
