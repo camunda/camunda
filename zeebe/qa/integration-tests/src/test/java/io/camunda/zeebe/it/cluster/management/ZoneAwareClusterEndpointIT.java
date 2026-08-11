@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -207,31 +208,37 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .operation(OperationEnum.PARTITION_JOIN)
                       .brokerId(brokerId(2))
                       .partitionId(1)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
                   new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(0))
                       .partitionId(1)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(3),
                   new Operation()
                       .operation(OperationEnum.PARTITION_JOIN)
                       .brokerId(brokerId(0))
                       .partitionId(2)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
                   new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(2))
                       .partitionId(2)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(3),
                   new Operation()
                       .operation(OperationEnum.PARTITION_JOIN)
                       .brokerId(brokerId(2))
                       .partitionId(3)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(2),
                   new Operation()
                       .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
                       .brokerId(brokerId(0))
                       .partitionId(3)
+                      .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID)
                       .priority(3)));
 
       Awaitility.await()

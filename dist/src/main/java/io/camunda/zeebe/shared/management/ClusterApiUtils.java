@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -30,10 +31,13 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -54,6 +58,8 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
@@ -74,6 +80,7 @@ import io.camunda.zeebe.management.cluster.PartitionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandling;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
@@ -88,6 +95,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.concurrent.CompletionException;
@@ -170,158 +178,164 @@ final class ClusterApiUtils {
 
   private static PlannedOperationsResponse mapResponseType(
       final ClusterConfigurationChangeResponse response) {
+    // response.response() is absent when the responding peer hasn't populated the new
+    // multi-partition-group data (e.g. a peer still running old code); fall back to the
+    // legacy data in that case.
+    final var multiConfigResponse = response.response();
+    final List<Operation> operations =
+        multiConfigResponse == null
+            ? mapOperations(response.legacyResponse().plannedChanges())
+            : multiConfigResponse.phases().stream()
+                .flatMap(
+                    phase ->
+                        switch (phase) {
+                          case final GlobalPhase globalPhase ->
+                              mapOperations(null, globalPhase.operations()).stream();
+                          case final PartitionGroupParallelPhase partitionGroupPhase ->
+                              partitionGroupPhase.groupOperations().entrySet().stream()
+                                  .flatMap(
+                                      entry ->
+                                          mapOperations(entry.getKey(), entry.getValue()).stream());
+                        })
+                .toList();
+    final List<BrokerState> currentTopology =
+        multiConfigResponse == null
+            ? mapBrokerStates(response.legacyResponse().currentConfiguration())
+            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.currentConfiguration());
+    final List<BrokerState> expectedTopology =
+        multiConfigResponse == null
+            ? mapBrokerStates(response.legacyResponse().expectedConfiguration())
+            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.expectedConfiguration());
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.legacyResponse().currentConfiguration()))
-        .expectedTopology(mapBrokerStates(response.legacyResponse().expectedConfiguration()))
-        .plannedChanges(mapOperations(response.legacyResponse().plannedChanges()));
+        .currentTopology(currentTopology)
+        .expectedTopology(expectedTopology)
+        .plannedChanges(operations);
   }
 
   private static List<Operation> mapOperations(
       final List<ClusterConfigurationChangeOperation> operations) {
-    return operations.stream().map(ClusterApiUtils::mapOperation).toList();
+    return mapOperations(null, operations);
   }
 
-  static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
-    return switch (operation) {
-      case final MemberJoinOperation join ->
-          new Operation()
-              .operation(OperationEnum.BROKER_ADD)
-              .brokerId(brokerIdValue(join.memberId()));
-      case final MemberLeaveOperation leave ->
-          new Operation()
-              .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(brokerIdValue(leave.memberId()));
-      case final PartitionJoinOperation join ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_JOIN)
-              .brokerId(brokerIdValue(join.memberId()))
-              .partitionId(join.partitionId())
-              .priority(join.priority());
-      case final PartitionLeaveOperation leave ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_LEAVE)
-              .brokerId(brokerIdValue(leave.memberId()))
-              .partitionId(leave.partitionId());
-      case final PartitionReconfigurePriorityOperation reconfigure ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-              .brokerId(brokerIdValue(reconfigure.memberId()))
-              .partitionId(reconfigure.partitionId())
-              .priority(reconfigure.priority());
-      case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_FORCE_RECONFIGURE)
-              .brokerId(brokerIdValue(partitionForceReconfigureOperation.memberId()))
-              .partitionId(partitionForceReconfigureOperation.partitionId())
-              .brokers(
-                  partitionForceReconfigureOperation.members().stream()
-                      .map(m -> brokerIdValue(m))
-                      .collect(toList()));
-      case final MemberRemoveOperation memberRemoveOperation ->
-          new Operation()
-              .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(brokerIdValue(memberRemoveOperation.memberId()))
-              .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
-      case final PartitionDisableExporterOperation disableExporterOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
-              .brokerId(brokerIdValue(disableExporterOperation.memberId()))
-              .partitionId(disableExporterOperation.partitionId())
-              .exporterId(disableExporterOperation.exporterId());
-      case final PartitionEnableExporterOperation enableExporterOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_ENABLE_EXPORTER)
-              .brokerId(brokerIdValue(enableExporterOperation.memberId()))
-              .partitionId(enableExporterOperation.partitionId())
-              .exporterId(enableExporterOperation.exporterId());
-      case final PartitionDeleteExporterOperation deleteExporterOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_DELETE_EXPORTER)
-              .brokerId(brokerIdValue(deleteExporterOperation.memberId()))
-              .partitionId(deleteExporterOperation.partitionId())
-              .exporterId(deleteExporterOperation.exporterId());
-      case final StartPartitionScaleUp startScaleUp ->
-          new Operation()
-              .operation(OperationEnum.START_PARTITION_SCALE_UP)
-              .brokerId(brokerIdValue(startScaleUp.memberId()));
-      case final PartitionBootstrapOperation bootstrapOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_BOOTSTRAP)
-              .brokerId(brokerIdValue(bootstrapOperation.memberId()))
-              .partitionId(bootstrapOperation.partitionId())
-              .priority(bootstrapOperation.priority());
-      case final PartitionPreRestoreOperation preRestoreOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_PRE_RESTORE)
-              .brokerId(brokerIdValue(preRestoreOperation.memberId()))
-              .partitionId(preRestoreOperation.partitionId());
-      case final PartitionRestoreOperation restoreOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_RESTORE)
-              .brokerId(brokerIdValue(restoreOperation.memberId()))
-              .partitionId(restoreOperation.partitionId());
-      case final DeleteHistoryOperation deleteHistoryOperation ->
-          new Operation().operation(OperationEnum.DELETE_HISTORY);
-      case final AwaitRedistributionCompletion redistributionCompletion ->
-          new Operation()
-              .operation(OperationEnum.AWAIT_REDISTRIBUTION)
-              .brokerId(brokerIdValue(redistributionCompletion.memberId()));
-      case final AwaitRelocationCompletion relocationCompletion ->
-          new Operation()
-              .operation(OperationEnum.AWAIT_RELOCATION)
-              .brokerId(brokerIdValue(relocationCompletion.memberId()));
-      case final UpdateRoutingState updateRoutingState ->
-          new Operation()
-              .operation(OperationEnum.UPDATE_ROUTING_STATE)
-              .brokerId(brokerIdValue(updateRoutingState.memberId()));
-      case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
-          new Operation().operation(OperationEnum.UPDATE_INCARNATION_NUMBER);
-      case final PreScalingOperation preScalingOperation ->
-          new Operation()
-              .operation(OperationEnum.PRE_SCALING)
-              .brokerId(brokerIdValue(preScalingOperation.memberId()))
-              .brokers(
-                  preScalingOperation.clusterMembers().stream()
-                      .map(m -> brokerIdValue(m))
-                      .toList());
-      case final PostScalingOperation postScalingOperation ->
-          new Operation()
-              .operation(OperationEnum.POST_SCALING)
-              .brokerId(brokerIdValue(postScalingOperation.memberId()))
-              .brokers(
-                  postScalingOperation.clusterMembers().stream()
-                      .map(m -> brokerIdValue(m))
-                      .toList());
-      case final UpdatePartitionDistributorConfigOperation
-              updatePartitionDistributorConfigOperation ->
-          new Operation()
-              .brokerId(brokerIdValue(updatePartitionDistributorConfigOperation.memberId()))
-              .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
-              .partitionDistributionConfig(
-                  toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
-      case final ModeChangeOperation modeChange ->
-          switch (modeChange.mode()) {
-            case RECOVERING ->
-                new Operation()
-                    .operation(OperationEnum.ENTER_RECOVERY)
-                    .brokerId(brokerIdValue(modeChange.memberId()));
-            case PROCESSING ->
-                new Operation()
-                    .operation(OperationEnum.EXIT_RECOVERY)
-                    .brokerId(brokerIdValue(modeChange.memberId()));
-          };
-      case final AwaitModeChangeOperation modeChange ->
-          new Operation()
-              .operation(OperationEnum.AWAIT_MODE_CHANGE)
-              .brokerId(brokerIdValue(modeChange.memberId()));
-      case final ExportingStateChangeOperation exportingStateChangeOperation ->
-          new Operation()
-              .operation(OperationEnum.EXPORTING_STATE_CHANGE)
-              .brokerId(brokerIdValue(exportingStateChangeOperation.memberId()))
-              .exportingState(mapExportingState(exportingStateChangeOperation.state()));
-      default -> new Operation().operation(OperationEnum.UNKNOWN);
-    };
+  private static List<Operation> mapOperations(
+      final String physicalTenantId,
+      final List<? extends ClusterConfigurationChangeOperation> operations) {
+    return operations.stream().map(op -> mapOperation(physicalTenantId, op)).toList();
+  }
+
+  static Operation mapOperation(
+      final String physicalTenantId, final ClusterConfigurationChangeOperation operation) {
+    final var convertedOperation =
+        switch (operation) {
+          case final MemberJoinOperation join ->
+              new Operation().operation(OperationEnum.BROKER_ADD);
+          case final MemberLeaveOperation leave ->
+              new Operation().operation(OperationEnum.BROKER_REMOVE);
+          case final PartitionJoinOperation join ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_JOIN)
+                  .partitionId(join.partitionId())
+                  .priority(join.priority());
+          case final PartitionLeaveOperation leave ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_LEAVE)
+                  .partitionId(leave.partitionId());
+          case final PartitionReconfigurePriorityOperation reconfigure ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+                  .partitionId(reconfigure.partitionId())
+                  .priority(reconfigure.priority());
+          case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_FORCE_RECONFIGURE)
+                  .partitionId(partitionForceReconfigureOperation.partitionId())
+                  .brokers(
+                      partitionForceReconfigureOperation.members().stream()
+                          .map(m -> brokerIdValue(m))
+                          .collect(toList()));
+          case final MemberRemoveOperation memberRemoveOperation ->
+              new Operation()
+                  .operation(OperationEnum.BROKER_REMOVE)
+                  .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
+          case final PartitionDisableExporterOperation disableExporterOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
+                  .partitionId(disableExporterOperation.partitionId())
+                  .exporterId(disableExporterOperation.exporterId());
+          case final PartitionEnableExporterOperation enableExporterOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_ENABLE_EXPORTER)
+                  .partitionId(enableExporterOperation.partitionId())
+                  .exporterId(enableExporterOperation.exporterId());
+          case final PartitionDeleteExporterOperation deleteExporterOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_DELETE_EXPORTER)
+                  .partitionId(deleteExporterOperation.partitionId())
+                  .exporterId(deleteExporterOperation.exporterId());
+          case final StartPartitionScaleUp startScaleUp ->
+              new Operation().operation(OperationEnum.START_PARTITION_SCALE_UP);
+          case final PartitionBootstrapOperation bootstrapOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_BOOTSTRAP)
+                  .partitionId(bootstrapOperation.partitionId())
+                  .priority(bootstrapOperation.priority());
+          case final PartitionPreRestoreOperation preRestoreOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_PRE_RESTORE)
+                  .partitionId(preRestoreOperation.partitionId());
+          case final PartitionRestoreOperation restoreOperation ->
+              new Operation()
+                  .operation(OperationEnum.PARTITION_RESTORE)
+                  .partitionId(restoreOperation.partitionId());
+          case final DeleteHistoryOperation deleteHistoryOperation ->
+              new Operation().operation(OperationEnum.DELETE_HISTORY);
+          case final AwaitRedistributionCompletion redistributionCompletion ->
+              new Operation().operation(OperationEnum.AWAIT_REDISTRIBUTION);
+          case final AwaitRelocationCompletion relocationCompletion ->
+              new Operation().operation(OperationEnum.AWAIT_RELOCATION);
+          case final UpdateRoutingState updateRoutingState ->
+              new Operation().operation(OperationEnum.UPDATE_ROUTING_STATE);
+          case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
+              new Operation().operation(OperationEnum.UPDATE_INCARNATION_NUMBER);
+          case final PreScalingOperation preScalingOperation ->
+              new Operation()
+                  .operation(OperationEnum.PRE_SCALING)
+                  .brokers(
+                      preScalingOperation.clusterMembers().stream()
+                          .map(m -> brokerIdValue(m))
+                          .toList());
+          case final PostScalingOperation postScalingOperation ->
+              new Operation()
+                  .operation(OperationEnum.POST_SCALING)
+                  .brokers(
+                      postScalingOperation.clusterMembers().stream()
+                          .map(m -> brokerIdValue(m))
+                          .toList());
+          case final UpdatePartitionDistributorConfigOperation
+                  updatePartitionDistributorConfigOperation ->
+              new Operation()
+                  .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
+                  .partitionDistributionConfig(
+                      toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
+          case final ModeChangeOperation modeChange ->
+              switch (modeChange.mode()) {
+                case RECOVERING -> new Operation().operation(OperationEnum.ENTER_RECOVERY);
+                case PROCESSING -> new Operation().operation(OperationEnum.EXIT_RECOVERY);
+              };
+          case final AwaitModeChangeOperation modeChange ->
+              new Operation().operation(OperationEnum.AWAIT_MODE_CHANGE);
+          case final ExportingStateChangeOperation exportingStateChangeOperation ->
+              new Operation()
+                  .operation(OperationEnum.EXPORTING_STATE_CHANGE)
+                  .exportingState(mapExportingState(exportingStateChangeOperation.state()));
+        };
+
+    convertedOperation.brokerId(brokerIdValue(operation.memberId()));
+    if (operation instanceof PartitionGroupOperation) {
+      convertedOperation.setPhysicalTenant(physicalTenantId);
+    }
+    return convertedOperation;
   }
 
   private static List<BrokerState> mapBrokerStates(
@@ -336,6 +350,68 @@ final class ClusterApiUtils {
                     .version(entry.getValue().version())
                     .partitions(mapPartitionStates(entry.getValue().partitions())))
         .toList();
+  }
+
+  /**
+   * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
+   * the REST response: each broker's partitions from every physical tenant it participates in are
+   * merged onto that one broker entry, tagged with their owning tenant.
+   */
+  private static List<BrokerState> mapBrokerStatesFromPhysicalTenantsConfig(
+      final CurrentClusterConfiguration configuration) {
+    final Map<String, PartitionGroupConfiguration> partitionGroups =
+        configuration.partitionGroups();
+    return configuration.globalConfiguration().members().entrySet().stream()
+        .map(
+            entry ->
+                mapBrokerStateFromPhysicalTenantsConfig(
+                    entry.getKey(), entry.getValue(), partitionGroups))
+        .toList();
+  }
+
+  private static BrokerState mapBrokerStateFromPhysicalTenantsConfig(
+      final MemberId memberId,
+      final io.camunda.zeebe.dynamic.config.state.BrokerState brokerState,
+      final Map<String, PartitionGroupConfiguration> partitionGroups) {
+    final List<PartitionState> partitions = new ArrayList<>();
+    final List<PhysicalTenantState> physicalTenants = new ArrayList<>();
+    partitionGroups.forEach(
+        (physicalTenantId, group) -> {
+          final var brokerPartitionState = group.members().get(memberId);
+          if (brokerPartitionState != null) {
+            physicalTenants.add(
+                new PhysicalTenantState()
+                    .id(physicalTenantId)
+                    .mode(mapPhysicalTenantMode(brokerPartitionState.mode())));
+            partitions.addAll(
+                mapPartitionStates(physicalTenantId, brokerPartitionState.partitions()));
+          }
+        });
+    return new BrokerState()
+        .id(brokerIdValue(memberId))
+        .state(mapBrokerLifecycleState(brokerState.state()))
+        .lastUpdatedAt(mapInstantToDateTime(brokerState.lastUpdated()))
+        .version(brokerState.version())
+        .partitions(partitions)
+        .physicalTenants(physicalTenants);
+  }
+
+  private static BrokerStateCode mapBrokerLifecycleState(
+      final io.camunda.zeebe.dynamic.config.state.BrokerState.State state) {
+    return switch (state) {
+      case ACTIVE -> BrokerStateCode.ACTIVE;
+      case JOINING -> BrokerStateCode.JOINING;
+      case LEAVING -> BrokerStateCode.LEAVING;
+      case LEFT -> BrokerStateCode.LEFT;
+      case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
+    };
+  }
+
+  private static PhysicalTenantState.ModeEnum mapPhysicalTenantMode(final Mode mode) {
+    return switch (mode) {
+      case PROCESSING -> PhysicalTenantState.ModeEnum.PROCESSING;
+      case RECOVERING -> PhysicalTenantState.ModeEnum.RECOVERING;
+    };
   }
 
   private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
@@ -360,11 +436,18 @@ final class ClusterApiUtils {
 
   private static List<PartitionState> mapPartitionStates(
       final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
+    return mapPartitionStates(null, partitions);
+  }
+
+  private static List<PartitionState> mapPartitionStates(
+      final String physicalTenantId,
+      final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
             entry ->
                 new PartitionState()
                     .id(entry.getKey())
+                    .physicalTenant(physicalTenantId)
                     .priority(entry.getValue().priority())
                     .state(mapPartitionState(entry.getValue().state()))
                     .config(mapPartitionConfig(entry.getValue().config())))
@@ -415,7 +498,10 @@ final class ClusterApiUtils {
 
   private static GetTopologyResponse mapClusterTopology(final ClusterConfiguration topology) {
     final var response = new GetTopologyResponse();
-    final List<BrokerState> brokers = mapBrokerStates(topology.members());
+    // temp: convert to new model from legacy, because the query response from the coordinator now
+    // only returns the legacy format.
+    final List<BrokerState> brokers =
+        mapBrokerStatesFromPhysicalTenantsConfig(CurrentClusterConfiguration.fromLegacy(topology));
 
     response.version(topology.version()).brokers(brokers);
     topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));

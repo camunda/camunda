@@ -8,11 +8,17 @@
 package io.camunda.zeebe.shared.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -24,12 +30,15 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveO
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
@@ -50,6 +59,10 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
@@ -57,6 +70,8 @@ import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.PhysicalTenantState;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -91,7 +106,7 @@ final class ClusterApiUtilsTest {
   @ParameterizedTest
   @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
   void shouldMapClusterChangeOperation(final ClusterConfigurationChangeOperation operation) {
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
     assertThat(encoded).isNotNull();
     assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
     assertThat(OperationEnum.values())
@@ -112,6 +127,182 @@ final class ClusterApiUtilsTest {
         .contains(encoded.getOperation());
   }
 
+  @ParameterizedTest
+  @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
+  void shouldTagOnlyPartitionGroupOperationsWithPhysicalTenant(
+      final ClusterConfigurationChangeOperation operation) {
+    // when
+    final var encoded = ClusterApiUtils.mapOperation("tenant-a", operation);
+
+    // then
+    if (operation instanceof PartitionGroupOperation) {
+      assertThat(encoded.getPhysicalTenant()).isEqualTo("tenant-a");
+    } else {
+      assertThat(encoded.getPhysicalTenant()).isNull();
+    }
+  }
+
+  @Test
+  void shouldMapPhasedResponseIntoPlannedChangesTaggedByTenant() {
+    // given
+    final var globalOperation = new MemberJoinOperation(member(1));
+    final var tenantAOperation = new DeleteHistoryOperation(member(1));
+    final var tenantBOperation = new DeleteHistoryOperation(member(2));
+    final List<Phase> phases =
+        List.of(
+            new GlobalPhase(List.of(globalOperation)),
+            new PartitionGroupParallelPhase(
+                Map.of(
+                    "tenant-a", List.of(tenantAOperation),
+                    "tenant-b", List.of(tenantBOperation))));
+    final var response =
+        new ClusterConfigurationChangeResponse(
+            1,
+            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+            new CurrentConfigurationChangeResponse(
+                CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases));
+
+    // when
+    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
+
+    // then
+    assertThat(result.getStatusCode().value()).isEqualTo(202);
+    final var body = (PlannedOperationsResponse) result.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> op.getPhysicalTenant() == null)
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.BROKER_ADD);
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> "tenant-a".equals(op.getPhysicalTenant()))
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.DELETE_HISTORY);
+    assertThat(body.getPlannedChanges())
+        .filteredOn(op -> "tenant-b".equals(op.getPhysicalTenant()))
+        .extracting(op -> op.getOperation())
+        .containsExactly(OperationEnum.DELETE_HISTORY);
+  }
+
+  @Test
+  void shouldFallBackToLegacyPlannedChangesWhenMultiConfigurationResponseIsAbsent() {
+    // given — a peer that hasn't populated the new multi-partition-group response, e.g. one still
+    // running old code (see ClusterConfigurationChangeResponse.response()).
+    final var operation = new MemberLeaveOperation(member(1));
+    final var response =
+        new ClusterConfigurationChangeResponse(
+            1, new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of(operation)), null);
+
+    // when
+    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
+
+    // then
+    final var body = (PlannedOperationsResponse) result.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getPlannedChanges())
+        .extracting(op -> op.getOperation(), op -> op.getPhysicalTenant())
+        .containsExactly(tuple(OperationEnum.BROKER_REMOVE, null));
+  }
+
+  @Test
+  void shouldFlattenPartitionsFromAllPhysicalTenantsOntoTheOwningBroker() {
+    // given — broker 1 participates in both tenants, broker 2 only in tenant-b, and is recovering
+    // there.
+    final var member1 = member(1);
+    final var member2 = member(2);
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                member1,
+                new io.camunda.zeebe.dynamic.config.state.BrokerState(
+                    0,
+                    Instant.ofEpochSecond(1),
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE),
+                member2,
+                new io.camunda.zeebe.dynamic.config.state.BrokerState(
+                    0,
+                    Instant.ofEpochSecond(2),
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var tenantA =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                member1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var tenantB =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                member1,
+                BrokerPartitionState.initialize(
+                    Map.of(2, PartitionState.active(1, DynamicPartitionConfig.init()))),
+                member2,
+                BrokerPartitionState.initialize(
+                        Map.of(2, PartitionState.active(1, DynamicPartitionConfig.init())))
+                    .setMode(Mode.RECOVERING)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var multiConfig =
+        new CurrentClusterConfiguration(
+            0,
+            globalConfiguration,
+            Map.of("tenant-a", tenantA, "tenant-b", tenantB),
+            PhasedChangeState.empty());
+    final var response =
+        new ClusterConfigurationChangeResponse(
+            1,
+            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+            new CurrentConfigurationChangeResponse(multiConfig, multiConfig, List.of()));
+
+    // when
+    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
+
+    // then
+    final var body = (PlannedOperationsResponse) result.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getCurrentTopology())
+        .extracting(BrokerState::getId)
+        .extracting(String::valueOf)
+        .containsExactlyInAnyOrder("1", "2");
+
+    final var broker1 =
+        body.getCurrentTopology().stream()
+            .filter(b -> "1".equals(String.valueOf(b.getId())))
+            .findFirst()
+            .orElseThrow();
+    assertThat(broker1.getPartitions())
+        .extracting(p -> p.getId(), p -> p.getPhysicalTenant())
+        .containsExactlyInAnyOrder(tuple(1, "tenant-a"), tuple(2, "tenant-b"));
+    assertThat(broker1.getPhysicalTenants())
+        .extracting(PhysicalTenantState::getId, PhysicalTenantState::getMode)
+        .containsExactlyInAnyOrder(
+            tuple("tenant-a", PhysicalTenantState.ModeEnum.PROCESSING),
+            tuple("tenant-b", PhysicalTenantState.ModeEnum.PROCESSING));
+
+    final var broker2 =
+        body.getCurrentTopology().stream()
+            .filter(b -> "2".equals(String.valueOf(b.getId())))
+            .findFirst()
+            .orElseThrow();
+    assertThat(broker2.getPartitions())
+        .extracting(p -> p.getId(), p -> p.getPhysicalTenant())
+        .containsExactly(tuple(2, "tenant-b"));
+    assertThat(broker2.getPhysicalTenants())
+        .extracting(PhysicalTenantState::getId, PhysicalTenantState::getMode)
+        .containsExactly(tuple("tenant-b", PhysicalTenantState.ModeEnum.RECOVERING));
+  }
+
   @Test
   void shouldUseBrokerIdAsIntegerForNonZoneAwareBroker() {
     // given
@@ -119,7 +310,7 @@ final class ClusterApiUtilsTest {
     final var operation = new MemberJoinOperation(memberId);
 
     // when
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
 
     // then
     assertThat(encoded.getBrokerId()).isEqualTo(1);
@@ -132,7 +323,7 @@ final class ClusterApiUtilsTest {
     final var operation = new MemberJoinOperation(memberId);
 
     // when
-    final var encoded = ClusterApiUtils.mapOperation(operation);
+    final var encoded = ClusterApiUtils.mapOperation(null, operation);
 
     // then
     assertThat(encoded.getBrokerId()).isEqualTo("zone-a_0");
