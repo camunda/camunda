@@ -22,9 +22,12 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Records how long resolving secrets from a store takes, and what resolving each secret reference
- * ended up as. Without these, a store that fails, throttles, or denies access is visible only in
- * the broker log, so there is nothing to alert on.
+ * Records how long resolving secrets from a store takes, what resolving each secret reference ended
+ * up as, and the cycles a store failed unexpectedly in. Without these, a store that fails,
+ * throttles, or denies access is visible only in the broker log, so there is nothing to alert on.
+ *
+ * <p>The per-reference outcomes and the per-cycle errors are separate meters rather than values on
+ * one counter, so that neither can be added to the other by a query that aggregates across a tag.
  *
  * <p>Every meter is tagged by store ID, which is not known up front: it comes from the pending
  * secret references in state, not from configuration, and the engine resolves references for store
@@ -42,6 +45,7 @@ public final class SecretResolutionMetrics {
       new EnumMap<>(SecretResolutionCallResult.class);
   private final Map<SecretResolutionOutcome, BoundedMeterCache<Counter>> outcomeCounters =
       new EnumMap<>(SecretResolutionOutcome.class);
+  private final BoundedMeterCache<Counter> cycleErrors;
 
   public SecretResolutionMetrics(final MeterRegistry registry) {
     this.registry = registry;
@@ -51,6 +55,7 @@ public final class SecretResolutionMetrics {
     for (final var outcome : SecretResolutionOutcome.values()) {
       outcomeCounters.put(outcome, counterCache(registry, outcome));
     }
+    cycleErrors = cycleErrorCache(registry);
   }
 
   /**
@@ -104,9 +109,13 @@ public final class SecretResolutionMetrics {
    * references it left pending are retried, so this counts cycles rather than references — counting
    * the references instead would scale the series with the pending backlog and with how often the
    * cycle runs, and neither is a quantity anyone can alert on.
+   *
+   * <p>That unit is why this is its own meter rather than another value on the outcome counter: a
+   * counter mixing cycles and references cannot be summed or divided across its {@code result} tag,
+   * so every rate and failure ratio built on it would quietly add the two together.
    */
   public void error(final String storeId) {
-    outcomeCounter(storeId, SecretResolutionOutcome.ERROR).increment();
+    cycleErrors.get(storeTag(storeId)).increment();
   }
 
   private Counter outcomeCounter(final String storeId, final SecretResolutionOutcome outcome) {
@@ -129,6 +138,15 @@ public final class SecretResolutionMetrics {
         Counter.builder(meterDoc.getName())
             .description(meterDoc.getDescription())
             .tag(SecretResolutionKeyNames.RESULT.asString(), outcome.name())
+            .withRegistry(registry);
+    return BoundedMeterCache.of(registry, provider, SecretResolutionKeyNames.STORE);
+  }
+
+  private static BoundedMeterCache<Counter> cycleErrorCache(final MeterRegistry registry) {
+    final var meterDoc = SecretResolutionMetricsDoc.RESOLUTION_CYCLE_ERROR;
+    final var provider =
+        Counter.builder(meterDoc.getName())
+            .description(meterDoc.getDescription())
             .withRegistry(registry);
     return BoundedMeterCache.of(registry, provider, SecretResolutionKeyNames.STORE);
   }

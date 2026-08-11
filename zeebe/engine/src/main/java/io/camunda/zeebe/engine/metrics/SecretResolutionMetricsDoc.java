@@ -79,17 +79,16 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
   RESOLUTION_OUTCOME {
     @Override
     public String getDescription() {
-      return "Number of secret reference resolutions that produced an outcome, per store. Every "
-          + "result value except ERROR is terminal for the reference and is only counted once the "
-          + "engine has written the follow-up command for it. A reference whose store is "
-          + "unavailable but still has retry attempts left is not counted at all, because it has "
-          + "not reached a terminal outcome yet. ERROR is the one non-terminal value: it counts one "
-          + "per resolution cycle a store failed unexpectedly in, not one per reference, since "
-          + "those references stay pending and are retried. A terminal value can slightly "
-          + "over-count: a reference stops being pending only once the follow-up command has been "
-          + "processed, so a cycle running before that resolves it a second time and counts it "
-          + "again, even though the duplicate command is then rejected. Read the counter as a rate "
-          + "signal per outcome rather than as an exact number of references.";
+      return "Number of secret reference resolutions that produced an outcome, per store. Counts "
+          + "references throughout: every result value is terminal for the reference it counts, and "
+          + "is only counted once the engine has written the follow-up command for it, so the "
+          + "values can be summed or divided by one another. A reference whose store is unavailable "
+          + "but still has retry attempts left is not counted at all, because it has not reached a "
+          + "terminal outcome yet. A value can slightly over-count: a reference stops being pending "
+          + "only once the follow-up command has been processed, so a cycle running before that "
+          + "resolves it a second time and counts it again, even though the duplicate command is "
+          + "then rejected. Read the counter as a rate signal per outcome rather than as an exact "
+          + "number of references.";
     }
 
     @Override
@@ -105,6 +104,45 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {SecretResolutionKeyNames.STORE, SecretResolutionKeyNames.RESULT};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Resolution cycles a store failed unexpectedly in */
+  RESOLUTION_CYCLE_ERROR {
+    @Override
+    public String getDescription() {
+      return "Number of resolution cycles in which a store failed in a way the engine does not "
+          + "model — an unexpected exception rather than a per-secret failure or an unreachable "
+          + "store — per store. Always a bug, either in the store implementation or in the engine. "
+          + "Counts cycles rather than references, and is a separate meter from "
+          + "camunda.secret.resolution.outcome for that reason: the references such a cycle leaves "
+          + "pending are retried, so counting them would scale the series with the pending backlog "
+          + "and with how often the cycle runs, and neither is a quantity anyone can alert on. Does "
+          + "not cover an Error thrown by a store: the engine recovers from a RuntimeException "
+          + "only, and an Error instead fails the resolution task and shows up on "
+          + "camunda.secret.resolution.duration with result=ERROR.";
+    }
+
+    @Override
+    public String getName() {
+      return "camunda.secret.resolution.cycle.error";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      // deliberately no `result`: the meter has a single meaning, so there is no value domain to
+      // aggregate across and no way to add a cycle count to a reference count by accident
+      return new KeyName[] {SecretResolutionKeyNames.STORE};
     }
 
     @Override
@@ -160,6 +198,10 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
    * here because the engine collapses all of them to a single {@code ResolutionState.NOT_FOUND}
    * when it writes to the stream, so this counter is the only place the distinction between a
    * missing secret and a denied one survives.
+   *
+   * <p>Every value counts one secret reference that reached a terminal outcome. Nothing measured
+   * per cycle belongs here: a counter whose values carry two different units cannot be summed or
+   * divided across the tag, which is what {@link #RESOLUTION_CYCLE_ERROR} is a separate meter for.
    */
   public enum SecretResolutionOutcome {
     /** The store returned a value for the reference */
@@ -177,15 +219,7 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
      * be reached and no retry attempt is left. Mirrors {@code ResolutionState.STORE_UNAVAILABLE},
      * which the engine writes for both cases.
      */
-    STORE_UNAVAILABLE,
-    /**
-     * The store failed in a way the engine does not model: an unexpected exception rather than a
-     * {@code Failed} result or a {@code SecretStoreUnavailableException}. Always a bug, either in
-     * the store implementation or in the engine, and the only value here that is not terminal — the
-     * references stay pending and are retried, so this value counts one per failed resolution cycle
-     * rather than one per reference.
-     */
-    ERROR;
+    STORE_UNAVAILABLE;
 
     /**
      * Maps a store's typed error code onto the tag value.
@@ -213,10 +247,11 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
    * timer can only say how the call itself ended. That distinction is what keeps a store timing out
    * after 60s out of the same histogram as the calls that returned.
    *
-   * <p>Every value naming a failure means the same thing as the {@link SecretResolutionOutcome}
-   * constant of the same name, so a {@code result} value reads identically on both meters. Only
-   * {@link #RETURNED} is exclusive to this domain, because a returning batch call has no single
-   * per-reference outcome to report.
+   * <p>{@link #STORE_UNAVAILABLE} is the one value shared with {@link SecretResolutionOutcome}, and
+   * means the same failure on both, so that {@code result} value reads identically wherever it
+   * appears. The other two are exclusive to this domain: a returning batch call has no single
+   * per-reference outcome to report, and a call that threw leaves its references pending rather
+   * than resolving any of them.
    */
   public enum SecretResolutionCallResult {
     /** The store returned, whatever the per-reference results were */
@@ -226,7 +261,12 @@ public enum SecretResolutionMetricsDoc implements ExtendedMeterDocumentation {
      * says nothing about retries: it covers every unreachable call, not only the last one.
      */
     STORE_UNAVAILABLE,
-    /** The store threw something the engine does not model. Always a bug */
+    /**
+     * The store threw something the engine does not model. Always a bug. Covers an {@code Error}
+     * too, which the engine does not recover from and which therefore reaches no other meter —
+     * {@link SecretResolutionMetricsDoc#RESOLUTION_CYCLE_ERROR} counts only the cycles the engine
+     * carried on from.
+     */
     ERROR
   }
 }

@@ -81,20 +81,40 @@ final class SecretResolutionMetricsDocTest {
             "ACCESS_DENIED",
             "INVALID_REF",
             "UNREADABLE",
-            "STORE_UNAVAILABLE",
-            "ERROR");
+            "STORE_UNAVAILABLE");
+  }
+
+  @Test
+  void shouldCountOnlySecretReferencesOnTheOutcomeCounter() {
+    // given — the two values that describe a whole call rather than a single reference
+    final var callLevelValues =
+        Stream.of(SecretResolutionCallResult.RETURNED, SecretResolutionCallResult.ERROR)
+            .map(Enum::name)
+            .toList();
+
+    // when/then — neither may become an outcome value. A counter whose values carry two units
+    // cannot be summed or divided across its `result` tag, so `sum by(store)(rate(..._total[5m]))`
+    // and every failure ratio would silently add references and calls together. A quantity measured
+    // per call or per cycle belongs on its own meter, as RESOLUTION_CYCLE_ERROR is
+    assertThat(SecretResolutionOutcome.values())
+        .extracting(Enum::name)
+        .doesNotContainAnyElementsOf(callLevelValues);
   }
 
   @Test
   void shouldGiveTheSameResultValueTheSameMeaningOnBothMeters() {
-    // given — the timer's own value for a call that came back, which has no per-reference meaning
-    final var timerOnlyValue = SecretResolutionCallResult.RETURNED.name();
+    // given — the timer's own values: RETURNED because a call that came back has no single
+    // per-reference outcome, ERROR because a call that threw resolved no reference at all
+    final var timerOnlyValues =
+        Stream.of(SecretResolutionCallResult.RETURNED, SecretResolutionCallResult.ERROR)
+            .map(Enum::name)
+            .toList();
 
     // when
     final var sharedValues =
         Stream.of(SecretResolutionCallResult.values())
             .map(Enum::name)
-            .filter(name -> !name.equals(timerOnlyValue))
+            .filter(name -> !timerOnlyValues.contains(name))
             .toList();
 
     // then — a `result` value that appears on both meters must mean the same failure on both,
@@ -118,12 +138,12 @@ final class SecretResolutionMetricsDocTest {
   }
 
   @Test
-  void shouldNotProduceTheNonTerminalOutcomesFromAStoreErrorCode() {
-    // given/when/then — STORE_UNAVAILABLE and ERROR are engine-level, not per-secret, so a store
-    // error code must never map onto them
+  void shouldNotProduceTheStoreLevelOutcomeFromAStoreErrorCode() {
+    // given/when/then — STORE_UNAVAILABLE says the store served no reference at all, so a code the
+    // store returned for one specific reference must never map onto it
     assertThat(SecretErrorCode.values())
         .extracting(SecretResolutionOutcome::from)
-        .doesNotContain(SecretResolutionOutcome.STORE_UNAVAILABLE, SecretResolutionOutcome.ERROR);
+        .doesNotContain(SecretResolutionOutcome.STORE_UNAVAILABLE);
   }
 
   @Test
@@ -143,10 +163,32 @@ final class SecretResolutionMetricsDocTest {
     // given
     final var description = SecretResolutionMetricsDoc.RESOLUTION_OUTCOME.getDescription();
 
-    // when/then — the counter is neither one-per-reference nor exact, and both caveats have to
-    // reach whoever builds an alert on it: ERROR counts per cycle, and a terminal outcome can be
-    // counted twice when a reference is resolved again before its command has been processed
-    assertThat(description).contains("ERROR").contains("over-count");
+    // when/then — the counter is per reference but not exact, and both caveats have to reach
+    // whoever builds an alert on it: a reference with retry attempts left is not counted at all,
+    // and one that is resolved again before its command has been processed is counted twice
+    assertThat(description).contains("retry attempts left").contains("over-count");
+  }
+
+  @Test
+  void shouldDocumentTheCycleErrorAsACounterTaggedByStoreOnly() {
+    // given
+    final var meter = SecretResolutionMetricsDoc.RESOLUTION_CYCLE_ERROR;
+
+    // when/then — no `result` tag: the meter has a single meaning, so there is no value domain to
+    // aggregate across and no way to add a cycle count to a reference count by accident
+    assertThat(meter.getName()).isEqualTo("camunda.secret.resolution.cycle.error");
+    assertThat(meter.getType()).isEqualTo(Type.COUNTER);
+    assertThat(meter.getKeyNames()).containsExactly(SecretResolutionKeyNames.STORE);
+  }
+
+  @Test
+  void shouldDocumentThatTheCycleErrorCountsCyclesRatherThanReferences() {
+    // given
+    final var description = SecretResolutionMetricsDoc.RESOLUTION_CYCLE_ERROR.getDescription();
+
+    // when/then — the unit is the whole point of the separate meter, and reading it as a reference
+    // count would make it look like a backlog rather than a bug rate
+    assertThat(description).contains("cycles rather than references");
   }
 
   @Test

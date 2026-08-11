@@ -190,7 +190,11 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
                 e);
             // a store failing this way is a bug rather than one of the modelled outcomes, and it
             // would otherwise be log-only: no outcome is counted for these references, so every
-            // rate built on the counter would read as "nothing is happening"
+            // rate built on the outcome counter would read as "nothing is happening". Counted on
+            // its own meter, per cycle, because these references stay pending — see
+            // SecretResolutionMetrics#error. Deliberately only what this catch covers: an Error is
+            // not a cycle the scheduler carried on from, and is visible on the duration timer
+            // (result=ERROR) and in the task failing instead.
             metrics.error(entry.getKey());
           }
         }

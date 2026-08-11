@@ -300,7 +300,7 @@ final class SecretResolutionSchedulerTest {
         new SecretStoreRegistry(Map.of(STORE_ID, secretStore), Map.of(STORE_ID, cache));
     final var localScheduler =
         new SecretResolutionScheduler(
-            () -> scheduledTaskState, registry, new EngineConfiguration());
+            () -> scheduledTaskState, registry, new EngineConfiguration(), metrics);
     localScheduler.onRecovered(context);
     stubPending(STORE_ID, "db-password", "api-key");
     when(secretStore.resolve(Set.of("db-password", "api-key")))
@@ -1069,9 +1069,49 @@ final class SecretResolutionSchedulerTest {
     // then — the refs stay pending and are retried, so counting them would scale the series with
     // the backlog and the cycle rate; without counting anything a store failing this way every
     // cycle leaves every series flat and there is nothing to alert on
-    assertThat(outcomeCount(STORE_ID, SecretResolutionOutcome.ERROR)).isEqualTo(1);
+    assertThat(cycleErrorCount(STORE_ID)).isEqualTo(1);
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR).count()).isEqualTo(1);
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.RETURNED)).isNull();
+  }
+
+  @Test
+  void shouldNotPutTheCycleErrorOnTheOutcomeCounter() throws Exception {
+    // given
+    stubPending(STORE_ID, "a", "b");
+    when(secretStore.resolve(any())).thenThrow(new IllegalStateException("boom"));
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then — the outcome counter registers no series at all for this cycle. Every value on it
+    // counts one secret reference, and a cycle count sharing the meter would be added to those by
+    // `sum by(store)(rate(..._total[5m]))` and by any failure ratio built on the same counter
+    assertThat(
+            meterRegistry
+                .find(SecretResolutionMetricsDoc.RESOLUTION_OUTCOME.getName())
+                .tag(SecretResolutionKeyNames.STORE.asString(), STORE_ID)
+                .counters())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldCountACycleErrorWhenTheEngineFailsAfterTheStoreCallCameBack() throws Exception {
+    // given — the store itself is fine; the engine blows up while writing the follow-up command
+    stubPending(STORE_ID, "db-password");
+    when(secretStore.resolve(Set.of("db-password")))
+        .thenReturn(Map.of("db-password", new SecretResolutionResult.Resolved("s3cr3t")));
+    when(resultBuilder.appendCommandRecord(any(), any()))
+        .thenThrow(new IllegalStateException("boom"));
+
+    // when
+    scheduler.resolveSecrets(resultBuilder);
+
+    // then — the duration timer saw a call that came back and so reports nothing wrong; this is
+    // the class of failure only the cycle counter can surface, and the reason it is a meter of its
+    // own rather than something the timer's ERROR bucket already covers
+    assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.RETURNED).count()).isEqualTo(1);
+    assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR)).isNull();
+    assertThat(cycleErrorCount(STORE_ID)).isEqualTo(1);
   }
 
   @Test
@@ -1088,7 +1128,7 @@ final class SecretResolutionSchedulerTest {
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.STORE_UNAVAILABLE).count())
         .isEqualTo(1);
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR)).isNull();
-    assertThat(outcomeCount(STORE_ID, SecretResolutionOutcome.ERROR)).isZero();
+    assertThat(cycleErrorCount(STORE_ID)).isZero();
   }
 
   @Test
@@ -1106,6 +1146,13 @@ final class SecretResolutionSchedulerTest {
     // is what its latency would otherwise be read as
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.ERROR).count()).isEqualTo(1);
     assertThat(resolutionTimer(STORE_ID, SecretResolutionCallResult.RETURNED)).isNull();
+
+    // and — the cycle counter stays at zero on purpose. It counts cycles the scheduler carried on
+    // from, and this one it did not: the Error escaped the `catch (RuntimeException)` and failed
+    // the resolution task. Catching it to keep the two meters in step would mean swallowing an
+    // Error in an actor task, which is worse than the asymmetry; the duration timer above and the
+    // failing task are what make this visible instead
+    assertThat(cycleErrorCount(STORE_ID)).isZero();
   }
 
   @ParameterizedTest
@@ -1226,6 +1273,15 @@ final class SecretResolutionSchedulerTest {
             .find(SecretResolutionMetricsDoc.RESOLUTION_OUTCOME.getName())
             .tag(SecretResolutionKeyNames.STORE.asString(), storeId)
             .tag(SecretResolutionKeyNames.RESULT.asString(), outcome.name())
+            .counter();
+    return counter == null ? 0 : counter.count();
+  }
+
+  private double cycleErrorCount(final String storeId) {
+    final var counter =
+        meterRegistry
+            .find(SecretResolutionMetricsDoc.RESOLUTION_CYCLE_ERROR.getName())
+            .tag(SecretResolutionKeyNames.STORE.asString(), storeId)
             .counter();
     return counter == null ? 0 : counter.count();
   }
