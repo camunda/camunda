@@ -72,8 +72,23 @@ const InstancesTableWrapper: React.FC = observer(() => {
     const visibleIds = processInstances.map(
       (instance) => instance.processInstanceKey,
     );
+    const visibleActiveRootIds = processInstances
+      .filter(
+        (instance) =>
+          instance.state === 'ACTIVE' &&
+          instance.parentProcessInstanceKey === null,
+      )
+      .map((instance) => instance.processInstanceKey);
     const visibleRunningIds = processInstances
-      .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
+      .filter((instance) => instance.state === 'ACTIVE')
+      .map((instance) => instance.processInstanceKey);
+
+    const visibleSuspendedRootIds = processInstances
+      .filter(
+        (instance) =>
+          instance.state === 'SUSPENDED' &&
+          instance.parentProcessInstanceKey === null,
+      )
       .map((instance) => instance.processInstanceKey);
 
     const visibleFinishedIds = processInstances
@@ -84,14 +99,16 @@ const InstancesTableWrapper: React.FC = observer(() => {
       .map((instance) => instance.processInstanceKey);
 
     const visibleIncidentIds = processInstances
-      .filter((instance) => instance.hasIncident)
+      .filter((instance) => instance.state === 'ACTIVE' && instance.hasIncident)
       .map((instance) => instance.processInstanceKey);
 
     processInstancesSelectionStore.setRuntime({
       totalCount,
       hasMoreTotalItems,
       visibleIds,
+      visibleActiveRootIds,
       visibleRunningIds,
+      visibleSuspendedRootIds,
       visibleFinishedIds,
       visibleIncidentIds,
     });

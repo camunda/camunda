@@ -63,7 +63,6 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const filters = useFilters();
     const location = useLocation();
     const [searchParams] = useSearchParams();
-    const isBatchSelectionEnabled = searchParams.get('suspended') !== 'true';
 
     const {canceled, completed, tenantId} = getProcessInstanceFilters(
       location.search,
@@ -120,21 +119,17 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           count={totalCount}
           hasMoreTotalItems={hasMoreTotalItems}
         />
-        {isBatchSelectionEnabled && (
-          <Toolbar
-            selectedInstancesCount={
-              processInstancesSelectionStore.selectedCount
-            }
-            isSelectedCountTruncated={
-              processInstancesSelectionStore.isSelectedCountTruncated
-            }
-          />
-        )}
+        <Toolbar
+          selectedInstancesCount={processInstancesSelectionStore.selectedCount}
+          isSelectedCountTruncated={
+            processInstancesSelectionStore.isSelectedCountTruncated
+          }
+        />
         <SortableTable
           state={state}
           stickyHeader
           columnsWithNoContentPadding={['operations']}
-          selectionType={isBatchSelectionEnabled ? 'checkbox' : undefined}
+          selectionType="checkbox"
           onSelectAll={processInstancesSelectionStore.selectAll}
           onSelect={(rowId) => {
             processInstancesSelectionStore.select(rowId);

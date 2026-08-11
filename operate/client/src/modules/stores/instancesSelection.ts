@@ -18,7 +18,9 @@ type Runtime = {
   totalCount: number;
   hasMoreTotalItems?: boolean;
   visibleIds: string[];
+  visibleActiveRootIds?: string[];
   visibleRunningIds?: string[];
+  visibleSuspendedRootIds?: string[];
   visibleFinishedIds?: string[];
   visibleIncidentIds?: string[];
 };
@@ -40,7 +42,9 @@ class InstancesSelection {
     totalCount: 0,
     hasMoreTotalItems: false,
     visibleIds: [],
+    visibleActiveRootIds: [],
     visibleRunningIds: [],
+    visibleSuspendedRootIds: [],
     visibleFinishedIds: [],
     visibleIncidentIds: [],
   };
@@ -74,7 +78,15 @@ class InstancesSelection {
       prev.totalCount === next.totalCount &&
       !!prev.hasMoreTotalItems === !!next.hasMoreTotalItems &&
       isEqual(prev.visibleIds, next.visibleIds) &&
+      isEqual(
+        prev.visibleActiveRootIds ?? [],
+        next.visibleActiveRootIds ?? [],
+      ) &&
       isEqual(prev.visibleRunningIds ?? [], next.visibleRunningIds ?? []) &&
+      isEqual(
+        prev.visibleSuspendedRootIds ?? [],
+        next.visibleSuspendedRootIds ?? [],
+      ) &&
       isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? []) &&
       isEqual(prev.visibleIncidentIds ?? [], next.visibleIncidentIds ?? [])
     ) {
@@ -187,6 +199,36 @@ class InstancesSelection {
     );
   }
 
+  get hasSelectedActiveRootInstances() {
+    const {
+      selectedIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const visibleActiveRootIds = this.runtime.visibleActiveRootIds ?? [];
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleActiveRootIds.some((id) => selectedIds.includes(id))
+    );
+  }
+
+  get hasSelectedSuspendedRootInstances() {
+    const {
+      selectedIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const visibleSuspendedRootIds = this.runtime.visibleSuspendedRootIds ?? [];
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleSuspendedRootIds.some((id) => selectedIds.includes(id))
+    );
+  }
+
   get hasSelectedFinishedInstances() {
     const {
       selectedIds,
@@ -226,6 +268,28 @@ class InstancesSelection {
     }
 
     return visibleRunningIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedActiveRootIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleActiveRootIds = this.runtime.visibleActiveRootIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleActiveRootIds.includes(id));
+    }
+
+    return visibleActiveRootIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedSuspendedRootIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleSuspendedRootIds = this.runtime.visibleSuspendedRootIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleSuspendedRootIds.includes(id));
+    }
+
+    return visibleSuspendedRootIds.filter((id) => !selectedIds.includes(id));
   }
 
   get checkedIncidentIds() {
@@ -278,7 +342,9 @@ class InstancesSelection {
       totalCount: 0,
       hasMoreTotalItems: false,
       visibleIds: [],
+      visibleActiveRootIds: [],
       visibleRunningIds: [],
+      visibleSuspendedRootIds: [],
       visibleFinishedIds: [],
       visibleIncidentIds: [],
     };

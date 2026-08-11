@@ -20,13 +20,19 @@ import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml'
 import {useSelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 
-const MigrateAction: React.FC = observer(() => {
+type Props = {
+  isRunningSelection?: boolean;
+};
+
+const MigrateAction: React.FC<Props> = observer(({isRunningSelection}) => {
   const {
     selectedIds,
-    hasSelectedRunningInstances,
+    hasSelectedRunningInstances: storeHasSelectedRunningInstances,
     excludedIds,
     state: {selectionMode},
   } = processInstancesSelectionStore;
+  const hasSelectedRunningInstances =
+    isRunningSelection ?? storeHasSelectedRunningInstances;
 
   const selectedProcessDefinition = useSelectedProcessDefinitionContext();
   const processDefinitionXml = useListViewXml({

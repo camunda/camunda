@@ -17,14 +17,15 @@ import {parseDecisionInstancesSearchFilter} from 'modules/utils/filter/decisions
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const useBatchOperationMutationRequestBody = () => {
+const useProcessInstancesBatchOperationMutationRequestBody = (
+  checkedEligibleIds: string[],
+) => {
   const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
 
-  const {selectedIds, excludedIds, checkedRunningIds} =
-    processInstancesSelectionStore;
+  const {selectedIds, excludedIds} = processInstancesSelectionStore;
 
-  const includeIds = selectedIds.length > 0 ? checkedRunningIds : [];
+  const includeIds = selectedIds.length > 0 ? checkedEligibleIds : [];
 
   return buildMutationRequestBody({
     searchParams,
@@ -33,6 +34,21 @@ const useBatchOperationMutationRequestBody = () => {
     conditions,
   });
 };
+
+const useBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedRunningIds,
+  );
+
+const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedActiveRootIds,
+  );
+
+const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedSuspendedRootIds,
+  );
 
 /**
  * Hook for building the request body for delete batch operations.
@@ -76,6 +92,8 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
 
 export {
   useBatchOperationMutationRequestBody,
+  useSuspendProcessInstancesBatchOperationMutationRequestBody,
+  useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useDeleteDecisionInstancesBatchOperationRequestBody,
 };
