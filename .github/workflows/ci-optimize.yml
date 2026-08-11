@@ -353,6 +353,7 @@ jobs:
     permissions: { }
     env:
       TEST_TYPE: E2E
+      TEST_OWNER: '@camunda/optimize'
 
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
@@ -514,6 +515,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: E2E
+      TEST_OWNER: '@camunda/optimize'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - name: Checkout code
