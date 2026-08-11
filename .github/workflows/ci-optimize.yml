@@ -289,7 +289,10 @@ jobs:
         with:
           directory: optimize/client
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        uses: ./.github/actions/yarn-install-with-retry
+        with:
+          directory: optimize/client
+          args: install --frozen-lockfile
       - name: Unit tests
         run: yarn test:ci
       - name: Upload test results
