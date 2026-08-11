@@ -33,6 +33,7 @@ public class ProcessingMetrics {
   private static final String ACTION_PROCESSED = "processed";
 
   private final AtomicLong lastProcessedPosition = new AtomicLong();
+  private final AtomicLong pendingSideEffects = new AtomicLong();
   private final Table<ValueType, Intent, Timer> processingDuration = Table.simple();
   private final Map<String, Counter> streamProcessorEvents = new HashMap<>();
 
@@ -48,6 +49,7 @@ public class ProcessingMetrics {
     this.registry = registry;
 
     registerLastProcessedPosition();
+    registerPendingSideEffects();
     batchProcessingDuration = registerTimer(StreamMetricsDoc.BATCH_PROCESSING_DURATION);
     batchProcessingPostCommitTasks =
         registerTimer(StreamMetricsDoc.BATCH_PROCESSING_POST_COMMIT_TASKS);
@@ -124,6 +126,10 @@ public class ProcessingMetrics {
     lastProcessedPosition.set(position);
   }
 
+  public void setPendingSideEffects(final int count) {
+    pendingSideEffects.set(count);
+  }
+
   private DistributionSummary registerBatchProcessingCommands() {
     final DistributionSummary batchProcessingCommands;
     final var commandsDoc = StreamMetricsDoc.BATCH_PROCESSING_COMMANDS;
@@ -155,6 +161,13 @@ public class ProcessingMetrics {
   private void registerLastProcessedPosition() {
     final var meterDoc = StreamMetricsDoc.LAST_PROCESSED_POSITION;
     Gauge.builder(meterDoc.getName(), lastProcessedPosition, AtomicLong::longValue)
+        .description(meterDoc.getDescription())
+        .register(registry);
+  }
+
+  private void registerPendingSideEffects() {
+    final var meterDoc = StreamMetricsDoc.PENDING_SIDE_EFFECTS;
+    Gauge.builder(meterDoc.getName(), pendingSideEffects, AtomicLong::longValue)
         .description(meterDoc.getDescription())
         .register(registry);
   }

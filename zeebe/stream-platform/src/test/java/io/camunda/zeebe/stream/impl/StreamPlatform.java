@@ -79,6 +79,7 @@ public final class StreamPlatform {
   private final StreamProcessorListener mockStreamProcessorListener;
   private TestCommandCache scheduledCommandCache;
   private final InstantSource clock;
+  private MeterRegistry processorMeterRegistry;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -127,6 +128,11 @@ public final class StreamPlatform {
 
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  /** The registry of the stream processor built last, holding its processing metrics. */
+  public MeterRegistry getProcessorMeterRegistry() {
+    return processorMeterRegistry;
   }
 
   public void resetLogContext() {
@@ -290,9 +296,10 @@ public final class StreamPlatform {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
 
+    processorMeterRegistry = new SimpleMeterRegistry();
     final var builder =
         StreamProcessor.builder()
-            .meterRegistry(new SimpleMeterRegistry())
+            .meterRegistry(processorMeterRegistry)
             .clock(StreamClock.controllable(clock))
             .logStream(stream)
             .zeebeDb(zeebeDb)
