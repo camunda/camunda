@@ -21,9 +21,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
+import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
@@ -48,7 +53,8 @@ final class ClusterEndpointTest {
             Map.of(
                 "dryRun", new String[] {"true"},
                 "force", new String[] {"false"},
-                "replicationFactor", new String[] {"3"}));
+                "replicationFactor", new String[] {"3"},
+                "physicalTenant", new String[] {"tenant-a"}));
 
     // when - then
     assertThatCode(() -> endpoint.validateRequestParameters(request)).doesNotThrowAnyException();
@@ -82,6 +88,87 @@ final class ClusterEndpointTest {
 
   private ClusterEndpoint createEndpoint() {
     return new ClusterEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
+  }
+
+  @Nested
+  class ClusterTopologyEndpoint {
+
+    private CurrentClusterConfiguration singleTenantConfiguration() {
+      return CurrentClusterConfiguration.fromLegacy(
+          ClusterConfiguration.init()
+              .addMember(
+                  MemberId.from("0"),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
+    }
+
+    @Test
+    void shouldReturn404ForUnknownPhysicalTenant() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
+
+      // when
+      final var response = endpoint.clusterTopology("does-not-exist");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void shouldTreatBlankPhysicalTenantAsAbsent() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
+
+      // when
+      final var response = endpoint.clusterTopology("   ");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldReturnTopologyWhenPhysicalTenantIsAbsent() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
+
+      // when
+      final var response = endpoint.clusterTopology(null);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldReturn200ForScopedTenantWhenConfigurationIsUninitialized() {
+      // given — an uninitialized configuration has zero partition groups (broker startup, or
+      // right after a restore); a request scoped to a physical tenant must still get the
+      // uninitialized body, not a 404, since "no groups yet" means "not bootstrapped", not
+      // "unknown tenant".
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      when(sender.getTopology())
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(CurrentClusterConfiguration.uninitialized())));
+
+      // when
+      final var response = endpoint.clusterTopology("default");
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+      final var body = (GetTopologyResponse) response.getBody();
+      assertThat(body).isNotNull();
+      assertThat(body.getVersion()).isEqualTo(-1);
+    }
   }
 
   @Nested
@@ -200,7 +287,9 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = new ClusterEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
 
       // when
       final var response = endpoint.getConfigurationChange("2");
@@ -220,7 +309,9 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = new ClusterEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
 
       // when
       final var response = endpoint.getConfigurationChange("999");
@@ -249,7 +340,9 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = new ClusterEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
 
       // when
       final var response = endpoint.listConfigurationChanges();

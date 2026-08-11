@@ -134,7 +134,36 @@ schemas:
 
   GetTopologyResponse:
     title: GetTopologyResponse
-    description: Current topology of the cluster
+    description: |
+      Current topology of the cluster. The top-level fields describe either exactly one physical
+      tenant or more than one, never both, and the two shapes are mutually exclusive:
+
+      - Single-tenant shape (a single-tenant cluster, or a request scoped with
+        `?physicalTenant=<id>`): `version`, `lastChange`, `pendingChange`, and `routing` are
+        populated. Of these, only `routing` is that one physical tenant's own routing state;
+        `version`, `lastChange`, and `pendingChange` describe cluster-wide configuration-change
+        state, not a per-tenant history - `version` is the higher of the cluster-wide and the
+        scoped tenant's own version, `lastChange` comes from the cluster-wide change history (so
+        it is identical whichever tenant is requested), and `pendingChange` reports the
+        cluster-wide pending change, falling back to the scoped tenant's own pending change only
+        when there is no cluster-wide one. This keeps the same top-level field set as before
+        physical tenants existed, so existing consumers of the top-level shape are unaffected.
+      - Multi-tenant shape (an unscoped request against a cluster with more than one physical
+        tenant): `version`, `lastChange`, `pendingChange`, and `routing` are all absent - reporting
+        any one tenant's routing state at the top level would misrepresent the tenants left out,
+        and the cluster-wide change state has no single physical tenant to be scoped to. Each
+        broker's `version` is absent for the same reason, see `BrokerState`.
+
+      `physicalTenants` reports every physical tenant the response covers, in both shapes, and is
+      absent only for an unscoped request against a single-tenant cluster - whose one tenant the
+      top-level fields already describe in full, and which is the shape that predates physical
+      tenants. A request scoping to one tenant therefore reads that tenant's routing state from
+      `physicalTenants` exactly as an unscoped one does, at the cost of repeating it under
+      `routing`; the two always agree.
+
+      `pendingChange` is superseded by the `/actuator/cluster/changes` endpoints, which report
+      pending changes per physical tenant; it is kept here only for the single-tenant shape's
+      backwards compatibility.
     type: object
     properties:
       version:
@@ -155,6 +184,26 @@ schemas:
         example: "cluster-1234"
       partitionDistribution:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      physicalTenants:
+        description: >
+          One entry per physical tenant the response covers: every physical tenant known to the
+          cluster for an unscoped request, or just the requested one for a request scoped with
+          `?physicalTenant=<id>`. Absent only for an unscoped request against a single-tenant
+          cluster, where `version`/`lastChange`/`pendingChange`/`routing` already carry that one
+          tenant's state (see the schema description).
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PhysicalTenantInfo"
+
+  PhysicalTenantInfo:
+    title: PhysicalTenantInfo
+    description: A physical tenant's own routing state, as reported by `GetTopologyResponse`.
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
 
   UpdatePartitionDistributionRequest:
     description: >
@@ -553,7 +602,11 @@ schemas:
       version:
         type: integer
         format: int64
-        description: The version of the broker state
+        description: >
+          The version of the broker state, covering both its lifecycle state and its partition
+          state in the physical tenant the response describes. Absent when the response covers
+          more than one physical tenant, since each tenant advances its own counter independently
+          and no single number describes them all; use `lastUpdatedAt` for change detection there.
         example: 1
       lastUpdatedAt:
         type: string

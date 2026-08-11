@@ -117,9 +117,15 @@ paths:
     get:
       summary: Get current topology
       description: Returns the current topology of the cluster.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '200':
           $ref: "#/components/responses/GetTopologyResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
         '500':
           $ref: 'components.yaml#/responses/InternalError'
         '502':
@@ -403,6 +409,14 @@ components:
       schema:
         type: integer
         format: int32
+    PhysicalTenantParameter:
+      name: physicalTenant
+      description: Scopes the response to one physical tenant.
+      in: query
+      style: form
+      required: false
+      schema:
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
   responses:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.
