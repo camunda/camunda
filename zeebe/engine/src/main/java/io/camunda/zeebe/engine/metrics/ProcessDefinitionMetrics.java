@@ -102,6 +102,14 @@ public final class ProcessDefinitionMetrics {
     drainingProcessDefinitions.decrementAndGet();
   }
 
+  /**
+   * Removes a definition deleted outright from the deployed count, without ever entering the
+   * draining count (its last instance was already gone). Live processing only.
+   */
+  public void processDefinitionDeleted(final long processDefinitionKey) {
+    removeDeployedDefinition(processDefinitionKey);
+  }
+
   private void removeDeployedDefinition(final long processDefinitionKey) {
     final var entry = entriesByKey.remove(processDefinitionKey);
     if (entry == null) {

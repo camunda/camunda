@@ -698,14 +698,34 @@ public class DrainingProcessDefinitionTest {
 
   @Test
   public void shouldMintNewVersionWhenRedeployingIdenticalResourceWhileDraining() {
-    // given - a definition kept draining by a still-running instance
+    // given - a definition kept draining by a still-running instance.
     final var processId = helper.getBpmnProcessId();
-    final var v1 = deployWithJob(processId);
+    final var resource =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    final var v1 =
+        engine
+            .deployment()
+            .withXmlResource(resource)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
     awaitJobCreated(engine.processInstance().ofBpmnProcessId(processId).create());
     drainViaDeletion(v1.getProcessDefinitionKey());
 
     // when - the identical resource is redeployed while v1 is still draining
-    final var redeployed = deployWithJob(processId);
+    final var redeployed =
+        engine
+            .deployment()
+            .withXmlResource(resource)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
 
     // then - it is not deduplicated onto the draining v1 (which would make the redeploy vanish once
     // the drain finalizes); a fresh version is minted with a new key
@@ -714,6 +734,10 @@ public class DrainingProcessDefinitionTest {
         .isFalse();
     assertThat(redeployed.getVersion()).isEqualTo(2);
     assertThat(redeployed.getProcessDefinitionKey()).isNotEqualTo(v1.getProcessDefinitionKey());
+    // and - the resource is byte-identical to v1
+    assertThat(redeployed.getChecksum())
+        .describedAs("the redeployed resource must be byte-identical to the draining v1")
+        .isEqualTo(v1.getChecksum());
   }
 
   @Test
@@ -960,7 +984,6 @@ public class DrainingProcessDefinitionTest {
           engine
               .resourceDeletion()
               .withResourceKey(processDefinitionKey)
-              .withResourceType(ResourceType.PROCESS_DEFINITION)
               .withResourceId(processId)
               .withDeleteHistory(true)
               .expectRejection()
@@ -1007,6 +1030,29 @@ public class DrainingProcessDefinitionTest {
                         .exists()))
         .describedAs("the definition must stay draining, not be deleted, while an instance runs")
         .isFalse();
+  }
+
+  @Test
+  public void shouldPopulateResourceMetadataOnRejectedDeleteWhileDrainingWithoutExplicitType() {
+    // given - a definition kept DRAINING by a still-running instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    engine.processInstance().ofBpmnProcessId(processId).create();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // when - the repeated delete carries only the resource key, as the default client path does
+    final var rejection =
+        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+
+    // then - the processor stamps the resolved metadata onto the rejection
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getValue().getResourceType()).isEqualTo(ResourceType.PROCESS_DEFINITION);
+    assertThat(rejection.getValue().getResourceId()).isEqualTo(processId);
   }
 
   private RecordToWrite drainReport(

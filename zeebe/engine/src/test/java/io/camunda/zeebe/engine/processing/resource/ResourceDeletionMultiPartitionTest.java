@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -33,7 +34,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -102,7 +103,7 @@ public class ResourceDeletionMultiPartitionTest {
               RecordingExporter.records()
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
-                  .collect(Collectors.toList()))
+                  .toList())
           .extracting(Record::getIntent)
           .endsWith(
               ResourceDeletionIntent.DELETE,
@@ -124,7 +125,7 @@ public class ResourceDeletionMultiPartitionTest {
             .deploy()
             .getValue()
             .getProcessesMetadata()
-            .get(0)
+            .getFirst()
             .getProcessDefinitionKey();
 
     // when
@@ -148,6 +149,7 @@ public class ResourceDeletionMultiPartitionTest {
                     : r.getPartitionId())
         .containsSubsequence(
             tuple(ResourceDeletionIntent.DELETE, RecordType.COMMAND, 1),
+            tuple(ProcessIntent.DRAINING, RecordType.EVENT, 1),
             tuple(ProcessIntent.DELETING, RecordType.EVENT, 1),
             tuple(ProcessIntent.DELETED, RecordType.EVENT, 1),
             tuple(ResourceDeletionIntent.DELETED, RecordType.EVENT, 1),
@@ -167,7 +169,7 @@ public class ResourceDeletionMultiPartitionTest {
               RecordingExporter.records()
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
-                  .collect(Collectors.toList()))
+                  .toList())
           .extracting(Record::getIntent)
           .endsWith(
               ResourceDeletionIntent.DELETE,
@@ -191,7 +193,7 @@ public class ResourceDeletionMultiPartitionTest {
             .deploy()
             .getValue()
             .getProcessesMetadata()
-            .get(0)
+            .getFirst()
             .getProcessDefinitionKey();
 
     // when
@@ -231,7 +233,7 @@ public class ResourceDeletionMultiPartitionTest {
             .deploy()
             .getValue()
             .getProcessesMetadata()
-            .get(0)
+            .getFirst()
             .getProcessDefinitionKey();
 
     engine.processInstance().ofBpmnProcessId(processId).onPartition(2).create();
@@ -397,6 +399,18 @@ public class ResourceDeletionMultiPartitionTest {
         .withPartitionId(INSTANCE_PARTITION)
         .await();
 
+    // and - the deployment partition emitted a DRAINING event
+    final var drainingOnDeploymentPartition =
+        RecordingExporter.processRecords()
+            .withIntent(ProcessIntent.DRAINING)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withPartitionId(1)
+            .getFirst();
+    assertThat(((ProcessRecord) drainingOnDeploymentPartition.getValue()).getDrainPartitions())
+        .describedAs("the deployment partition's DRAINING event records every partition to drain")
+        .containsExactlyInAnyOrder(
+            IntStream.rangeClosed(1, PARTITION_COUNT).boxed().toArray(Integer[]::new));
+
     // when - the last active instance completes on its partition, freeing that partition to drain.
     // The command must be written on INSTANCE_PARTITION: the test harness routes writes to the
     // deployment partition by default, but the job only exists on the instance's partition.
@@ -443,7 +457,7 @@ public class ResourceDeletionMultiPartitionTest {
             .deploy()
             .getValue()
             .getFormMetadata()
-            .get(0)
+            .getFirst()
             .getFormKey();
 
     // when
@@ -485,7 +499,7 @@ public class ResourceDeletionMultiPartitionTest {
               RecordingExporter.records()
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
-                  .collect(Collectors.toList()))
+                  .toList())
           .extracting(Record::getIntent)
           .endsWith(
               ResourceDeletionIntent.DELETE,
@@ -547,7 +561,7 @@ public class ResourceDeletionMultiPartitionTest {
               RecordingExporter.records()
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
-                  .collect(Collectors.toList()))
+                  .toList())
           .extracting(Record::getIntent)
           .endsWith(
               ResourceDeletionIntent.DELETE,
@@ -569,7 +583,7 @@ public class ResourceDeletionMultiPartitionTest {
         .deploy()
         .getValue()
         .getProcessesMetadata()
-        .get(0)
+        .getFirst()
         .getProcessDefinitionKey();
   }
 
