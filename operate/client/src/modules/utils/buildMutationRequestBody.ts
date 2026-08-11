@@ -10,7 +10,10 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
+import {
+  parseProcessInstancesListSearchFilter,
+  parseProcessInstancesSearchFilter,
+} from 'modules/utils/filter/processInstancesSearch';
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 import {buildVariableEntry} from 'modules/hooks/processInstancesSearch';
@@ -21,6 +24,7 @@ type BuildMutationRequestBodyParams = {
   excludeIds?: string[];
   conditions?: VariableCondition[];
   processDefinitionKey?: string;
+  includeSuspended?: boolean;
 };
 
 const buildMutationRequestBody = ({
@@ -29,8 +33,11 @@ const buildMutationRequestBody = ({
   excludeIds = [],
   conditions,
   processDefinitionKey,
+  includeSuspended = false,
 }: BuildMutationRequestBodyParams) => {
-  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
+  const baseFilter = includeSuspended
+    ? parseProcessInstancesListSearchFilter(searchParams)
+    : parseProcessInstancesSearchFilter(searchParams);
 
   const keyCriterion = buildInstanceKeyCriterion(includeIds, excludeIds);
 

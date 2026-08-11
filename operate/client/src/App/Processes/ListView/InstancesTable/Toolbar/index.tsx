@@ -311,7 +311,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedActiveRootInstances
-                    ? 'No active process instances selected. Please select at least one active process instance to suspend.'
+                    ? 'No active root process instances selected. Please select at least one active root process instance to suspend.'
                     : undefined
               }
             >
@@ -328,7 +328,7 @@ const Toolbar: React.FC<Props> = observer(
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
                   : !hasSelectedSuspendedRootInstances
-                    ? 'No suspended process instances selected. Please select at least one suspended process instance to resume.'
+                    ? 'No suspended root process instances selected. Please select at least one suspended root process instance to resume.'
                     : undefined
               }
             >

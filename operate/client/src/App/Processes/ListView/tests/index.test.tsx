@@ -403,9 +403,24 @@ describe('Instances', () => {
       hasIncident: true,
     });
     mockSearchProcessInstances().withSuccess(searchResult([suspendedInstance]));
+    let requestBody:
+      ResumeProcessInstancesBatchOperationRequestBody | undefined;
+    const requestBodyResolver = vi.fn((body: unknown) => {
+      requestBody =
+        resumeProcessInstancesBatchOperationRequestBodySchema.parse(body);
+    });
+    mockResumeProcessInstancesBatchOperation().withSuccess(
+      {
+        batchOperationKey: 'resume-operation',
+        batchOperationType: 'RESUME_PROCESS_INSTANCE',
+      },
+      {requestBodyResolverFn: requestBodyResolver},
+    );
 
     const {user} = render(<ListView />, {
-      wrapper: getWrapper(`${Paths.processes()}?suspended=true`),
+      wrapper: getWrapper(
+        `${Paths.processes()}?suspended=true&businessId=eq_order-123___like_order`,
+      ),
     });
 
     await screen.findByRole('row', {name: /suspended-instance/i});
@@ -431,6 +446,22 @@ describe('Instances', () => {
         description: /no finished process instances selected/i,
       }),
     ).toBeDisabled();
+
+    await user.click(screen.getByRole('button', {name: 'Resume'}));
+    await user.click(
+      within(screen.getByRole('dialog', {name: 'Apply operation'})).getByRole(
+        'button',
+        {name: 'Apply'},
+      ),
+    );
+
+    await waitFor(() => {
+      expect(requestBodyResolver).toHaveBeenCalledOnce();
+      expect(requestBody?.filter).toEqual({
+        businessId: {$eq: 'order-123', $like: '*order*'},
+        state: {$eq: 'SUSPENDED'},
+      });
+    });
   });
 
   it('should allow canceling active child instances without offering suspend', async () => {
@@ -440,13 +471,19 @@ describe('Instances', () => {
       state: 'ACTIVE',
       parentProcessInstanceKey: 'parent-instance',
     });
+    const suspendedChildInstance = createProcessInstance({
+      processInstanceKey: 'suspended-child-instance',
+      processDefinitionName: 'Suspended Child Process',
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: 'parent-instance',
+    });
     mockSearchProcessInstances().withSuccess(
-      searchResult([activeChildInstance]),
+      searchResult([activeChildInstance, suspendedChildInstance]),
     );
 
     const {user} = render(<ListView />, {
       wrapper: getWrapper(
-        `${Paths.processes()}?active=true&parentProcessInstanceKey=parent-instance`,
+        `${Paths.processes()}?active=true&suspended=true&parentProcessInstanceKey=parent-instance`,
       ),
     });
 
@@ -456,13 +493,29 @@ describe('Instances', () => {
     await user.click(
       within(activeChildRow).getByRole('checkbox', {name: /select row/i}),
     );
+    await user.click(
+      within(
+        screen.getByRole('row', {name: /suspended-child-instance/i}),
+      ).getByRole('checkbox', {name: /select row/i}),
+    );
 
     expect(
       screen
         .getAllByRole('button', {name: 'Cancel'})
         .some((button) => !button.hasAttribute('disabled')),
     ).toBe(true);
-    expect(screen.getByRole('button', {name: 'Suspend'})).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        name: 'Suspend',
+        description: /no active root process instances selected/i,
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        name: 'Resume',
+        description: /no suspended root process instances selected/i,
+      }),
+    ).toBeDisabled();
   });
 
   it('should render title and document title', async () => {

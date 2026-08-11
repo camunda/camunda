@@ -19,6 +19,7 @@ import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@ca
 
 const useProcessInstancesBatchOperationMutationRequestBody = (
   checkedEligibleIds: string[],
+  includeSuspended = false,
 ) => {
   const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
@@ -32,6 +33,7 @@ const useProcessInstancesBatchOperationMutationRequestBody = (
     includeIds,
     excludeIds: excludedIds,
     conditions,
+    includeSuspended,
   });
 };
 
@@ -48,6 +50,7 @@ const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedSuspendedRootIds,
+    true,
   );
 
 /**
