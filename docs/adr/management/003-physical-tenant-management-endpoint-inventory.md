@@ -40,22 +40,22 @@ The only exception to that rule is the `/v2/status` endpoint, see [ADR 001 D3](.
 Exporting pause/resume is included here because it is part of the overall backup procedure.
 Restore endpoints are not fully implemented yet but should follow the same pattern.
 
-|                Endpoint                 |                       Behavior                       |
-|-----------------------------------------|------------------------------------------------------|
-| `GET /v2/exporting`                     | Aggregate exporting status of the physical tenant.   |
-| `POST /v2/exporting/pause?soft=`        | Pause exporting.                                     |
-| `POST /v2/exporting/resume`             | Resume exporting.                                    |
-| `POST /v2/backups/runtime`              | Trigger runtime backup.                              |
-| `GET /v2/backups/runtime/{backupId}`    | Status of one runtime backup.                        |
-| `GET /v2/backups/runtime?prefix=`       | List runtime backups, optionally filtered by prefix. |
-| `DELETE /v2/backups/runtime/{backupId}` | Delete runtime backup.                               |
-| `GET /v2/backups/runtime/state`         | Query runtime backup ranges.                         |
-| `POST /v2/backups/runtime/state/sync`   | Force write state to the backup store.               |
-| `DELETE /v2/backups/runtime/state`      | Delete the runtime backup state.                     |
-| `POST /v2/backups/history`              | Trigger history backup                               |
-| `GET /v2/backups/history/{backupId}`    | Status of history backup.                            |
-| `GET /v2/backups/history?pattern=`      | List history backups.                                |
-| `DELETE /v2/backups/history/{backupId}` | Delete history backup.                               |
+|                  Endpoint                  |                       Behavior                       |
+|--------------------------------------------|------------------------------------------------------|
+| `GET /v2/exporting`                        | Aggregate exporting status of the physical tenant.   |
+| `POST /v2/exporting/pause?soft=`           | Pause exporting.                                     |
+| `POST /v2/exporting/resume`                | Resume exporting.                                    |
+| `POST /v2/backups/runtime`                 | Trigger runtime backup.                              |
+| `GET /v2/backups/runtime/{backupId}`       | Status of one runtime backup.                        |
+| `GET /v2/backups/runtime?prefix=`          | List runtime backups, optionally filtered by prefix. |
+| `DELETE /v2/backups/runtime/{backupId}`    | Delete runtime backup.                               |
+| `GET /v2/backups/runtime/state`            | Query runtime backup ranges.                         |
+| `POST /v2/backups/runtime/state/sync`      | Force write state to the backup store.               |
+| `DELETE /v2/backups/runtime/state`         | Delete the runtime backup state.                     |
+| `POST /v2/backups/history`                 | Trigger history backup                               |
+| `GET /v2/backups/history/{backupId}`       | Status of history backup.                            |
+| `GET /v2/backups/history?prefix=&verbose=` | List history backups, optionally filtered by prefix. |
+| `DELETE /v2/backups/history/{backupId}`    | Delete history backup.                               |
 
 ### D2. Cluster-wide REST management endpoints
 
