@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -412,18 +411,9 @@ public class ResourceDeletionMultiPartitionTest {
             IntStream.rangeClosed(1, PARTITION_COUNT).boxed().toArray(Integer[]::new));
 
     // when - the last active instance completes on its partition, freeing that partition to drain.
-    // The command must be written on INSTANCE_PARTITION: the test harness routes writes to the
-    // deployment partition by default, but the job only exists on the instance's partition.
-    final var createdJob =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(instanceKey)
-            .withType(JOB_TYPE)
-            .getFirst();
-    engine.writeCommandOnPartition(
-        INSTANCE_PARTITION,
-        createdJob.getKey(),
-        JobIntent.COMPLETE,
-        (JobRecord) createdJob.getValue());
+    // The job client routes the command to the job key's partition, so it lands on
+    // INSTANCE_PARTITION.
+    engine.job().ofInstance(instanceKey).withType(JOB_TYPE).complete();
 
     // then - all partitions' drain reports are cleared on the deployment partition and the
     // definition is reported fully deleted cluster-wide exactly once
