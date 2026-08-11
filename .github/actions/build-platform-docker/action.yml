@@ -83,12 +83,31 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      # Wrapped in Wandalen/wretry.action: setup-buildx-action has intermittently failed with
+      # registry/CDN 5xx errors, and it's a `uses:` step so nick-fields/retry (our usual retry
+      # action, shell-command only) can't wrap it.
+      uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
       with:
-        # to be able to push to local registry, which we use in our tests, we need to use host network
-        driver-opts: network=host
-        buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
-        endpoint: zeebe-context
+        action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        attempt_limit: 3
+        attempt_delay: 10000
+        # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
+        github_token: ${{ github.token }}
+        with: |
+          # to be able to push to local registry, which we use in our tests, we need to use host network
+          driver-opts: network=host
+          buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
+          endpoint: zeebe-context
+
+    # wretry passes the wrapped action's inputs by exporting them into GITHUB_ENV, so all of
+    # setup-buildx-action's INPUT_* variables stay set for the rest of the job -- well past this
+    # composite action. A later step that does not declare one of these inputs itself would read the
+    # stale value instead of that action's own default; `version`, `name` and `platforms` are common
+    # enough input names to collide. GITHUB_ENV cannot unset, so blank them out.
+    - name: Clear buildx inputs leaked into the job environment by wretry
+      shell: bash
+      run: |
+        env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
 
     - name: Set semantic version from Maven project
       id: get-version
@@ -137,23 +156,40 @@ runs:
         fi
 
     - name: Build Docker image
-      uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+      # Wrapped for the same reason as the buildx setup above: BuildKit resolves the Dockerfile
+      # frontend and the base images through Docker Hub, whose token endpoint intermittently answers
+      # 5xx (INC-7065, INC-6769, INC-6731), failing the build before a single layer is built.
+      uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
       env:
         DOCKER_BUILD_SUMMARY: false
         DOCKER_BUILD_RECORD_UPLOAD: false
       with:
-        context: .
-        file: ${{ inputs.dockerfile }}
-        tags: ${{ steps.get-image.outputs.tags }}
-        load: ${{ inputs.push != 'true' }}
-        push: false
-        platforms: ${{ inputs.platforms }}
-        provenance: false
-        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
-        build-args: |
-          DISTBALL=${{ steps.get-distball.outputs.result }}
-          DATE=${{ steps.get-date.outputs.result }}
-          REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
-          VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
-          ${{ steps.get-additional-build-args.outputs.result }}
-        target: app
+        action: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        attempt_limit: 3
+        attempt_delay: 10000
+        # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
+        github_token: ${{ github.token }}
+        # wretry re-parses this block as YAML, so the indentation below is significant: it has to
+        # stay valid after the expressions expand. Keep every interpolated value single-line -- a
+        # multi-line one would have its later lines land at column 0 and break the nested scalar.
+        with: |
+          context: .
+          file: ${{ inputs.dockerfile }}
+          tags: ${{ steps.get-image.outputs.tags }}
+          load: ${{ inputs.push != 'true' }}
+          push: false
+          platforms: ${{ inputs.platforms }}
+          provenance: false
+          outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
+          build-args: |
+            DISTBALL=${{ steps.get-distball.outputs.result }}
+            DATE=${{ steps.get-date.outputs.result }}
+            REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
+            VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+            ${{ steps.get-additional-build-args.outputs.result }}
+          target: app
+
+    - name: Clear build-push inputs leaked into the job environment by wretry
+      shell: bash
+      run: |
+        env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
