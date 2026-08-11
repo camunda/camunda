@@ -255,6 +255,8 @@ public final class EngineProcessors {
             Authorization.AUTHORIZED_USERNAME,
             Authorization.AUTHORIZED_CLIENT_ID,
             false,
+            // Identity: the engine has no Spring context to enrich membership resolution with,
+            // unlike CSL's spring-boot-starter adapter of the same port.
             MembershipResolutionContextPropagator.identity(),
             new MicrometerAuthorizationCheckLatencyRecorder(
                 typedRecordProcessorContext.getMeterRegistry()));
