@@ -26,6 +26,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -88,6 +90,45 @@ public class ClusterEndpoint {
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
+  }
+
+  @GetMapping(path = "/changes/{changeId}", produces = "application/json")
+  public ResponseEntity<?> getConfigurationChange(@PathVariable final String changeId) {
+    final long id;
+    try {
+      id = Long.parseLong(changeId);
+    } catch (final NumberFormatException ignore) {
+      return invalidRequest("Change id must be a number");
+    }
+    try {
+      return withCurrentConfiguration(
+          configuration -> ClusterApiUtils.mapConfigurationChangeResponse(configuration, id));
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  @GetMapping(path = "/changes", produces = "application/json")
+  public ResponseEntity<?> listConfigurationChanges() {
+    try {
+      return withCurrentConfiguration(ClusterApiUtils::mapConfigurationChangesResponse);
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  /**
+   * Fetches the current topology and, until the coordinator's query response itself carries the new
+   * multi-partition-group model, converts it from the legacy {@link ClusterConfiguration} on every
+   * call before handing it to {@code action}.
+   */
+  private ResponseEntity<?> withCurrentConfiguration(
+      final Function<CurrentClusterConfiguration, ResponseEntity<?>> action) {
+    final var topology = requestSender.getTopology().join();
+    if (topology.isLeft()) {
+      return ClusterApiUtils.mapErrorResponse(topology.getLeft());
+    }
+    return action.apply(CurrentClusterConfiguration.fromLegacy(topology.get()));
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {
