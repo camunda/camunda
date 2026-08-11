@@ -86,10 +86,10 @@ tags:
 
 paths:
   # Agent definition endpoints
-  /agents/{agentDefinitionKey}:
-    $ref: 'agent-definitions.yaml#/paths/~1agents~1{agentDefinitionKey}'
-  /agents/search:
-    $ref: 'agent-definitions.yaml#/paths/~1agents~1search'
+  /agent-definitions/{agentDefinitionKey}:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1{agentDefinitionKey}'
+  /agent-definitions/search:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1search'
 
   # Agent instance endpoints
   /agent-instances:
