@@ -99,12 +99,16 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      # Wrapped in Wandalen/wretry.action: setup-buildx-action has intermittently failed with
-      # registry/CDN 5xx errors, and it's a `uses:` step so nick-fields/retry (our usual retry
-      # action, shell-command only) can't wrap it.
+      # Wrapped in Wandalen/wretry.action because this step pulls moby/buildkit from Docker Hub and
+      # is exposed to the same 5xx outages as the build below, though no incident has been traced to
+      # it so far. It's a `uses:` step, so nick-fields/retry (our usual retry action, shell-command
+      # only) can't wrap it.
       uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
       with:
         action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        # wretry cannot inspect the wrapped action's error -- `retry_condition` only sees contexts
+        # captured before the step ran -- so this retries any failure, not just a 5xx. A genuine
+        # error therefore costs up to 3 attempts before reporting red.
         attempt_limit: 3
         attempt_delay: 10000
         # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
@@ -177,6 +181,10 @@ runs:
         DOCKER_BUILD_RECORD_UPLOAD: false
       with:
         action: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        # As above, wretry cannot classify the failure, so a broken Dockerfile or a 4xx from the
+        # registry is retried just like a 5xx. Layers already built are cached in the builder, which
+        # persists across attempts, so a replay is cheap up to the point that failed -- but a failing
+        # RUN re-executes on every attempt.
         attempt_limit: 3
         attempt_delay: 10000
         # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
