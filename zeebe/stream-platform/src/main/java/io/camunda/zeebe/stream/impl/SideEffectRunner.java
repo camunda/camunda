@@ -79,6 +79,7 @@ final class SideEffectRunner implements CommittedPositionListener {
             responses,
             new AggregatePostCommitTask(position, postCommitTasks),
             completionCallback));
+    processingMetrics.setPendingSideEffects(sideEffects.size());
     executeNextSideEffects();
   }
 
@@ -104,6 +105,7 @@ final class SideEffectRunner implements CommittedPositionListener {
 
   private void completeSideEffects(final SideEffects completedSideEffects) {
     sideEffects.remove();
+    processingMetrics.setPendingSideEffects(sideEffects.size());
     executingSideEffects = false;
     completedSideEffects.completionCallback().run();
     executeNextSideEffects();
