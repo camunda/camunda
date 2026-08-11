@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {ProcessesFilters} from './ProcessesFilters';
@@ -30,11 +27,9 @@ describe('<ProcessesFilters />', () => {
 		sessionStorage.clear();
 	});
 
-	it('should set initial filters', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
-
+	it('should set initial filters', async () => {
 		const screen = await renderWithRouter(
-			() => <ProcessesFilters initialFilterValues={{search: 'invoice', hasStartForm: 'yes'}} />,
+			() => <ProcessesFilters initialFilterValues={{search: 'invoice', hasStartForm: 'yes'}} tenants={TENANTS} />,
 			{path: '/tasklist/processes'},
 		);
 
@@ -44,10 +39,9 @@ describe('<ProcessesFilters />', () => {
 			.toHaveTextContent('Requires form input to start');
 	});
 
-	it('should write the search filter to the URL and preserve other filters', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
+	it('should write the search filter to the URL and preserve other filters', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <ProcessesFilters initialFilterValues={{hasStartForm: 'no', tenantId: 'tenant-a'}} />,
+			() => <ProcessesFilters initialFilterValues={{hasStartForm: 'no', tenantId: 'tenant-a'}} tenants={TENANTS} />,
 			{
 				path: '/tasklist/processes',
 			},
@@ -64,11 +58,13 @@ describe('<ProcessesFilters />', () => {
 			});
 	});
 
-	it('should update the start form filter', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
-		const {router, ...screen} = await renderWithRouter(() => <ProcessesFilters initialFilterValues={{}} />, {
-			path: '/tasklist/processes',
-		});
+	it('should update the start form filter', async () => {
+		const {router, ...screen} = await renderWithRouter(
+			() => <ProcessesFilters initialFilterValues={{}} tenants={TENANTS} />,
+			{
+				path: '/tasklist/processes',
+			},
+		);
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Filter processes'}));
 		await userEvent.click(screen.getByRole('option', {name: 'Requires form input to start'}));
@@ -76,10 +72,9 @@ describe('<ProcessesFilters />', () => {
 		await expect.poll(() => router.state.location.search).toEqual({hasStartForm: 'yes'});
 	});
 
-	it('should remove the start form filter when all processes is selected', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
+	it('should remove the start form filter when all processes is selected', async () => {
 		const {router, ...screen} = await renderWithRouter(
-			() => <ProcessesFilters initialFilterValues={{hasStartForm: 'yes'}} />,
+			() => <ProcessesFilters initialFilterValues={{hasStartForm: 'yes'}} tenants={TENANTS} />,
 			{
 				path: '/tasklist/processes',
 				initialEntry: '/tasklist/processes?hasStartForm=yes',
@@ -92,15 +87,17 @@ describe('<ProcessesFilters />', () => {
 		await expect.poll(() => router.state.location.search).toEqual({});
 	});
 
-	it('should show tenants and update the tenant filter when multi-tenancy is enabled', async ({worker}) => {
+	it('should show tenants and update the tenant filter when multi-tenancy is enabled', async () => {
 		sessionStorage.setItem(
 			'clientConfig',
 			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
 		);
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
-		const {router, ...screen} = await renderWithRouter(() => <ProcessesFilters initialFilterValues={{}} />, {
-			path: '/tasklist/processes',
-		});
+		const {router, ...screen} = await renderWithRouter(
+			() => <ProcessesFilters initialFilterValues={{}} tenants={TENANTS} />,
+			{
+				path: '/tasklist/processes',
+			},
+		);
 
 		const tenantFilter = screen.getByRole('combobox', {name: 'Tenant'});
 		await expect.element(tenantFilter).toHaveTextContent('Default - <default>');
@@ -111,10 +108,8 @@ describe('<ProcessesFilters />', () => {
 		await expect.poll(() => router.state.location.search).toEqual({tenantId: 'tenant-a'});
 	});
 
-	it('should hide the tenant filter when multi-tenancy is disabled', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({tenants: TENANTS}))}));
-
-		const screen = await renderWithRouter(() => <ProcessesFilters initialFilterValues={{}} />, {
+	it('should hide the tenant filter when multi-tenancy is disabled', async () => {
+		const screen = await renderWithRouter(() => <ProcessesFilters initialFilterValues={{}} tenants={TENANTS} />, {
 			path: '/tasklist/processes',
 		});
 

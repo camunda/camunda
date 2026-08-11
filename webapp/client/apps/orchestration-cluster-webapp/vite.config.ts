@@ -48,10 +48,10 @@ const config = defineConfig(({mode}) => ({
 		tsconfigPaths: true,
 		// remove the explicit alias config when this is fixed: https://github.com/vitejs/vite/issues/21889
 		alias: {
-			'#/shared': path.resolve(__dirname, './src/shared'),
-			'#/operate': path.resolve(__dirname, './src/operate'),
-			'#/tasklist': path.resolve(__dirname, './src/tasklist'),
-			'#/admin': path.resolve(__dirname, './src/admin'),
+			'#/shared': path.resolve(import.meta.dirname, './src/shared'),
+			'#/operate': path.resolve(import.meta.dirname, './src/operate'),
+			'#/tasklist': path.resolve(import.meta.dirname, './src/tasklist'),
+			'#/admin': path.resolve(import.meta.dirname, './src/admin'),
 		},
 	},
 	plugins: mode === 'sbom' ? [...basePlugins, sbom({specVersion: '1.6'})] : basePlugins,

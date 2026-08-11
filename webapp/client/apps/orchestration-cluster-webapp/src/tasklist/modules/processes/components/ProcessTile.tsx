@@ -12,7 +12,7 @@ import {ArrowRight, List} from '@carbon/react/icons';
 import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton/AsyncActionButton';
-import type {StartProcessStatus} from '#/tasklist/modules/processes/useStartProcess';
+import type {StartProcessStatus} from '#/tasklist/modules/processes/startProcessMachine';
 import styles from './ProcessTile.module.scss';
 import {useMemo} from 'react';
 
@@ -28,6 +28,10 @@ function getStartProcessStatusDescription(status: StartProcessStatus): string | 
 		return _t('tasklist.processesStartProcessPendingStatusText');
 	}
 
+	if (status === 'active-tasks') {
+		return _t('tasklist.processesStartProcessWaitForTasksText');
+	}
+
 	if (status === 'finished') {
 		return _t('tasklist.processesStartProcessSuccess');
 	}
@@ -37,6 +41,10 @@ function getStartProcessStatusDescription(status: StartProcessStatus): string | 
 	}
 
 	return undefined;
+}
+
+function getInlineLoadingStatus(status: StartProcessStatus) {
+	return status === 'active-tasks' ? 'active' : status;
 }
 
 const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, onStartProcess}) => {
@@ -89,7 +97,11 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 							</li>
 						) : null}
 					</ul>
-					<AsyncActionButton status={status} buttonProps={buttonProps} inlineLoadingProps={inlineLoadingProps}>
+					<AsyncActionButton
+						status={getInlineLoadingStatus(status)}
+						buttonProps={buttonProps}
+						inlineLoadingProps={inlineLoadingProps}
+					>
 						{t('tasklist.processesTileStartProcessButtonLabel')}
 					</AsyncActionButton>
 				</div>

@@ -7,13 +7,12 @@
  */
 
 import {Column, Dropdown, Grid, Search} from '@carbon/react';
-import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {useEffect, useEffectEvent, useReducer} from 'react';
 import {Field, Form, type FormRenderProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {queries} from '#/shared/http/queries';
 import styles from './ProcessesFilters.module.scss';
 
 const SUBMIT_DEBOUNCE = 500;
@@ -46,10 +45,12 @@ type FilterValues = {
 
 type Props = {
 	initialFilterValues: Partial<FilterValues>;
+	tenants: CurrentUser['tenants'];
 };
 
 type FieldsProps = {
 	handleSubmit: FormRenderProps<FilterValues>['handleSubmit'];
+	tenants: CurrentUser['tenants'];
 };
 
 function useDebounce(callback: () => void, delay: number) {
@@ -69,12 +70,8 @@ function useDebounce(callback: () => void, delay: number) {
 	return invoke;
 }
 
-const Fields: React.FC<FieldsProps> = ({handleSubmit}) => {
+const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 	const {t} = useTranslation();
-	const {data: tenants} = useSuspenseQuery({
-		...queries.getCurrentUser(),
-		select: ({tenants}) => tenants,
-	});
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled && tenants.length > 1;
 	const debouncedHandleSubmit = useDebounce(handleSubmit, SUBMIT_DEBOUNCE);
 
@@ -151,7 +148,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit}) => {
 	);
 };
 
-const ProcessesFilters: React.FC<Props> = ({initialFilterValues}) => {
+const ProcessesFilters: React.FC<Props> = ({initialFilterValues, tenants}) => {
 	const navigate = useNavigate();
 
 	return (
@@ -171,7 +168,7 @@ const ProcessesFilters: React.FC<Props> = ({initialFilterValues}) => {
 		>
 			{({handleSubmit}) => (
 				<form onSubmit={handleSubmit}>
-					<Fields handleSubmit={handleSubmit} />
+					<Fields handleSubmit={handleSubmit} tenants={tenants} />
 				</form>
 			)}
 		</Form>

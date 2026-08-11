@@ -18,10 +18,10 @@ import {
 	StartProcessFormModalSkeleton,
 	type StartProcessFormModalErrorVariant,
 } from '#/tasklist/modules/processes/components/StartProcessFormModal';
-import {useStartProcessFromForm} from '#/tasklist/modules/processes/useStartProcessFromForm';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 import {ProcessStartFormImportError, ProcessStartFormNotFoundError} from '#/shared/errors';
+import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_NOT_FOUND = 404;
@@ -103,9 +103,20 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 			refetchOnReconnect: false,
 			refetchOnWindowFocus: false,
 		});
-		const {mutateAsync: startProcess} = useStartProcessFromForm();
+		const {startProcess} = useStartProcess();
 		const {mutateAsync: uploadDocuments} = useUploadDocuments();
 		const close = useCloseStartProcessForm();
+		const handleOnSubmit = useCallback(
+			async (partialVariables: {name: string; value: string}[]) => {
+				const variables = partialVariables.reduce<Record<string, unknown>>((result, {name, value}) => {
+					result[name] = tryParseJSON(value);
+					return result;
+				}, {});
+
+				startProcess(process, variables);
+			},
+			[process, startProcess],
+		);
 
 		return (
 			<StartProcessFormModal
@@ -115,15 +126,7 @@ export const Route = createFileRoute('/_auth/tasklist/processes/$processDefiniti
 				tenantId={process.tenantId}
 				onClose={close}
 				onFileUpload={uploadDocuments}
-				onSubmit={async (partialVariables) => {
-					const variables = partialVariables.reduce<Record<string, unknown>>((result, {name, value}) => {
-						result[name] = tryParseJSON(value);
-						return result;
-					}, {});
-
-					await startProcess({processDefinitionKey, tenantId: process.tenantId, variables});
-					close();
-				}}
+				onSubmit={handleOnSubmit}
 			/>
 		);
 	},

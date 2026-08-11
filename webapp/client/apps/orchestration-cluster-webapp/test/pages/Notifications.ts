@@ -12,6 +12,14 @@ class Notifications extends View {
 	getByNotificationTitle(title: string) {
 		return this.page.getByRole('status').filter({hasText: title});
 	}
+
+	getByActionableNotificationTitle(title: string) {
+		return this.page.getByRole('alertdialog').filter({hasText: title});
+	}
+
+	getActionButton(title: string, label: string) {
+		return this.getByActionableNotificationTitle(title).getByRole('button', {name: label});
+	}
 }
 
 export {Notifications};

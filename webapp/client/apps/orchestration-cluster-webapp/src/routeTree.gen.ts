@@ -22,7 +22,7 @@ import { Route as AuthOperateDecisionsRouteImport } from './routes/_auth/operate
 import { Route as AuthOperateOperationsLogRouteImport } from './routes/_auth/operate/operations-log'
 import { Route as AuthOperateProcessesRouteImport } from './routes/_auth/operate/processes'
 import { Route as AuthTasklistTasksRouteRouteImport } from './routes/_auth/tasklist/_tasks/route'
-import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
+import { Route as AuthTasklistProcessesRouteRouteImport } from './routes/_auth/tasklist/processes/route'
 import { Route as AuthOperateDecisionsIndexRouteImport } from './routes/_auth/operate/decisions/index'
 import { Route as AuthOperateDecisionsDecisionInstanceIdRouteImport } from './routes/_auth/operate/decisions/$decisionInstanceId'
 import { Route as AuthTasklistTasksIndexRouteImport } from './routes/_auth/tasklist/_tasks/index'
@@ -98,11 +98,12 @@ const AuthTasklistTasksRouteRoute = AuthTasklistTasksRouteRouteImport.update({
   id: '/_tasks',
   getParentRoute: () => AuthTasklistRouteRoute,
 } as any)
-const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
-  id: '/processes',
-  path: '/processes',
-  getParentRoute: () => AuthTasklistRouteRoute,
-} as any)
+const AuthTasklistProcessesRouteRoute =
+  AuthTasklistProcessesRouteRouteImport.update({
+    id: '/processes',
+    path: '/processes',
+    getParentRoute: () => AuthTasklistRouteRoute,
+  } as any)
 const AuthOperateDecisionsIndexRoute =
   AuthOperateDecisionsIndexRouteImport.update({
     id: '/',
@@ -148,7 +149,7 @@ const AuthTasklistProcessesProcessDefinitionKeyStartRoute =
   AuthTasklistProcessesProcessDefinitionKeyStartRouteImport.update({
     id: '/$processDefinitionKey/start',
     path: '/$processDefinitionKey/start',
-    getParentRoute: () => AuthTasklistProcessesRoute,
+    getParentRoute: () => AuthTasklistProcessesRouteRoute,
   } as any)
 const AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
   AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport.update({
@@ -163,11 +164,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
   '/operate/decisions': typeof AuthOperateDecisionsRouteWithChildren
   '/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/operate/processes': typeof AuthOperateProcessesRoute
-  '/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
@@ -184,10 +185,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/tasklist': typeof AuthTasklistTasksIndexRoute
   '/': typeof AuthIndexRoute
+  '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
   '/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/operate/processes': typeof AuthOperateProcessesRoute
-  '/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
   '/operate/decisions/$decisionInstanceId': typeof AuthOperateDecisionsDecisionInstanceIdRoute
@@ -207,11 +208,11 @@ export interface FileRoutesById {
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
   '/_auth/tasklist/_tasks': typeof AuthTasklistTasksRouteRouteWithChildren
+  '/_auth/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/_auth/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
   '/_auth/operate/decisions': typeof AuthOperateDecisionsRouteWithChildren
   '/_auth/operate/operations-log': typeof AuthOperateOperationsLogRoute
   '/_auth/operate/processes': typeof AuthOperateProcessesRoute
-  '/_auth/tasklist/processes': typeof AuthTasklistProcessesRouteWithChildren
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
@@ -232,11 +233,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/tasklist/processes'
     | '/operate/batch-operations'
     | '/operate/decisions'
     | '/operate/operations-log'
     | '/operate/processes'
-    | '/tasklist/processes'
     | '/admin/'
     | '/operate/'
     | '/tasklist/$userTaskKey'
@@ -253,10 +254,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/tasklist'
     | '/'
+    | '/tasklist/processes'
     | '/operate/batch-operations'
     | '/operate/operations-log'
     | '/operate/processes'
-    | '/tasklist/processes'
     | '/admin'
     | '/operate'
     | '/operate/decisions/$decisionInstanceId'
@@ -275,11 +276,11 @@ export interface FileRouteTypes {
     | '/_auth/tasklist'
     | '/_auth/'
     | '/_auth/tasklist/_tasks'
+    | '/_auth/tasklist/processes'
     | '/_auth/operate/batch-operations'
     | '/_auth/operate/decisions'
     | '/_auth/operate/operations-log'
     | '/_auth/operate/processes'
-    | '/_auth/tasklist/processes'
     | '/_auth/admin/'
     | '/_auth/operate/'
     | '/_auth/tasklist/_tasks/$userTaskKey'
@@ -395,7 +396,7 @@ declare module '@tanstack/react-router' {
       id: '/_auth/tasklist/processes'
       path: '/processes'
       fullPath: '/tasklist/processes'
-      preLoaderRoute: typeof AuthTasklistProcessesRouteImport
+      preLoaderRoute: typeof AuthTasklistProcessesRouteRouteImport
       parentRoute: typeof AuthTasklistRouteRoute
     }
     '/_auth/operate/decisions/': {
@@ -452,7 +453,7 @@ declare module '@tanstack/react-router' {
       path: '/$processDefinitionKey/start'
       fullPath: '/tasklist/processes/$processDefinitionKey/start'
       preLoaderRoute: typeof AuthTasklistProcessesProcessDefinitionKeyStartRouteImport
-      parentRoute: typeof AuthTasklistProcessesRoute
+      parentRoute: typeof AuthTasklistProcessesRouteRoute
     }
     '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
       id: '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
@@ -562,28 +563,29 @@ const AuthTasklistTasksRouteRouteWithChildren =
     AuthTasklistTasksRouteRouteChildren,
   )
 
-interface AuthTasklistProcessesRouteChildren {
+interface AuthTasklistProcessesRouteRouteChildren {
   AuthTasklistProcessesProcessDefinitionKeyStartRoute: typeof AuthTasklistProcessesProcessDefinitionKeyStartRoute
 }
 
-const AuthTasklistProcessesRouteChildren: AuthTasklistProcessesRouteChildren = {
-  AuthTasklistProcessesProcessDefinitionKeyStartRoute:
-    AuthTasklistProcessesProcessDefinitionKeyStartRoute,
-}
+const AuthTasklistProcessesRouteRouteChildren: AuthTasklistProcessesRouteRouteChildren =
+  {
+    AuthTasklistProcessesProcessDefinitionKeyStartRoute:
+      AuthTasklistProcessesProcessDefinitionKeyStartRoute,
+  }
 
-const AuthTasklistProcessesRouteWithChildren =
-  AuthTasklistProcessesRoute._addFileChildren(
-    AuthTasklistProcessesRouteChildren,
+const AuthTasklistProcessesRouteRouteWithChildren =
+  AuthTasklistProcessesRouteRoute._addFileChildren(
+    AuthTasklistProcessesRouteRouteChildren,
   )
 
 interface AuthTasklistRouteRouteChildren {
   AuthTasklistTasksRouteRoute: typeof AuthTasklistTasksRouteRouteWithChildren
-  AuthTasklistProcessesRoute: typeof AuthTasklistProcessesRouteWithChildren
+  AuthTasklistProcessesRouteRoute: typeof AuthTasklistProcessesRouteRouteWithChildren
 }
 
 const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
   AuthTasklistTasksRouteRoute: AuthTasklistTasksRouteRouteWithChildren,
-  AuthTasklistProcessesRoute: AuthTasklistProcessesRouteWithChildren,
+  AuthTasklistProcessesRouteRoute: AuthTasklistProcessesRouteRouteWithChildren,
 }
 
 const AuthTasklistRouteRouteWithChildren =

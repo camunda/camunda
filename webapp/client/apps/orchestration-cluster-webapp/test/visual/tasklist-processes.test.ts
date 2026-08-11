@@ -122,7 +122,7 @@ test('should match the start-process form error snapshots', async ({network, tas
 	await expect(page).toHaveScreenshot('start-process-form-render-error.png');
 });
 
-test('should match the start-process form validation and submission-error snapshots', async ({
+test('should match the start-process form validation and submission-error notification snapshots', async ({
 	network,
 	tasklistProcessesPage,
 	page,
@@ -145,7 +145,7 @@ test('should match the start-process form validation and submission-error snapsh
 
 	await tasklistProcessesPage.startProcessDialog.getByRole('textbox', {name: 'Customer name'}).fill('Jane Doe');
 	await tasklistProcessesPage.startProcessFormButton.click();
-	await expect(tasklistProcessesPage.startProcessFormError).toContainText('Form could not be submitted.');
+	await expect(tasklistProcessesPage.header.notifications.getByNotificationTitle('Process start failed')).toBeVisible();
 	await expect(page).toHaveScreenshot('start-process-form-submission-error.png');
 });
 

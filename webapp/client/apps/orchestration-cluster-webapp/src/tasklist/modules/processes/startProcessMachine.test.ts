@@ -8,14 +8,15 @@
 
 import {createActor, waitFor} from 'xstate';
 import {HttpResponse} from 'msw';
-import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {createProcessDefinition} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createProcessInstanceResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockCreateProcessInstanceEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
+import {mockCreateProcessInstanceEndpoint, mockQueryUserTasksEndpoint} from '#/shared-test-modules/mock-handlers';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {startProcessMachine} from './useStartProcess';
+import {startProcessMachine} from './startProcessMachine';
 
 describe('startProcessMachine', () => {
 	beforeEach(() => {
@@ -33,10 +34,13 @@ describe('startProcessMachine', () => {
 			mockCreateProcessInstanceEndpoint({
 				successResponse: HttpResponse.json(createProcessInstanceResponse()),
 			}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [createUserTask()]})),
+			}),
 		);
-		const actor = createActor(startProcessMachine).start();
+		const actor = createActor(startProcessMachine, {input: undefined}).start();
 
-		actor.send({type: 'process.start', process, tenantId: '<default>'});
+		actor.send({type: 'process.start', process});
 
 		await waitFor(actor, (snapshot) => snapshot.matches('Succeeded'));
 		expect(actor.getSnapshot().context.selectedProcess).toEqual(process);
@@ -54,9 +58,9 @@ describe('startProcessMachine', () => {
 				successResponse: new HttpResponse(null, {status: 500}),
 			}),
 		);
-		const actor = createActor(startProcessMachine).start();
+		const actor = createActor(startProcessMachine, {input: undefined}).start();
 
-		actor.send({type: 'process.start', process, tenantId: '<default>'});
+		actor.send({type: 'process.start', process});
 
 		await waitFor(actor, (snapshot) => snapshot.matches('Failed'));
 		expect(notificationsStore.notifications).toHaveLength(0);
@@ -75,9 +79,9 @@ describe('startProcessMachine', () => {
 				successResponse: new HttpResponse(null, {status: 403}),
 			}),
 		);
-		const actor = createActor(startProcessMachine).start();
+		const actor = createActor(startProcessMachine, {input: undefined}).start();
 
-		actor.send({type: 'process.start', process, tenantId: '<default>'});
+		actor.send({type: 'process.start', process});
 
 		await waitFor(actor, (snapshot) => snapshot.matches('Failed'));
 		expect(notificationsStore.notifications).toHaveLength(0);
@@ -95,17 +99,28 @@ describe('startProcessMachine', () => {
 		actor.stop();
 	});
 
-	it('should ignore processes that require a start form', () => {
-		const actor = createActor(startProcessMachine).start();
+	it('should start processes that require a start form and close the form', async ({worker}) => {
+		worker.use(
+			mockCreateProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(createProcessInstanceResponse()),
+			}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [createUserTask()]})),
+			}),
+		);
+		const navigate = vi.fn();
+		const process = createProcessDefinition({hasStartForm: true});
+		const actor = createActor(startProcessMachine, {input: {navigate}}).start();
 
 		actor.send({
 			type: 'process.start',
-			process: createProcessDefinition({hasStartForm: true}),
-			tenantId: '<default>',
+			process,
 		});
 
-		expect(actor.getSnapshot().matches('Idle')).toBe(true);
-		expect(actor.getSnapshot().context.selectedProcess).toBeNull();
+		expect(actor.getSnapshot().matches('Starting')).toBe(true);
+		expect(actor.getSnapshot().context.selectedProcess).toEqual(process);
+		expect(navigate).toHaveBeenCalledWith({to: '/tasklist/processes', search: true});
+		await waitFor(actor, (snapshot) => snapshot.matches('Succeeded'));
 		actor.stop();
 	});
 
@@ -116,14 +131,16 @@ describe('startProcessMachine', () => {
 				delay: 100,
 				successResponse: HttpResponse.json(createProcessInstanceResponse()),
 			}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse({items: [createUserTask()]})),
+			}),
 		);
-		const actor = createActor(startProcessMachine).start();
+		const actor = createActor(startProcessMachine, {input: undefined}).start();
 
-		actor.send({type: 'process.start', process: selectedProcess, tenantId: '<default>'});
+		actor.send({type: 'process.start', process: selectedProcess});
 		actor.send({
 			type: 'process.start',
 			process: createProcessDefinition({processDefinitionKey: '2'}),
-			tenantId: '<default>',
 		});
 
 		expect(actor.getSnapshot().matches('Starting')).toBe(true);

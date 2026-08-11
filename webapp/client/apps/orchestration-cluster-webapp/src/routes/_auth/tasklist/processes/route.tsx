@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TasklistProcessesPage} from '#/tasklist/pages/TasklistProcessesPage';
+import {useCallback, useMemo} from 'react';
 import {createFileRoute, Outlet, type ErrorComponentProps, useNavigate} from '@tanstack/react-router';
+import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {TasklistProcessesPage} from '#/tasklist/pages/TasklistProcessesPage';
 import {processesSearchSchema} from '#/tasklist/modules/processes/searchSchema';
 import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
+import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
 import {queries} from '#/shared/http/queries';
-import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useMemo} from 'react';
 import {requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
-import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 
@@ -38,14 +38,14 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 			result.data.response.status === HTTP_STATUS_FORBIDDEN
 		) {
 			return (
-				<main id="main-content" className={`cds--content`}>
+				<main id="main-content" className="cds--content">
 					<ForbiddenPage />
 				</main>
 			);
 		}
 
 		return (
-			<main id="main-content" className={`cds--content`}>
+			<main id="main-content" className="cds--content">
 				<GenericErrorPage reset={reset} />
 			</main>
 		);
@@ -60,34 +60,31 @@ export const Route = createFileRoute('/_auth/tasklist/processes')({
 			refetchInterval: 5000,
 		});
 		const processes = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
-		const {status, selectedProcessDefinitionKey, isBusy, startProcess} = useStartProcess();
+		const openStartProcessForm = useCallback(
+			(processDefinitionKey: string) => {
+				navigate({
+					to: '/tasklist/processes/$processDefinitionKey/start',
+					params: {processDefinitionKey},
+					search,
+				});
+			},
+			[navigate, search],
+		);
 
 		return (
-			<>
+			<StartProcessProvider>
 				<TasklistProcessesPage
 					initialFilterValues={search}
+					tenants={currentUser.tenants}
 					processes={processes}
 					hasNextPage={hasNextPage}
 					isFetchingNextPage={isFetchingNextPage}
-					onLoadMore={() => fetchNextPage()}
-					selectedProcessDefinitionKey={selectedProcessDefinitionKey}
-					startProcessStatus={status}
-					isStartProcessBusy={isBusy}
-					onStartProcess={(process) => {
-						if (process.hasStartForm) {
-							navigate({
-								to: '/tasklist/processes/$processDefinitionKey/start',
-								params: {processDefinitionKey: process.processDefinitionKey},
-								search,
-							});
-							return;
-						}
-
-						startProcess(process, process.tenantId);
-					}}
-				/>
-				<Outlet />
-			</>
+					onLoadMore={fetchNextPage}
+					onOpenStartProcessForm={openStartProcessForm}
+				>
+					<Outlet />
+				</TasklistProcessesPage>
+			</StartProcessProvider>
 		);
 	},
 });

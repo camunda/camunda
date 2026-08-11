@@ -179,6 +179,8 @@
 			"processesStartProcessSuccess": "Prozess gestartet",
 			"processesStartProcessFailed": "Prozessstart fehlgeschlagen",
 			"processesStartProcessNotificationSuccess": "Prozess wurde gestartet",
+			"processesNewTaskNotification": "Prozess \"{{processName}}\" hat Aufgabe \"{{taskName}}\" erreicht",
+			"processesNewTaskNotificationAction": "Aufgabe öffnen",
 			"processesProcessTileAttributes": "Prozessattribute",
 			"processesStartProcessFailedMissingTenant": "Prozessstart fehlgeschlagen. Bitte wählen Sie einen Mandanten.",
 			"processesProcessTileAttributeRequiresForm": "Erfordert Formulareingabe",
