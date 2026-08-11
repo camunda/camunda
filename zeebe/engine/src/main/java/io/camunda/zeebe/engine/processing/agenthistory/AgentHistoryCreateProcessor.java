@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchHelper;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -43,6 +44,7 @@ public final class AgentHistoryCreateProcessor
   private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
+  private final AgentHistoryBatchHelper historyHelper;
 
   public AgentHistoryCreateProcessor(
       final Writers writers,
@@ -56,6 +58,7 @@ public final class AgentHistoryCreateProcessor
     jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
+    historyHelper = new AgentHistoryBatchHelper(processingState);
   }
 
   @Override
@@ -98,37 +101,19 @@ public final class AgentHistoryCreateProcessor
       return;
     }
 
-    final var jobKey = commandValue.getJobKey();
-    if (jobState.getState(jobKey) != JobState.State.ACTIVATED) {
-      writeRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to create agent history entry for job with key '%d', but the job is not active."
-              .formatted(jobKey));
-      return;
-    }
-    final var job = jobState.getJob(jobKey);
-
-    if (job.hasLeaseToken() && !commandValue.getJobLease().equals(job.getLeaseToken())) {
-      writeRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
-              .formatted(jobKey));
+    final var validJob =
+        historyHelper.validateJobContext(
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey());
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
+    final var job = validJob.get();
     final var jobElementInstanceKey = job.getElementInstanceKey();
-    final var commandElementInstanceKey = commandValue.getElementInstanceKey();
-    if (jobElementInstanceKey != commandElementInstanceKey) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          "Expected element instance key '%d' for agent history entry, but job '%d' is associated with element instance '%d'."
-              .formatted(commandElementInstanceKey, jobKey, jobElementInstanceKey));
-      return;
-    }
-
     if (!agentInstanceRecord.getElementInstanceKeys().contains(jobElementInstanceKey)) {
       writeRejection(
           command,
