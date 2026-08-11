@@ -16,6 +16,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
+import io.camunda.exporter.handlers.AgentDefinitionHandler;
 import io.camunda.exporter.handlers.AgentHistoryHandler;
 import io.camunda.exporter.handlers.AgentInstanceHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
@@ -110,6 +111,7 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -261,6 +263,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptors.get(DecisionIndex.class).getFullQualifiedName(),
                 decisionRequirementsCache),
+            new AgentDefinitionHandler(
+                indexDescriptors.get(AgentDefinitionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
             new ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandler(

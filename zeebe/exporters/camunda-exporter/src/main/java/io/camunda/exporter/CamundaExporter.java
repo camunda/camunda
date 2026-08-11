@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_DEFINITION;
 import static io.camunda.zeebe.protocol.record.ValueType.AGENT_HISTORY;
 import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
@@ -436,6 +437,7 @@ public class CamundaExporter implements Exporter {
             GLOBAL_LISTENER,
             AGENT_INSTANCE,
             AGENT_HISTORY,
+            AGENT_DEFINITION,
             TIMER,
             SIGNAL_SUBSCRIPTION,
             CONDITIONAL_SUBSCRIPTION);
