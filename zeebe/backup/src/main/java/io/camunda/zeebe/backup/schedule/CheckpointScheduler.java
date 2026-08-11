@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.backup.schedule;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
@@ -21,16 +19,23 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Triggers marker checkpoints and scheduled backups for a single physical tenant, on that tenant's
+ * own schedules. All requests are targeted at the tenant's partitions only, so tenants with
+ * different backup configurations never interfere with each other.
+ */
 public class CheckpointScheduler extends Actor implements AutoCloseable {
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointScheduler.class);
+  private final String physicalTenantId;
   private final Schedule checkpointSchedule;
   private final Schedule backupSchedule;
   private final BackupRequestHandler backupRequestHandler;
@@ -42,10 +47,13 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final ExponentialBackoff backupErrorStrategy;
 
   public CheckpointScheduler(
+      final String physicalTenantId,
       final Schedule checkpointSchedule,
       final Schedule backupSchedule,
       final BackupRequestHandler backupRequestHandler,
       final MeterRegistry meterRegistry) {
+    super("CheckpointScheduler", null, Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
+    this.physicalTenantId = physicalTenantId;
     this.checkpointSchedule = checkpointSchedule;
     this.backupSchedule = backupSchedule;
     metrics = new SchedulerMetrics(meterRegistry);
@@ -61,9 +69,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     LOG.debug("Checkpoint scheduler started");
     metrics.register();
     if (checkpointSchedule != null) {
+      LOG.info("Checkpoint scheduler initialized with interval {}", checkpointSchedule);
       actor.run(this::markerSchedulingTask);
     }
     if (backupSchedule != null) {
+      LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
       actor.run(this::backupSchedulingTask);
     }
   }
@@ -106,7 +116,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final Function<CheckpointStateResponse, Set<PartitionCheckpointState>> stateFilter) {
     final ActorFuture<Set<PartitionCheckpointState>> future = createFuture();
     backupRequestHandler
-        .getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID)
+        .getCheckpointState(physicalTenantId)
         .thenApplyAsync(stateFilter, this)
         .whenCompleteAsync(future, this);
     return future;
@@ -156,7 +166,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final CompletableActorFuture<ExecutionResult> future = new CompletableActorFuture<>();
     if (nextExecution.isBefore(now) || nextExecution.equals(now)) {
       backupRequestHandler
-          .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, type)
+          .checkpoint(physicalTenantId, type)
           .toCompletableFuture()
           .thenApplyAsync(
               id -> {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,6 +19,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -51,7 +53,10 @@ public class CheckpointSchedulerServiceStepTest {
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
     final var mockClusterServices = mock(ClusterServicesImpl.class);
 
-    when(mockBrokerStartupContext.getBrokerConfiguration()).thenReturn(TEST_BROKER_CONFIG);
+    when(mockBrokerStartupContext.getPhysicalTenantIds())
+        .thenReturn(() -> Set.of(DEFAULT_PHYSICAL_TENANT_ID));
+    when(mockBrokerStartupContext.getPhysicalTenantContext(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(physicalTenantContext(TEST_BROKER_CONFIG));
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockBrokerStartupContext.getActorSchedulingService())
         .thenReturn(mockActorSchedulingService);
@@ -69,6 +74,10 @@ public class CheckpointSchedulerServiceStepTest {
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
     future = CONCURRENCY_CONTROL.createFuture();
+  }
+
+  private PhysicalTenantContext physicalTenantContext(final BrokerCfg config) {
+    return new PhysicalTenantContext(null, null, null, config, null, null);
   }
 
   @Test

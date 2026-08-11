@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -42,10 +43,14 @@ import org.slf4j.LoggerFactory;
  * Manages the retention of backups by periodically identifying old backups and routing their
  * deletion through the stream processor via {@code DELETE_BACKUP} commands.
  *
+ * <p>An instance is scoped to a single physical tenant: it only looks at that tenant's partitions
+ * and only sends delete commands to them, so tenants with different backup stores and retention
+ * windows are kept independent.
+ *
  * <h2>Retention Process</h2>
  *
  * The retention process is executed on a configurable schedule and performs the following steps for
- * each partition:
+ * each partition of the physical tenant:
  *
  * <ol>
  *   <li><b>Retrieve Backups:</b> Fetches all existing backups for the partition from the backup
@@ -100,6 +105,7 @@ public class BackupRetention extends Actor {
             }
           });
 
+  private final String physicalTenantId;
   private final Supplier<BackupStore> backupStoreFactory;
   private final BrokerClient brokerClient;
   private final Schedule retentionSchedule;
@@ -110,12 +116,15 @@ public class BackupRetention extends Actor {
   private @Nullable BackupStore backupStore;
 
   public BackupRetention(
+      final String physicalTenantId,
       final Supplier<BackupStore> backupStoreFactory,
       final BrokerClient brokerClient,
       final Schedule retentionSchedule,
       final Duration retentionWindow,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
+    super("BackupRetention", null, Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
+    this.physicalTenantId = physicalTenantId;
     metrics = new RetentionMetrics(meterRegistry);
     this.backupStoreFactory = backupStoreFactory;
     this.brokerClient = brokerClient;
@@ -126,7 +135,7 @@ public class BackupRetention extends Actor {
 
   @Override
   protected void onActorStarted() {
-    LOG.debug("Retention scheduler started");
+    LOG.info("Backup retention initialized with cleanup schedule {}", retentionSchedule);
     backupStore = backupStoreFactory.get();
     metrics.register();
     final var next =
@@ -169,7 +178,7 @@ public class BackupRetention extends Actor {
   private ActorFuture<Void> performRetention() {
     final ActorFuture<Void> retentionFuture = createFuture();
     final var partitionFutures =
-        topologyManager.getTopology().getPartitions().stream()
+        topologyManager.getTopology(physicalTenantId).getPartitions().stream()
             .parallel()
             .map(this::createRetentionContext)
             .map(
@@ -317,6 +326,7 @@ public class BackupRetention extends Actor {
     final var futures = new ArrayList<CompletableFuture<?>>(uniqueCheckpointIds.length);
     for (final var checkpointId : uniqueCheckpointIds) {
       final var request = new BackupDeleteRequest();
+      request.setPartitionGroup(physicalTenantId);
       request.setPartitionId(context.partitionId);
       request.setBackupId(checkpointId);
       futures.add(
