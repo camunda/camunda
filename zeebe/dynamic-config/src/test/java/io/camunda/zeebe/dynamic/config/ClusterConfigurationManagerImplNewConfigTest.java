@@ -247,9 +247,8 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     // then — the first phase's operation was applied, but the plan is not advanced to phase 2
     // since the local member is not the coordinator
     final var config = configuration(manager);
-    final var pending = config.phasedChangeState().pending();
-    assertThat(pending).isPresent();
-    assertThat(pending.get().currentPhaseIndex()).isZero();
+    final var pending = config.phasedChangeState().onlyPending();
+    assertThat(pending.currentPhaseIndex()).isZero();
     assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
   }
 
@@ -482,7 +481,7 @@ final class ClusterConfigurationManagerImplNewConfigTest {
             CurrentClusterConfiguration.INITIAL_VERSION,
             global,
             Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
-            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+            new PhasedChangeState(plan.id() + 1, Map.of(plan.id(), plan), List.of()));
     manager.updateMultiConfiguration(ignored -> seeded).join();
 
     final var listenerCalled = new AtomicBoolean(false);
@@ -508,7 +507,7 @@ final class ClusterConfigurationManagerImplNewConfigTest {
             CurrentClusterConfiguration.INITIAL_VERSION,
             global,
             Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, groupWithoutMember0),
-            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+            new PhasedChangeState(plan.id() + 1, Map.of(plan.id(), plan), List.of()));
     manager.onGossipReceivedCurrent(received);
 
     // then — the merge is applied (member 0 is gone from the group), but no inconsistency is

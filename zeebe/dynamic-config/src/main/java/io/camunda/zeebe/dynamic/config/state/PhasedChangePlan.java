@@ -8,9 +8,11 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
@@ -25,6 +27,12 @@ import org.jspecify.annotations.NullMarked;
  * <p>Merge rule (gossip convergence): if plan IDs are equal, the higher {@code currentPhaseIndex}
  * wins. If plan IDs differ, the higher plan ID always wins — plan IDs are monotonically increasing,
  * so the higher ID is always the newer plan.
+ *
+ * <p>{@link #scope()} identifies which sub-configuration(s) this plan touches, derived from its
+ * phases: a plan with any {@link GlobalPhase} has {@link Global} scope (cluster-wide, conflicts
+ * with everything); otherwise it has {@link Groups} scope, the union of every partition group named
+ * across its {@link PartitionGroupParallelPhase}s. Multiple plans with disjoint {@link Groups}
+ * scopes may be pending concurrently; see {@link PhasedChangeState}.
  */
 @NullMarked
 public record PhasedChangePlan(
@@ -103,6 +111,57 @@ public record PhasedChangePlan(
    */
   public boolean hasRestorePlanId() {
     return id == RESTORED_PLAN_ID;
+  }
+
+  /**
+   * Returns the scope of this plan: {@link Global} if any phase is a {@link GlobalPhase} (the plan
+   * touches cluster-wide broker lifecycle, and therefore conflicts with every other plan);
+   * otherwise {@link Groups}, the union of every partition group id named across the plan's {@link
+   * PartitionGroupParallelPhase}s.
+   */
+  public Scope scope() {
+    return scopeOf(phases);
+  }
+
+  /** Same as {@link #scope()}, computable before a plan (and its id) exists. */
+  public static Scope scopeOf(final List<Phase> phases) {
+    if (phases.stream().anyMatch(GlobalPhase.class::isInstance)) {
+      return new Global();
+    }
+    final Set<String> groupIds =
+        phases.stream()
+            .filter(PartitionGroupParallelPhase.class::isInstance)
+            .map(PartitionGroupParallelPhase.class::cast)
+            .flatMap(phase -> phase.groupOperations().keySet().stream())
+            .collect(Collectors.toUnmodifiableSet());
+    return new Groups(groupIds);
+  }
+
+  /**
+   * Returns {@code true} if {@code a} and {@code b} target overlapping sub-configurations and
+   * therefore cannot be pending concurrently: either one of them is {@link Global} (cluster-wide,
+   * conflicts with anything), or both are {@link Groups} and share at least one group id.
+   */
+  public static boolean conflicts(final Scope a, final Scope b) {
+    if (a instanceof Global || b instanceof Global) {
+      return true;
+    }
+    final var groupsA = ((Groups) a).groupIds();
+    final var groupsB = ((Groups) b).groupIds();
+    return !Collections.disjoint(groupsA, groupsB);
+  }
+
+  /** The sub-configuration(s) a {@link PhasedChangePlan} touches. See {@link #scope()}. */
+  public sealed interface Scope permits Global, Groups {}
+
+  /** Cluster-wide scope: touches {@link GlobalConfiguration}, conflicts with every other plan. */
+  public record Global() implements Scope {}
+
+  /** Scope limited to the named partition groups. */
+  public record Groups(Set<String> groupIds) implements Scope {
+    public Groups {
+      groupIds = Set.copyOf(groupIds);
+    }
   }
 
   /**

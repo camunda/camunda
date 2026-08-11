@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -100,7 +101,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Map<String, ExponentialBackoffRetryDelay> groupBackoffRetry = new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
-  private ScheduledTimer advancePhaseRetryTimer;
+  // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
+  private final Map<Long, ScheduledTimer> advancePhaseRetryTimers = new HashMap<>();
+  private final int completedChangeHistoryLimit;
 
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
@@ -135,6 +138,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     useNewConfig = false;
     persistedCurrentConfiguration = null;
     coordinatorSupplier = null;
+    completedChangeHistoryLimit = PhasedChangeState.DEFAULT_HISTORY_LIMIT;
   }
 
   /**
@@ -164,6 +168,29 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final TopologyManagerMetrics topologyMetrics,
       final Duration minRetryDelay,
       final Duration maxRetryDelay) {
+    this(
+        executor,
+        localMemberId,
+        persistedCurrentConfiguration,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay,
+        PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+  }
+
+  /**
+   * @param completedChangeHistoryLimit maximum number of completed changes retained in {@link
+   *     PhasedChangeState#history()}, oldest evicted first
+   */
+  @VisibleForTesting
+  ClusterConfigurationManagerImpl(
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedCurrentClusterConfiguration persistedCurrentConfiguration,
+      final TopologyManagerMetrics topologyMetrics,
+      final Duration minRetryDelay,
+      final Duration maxRetryDelay,
+      final int completedChangeHistoryLimit) {
     this.executor = executor;
     persistedClusterConfiguration = null;
     this.persistedCurrentConfiguration = persistedCurrentConfiguration;
@@ -172,6 +199,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.topologyMetrics = topologyMetrics;
     this.minRetryDelay = minRetryDelay;
     this.maxRetryDelay = maxRetryDelay;
+    this.completedChangeHistoryLimit = completedChangeHistoryLimit;
     backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
     useNewConfig = true;
     coordinatorSupplier =
@@ -451,7 +479,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    */
   private boolean wasTargetedByCurrentPlan(
       final CurrentClusterConfiguration configuration, final String groupId) {
-    return configuration.phasedChangeState().pending().stream()
+    return configuration.phasedChangeState().pending().values().stream()
         .flatMap(plan -> plan.phases().stream())
         .filter(PartitionGroupParallelPhase.class::isInstance)
         .map(PartitionGroupParallelPhase.class::cast)
@@ -695,19 +723,31 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * Drives phased-plan advancement. Invoked after every successful local configuration update. Only
-   * the coordinator (the member with the lowest id, per {@link
-   * ClusterConfigurationCoordinatorSupplier}) advances the plan, so that a single member is
-   * responsible for the transition. When the current phase's sub-configuration(s) have drained
-   * their pending changes, the plan is advanced to the next phase, or completed if it was the last
-   * phase. The action is idempotent — re-firing on an already-advanced phase is a no-op.
+   * Drives phased-plan advancement for every currently pending plan (multiple may be pending
+   * concurrently, targeting disjoint sub-configurations). Invoked after every successful local
+   * configuration update. Only the coordinator (the member with the lowest id, per {@link
+   * ClusterConfigurationCoordinatorSupplier}) advances plans, so that a single member is
+   * responsible for the transition. When a plan's current phase's sub-configuration(s) have drained
+   * their pending changes, that plan is advanced to the next phase, or completed if it was the last
+   * phase. The action is idempotent — re-firing on an already-advanced phase is a no-op. Plans are
+   * advanced one at a time (each id re-reads the latest configuration before mutating it), so
+   * advancing one plan never clobbers a concurrent update to another.
    */
   private void maybeAdvancePhase(final CurrentClusterConfiguration config) {
-    final var pending = config.phasedChangeState().pending();
-    if (pending.isEmpty() || !isLocalMemberCoordinator()) {
+    if (config.phasedChangeState().pending().isEmpty() || !isLocalMemberCoordinator()) {
       return;
     }
-    final var plan = pending.get();
+    for (final var planId : List.copyOf(config.phasedChangeState().pending().keySet())) {
+      maybeAdvancePhase(config, planId);
+    }
+  }
+
+  private void maybeAdvancePhase(final CurrentClusterConfiguration config, final long planId) {
+    final var plan = config.phasedChangeState().pending().get(planId);
+    if (plan == null) {
+      // Already advanced/completed by a previous call in this same batch, or by another trigger.
+      return;
+    }
     final boolean currentPhaseComplete =
         switch (plan.currentPhase()) {
           case final GlobalPhase ignored -> !config.globalConfiguration().hasPendingChanges();
@@ -721,37 +761,47 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
 
     if (plan.hasNextPhase()) {
-      updateMultiConfiguration(CurrentClusterConfiguration::activateNextPhase)
+      updateMultiConfiguration(c -> c.activateNextPhase(planId))
           .onComplete(
               (ignore, error) -> {
                 if (error != null) {
-                  LOG.warn("Failed to advance phased change plan to next phase", error);
-                  scheduleAdvancePhase();
+                  LOG.warn(
+                      "Failed to advance phased change plan '{}' to next phase", planId, error);
+                  scheduleAdvancePhase(planId);
                 } else {
-                  advancePhaseRetryTimer = null;
+                  advancePhaseRetryTimers.remove(planId);
                 }
               });
     } else {
-      updateMultiConfiguration(c -> c.completePlan(PhasedChangePlanStatus.COMPLETED))
+      updateMultiConfiguration(
+              c ->
+                  c.completePlan(
+                      planId, PhasedChangePlanStatus.COMPLETED, completedChangeHistoryLimit))
           .onComplete(
               (ignore, error) -> {
                 if (error != null) {
-                  LOG.warn("Failed to complete phased change plan", error);
-                  scheduleAdvancePhase();
+                  LOG.warn("Failed to complete phased change plan '{}'", planId, error);
+                  scheduleAdvancePhase(planId);
                 } else {
-                  advancePhaseRetryTimer = null;
+                  advancePhaseRetryTimers.remove(planId);
                 }
               });
     }
   }
 
-  private void scheduleAdvancePhase() {
-    if (advancePhaseRetryTimer == null) {
-      advancePhaseRetryTimer =
-          executor.schedule(
-              backoffRetry.nextDelay(),
-              () -> maybeAdvancePhase(persistedCurrentConfiguration.getConfiguration()));
-    }
+  private void scheduleAdvancePhase(final long planId) {
+    advancePhaseRetryTimers.computeIfAbsent(
+        planId,
+        ignored ->
+            executor.schedule(
+                backoffRetry.nextDelay(),
+                () -> {
+                  // Cleared before firing (not in the success/failure branches of the retry
+                  // itself), so a repeat failure can schedule a new timer instead of finding a
+                  // stale, already-fired one still occupying this key.
+                  advancePhaseRetryTimers.remove(planId);
+                  maybeAdvancePhase(persistedCurrentConfiguration.getConfiguration(), planId);
+                }));
   }
 
   private boolean isLocalMemberCoordinator() {

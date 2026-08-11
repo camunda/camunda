@@ -40,7 +40,9 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPar
 import io.camunda.zeebe.util.ReflectUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -274,27 +276,36 @@ public final class ClusterTopologyDomain extends DomainContextBase {
 
   @Provide
   Arbitrary<PhasedChangeState> phasedChangeStates() {
-    return completedPhasedChanges()
-        .optional()
-        .flatMap(
-            lastChange -> {
-              // Pending plan id must be positive and greater than the last completed change id.
-              final long minPendingId = lastChange.map(c -> c.id() + 1).orElse(1L);
-              return phasedChangePlans(minPendingId)
-                  .optional()
-                  .map(pending -> new PhasedChangeState(pending, lastChange));
-            });
-  }
-
-  Arbitrary<PhasedChangePlan> phasedChangePlans(final long minId) {
-    final var id = Arbitraries.longs().between(minId, minId + 1000);
-    final var phases = phases().list().ofMinSize(1).ofMaxSize(4);
-    return Combinators.combine(id, phases, nanoPrecisionInstants())
+    // History ids are reassigned sequentially from 0, and an optional pending plan (if any) gets
+    // the next id after that — this keeps every id below nextId, satisfying PhasedChangeState's
+    // invariant, while still exercising arbitrary statuses/timestamps/phases via the existing
+    // completedPhasedChanges()/phases() generators.
+    final var rawHistory = completedPhasedChanges().list().ofMaxSize(3);
+    final var maybePhaseList = phases().list().ofMinSize(1).ofMaxSize(4).optional();
+    return Combinators.combine(rawHistory, maybePhaseList, nanoPrecisionInstants())
         .flatAs(
-            (planId, phaseList, startedAt) ->
-                Arbitraries.integers()
-                    .between(0, phaseList.size() - 1)
-                    .map(index -> new PhasedChangePlan(planId, index, phaseList, startedAt)));
+            (raw, maybePhases, pendingStartedAt) -> {
+              final List<CompletedPhasedChange> history = new ArrayList<>();
+              for (int i = 0; i < raw.size(); i++) {
+                final var c = raw.get(i);
+                history.add(
+                    new CompletedPhasedChange(i, c.status(), c.startedAt(), c.completedAt()));
+              }
+              final long pendingId = Math.max(history.size(), PhasedChangePlan.INITIAL_PLAN_ID);
+              if (maybePhases.isEmpty()) {
+                return Arbitraries.just(new PhasedChangeState(pendingId, Map.of(), history));
+              }
+              final var phaseList = maybePhases.get();
+              return Arbitraries.integers()
+                  .between(0, phaseList.size() - 1)
+                  .map(
+                      index -> {
+                        final var plan =
+                            new PhasedChangePlan(pendingId, index, phaseList, pendingStartedAt);
+                        return new PhasedChangeState(
+                            pendingId + 1, Map.of(pendingId, plan), history);
+                      });
+            });
   }
 
   @Provide

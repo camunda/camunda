@@ -236,7 +236,7 @@ final class PartitionGroupExporterStateInitializerTest {
                         CurrentClusterConfiguration.DEFAULT_GROUP,
                         List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty()))))),
             Instant.EPOCH);
-    return new PhasedChangeState(Optional.of(plan), Optional.empty());
+    return new PhasedChangeState(1L, Map.of(plan.id(), plan), List.of());
   }
 
   private static PartitionGroupConfiguration groupWithMember(

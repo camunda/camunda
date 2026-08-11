@@ -27,12 +27,14 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +44,28 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private final ClusterConfigurationManager clusterTopologyManager;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private final int completedChangeHistoryLimit;
 
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
       final ConcurrencyControl executor) {
+    this(clusterTopologyManager, localMemberId, executor, PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+  }
+
+  /**
+   * @param completedChangeHistoryLimit maximum number of completed changes retained in {@link
+   *     io.camunda.zeebe.dynamic.config.state.PhasedChangeState#history()}, oldest evicted first
+   */
+  public ConfigurationChangeCoordinatorImpl(
+      final ClusterConfigurationManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final int completedChangeHistoryLimit) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.completedChangeHistoryLimit = completedChangeHistoryLimit;
   }
 
   @Override
@@ -100,7 +116,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         return currentConfiguration;
                       }
                       LOG.warn("Cancelling configuration change '{}'.", changeId);
-                      return currentConfiguration.cancelPendingChanges();
+                      return currentConfiguration.cancelPendingChanges(
+                          changeId, completedChangeHistoryLimit);
                     })
                 .onComplete(
                     (updatedConfiguration, error) -> {
@@ -127,21 +144,19 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               "Cannot cancel change " + changeId + " because the topology is not initialized"));
       return false;
     }
-    final var pendingPlan = currentConfiguration.phasedChangeState().pending();
-    if (pendingPlan.isEmpty()) {
+    final var state = currentConfiguration.phasedChangeState();
+    if (!state.wasIssued(changeId)) {
       failFuture(
           future,
           new InvalidRequest(
-              "Cannot cancel change " + changeId + " because no change is in progress"));
+              "Cannot cancel change " + changeId + " because it is not a known change"));
       return false;
     }
-    if (pendingPlan.orElseThrow().id() != changeId) {
-      failFuture(
-          future,
-          new InvalidRequest(
-              "Cannot cancel change " + changeId + " because it is not the current change"));
-      return false;
-    }
+    // changeId < nextId: either still pending (cancel proceeds below) or already resolved
+    // (completed/failed/cancelled, whether still in the retained history window or aged out of
+    // it) — cancelling an already-resolved change is treated as an idempotent no-op success,
+    // since a resolved id can never be re-distinguished from "no longer tracked" once history ages
+    // it out, and both cases mean "there is nothing left to cancel".
     return true;
   }
 
@@ -208,8 +223,12 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       return;
     }
 
+    // Captured before any mutation: the id the coordinator's single-threaded executor is about to
+    // hand out for this request, whether or not it is ever actually applied (dry-run) or the
+    // request races with a concurrent one (checked in checkConcurrentModification below).
+    final long changeId = currentConfiguration.phasedChangeState().nextId();
     final ActorFuture<CurrentClusterConfiguration> validation =
-        validateNewModelChangeRequest(currentConfiguration, phases);
+        validateNewModelChangeRequest(currentConfiguration, changeId, phases);
 
     validation.onComplete(
         (simulatedFinalConfiguration, validationError) -> {
@@ -220,12 +239,6 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
 
           final var operations = flattenPhases(phases);
           if (dryRun) {
-            final long changeId =
-                currentConfiguration
-                    .phasedChangeState()
-                    .lastChange()
-                    .map(c -> c.id() + 1)
-                    .orElse(1L);
             future.complete(
                 new ConfigurationChangeResult(
                     currentConfiguration.toLegacyDefault(),
@@ -238,10 +251,17 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
             return;
           }
 
+          // The id actually assigned may differ from `changeId` (captured from the snapshot used
+          // to validate/simulate) if another, non-conflicting request was admitted in between —
+          // checkConcurrentModification only rejects overlapping scopes, not unrelated admissions
+          // that bump the counter. The applied id is therefore read fresh, inside the same
+          // single-threaded transaction that calls initPlan, so it is exact.
+          final MutableLong appliedChangeId = new MutableLong();
           clusterTopologyManager
               .updateMultiConfiguration(
                   config -> {
                     checkConcurrentModification(config, currentConfiguration, phases);
+                    appliedChangeId.set(config.phasedChangeState().nextId());
                     return config.initPlan(phases);
                   })
               .onComplete(
@@ -250,15 +270,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                       failFuture(future, error);
                       return;
                     }
-                    final long changeId =
-                        updated.phasedChangeState().pending().map(PhasedChangePlan::id).orElse(0L);
                     future.complete(
                         new ConfigurationChangeResult(
                             currentConfiguration.toLegacyDefault(),
                             simulatedFinalConfiguration.toLegacyDefault(),
                             currentConfiguration,
                             simulatedFinalConfiguration,
-                            changeId,
+                            appliedChangeId.get(),
                             operations,
                             phases));
                   },
@@ -271,9 +289,15 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final CurrentClusterConfiguration configUsedForGeneratingOperations,
       final List<Phase> phases) {
 
-    if (latestConfig.phasedChangeState().pending().isPresent()) {
-      throw new ConcurrentModificationException(
-          "Cannot apply configuration change. Another configuration change is in progress.");
+    final var scope = PhasedChangePlan.scopeOf(phases);
+    for (final var existing : latestConfig.phasedChangeState().pending().values()) {
+      if (PhasedChangePlan.conflicts(scope, existing.scope())) {
+        throw new ConcurrentModificationException(
+            String.format(
+                "Cannot apply configuration change. Another configuration change [%d] targeting an"
+                    + " overlapping group is in progress.",
+                existing.id()));
+      }
     }
 
     // simple equality check on the whole configuration is not enough, because we allow concurrent
@@ -317,7 +341,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
    * changes, the plan moved into {@code lastChange}), used as the expected final configuration.
    */
   private ActorFuture<CurrentClusterConfiguration> validateNewModelChangeRequest(
-      final CurrentClusterConfiguration currentConfiguration, final List<Phase> phases) {
+      final CurrentClusterConfiguration currentConfiguration,
+      final long newPlanId,
+      final List<Phase> phases) {
     final ActorFuture<CurrentClusterConfiguration> validationFuture = executor.createFuture();
 
     if (currentConfiguration.globalConfiguration().members().isEmpty()) {
@@ -325,53 +351,61 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           validationFuture,
           new OperationNotAllowed(
               "Cannot apply configuration change. The configuration is not initialized."));
-    } else if (currentConfiguration.phasedChangeState().pending().isPresent()) {
-      failFuture(
-          validationFuture,
-          new ConcurrentModificationException(
-              String.format(
-                  "Cannot apply configuration change. Another configuration change [%d] is in progress.",
-                  currentConfiguration
-                      .phasedChangeState()
-                      .pending()
-                      .map(PhasedChangePlan::id)
-                      .orElseThrow())));
-    } else {
-      final var globalSimulator =
-          new GlobalConfigurationChangeAppliersImpl(
-              new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor());
-      final var groupSimulator =
-          new PartitionGroupConfigurationChangeAppliersImpl(
-              new NoopPartitionChangeExecutor(),
-              new NoopPartitionScalingChangeExecutor(),
-              new NoopModeChangeExecutor(),
-              new NoopRestoreChangeExecutor());
-      try {
-        final var withPlan = currentConfiguration.initPlan(phases);
-        simulateNewModelChange(withPlan, globalSimulator, groupSimulator, validationFuture);
-      } catch (final Exception e) {
-        failFuture(validationFuture, e);
+      return validationFuture;
+    }
+
+    final var scope = PhasedChangePlan.scopeOf(phases);
+    for (final var existing : currentConfiguration.phasedChangeState().pending().values()) {
+      if (PhasedChangePlan.conflicts(scope, existing.scope())) {
+        failFuture(
+            validationFuture,
+            new ConcurrentModificationException(
+                String.format(
+                    "Cannot apply configuration change. Another configuration change [%d]"
+                        + " targeting an overlapping scope is in progress.",
+                    existing.id())));
+        return validationFuture;
       }
+    }
+
+    final var globalSimulator =
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor());
+    final var groupSimulator =
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor());
+    try {
+      final var withPlan = currentConfiguration.initPlan(phases);
+      simulateNewModelChange(
+          withPlan, newPlanId, globalSimulator, groupSimulator, validationFuture);
+    } catch (final Exception e) {
+      failFuture(validationFuture, e);
     }
     return validationFuture;
   }
 
   private void simulateNewModelChange(
       final CurrentClusterConfiguration config,
+      final long planId,
       final GlobalConfigurationChangeAppliers globalSimulator,
       final PartitionGroupConfigurationChangeAppliers groupSimulator,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
-    final var pending = config.phasedChangeState().pending();
-    if (pending.isEmpty()) {
+    final var plan = config.phasedChangeState().pending().get(planId);
+    if (plan == null) {
+      // The plan has been fully drained and moved into history — simulation is done.
       simulationCompleted.complete(config);
       return;
     }
-    switch (pending.get().currentPhase()) {
+    switch (plan.currentPhase()) {
       case final GlobalPhase ignored ->
-          simulateGlobalPhase(config, globalSimulator, groupSimulator, simulationCompleted);
+          simulateGlobalPhase(config, planId, globalSimulator, groupSimulator, simulationCompleted);
       case final PartitionGroupParallelPhase parallelPhase ->
           simulatePartitionGroupPhase(
               config,
+              planId,
               new ArrayList<>(parallelPhase.groupOperations().keySet()),
               0,
               globalSimulator,
@@ -382,12 +416,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
 
   private void simulateGlobalPhase(
       final CurrentClusterConfiguration config,
+      final long planId,
       final GlobalConfigurationChangeAppliers globalSimulator,
       final PartitionGroupConfigurationChangeAppliers groupSimulator,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
     if (!config.globalConfiguration().hasPendingChanges()) {
       advancePhaseAndContinueSimulation(
-          config, globalSimulator, groupSimulator, simulationCompleted);
+          config, planId, globalSimulator, groupSimulator, simulationCompleted);
       return;
     }
     final var operation =
@@ -410,12 +445,14 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               final var advanced =
                   configWithInit.updateGlobalConfiguration(
                       g -> g.advanceConfigurationChange(transformer));
-              simulateGlobalPhase(advanced, globalSimulator, groupSimulator, simulationCompleted);
+              simulateGlobalPhase(
+                  advanced, planId, globalSimulator, groupSimulator, simulationCompleted);
             });
   }
 
   private void simulatePartitionGroupPhase(
       final CurrentClusterConfiguration config,
+      final long planId,
       final List<String> groupIds,
       final int index,
       final GlobalConfigurationChangeAppliers globalSimulator,
@@ -423,7 +460,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
     if (index >= groupIds.size()) {
       advancePhaseAndContinueSimulation(
-          config, globalSimulator, groupSimulator, simulationCompleted);
+          config, planId, globalSimulator, groupSimulator, simulationCompleted);
       return;
     }
     simulatePartitionGroupOperations(
@@ -432,7 +469,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
         groupSimulator,
         drained ->
             simulatePartitionGroupPhase(
-                drained, groupIds, index + 1, globalSimulator, groupSimulator, simulationCompleted),
+                drained,
+                planId,
+                groupIds,
+                index + 1,
+                globalSimulator,
+                groupSimulator,
+                simulationCompleted),
         simulationCompleted);
   }
 
@@ -474,15 +517,16 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
 
   private void advancePhaseAndContinueSimulation(
       final CurrentClusterConfiguration config,
+      final long planId,
       final GlobalConfigurationChangeAppliers globalSimulator,
       final PartitionGroupConfigurationChangeAppliers groupSimulator,
       final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
-    final var plan = config.phasedChangeState().pending().orElseThrow();
+    final var plan = config.phasedChangeState().pending().get(planId);
     final var next =
         plan.hasNextPhase()
-            ? config.activateNextPhase()
-            : config.completePlan(PhasedChangePlanStatus.COMPLETED);
-    simulateNewModelChange(next, globalSimulator, groupSimulator, simulationCompleted);
+            ? config.activateNextPhase(planId)
+            : config.completePlan(planId, PhasedChangePlanStatus.COMPLETED);
+    simulateNewModelChange(next, planId, globalSimulator, groupSimulator, simulationCompleted);
   }
 
   /**

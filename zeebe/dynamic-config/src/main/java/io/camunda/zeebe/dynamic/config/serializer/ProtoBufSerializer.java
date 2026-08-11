@@ -1977,24 +1977,23 @@ public class ProtoBufSerializer
   }
 
   private Topology.PhasedChangeState encodePhasedChangeState(final PhasedChangeState state) {
-    final var builder = Topology.PhasedChangeState.newBuilder();
-    state.pending().ifPresent(plan -> builder.setPendingPlan(encodePhasedChangePlan(plan)));
+    final var builder = Topology.PhasedChangeState.newBuilder().setNextId(state.nextId());
+    state.pending().values().forEach(plan -> builder.addPending(encodePhasedChangePlan(plan)));
     state
-        .lastChange()
-        .ifPresent(lastChange -> builder.setLastChange(encodeCompletedPhasedChange(lastChange)));
+        .history()
+        .forEach(
+            completedChange -> builder.addHistory(encodeCompletedPhasedChange(completedChange)));
     return builder.build();
   }
 
   private PhasedChangeState decodePhasedChangeState(final Topology.PhasedChangeState proto) {
-    final Optional<PhasedChangePlan> pending =
-        proto.hasPendingPlan()
-            ? Optional.of(decodePhasedChangePlan(proto.getPendingPlan()))
-            : Optional.empty();
-    final Optional<CompletedPhasedChange> lastChange =
-        proto.hasLastChange()
-            ? Optional.of(decodeCompletedPhasedChange(proto.getLastChange()))
-            : Optional.empty();
-    return new PhasedChangeState(pending, lastChange);
+    final Map<Long, PhasedChangePlan> pending =
+        proto.getPendingList().stream()
+            .map(this::decodePhasedChangePlan)
+            .collect(Collectors.toMap(PhasedChangePlan::id, plan -> plan));
+    final List<CompletedPhasedChange> history =
+        proto.getHistoryList().stream().map(this::decodeCompletedPhasedChange).toList();
+    return new PhasedChangeState(proto.getNextId(), pending, history);
   }
 
   private Topology.PhasedChangePlan encodePhasedChangePlan(final PhasedChangePlan plan) {

@@ -190,7 +190,11 @@ public record CurrentClusterConfiguration(
    *     a change in progress
    */
   public CurrentClusterConfiguration activatePendingPhase() {
-    return phasedChangeState.pending().map(this::applyPhase).orElse(this);
+    var result = this;
+    for (final var plan : phasedChangeState.pending().values()) {
+      result = result.applyPhase(plan);
+    }
+    return result;
   }
 
   /**
@@ -379,70 +383,95 @@ public record CurrentClusterConfiguration(
           "Expected to init a plan with at least one phase, but the phase list is empty");
     }
 
+    final long newId = phasedChangeState.nextId();
     final var newState = phasedChangeState.initPlan(phases);
-    final var plan = newState.pending().orElseThrow();
+    final var plan = Objects.requireNonNull(newState.pending().get(newId));
     return withPhasedChangeState(newState).applyPhase(plan);
   }
 
   /**
-   * Advances the pending plan to the next phase and activates that phase into the
+   * Advances the pending plan {@code planId} to the next phase and activates that phase into the
    * sub-configurations.
    *
    * <p>The next phase must not target a sub-configuration that still has the previous phase's
    * change in progress (see {@link #initPlan(List)}); if it does, this throws because a
    * configuration change is already in progress on that sub-config.
    *
-   * @throws IllegalStateException if no plan is pending, or the plan is already on its last phase
+   * @throws IllegalStateException if no plan {@code planId} is pending, or it is already on its
+   *     last phase
    */
-  public CurrentClusterConfiguration activateNextPhase() {
-    final var plan =
-        phasedChangeState
-            .pending()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "Cannot activate the next phase when no plan is pending"));
+  public CurrentClusterConfiguration activateNextPhase(final long planId) {
+    final var plan = phasedChangeState.pending().get(planId);
+    if (plan == null) {
+      throw new IllegalStateException(
+          "Cannot activate the next phase: no plan '%d' is pending".formatted(planId));
+    }
     if (!plan.hasNextPhase()) {
       throw new IllegalStateException(
           "Cannot activate the next phase: the plan is already on its last phase");
     }
     final var advanced = plan.withNextPhase();
-    final var newState =
-        new PhasedChangeState(Optional.of(advanced), phasedChangeState.lastChange());
+    final var newState = phasedChangeState.withAdvancedPlan(advanced);
     return withPhasedChangeState(newState).applyPhase(advanced);
   }
 
   /**
-   * Completes the pending plan with the given terminal status, moving it into the last-completed
-   * change. Sub-configuration changes activated by the plan are left untouched.
+   * Completes the pending plan {@code planId} with the given terminal status, moving it into {@code
+   * history}. Sub-configuration changes activated by the plan are left untouched.
    *
-   * @throws IllegalStateException if no plan is pending
+   * @throws IllegalStateException if plan {@code planId} is not pending
    */
-  public CurrentClusterConfiguration completePlan(final PhasedChangePlanStatus status) {
-    return withPhasedChangeState(phasedChangeState.completePlan(status));
+  public CurrentClusterConfiguration completePlan(
+      final long planId, final PhasedChangePlanStatus status) {
+    return completePlan(planId, status, PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+  }
+
+  /** Same as {@link #completePlan(long, PhasedChangePlanStatus)}, with an explicit history cap. */
+  public CurrentClusterConfiguration completePlan(
+      final long planId, final PhasedChangePlanStatus status, final int historyLimit) {
+    return withPhasedChangeState(phasedChangeState.completePlan(planId, status, historyLimit));
   }
 
   /**
-   * Cancels the pending plan: clears the pending change on every sub-configuration that has one
-   * (the global configuration and/or any partition group targeted by the plan's phases so far), and
-   * moves the plan into {@code lastChange} with {@link PhasedChangePlanStatus#CANCELLED}. This is
-   * an unsafe operation and should be used only as a last resort when a plan is stuck — already
-   * applied operations are not reverted, so sub-configurations affected by earlier phases may be
-   * left in an intermediate state.
+   * Cancels the pending plan {@code planId}: clears the pending change on the sub-configuration(s)
+   * targeted by its <em>current</em> phase (the only ones that can have a change in progress
+   * belonging to this plan — earlier phases have already drained), and moves the plan into {@code
+   * history} with {@link PhasedChangePlanStatus#CANCELLED}. This is an unsafe operation and should
+   * be used only as a last resort when a plan is stuck — already applied operations are not
+   * reverted, so sub-configurations affected by earlier phases may be left in an intermediate
+   * state.
    *
-   * @return {@code this} if no plan is pending
+   * <p>Only the named plan's own sub-configurations are touched; other concurrently pending plans
+   * (which, by admission, target disjoint sub-configurations) are unaffected.
+   *
+   * @return {@code this} if plan {@code planId} is not pending
    */
-  public CurrentClusterConfiguration cancelPendingChanges() {
-    if (phasedChangeState.pending().isEmpty()) {
+  public CurrentClusterConfiguration cancelPendingChanges(final long planId) {
+    return cancelPendingChanges(planId, PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+  }
+
+  /** Same as {@link #cancelPendingChanges(long)}, with an explicit history cap. */
+  public CurrentClusterConfiguration cancelPendingChanges(
+      final long planId, final int historyLimit) {
+    final var plan = phasedChangeState.pending().get(planId);
+    if (plan == null) {
       return this;
     }
-    var result = updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
-    for (final var groupId : partitionGroups.keySet()) {
-      result =
-          result.updatePartitionGroupConfig(
-              groupId, PartitionGroupConfiguration::cancelPendingChanges);
-    }
-    return result.completePlan(PhasedChangePlanStatus.CANCELLED);
+    final var result =
+        switch (plan.currentPhase()) {
+          case final GlobalPhase ignored ->
+              updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
+          case final PartitionGroupParallelPhase parallelPhase -> {
+            var r = this;
+            for (final var groupId : parallelPhase.groupOperations().keySet()) {
+              r =
+                  r.updatePartitionGroupConfig(
+                      groupId, PartitionGroupConfiguration::cancelPendingChanges);
+            }
+            yield r;
+          }
+        };
+    return result.completePlan(planId, PhasedChangePlanStatus.CANCELLED, historyLimit);
   }
 
   /**
@@ -515,21 +544,18 @@ public record CurrentClusterConfiguration(
    * ClusterConfiguration#isAfterRestore()}.
    */
   public boolean isAfterRestore() {
-    return phasedChangeState
-        .pending()
-        .filter(PhasedChangePlan::hasRestorePlanId)
-        .filter(plan -> plan.phases().size() == 1)
-        .map(plan -> plan.phases().get(0))
-        .filter(
-            phase ->
-                phase instanceof final PartitionGroupParallelPhase parallelPhase
-                    && parallelPhase.groupOperations().size() == 1
-                    && parallelPhase.groupOperations().values().stream()
-                        .allMatch(
-                            operations ->
-                                operations.size() == 1
-                                    && operations.get(0) instanceof UpdateRoutingState))
-        .isPresent();
+    return phasedChangeState.pending().values().stream().anyMatch(this::isRestorePlan);
+  }
+
+  private boolean isRestorePlan(final PhasedChangePlan plan) {
+    return plan.hasRestorePlanId()
+        && plan.phases().size() == 1
+        && plan.phases().get(0) instanceof final PartitionGroupParallelPhase parallelPhase
+        && parallelPhase.groupOperations().size() == 1
+        && parallelPhase.groupOperations().values().stream()
+            .allMatch(
+                operations ->
+                    operations.size() == 1 && operations.get(0) instanceof UpdateRoutingState);
   }
 
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
@@ -555,7 +581,14 @@ public record CurrentClusterConfiguration(
     final long lastChangeId = lastChange.map(CompletedPhasedChange::id).orElse(0L);
     final Optional<PhasedChangePlan> pending =
         legacy.pendingChanges().flatMap(plan -> toPhasedChangePlan(plan, lastChangeId));
-    return new PhasedChangeState(pending, lastChange);
+    final List<CompletedPhasedChange> history = lastChange.map(List::of).orElse(List.of());
+    final long nextId =
+        pending
+            .map(plan -> plan.id() + 1)
+            .orElse(Math.max(lastChangeId + 1, PhasedChangePlan.INITIAL_PLAN_ID));
+    final Map<Long, PhasedChangePlan> pendingMap =
+        pending.map(plan -> Map.of(plan.id(), plan)).orElse(Map.of());
+    return new PhasedChangeState(nextId, pendingMap, history);
   }
 
   /**

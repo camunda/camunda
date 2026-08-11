@@ -201,14 +201,12 @@ final class ClusterApiUtils {
       final CurrentClusterConfiguration configuration) {
     final var phasedChangeState = configuration.phasedChangeState();
     final List<ConfigurationChange> changes = new ArrayList<>();
-    phasedChangeState
-        .pending()
-        .map(plan -> mapConfigurationChange(configuration, plan))
-        .ifPresent(changes::add);
-    phasedChangeState
-        .lastChange()
+    phasedChangeState.pending().values().stream()
+        .map(phasedChangePlan -> mapConfigurationChange(configuration, phasedChangePlan))
+        .forEach(changes::add);
+    phasedChangeState.history().stream()
         .map(ClusterApiUtils::mapConfigurationChange)
-        .ifPresent(changes::add);
+        .forEach(changes::add);
 
     final var sortedChanges =
         changes.stream().sorted(Comparator.comparingLong(ConfigurationChange::getId)).toList();
@@ -224,13 +222,16 @@ final class ClusterApiUtils {
   private static Optional<ConfigurationChange> findConfigurationChange(
       final CurrentClusterConfiguration configuration, final long changeId) {
     final var phasedChangeState = configuration.phasedChangeState();
-    final var pendingMatch = phasedChangeState.pending().filter(plan -> plan.id() == changeId);
+    final var pendingMatch =
+        phasedChangeState.pending().values().stream()
+            .filter(plan -> plan.id() == changeId)
+            .findFirst();
     if (pendingMatch.isPresent()) {
       return pendingMatch.map(plan -> mapConfigurationChange(configuration, plan));
     }
-    return phasedChangeState
-        .lastChange()
+    return phasedChangeState.history().stream()
         .filter(change -> change.id() == changeId)
+        .findFirst()
         .map(ClusterApiUtils::mapConfigurationChange);
   }
 

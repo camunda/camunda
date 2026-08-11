@@ -79,10 +79,14 @@ message CompletedPhasedChange {
   google.protobuf.Timestamp completedAt = 4;
 }
 
-// Wrapper that holds at most one pending plan and the last completed change.
+// Wrapper that holds every currently pending plan (multiple may be pending
+// concurrently, targeting disjoint sub-configurations) plus a bounded window
+// of recently completed changes. nextId is the monotonic plan-id counter;
+// pending plan ids and history entry ids are always less than nextId.
 message PhasedChangeState {
-  PhasedChangePlan pendingPlan = 1;
-  CompletedPhasedChange lastChange = 2;
+  int64 nextId = 1;
+  repeated PhasedChangePlan pending = 2;
+  repeated CompletedPhasedChange history = 3;
 }
 
 // A single phase in a PhasedChangePlan; either global or per-group.
