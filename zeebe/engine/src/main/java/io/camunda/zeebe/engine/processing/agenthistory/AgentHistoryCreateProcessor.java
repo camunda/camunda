@@ -59,7 +59,7 @@ public final class AgentHistoryCreateProcessor
     jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
-    historyHelper = new AgentHistoryBatchHelper(processingState);
+    historyHelper = new AgentHistoryBatchHelper(keyGenerator, processingState);
   }
 
   @Override

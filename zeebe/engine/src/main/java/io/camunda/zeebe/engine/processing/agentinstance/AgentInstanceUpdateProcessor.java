@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -89,14 +90,15 @@ public final class AgentInstanceUpdateProcessor
   public AgentInstanceUpdateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
-    historyBatchHelper = new AgentHistoryBatchHelper(processingState);
+    historyBatchHelper = new AgentHistoryBatchHelper(keyGenerator, processingState);
   }
 
   @Override
