@@ -545,7 +545,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Latency of authorization checks in AuthorizationCheckBehavior, including the fast path when checks are disabled",
+      "description": "Latency of each authorization check",
       "fieldConfig": {
         "defaults": {
           "color": {
