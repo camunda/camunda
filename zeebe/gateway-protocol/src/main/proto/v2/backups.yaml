@@ -273,7 +273,218 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
 
+  /backups/history:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: takeHistoryBackup
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Take a history backup
+      description: |
+        Triggers a backup of the physical tenant's history, by scheduling a snapshot of every
+        secondary storage index it owns.
+
+        Unlike runtime backups, history backups have no generated-id mode: `backupId` is always
+        required.
+
+        Only available on clusters whose secondary storage is Elasticsearch or OpenSearch.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TakeHistoryBackupRequest'
+      responses:
+        "202":
+          description: The backup has been successfully scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TakeHistoryBackupResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/HistoryBackupForbidden'
+        "409":
+          description: |
+            A backup with the given id already exists, or another backup is already running.
+
+            The "already running" check is best-effort and node-local: it only observes backups
+            started by the gateway that serves the request. Two concurrent requests reaching
+            different gateways are narrowed by the duplicate-id check alone.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: listHistoryBackups
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: List history backups
+      description: |
+        Returns a list of all available history backups of the physical tenant, with their state
+        and additional info, most recent first by snapshot start time.
+
+        Only available on clusters whose secondary storage is Elasticsearch or OpenSearch.
+      parameters:
+        - name: prefix
+          in: query
+          required: false
+          description: |
+            A prefix that backup ids must match, ending in a single '*'. If omitted, all
+            backups are returned.
+          schema:
+            $ref: '#/components/schemas/BackupIdPrefix'
+        - name: verbose
+          in: query
+          required: false
+          description: |
+            Whether to ask the secondary storage for snapshot-level detail. Setting this to
+            `false` makes the query cheaper, but the store then reports neither snapshot state
+            nor start time, so both the per-snapshot `details` and the aggregated `state` are
+            incomplete and the listing order is unspecified.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: The list of history backups.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/HistoryBackupForbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /backups/history/{backupId}:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: getHistoryBackup
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get history backup
+      description: |
+        Returns detailed status of the history backup with the given id.
+
+        Only available on clusters whose secondary storage is Elasticsearch or OpenSearch.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: '#/components/schemas/BackupId'
+      responses:
+        "200":
+          description: The history backup.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryBackupInfo'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/HistoryBackupForbidden'
+        "404":
+          description: A backup with the given id does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: deleteHistoryBackup
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: DELETE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Delete history backup
+      description: |
+        Deletes the history backup with the given id, by deleting every snapshot that makes it
+        up.
+
+        Only available on clusters whose secondary storage is Elasticsearch or OpenSearch.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: '#/components/schemas/BackupId'
+      responses:
+        "204":
+          description: The backup has been successfully deleted.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/HistoryBackupForbidden'
+        "404":
+          description: A backup with the given id does not exist.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
 components:
+  responses:
+    HistoryBackupForbidden:
+      description: |
+        The request is forbidden, either because the authenticated caller lacks the required
+        `BACKUP` permission, or because the cluster's secondary storage is neither Elasticsearch
+        nor OpenSearch and therefore cannot serve history backups. The problem detail says which
+        of the two applies.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
   schemas:
     BackupId:
       title: Backup ID
@@ -619,3 +830,135 @@ components:
         - checkpointStates
         - backupStates
         - ranges
+
+    HistoryBackupStateCode:
+      title: History Backup State
+      description: |
+        The aggregated state of a history backup, computed from the state of each of its
+        snapshots.
+      type: string
+      enum:
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+        - INCOMPLETE
+        - INCOMPATIBLE
+      example: IN_PROGRESS
+
+    TakeHistoryBackupRequest:
+      title: TakeHistoryBackupRequest
+      description: Request body for taking a history backup.
+      type: object
+      properties:
+        backupId:
+          description: The id of the backup to take.
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+      required:
+        - backupId
+
+    TakeHistoryBackupResponse:
+      title: TakeHistoryBackupResponse
+      description: Response body for taking a history backup.
+      type: object
+      properties:
+        backupId:
+          description: The id of the backup that has been scheduled.
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+        scheduledSnapshots:
+          description: The names of the snapshots that have been scheduled for this backup.
+          type: array
+          items:
+            type: string
+            description: The name of a scheduled snapshot.
+            example: camunda_webapps_1_8.10.0_part_1_of_6
+      required:
+        - backupId
+        - scheduledSnapshots
+
+    HistoryBackupInfo:
+      title: History Backup Info
+      description: |
+        Detailed status of a history backup. The aggregated state is computed from the state of
+        each of its snapshots as:
+        - If every expected snapshot exists and all are complete, the overall state is
+          'COMPLETED'.
+        - If one snapshot failed or is partial, the overall state is 'FAILED'.
+        - Otherwise, if one snapshot is incompatible, the overall state is 'INCOMPATIBLE'.
+        - Otherwise, if one snapshot is still running, the overall state is 'IN_PROGRESS'.
+        - Otherwise, if snapshots are missing and the backup has not progressed within the
+          configured timeout, the overall state is 'INCOMPLETE'.
+      type: object
+      properties:
+        backupId:
+          description: The id of the backup.
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+        state:
+          description: The aggregated state of the backup.
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/HistoryBackupStateCode'
+        failureReason:
+          description: Reason for failure if the state is 'FAILED'.
+          type: string
+          nullable: true
+          example: ""
+        details:
+          readOnly: true
+          description: |
+            Detailed status of the backup per snapshot. Always lists every snapshot found for
+            the backup; when the backup was read without snapshot detail, each entry carries
+            only its name.
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryBackupSnapshotInfo'
+      required:
+        - backupId
+        - state
+        - failureReason
+        - details
+
+    HistoryBackupSnapshotInfo:
+      title: History Backup Snapshot Info
+      description: Detailed info of a single snapshot making up a history backup.
+      type: object
+      properties:
+        snapshotName:
+          description: The name of the snapshot.
+          readOnly: true
+          type: string
+          example: camunda_webapps_1_8.10.0_part_1_of_6
+        state:
+          description: |
+            The state of the snapshot, reported verbatim by the secondary storage (for example
+            'SUCCESS', 'IN_PROGRESS' or 'PARTIAL'). Deliberately not a closed set: Elasticsearch
+            and OpenSearch report different vocabularies. Not reported when the backup was
+            listed without snapshot detail.
+          readOnly: true
+          type: string
+          nullable: true
+          example: SUCCESS
+        startTime:
+          description: |
+            The timestamp at which the snapshot was started. Not reported when the backup was
+            listed without snapshot detail.
+          readOnly: true
+          type: string
+          format: date-time
+          nullable: true
+          example: "2022-09-15T13:10:38.176514094Z"
+        failures:
+          description: The failures reported for this snapshot. Empty if there were none.
+          readOnly: true
+          type: array
+          items:
+            type: string
+            description: A failure reported by the secondary storage for this snapshot.
+      required:
+        - snapshotName
+        - state
+        - startTime
+        - failures

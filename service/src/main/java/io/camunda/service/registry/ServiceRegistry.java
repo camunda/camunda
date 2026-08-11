@@ -27,6 +27,7 @@ import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
+import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ManagementServices;
@@ -98,6 +99,8 @@ public interface ServiceRegistry {
   GlobalListenerServices globalListenerServices(String physicalTenantId);
 
   GroupServices groupServices(String physicalTenantId);
+
+  HistoryBackupServices historyBackupServices(String physicalTenantId);
 
   IncidentServices incidentServices(String physicalTenantId);
 

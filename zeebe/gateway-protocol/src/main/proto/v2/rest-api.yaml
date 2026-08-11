@@ -132,6 +132,10 @@ paths:
     $ref: 'backups.yaml#/paths/~1backups~1runtime~1state~1sync'
   /backups/runtime/{backupId}:
     $ref: 'backups.yaml#/paths/~1backups~1runtime~1{backupId}'
+  /backups/history:
+    $ref: 'backups.yaml#/paths/~1backups~1history'
+  /backups/history/{backupId}:
+    $ref: 'backups.yaml#/paths/~1backups~1history~1{backupId}'
 
   # Batch operation endpoints
   /batch-operation-items/search:
