@@ -7,9 +7,21 @@
  */
 package io.camunda.service.exception;
 
+<<<<<<< HEAD
+=======
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
+
+/**
+ * Thrown when secondary storage is not configured at all ({@code
+ * camunda.data.secondary-storage.type=none}). HTTP 403 — contrast with {@link
+ * SecondaryStorageDegradedException}, which is HTTP 503 for a configured but currently-degraded
+ * physical tenant.
+ */
+>>>>>>> f241add9 (fix: resolve type in SecondaryStorageInterceptor using Unified Configuration)
 public class SecondaryStorageUnavailableException extends ServiceException {
   public static final String NO_SECONDARY_STORAGE_MESSAGE =
-      "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property.";
+      "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the '%s' property."
+          .formatted(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
 
   public SecondaryStorageUnavailableException() {
     super(NO_SECONDARY_STORAGE_MESSAGE, ServiceException.Status.FORBIDDEN);
