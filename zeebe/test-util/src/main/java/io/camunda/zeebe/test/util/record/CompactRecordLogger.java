@@ -534,11 +534,12 @@ public class CompactRecordLogger {
     return record.getValue().getClass().getSimpleName() + " " + record.getValue().toJson();
   }
 
-  private String summarizeAgentInstance(final Record<?> record) {
+  protected String summarizeAgentInstance(final Record<?> record) {
     final var value = (AgentInstanceRecordValue) record.getValue();
     final var result = new StringBuilder();
 
     result.append(shortenKey(value.getAgentInstanceKey()));
+    result.append(" def:").append(shortenKey(value.getAgentDefinitionKey()));
     result.append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     result.append(
         summarizeProcessInformation(

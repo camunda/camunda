@@ -140,7 +140,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static BpmnModelInstance process(final String jobType) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(jobType))
+        .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(jobType).zeebeAiAgentTaskDefinition())
         .endEvent()
         .done();
   }
@@ -148,7 +148,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static BpmnModelInstance processWithErrorBoundary(final String jobType) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(jobType))
+        .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(jobType).zeebeAiAgentTaskDefinition())
         .boundaryEvent(BOUNDARY_ID, b -> b.error(ERROR_CODE))
         .endEvent()
         .moveToActivity(SERVICE_TASK_ID)

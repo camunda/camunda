@@ -102,14 +102,17 @@ public class AgentInstanceCompleteTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .parallelGateway("fork")
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .parallelGateway("join")
                 .endEvent()
                 .moveToNode("fork")
-                .serviceTask(secondTaskId, t -> t.zeebeJobType("other-agent"))
+                .serviceTask(
+                    secondTaskId, t -> t.zeebeJobType("other-agent").zeebeAiAgentTaskDefinition())
                 .connectTo("join")
                 .moveToNode("fork")
-                .serviceTask(thirdTaskId, t -> t.zeebeJobType("third-agent"))
+                .serviceTask(
+                    thirdTaskId, t -> t.zeebeJobType("third-agent").zeebeAiAgentTaskDefinition())
                 .connectTo("join")
                 .done())
         .deploy();
@@ -180,7 +183,8 @@ public class AgentInstanceCompleteTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();

@@ -30,6 +30,15 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getAgentInstanceKey();
 
   /**
+   * @return the key of the agent definition this instance runs on, or {@code -1} if unset.
+   *     <p>A successfully created agent instance always resolves to a real key, since creation is
+   *     rejected for elements that have no agent definition; {@code -1} therefore only appears on
+   *     the create command before the engine stamps the value, or on legacy records predating this
+   *     field.
+   */
+  long getAgentDefinitionKey();
+
+  /**
    * @return the unique key of the element instance that the agent instance was last associated with
    */
   long getElementInstanceKey();

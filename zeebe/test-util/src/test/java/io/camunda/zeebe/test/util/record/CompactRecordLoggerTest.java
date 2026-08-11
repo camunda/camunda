@@ -14,11 +14,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
@@ -203,6 +206,40 @@ class CompactRecordLoggerTest {
       // then
       assertThat(result)
           .isEqualTo("K1 AI_AGENT_TASK @\"Activity_1\" of <process \"orderProcess\"[K2] v3>");
+    }
+
+    @Test
+    void shouldSummarizeAgentInstanceRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_INSTANCE)
+              .withValue(
+                  ImmutableAgentInstanceRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withAgentDefinitionKey(4L)
+                      .withElementId("Activity_1")
+                      .withElementInstanceKey(3L)
+                      .withProcessDefinitionKey(2L)
+                      .withProcessInstanceKey(5L)
+                      .withStatus(AgentInstanceStatus.TOOL_CALLING)
+                      .withDefinition(
+                          ImmutableAgentInstanceDefinitionValue.builder()
+                              .withModel("gpt-4o")
+                              .withProvider("openai")
+                              .build())
+                      .withChangedAttributes(List.of("status", "metrics"))
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentInstance(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              "K1 def:K4 @\"Activity_1\"[K3] in <process K2[K5]> model:gpt-4o/openai status:TOOL_CALLING changed:[s, m]");
     }
 
     @Test

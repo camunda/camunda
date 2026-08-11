@@ -50,11 +50,13 @@ public class AgentInstanceCompleteWithoutCommandBatchingTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .parallelGateway("fork")
-                .serviceTask(FIRST_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    FIRST_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .parallelGateway("join")
                 .endEvent()
                 .moveToNode("fork")
-                .serviceTask(SECOND_TASK_ID, t -> t.zeebeJobType("other-agent"))
+                .serviceTask(
+                    SECOND_TASK_ID, t -> t.zeebeJobType("other-agent").zeebeAiAgentTaskDefinition())
                 .connectTo("join")
                 .done())
         .deploy();

@@ -46,7 +46,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -84,7 +85,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -129,7 +131,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -168,7 +171,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -208,7 +212,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -248,7 +253,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -306,7 +312,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -361,7 +368,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -399,7 +407,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -447,7 +456,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -489,7 +499,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -526,7 +537,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -573,7 +585,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -616,7 +629,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -653,7 +667,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -717,7 +732,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -754,7 +770,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -826,6 +843,7 @@ public class AgentInstanceUpdateTest {
                     SERVICE_TASK_ID,
                     t ->
                         t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
                             .multiInstance(
                                 m ->
                                     m.zeebeInputCollectionExpression("items")
@@ -887,6 +905,7 @@ public class AgentInstanceUpdateTest {
                     SERVICE_TASK_ID,
                     t ->
                         t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
                             .multiInstance(
                                 m ->
                                     m.zeebeInputCollectionExpression("items")
@@ -948,7 +967,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -987,7 +1007,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -1033,7 +1054,10 @@ public class AgentInstanceUpdateTest {
                 .startEvent()
                 .serviceTask(
                     SERVICE_TASK_ID,
-                    t -> t.zeebeJobType("agent").zeebeOutputExpression("assert(x, x != null)", "y"))
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .zeebeOutputExpression("assert(x, x != null)", "y"))
                 .endEvent()
                 .done())
         .deploy();
@@ -1086,7 +1110,8 @@ public class AgentInstanceUpdateTest {
             Bpmn.createExecutableProcess(mismatchProcessId)
                 .startEvent()
                 .parallelGateway("split")
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .parallelGateway("merge")
                 .endEvent()
                 .moveToNode("split")
@@ -1144,7 +1169,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(piMismatchProcessId)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -1205,6 +1231,7 @@ public class AgentInstanceUpdateTest {
                     SERVICE_TASK_ID,
                     t ->
                         t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
                             .multiInstance(
                                 m ->
                                     m.zeebeInputCollectionExpression("items")
@@ -1269,7 +1296,8 @@ public class AgentInstanceUpdateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();

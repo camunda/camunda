@@ -53,7 +53,8 @@ public class MigrateAgentInstanceTest {
                 Bpmn.createExecutableProcess(processId)
                     .versionTag("v1")
                     .startEvent()
-                    .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                     .userTask("B")
                     .endEvent()
                     .done())
@@ -138,7 +139,7 @@ public class MigrateAgentInstanceTest {
             Bpmn.createExecutableProcess(processId)
                 .versionTag("v1")
                 .startEvent()
-                .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .userTask("B")
                 .endEvent()
                 .done())
@@ -236,11 +237,13 @@ public class MigrateAgentInstanceTest {
                     .versionTag("v1")
                     .startEvent()
                     .parallelGateway("fork")
-                    .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .serviceTask(
+                        "A", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                     .parallelGateway("join")
                     .endEvent()
                     .moveToNode("fork")
-                    .serviceTask("B", t -> t.zeebeJobType(otherJobType))
+                    .serviceTask(
+                        "B", t -> t.zeebeJobType(otherJobType).zeebeAiAgentTaskDefinition())
                     .connectTo("join")
                     .done())
             .withXmlResource(
@@ -362,6 +365,7 @@ public class MigrateAgentInstanceTest {
                     .adHocSubProcess(
                         "ahsp",
                         ahsp -> {
+                          ahsp.zeebeAiAgentSubProcessDefinition();
                           ahsp.task("tool");
                           ahsp.zeebeJobType(AGENT_JOB_TYPE);
                         })

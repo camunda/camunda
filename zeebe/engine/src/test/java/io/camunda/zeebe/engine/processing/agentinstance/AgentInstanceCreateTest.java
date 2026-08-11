@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTo
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -48,7 +49,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -101,7 +103,8 @@ public class AgentInstanceCreateTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
-                    .serviceTask(customElementId, t -> t.zeebeJobType("agent"))
+                    .serviceTask(
+                        customElementId, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                     .endEvent()
                     .done())
             .deploy()
@@ -151,7 +154,8 @@ public class AgentInstanceCreateTest {
             "child.bpmn",
             Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -185,7 +189,8 @@ public class AgentInstanceCreateTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .versionTag(versionTag)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -202,6 +207,75 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
+  public void shouldStampAgentDefinitionKeyResolvedFromAgentDefinition() {
+    // given -- a service task carrying an agent marker mints an AgentDefinition at deploy time,
+    // keyed by (processDefinitionKey, elementId) in the AgentDefinitionState column family.
+    final var processMetadata =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst();
+    final var agentDefinitionKey =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(processMetadata.getProcessDefinitionKey())
+            .getFirst()
+            .getValue()
+            .getAgentDefinitionKey();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when
+    final var created =
+        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+
+    // then -- the CREATED event links back to the element's AgentDefinition version.
+    assertThat(created.getValue().getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
+  }
+
+  @Test
+  public void shouldRejectWhenElementHasNoAgentDefinition() {
+    // given -- a plain service task with no agent marker mints no AgentDefinition at deploy time,
+    // so there is nothing to attach an agent instance to.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .expectRejection()
+            .create();
+
+    // then -- creation is rejected because the target element carries no agent definition.
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(serviceTaskInstance.getKey()))
+        .contains(SERVICE_TASK_ID)
+        .contains("has no agent definition");
+  }
+
+  @Test
   public void shouldMaterializeStatusInitializingOnCreate() {
     // given
     ENGINE
@@ -209,7 +283,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -236,7 +311,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -267,7 +343,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -296,7 +373,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -324,6 +402,7 @@ public class AgentInstanceCreateTest {
                 .adHocSubProcess(
                     AD_HOC_SUB_PROCESS_ID,
                     asp -> {
+                      asp.zeebeAiAgentSubProcessDefinition();
                       asp.task("inner-task");
                       asp.completionCondition("=completionCondition");
                     })
@@ -365,6 +444,7 @@ public class AgentInstanceCreateTest {
                     SERVICE_TASK_ID,
                     t ->
                         t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
                             .multiInstance(
                                 m ->
                                     m.zeebeInputCollectionExpression("items")
@@ -410,7 +490,8 @@ public class AgentInstanceCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -505,7 +586,10 @@ public class AgentInstanceCreateTest {
                 .startEvent()
                 .serviceTask(
                     SERVICE_TASK_ID,
-                    t -> t.zeebeJobType("agent").zeebeOutputExpression("assert(x, x != null)", "y"))
+                    t ->
+                        t.zeebeJobType("agent")
+                            .zeebeAiAgentTaskDefinition()
+                            .zeebeOutputExpression("assert(x, x != null)", "y"))
                 .endEvent()
                 .done())
         .deploy();

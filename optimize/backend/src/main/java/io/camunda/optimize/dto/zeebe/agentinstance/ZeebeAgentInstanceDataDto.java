@@ -54,6 +54,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.agentInstanceKey = agentInstanceKey;
   }
 
+  // Not tracked — Optimize's agent-instance import doesn't use the link back to the agent
+  // definition, so this identity is intentionally left unset rather than deserialized.
+  @Override
+  public long getAgentDefinitionKey() {
+    return -1;
+  }
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;

@@ -180,7 +180,8 @@ public class AgentHistoryDiscardTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
+                .serviceTask(
+                    SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
