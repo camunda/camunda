@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -98,7 +99,8 @@ public class IndexDescriptors {
                 new GlobalListenerIndex(indexPrefix, isElasticsearch),
                 new DeployedResourceIndex(indexPrefix, isElasticsearch),
                 new AgentInstanceTemplate(indexPrefix, isElasticsearch),
-                new AgentHistoryTemplate(indexPrefix, isElasticsearch))
+                new AgentHistoryTemplate(indexPrefix, isElasticsearch),
+                new AgentDefinitionIndex(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 
