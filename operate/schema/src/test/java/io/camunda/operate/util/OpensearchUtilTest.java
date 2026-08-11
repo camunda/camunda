@@ -8,12 +8,14 @@
 package io.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -118,6 +120,21 @@ class OpensearchUtilTest {
 
     verifyGetRequest();
     verifySearchRequest();
+  }
+
+  @Test
+  void shouldNotFallbackOnSearchWhenCallingGetByIdAndGetRequestFails() {
+    final OperateRuntimeException failure = new OperateRuntimeException("index is gone");
+    when(docOperations.getWithRetries(any(), any(), any(), any())).thenThrow(failure);
+
+    assertThatThrownBy(
+            () ->
+                OpensearchUtil.getByIdOrSearchArchives(
+                    osClient, templateDescr, DOC_ID, QueryType.ALL, "treePath"))
+        .isSameAs(failure);
+
+    verifyGetRequest();
+    verifyNoMoreInteractions(docOperations);
   }
 
   private void verifyGetRequest() {

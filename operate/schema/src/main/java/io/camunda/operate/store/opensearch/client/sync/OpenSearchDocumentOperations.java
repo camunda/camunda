@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.ShardFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -335,20 +336,27 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public <R> Optional<R> getWithRetries(
       final String index, final String id, final Class<R> entityClass) {
-    return executeWithRetries(
-        () -> {
-          final GetResponse<R> response = openSearchClient.get(getRequest(index, id), entityClass);
-          return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
-        });
+    return getWithRetries(index, id, null, entityClass);
   }
 
   public <R> Optional<R> getWithRetries(
       final String index, final String id, final String routing, final Class<R> entityClass) {
     return executeWithRetries(
         () -> {
-          final GetResponse<R> response =
-              openSearchClient.get(getRequest(index, id, routing), entityClass);
-          return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+          try {
+            final GetResponse<R> response =
+                openSearchClient.get(getRequest(index, id, routing), entityClass);
+            return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+          } catch (final OpenSearchException ex) {
+            if (ex.status() == 404) {
+              final boolean indexExists =
+                  openSearchClient.indices().exists(e -> e.index(index)).value();
+              if (indexExists) {
+                return Optional.empty();
+              }
+            }
+            throw ex;
+          }
         });
   }
 
