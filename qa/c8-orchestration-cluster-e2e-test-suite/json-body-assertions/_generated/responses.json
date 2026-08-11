@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "be1b0dd27a87efcb096e122c39f8cb6a3bb7b9d4",
-    "generatedAt": "2026-08-06T15:26:01.012Z",
+    "commit": "e000bbd466eb1bba365352aa339267d770f2a6cf",
+    "generatedAt": "2026-08-11T12:18:01.381Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "b33f0519714cde6ee3c35e929a034227b50537cd23ca0c140509f21b6c680865"
+    "specSha256": "7c97dd7e3ac757a69a21c9cd8d14513f46eb2b0f113b232d58364c70e1caee49"
   },
   "responses": [
     {
@@ -179,6 +179,37 @@
                 {
                   "name": "name",
                   "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-instances/{agentInstanceKey}",
+      "method": "PATCH",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "createdHistory",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "historyItemId",
+                  "type": "string"
+                },
+                {
+                  "name": "historyItemKey",
+                  "type": "string"
+                },
+                {
+                  "name": "isDuplicate",
+                  "type": "boolean"
                 }
               ],
               "optional": []
@@ -438,6 +469,10 @@
                   "type": "string"
                 },
                 {
+                  "name": "historyItemId",
+                  "type": "string"
+                },
+                {
                   "name": "historyItemKey",
                   "type": "string"
                 },
@@ -448,6 +483,27 @@
                 {
                   "name": "jobLease",
                   "type": "string"
+                },
+                {
+                  "name": "limits",
+                  "type": "0",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "maxModelCalls",
+                        "type": "number"
+                      },
+                      {
+                        "name": "maxTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "maxToolCalls",
+                        "type": "number"
+                      }
+                    ],
+                    "optional": []
+                  }
                 },
                 {
                   "name": "loopIteration",
@@ -479,12 +535,26 @@
                   }
                 },
                 {
+                  "name": "model",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "producedAt",
                   "type": "string"
                 },
                 {
+                  "name": "provider",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "role",
                   "type": "string"
+                },
+                {
+                  "name": "systemPrompt",
+                  "type": "array<object|object|object>"
                 },
                 {
                   "name": "toolCalls",
@@ -507,6 +577,29 @@
                       },
                       {
                         "name": "toolName",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "tools",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "description",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "elementId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "name",
                         "type": "string"
                       }
                     ],
