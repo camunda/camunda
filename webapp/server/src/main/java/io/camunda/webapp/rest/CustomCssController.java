@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@ConditionalOnWebappUiEnabled("tmp-webapp")
+@ConditionalOnWebappUiEnabled("tasklist")
 public class CustomCssController {
 
-  static final String PATH = "/webapp/custom.css";
+  static final String PATH = "/custom.css";
 
   static final String CLASSPATH_LOCATION = "custom.css";
 

@@ -51,7 +51,7 @@ class WebappIndexControllerTest {
 
     // then
     assertThat(viewName).isEqualTo("webapp/index");
-    assertThat(model.getAttribute("baseName")).isEqualTo("/camunda/webapp/");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/camunda/");
     assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda");
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
     assertThat(model.getAttribute("organizationId")).isEqualTo("");
@@ -68,8 +68,8 @@ class WebappIndexControllerTest {
     // when
     final String result = controller.forwardToWebapp(request);
 
-    // then no auth check is performed; result is unconditional forward to /webapp
-    assertThat(result).isEqualTo("forward:/webapp");
+    // then no auth check is performed; result is unconditional forward to /tasklist/
+    assertThat(result).isEqualTo("forward:/tasklist/");
   }
 
   @Test
@@ -92,7 +92,7 @@ class WebappIndexControllerTest {
       final String result = controller.forwardToWebapp(request);
 
       // then
-      assertThat(result).isEqualTo("forward:/webapp");
+      assertThat(result).isEqualTo("forward:/tasklist/");
     }
   }
 
@@ -106,7 +106,7 @@ class WebappIndexControllerTest {
     final HttpSession session = mock(HttpSession.class);
     final AnonymousAuthenticationToken anonymous = mock(AnonymousAuthenticationToken.class);
 
-    when(request.getRequestURI()).thenReturn("/webapp/foo/bar");
+    when(request.getRequestURI()).thenReturn("/tasklist/foo/bar");
     when(request.getContextPath()).thenReturn("");
     when(request.getSession(true)).thenReturn(session);
 
@@ -121,7 +121,35 @@ class WebappIndexControllerTest {
 
       // then the URL is stashed in the session and the request is forwarded to /login
       assertThat(result).isEqualTo("forward:/login");
-      verify(session).setAttribute(REQUESTED_URL, "/webapp/foo/bar");
+      verify(session).setAttribute(REQUESTED_URL, "/tasklist/foo/bar");
+    }
+  }
+
+  @Test
+  void shouldForwardToLoginAndStashUrlWhenAuthenticationIsMissing() {
+    // given
+    final WebappConfiguration config = new WebappConfiguration();
+    config.setLoginDelegated(true);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
+    final HttpSession session = mock(HttpSession.class);
+
+    when(request.getRequestURI()).thenReturn("/tasklist/foo/bar");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getSession(true)).thenReturn(session);
+
+    try (final MockedStatic<SecurityContextHolder> mocked =
+        mockStatic(SecurityContextHolder.class)) {
+      final SecurityContext securityContext = mock(SecurityContext.class);
+      when(securityContext.getAuthentication()).thenReturn(null);
+      mocked.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+
+      // when
+      final String result = controller.forwardToWebapp(request);
+
+      // then
+      assertThat(result).isEqualTo("forward:/login");
+      verify(session).setAttribute(REQUESTED_URL, "/tasklist/foo/bar");
     }
   }
 
@@ -140,7 +168,7 @@ class WebappIndexControllerTest {
 
     // then
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(true);
-    assertThat(model.getAttribute("baseName")).isEqualTo("/webapp/");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/");
     assertThat(model.getAttribute("contextPath")).isEqualTo("");
   }
 
@@ -157,7 +185,7 @@ class WebappIndexControllerTest {
     // then — falls back to default WebappConfiguration values
     assertThat(viewName).isEqualTo("webapp/index");
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
-    assertThat(model.getAttribute("baseName")).isEqualTo("/webapp/");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/");
     assertThat(model.getAttribute("contextPath")).isEqualTo("");
   }
 

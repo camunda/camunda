@@ -94,10 +94,10 @@ jobs:
         with:
           directory: ./operate/client
           package-manager: npm
-      - name: Build tasklist frontend
+      - name: Build unified webapp frontend
         uses: ./.github/actions/build-frontend
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: npm
       - name: Build identity frontend
         uses: ./.github/actions/build-frontend
@@ -167,4 +167,3 @@ jobs:
         env:
           IMAGE: zeebe-io/camunda:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
-

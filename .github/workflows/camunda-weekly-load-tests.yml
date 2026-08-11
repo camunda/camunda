@@ -93,9 +93,9 @@ jobs:
           directory: ./operate/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
+        name: Build Unified Webapp Frontend
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Identity Frontend

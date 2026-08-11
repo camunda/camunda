@@ -18,12 +18,12 @@ import org.springframework.web.servlet.ModelAndView;
  * controllers so a physical-tenant-prefixed request renders an SPA whose {@code <base href>}
  * carries the PT prefix.
  *
- * <p>The legacy index controllers (operate, tasklist, admin) set {@code contextPath =
- * servletContextPath + "/<app>/"} unconditionally (e.g. {@code /operate/}). The unified webapp's
- * {@code WebappIndexController} additionally sets {@code baseName = servletContextPath +
- * "/webapp/"}, which drives the rendered shell's {@code <base href>} and the SPA boot config.
- * Without this interceptor those values would always be unprefixed, so even when entered through
- * {@code /physical-tenants/<id>/<app>} the browser would resolve assets and API calls back to the
+ * <p>The legacy index controllers (operate and admin) set {@code contextPath = servletContextPath +
+ * "/<app>/"} unconditionally (e.g. {@code /operate/}). The unified webapp's {@code
+ * WebappIndexController} additionally sets {@code baseName} to the servlet context root, which
+ * drives the rendered shell's {@code <base href>} and the SPA boot config. Without this interceptor
+ * those values would always be unprefixed, so even when entered through {@code
+ * /physical-tenants/<id>/<app>} the browser would resolve assets and API calls back to the
  * unprefixed URL space, where the PT session cookie does not apply and the SPA breaks.
  *
  * <p>The physical tenant id is resolved from the request via {@link

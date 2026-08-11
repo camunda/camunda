@@ -27,13 +27,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * client-config.js} for physical-tenant-prefixed webapp requests so the runtime SPA config reports
  * PT-prefixed paths.
  *
- * <p>Operate and Tasklist publish their bootstrap config from {@code getClientConfig} on {@link
- * io.camunda.operate.webapp.rest.ClientConfigRestService} and {@link
- * io.camunda.tasklist.webapp.rest.ClientConfigRestService} respectively, returning a {@code
- * window.clientConfig = {...};} document with {@code "contextPath":""} and {@code
- * "baseName":"/<app>"}. The SPA feeds {@code baseName} to react-router as its basename; without
- * this rewrite the router rejects any URL outside the unprefixed {@code /operate} (or {@code
- * /tasklist}) space — including the PT-prefixed entry path.
+ * <p>Operate publishes its bootstrap config from {@code getClientConfig} on {@link
+ * io.camunda.operate.webapp.rest.ClientConfigRestService}, returning a {@code window.clientConfig =
+ * {...};} document with {@code "contextPath":""} and {@code "baseName":"/operate"}. The SPA feeds
+ * {@code baseName} to react-router as its basename; without this rewrite the router rejects any URL
+ * outside the unprefixed {@code /operate} space, including the PT-prefixed entry path.
  *
  * <p>Approach: a string-level rewrite of the two known JSON fields on the body Spring just
  * serialised. The field names and value types are fixed by {@code ClientConfig}, so capturing the
@@ -53,9 +51,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBodyAdvice<String> {
 
   private static final Set<Class<?>> CLIENT_CONFIG_SERVICES =
-      Set.of(
-          io.camunda.operate.webapp.rest.ClientConfigRestService.class,
-          io.camunda.tasklist.webapp.rest.ClientConfigRestService.class);
+      Set.of(io.camunda.operate.webapp.rest.ClientConfigRestService.class);
   private static final String GET_CLIENT_CONFIG = "getClientConfig";
 
   private static final Pattern CONTEXT_PATH = Pattern.compile("(\"contextPath\":\")([^\"]*)(\")");

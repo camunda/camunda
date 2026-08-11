@@ -290,8 +290,8 @@ jobs:
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
 
-  build-tasklist-frontend:
-    name: Build Tasklist Frontend
+  build-unified-webapp-frontend:
+    name: Build Unified Webapp Frontend
     needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
@@ -302,21 +302,22 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build-frontend
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: "npm"
-      - name: Upload Tasklist frontend artifact
+      - name: Upload unified webapp frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tasklist-frontend
-          path: tasklist/client/build
+          name: unified-webapp-frontend
+          path: webapp/client/apps/orchestration-cluster-webapp/dist
           retention-days: 1
+          if-no-files-found: error
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          job_name: docker-build-helm-integration-tasklist-frontend
+          job_name: docker-build-helm-integration-unified-webapp-frontend
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -405,7 +406,7 @@ jobs:
   # Main build job - waits for all frontends to complete
   build-and-push:
     name: Build and Push Docker Image
-    needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
+    needs: [build-operate-frontend, build-unified-webapp-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
@@ -461,11 +462,11 @@ jobs:
           name: operate-frontend
           path: operate/client/build
 
-      - name: Download Tasklist frontend artifact
+      - name: Download unified webapp frontend artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: tasklist-frontend
-          path: tasklist/client/build
+          name: unified-webapp-frontend
+          path: webapp/client/apps/orchestration-cluster-webapp/dist
 
       - name: Download Identity frontend artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -1235,7 +1236,7 @@ jobs:
       - should-run
       - preflight
       - build-operate-frontend
-      - build-tasklist-frontend
+      - build-unified-webapp-frontend
       - build-identity-frontend
       - build-and-push
       - format-identifier

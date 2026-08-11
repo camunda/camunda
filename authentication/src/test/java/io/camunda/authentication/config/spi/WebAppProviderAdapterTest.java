@@ -59,6 +59,19 @@ class WebAppProviderAdapterTest {
   }
 
   @Test
+  void shouldResolveTasklistForPhysicalTenant() {
+    assertThat(provider.webAppFor(get("/physical-tenants/tenant-a/tasklist/foo")))
+        .contains("tasklist");
+  }
+
+  @Test
+  void shouldResolveTasklistForPhysicalTenantWhenContextPathIsSet() {
+    assertThat(
+            provider.webAppFor(get("/camunda", "/camunda/physical-tenants/tenant-a/tasklist/foo")))
+        .contains("tasklist");
+  }
+
+  @Test
   void shouldReturnEmptyForUnknownPrefixWhenContextPathIsSet() {
     assertThat(provider.webAppFor(get("/camunda", "/camunda/api/v2/foo"))).isEmpty();
   }

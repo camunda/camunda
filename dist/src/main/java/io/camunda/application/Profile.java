@@ -23,9 +23,6 @@ public enum Profile {
   TASKLIST("tasklist"),
   IDENTITY("identity"), // Legacy, use "admin" instead
   ADMIN("admin"),
-  TMP_WEBAPP(
-      "tmp-webapp"), // Temporary profile for the unified BFF migration; removed at end of epic
-  // https://github.com/camunda/product-hub/issues/3456
 
   // environment profiles
   TEST("test"),
@@ -51,7 +48,7 @@ public enum Profile {
   }
 
   public static Set<Profile> getWebappProfiles() {
-    return Set.of(TASKLIST, IDENTITY, OPERATE, ADMIN, TMP_WEBAPP);
+    return Set.of(TASKLIST, IDENTITY, OPERATE, ADMIN);
   }
 
   @Override

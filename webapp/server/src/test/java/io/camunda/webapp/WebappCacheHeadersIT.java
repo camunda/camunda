@@ -21,13 +21,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Verifies that static assets under {@code /webapp/assets/**} and the physical-tenant-prefixed
- * sibling {@code /physical-tenants/<id>/webapp/assets/**} are served with forever-caching headers
- * and that requests for non-existent assets return 404.
+ * Verifies that static assets under {@code /assets/**} and the physical-tenant-prefixed sibling
+ * {@code /physical-tenants/<id>/assets/**} are served with forever-caching headers and that
+ * requests for non-existent assets return 404.
  */
 @SpringBootTest(classes = TestWebappApplication.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@ActiveProfiles("tmp-webapp")
+@ActiveProfiles("tasklist")
 class WebappCacheHeadersIT {
 
   @Autowired private TestRestTemplate restTemplate;
@@ -36,12 +36,12 @@ class WebappCacheHeadersIT {
   void shouldServeWebappAssetsWithImmutableForeverCacheHeader() {
     // when
     final ResponseEntity<String> response =
-        restTemplate.getForEntity("/webapp/assets/test-asset.js", String.class);
+        restTemplate.getForEntity("/assets/test-asset.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getHeaders().getCacheControl())
-        .as("forever-cache header on /webapp/assets/**")
+        .as("forever-cache header on /assets/**")
         .isEqualTo("max-age=31536000, public, immutable");
   }
 
@@ -49,7 +49,7 @@ class WebappCacheHeadersIT {
   void shouldNotServeUnknownAssetsAsStaticResources() {
     // when — ensures the resource handler does not silently 200 on missing files
     final ResponseEntity<String> response =
-        restTemplate.getForEntity("/webapp/assets/does-not-exist.js", String.class);
+        restTemplate.getForEntity("/assets/does-not-exist.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -60,12 +60,12 @@ class WebappCacheHeadersIT {
     // when
     final ResponseEntity<String> response =
         restTemplate.getForEntity(
-            "/physical-tenants/test-tenant/webapp/assets/test-asset.js", String.class);
+            "/physical-tenants/test-tenant/assets/test-asset.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getHeaders().getCacheControl())
-        .as("forever-cache header on /physical-tenants/*/webapp/assets/**")
+        .as("forever-cache header on /physical-tenants/*/assets/**")
         .isEqualTo("max-age=31536000, public, immutable");
   }
 
@@ -74,9 +74,26 @@ class WebappCacheHeadersIT {
     // when
     final ResponseEntity<String> response =
         restTemplate.getForEntity(
-            "/physical-tenants/test-tenant/webapp/assets/does-not-exist.js", String.class);
+            "/physical-tenants/test-tenant/assets/does-not-exist.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void shouldServeUnifiedFavicon() {
+    final ResponseEntity<String> response = restTemplate.getForEntity("/favicon.ico", String.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isEqualTo("test-favicon\n");
+  }
+
+  @Test
+  void shouldServeUnifiedFaviconUnderPhysicalTenantPrefix() {
+    final ResponseEntity<String> response =
+        restTemplate.getForEntity("/physical-tenants/test-tenant/favicon.ico", String.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isEqualTo("test-favicon\n");
   }
 }

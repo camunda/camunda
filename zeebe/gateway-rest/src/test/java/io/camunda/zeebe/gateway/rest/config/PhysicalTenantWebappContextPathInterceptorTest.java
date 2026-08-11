@@ -37,19 +37,19 @@ class PhysicalTenantWebappContextPathInterceptorTest {
   }
 
   @Test
-  void shouldPrefixContextPathForDefaultPhysicalTenant() {
+  void shouldPrefixOperateContextPathForDefaultPhysicalTenant() {
     // given
     final MockHttpServletRequest request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, "default");
-    final ModelAndView modelAndView = new ModelAndView("tasklist/index");
-    modelAndView.addObject("contextPath", "/tasklist/");
+    final ModelAndView modelAndView = new ModelAndView("operate/index");
+    modelAndView.addObject("contextPath", "/operate/");
 
     // when
     interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
 
     // then
     assertThat(modelAndView.getModel().get("contextPath"))
-        .isEqualTo("/physical-tenants/default/tasklist/");
+        .isEqualTo("/physical-tenants/default/operate/");
   }
 
   @Test
@@ -95,21 +95,19 @@ class PhysicalTenantWebappContextPathInterceptorTest {
 
   @Test
   void shouldPrefixBaseNameForPhysicalTenantRequest() {
-    // given — the unified webapp's model shape: contextPath is the bare servlet context path,
-    // baseName carries the /webapp/ suffix
+    // given — the unified webapp's model shape uses the servlet root as its baseName
     final MockHttpServletRequest request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
     final ModelAndView modelAndView = new ModelAndView("webapp/index");
     modelAndView.addObject("contextPath", "");
-    modelAndView.addObject("baseName", "/webapp/");
+    modelAndView.addObject("baseName", "/");
 
     // when
     interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
 
     // then
     assertThat(modelAndView.getModel().get("contextPath")).isEqualTo("/physical-tenants/tenanta");
-    assertThat(modelAndView.getModel().get("baseName"))
-        .isEqualTo("/physical-tenants/tenanta/webapp/");
+    assertThat(modelAndView.getModel().get("baseName")).isEqualTo("/physical-tenants/tenanta/");
   }
 
   @Test
@@ -119,14 +117,14 @@ class PhysicalTenantWebappContextPathInterceptorTest {
     request.setContextPath("/camunda");
     PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
     final ModelAndView modelAndView = new ModelAndView("webapp/index");
-    modelAndView.addObject("baseName", "/camunda/webapp/");
+    modelAndView.addObject("baseName", "/camunda/");
 
     // when
     interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
 
     // then — the PT segment is inserted after the context path, not before it
     assertThat(modelAndView.getModel().get("baseName"))
-        .isEqualTo("/camunda/physical-tenants/tenanta/webapp/");
+        .isEqualTo("/camunda/physical-tenants/tenanta/");
   }
 
   @Test
@@ -134,13 +132,13 @@ class PhysicalTenantWebappContextPathInterceptorTest {
     // given — no physical tenant id stamped on the request
     final MockHttpServletRequest request = new MockHttpServletRequest();
     final ModelAndView modelAndView = new ModelAndView("webapp/index");
-    modelAndView.addObject("baseName", "/webapp/");
+    modelAndView.addObject("baseName", "/");
 
     // when
     interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
 
     // then
-    assertThat(modelAndView.getModel().get("baseName")).isEqualTo("/webapp/");
+    assertThat(modelAndView.getModel().get("baseName")).isEqualTo("/");
   }
 
   @Test

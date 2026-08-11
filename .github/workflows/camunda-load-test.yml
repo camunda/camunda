@@ -92,7 +92,7 @@ on:
         required: false
         default: false
       build-frontend:
-        description: 'Build frontend assets as part of the load test image build'
+        description: 'Build legacy frontend assets as part of the load test image build'
         type: boolean
         required: false
         default: false
@@ -381,11 +381,10 @@ jobs:
           directory: ./operate/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
-        if: ${{ inputs.build-frontend }}
+        name: Build Unified Webapp Frontend
+        id: build-webapp-fe
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Identity Frontend

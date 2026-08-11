@@ -25,10 +25,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@ConditionalOnWebappUiEnabled("tmp-webapp")
+@ConditionalOnWebappUiEnabled("tasklist")
 public class WebappIndexController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappIndexController.class);
@@ -51,9 +50,9 @@ public class WebappIndexController {
     this.securityProperties = securityProperties;
   }
 
-  @GetMapping({"/webapp", "/webapp/", "/webapp/index.html"})
+  @GetMapping({"/tasklist", "/tasklist/", "/tasklist/index.html"})
   public String webapp(final Model model) {
-    model.addAttribute("baseName", context.getContextPath() + "/webapp/");
+    model.addAttribute("baseName", context.getContextPath() + "/");
     model.addAttribute("contextPath", context.getContextPath());
     model.addAttribute("isEnterprise", webappConfiguration.isEnterprise());
     final var saas = securityProperties != null ? securityProperties.getSaas() : null;
@@ -63,19 +62,7 @@ public class WebappIndexController {
   }
 
   /**
-   * Forwards SPA routes to index.html, excluding static assets.
-   *
-   * <p>The regex pattern uses negative lookahead to prevent matching paths starting with "assets":
-   *
-   * <ul>
-   *   <li>{@code (?!assets)} - excludes "assets"
-   *   <li>{@code .*} - matches any other path segment
-   * </ul>
-   *
-   * <p>This exclusion is necessary because PathPatternParser (Spring Framework 6+) gives controller
-   * mappings higher precedence than static resource handlers. Without this pattern, requests like
-   * {@code /webapp/assets/index.css} would be forwarded to index.html instead of being served as
-   * static files.
+   * Forwards SPA routes to index.html.
    *
    * <p>The forward + login-redirect logic is intentionally inlined here rather than reusing the
    * legacy {@code WebappsRequestForwardManager} from {@code dist/}. Once Tasklist/Operate/Admin
@@ -83,12 +70,16 @@ public class WebappIndexController {
    * deleted, leaving this controller as the sole implementation. Bounded duplication during the
    * migration window is an explicit choice.
    */
-  @RequestMapping(value = {"/webapp/{path:^(?!assets).*}", "/webapp/{path:^(?!assets).*}/**"})
+  @GetMapping(
+      value = {
+        "/tasklist/{path:^(?!(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)$).+}",
+        "/tasklist/{path:^(?!(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)$).+}/**"
+      })
   public String forwardToWebapp(final HttpServletRequest request) {
     if (webappConfiguration.isLoginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request);
     } else {
-      return "forward:/webapp";
+      return "forward:/tasklist/";
     }
   }
 
@@ -104,7 +95,8 @@ public class WebappIndexController {
 
   private boolean isNotLoggedIn() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    return (authentication instanceof AnonymousAuthenticationToken)
+    return authentication == null
+        || (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
   }
 

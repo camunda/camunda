@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Static-resource configuration for the unified BFF webapp. Maps {@code /webapp/assets/**} to the
+ * Static-resource configuration for the unified BFF webapp. Maps {@code /assets/**} to the
  * webjar-packaged FE bundle ({@code classpath:/META-INF/resources/webapp/assets/}) and applies
  * forever-caching headers.
  *
@@ -27,16 +27,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * applied by the Spring Security filter chain, so a redeploy with a new bundle hash is picked up on
  * the next reload.
  *
- * <p>Active under the {@code tmp-webapp} profile (via {@link
- * io.camunda.webapp.WebappModuleConfiguration}'s component scan) and gated identically to {@link
- * io.camunda.webapp.controllers.WebappIndexController} for symmetry.
+ * <p>Gated identically to {@link io.camunda.webapp.controllers.WebappIndexController} for symmetry.
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnWebappUiEnabled("tmp-webapp")
+@ConditionalOnWebappUiEnabled("tasklist")
 public class WebappWebMvcConfig implements WebMvcConfigurer {
 
-  static final String ASSETS_PATH_PATTERN = "/webapp/assets/**";
+  static final String ASSETS_PATH_PATTERN = "/assets/**";
   static final String ASSETS_CLASSPATH_LOCATION = "classpath:/META-INF/resources/webapp/assets/";
+  static final String FAVICON_PATH_PATTERN = "/favicon.ico";
+  static final String FAVICON_CLASSPATH_LOCATION = "classpath:/META-INF/resources/webapp/";
   static final Duration ASSETS_CACHE_MAX_AGE = Duration.ofDays(365);
 
   @Override
@@ -45,9 +45,12 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .addResourceHandler(ASSETS_PATH_PATTERN)
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+    registry
+        .addResourceHandler(FAVICON_PATH_PATTERN)
+        .addResourceLocations(FAVICON_CLASSPATH_LOCATION);
     // PathPattern.extractPathWithinPattern() starts at the first '*', so the resource path the
-    // resolver receives includes the tenant segment: "tenantId/webapp/assets/file.js".
-    // SegmentStrippingResolver strips the 3 leading segments to get "file.js" relative to the
+    // resolver receives includes the tenant segment: "tenantId/assets/file.js".
+    // SegmentStrippingResolver strips the 2 leading segments to get "file.js" relative to the
     // classpath location.
     registry
         .addResourceHandler(
@@ -55,6 +58,12 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable())
         .resourceChain(false)
-        .addResolver(new SegmentStrippingResolver(3));
+        .addResolver(new SegmentStrippingResolver(2));
+    registry
+        .addResourceHandler(
+            PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*" + FAVICON_PATH_PATTERN)
+        .addResourceLocations(FAVICON_CLASSPATH_LOCATION)
+        .resourceChain(false)
+        .addResolver(new SegmentStrippingResolver(1));
   }
 }
