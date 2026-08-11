@@ -20,6 +20,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.HashMap;
@@ -51,9 +53,13 @@ final class PhysicalTenantProvisioningInitializerTest {
             partition("tenantA", 1, Set.of(member(0), member(1)), member(0)),
             partition("tenantA", 2, Set.of(member(0), member(1)), member(1)));
     final var configuration = configurationWith(existingTenantA);
+    final int tenantBPartitionCount = 2;
     final var staticConfiguration =
         staticConfigWith(
-            List.of(tenantPartitionIds("tenantA", 2), tenantPartitionIds("tenantB", 2)), 2);
+            List.of(
+                tenantPartitionIds("tenantA", 2),
+                tenantPartitionIds("tenantB", tenantBPartitionCount)),
+            2);
     final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
 
     // when
@@ -62,6 +68,14 @@ final class PhysicalTenantProvisioningInitializerTest {
     // then — tenantB now has an empty-but-provisioned group with a pending change to place its
     // partitions, while tenantA is completely untouched
     assertThat(result.partitionGroups()).containsKey("tenantB");
+    assertThat(result.partitionGroup("tenantB").routingState())
+        .hasValueSatisfying(
+            routingState -> {
+              assertThat(routingState.messageCorrelation())
+                  .isEqualTo(new MessageCorrelation.HashMod(tenantBPartitionCount));
+              assertThat(routingState.requestHandling())
+                  .isEqualTo(new AllPartitions(tenantBPartitionCount));
+            });
     assertThat(result.partitionGroup("tenantB").hasPendingChanges()).isTrue();
     assertThat(result.partitionGroups().get("tenantA"))
         .isEqualTo(configuration.partitionGroups().get("tenantA"));

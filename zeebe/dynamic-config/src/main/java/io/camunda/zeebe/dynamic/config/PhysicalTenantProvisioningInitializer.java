@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.AdditivePartitionReassigner;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentOperationsGenerator;
@@ -188,12 +189,14 @@ public class PhysicalTenantProvisioningInitializer
       // configured distributor instead. ZoneAwareDistribution uses round robin assignment that
       // means the existing tenants are also moved. Additive zone aware reassignment will be a
       // followup.
+      final var sortedPartitionIds =
+          targetPartitionIds.stream().sorted(PartitionId::compareTo).toList();
       return configuration
           .globalConfiguration()
           .partitionDistributorConfig()
           .get()
           .toDistributor()
-          .distributePartitions(targetMembers, targetPartitionIds, replicationFactor);
+          .distributePartitions(targetMembers, sortedPartitionIds, replicationFactor);
     }
 
     return reassigner.reassignPartitions(
@@ -207,7 +210,10 @@ public class PhysicalTenantProvisioningInitializer
     final var updatedGroups = new HashMap<>(configuration.partitionGroups());
     updatedGroups.put(
         newTenantId,
-        PartitionGroupConfiguration.empty(PartitionGroupConfiguration.INITIAL_VERSION));
+        PartitionGroupConfiguration.empty(PartitionGroupConfiguration.INITIAL_VERSION)
+            .setRoutingState(
+                RoutingState.initializeWithPartitionCount(
+                    staticPartitionIdsByTenant.get(newTenantId).size())));
     final var withEmptyGroup =
         new CurrentClusterConfiguration(
             configuration.version(),
