@@ -39,7 +39,9 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public static final String ATTR_SYSTEM_PROMPT = "systemPrompt";
   public static final String ATTR_MODEL = "model";
   public static final String ATTR_PROVIDER = "provider";
-  public static final String ATTR_LIMITS = "limits";
+  public static final String ATTR_MAX_TOKENS = "maxTokens";
+  public static final String ATTR_MAX_MODEL_CALLS = "maxModelCalls";
+  public static final String ATTR_MAX_TOOL_CALLS = "maxToolCalls";
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);

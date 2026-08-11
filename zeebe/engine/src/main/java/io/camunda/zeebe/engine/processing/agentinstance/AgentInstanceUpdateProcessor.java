@@ -207,6 +207,13 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
+    final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
+    if (isHistoryValid.isLeft()) {
+      final var rejection = isHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
 
     final var unknown =

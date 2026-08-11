@@ -177,6 +177,13 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
+    if (isHistoryValid.isLeft()) {
+      final var rejection = isHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
