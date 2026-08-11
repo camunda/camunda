@@ -106,7 +106,12 @@ public class ResourceController {
                 .body(ResponseMapper.toGetResourceContentResponse(entity)));
   }
 
-  @CamundaGetMapping(path = "/resources/{resourceKey}/content/binary")
+  @CamundaGetMapping(
+      path = "/resources/{resourceKey}/content/binary",
+      produces = {
+        MediaType.APPLICATION_OCTET_STREAM_VALUE,
+        MediaType.APPLICATION_PROBLEM_JSON_VALUE
+      })
   public CompletableFuture<ResponseEntity<Object>> getResourceContentBinary(
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
