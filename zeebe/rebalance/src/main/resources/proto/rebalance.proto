@@ -10,9 +10,9 @@ message TriggerRebalanceRequest {
 
 // Each override is absent unless specified when triggering the rebalance.
 message RebalanceOverrides {
-  optional int64 replicationLagThresholdBytes = 1;
-  optional int64 replicationTimeoutMillis = 2;
-  optional int32 maxTransferAttempts = 3;
+  optional uint64 replicationLagThresholdBytes = 1;
+  optional uint64 replicationTimeoutMillis = 2;
+  optional uint32 maxTransferAttempts = 3;
 }
 
 message RebalanceStatusResponse {
@@ -23,14 +23,14 @@ message RebalanceStatusResponse {
 }
 
 message RunningRebalance {
-  int64 rebalanceId = 1;
+  uint64 rebalanceId = 1;
   RebalanceOverrides overrides = 2;
   bool dryRun = 3;
   bool cancelRequested = 4;
 }
 
 message CompletedRebalance {
-  int64 rebalanceId = 1;
+  uint64 rebalanceId = 1;
   RebalanceOutcome outcome = 2;
 }
 
