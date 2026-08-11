@@ -40,9 +40,9 @@ message CancelRebalanceResponse {
 
 enum RebalanceOutcome {
   REBALANCE_OUTCOME_UNSPECIFIED = 0;
-  COMPLETED = 1;
-  CANCELLED = 2;
-  FAILED = 3;
+  REBALANCE_COMPLETED = 1;
+  REBALANCE_CANCELLED = 2;
+  REBALANCE_FAILED = 3;
 }
 
 message Response {
@@ -59,7 +59,7 @@ message RebalanceErrorResponse {
 }
 
 enum RebalanceErrorCode {
-  INTERNAL_ERROR = 0;
-  REBALANCE_IN_PROGRESS = 1;
-  NOT_COORDINATOR = 2;
+  REBALANCE_ERROR_UNSPECIFIED = 0;
+  REBALANCE_ERROR_IN_PROGRESS = 1;
+  REBALANCE_ERROR_NOT_COORDINATOR = 2;
 }

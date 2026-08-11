@@ -169,17 +169,17 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
 
   private Rebalance.RebalanceOutcome encodeOutcome(final RebalanceOutcome outcome) {
     return switch (outcome) {
-      case COMPLETED -> Rebalance.RebalanceOutcome.COMPLETED;
-      case CANCELLED -> Rebalance.RebalanceOutcome.CANCELLED;
-      case FAILED -> Rebalance.RebalanceOutcome.FAILED;
+      case COMPLETED -> Rebalance.RebalanceOutcome.REBALANCE_COMPLETED;
+      case CANCELLED -> Rebalance.RebalanceOutcome.REBALANCE_CANCELLED;
+      case FAILED -> Rebalance.RebalanceOutcome.REBALANCE_FAILED;
     };
   }
 
   private RebalanceOutcome decodeOutcome(final Rebalance.RebalanceOutcome outcome) {
     return switch (outcome) {
-      case COMPLETED -> RebalanceOutcome.COMPLETED;
-      case CANCELLED -> RebalanceOutcome.CANCELLED;
-      case FAILED -> RebalanceOutcome.FAILED;
+      case REBALANCE_COMPLETED -> RebalanceOutcome.COMPLETED;
+      case REBALANCE_CANCELLED -> RebalanceOutcome.CANCELLED;
+      case REBALANCE_FAILED -> RebalanceOutcome.FAILED;
       case REBALANCE_OUTCOME_UNSPECIFIED, UNRECOGNIZED ->
           throw new DecodingFailed("Rebalance outcome is missing or unrecognized: " + outcome);
     };
@@ -187,17 +187,17 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
 
   private Rebalance.RebalanceErrorCode encodeErrorCode(final RebalanceErrorCode code) {
     return switch (code) {
-      case REBALANCE_IN_PROGRESS -> Rebalance.RebalanceErrorCode.REBALANCE_IN_PROGRESS;
-      case NOT_COORDINATOR -> Rebalance.RebalanceErrorCode.NOT_COORDINATOR;
-      case INTERNAL_ERROR -> Rebalance.RebalanceErrorCode.INTERNAL_ERROR;
+      case REBALANCE_IN_PROGRESS -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_IN_PROGRESS;
+      case NOT_COORDINATOR -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_NOT_COORDINATOR;
+      case INTERNAL_ERROR -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_UNSPECIFIED;
     };
   }
 
   private RebalanceErrorCode decodeErrorCode(final Rebalance.RebalanceErrorCode code) {
     return switch (code) {
-      case REBALANCE_IN_PROGRESS -> RebalanceErrorCode.REBALANCE_IN_PROGRESS;
-      case NOT_COORDINATOR -> RebalanceErrorCode.NOT_COORDINATOR;
-      case INTERNAL_ERROR, UNRECOGNIZED -> RebalanceErrorCode.INTERNAL_ERROR;
+      case REBALANCE_ERROR_IN_PROGRESS -> RebalanceErrorCode.REBALANCE_IN_PROGRESS;
+      case REBALANCE_ERROR_NOT_COORDINATOR -> RebalanceErrorCode.NOT_COORDINATOR;
+      case REBALANCE_ERROR_UNSPECIFIED, UNRECOGNIZED -> RebalanceErrorCode.INTERNAL_ERROR;
     };
   }
 }
