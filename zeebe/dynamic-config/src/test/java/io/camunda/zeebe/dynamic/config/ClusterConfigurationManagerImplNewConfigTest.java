@@ -95,7 +95,6 @@ final class ClusterConfigurationManagerImplNewConfigTest {
         new PartitionGroupConfigurationChangeAppliersImpl(
             new NoopPartitionChangeExecutor(),
             new NoopPartitionScalingChangeExecutor(),
-            new NoopClusterChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
     return manager;
@@ -638,7 +637,6 @@ final class ClusterConfigurationManagerImplNewConfigTest {
         new PartitionGroupConfigurationChangeAppliersImpl(
             new FailingExecutor(1),
             new NoopPartitionScalingChangeExecutor(),
-            new NoopClusterChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
 
@@ -833,6 +831,11 @@ final class ClusterConfigurationManagerImplNewConfigTest {
 
     @Override
     public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
+      return mayBeFail();
+    }
+
+    @Override
+    public ActorFuture<Void> deleteHistory() {
       return mayBeFail();
     }
 

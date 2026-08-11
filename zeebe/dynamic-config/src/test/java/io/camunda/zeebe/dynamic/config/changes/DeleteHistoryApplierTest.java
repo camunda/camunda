@@ -26,9 +26,8 @@ public class DeleteHistoryApplierTest {
   void shouldSuccessDeleteHistoryOnInitIfNoPartitionExists() {
     // given
     final MemberId memberId = MemberId.from("1");
-    final ClusterChangeExecutor clusterChangeExecutor =
-        new ClusterChangeExecutor.NoopClusterChangeExecutor();
-    final var deleteHistoryApplier = new DeleteHistoryApplier(memberId, clusterChangeExecutor);
+    final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
+    final var deleteHistoryApplier = new DeleteHistoryApplier(memberId, partitionChangeExecutor);
 
     final ClusterConfiguration clusterConfigurationWithMember =
         ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
@@ -45,9 +44,8 @@ public class DeleteHistoryApplierTest {
     // given
     final MemberId memberId = MemberId.from("1");
     final int partitionId = 2;
-    final ClusterChangeExecutor clusterChangeExecutor =
-        new ClusterChangeExecutor.NoopClusterChangeExecutor();
-    final var deleteHistoryApplier = new DeleteHistoryApplier(memberId, clusterChangeExecutor);
+    final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
+    final var deleteHistoryApplier = new DeleteHistoryApplier(memberId, partitionChangeExecutor);
 
     final ClusterConfiguration clusterConfigWithPartition =
         ClusterConfiguration.init()
@@ -76,14 +74,13 @@ public class DeleteHistoryApplierTest {
     // given
     final MemberId member1Id = MemberId.from("1");
     final MemberId member2Id = MemberId.from("2");
-    final ClusterChangeExecutor clusterChangeExecutor =
-        new ClusterChangeExecutor.NoopClusterChangeExecutor();
+    final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
 
     final ClusterConfiguration initialConfiguration =
         ClusterConfiguration.init()
             .addMember(member1Id, MemberState.initializeAsActive(Map.of()))
             .addMember(member2Id, MemberState.initializeAsActive(Map.of()));
-    final var deleteHistoryApplier = new DeleteHistoryApplier(member1Id, clusterChangeExecutor);
+    final var deleteHistoryApplier = new DeleteHistoryApplier(member1Id, partitionChangeExecutor);
     final var initializedConfiguration =
         deleteHistoryApplier.init(initialConfiguration).get().apply(initialConfiguration);
     final var updater = deleteHistoryApplier.apply().join();

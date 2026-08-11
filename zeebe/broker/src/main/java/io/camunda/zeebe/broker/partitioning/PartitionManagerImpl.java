@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
@@ -88,6 +89,7 @@ public final class PartitionManagerImpl
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final ExporterHistoryPurger exporterHistoryPurger;
 
   public PartitionManagerImpl(
       final String partitionGroup,
@@ -127,6 +129,8 @@ public final class PartitionManagerImpl
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     brokerMeterRegistry = meterRegistry;
+    exporterHistoryPurger =
+        new ExporterHistoryPurger(partitionGroup, exporterRepository, meterRegistry);
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
@@ -555,6 +559,21 @@ public final class PartitionManagerImpl
         .map(partitionId -> setExportingState(partitionId, exportingState))
         .collect(new ActorFutureCollector<Void>(concurrencyControl))
         .thenAccept(ignored -> unit());
+  }
+
+  @Override
+  public ActorFuture<Void> deleteHistory() {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            exporterHistoryPurger.purgeAll();
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 
   private ActorFuture<Void> setExportingState(

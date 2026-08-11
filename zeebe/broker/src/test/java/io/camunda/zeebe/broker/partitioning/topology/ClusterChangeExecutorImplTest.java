@@ -14,7 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
@@ -38,11 +37,7 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(),
-              new ExporterRepository(),
-              nodeIdProvider,
-              null,
-              Optional.empty());
+              new TestConcurrencyControl(), nodeIdProvider, Optional.empty());
 
       // when
       final var result =
@@ -61,11 +56,7 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(),
-              new ExporterRepository(),
-              nodeIdProvider,
-              null,
-              Optional.empty());
+              new TestConcurrencyControl(), nodeIdProvider, Optional.empty());
 
       // when
       final var result = executor.preScaling(3, Set.of(MemberId.from("0"), MemberId.from("1")));
@@ -83,11 +74,7 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(),
-              new ExporterRepository(),
-              nodeIdProvider,
-              null,
-              Optional.empty());
+              new TestConcurrencyControl(), nodeIdProvider, Optional.empty());
 
       // when
       final var result =
@@ -113,11 +100,7 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(),
-              new ExporterRepository(),
-              nodeIdProvider,
-              null,
-              Optional.empty());
+              new TestConcurrencyControl(), nodeIdProvider, Optional.empty());
 
       // when
       final var result =
@@ -136,11 +119,7 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(),
-              new ExporterRepository(),
-              nodeIdProvider,
-              null,
-              Optional.empty());
+              new TestConcurrencyControl(), nodeIdProvider, Optional.empty());
 
       // when
       final var result =

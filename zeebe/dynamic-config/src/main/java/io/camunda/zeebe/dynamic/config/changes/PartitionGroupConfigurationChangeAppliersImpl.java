@@ -54,19 +54,16 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
 
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
-  private final ClusterChangeExecutor clusterChangeExecutor;
   private final ModeChangeExecutor modeChangeExecutor;
   private final RestoreChangeExecutor restoreChangeExecutor;
 
   public PartitionGroupConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      final ClusterChangeExecutor clusterChangeExecutor,
       final ModeChangeExecutor modeChangeExecutor,
       final RestoreChangeExecutor restoreChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
-    this.clusterChangeExecutor = clusterChangeExecutor;
     this.modeChangeExecutor = modeChangeExecutor;
     this.restoreChangeExecutor = restoreChangeExecutor;
   }
@@ -121,7 +118,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final UpdateRoutingState op ->
           new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation ignored -> new UpdateIncarnationNumberApplier();
-      case final DeleteHistoryOperation ignored -> new DeleteHistoryApplier(clusterChangeExecutor);
+      case final DeleteHistoryOperation ignored ->
+          new DeleteHistoryApplier(partitionChangeExecutor);
       case final ModeChangeOperation op ->
           switch (op.mode()) {
             case RECOVERING -> new EnterRecoveryApplier(op.memberId(), modeChangeExecutor);

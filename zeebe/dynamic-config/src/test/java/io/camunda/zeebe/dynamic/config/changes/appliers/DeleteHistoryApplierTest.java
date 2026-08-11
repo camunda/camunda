@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
@@ -30,7 +30,8 @@ import org.junit.jupiter.api.Test;
 
 final class DeleteHistoryApplierTest {
 
-  private final ClusterChangeExecutor clusterChangeExecutor = mock(ClusterChangeExecutor.class);
+  private final PartitionChangeExecutor partitionChangeExecutor =
+      mock(PartitionChangeExecutor.class);
   private final GlobalConfiguration globalConfiguration = GlobalConfiguration.init();
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -55,7 +56,7 @@ final class DeleteHistoryApplierTest {
 
     // when
     final var result =
-        new DeleteHistoryApplier(clusterChangeExecutor).init(globalConfiguration, group);
+        new DeleteHistoryApplier(partitionChangeExecutor).init(globalConfiguration, group);
 
     // then
     assertThat(result).isLeft();
@@ -68,8 +69,9 @@ final class DeleteHistoryApplierTest {
   void shouldExecuteDeleteHistoryCallback() {
     // given
     final var group = groupWithMembers(Map.of());
-    final var applier = new DeleteHistoryApplier(clusterChangeExecutor);
-    when(clusterChangeExecutor.deleteHistory()).thenReturn(CompletableActorFuture.completed(null));
+    final var applier = new DeleteHistoryApplier(partitionChangeExecutor);
+    when(partitionChangeExecutor.deleteHistory())
+        .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var initResult = applier.init(globalConfiguration, group);
@@ -77,6 +79,6 @@ final class DeleteHistoryApplierTest {
     applier.apply().join();
 
     // then
-    verify(clusterChangeExecutor, times(1)).deleteHistory();
+    verify(partitionChangeExecutor, times(1)).deleteHistory();
   }
 }

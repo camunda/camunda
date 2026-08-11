@@ -16,11 +16,11 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 final class DeleteHistoryApplier implements ClusterOperationApplier {
-  private final ClusterChangeExecutor clusterChangeExecutor;
+  private final PartitionChangeExecutor partitionChangeExecutor;
 
   public DeleteHistoryApplier(
-      final MemberId memberId, final ClusterChangeExecutor clusterChangeExecutor) {
-    this.clusterChangeExecutor = clusterChangeExecutor;
+      final MemberId memberId, final PartitionChangeExecutor partitionChangeExecutor) {
+    this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
   @Override
@@ -39,7 +39,7 @@ final class DeleteHistoryApplier implements ClusterOperationApplier {
   @Override
   public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
     final var result = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
-    clusterChangeExecutor
+    partitionChangeExecutor
         .deleteHistory()
         .onComplete(
             (ignore, error) -> {

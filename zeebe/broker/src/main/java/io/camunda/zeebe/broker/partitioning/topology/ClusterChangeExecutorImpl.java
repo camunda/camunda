@@ -8,14 +8,10 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -25,36 +21,14 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   private final ConcurrencyControl concurrencyControl;
   private final NodeIdProvider nodeIdProvider;
   private final Optional<String> zone;
-  private final ExporterHistoryPurger exporterHistoryPurger;
 
   public ClusterChangeExecutorImpl(
       final ConcurrencyControl concurrencyControl,
-      final ExporterRepository exporterRepository,
       final NodeIdProvider nodeIdProvider,
-      final MeterRegistry meterRegistry,
       final Optional<String> zone) {
     this.concurrencyControl = concurrencyControl;
     this.nodeIdProvider = Objects.requireNonNull(nodeIdProvider);
     this.zone = zone;
-    exporterHistoryPurger =
-        new ExporterHistoryPurger(
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, exporterRepository, meterRegistry);
-  }
-
-  @Override
-  public ActorFuture<Void> deleteHistory() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
-    concurrencyControl.run(
-        () -> {
-          try {
-            exporterHistoryPurger.purgeAll();
-            result.complete(null);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          }
-        });
-
-    return result;
   }
 
   @Override

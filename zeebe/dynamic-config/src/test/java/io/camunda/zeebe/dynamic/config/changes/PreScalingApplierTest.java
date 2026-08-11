@@ -98,11 +98,6 @@ final class PreScalingApplierTest {
     final var failingExecutor =
         new ClusterChangeExecutor() {
           @Override
-          public ActorFuture<Void> deleteHistory() {
-            return null;
-          }
-
-          @Override
           public ActorFuture<Void> preScaling(
               final int currentClusterSize, final Set<MemberId> clusterMembers) {
             return CompletableActorFuture.completedExceptionally(
