@@ -39,7 +39,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch");
+    final var interceptor = new SecondaryStorageInterceptor(() -> "elasticsearch");
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -49,7 +49,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch");
+    final var interceptor = new SecondaryStorageInterceptor(() -> "elasticsearch");
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -59,7 +59,7 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor(CAMUNDA_DATABASE_TYPE_NONE);
+    final var interceptor = new SecondaryStorageInterceptor(() -> CAMUNDA_DATABASE_TYPE_NONE);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
   }

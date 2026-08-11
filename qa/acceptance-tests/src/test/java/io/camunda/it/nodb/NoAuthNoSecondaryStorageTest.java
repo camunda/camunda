@@ -7,7 +7,7 @@
  */
 package io.camunda.it.nodb;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -34,7 +34,7 @@ public class NoAuthNoSecondaryStorageTest {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
+          .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
           .withProperty("spring.profiles.active", "broker");
 
   @AutoClose private CamundaClient camundaClient;
@@ -159,7 +159,7 @@ public class NoAuthNoSecondaryStorageTest {
         .hasMessageContaining(
             String.format(
                 "Secondary storage can be configured using the '%s' property",
-                PROPERTY_CAMUNDA_DATABASE_TYPE))
+                UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
         .hasMessageContaining("FORBIDDEN")
         .hasMessageContaining("status: 403");
   }
