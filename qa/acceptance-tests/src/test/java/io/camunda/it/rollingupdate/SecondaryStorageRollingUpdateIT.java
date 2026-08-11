@@ -55,7 +55,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 
 /**
- * Rolling update test for secondary storage across mixed-version upgrades and rollbacks.
+ * Rolling update test for secondary storage across mixed-version upgrades.
  *
  * <p>The test drives a representative scenario across a rolling-update version boundary: it creates
  * identity resources, starts a process instance, advances it through a service task (job), message
@@ -225,15 +225,18 @@ final class SecondaryStorageRollingUpdateIT {
         testCluster(client);
       }
 
-      // === Phase 3: new broker restarts on old schema — complete process, verify new writes ===
-      LOGGER.info("Stopping new broker to complete rollback");
-      broker1.stop();
-      updateBroker(broker1, newNodeId, from, storage);
-      broker1.start();
+      // === Phase 3: upgrade broker 0 too, completing the rollout ===
+      // Downgrading a broker version is not a supported feature (confirmed with the dynamic-config
+      // owner) — a real rolling upgrade only ever moves forward, ending with every node on the new
+      // version. Do not reintroduce a downgrade step here; upgrade the remaining broker instead.
+      LOGGER.info("Stopping broker0 to complete the rollout");
+      broker0.stop();
+      updateBroker(broker0, oldNodeId, to, storage);
+      broker0.start();
 
       try (final var client = newClient(gateway0)) {
-        // create a third instance to prove new writes work on the updated schema
-        LOGGER.info("=== Test Run 3 - Old cluster version again ===");
+        // create a third instance to prove writes still work once the cluster is fully upgraded
+        LOGGER.info("=== Test Run 3 - Fully upgraded cluster ===");
         testCluster(client);
       }
     } catch (final RuntimeException | Error e) {
