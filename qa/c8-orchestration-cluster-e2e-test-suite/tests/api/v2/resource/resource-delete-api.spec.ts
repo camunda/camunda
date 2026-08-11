@@ -6,18 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {
   assertStatusCode,
   buildUrl,
+  credentials,
   defaultHeaders,
   assertUnauthorizedRequest,
   jsonHeaders,
   assertNotFoundRequest,
   assertBadRequest,
+  assertPaginatedRequest,
+  authHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {deployResourceAndGetMetadata} from '@requestHelpers';
+import {
+  deployInlineResource,
+  deployResourceAndGetMetadata,
+  searchResources,
+  uniqueResourceName,
+} from '@requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Resource Delete API', () => {
@@ -47,6 +56,61 @@ test.describe.parallel('Resource Delete API', () => {
       },
       res,
     );
+  });
+
+  test('Delete Resource - deleted generic resource stops being served', async ({
+    request,
+  }) => {
+    const resource = await deployInlineResource(
+      request,
+      uniqueResourceName('system-prompt', 'md'),
+      '# System prompt',
+    );
+    const resourceKey = resource.resourceKey;
+    const contentBinaryUrl = buildUrl(
+      '/resources/{resourceKey}/content/binary',
+      {resourceKey},
+    );
+
+    await expect(async () => {
+      const searchRes = await searchResources(request, {filter: {resourceKey}});
+      await assertPaginatedRequest(searchRes, {itemsLengthEqualTo: 1});
+
+      const contentRes = await request.get(contentBinaryUrl, {
+        headers: authHeaders(credentials.accessToken),
+      });
+      await assertStatusCode(contentRes, 200);
+    }).toPass(defaultAssertionOptions);
+
+    const deleteRes = await request.post(
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
+      {
+        headers: defaultHeaders(),
+      },
+    );
+    await assertStatusCode(deleteRes, 200);
+
+    await expect(async () => {
+      const searchRes = await searchResources(request, {filter: {resourceKey}});
+      await assertPaginatedRequest(searchRes, {itemsLengthEqualTo: 0});
+
+      const getRes = await request.get(
+        buildUrl('/resources/{resourceKey}', {resourceKey}),
+        {headers: defaultHeaders()},
+      );
+      await assertNotFoundRequest(
+        getRes,
+        `Resource with key '${resourceKey}' not found`,
+      );
+
+      const contentRes = await request.get(contentBinaryUrl, {
+        headers: authHeaders(credentials.accessToken),
+      });
+      await assertNotFoundRequest(
+        contentRes,
+        `Resource with key '${resourceKey}' not found`,
+      );
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Delete Resource - Not Found 404', async ({request}) => {
