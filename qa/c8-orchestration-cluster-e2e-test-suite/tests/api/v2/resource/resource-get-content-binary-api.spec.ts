@@ -34,6 +34,7 @@ function contentBinaryUrl(resourceKey: string): string {
   return buildUrl('/resources/{resourceKey}/content/binary', {resourceKey});
 }
 
+// Workaround for bug #59831: https://github.com/camunda/camunda/issues/59831
 // The handler is mapped with the gateway's default JSON produces list, so an
 // explicit `Accept: application/octet-stream` — the media type the API spec
 // documents — is answered with 406. Send no Accept header until that is fixed.
