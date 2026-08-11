@@ -57,114 +57,6 @@ paths:
           description: The default physical tenant is DOWN and does not have any partition with a healthy leader.
       x-added-in-version: "8.8"
 
-  # Not served under the document's `/v2` server base,
-  # hence the path-item `servers` override below
-  /cluster/v2/status:
-    servers:
-      - url: "{schema}://{host}:{port}"
-        variables:
-          host:
-            default: localhost
-            description: The hostname of the Orchestration Cluster REST Gateway.
-          port:
-            default: "8080"
-            description: The port of the Orchestration Cluster REST API server.
-          schema:
-            default: http
-            description: The schema of the Orchestration Cluster REST API server.
-    get:
-      x-eventually-consistent: false
-      tags:
-        - Cluster
-      operationId: getClusterStatus
-      x-required-permissions: [ ]
-      # Public health-check endpoint — declared unauthenticated at runtime
-      # via SecurityPathAdapter. `security: []` overrides the conditional
-      # enforcement on the global schemes for this operation.
-      security: [ ]
-      summary: Get the status of the whole cluster
-      description: >-
-        Checks the health status of the whole cluster, aggregated over all physical tenants. Returns
-        `HEALTHY` when every physical tenant is healthy, `DOWN` when no physical tenant can process
-        work, and `DEGRADED` in every other case. No per-tenant detail is reported; use
-        `GET /cluster/v2/topology` for that.
-      responses:
-        "200":
-          description: The cluster can process work; the body reports whether it is fully healthy or degraded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClusterStatusResponse'
-        "503":
-          description: The cluster is DOWN because no physical tenant can process work.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClusterStatusResponse'
-      x-added-in-version: "8.10"
-
-  # Not served under the document's `/v2` server base,
-  # hence the path-item `servers` override below
-  /cluster/v2/mode:
-    servers:
-      - url: "{schema}://{host}:{port}"
-        variables:
-          host:
-            default: localhost
-            description: The hostname of the Orchestration Cluster REST Gateway.
-          port:
-            default: "8080"
-            description: The port of the Orchestration Cluster REST API server.
-          schema:
-            default: http
-            description: The schema of the Orchestration Cluster REST API server.
-    patch:
-      x-eventually-consistent: false
-      tags:
-        - Recovery
-      operationId: changeClusterModeAsClusterAdmin
-      x-required-permissions: [ ]
-      security:
-        - bearerAuth: [ ]
-        - basicAuth: [ ]
-      summary: Change the cluster mode of one or every physical tenant
-      description: >-
-        Transitions physical tenants between processing and recovery mode.
-
-
-        If the `physicalTenantId` parameter is not provided, all available physical tenants are
-        transitioned individually.
-      parameters:
-        - $ref: '#/components/parameters/ModeParameter'
-        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
-        - $ref: '#/components/parameters/DryRunParameter'
-      responses:
-        "200":
-          description: >-
-            The mode change request was accepted; returns the planned cluster change covering every
-            requested physical tenant.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClusterModeChangeResponse'
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "404":
-          description: The requested `physicalTenantId` does not exist in this cluster.
-          content:
-            application/problem+json:
-              schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-        "409":
-          description: >-
-            The mode change conflicts with the cluster state, for example because another
-            configuration change is in progress.
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-added-in-version: "8.10"
-
   /mode:
     patch:
       x-eventually-consistent: false
@@ -303,35 +195,8 @@ components:
       schema:
         type: boolean
         default: false
-    PhysicalTenantIdParameter:
-      name: physicalTenantId
-      in: query
-      required: false
-      description: >-
-        The physical tenant to apply the change to. When omitted, the change is applied to every
-        physical tenant of the cluster.
-      schema:
-        type: string
-        example: default
 
   schemas:
-    ClusterStatusResponse:
-      description: The aggregated status of the whole cluster.
-      type: object
-      required:
-        - status
-      properties:
-        status:
-          description: >-
-            `HEALTHY` when every physical tenant is healthy, `DOWN` when no physical tenant can
-            process work, `DEGRADED` in every other case.
-          type: string
-          example: HEALTHY
-          enum:
-            - HEALTHY
-            - DEGRADED
-            - DOWN
-
     Mode:
       description: The operating mode of a cluster's partitions.
       type: string

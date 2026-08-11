@@ -456,8 +456,6 @@ paths:
   # Cluster status endpoints
   /status: # Legacy `/status` endpoint that is deprecated and only works for the default physical tenant
     $ref: 'cluster.yaml#/paths/~1status'
-  /cluster/v2/status: # New /cluster/v2/status endpoint that works for all physical tenants.
-    $ref: 'cluster.yaml#/paths/~1cluster~1v2~1status'
 
   # System endpoints
   /system/usage-metrics:
@@ -502,6 +500,16 @@ paths:
     $ref: 'cluster.yaml#/paths/~1cluster~1v2~1mode'
   /restore:
     $ref: 'cluster.yaml#/paths/~1restore'
+
+  # Cluster-wide endpoints, served on the bare root rather than under the `/v2` server base: the
+  # `/cluster/v2` base is part of the path key, not the server URL, so these keys must stay
+  # absolute. They cannot be shortened to `/status` and `/mode` — both are already taken above by
+  # `cluster.yaml`, and `OpenApiYamlLoader.KNOWN_ROOTS` matches the literal `/cluster/v2/` prefix to
+  # skip the runtime `/v2` prefixing. See `cluster-wide.yaml`.
+  /cluster/v2/mode:
+    $ref: 'cluster-wide.yaml#/paths/~1cluster~1v2~1mode'
+  /cluster/v2/status:
+    $ref: 'cluster-wide.yaml#/paths/~1cluster~1v2~1status'
 
   # User endpoints
   /users:
