@@ -480,6 +480,9 @@ components:
             - ACTIVE
             - DRAINING
             - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -547,6 +550,9 @@ components:
             - ACTIVE
             - DRAINING
             - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.

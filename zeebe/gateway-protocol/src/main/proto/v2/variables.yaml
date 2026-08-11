@@ -318,3 +318,10 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - variables
+      x-properties-added-in-version:
+        - propertyName: "variables"
+          addedInVersionOverride: "8.6"
+        - propertyName: "local"
+          addedInVersionOverride: "8.6"
+        - propertyName: "operationReference"
+          addedInVersionOverride: "8.6"

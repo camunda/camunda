@@ -168,6 +168,7 @@ paths:
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-added-in-version: "8.6"
+      x-added-in-version-override: "8.6"
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:

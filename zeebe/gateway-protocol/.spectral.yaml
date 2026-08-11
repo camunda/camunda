@@ -334,7 +334,7 @@ rules:
       function: verifySemanticKindsRegistered
 
   properties-added-in-version-shape:
-    description: "`x-properties-added-in-version` must be a non-empty array of `{propertyName, addedInVersion}` objects with no other keys."
+    description: "`x-properties-added-in-version` must be a non-empty array of objects, each requiring `propertyName` plus at least one of `addedInVersion`/`addedInVersionOverride`, and no other keys."
     severity: error
     # Report at the schema's source location, not at every $ref consumer.
     resolved: false
@@ -347,8 +347,11 @@ rules:
           minItems: 1
           items:
             type: object
-            required: [propertyName, addedInVersion]
+            required: [propertyName]
             additionalProperties: false
+            anyOf:
+              - required: [addedInVersion]
+              - required: [addedInVersionOverride]
             properties:
               propertyName:
                 type: string
@@ -358,6 +361,27 @@ rules:
                 type: string
                 pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
                 description: Camunda version in which the property was introduced, e.g. "8.8".
+              addedInVersionOverride:
+                type: string
+                pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+                description: >-
+                  A documented, reviewed exception: replaces the version the bundler computed
+                  for this property before the usual Rule 1/2/3 evaluation, so `addedInVersion`
+                  is only required alongside it when the overridden value still needs an
+                  explicit annotation (i.e. it isn't inferred from the endpoint/ancestor
+                  version). See "Overriding the computed version" in
+                  .github/scripts/x-added-in-version-check/README.md.
+
+  added-in-version-override-shape:
+    description: "`x-added-in-version-override`, when present on an operation, must be a version string."
+    severity: error
+    given: $.paths[*][*].x-added-in-version-override
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: string
+          pattern: "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 
   # Guard against new schemas introducing ambiguous bare identifier properties.
   # Existing schemas are grandfathered via the allowlist below — do not add new
