@@ -57,7 +57,6 @@ async function deployAndStartIsolationProcess(clusterVariableName: string) {
   return {jobType, processInstanceKey: String(instance.processInstanceKey)};
 }
 
-/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - FEEL Isolation', () => {
   const state: Record<string, unknown> = {};
   const createdGlobalNames: string[] = [];
@@ -105,6 +104,10 @@ test.describe.parallel('Cluster Variable API Tests - FEEL Isolation', () => {
     await createGlobalClusterVariable(request, state, 'piIsolation', variable);
     createdGlobalNames.push(variable.name);
 
+    await test.step('Metadata is stored on the variable', async () => {
+      expect(state['piIsolationMetadata']).toEqual(METADATA);
+    });
+
     const {processInstanceKey} = await deployAndStartIsolationProcess(
       variable.name,
     );
@@ -115,9 +118,16 @@ test.describe.parallel('Cluster Variable API Tests - FEEL Isolation', () => {
         name: 'mappedValue',
       });
 
-      // Search returns variable values as JSON strings.
+      // Search returns variable values as JSON strings. Swap in the parsed value so
+      // the whole response is walked and the value is walked structurally, not as
+      // one opaque string leaf.
       const parsed = JSON.parse(stored.value);
-      assertNoMetadataLeak(parsed, variable.value, parsed, METADATA);
+      assertNoMetadataLeak(
+        parsed,
+        variable.value,
+        {...stored, value: parsed},
+        METADATA,
+      );
     });
   });
 
