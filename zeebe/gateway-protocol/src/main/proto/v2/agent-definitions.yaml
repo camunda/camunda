@@ -134,31 +134,31 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKeyFilterProperty'
         agentType:
-          description: The kind of agent this definition describes.
+          description: The kind of agent this agent definition describes.
           allOf:
             - $ref: '#/components/schemas/AgentDefinitionTypeFilterProperty'
         name:
-          description: The human-readable name of the process element that owns the agent.
+          description: The human-readable name of the process element that owns the agent definition.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementId:
-          description: The BPMN element ID of the process element that owns the agent.
+          description: The BPMN element ID of the process element that owns the agent definition.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
         processDefinitionId:
-          description: The BPMN process ID of the process definition that owns the agent.
+          description: The BPMN process ID of the process definition that owns the agent definition.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionIdFilterProperty'
         processDefinitionKey:
-          description: The key of the process definition that owns the agent.
+          description: The key of the process definition that owns the agent definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
         processDefinitionVersion:
-          description: The version of the process definition that owns the agent.
+          description: The version of the process definition that owns the agent definition.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
         processDefinitionVersionTag:
-          description: The version tag of the process definition that owns the agent.
+          description: The version tag of the process definition that owns the agent definition.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         tenantId:
@@ -181,7 +181,7 @@ components:
             $ref: '#/components/schemas/AgentDefinitionResult'
 
     AgentDefinitionResult:
-      description: An agent definition, minted at deploy time for a process element that owns an agent.
+      description: An agent definition, created at deploy time for the process element it belongs to.
       type: object
       required:
         - agentDefinitionKey
@@ -195,36 +195,37 @@ components:
         - tenantId
       properties:
         agentDefinitionKey:
-          description: The unique key for this agent definition.
+          description: |
+            The unique key for this agent definition. Unique across process definition versions.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKey'
         agentType:
           $ref: '#/components/schemas/AgentDefinitionTypeEnum'
         name:
           description: |
-            The human-readable name of the process element that owns the agent. Falls back to
-            elementId when the element has no BPMN name configured.
+            The human-readable name of the process element that owns the agent definition. Falls
+            back to elementId when the element has no BPMN name configured.
           type: string
         elementId:
-          description: The BPMN element ID of the process element that owns the agent.
+          description: The BPMN element ID of the process element that owns the agent definition.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         processDefinitionId:
-          description: The BPMN process ID of the process definition that owns the agent.
+          description: The BPMN process ID of the process definition that owns the agent definition.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
         processDefinitionKey:
-          description: The key of the process definition that owns the agent.
+          description: The key of the process definition that owns the agent definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
         processDefinitionVersion:
           type: integer
           format: int32
-          description: The version of the process definition that owns the agent.
+          description: The version of the process definition that owns the agent definition.
         processDefinitionVersionTag:
           type: string
           nullable: true
-          description: The version tag of the process definition that owns the agent.
+          description: The version tag of the process definition that owns the agent definition.
         tenantId:
           description: The tenant ID of this agent definition.
           allOf:
