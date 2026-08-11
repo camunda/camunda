@@ -16,15 +16,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
+import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -143,7 +141,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     for (final PartitionId partition : oldPartitions) {
       final var newMetadata = newDistribution.get(partition);
       final var oldMetadata = oldDistribution.get(partition);
-      operations.addAll(movePartition(oldMetadata, newMetadata));
+      operations.addAll(PartitionReassignmentSupport.movePartition(oldMetadata, newMetadata));
     }
     final var hasNewPartitions = !newPartitions.isEmpty();
 
@@ -188,45 +186,6 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
       }
     }
 
-    return operations;
-  }
-
-  private List<ClusterConfigurationChangeOperation> movePartition(
-      final PartitionMetadata oldMetadata, final PartitionMetadata newMetadata) {
-    final Integer partitionId = newMetadata.id().number();
-    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
-
-    final var membersToJoin =
-        newMetadata.members().stream()
-            .filter(member -> !oldMetadata.members().contains(member))
-            .map(
-                newMember ->
-                    new PartitionJoinOperation(
-                        newMember, partitionId, newMetadata.getPriority(newMember)))
-            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
-            .toList();
-    final var membersToLeave =
-        oldMetadata.members().stream()
-            .filter(member -> !newMetadata.members().contains(member))
-            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, 1))
-            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
-            .toList();
-    final var membersToChangePriority =
-        oldMetadata.members().stream()
-            .filter(memberId -> newMetadata.members().contains(memberId))
-            .filter(
-                memberId -> newMetadata.getPriority(memberId) != oldMetadata.getPriority(memberId))
-            .map(
-                memberId ->
-                    new PartitionReconfigurePriorityOperation(
-                        memberId, partitionId, newMetadata.getPriority(memberId)))
-            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
-            .toList();
-
-    // TODO: interleave join and leave operation
-    operations.addAll(membersToJoin);
-    operations.addAll(membersToLeave);
-    operations.addAll(membersToChangePriority);
     return operations;
   }
 }

@@ -15,8 +15,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -146,7 +144,7 @@ public final class PartitionReassignmentOperationsGenerator {
                         : Optional.empty();
                 operations = bootstrapPartition(target, config, !isNewGroup);
               } else {
-                operations = movePartition(current, target);
+                operations = PartitionReassignmentSupport.movePartition(current, target);
               }
               if (!operations.isEmpty()) {
                 operationsByGroup
@@ -203,53 +201,6 @@ public final class PartitionReassignmentOperationsGenerator {
         operations.add(new PartitionJoinOperation(member, partitionId, target.getPriority(member)));
       }
     }
-    return operations;
-  }
-
-  /**
-   * An existing partition changing shape: join new members, have removed members leave, and
-   * reconfigure the priority of any member present in both whose priority changed. A target
-   * identical to the current state produces no operations at all.
-   */
-  private static List<PartitionGroupOperation> movePartition(
-      final PartitionMetadata current, final PartitionMetadata target) {
-    final int partitionId = target.id().number();
-    final List<PartitionGroupOperation> operations = new ArrayList<>();
-
-    final var membersToJoin =
-        target.members().stream()
-            .filter(member -> !current.members().contains(member))
-            .map(
-                newMember ->
-                    (PartitionGroupOperation)
-                        new PartitionJoinOperation(
-                            newMember, partitionId, target.getPriority(newMember)))
-            .sorted(Comparator.comparing(PartitionGroupOperation::memberId))
-            .toList();
-    final var membersToLeave =
-        current.members().stream()
-            .filter(member -> !target.members().contains(member))
-            .map(
-                oldMember ->
-                    (PartitionGroupOperation)
-                        new PartitionLeaveOperation(oldMember, partitionId, 1))
-            .sorted(Comparator.comparing(PartitionGroupOperation::memberId))
-            .toList();
-    final var membersToChangePriority =
-        current.members().stream()
-            .filter(member -> target.members().contains(member))
-            .filter(member -> target.getPriority(member) != current.getPriority(member))
-            .map(
-                member ->
-                    (PartitionGroupOperation)
-                        new PartitionReconfigurePriorityOperation(
-                            member, partitionId, target.getPriority(member)))
-            .sorted(Comparator.comparing(PartitionGroupOperation::memberId))
-            .toList();
-
-    operations.addAll(membersToJoin);
-    operations.addAll(membersToLeave);
-    operations.addAll(membersToChangePriority);
     return operations;
   }
 }
