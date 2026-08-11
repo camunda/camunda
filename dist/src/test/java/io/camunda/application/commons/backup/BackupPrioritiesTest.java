@@ -186,6 +186,7 @@ class BackupPrioritiesTest {
             "camunda-user-8.8.0_",
             "camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_",
+            "camunda-agent-definition-8.10.0_",
             "camunda-agent-history-8.10.0_",
             "camunda-audit-log-8.9.0_",
             "camunda-audit-log-cleanup-8.9.0_",
