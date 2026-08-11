@@ -50,7 +50,7 @@ spec:
       initContainers:
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.9.6
+          image: camunda/connectors-bundle:8.9.7
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -72,14 +72,11 @@ spec:
                   name: camunda-credentials
                   key: connectors-security-authentication-oidc-secret
             
-            
             - name: CONNECTORS_LOG_APPENDER
               value: stackdriver
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-89-elasticsearch-stable-camunda-platform-identity-env-vars
-            - configMapRef:
-                name: c8-golden-stable-89-elasticsearch-stable-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

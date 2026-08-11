@@ -50,7 +50,7 @@ spec:
       initContainers:
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.9.6
+          image: camunda/identity:8.9.8
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -89,9 +89,6 @@ spec:
                   key: identity-firstuser-password
             - name: IDENTITY_LOG_APPENDER
               value: Stackdriver
-          envFrom:
-            - configMapRef:
-                name: c8-golden-stable-89-opensearch-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

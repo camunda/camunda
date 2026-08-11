@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-89-rdbms-stable
       namespace: c8-golden-stable-89-rdbms-stable
-      version: 14.8.0
+      version: 14.8.1
       tags:
       - dev
       custom-properties: []
@@ -30,13 +30,13 @@ data:
         url: 
       - name: Identity
         id: identity
-        version: 8.9.6
+        version: 8.9.8
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-89-rdbms-stable:82/actuator/health
         metrics: http://identity.c8-golden-stable-89-rdbms-stable:82/actuator/prometheus
       - name: Connectors
         id: connectors
-        version: 8.9.6
+        version: 8.9.7
         url: http://connectors.c8-golden-stable-89-rdbms-stable:8080
         readiness: http://connectors.c8-golden-stable-89-rdbms-stable:8080/actuator/health/readiness
         metrics: http://connectors.c8-golden-stable-89-rdbms-stable:8080/actuator/prometheus
