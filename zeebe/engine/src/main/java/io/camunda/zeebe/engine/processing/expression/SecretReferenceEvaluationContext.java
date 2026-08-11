@@ -79,7 +79,12 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
         return Either.right(SecretLeafContext.INSTANCE);
       }
       final var camunda = delegateCamunda.isRight() ? delegateCamunda.get() : null;
-      return camunda != null ? camunda.getVariable(variableName) : Either.left(null);
+      return camunda != null ? camunda.getVariable(variableName) : notFound();
+    }
+
+    @SuppressWarnings("NullAway")
+    private static Either<DirectBuffer, EvaluationContext> notFound() {
+      return Either.left(null);
     }
   }
 
