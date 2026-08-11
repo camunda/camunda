@@ -301,6 +301,7 @@ const startProcessMachine = setup({
 			},
 		},
 		NotifyingTasks: {
+			tags: 'status:waiting_for_tasks',
 			entry: 'notifyNewTasks',
 			always: {target: 'Succeeded'},
 		},
