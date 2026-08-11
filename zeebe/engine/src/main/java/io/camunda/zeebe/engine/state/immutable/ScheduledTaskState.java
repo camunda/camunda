@@ -36,4 +36,6 @@ public interface ScheduledTaskState {
   BatchOperationState getBatchOperationState();
 
   DbRoutingState getRoutingState();
+
+  JobBatchDeliveryState getJobBatchDeliveryState();
 }

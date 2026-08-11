@@ -18,6 +18,8 @@ import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerJobBatchAcknowledgeRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerJobBatchRejectRequest;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -125,14 +127,18 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             final var brokerRequest = request.getRequest();
             final var partitionId = requestState.getNextPartition();
             final var remainingAmount = requestState.getRemainingAmount();
+            final var deliveryAttemptKey = ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement();
 
             // partitions to check and jobs to activate left
             brokerRequest.setPartitionId(partitionId);
             brokerRequest.setMaxJobsToActivate(remainingAmount);
+            brokerRequest.setDeliveryAttemptKey(deliveryAttemptKey);
 
             brokerClient
                 .sendRequest(brokerRequest)
-                .whenCompleteAsync(handleBrokerResponse(request, requestState, delegate), actor);
+                .whenCompleteAsync(
+                    handleBrokerResponse(request, requestState, delegate, deliveryAttemptKey),
+                    actor);
 
           } else {
             // enough jobs activated or no more partitions left to check
@@ -146,14 +152,16 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private BiConsumer<BrokerResponse<JobBatchRecord>, Throwable> handleBrokerResponse(
       final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,
-      final ResponseObserverDelegate delegate) {
+      final ResponseObserverDelegate delegate,
+      final long deliveryAttemptKey) {
     return (brokerResponse, error) -> {
       if (error == null && brokerResponse.isResponse()) {
-        handleResponseSuccess(request, requestState, delegate, brokerResponse);
+        handleResponseSuccess(request, requestState, delegate, brokerResponse, deliveryAttemptKey);
       } else if (error == null) {
-        handleBrokerErrorResponse(request, requestState, delegate, brokerResponse);
+        handleBrokerErrorResponse(
+            request, requestState, delegate, brokerResponse, deliveryAttemptKey);
       } else {
-        handleResponseError(request, requestState, delegate, error);
+        handleResponseError(request, requestState, delegate, error, deliveryAttemptKey);
       }
     };
   }
@@ -162,10 +170,16 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate,
-      final BrokerResponse<JobBatchRecord> brokerResponse) {
+      final BrokerResponse<JobBatchRecord> brokerResponse,
+      final long deliveryAttemptKey) {
     actor.run(
         () -> {
           final var response = brokerResponse.getResponse();
+          // ACK as soon as the broker response is received — before client delivery. Client-send
+          // failures still use reactivateJobs → FAIL.
+          acknowledgeDelivery(
+              brokerResponse.getPartitionId(), request.getType(), deliveryAttemptKey);
+
           final JobActivationResult<T> jobActivationResult =
               activationResultMapper.apply(
                   new JobActivationResponse(
@@ -263,7 +277,8 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState state,
       final ResponseObserverDelegate delegate,
-      final Throwable error) {
+      final Throwable error,
+      final long deliveryAttemptKey) {
     actor.run(
         () -> {
           final var wasResourceExhausted = wasResourceExhausted(error);
@@ -272,6 +287,8 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             return;
           } else if (!wasResourceExhausted) {
             logErrorResponse(state.getCurrentPartition(), request.getType(), error);
+            // Best-effort reclaim if the broker may have activated jobs but the response was lost.
+            rejectDelivery(state.getCurrentPartition(), request.getType(), deliveryAttemptKey);
           }
 
           state.setResourceExhaustedWasPresent(wasResourceExhausted);
@@ -284,8 +301,57 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState state,
       final ResponseObserverDelegate delegate,
-      final BrokerResponse<JobBatchRecord> response) {
-    handleResponseError(request, state, delegate, response.toException());
+      final BrokerResponse<JobBatchRecord> response,
+      final long deliveryAttemptKey) {
+    handleResponseError(request, state, delegate, response.toException(), deliveryAttemptKey);
+  }
+
+  private void acknowledgeDelivery(
+      final int partitionId, final String jobType, final long deliveryAttemptKey) {
+    if (deliveryAttemptKey <= 0) {
+      return;
+    }
+    final var ackRequest =
+        new BrokerJobBatchAcknowledgeRequest(partitionId, jobType, deliveryAttemptKey);
+    ackRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    brokerClient
+        .sendRequestWithRetry(ackRequest)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                Loggers.GATEWAY_LOGGER.debug(
+                    "Failed to ACK JobBatch delivery attempt {} on partition {} for type {}: {}",
+                    deliveryAttemptKey,
+                    partitionId,
+                    jobType,
+                    error.getMessage());
+              }
+            },
+            actor);
+  }
+
+  private void rejectDelivery(
+      final int partitionId, final String jobType, final long deliveryAttemptKey) {
+    if (deliveryAttemptKey <= 0) {
+      return;
+    }
+    final var rejectRequest =
+        new BrokerJobBatchRejectRequest(partitionId, jobType, deliveryAttemptKey);
+    rejectRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    brokerClient
+        .sendRequestWithRetry(rejectRequest)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                Loggers.GATEWAY_LOGGER.debug(
+                    "Failed to REJECT JobBatch delivery attempt {} on partition {} for type {}: {}",
+                    deliveryAttemptKey,
+                    partitionId,
+                    jobType,
+                    error.getMessage());
+              }
+            },
+            actor);
   }
 
   private boolean isRejection(final Throwable error) {

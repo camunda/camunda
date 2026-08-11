@@ -804,7 +804,9 @@ final class JsonSerializableToJsonTest {
                       .setType(type)
                       .setWorker(worker)
                       .setTruncated(true)
-                      .setWithLease(true);
+                      .setWithLease(true)
+                      .setDeliveryAttemptKey(42L)
+                      .setDeliveryDeadline(9000L);
 
               record.jobKeys().add().setValue(3L);
               final JobRecord jobRecord = record.jobs().add();
@@ -961,7 +963,9 @@ final class JsonSerializableToJsonTest {
                   ],
                   "timeout": 2,
                   "tenantIds": [],
-                  "tenantFilter": "PROVIDED"
+                  "tenantFilter": "PROVIDED",
+                  "deliveryAttemptKey": 42,
+                  "deliveryDeadline": 9000
                 }
                 """
       },
@@ -988,7 +992,9 @@ final class JsonSerializableToJsonTest {
                   "jobs": [],
                   "timeout": -1,
                   "tenantIds": [],
-                  "tenantFilter": "PROVIDED"
+                  "tenantFilter": "PROVIDED",
+                  "deliveryAttemptKey": 0,
+                  "deliveryDeadline": 0
                 }
                 """
       },

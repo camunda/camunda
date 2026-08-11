@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.jobbatch.DbJobBatchDeliveryState;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
@@ -78,6 +79,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobBatchDeliveryState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
@@ -171,6 +173,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
   private final MutableSecretReferenceState secretReferenceState;
+  private final MutableJobBatchDeliveryState jobBatchDeliveryState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -249,6 +252,7 @@ public class ProcessingDbState implements MutableProcessingState {
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
     secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+    jobBatchDeliveryState = new DbJobBatchDeliveryState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -494,6 +498,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableSecretReferenceState getSecretReferenceState() {
     return secretReferenceState;
+  }
+
+  @Override
+  public MutableJobBatchDeliveryState getJobBatchDeliveryState() {
+    return jobBatchDeliveryState;
   }
 
   @Override

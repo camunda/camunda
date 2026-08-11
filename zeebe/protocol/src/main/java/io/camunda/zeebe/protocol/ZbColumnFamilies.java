@@ -366,7 +366,12 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
   // deploy time and replicated identically to every partition (like process/decision/form
   // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
-  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL);
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL),
+
+  // pending JobBatch delivery handshake: deliveryAttemptKey -> job keys + delivery deadline
+  JOB_BATCH_PENDING_DELIVERY(162, PARTITION_LOCAL),
+  // secondary index: (deliveryDeadline, deliveryAttemptKey) → ∅ for the delivery-ack checker
+  JOB_BATCH_PENDING_DELIVERY_DEADLINES(163, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

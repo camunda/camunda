@@ -104,6 +104,7 @@ public class ActivateJobsStub
     response.setWorker(requestDto.getWorkerBuffer());
     response.setType(requestDto.getTypeBuffer());
     response.setTimeout(requestDto.getTimeout());
+    response.setDeliveryAttemptKey(requestDto.getDeliveryAttemptKey());
     addJobs(
         response,
         partitionId,

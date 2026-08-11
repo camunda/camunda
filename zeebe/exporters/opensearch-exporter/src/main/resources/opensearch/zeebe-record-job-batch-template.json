@@ -208,6 +208,12 @@
             },
             "tenantFilter": {
               "type": "keyword"
+            },
+            "deliveryAttemptKey": {
+              "type": "long"
+            },
+            "deliveryDeadline": {
+              "type": "date"
             }
           }
         }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
+import io.camunda.zeebe.engine.state.immutable.JobBatchDeliveryState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.jobbatch.DbJobBatchDeliveryState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -56,6 +58,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final BatchOperationState batchOperationState;
   private final DbRoutingState routingState;
   private final SecretReferenceState secretReferenceState;
+  private final JobBatchDeliveryState jobBatchDeliveryState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -84,6 +87,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+    jobBatchDeliveryState = new DbJobBatchDeliveryState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -149,5 +153,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public DbRoutingState getRoutingState() {
     return routingState;
+  }
+
+  @Override
+  public JobBatchDeliveryState getJobBatchDeliveryState() {
+    return jobBatchDeliveryState;
   }
 }

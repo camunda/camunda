@@ -925,9 +925,18 @@ public class CompactRecordLogger {
     }
 
     if (jobKeys != null && !jobKeys.isEmpty()) {
+      final var jobs = value.getJobs();
       for (int i = 0; i < jobKeys.size(); i++) {
         final var jobKey = jobKeys.get(i);
-        final var job = value.getJobs().get(i);
+        // ACK/REJECT events may carry job keys without full job payloads
+        if (jobs == null || i >= jobs.size()) {
+          result
+              .append(StringUtils.rightPad("\n", 8 + valueTypeChars))
+              .append("- job key: ")
+              .append(jobKey);
+          continue;
+        }
+        final var job = jobs.get(i);
 
         result
             .append(StringUtils.rightPad("\n", 8 + valueTypeChars))

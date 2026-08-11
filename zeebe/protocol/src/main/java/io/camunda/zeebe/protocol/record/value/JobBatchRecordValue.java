@@ -89,4 +89,20 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the tenant filtering strategy used for job activation
    */
   TenantFilter getTenantFilter();
+
+  /**
+   * Gateway-generated key that correlates a poll activation with its delivery ACK or REJECT. Zero
+   * means the caller does not use delivery acknowledgement (legacy behaviour).
+   *
+   * @return the delivery attempt key, or {@code 0} when unused
+   */
+  long getDeliveryAttemptKey();
+
+  /**
+   * Broker-computed deadline for the pending delivery handshake. Set on {@code ACTIVATED} when a
+   * delivery attempt key is present. Zero when unused.
+   *
+   * @return epoch millis when an unacked delivery may be rejected, or {@code 0}
+   */
+  long getDeliveryDeadline();
 }

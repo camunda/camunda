@@ -113,6 +113,11 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withDeliveryAttemptKey(final long deliveryAttemptKey) {
+    jobBatchRecord.setDeliveryAttemptKey(deliveryAttemptKey);
+    return this;
+  }
+
   public JobActivationClient withTenantFilter(final TenantFilter tenantFilter) {
     jobBatchRecord.setTenantFilter(tenantFilter);
     return this;

@@ -18,4 +18,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
 | [0007](0007-810-job-waiting-for-secret-resolution-state.md)         | Persisted `WAITING_FOR_SECRET_RESOLUTION` job state for jobs parked while their secret references resolve     |
 | [0008](0008-810-suspended-job-state.md)                             | Persisted `SUSPENDED` job state that withholds the jobs of a suspended process instance from hand-out         |
+| [0009](0009-810-job-batch-delivery-ack.md)                          | JobBatch delivery ACK: short pending delivery + yield when the gateway never receives the activation response |
 

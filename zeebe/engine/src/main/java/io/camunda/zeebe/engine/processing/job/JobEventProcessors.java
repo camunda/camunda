@@ -136,10 +136,26 @@ public final class JobEventProcessors {
                 tenantCheck,
                 clock,
                 incidentMetrics,
-                secretStoreRegistry))
+                secretStoreRegistry,
+                config.getJobsDeliveryAckTimeout().toMillis()))
+        .onCommand(
+            ValueType.JOB_BATCH,
+            JobBatchIntent.ACKNOWLEDGE,
+            new JobBatchAcknowledgeProcessor(writers))
+        .onCommand(
+            ValueType.JOB_BATCH,
+            JobBatchIntent.REJECT,
+            new JobBatchRejectProcessor(
+                processingState, writers, bpmnBehaviors.jobActivationBehavior()))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
+                config.getJobsTimeoutCheckerPollingInterval(),
+                config.getJobsTimeoutCheckerBatchLimit(),
+                clock))
+        .withListener(
+            new JobBatchDeliveryAckCheckScheduler(
+                scheduledTaskStateFactory.get().getJobBatchDeliveryState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
                 config.getJobsTimeoutCheckerBatchLimit(),
                 clock))

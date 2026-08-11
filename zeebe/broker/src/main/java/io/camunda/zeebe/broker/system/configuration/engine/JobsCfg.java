@@ -16,6 +16,7 @@ public class JobsCfg implements ConfigurationEntry {
       EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int timeoutCheckerBatchLimit =
       EngineConfiguration.DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
+  private Duration deliveryAckTimeout = EngineConfiguration.DEFAULT_JOBS_DELIVERY_ACK_TIMEOUT;
   private boolean includeVariablesInJobCompletedEvent =
       EngineConfiguration.DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
 
@@ -35,6 +36,14 @@ public class JobsCfg implements ConfigurationEntry {
     this.timeoutCheckerBatchLimit = timeoutCheckerBatchLimit;
   }
 
+  public Duration getDeliveryAckTimeout() {
+    return deliveryAckTimeout;
+  }
+
+  public void setDeliveryAckTimeout(final Duration deliveryAckTimeout) {
+    this.deliveryAckTimeout = deliveryAckTimeout;
+  }
+
   public boolean isIncludeVariablesInJobCompletedEvent() {
     return includeVariablesInJobCompletedEvent;
   }
@@ -51,6 +60,8 @@ public class JobsCfg implements ConfigurationEntry {
         + timeoutCheckerPollingInterval
         + ", timeoutCheckerBatchLimit="
         + timeoutCheckerBatchLimit
+        + ", deliveryAckTimeout="
+        + deliveryAckTimeout
         + ", includeVariablesInJobCompletedEvent="
         + includeVariablesInJobCompletedEvent
         + '}';

@@ -34,6 +34,10 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
+
+  /** Bound for reclaiming activations whose response never reached the gateway. */
+  public static final Duration DEFAULT_JOBS_DELIVERY_ACK_TIMEOUT = Duration.ofSeconds(30);
+
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
@@ -127,6 +131,7 @@ public final class EngineConfiguration {
   private boolean candidateGroupNameResolution = DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
+  private Duration jobsDeliveryAckTimeout = DEFAULT_JOBS_DELIVERY_ACK_TIMEOUT;
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
@@ -292,6 +297,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setJobsTimeoutCheckerBatchLimit(
       final int jobsTimeoutCheckerBatchLimit) {
     this.jobsTimeoutCheckerBatchLimit = jobsTimeoutCheckerBatchLimit;
+    return this;
+  }
+
+  public Duration getJobsDeliveryAckTimeout() {
+    return jobsDeliveryAckTimeout;
+  }
+
+  public EngineConfiguration setJobsDeliveryAckTimeout(final Duration jobsDeliveryAckTimeout) {
+    this.jobsDeliveryAckTimeout = jobsDeliveryAckTimeout;
     return this;
   }
 

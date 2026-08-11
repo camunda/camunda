@@ -115,4 +115,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   JobMetricsState getJobMetricsState();
 
   SecretReferenceState getSecretReferenceState();
+
+  JobBatchDeliveryState getJobBatchDeliveryState();
 }

@@ -72,6 +72,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
   private final JobSecretInjector jobSecretInjector;
+  private final InstantSource clock;
+  private final long deliveryAckTimeoutMillis;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -82,13 +84,16 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final CslTenantCheck tenantCheck,
       final InstantSource clock,
       final IncidentMetrics incidentMetrics,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final long deliveryAckTimeoutMillis) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
+    this.clock = clock;
+    this.deliveryAckTimeoutMillis = deliveryAckTimeoutMillis;
     jobSecretInjector = new JobSecretInjector(secretStoreRegistry);
     jobBatchCollector =
         new JobBatchCollector(
@@ -262,6 +267,11 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     // building the response can drop jobs from the batch (those whose injected secret values
     // would exceed the max message size), so it must happen before the ACTIVATED event
     final var response = responseValueFor(record, value);
+    if (value.getDeliveryAttemptKey() > 0
+        && !value.getJobKeys().isEmpty()
+        && deliveryAckTimeoutMillis > 0) {
+      value.setDeliveryDeadline(clock.millis() + deliveryAckTimeoutMillis);
+    }
     // append (and apply to state) the ACTIVATED event with the unresolved placeholders
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeAcceptedResponseOnCommand(

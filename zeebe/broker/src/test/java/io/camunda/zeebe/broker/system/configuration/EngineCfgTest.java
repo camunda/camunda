@@ -35,6 +35,8 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(configuration.getJobsDeliveryAckTimeout())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOBS_DELIVERY_ACK_TIMEOUT);
     assertThat(configuration.getFormCacheCapacity())
         .isEqualTo(EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY);
     assertThat(configuration.getProcessCacheCapacity())
@@ -102,6 +104,7 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
+    assertThat(configuration.getJobsDeliveryAckTimeout()).isEqualTo(Duration.ofSeconds(45));
     assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
     assertThat(configuration.getMaxProcessDepth()).isEqualTo(2000);
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));

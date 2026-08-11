@@ -17,7 +17,21 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum JobBatchIntent implements Intent {
   ACTIVATE((short) 0),
-  ACTIVATED((short) 1);
+  ACTIVATED((short) 1),
+
+  /**
+   * Gateway confirms it received the activation response for the delivery attempt key. Clears the
+   * pending delivery without changing job state.
+   */
+  ACKNOWLEDGE((short) 2),
+  ACKNOWLEDGED((short) 3),
+
+  /**
+   * Gateway or the delivery-ack timer rejects a pending delivery. Yields jobs that are still
+   * activated for that attempt so they become activatable again.
+   */
+  REJECT((short) 4),
+  REJECTED((short) 5);
 
   private final short value;
 
@@ -35,6 +49,14 @@ public enum JobBatchIntent implements Intent {
         return ACTIVATE;
       case 1:
         return ACTIVATED;
+      case 2:
+        return ACKNOWLEDGE;
+      case 3:
+        return ACKNOWLEDGED;
+      case 4:
+        return REJECT;
+      case 5:
+        return REJECTED;
       default:
         return Intent.UNKNOWN;
     }
@@ -49,6 +71,8 @@ public enum JobBatchIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case ACTIVATED:
+      case ACKNOWLEDGED:
+      case REJECTED:
         return true;
       default:
         return false;

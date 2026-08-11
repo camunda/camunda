@@ -42,6 +42,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
   private static final StringValue WITH_LEASE_KEY = new StringValue("withLease");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
+  private static final StringValue DELIVERY_ATTEMPT_KEY = new StringValue("deliveryAttemptKey");
+  private static final StringValue DELIVERY_DEADLINE_KEY = new StringValue("deliveryDeadline");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
@@ -59,9 +61,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final BooleanProperty withLeaseProp = new BooleanProperty(WITH_LEASE_KEY, false);
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
+  private final LongProperty deliveryAttemptKeyProp = new LongProperty(DELIVERY_ATTEMPT_KEY, 0L);
+  private final LongProperty deliveryDeadlineProp = new LongProperty(DELIVERY_DEADLINE_KEY, 0L);
 
   public JobBatchRecord() {
-    super(11);
+    super(13);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -72,7 +76,9 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(truncatedProp)
         .declareProperty(withLeaseProp)
         .declareProperty(tenantIdsProp)
-        .declareProperty(tenantFilterProp);
+        .declareProperty(tenantFilterProp)
+        .declareProperty(deliveryAttemptKeyProp)
+        .declareProperty(deliveryDeadlineProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -168,8 +174,28 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return tenantFilterProp.getValue();
   }
 
+  @Override
+  public long getDeliveryAttemptKey() {
+    return deliveryAttemptKeyProp.getValue();
+  }
+
+  @Override
+  public long getDeliveryDeadline() {
+    return deliveryDeadlineProp.getValue();
+  }
+
   public JobBatchRecord setTenantFilter(final TenantFilter tenantFilter) {
     tenantFilterProp.setValue(tenantFilter);
+    return this;
+  }
+
+  public JobBatchRecord setDeliveryAttemptKey(final long deliveryAttemptKey) {
+    deliveryAttemptKeyProp.setValue(deliveryAttemptKey);
+    return this;
+  }
+
+  public JobBatchRecord setDeliveryDeadline(final long deliveryDeadline) {
+    deliveryDeadlineProp.setValue(deliveryDeadline);
     return this;
   }
 

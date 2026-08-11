@@ -66,6 +66,15 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return this;
   }
 
+  public BrokerActivateJobsRequest setDeliveryAttemptKey(final long deliveryAttemptKey) {
+    requestDto.setDeliveryAttemptKey(deliveryAttemptKey);
+    return this;
+  }
+
+  public long getDeliveryAttemptKey() {
+    return requestDto.getDeliveryAttemptKey();
+  }
+
   @Override
   public JobBatchRecord getRequestWriter() {
     return requestDto;
