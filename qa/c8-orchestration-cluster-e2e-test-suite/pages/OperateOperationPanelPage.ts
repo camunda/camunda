@@ -110,6 +110,10 @@ export class OperateOperationPanelPage {
     // "Migrate"). That mislabeled pair then leaks into the wrong operationId
     // filter downstream. evaluateAll reads both fields from the same DOM
     // snapshot, so id and type always come from the same entry.
+    //
+    // The type selector mirrors what getOperationType's getByRole('heading')
+    // resolves to — h1-h6 plus an explicit role="heading" — because Playwright's
+    // role engine is not available inside evaluateAll.
     const operationIds = await this.getAllOperationEntries().evaluateAll(
       (entries) =>
         entries.map((entry) => ({
@@ -119,7 +123,7 @@ export class OperateOperationPanelPage {
               ?.textContent?.trim() ?? '',
           type:
             entry
-              .querySelector('h1, h2, h3, h4, h5, h6')
+              .querySelector('h1, h2, h3, h4, h5, h6, [role="heading"]')
               ?.textContent?.trim() ?? '',
         })),
     );

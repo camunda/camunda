@@ -744,12 +744,24 @@ test.describe.serial('Process Instance Migration', () => {
       // popover budget, plus a reload, waiting on a precondition that had not
       // happened. Wait for the flow node's own incidents overlay first. Operate
       // repolls the per-flow-node statistics that drive the overlay every 5s
-      // while the instance is running, so this needs no reload of its own: one
-      // assertion absorbs the engine/import lag without adding page churn or
-      // extra load to the backend the step is already waiting on.
-      await expect(
-        operateDiagramPage.getIncidentsOverlay('BusinessRuleTask2'),
-      ).toBeVisible({timeout: 120000});
+      // while the instance is running, so the wait absorbs engine/import lag on
+      // its own; a reload only helps in the narrow case where that store has
+      // wedged into an error state. Hence a long poll with a single reload
+      // recovery rather than reloading on every attempt, which would add load
+      // to the backend the step is already waiting on.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDiagramPage.getIncidentsOverlay('BusinessRuleTask2'),
+          ).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await sleep(5000);
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 2,
+      });
 
       await waitForAssertion({
         assertion: async () => {
