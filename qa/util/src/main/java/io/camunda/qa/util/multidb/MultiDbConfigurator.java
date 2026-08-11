@@ -204,8 +204,8 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     // db type
-    opensearchProperties.put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
     opensearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
+    opensearchProperties.put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
     opensearchProperties.put("camunda.operate.database", DB_TYPE_OPENSEARCH);
     opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
 
