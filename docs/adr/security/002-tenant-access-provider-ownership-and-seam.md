@@ -108,3 +108,15 @@ and the `TenantAccessProvider` interface, not the implementation.
   share the concrete provider only on the read path. Because the engine's tenant policy stays
   engine-side, a future change to it does not touch CSL or the search read path.
 
+**Revisited for camunda-security-library#587.** That issue asked whether the read and write paths'
+differing anonymous-detection mechanisms (a `CamundaAuthentication` predicate on the read path vs. a
+raw claims-map key on the write path) could be standardized. They can't: the write path's only
+entry point is the command record's deserialized claims map (`TypedRecord.getAuthorizations()`),
+and the shared converter to `CamundaAuthentication` (`TokenClaimsAuthenticationResolver.resolve()`)
+throws when no username/client-id claim is present — which is exactly what an anonymous claims map
+looks like. The raw-key read must happen before a `CamundaAuthentication` can safely be built, not
+after, so the "one dumb provider" alternative above stays rejected for this reason too. The
+monorepo addressed the issue's narrower "or via one shared short-circuit" framing by collapsing the
+three duplicate raw-key checks inside the engine (`CslTenantCheck`, `CslAuthorizationCheck`) into
+one helper, `CslTenantCheck.isAnonymousCommand`.
+

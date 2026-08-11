@@ -57,7 +57,7 @@ public final class CslTenantCheck {
    * io.camunda.security.api.model.CamundaAuthentication}.
    */
   public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+    if (isAnonymousCommand(authorizations)) {
       return TenantAccess.wildcard(List.of());
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
@@ -71,6 +71,15 @@ public final class CslTenantCheck {
     final var tenantIds =
         Objects.requireNonNullElse(authentication.authenticatedTenantIds(), List.<String>of());
     return TenantAccess.allowed(tenantIds);
+  }
+
+  /**
+   * True when the raw claims/authorizations map marks the caller as an anonymous user. Checked on
+   * the raw map because some write-path call sites run before (or without) building a {@link
+   * io.camunda.security.api.model.CamundaAuthentication}.
+   */
+  static boolean isAnonymousCommand(final Map<String, Object> authorizations) {
+    return Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
   }
 
   public boolean isMultiTenancyChecksEnabled() {

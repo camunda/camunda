@@ -84,7 +84,7 @@ public final class CslAuthorizationCheck {
       return Either.right(Optional.empty());
     }
     final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+    if (CslTenantCheck.isAnonymousCommand(authorizations)) {
       LOG.trace(
           "Skipping authorization check for anonymous user on command {}", command.getIntent());
       return Either.right(Optional.empty());
@@ -204,7 +204,7 @@ public final class CslAuthorizationCheck {
       final T value,
       final Rejection noPrincipalRejection,
       final Function<AuthorizationRejection, Rejection> denialMapper) {
-    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+    if (CslTenantCheck.isAnonymousCommand(claims)) {
       return Either.right(value);
     }
     if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
