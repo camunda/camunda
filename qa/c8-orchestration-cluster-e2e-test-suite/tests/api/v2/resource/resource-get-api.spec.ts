@@ -113,7 +113,6 @@ test.describe.parallel('Resource Get API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - Not Found 404 For A Process Definition Key', async ({
     request,
   }) => {
@@ -122,6 +121,19 @@ test.describe.parallel('Resource Get API', () => {
       'Zeebe_User_Task_Process.bpmn',
       0,
     );
+
+    // Both endpoints read secondary storage. Waiting for the process definition
+    // to be projected is what makes the 404 below meaningful — asserted earlier
+    // it would pass simply because nothing has been indexed yet.
+    await expect(async () => {
+      const definitionRes = await request.get(
+        buildUrl('/process-definitions/{processDefinitionKey}', {
+          processDefinitionKey: processDefinition.resourceKey,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(definitionRes, 200);
+    }).toPass(defaultAssertionOptions);
 
     const res = await request.get(
       buildUrl('/resources/{resourceKey}', {

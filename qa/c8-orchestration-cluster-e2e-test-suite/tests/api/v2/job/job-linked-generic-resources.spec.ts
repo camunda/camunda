@@ -157,6 +157,12 @@ test.describe.parallel('Job Linked Generic Resources', () => {
     const [link] = parseLinkedResourcesHeader(job.customHeaders);
 
     expect(link.resourceKey).toBe(pinnedResourceKey);
+    await expect(async () => {
+      expect(await fetchResourceContent(request, link.resourceKey)).toBe(
+        'timeout: 30',
+      );
+    }).toPass(defaultAssertionOptions);
+
     await completeJob(request, job.jobKey);
   });
 
