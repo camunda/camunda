@@ -11,6 +11,7 @@ import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -76,6 +77,7 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
 
   private final SecretReferenceState secretReferenceState;
   private final SecretStoreRegistry secretStoreRegistry;
+  private final SecretResolutionMetrics metrics;
   private final Duration schedulingInterval;
   private final Duration retryInitialDelay;
   private final Duration retryMaxDelay;
@@ -107,9 +109,11 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
   public SecretResolutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SecretStoreRegistry secretStoreRegistry,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SecretResolutionMetrics metrics) {
     secretReferenceState = scheduledTaskStateFactory.get().getSecretReferenceState();
     this.secretStoreRegistry = secretStoreRegistry;
+    this.metrics = metrics;
     schedulingInterval = config.getSecretResolutionInterval();
     retryInitialDelay = config.getSecretResolutionRetryInitialDelay();
     retryMaxDelay = config.getSecretResolutionRetryMaxDelay();
@@ -184,6 +188,14 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
                 entry.getKey(),
                 entry.getValue().size(),
                 e);
+            // a store failing this way is a bug rather than one of the modelled outcomes, and it
+            // would otherwise be log-only: no outcome is counted for these references, so every
+            // rate built on the outcome counter would read as "nothing is happening". Counted on
+            // its own meter, per cycle, because these references stay pending — see
+            // SecretResolutionMetrics#error. Deliberately only what this catch covers: an Error is
+            // not a cycle the scheduler carried on from, and is visible on the duration timer
+            // (result=ERROR) and in the task failing instead.
+            metrics.error(entry.getKey());
           }
         }
       }
@@ -270,28 +282,36 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
           "Secret store '{}' is not configured — failing {} pending secret refs",
           storeId,
           refs.size());
-      for (final String ref : refs) {
-        if (!appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE)) {
-          // batch full; refs not yet appended remain pending and will be retried next cycle —
-          // leave retry state untouched instead of resetting it out from under them
-          return false;
-        }
-        progressMade.set(true);
+      if (appendStoreUnavailableFails(resultBuilder, storeId, refs, progressMade) < refs.size()) {
+        // batch full; refs not yet appended remain pending and will be retried next cycle —
+        // leave retry state untouched instead of resetting it out from under them
+        return false;
       }
       storeRetryStates.remove(storeId);
       return true;
     }
 
     try {
-      final var results = store.resolveFromStore(refs);
+      final var results = metrics.recordResolution(storeId, () -> store.resolveFromStore(refs));
       for (final var entry : results.entrySet()) {
         final String ref = entry.getKey();
         final boolean appended;
+        // only a reference whose command was appended has reached a terminal outcome; one that did
+        // not fit stays pending and is counted when a later cycle appends it. Appending is the
+        // earliest point the outcome is known, but not the point the reference stops being pending
+        // — that is the RESOLUTION_COMPLETED event — so a cycle running before the command is
+        // processed resolves the reference again and counts it again, even though the duplicate
+        // command is then rejected. The over-count is documented on the meter; counting on the
+        // applied event instead would lose the store error code, which the record does not carry.
         switch (entry.getValue()) {
           // the value stays in the store and is never touched here, so the resolution record
           // carries no secret
-          case final SecretResolutionResult.Resolved ignored ->
-              appended = appendResolutionComplete(resultBuilder, storeId, ref);
+          case final SecretResolutionResult.Resolved ignored -> {
+            appended = appendResolutionComplete(resultBuilder, storeId, ref);
+            if (appended) {
+              metrics.resolved(storeId);
+            }
+          }
           case SecretResolutionResult.Failed(
                   final var code,
                   final var message,
@@ -307,6 +327,10 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
             // NOT_FOUND for now; ResolutionState has no finer per-secret states yet (#57855
             // will refine).
             appended = appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.NOT_FOUND);
+            if (appended) {
+              // the metric keeps the code the stream record loses
+              metrics.failed(storeId, code);
+            }
           }
         }
         if (!appended) {
@@ -328,15 +352,11 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
             retryMaxAttempts,
             refs.size(),
             e.getMessage());
-        for (final String ref : refs) {
-          if (!appendResolutionFail(
-              resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE)) {
-            // batch full; refs not yet appended remain pending. Leave retry state untouched so
-            // the next cycle still sees attempts >= retryMaxAttempts and continues failing them,
-            // instead of resetting to 0 and re-entering the backoff branch below.
-            return false;
-          }
-          progressMade.set(true);
+        if (appendStoreUnavailableFails(resultBuilder, storeId, refs, progressMade) < refs.size()) {
+          // batch full; refs not yet appended remain pending. Leave retry state untouched so
+          // the next cycle still sees attempts >= retryMaxAttempts and continues failing them,
+          // instead of resetting to 0 and re-entering the backoff branch below.
+          return false;
         }
         storeRetryStates.remove(storeId);
       } else {
@@ -352,6 +372,32 @@ public final class SecretResolutionScheduler implements StreamProcessorLifecycle
       }
       return true;
     }
+  }
+
+  /**
+   * Fails as many references of an unusable store as the result still has room for, counting the
+   * outcome for each one it appended. The refs it did not reach stay pending and are failed by the
+   * next cycle: the caller leaves the retry state alone in that case, so neither a store that is
+   * not configured nor one whose retries ran out re-enters the backoff ladder on their account.
+   *
+   * @return how many references the result took, which is fewer than {@code refs} only when the
+   *     batch filled up
+   */
+  private int appendStoreUnavailableFails(
+      final TaskResultBuilder resultBuilder,
+      final String storeId,
+      final Set<String> refs,
+      final MutableBoolean progressMade) {
+    int appended = 0;
+    for (final String ref : refs) {
+      if (!appendResolutionFail(resultBuilder, storeId, ref, ResolutionState.STORE_UNAVAILABLE)) {
+        break;
+      }
+      appended++;
+      progressMade.set(true);
+    }
+    metrics.storeUnavailable(storeId, appended);
+    return appended;
   }
 
   private boolean appendResolutionComplete(
