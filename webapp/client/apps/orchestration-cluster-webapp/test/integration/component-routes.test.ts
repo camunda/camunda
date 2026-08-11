@@ -145,7 +145,7 @@ test.describe('component routes', () => {
 	test('should redirect to login when system configuration endpoint fails', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(createCurrentUser()),
+				successResponse: HttpResponse.json(null, {status: 500}),
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
@@ -158,6 +158,7 @@ test.describe('component routes', () => {
 		await page.goto('/operate');
 
 		await expect(page).toHaveURL('/login?redirect=%2Foperate');
+		await expect(page.getByRole('heading', {name: 'Login'})).toBeVisible();
 	});
 
 	test('should show 404 page for unknown tasklist route', async ({network, page, notFoundPage}) => {
