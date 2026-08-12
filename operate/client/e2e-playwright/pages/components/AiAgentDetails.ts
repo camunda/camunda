@@ -27,7 +27,7 @@ class AiAgentDetails {
   readonly modelSectionTrigger: Locator;
 
   constructor(page: Page) {
-    this.container = page.getByRole('article', {name: 'AI Agent'});
+    this.container = page.getByRole('article', {name: 'Agent Instance'});
     this.statusOverlay = page.getByTestId(/^agent-status-overlay-/).first();
 
     this.errorMessage = this.container.getByText(
