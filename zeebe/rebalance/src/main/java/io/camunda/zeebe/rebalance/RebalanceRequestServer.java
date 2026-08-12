@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -84,9 +85,7 @@ public final class RebalanceRequestServer implements AutoCloseable {
   }
 
   private static <T> Either<RebalanceErrorResponse, T> mapError(final Throwable throwable) {
-    // throwable should be a CompletionException wrapping what the coordinator threw
-    final var wrapped = throwable.getCause();
-    final var failure = wrapped != null ? wrapped : throwable;
+    final var failure = FuturesUtil.unwrapCompletionException(throwable);
     final var message = Objects.toString(failure.getMessage(), failure.toString());
 
     final RebalanceErrorCode code;
