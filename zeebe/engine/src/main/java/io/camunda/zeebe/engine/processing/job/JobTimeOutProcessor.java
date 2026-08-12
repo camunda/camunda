@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -32,6 +33,7 @@ public final class JobTimeOutProcessor
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
+  private final SuspensionState suspensionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final JobProcessingMetrics jobMetrics;
@@ -45,6 +47,7 @@ public final class JobTimeOutProcessor
       final BpmnJobActivationBehavior jobActivationBehavior,
       final InstantSource clock) {
     jobState = state.getJobState();
+    suspensionState = state.getSuspensionState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
@@ -61,7 +64,16 @@ public final class JobTimeOutProcessor
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
-      jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
+
+      // TIMED_OUT made the job ACTIVATABLE. If the instance is still SUSPENDED, park it in the same
+      // batch so it is not handed out. Use getSuspensionState == SUSPENDED (not isSuspended): while
+      // RESUMING the instance is draining and the job must become available again.
+      if (suspensionState.getSuspensionState(job.getProcessInstanceKey())
+          == SuspensionState.State.SUSPENDED) {
+        stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+      } else {
+        jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
+      }
     } else {
       final var reason =
           switch (state) {
@@ -86,9 +98,8 @@ public final class JobTimeOutProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<JobRecord> record) {
-    // an internal time-out re-activates the job, so reject while suspended. Like a timer, the
-    // time-out is not suppressed here and may re-trigger until firing is suppressed and re-armed on
-    // resume.
-    return SuspensionBehavior.REJECT;
+    // Process while suspended: an activated job must leave ACTIVATED on time-out so it can be
+    // parked (Job.SUSPENDED) instead of looping on rejected TIME_OUT commands forever.
+    return SuspensionBehavior.PROCESS;
   }
 }

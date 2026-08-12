@@ -52,6 +52,7 @@ public final class ProcessInstanceSuspendProcessor
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
+  private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
@@ -64,6 +65,9 @@ public final class ProcessInstanceSuspendProcessor
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
     suspensionState = processingState.getSuspensionState();
+    suspensionJobBehavior =
+        new ProcessInstanceSuspensionJobBehavior(
+            elementInstanceState, processingState.getJobState(), stateWriter);
   }
 
   @Override
@@ -75,6 +79,9 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final ProcessInstanceRecord value = elementInstance.getValue();
+    // Park jobs before the instance-level SUSPENDED event so suspension is complete when the
+    // marker is written. A later SUSPENDING intermediate state can chunk this work first.
+    suspensionJobBehavior.suspendJobs(command.getKey());
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
