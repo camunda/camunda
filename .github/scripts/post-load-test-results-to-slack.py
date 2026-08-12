@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Build and post the daily load-test results table to Slack.
 
-Renders a side-by-side gRPC vs REST metrics table from the end-of-soak metric
-snapshots and posts it to the reliability-testing Slack channel via an incoming
-webhook. Invoked by the `notify-results` job of
+Renders a side-by-side gRPC vs REST vs no-secondary-storage metrics table from
+the end-of-soak metric snapshots and posts it to the reliability-testing Slack
+channel via an incoming webhook. Invoked by the `notify-results` job of
 `.github/workflows/camunda-daily-load-tests.yml`.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml`
 (the single source of truth shared with `loadTestMetrics.sh`), so adding a metric
-there automatically adds a row here.
+there automatically adds a row here. Metrics tied to secondary storage (e.g.
+importer/exporter lag) naturally render as n/a in the None column.
 
 Required environment variables:
   GRPC_RESULTS_JSON   JSON object of {metric_name: value} for the gRPC run.
   REST_RESULTS_JSON   JSON object of {metric_name: value} for the REST run.
+  NONE_RESULTS_JSON   JSON object of {metric_name: value} for the no-secondary-storage run.
   BENCHMARK           Benchmark name, e.g. medic-daily-YYYY-MM-DD-<sha>-test.
   SLACK_WEBHOOK_URL   Incoming-webhook URL to post to.
   REPO                GitHub repo slug, e.g. camunda/camunda.
@@ -38,9 +40,11 @@ import yaml
 
 grpc    = json.loads(os.environ.get('GRPC_RESULTS_JSON') or '{}')
 rest    = json.loads(os.environ.get('REST_RESULTS_JSON') or '{}')
+none    = json.loads(os.environ.get('NONE_RESULTS_JSON') or '{}')
 bench   = os.environ['BENCHMARK']
 grpc_ns = f'c8-{bench}'
 rest_ns = f'c8-{bench}-rest'
+none_ns = f'c8-{bench}-none'
 repo    = os.environ['REPO']
 run_id  = os.environ['RUN_ID']
 webhook = os.environ['SLACK_WEBHOOK_URL']
@@ -79,11 +83,12 @@ def fmt(v, q):
 lw = max(len('Metric'), *(len(q['description']) for q in queries))
 gw = max(len('gRPC'),   *(len(fmt(grpc.get(q['name']), q)) for q in queries))
 rw = max(len('REST'),   *(len(fmt(rest.get(q['name']), q)) for q in queries))
+nw = max(len('None'),   *(len(fmt(none.get(q['name']), q)) for q in queries))
 
-header = f"{'Metric':<{lw}}  {'gRPC':<{gw}}  {'REST':<{rw}}"
-sep    = '-' * (lw + 2 + gw + 2 + rw)
+header = f"{'Metric':<{lw}}  {'gRPC':<{gw}}  {'REST':<{rw}}  {'None':<{nw}}"
+sep    = '-' * (lw + 2 + gw + 2 + rw + 2 + nw)
 rows   = [
-    f"{q['description']:<{lw}}  {fmt(grpc.get(q['name']), q):<{gw}}  {fmt(rest.get(q['name']), q):<{rw}}"
+    f"{q['description']:<{lw}}  {fmt(grpc.get(q['name']), q):<{gw}}  {fmt(rest.get(q['name']), q):<{rw}}  {fmt(none.get(q['name']), q):<{nw}}"
     for q in queries
 ]
 table  = '\n'.join([header, sep] + rows)
@@ -93,6 +98,7 @@ from_ms   = (soak_end - 10800) * 1000
 to_ms     = soak_end * 1000
 grpc_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={grpc_ns}&from={from_ms}&to={to_ms}'
 rest_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={rest_ns}&from={from_ms}&to={to_ms}'
+none_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={none_ns}&from={from_ms}&to={to_ms}'
 run_url   = f'https://github.com/{repo}/actions/runs/{run_id}'
 
 blocks = [
@@ -107,7 +113,7 @@ blocks = [
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f'<{grpc_dash}|Grafana gRPC> · <{rest_dash}|Grafana REST>',
+            'text': f'<{grpc_dash}|Grafana gRPC> · <{rest_dash}|Grafana REST> · <{none_dash}|Grafana None>',
         },
     },
     {
