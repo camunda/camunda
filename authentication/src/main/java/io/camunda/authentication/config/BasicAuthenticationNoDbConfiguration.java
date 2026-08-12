@@ -16,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Provides fail-fast behavior when Basic Authentication is configured but secondary storage is
- * disabled (camunda.database.type=none). This prevents misleading security flows and produces a
- * clear error message at context startup.
+ * disabled (camunda.data.secondary-storage.type=none). This prevents misleading security flows and
+ * produces a clear error message at context startup.
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)

@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import io.camunda.cluster.SecondaryStorageReadiness;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
@@ -56,7 +56,8 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
     final var interceptor =
-        new SecondaryStorageInterceptor("elasticsearch", SecondaryStorageReadiness.ALWAYS_READY);
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.ELASTICSEARCH, SecondaryStorageReadiness.ALWAYS_READY);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -67,7 +68,8 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
     final var readiness = mock(SecondaryStorageReadiness.class);
 
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch", readiness);
+    final var interceptor =
+        new SecondaryStorageInterceptor(t -> DatabaseType.ELASTICSEARCH, readiness);
     interceptor.preHandle(request, response, handlerMethod);
 
     verifyNoInteractions(readiness);
@@ -80,7 +82,8 @@ class SecondaryStorageInterceptorTest {
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
-        new SecondaryStorageInterceptor("elasticsearch", SecondaryStorageReadiness.ALWAYS_READY);
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.ELASTICSEARCH, SecondaryStorageReadiness.ALWAYS_READY);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -89,10 +92,11 @@ class SecondaryStorageInterceptorTest {
   void shouldThrowWhenSecondaryStorageDisabledAndAnnotationPresent() {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
         new SecondaryStorageInterceptor(
-            CAMUNDA_DATABASE_TYPE_NONE, SecondaryStorageReadiness.ALWAYS_READY);
+            t -> DatabaseType.NONE, SecondaryStorageReadiness.ALWAYS_READY);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
   }
@@ -104,7 +108,7 @@ class SecondaryStorageInterceptorTest {
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
-        new SecondaryStorageInterceptor(CAMUNDA_DATABASE_TYPE_NONE, degraded(PHYSICAL_TENANT_ID));
+        new SecondaryStorageInterceptor(t -> DatabaseType.NONE, degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
   }
@@ -116,7 +120,8 @@ class SecondaryStorageInterceptorTest {
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
-        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.ELASTICSEARCH, degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageDegradedException.class);
   }
@@ -128,7 +133,8 @@ class SecondaryStorageInterceptorTest {
     bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
-        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.ELASTICSEARCH, degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageDegradedException.class);
 
@@ -139,10 +145,11 @@ class SecondaryStorageInterceptorTest {
   void shouldNotHintRetryAfterWhenSecondaryStorageDisabled() {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
         new SecondaryStorageInterceptor(
-            CAMUNDA_DATABASE_TYPE_NONE, SecondaryStorageReadiness.ALWAYS_READY);
+            t -> DatabaseType.NONE, SecondaryStorageReadiness.ALWAYS_READY);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
 
@@ -154,9 +161,11 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
     when(request.getDispatcherType()).thenReturn(DispatcherType.ASYNC);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
     final var interceptor =
-        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+        new SecondaryStorageInterceptor(
+            t -> DatabaseType.ELASTICSEARCH, degraded(PHYSICAL_TENANT_ID));
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
