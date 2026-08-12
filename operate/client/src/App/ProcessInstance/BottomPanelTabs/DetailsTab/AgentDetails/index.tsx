@@ -117,7 +117,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   if (isError || !agentInstance) {
     return (
       <AgentDetailsContainer aria-labelledby={headingId}>
-        <AgentHeading id={headingId}>AI Agent</AgentHeading>
+        <AgentHeading id={headingId}>Agent Instance</AgentHeading>
         <ErrorHint>Unable to load agent information.</ErrorHint>
       </AgentDetailsContainer>
     );
@@ -147,7 +147,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       }}
     >
       <AgentHeader>
-        <AgentHeading id={headingId}>AI Agent</AgentHeading>
+        <AgentHeading id={headingId}>Agent Instance</AgentHeading>
         {selectableAgentInstances.length > 1 ? (
           <AgentSelector
             agents={selectableAgentInstances}

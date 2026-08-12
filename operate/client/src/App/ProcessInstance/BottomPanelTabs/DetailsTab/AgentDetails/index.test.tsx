@@ -46,7 +46,7 @@ describe('<AgentDetails />', () => {
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
   });
 
-  it('should render AI Agent heading and status for TOOL_CALLING', () => {
+  it('should render Agent Instance heading and status for TOOL_CALLING', () => {
     render(
       <AgentDetails
         agentInstances={[agentInstance]}
@@ -58,7 +58,7 @@ describe('<AgentDetails />', () => {
       {wrapper: createWrapper()},
     );
 
-    expect(screen.getByText('AI Agent')).toBeInTheDocument();
+    expect(screen.getByText('Agent Instance')).toBeInTheDocument();
     const statusSection = screen.getByTestId('agent-status-section');
     expect(
       within(statusSection).getByText('Status: Calling tools'),
@@ -164,7 +164,7 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('AI Agent')).toBeInTheDocument();
+    expect(screen.getByText('Agent Instance')).toBeInTheDocument();
     expect(
       screen.getByText('Unable to load agent information.'),
     ).toBeInTheDocument();
