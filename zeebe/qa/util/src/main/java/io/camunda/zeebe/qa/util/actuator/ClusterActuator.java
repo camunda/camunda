@@ -359,6 +359,11 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json"})
   PlannedOperationsResponse purge(@Param boolean dryRun);
 
+  /** Purges only the given physical tenant, leaving the other physical tenants untouched. */
+  @RequestLine("POST /purge?dryRun={dryRun}&physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json"})
+  PlannedOperationsResponse purge(@Param boolean dryRun, @Param String physicalTenant);
+
   @RequestLine("PATCH /routing-state?dryRun={dryRun}&force={force}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@RequestBody final RoutingState routingState, @Param boolean dryRun);

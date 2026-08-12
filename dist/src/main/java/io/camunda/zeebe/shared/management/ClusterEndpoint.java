@@ -480,12 +480,18 @@ public class ClusterEndpoint {
     };
   }
 
+  /**
+   * Purges the cluster. Without a {@code physicalTenant} query parameter, every physical tenant is
+   * purged, keeping the whole-cluster meaning of a purge. With the parameter, only the given
+   * physical tenant's partitions and exported history are purged.
+   */
   @PostMapping(path = "/purge", produces = "application/json")
   public CompletableFuture<ResponseEntity<?>> purge(
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
     try {
       return requestSender
-          .purge(new PurgeRequest(Optional.empty(), dryRun))
+          .purge(new PurgeRequest(nonBlank(physicalTenant), dryRun))
           .thenApply(ClusterApiUtils::mapOperationResponse)
           .exceptionally(ClusterApiUtils::mapError);
     } catch (final Exception error) {
@@ -653,6 +659,11 @@ public class ClusterEndpoint {
       return invalidRequest(String.join("; ", errors));
     }
     return action.apply(parsed);
+  }
+
+  /** Treats an absent and a blank query parameter alike, as "not given". */
+  private static Optional<String> nonBlank(final @Nullable String value) {
+    return Optional.ofNullable(value).filter(v -> !v.isBlank());
   }
 
   public record PartitionAddRequest(int priority) {}
