@@ -13,9 +13,9 @@ import java.util.regex.Pattern;
 
 record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implements TargetIndex {
   static final int DEFAULT_ORDINAL = 0;
-  static final String ORDINAL_SUFFIX = "ord";
+  static final String ORDINAL_SUFFIX_START = "ord";
   static final Pattern ORDINAL_INDEX_PATTERN =
-      Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX) + "(\\d{5,})$");
+      Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX_START) + "(\\d{5,})$");
 
   OrdinalIndex {
     if (ordinal <= DEFAULT_ORDINAL) {
@@ -37,7 +37,8 @@ record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implement
     if (prefix == null || prefix.isBlank()) {
       throw new IllegalArgumentException("Ordinal index prefix must not be null or blank");
     }
-    final var name = prefix + ORDINAL_SUFFIX + Strings.padStart(String.valueOf(ordinal), 5, '0');
+    final var name =
+        prefix + ORDINAL_SUFFIX_START + Strings.padStart(String.valueOf(ordinal), 5, '0');
     return new OrdinalIndex(new IndexFamilyImpl(prefix), ordinal, name);
   }
 
