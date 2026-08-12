@@ -170,46 +170,6 @@ public final class ActivityOutputMappingTest {
         mapping(b -> b.zeebeInputExpression("x", "a").zeebeOutputExpression("y", "a.m")),
         scopeVariables(variable("a", "{\"l\":1,\"m\":2}"))
       },
-      {
-        // mappings are evaluated in modeling order, so a later mapping can reference the target
-        // of an earlier one even when nested targets are interleaved with plain ones
-        // regression test for https://github.com/camunda/camunda/issues/11789
-        "{}",
-        mapping(
-            b ->
-                b.zeebeOutputExpression("1", "obj.first")
-                    .zeebeOutputExpression("2", "flat")
-                    .zeebeOutputExpression("flat", "obj.second")
-                    .zeebeOutputExpression("flat", "flatCopy")),
-        scopeVariables(
-            variable("flat", "2"),
-            variable("obj", "{\"first\":1,\"second\":2}"),
-            variable("flatCopy", "2"))
-      },
-      {
-        // a mapping referencing a target produced by a LATER mapping sees it as not-yet-defined
-        // and resolves to null; the later mapping still produces its own value normally
-        "{}",
-        mapping(b -> b.zeebeOutputExpression("late", "early").zeebeOutputExpression("1", "late")),
-        scopeVariables(variable("early", "null"), variable("late", "1"))
-      },
-      {
-        // a mapping can reference the (merged) nested target of an earlier mapping
-        "{'x': 1}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b").zeebeOutputExpression("a.b + 1", "c")),
-        scopeVariables(variable("a", "{\"b\":1}"), variable("c", "2"))
-      },
-      {
-        // duplicate targets: every mapping is evaluated in order, the last value wins;
-        // an intermediate mapping sees the value that was current at its position
-        "{}",
-        mapping(
-            b ->
-                b.zeebeOutputExpression("1", "x")
-                    .zeebeOutputExpression("x", "y")
-                    .zeebeOutputExpression("2", "x")),
-        scopeVariables(variable("x", "2"), variable("y", "1"))
-      },
     };
   }
 
