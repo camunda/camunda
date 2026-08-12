@@ -225,9 +225,9 @@ public final class SuspensionStateTest {
     final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey);
 
     // then
-    assertThat(oldest).isNotNull();
-    assertThat(oldest.key()).isEqualTo(10L);
-    assertThat(oldest.command().getCommandKey()).isEqualTo(1L);
+    assertThat(oldest).isPresent();
+    assertThat(oldest.get().key()).isEqualTo(10L);
+    assertThat(oldest.get().command().getCommandKey()).isEqualTo(1L);
   }
 
   @Test
@@ -239,7 +239,8 @@ public final class SuspensionStateTest {
     suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKeyB, 2L));
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKeyB).key()).isEqualTo(20L);
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKeyB).orElseThrow().key())
+        .isEqualTo(20L);
   }
 
   @Test
@@ -248,7 +249,7 @@ public final class SuspensionStateTest {
     final long processInstanceKey = 1L;
 
     // when - then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey)).isNull();
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey)).isEmpty();
   }
 
   @Test
@@ -262,7 +263,8 @@ public final class SuspensionStateTest {
     suspensionState.removeBufferedCommand(10L);
 
     // then
-    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).key()).isEqualTo(20L);
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).orElseThrow().key())
+        .isEqualTo(20L);
   }
 
   @Test

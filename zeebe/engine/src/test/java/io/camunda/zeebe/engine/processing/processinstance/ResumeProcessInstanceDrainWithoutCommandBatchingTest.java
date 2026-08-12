@@ -51,11 +51,12 @@ public final class ResumeProcessInstanceDrainWithoutCommandBatchingTest {
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
 
-    // then
+    // then - one DRAIN cycle per command; the last cycle finds the buffer empty and hands off to
+    // COMPLETE_RESUMING directly instead of an extra empty DRAIN cycle
     final var bufferedCommandRecords = bufferedCommandRecordsUntilResumed(processInstanceKey);
     assertThat(
             recordsWithIntent(bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.DRAIN))
-        .hasSize(BUFFERED_COMMAND_COUNT + 1);
+        .hasSize(BUFFERED_COMMAND_COUNT);
 
     final var buffered =
         commandKeys(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -49,9 +50,11 @@ public interface SuspensionState {
    * Reads the head of the process instance's FIFO buffer without scanning the rest of it, so that
    * draining one command per {@code DRAIN} cycle stays cheap no matter how much is buffered.
    *
-   * @return the oldest buffered command, or {@code null} if the process instance has none buffered
+   * @return the oldest buffered command, or {@link Optional#empty()} if the process instance has
+   *     none buffered, or if the secondary index has an entry with no matching primary record (an
+   *     inconsistency that is logged but must not throw here, as it sits on the resume hot path)
    */
-  @Nullable BufferedCommand getOldestBufferedCommand(long processInstanceKey);
+  Optional<BufferedCommand> getOldestBufferedCommand(long processInstanceKey);
 
   @FunctionalInterface
   interface BufferedCommandVisitor {

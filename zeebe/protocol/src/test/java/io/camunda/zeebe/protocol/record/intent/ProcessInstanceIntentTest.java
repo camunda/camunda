@@ -61,6 +61,6 @@ final class ProcessInstanceIntentTest {
     assertThat(ProcessInstanceIntent.from((short) 20)).isEqualTo(ProcessInstanceIntent.RESUMED);
     assertThat(ProcessInstanceIntent.from((short) 21)).isEqualTo(ProcessInstanceIntent.RESUMING);
     assertThat(ProcessInstanceIntent.from((short) 22))
-        .isEqualTo(ProcessInstanceIntent.CONTINUE_RESUMING);
+        .isEqualTo(ProcessInstanceIntent.COMPLETE_RESUMING);
   }
 }

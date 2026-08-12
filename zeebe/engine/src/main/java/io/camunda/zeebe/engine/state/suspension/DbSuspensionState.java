@@ -13,15 +13,19 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
+import java.util.Optional;
+import org.slf4j.Logger;
 
 public final class DbSuspensionState implements MutableSuspensionState {
+
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong processInstanceKey = new DbLong();
   private final SuspensionMarkerValue suspensionMarkerValue = new SuspensionMarkerValue();
@@ -97,20 +101,34 @@ public final class DbSuspensionState implements MutableSuspensionState {
   }
 
   @Override
-  public @Nullable BufferedCommand getOldestBufferedCommand(final long key) {
+  public Optional<BufferedCommand> getOldestBufferedCommand(final long key) {
     processInstanceKey.wrapLong(key);
     final var oldest = new BufferedCommand[1];
     bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
         processInstanceKey,
         (compositeKey, nil) -> {
           final long bufferedKey = compositeKey.second().getValue();
-          oldest[0] =
-              new BufferedCommand(
-                  bufferedKey, requireBufferedCommand(bufferedKey, key).getRecord());
+          bufferedCommandKey.wrapLong(bufferedKey);
+          final var stored =
+              bufferedCommandColumnFamily.get(
+                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+          if (stored == null) {
+            // broken invariant (see #requireBufferedCommand), but this sits on the resume hot
+            // path: log instead of throwing so a single corrupted entry halts the drain for this
+            // instance rather than failing the whole partition
+            LOG.error(
+                "Expected to find buffered command with key '{}' for process instance '{}', but "
+                    + "none was stored; the buffered-command index is inconsistent. Treating the "
+                    + "buffer as unreadable for this instance.",
+                bufferedKey,
+                key);
+            return false;
+          }
           // the secondary index is ordered by bufferedCommandKey, so the first hit is the oldest
+          oldest[0] = new BufferedCommand(bufferedKey, stored.getRecord());
           return false;
         });
-    return oldest[0];
+    return Optional.ofNullable(oldest[0]);
   }
 
   /**

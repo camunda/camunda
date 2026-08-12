@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTe
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBufferedCommandDrainProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCompleteResumingProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
@@ -176,6 +177,13 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME,
         new ProcessInstanceResumeProcessor(processingState, writers, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.COMPLETE_RESUMING,
+        new ProcessInstanceCompleteResumingProcessor(
+            processingState.getElementInstanceState(),
+            processingState.getSuspensionState(),
+            writers));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,

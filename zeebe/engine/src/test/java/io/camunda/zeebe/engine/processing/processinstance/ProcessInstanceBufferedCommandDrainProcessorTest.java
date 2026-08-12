@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,47 +57,49 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
   }
 
   @Test
-  void shouldDropCommandAndContinueOnDrainError() {
+  void shouldHaltWithoutWritesOnDrainErrorWhenBufferHasEntries() {
     // given
     bufferCompleteElementCommand();
 
     // when
     final var result = processor.tryHandleError(drainCommand(), new RuntimeException("boom"));
 
-    // then
-    assertThat(result).isEqualTo(ProcessingError.EXPECTED_ERROR);
-    verify(stateWriter)
-        .appendFollowUpEvent(
-            eq(BUFFERED_COMMAND_KEY),
-            eq(ProcessInstanceBufferedCommandIntent.DRAINED),
-            any(ProcessInstanceBufferedCommandRecord.class));
-    verify(commandWriter)
-        .appendFollowUpCommand(
-            eq(PROCESS_INSTANCE_KEY),
-            eq(ProcessInstanceBufferedCommandIntent.DRAIN),
-            any(ProcessInstanceBufferedCommandRecord.class));
-  }
-
-  @Test
-  void shouldFallBackToUnexpectedErrorWhenNothingBuffered() {
-    // when
-    final var result = processor.tryHandleError(drainCommand(), new RuntimeException("boom"));
-
-    // then
+    // then - state-free: does not re-read the buffer, drop the command, or continue the chain;
+    // the engine's default UNEXPECTED_ERROR handling rejects the DRAIN and halts the instance
     assertThat(result).isEqualTo(ProcessingError.UNEXPECTED_ERROR);
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
   }
 
   @Test
-  void shouldNotWriteResumedWhenInstanceNoLongerExists() {
+  void shouldHaltWithoutWritesOnDrainErrorWhenBufferEmpty() {
+    // when
+    final var result = processor.tryHandleError(drainCommand(), new RuntimeException("boom"));
+
+    // then - same outcome regardless of buffer contents, confirming the handler never queries it
+    assertThat(result).isEqualTo(ProcessingError.UNEXPECTED_ERROR);
+    verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
+    verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
+  }
+
+  @Test
+  void shouldAppendCompleteResumingWhenBufferEmpty() {
     // when
     processor.processRecord(drainCommand());
 
     // then
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(ProcessInstanceIntent.COMPLETE_RESUMING),
+            any(ProcessInstanceRecord.class));
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
-    verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
   }
+
+  // Note: the peek-after-drain fast path (skip the extra DRAIN when the buffer just emptied) is
+  // not unit-testable here — stateWriter is mocked, so appendDrainedEvent's write never actually
+  // removes the entry from the real suspensionState this processor reads from. That behavior is
+  // covered end-to-end by ResumeProcessInstanceDrainTest instead.
 
   private void bufferCompleteElementCommand() {
     final var command =

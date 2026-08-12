@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -52,6 +53,15 @@ public final class ResumeProcessInstanceDrainTest {
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
+  // A tag length picked to land inside the narrow window where the command still fits as a
+  // single record (so it buffers successfully) but overflows the batch once bundled with DRAINED
+  // + the next DRAIN during a drain cycle (three records in one append). Derived empirically from
+  // the engine's own framing formula (Sequencer#canWriteEvents, maxFragmentSize = 4 MiB default):
+  // the window is roughly tagLen in [4_193_260, 4_193_676); this sits at its midpoint for margin
+  // against per-record field overhead (e.g. a longer bpmnProcessId) that a synthetic measurement
+  // would not otherwise account for.
+  private static final int TAG_LENGTH_NEAR_MAX_FRAGMENT_SIZE = 4_193_450;
+
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
@@ -65,11 +75,12 @@ public final class ResumeProcessInstanceDrainTest {
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
 
-    // then - one DRAIN cycle per command, plus one final cycle that finds the buffer empty
+    // then - one DRAIN cycle per command; the last cycle finds the buffer empty and hands off to
+    // COMPLETE_RESUMING directly instead of an extra empty DRAIN cycle
     final var bufferedCommandRecords = bufferedCommandRecordsUntilResumed(processInstanceKey);
     assertThat(
             recordsWithIntent(bufferedCommandRecords, ProcessInstanceBufferedCommandIntent.DRAIN))
-        .hasSize(BUFFERED_COMMAND_COUNT + 1);
+        .hasSize(BUFFERED_COMMAND_COUNT);
 
     final var buffered =
         commandKeys(
@@ -158,6 +169,81 @@ public final class ResumeProcessInstanceDrainTest {
         .hasSize(BUFFERED_COMMAND_COUNT);
     assertThat(bufferedCommandRecords)
         .noneMatch(r -> r.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+  }
+
+  @Test
+  public void shouldHaltDrainWithoutBanOrCrashWhenCommandExceedsBatchSize() {
+    // given - the buffered command is close enough to maxFragmentSize that bundling it with the
+    // DRAINED event and next DRAIN command overflows the batch
+    final long processInstanceKey = deployAndStart();
+    final var children = activatedChildren(processInstanceKey);
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    final var oversizedChild = children.getFirst();
+    bufferCommandNearMaxFragmentSize(oversizedChild);
+
+    // when - written directly rather than via the fluent resume() client, which by default
+    // blocks awaiting RESUMED; that event never arrives in this halted scenario
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(
+                ProcessInstanceIntent.RESUME,
+                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey))
+            .key(processInstanceKey));
+
+    // then - the DRAIN is rejected instead of banning the instance or crashing the partition
+    final var rejection =
+        RecordingExporter.records()
+            .onlyCommandRejections()
+            .withRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
+            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
+            .withIntent(ProcessInstanceBufferedCommandIntent.DRAIN)
+            .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
+            .getFirst();
+    assertThat(rejection).isNotNull();
+
+    // and - the buffered command is still there, never drained
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= rejection.getPosition())
+                .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
+                .withIntent(ProcessInstanceBufferedCommandIntent.DRAINED)
+                .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
+                .asList())
+        .isEmpty();
+
+    // and - the marker stays RESUMING (not reverted to SUSPENDED, not removed)
+    assertThat(
+            ((MutableProcessingState) ENGINE.getProcessingState())
+                .getSuspensionState()
+                .getSuspensionState(processInstanceKey))
+        .isEqualTo(SuspensionState.State.RESUMING);
+
+    // and - the partition survived: an unrelated instance still processes normally afterward
+    final long otherInstanceKey = deployAndStart();
+    final var terminated = ENGINE.processInstance().withInstanceKey(otherInstanceKey).cancel();
+    assertThat(terminated).isNotNull();
+
+    // and - across all this, the halted instance never reached RESUMED
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= terminated.getPosition())
+                .withValueType(ValueType.PROCESS_INSTANCE)
+                .withIntent(ProcessInstanceIntent.RESUMED)
+                .filter(r -> r.getKey() == processInstanceKey)
+                .asList())
+        .isEmpty();
+  }
+
+  private static void bufferCommandNearMaxFragmentSize(
+      final Record<ProcessInstanceRecordValue> child) {
+    final var oversizedValue = new ProcessInstanceRecord();
+    oversizedValue.wrap((ProcessInstanceRecord) child.getValue());
+    oversizedValue.setTags(Set.of("x".repeat(TAG_LENGTH_NEAR_MAX_FRAGMENT_SIZE)));
+
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, oversizedValue)
+            .key(child.getKey()));
   }
 
   private static long deployAndStart() {

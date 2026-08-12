@@ -24,7 +24,8 @@ final class ProcessInstanceResumingApplier
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
-    // SUSPENDED → RESUMING: gate still rejects external commands but lets drain internals through
+    // SUSPENDED → RESUMING: gate still rejects commands, but now processes BUFFER-classified
+    // commands (the drain's internal follow-ups) instead of buffering them again
     suspensionState.setSuspensionState(key, SuspensionState.State.RESUMING);
   }
 }

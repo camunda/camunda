@@ -87,10 +87,10 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * dedicated processor reacts by writing {@link #RESUMED} and triggering any post-resume actions
    * (e.g. resuming suspended jobs).
    */
-  CONTINUE_RESUMING((short) 22, false);
+  COMPLETE_RESUMING((short) 22, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
-      EnumSet.of(CANCEL, SUSPEND, RESUME, CONTINUE_RESUMING);
+      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -162,7 +162,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case 21:
         return RESUMING;
       case 22:
-        return CONTINUE_RESUMING;
+        return COMPLETE_RESUMING;
       default:
         return Intent.UNKNOWN;
     }
