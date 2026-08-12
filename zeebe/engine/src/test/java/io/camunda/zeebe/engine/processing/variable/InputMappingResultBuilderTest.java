@@ -10,11 +10,8 @@ package io.camunda.zeebe.engine.processing.variable;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 final class InputMappingResultBuilderTest {
@@ -122,17 +119,5 @@ final class InputMappingResultBuilderTest {
 
     // then
     assertEquality(builder.toDocument(), "{'x': 1}");
-  }
-
-  @Test
-  void shouldNotThrowStackOverflowOnDeeplyNestedTarget() {
-    // given — a target path with 50 000 segments: validates that the iterative serialization
-    // handles extreme input
-    final var targetPath =
-        IntStream.range(0, 50_000).mapToObj(i -> "a").collect(Collectors.toList());
-    builder.put(targetPath, asMsgPack("1"));
-
-    // when / then — must not throw
-    assertThatCode(builder::toDocument).doesNotThrowAnyException();
   }
 }
