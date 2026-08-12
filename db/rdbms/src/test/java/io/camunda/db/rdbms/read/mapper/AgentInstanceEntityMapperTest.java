@@ -29,6 +29,7 @@ class AgentInstanceEntityMapperTest {
         buildModel(
             key -> {
               key.agentInstanceKey(100L);
+              key.agentDefinitionKey(500L);
               key.elementId("Task_1");
               key.processInstanceKey(200L);
               key.rootProcessInstanceKey(300L);
@@ -59,6 +60,7 @@ class AgentInstanceEntityMapperTest {
     final AgentInstanceEntity entity = AgentInstanceEntityMapper.toEntity(dbModel);
 
     assertThat(entity.agentInstanceKey()).isEqualTo(100L);
+    assertThat(entity.agentDefinitionKey()).isEqualTo(500L);
     assertThat(entity.elementId()).isEqualTo("Task_1");
     assertThat(entity.processInstanceKey()).isEqualTo(200L);
     assertThat(entity.rootProcessInstanceKey()).isEqualTo(300L);

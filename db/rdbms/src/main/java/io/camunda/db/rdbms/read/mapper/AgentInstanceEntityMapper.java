@@ -27,6 +27,7 @@ public class AgentInstanceEntityMapper {
     }
     return new AgentInstanceEntity(
         dbModel.agentInstanceKey(),
+        dbModel.agentDefinitionKey(),
         dbModel.elementInstanceKeys() != null ? dbModel.elementInstanceKeys() : List.of(),
         dbModel.status(),
         new AgentInstanceDefinition(

@@ -44,6 +44,7 @@ public class AgentInstanceEntityTransformer
 
     return new AgentInstanceEntity(
         source.getKey(),
+        source.getAgentDefinitionKey(),
         source.getElementInstanceKeys(),
         toStatus(source.getStatus()),
         definition,

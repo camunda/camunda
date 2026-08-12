@@ -1041,6 +1041,7 @@ class SearchQueryResponseMapperTest {
     final var entity =
         new AgentInstanceEntity(
             123L, // agentInstanceKey
+            654L, // agentDefinitionKey
             List.of(456L), // elementInstanceKeys
             AgentInstanceEntity.AgentInstanceStatus.IDLE,
             new AgentInstanceEntity.AgentInstanceDefinition("gpt-4o", "openai", "You are helpful"),

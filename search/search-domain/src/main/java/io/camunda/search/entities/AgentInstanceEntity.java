@@ -18,6 +18,7 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentInstanceEntity(
     Long agentInstanceKey,
+    Long agentDefinitionKey,
     List<Long> elementInstanceKeys,
     AgentInstanceStatus status,
     AgentInstanceDefinition definition,
@@ -39,6 +40,7 @@ public record AgentInstanceEntity(
 
   public AgentInstanceEntity {
     Objects.requireNonNull(agentInstanceKey, "agentInstanceKey");
+    Objects.requireNonNull(agentDefinitionKey, "agentDefinitionKey");
     Objects.requireNonNull(status, "status");
     Objects.requireNonNull(definition, "definition");
     Objects.requireNonNull(metrics, "metrics");
