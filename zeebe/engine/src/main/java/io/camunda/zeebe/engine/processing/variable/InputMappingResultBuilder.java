@@ -22,11 +22,11 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Accumulates the results of variable mappings that are evaluated one by one in modeling order.
- * Each mapping's result is stored under its (possibly nested) target path, and can be looked up by
- * its top-level variable name so that subsequent mappings can reference the values produced by
- * earlier mappings. {@link #toDocument()} returns the accumulated results as a single MsgPack
- * document to be merged into the element's local scope.
+ * Accumulates the results of input mappings that are evaluated one by one in modeling order. Each
+ * mapping's result is stored under its (possibly nested) target path, and can be looked up by its
+ * top-level variable name so that subsequent mappings can reference the values produced by earlier
+ * mappings. {@link #toDocument()} returns the accumulated results as a single MsgPack document to
+ * be merged into the element's local scope.
  *
  * <p>A mapping to a nested target descends into (or creates) intermediate objects; a mapping whose
  * target collides structurally with an earlier one (a value where an object is needed, or vice
@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
  * expression had.
  */
 @NullMarked
-public final class MappingResultBuilder {
+public final class InputMappingResultBuilder {
 
   /** Values are either a nested {@code Map<String, Object>} or a MsgPack {@link DirectBuffer}. */
   private final Map<String, Object> entries = new LinkedHashMap<>();

@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
-final class MappingResultBuilderTest {
+final class InputMappingResultBuilderTest {
 
-  private final MappingResultBuilder builder = new MappingResultBuilder();
+  private final InputMappingResultBuilder builder = new InputMappingResultBuilder();
 
   @Test
   void shouldBuildEmptyDocument() {
@@ -72,7 +72,7 @@ final class MappingResultBuilderTest {
     // when
     builder.put(List.of("a", "b"), asMsgPack("2"));
 
-    // then: structural last-wins
+    // then: structural last-wins, like the previous combined-expression transformer
     assertEquality(builder.toDocument(), "{'a': {'b': 2}}");
   }
 
