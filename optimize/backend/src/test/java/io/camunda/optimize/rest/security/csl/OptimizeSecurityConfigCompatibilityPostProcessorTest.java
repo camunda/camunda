@@ -167,6 +167,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     // not a second operator choice.
     legacy.put("camunda.identity.issuer", "http://legacy.example.com/realm");
     legacy.put("camunda.identity.clientId", "legacy-client");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
@@ -186,6 +187,38 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
             entry.getMessage().contains("camunda.identity.issuer")
                 && !entry.getMessage().contains("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"),
         "the mirrored camunda.identity.issuer key must not get its own warning when the legacy env var already won");
+    // the secret's own warning must not fire either: the legacy secret already won
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("CAMUNDA_IDENTITY_CLIENT_SECRET"),
+        "the mirrored CAMUNDA_IDENTITY_CLIENT_SECRET key must not get its own warning when the"
+            + " legacy secret already won");
+  }
+
+  @Test
+  void shouldNotBridgeHelmChartClientCredentialsWithoutAnIssuerUri() {
+    // The official camunda-platform Helm chart's Optimize ConfigMap can legitimately render
+    // clientId/CAMUNDA_IDENTITY_CLIENT_SECRET while leaving camunda.identity.issuer blank (e.g. an
+    // OIDC-disabled or misconfigured install). Bridging the client-id/secret without an issuer-uri
+    // would let CSL's ScopedClientRegistrationFactory register a provider with no issuer,
+    // authorization-uri, token-uri, or jwk-set-uri, throwing IllegalStateException at startup.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+    logs.assertContains(
+        entry -> entry.getMessage().contains("camunda.identity.issuer"),
+        "expected a warning naming the missing issuer key");
+    // the secret value itself must never be logged
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("helm-secret"),
+        "client secret value must never be logged");
   }
 
   @Test
