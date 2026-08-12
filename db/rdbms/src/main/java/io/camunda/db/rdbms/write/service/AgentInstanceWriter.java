@@ -54,7 +54,8 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
         mergeToQueue(
             agentInstance.agentInstanceKey(),
             b -> {
-              b.processDefinitionId(agentInstance.processDefinitionId())
+              b.agentDefinitionKey(agentInstance.agentDefinitionKey())
+                  .processDefinitionId(agentInstance.processDefinitionId())
                   .processDefinitionKey(agentInstance.processDefinitionKey())
                   .processDefinitionVersion(agentInstance.processDefinitionVersion())
                   .versionTag(agentInstance.versionTag())

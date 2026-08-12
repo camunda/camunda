@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public record AgentInstanceDbModel(
     long agentInstanceKey,
+    long agentDefinitionKey,
     String elementId,
     long processInstanceKey,
     long rootProcessInstanceKey,
@@ -63,6 +64,7 @@ public record AgentInstanceDbModel(
   // separately via the sibling <collection> element.
   public AgentInstanceDbModel(
       final long agentInstanceKey,
+      final long agentDefinitionKey,
       final String elementId,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
@@ -89,6 +91,7 @@ public record AgentInstanceDbModel(
       final OffsetDateTime completionDate) {
     this(
         agentInstanceKey,
+        agentDefinitionKey,
         elementId,
         processInstanceKey,
         rootProcessInstanceKey,
@@ -133,6 +136,7 @@ public record AgentInstanceDbModel(
 
     return new AgentInstanceDbModel(
         agentInstanceKey,
+        agentDefinitionKey,
         elementId,
         processInstanceKey,
         rootProcessInstanceKey,
@@ -200,6 +204,7 @@ public record AgentInstanceDbModel(
   public Builder toBuilder() {
     return new Builder(tools)
         .agentInstanceKey(agentInstanceKey)
+        .agentDefinitionKey(agentDefinitionKey)
         .elementId(elementId)
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
@@ -229,6 +234,7 @@ public record AgentInstanceDbModel(
   public static class Builder implements ObjectBuilder<AgentInstanceDbModel> {
 
     private long agentInstanceKey;
+    private long agentDefinitionKey;
     private String elementId;
     private long processInstanceKey;
     private long rootProcessInstanceKey;
@@ -268,6 +274,11 @@ public record AgentInstanceDbModel(
 
     public Builder agentInstanceKey(final long agentInstanceKey) {
       this.agentInstanceKey = agentInstanceKey;
+      return this;
+    }
+
+    public Builder agentDefinitionKey(final long agentDefinitionKey) {
+      this.agentDefinitionKey = agentDefinitionKey;
       return this;
     }
 
@@ -400,6 +411,7 @@ public record AgentInstanceDbModel(
     public AgentInstanceDbModel build() {
       return new AgentInstanceDbModel(
           agentInstanceKey,
+          agentDefinitionKey,
           elementId,
           processInstanceKey,
           rootProcessInstanceKey,

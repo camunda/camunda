@@ -17,7 +17,9 @@
   <!-- default: PostgreSQL, H2, MariaDB, MySQL -->
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     INSERT INTO ${prefix}AGENT_INSTANCE (
-      AGENT_INSTANCE_KEY,ELEMENT_ID,
+      AGENT_INSTANCE_KEY,
+      AGENT_DEFINITION_KEY,
+      ELEMENT_ID,
       PROCESS_INSTANCE_KEY,
       ROOT_PROCESS_INSTANCE_KEY,
       PROCESS_DEFINITION_ID,
@@ -44,6 +46,7 @@
     )
     VALUES (
       #{agentInstanceKey},
+      #{agentDefinitionKey},
       #{elementId},
       #{processInstanceKey},
       #{rootProcessInstanceKey},
@@ -78,6 +81,7 @@
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     UPDATE ${prefix}AGENT_INSTANCE
     SET
+      AGENT_DEFINITION_KEY       = #{agentDefinitionKey},
       PROCESS_DEFINITION_ID      = #{processDefinitionId},
       PROCESS_DEFINITION_KEY     = #{processDefinitionKey},
       PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
@@ -147,6 +151,7 @@
     type="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     <constructor>
       <idArg column="AGENT_INSTANCE_KEY" javaType="_long" name="agentInstanceKey"/>
+      <arg column="AGENT_DEFINITION_KEY" javaType="_long" name="agentDefinitionKey"/>
       <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="_long" name="processInstanceKey"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="_long" name="rootProcessInstanceKey"/>
@@ -188,6 +193,7 @@
         SELECT * FROM (
           SELECT
             ai.AGENT_INSTANCE_KEY,
+            ai.AGENT_DEFINITION_KEY,
             ai.ELEMENT_ID,
             ai.PROCESS_INSTANCE_KEY,
             ai.ROOT_PROCESS_INSTANCE_KEY,

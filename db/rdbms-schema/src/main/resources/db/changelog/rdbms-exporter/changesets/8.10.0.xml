@@ -142,6 +142,7 @@
       <column name="AGENT_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
+      <column name="AGENT_DEFINITION_KEY" type="BIGINT"/>
       <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
