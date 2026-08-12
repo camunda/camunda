@@ -735,6 +735,7 @@ and verify against it**, using the same general loop:
 
 4. **Outcome — record it in `/tmp/fix-meta.json`'s `verify` field** (see
    Result Manifest below):
+
    - Green within 3 iterations → `"verify": "verified"`. The calling workflow
      marks the PR ready-for-review and adds the `verified` label.
    - Still red after 3 → `"verify": "unverified"`. The PR stays in draft, gets
