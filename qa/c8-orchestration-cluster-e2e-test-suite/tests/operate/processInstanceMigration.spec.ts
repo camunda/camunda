@@ -437,11 +437,6 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Select 3 process instances for migration', async () => {
-      // Batch selection is disabled while the "Suspended" state filter is
-      // active (the default processes view). Turn it off so the row-selection
-      // checkboxes render.
-      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
-
       await operateProcessesPage.selectProcessInstances(
         MANUAL_MIGRATION_INSTANCE_COUNT,
       );
