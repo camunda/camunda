@@ -37,7 +37,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@camunda/design-system';
-import {ChevronDown, Plus} from 'lucide-react';
+import {Check, ChevronDown, Plus} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {isBuiltInFilter, type BuiltInFilter} from '#/tasklist/modules/available-tasks/searchSchema';
@@ -92,8 +92,9 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 					}}
 				>
 					{BUILT_IN_FILTERS.map(({id, labelKey}) => (
-						<DropdownMenuRadioItem key={id} value={id}>
+						<DropdownMenuRadioItem key={id} value={id} className={styles.option}>
 							{t(labelKey)}
+							{filter === id ? <Check className={styles.optionCheck} aria-hidden /> : null}
 						</DropdownMenuRadioItem>
 					))}
 				</DropdownMenuRadioGroup>
@@ -111,8 +112,9 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 							}}
 						>
 							{customFilters.map(([filterId, {name}]) => (
-								<DropdownMenuRadioItem key={filterId} value={filterId}>
+								<DropdownMenuRadioItem key={filterId} value={filterId} className={styles.option}>
 									{getCustomFilterLabel(filterId, name)}
+									{filter === filterId ? <Check className={styles.optionCheck} aria-hidden /> : null}
 								</DropdownMenuRadioItem>
 							))}
 						</DropdownMenuRadioGroup>

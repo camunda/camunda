@@ -61,3 +61,27 @@
 	font-weight: 400;
 	color: var(--neutral-foreground-subtle);
 }
+
+// DropdownMenuRadioItem ships a filled-dot indicator in an absolutely positioned
+// span on the left, and reserves `pl-8` for it. This picker reads as a select, so
+// it uses a right-aligned checkmark instead, matching the DS Select's own item
+// indicator. Hide the built-in dot and flip the reserved space to the right.
+.option {
+	padding-left: 0.625rem;
+	padding-right: 2rem;
+
+	// The indicator span is the item's only direct <span> child (the label is bare
+	// text and the checkmark is an <svg>), so this targets it without relying on
+	// the DS package's generated class names.
+	> span {
+		display: none;
+	}
+}
+
+.optionCheck {
+	position: absolute;
+	right: 0.5rem;
+	width: 1rem;
+	height: 1rem;
+	color: var(--primary-action-default);
+}
