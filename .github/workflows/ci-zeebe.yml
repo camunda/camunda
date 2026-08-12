@@ -534,7 +534,7 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      github.actor == 'monorepo-devops-automation[bot]'
+      github.event.pull_request.user.login == 'monorepo-devops-automation[bot]'
     permissions:
       checks: read
       pull-requests: write
