@@ -88,6 +88,7 @@ class WebappCacheHeadersIT {
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo("test-favicon\n");
+    assertThat(response.getHeaders().getCacheControl()).isEqualTo("max-age=3600, public");
   }
 
   @Test
@@ -99,5 +100,6 @@ class WebappCacheHeadersIT {
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo("test-favicon\n");
+    assertThat(response.getHeaders().getCacheControl()).isEqualTo("max-age=3600, public");
   }
 }

@@ -38,6 +38,7 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
   static final String FAVICON_PATH_PATTERN = "/favicon.ico";
   static final String FAVICON_CLASSPATH_LOCATION = "classpath:/META-INF/resources/webapp/";
   static final Duration ASSETS_CACHE_MAX_AGE = Duration.ofDays(365);
+  static final Duration FAVICON_CACHE_MAX_AGE = Duration.ofHours(1);
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
@@ -47,7 +48,8 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
     registry
         .addResourceHandler(FAVICON_PATH_PATTERN)
-        .addResourceLocations(FAVICON_CLASSPATH_LOCATION);
+        .addResourceLocations(FAVICON_CLASSPATH_LOCATION)
+        .setCacheControl(CacheControl.maxAge(FAVICON_CACHE_MAX_AGE).cachePublic());
     // PathPattern.extractPathWithinPattern() starts at the first '*', so the resource path the
     // resolver receives includes the tenant segment: "tenantId/assets/file.js".
     // SegmentStrippingResolver strips the 2 leading segments to get "file.js" relative to the
@@ -63,6 +65,7 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .addResourceHandler(
             PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*" + FAVICON_PATH_PATTERN)
         .addResourceLocations(FAVICON_CLASSPATH_LOCATION)
+        .setCacheControl(CacheControl.maxAge(FAVICON_CACHE_MAX_AGE).cachePublic())
         .resourceChain(false)
         .addResolver(new SegmentStrippingResolver(1));
   }
