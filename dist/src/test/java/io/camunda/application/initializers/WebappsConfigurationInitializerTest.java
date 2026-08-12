@@ -57,6 +57,20 @@ class WebappsConfigurationInitializerTest {
   }
 
   @Test
+  void shouldUseOperateAsDefaultAppWhenOperateAndTasklistProfilesAreActive() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP))
+        .isEqualTo(Profile.OPERATE.getId());
+  }
+
+  @Test
   void shouldNotAddWebappStaticLocationWhenTasklistUiIsDisabled() {
     final GenericApplicationContext context = new GenericApplicationContext();
     context.getEnvironment().setActiveProfiles(Profile.TASKLIST.getId());
