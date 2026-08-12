@@ -8,8 +8,10 @@ applyTo: "load-tests/**,.github/workflows/*load-test*,.github/workflows/*load_te
 
 When reviewing changes to load tests, workflows, or load test infrastructure:
 
-1. **Smoke test**: The smoke CI workflow runs automatically on PRs touching
-   `load-tests/setup/**` and covers Elasticsearch only. For changes that affect
+1. **Smoke test**: The smoke CI workflow runs automatically and is a required check
+   (via `check-results`) on PRs touching `load-tests/setup/**`, and covers
+   Elasticsearch only. It runs both a fresh-install chain and an upgrade chain
+   (install from `main`, then update to the PR ref). For changes that affect
    other secondary storage types (e.g. OpenSearch) or that may have long-running
    impact, a manual load test run is required in addition to smoke CI.
 

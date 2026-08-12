@@ -299,6 +299,62 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  load-test-smoke-detect-versions:
+    # Only on pull_request events (same pattern as pin-check above): github.event.pull_request.*
+    # is empty under merge_group/push/schedule, so the job is skipped there rather than deploying
+    # a real cluster with no ref. Skipped is treated as success by check-results, so this doesn't
+    # break those builds — but it does mean the merge queue does not re-run the real Helm/cluster
+    # deploy against the batched merge-group commit; a queued PR merges on its last pull_request
+    # smoke result, not a fresh one. Accepted trade-off: re-running this on every merge_group entry
+    # would double real-cluster usage for every load-tests/setup/** PR.
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Detect Smoke Versions"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # fetch-depth: 0 clones full history (needed to diff against origin/main below), so this
+        # needs the same longer timeout as the other fetch-depth: 0 checkout in this file — the
+        # default 1-minute step timeout used for shallow checkouts elsewhere isn't enough.
+        timeout-minutes: 5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        name: Detect which setup versions changed
+        run: ./.github/scripts/load-test-detect-versions-changed.sh
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-smoke-tests:
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Smoke (${{ matrix.version }})"
+    needs: [ detect-changes, load-test-smoke-detect-versions ]
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.load-test-smoke-detect-versions.outputs.matrix) }}
+    uses: ./.github/workflows/camunda-load-test-smoke.yml
+    secrets: inherit
+    with:
+      target-version: ${{ matrix.version }}
+      orchestration-tag: ${{ matrix.orchestration-tag }}
+      ref: ${{ github.event.pull_request.head.ref }}
+
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -2546,6 +2602,8 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-smoke-detect-versions
+      - load-test-smoke-tests
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
