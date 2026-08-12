@@ -14,6 +14,8 @@ import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {CheckmarkIcon, OverflowMenu, OverflowMenuItem, SelectItem} from '#/shared/design-system-compat';
 import {ArrowDownWideNarrow} from 'lucide-react';
 import {queries} from '#/shared/http/queries';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {GhostSelect} from './GhostSelect';
 import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
 import {getCustomFilterSearch} from '../getCustomFilterSearch';
@@ -113,7 +115,10 @@ const Filters: React.FC = () => {
 	const customFilters = Object.entries(getStateLocally('tasklist.customFilters') ?? {});
 
 	return (
-		<section className={styles.panelHeader} aria-label={t('tasklist.taskFiltersHeaderAria')}>
+		<section
+			className={cn(styles.panelHeader, featureFlags.dsTasklistUI && styles.panelHeaderDS)}
+			aria-label={t('tasklist.taskFiltersHeaderAria')}
+		>
 			<GhostSelect
 				id="filter-select"
 				hideLabel
