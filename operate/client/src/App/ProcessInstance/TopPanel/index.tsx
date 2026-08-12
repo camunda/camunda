@@ -39,6 +39,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
+import {isMultiInstance as isMultiInstanceElement} from 'modules/bpmn-js/utils/isMultiInstance';
 
 const TopPanel: React.FC = observer(() => {
   const {
@@ -198,6 +199,65 @@ const TopPanel: React.FC = observer(() => {
     return 'content';
   };
 
+  const handleElementSelection = (
+    elementId?: string,
+    isMultiInstance?: boolean,
+    clickedElementId?: string,
+  ) => {
+    if (modificationsStore.state.status === 'moving-token' && businessObjects) {
+      const ancestorScopeType = getAncestorScopeType(
+        businessObjects,
+        sourceElementIdForMoveOperation ?? '',
+        elementId ?? '',
+        totalRunningInstancesByElement,
+      );
+
+      clearSelection();
+      finishMovingToken(
+        affectedTokenCount,
+        visibleAffectedTokenCount,
+        businessObjects,
+        processInstance?.processDefinitionId,
+        elementId,
+        ancestorScopeType,
+      );
+      return;
+    }
+
+    if (modificationsStore.state.status === 'adding-token') {
+      return;
+    }
+
+    if (elementId !== undefined) {
+      selectElement({
+        elementId,
+        isMultiInstanceBody: isMultiInstance,
+      });
+      return;
+    }
+
+    if (
+      selectedElementId !== null &&
+      clickedElementId !== undefined &&
+      selectedElementIds?.includes(clickedElementId)
+    ) {
+      if (isModificationModeEnabled) {
+        clearSelection();
+        return;
+      }
+
+      selectElement({
+        elementId: clickedElementId,
+        isMultiInstanceBody: isMultiInstanceElement(
+          businessObjects?.[clickedElementId],
+        ),
+      });
+      return;
+    }
+
+    clearSelection();
+  };
+
   return (
     <Container>
       {modificationsStore.state.status === 'moving-token' &&
@@ -239,37 +299,7 @@ const TopPanel: React.FC = observer(() => {
                     clearSelection();
                   }
                 }}
-                onElementSelection={(elementId, isMultiInstance) => {
-                  if (modificationsStore.state.status === 'moving-token') {
-                    const ancestorScopeType = getAncestorScopeType(
-                      businessObjects,
-                      sourceElementIdForMoveOperation ?? '',
-                      elementId ?? '',
-                      totalRunningInstancesByElement,
-                    );
-
-                    clearSelection();
-                    finishMovingToken(
-                      affectedTokenCount,
-                      visibleAffectedTokenCount,
-                      businessObjects,
-                      processInstance?.processDefinitionId,
-                      elementId,
-                      ancestorScopeType,
-                    );
-                  } else {
-                    if (modificationsStore.state.status !== 'adding-token') {
-                      if (elementId !== undefined) {
-                        selectElement({
-                          elementId,
-                          isMultiInstanceBody: isMultiInstance,
-                        });
-                      } else {
-                        clearSelection();
-                      }
-                    }
-                  }
-                }}
+                onElementSelection={handleElementSelection}
                 overlaysData={overlaysData}
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />

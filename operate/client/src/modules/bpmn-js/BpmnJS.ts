@@ -28,6 +28,7 @@ import type {OverlayData} from './overlayTypes';
 type OnElementSelection = (
   elementId?: string,
   isMultiInstance?: boolean,
+  clickedElementId?: string,
 ) => void;
 
 type OnElementDoubleClick = (elementId: string) => void;
@@ -444,7 +445,7 @@ class BpmnJS {
         isMultiInstance(element.businessObject),
       );
     } else if (this.#selectedElementIds !== undefined) {
-      this.onElementSelection?.(undefined);
+      this.onElementSelection?.(undefined, undefined, element.id);
     }
   };
 
