@@ -16,7 +16,7 @@ jobs:
   lint:
     name: "Lint"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -31,7 +31,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: Linting
         run: npm run lint
       - name: Observe build status
