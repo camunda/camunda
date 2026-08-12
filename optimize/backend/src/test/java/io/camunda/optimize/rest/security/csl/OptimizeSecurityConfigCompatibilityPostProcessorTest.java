@@ -95,6 +95,116 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldBridgeHelmChartIdentityConfigAndLogDeprecation() {
+    // The official camunda-platform Helm chart never sets CAMUNDA_OPTIMIZE_IDENTITY_*; it renders
+    // camunda.identity.* as structured YAML (application-ccsm.yaml) plus
+    // CAMUNDA_IDENTITY_CLIENT_SECRET
+    // for the secret instead.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "http://localhost:18080/auth/realms/camunda-platform");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri"))
+        .isEqualTo("http://localhost:18080/auth/realms/camunda-platform");
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("helm-secret");
+
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("camunda.identity.issuer")
+                && entry.getMessage().contains(OIDC + "issuer-uri"),
+        "expected deprecation warning naming the Helm-rendered issuer key");
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("camunda.identity.clientId")
+                && entry.getMessage().contains(OIDC + "client-id"),
+        "expected deprecation warning naming the Helm-rendered clientId key");
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("CAMUNDA_IDENTITY_CLIENT_SECRET")
+                && entry.getMessage().contains(OIDC + "client-secret"),
+        "expected deprecation warning naming the Helm client-secret env var");
+    // the secret value itself must never be logged
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("helm-secret"),
+        "client secret value must never be logged");
+  }
+
+  @Test
+  void shouldNotBridgeHelmChartIdentityIssuerUriKeyWhenBlank() {
+    // application-ccsm.yaml resolves camunda.identity.issuer to "" (via a Spring placeholder
+    // default) whenever CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL is unset, which is the normal state
+    // for any deployment that isn't Helm-based CCSM with CSL enabled. A blank value must never be
+    // bridged or warned about.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.clientId", "");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("camunda.identity"),
+        "expected no warning for blank Helm-rendered keys");
+  }
+
+  @Test
+  void shouldPreferLegacyOptimizeIdentityEnvVarsOverHelmChartKeysAndNotDoubleWarn() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", "http://legacy.example.com/realm");
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", "legacy-client");
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", "legacy-secret");
+    // Mirrors what application-ccsm.yaml actually does in a real docker-compose CCSM deployment:
+    // the same values end up in camunda.identity.* too, purely as an internal resource-file detail,
+    // not a second operator choice.
+    legacy.put("camunda.identity.issuer", "http://legacy.example.com/realm");
+    legacy.put("camunda.identity.clientId", "legacy-client");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("http://legacy.example.com/realm");
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("legacy-client");
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("legacy-secret");
+    // exactly one warning per property, naming the legacy env var — never the mirrored
+    // camunda.identity.* key, since its value was never actually used
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL")
+                && entry.getMessage().contains(OIDC + "issuer-uri"),
+        "expected the deprecation warning to name the legacy env var");
+    logs.assertDoesNotContain(
+        entry ->
+            entry.getMessage().contains("camunda.identity.issuer")
+                && !entry.getMessage().contains("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"),
+        "the mirrored camunda.identity.issuer key must not get its own warning when the legacy env var already won");
+  }
+
+  @Test
+  void shouldNotBridgeHelmChartIdentityConfigWhenAuth0IsConfigured() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_DOMAIN", "weblogin.example.com");
+    legacy.put("camunda.identity.issuer", "http://helm.example.com/realm");
+    legacy.put("camunda.identity.clientId", "helm-client");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("https://weblogin.example.com/");
+  }
+
+  @Test
   void shouldLetExplicitCamundaSecurityValueTakePrecedenceOverBridgedDefault() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", "http://localhost:18080/realm");

@@ -38,7 +38,10 @@ import org.springframework.core.env.MapPropertySource;
  * <p>Bridges the CCSM (Identity) and CCSaaS (Auth0) OIDC registrations from their {@code
  * CAMUNDA_OPTIMIZE_IDENTITY_*} / {@code CAMUNDA_OPTIMIZE_AUTH0_*} / {@code
  * CAMUNDA_OPTIMIZE_CLIENT_*} env-var interface (the {@code ${...}} placeholders in {@code
- * service-config.yaml}).
+ * service-config.yaml}), or from the {@code camunda.identity.issuer} / {@code
+ * camunda.identity.clientId} / {@code camunda.identity.audience} / {@code
+ * CAMUNDA_IDENTITY_CLIENT_SECRET} config surface the official {@code camunda-platform} Helm chart's
+ * Optimize ConfigMap renders instead.
  *
  * <p>Every recognised legacy key logs a deprecation warning naming its {@code camunda.security.*}
  * replacement (or, for obsolete keys, stating that it no longer has any effect). Legacy keys stay
@@ -120,8 +123,19 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     }
   }
 
-  // OIDC / Identity (CCSM), from the CAMUNDA_OPTIMIZE_IDENTITY_* env vars. Skipped when Auth0 is
+  // OIDC / Identity (CCSM), from the CAMUNDA_OPTIMIZE_IDENTITY_* env vars, or — when those are
+  // unset, as with the official camunda-platform Helm chart's Optimize ConfigMap — from the
+  // camunda.identity.* structured config it renders instead (application-ccsm.yaml) plus the
+  // CAMUNDA_IDENTITY_CLIENT_SECRET env var it uses for the secret. Skipped when Auth0 is
   // configured (the two modes are mutually exclusive, cloud wins) to avoid a mixed registration.
+  //
+  // Deliberately NOT bridged: camunda.identity.issuerBackendUrl. CSL has a single issuer-uri, used
+  // for OIDC discovery AND for validating each token's iss claim against the discovery document's
+  // issuer field. Keycloak reports the same externally-configured issuer regardless of which URL
+  // was dialed to reach it, so pointing issuer-uri at the backend-reachable URL would make
+  // discovery fail (issuer mismatch) instead of fixing reachability. camunda.identity.issuer (the
+  // browser-facing one) is the correct, and only, source for issuer-uri — mirroring the existing
+  // CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL precedent, which never bridged _ISSUER_BACKEND_URL either.
   private void bridgeIdentityOidc(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     if (isAuth0Configured(env)) {
@@ -131,6 +145,10 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
+    mapIfAbsentAndPresent(env, derived, "camunda.identity.issuer", OIDC_PREFIX + "issuer-uri");
+    mapIfAbsentAndPresent(env, derived, "camunda.identity.clientId", OIDC_PREFIX + "client-id");
+    mapIfAbsentAndPresent(
+        env, derived, "CAMUNDA_IDENTITY_CLIENT_SECRET", OIDC_PREFIX + "client-secret");
   }
 
   // OIDC / Auth0 (CCSaaS cloud), from the CAMUNDA_OPTIMIZE_AUTH0_* / CAMUNDA_OPTIMIZE_CLIENT_* env
@@ -348,6 +366,22 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       derived.putIfAbsent(cslKey, value);
       warnDeprecated(legacyKey, cslKey);
     }
+  }
+
+  // Bridges a legacy key into a CSL property, but only if no higher-priority legacy key has
+  // already supplied a value for the same CSL property. Without this, docker-compose CCSM
+  // installs that already set CAMUNDA_OPTIMIZE_IDENTITY_* would get a second, confusing
+  // deprecation warning for the identical value Optimize's own application-ccsm.yaml mirrors into
+  // camunda.identity.* automatically (an internal resource-file detail, not an operator choice).
+  private void mapIfAbsentAndPresent(
+      final ConfigurableEnvironment env,
+      final Map<String, Object> derived,
+      final String legacyKey,
+      final String cslKey) {
+    if (derived.containsKey(cslKey)) {
+      return;
+    }
+    mapIfPresent(env, derived, legacyKey, cslKey);
   }
 
   // Auth0 issuer URI is https://<domain>/ (trailing slash required for OIDC discovery). Accepts a
