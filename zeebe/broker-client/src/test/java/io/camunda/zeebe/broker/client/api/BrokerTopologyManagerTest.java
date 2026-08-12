@@ -877,6 +877,41 @@ final class BrokerTopologyManagerTest {
   }
 
   @Test
+  void shouldExcludeADisabledGroupFromTopology() {
+    // given -- default and tenant1 are both known locally and both configured
+    notifyEvent(createMemberAddedEvent(createBroker(BrokerMemberId.from(0))));
+    notifyEvent(createMemberAddedEvent(createBrokerWithGroup(BrokerMemberId.from(0), "tenant1")));
+
+    final var global = globalConfigWithMember(MemberId.from("1"));
+    final var defaultGroup = singleMemberGroup(MemberId.from("1"), Map.of(1, 1));
+    final var tenant1Group = singleMemberGroup(MemberId.from("1"), Map.of(5, 1));
+    topologyManager.onClusterConfigurationUpdated(
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, defaultGroup, "tenant1", tenant1Group),
+            PhasedChangeState.empty()));
+    actorSchedulerRule.workUntilDone();
+    assertThat(topologyManager.getTopology("tenant1").isInitialized()).isTrue();
+    assertThat(topologyManager.getTopology("tenant1").getPartitionsCount()).isEqualTo(1);
+
+    // when -- tenant1 is disabled (removed from local static configuration); its
+    // PartitionGroupConfiguration is still present, just flagged
+    topologyManager.onClusterConfigurationUpdated(
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            global,
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, defaultGroup, "tenant1", tenant1Group.disable()),
+            PhasedChangeState.empty()));
+    actorSchedulerRule.workUntilDone();
+
+    // then -- tenant1 no longer resolves, as if it were never configured at all; default is
+    // unaffected
+    assertThat(topologyManager.getTopology("tenant1").isInitialized()).isFalse();
+    assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(1);
+  }
+
+  @Test
   void shouldFireIncarnationChangedOncePerGroupWhoseIncarnationNumberChanged() {
     // given -- default and tenant1 are both configured at their initial incarnation number
     notifyEvent(createMemberAddedEvent(createBroker(BrokerMemberId.from(0))));
