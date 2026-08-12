@@ -23,6 +23,11 @@ runs:
   - name: Test Summary
     uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
     if: ${{ inputs.skipSummary == 'false' }}
+    # The summary is presentational: it renders test counts into the job summary and feeds
+    # nothing downstream. A single unparseable TEST-*.xml used to fail this step and abort the
+    # whole composite action, skipping "Find flaky tests" and leaving the flakyTests output
+    # empty -- indistinguishable from a clean run, so flakes went unreported to CI health.
+    continue-on-error: true
     with:
       paths: |
         **/target/failsafe-reports/TEST-*.xml
