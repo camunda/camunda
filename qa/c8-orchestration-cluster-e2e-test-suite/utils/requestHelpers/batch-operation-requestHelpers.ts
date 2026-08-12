@@ -20,7 +20,9 @@ export async function cancelBatchOperation(
   const result: Record<string, APIResponse> = {};
   await expect(async () => {
     const res = await request.post(
-      buildUrl(`/batch-operations/${batchOperationKey}/cancellation`),
+      buildUrl('/batch-operations/{batchOperationKey}/cancellation', {
+        batchOperationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -50,7 +52,9 @@ export async function suspendBatchOperation(
   const result: Record<string, unknown> = {};
   await expect(async () => {
     const res = await request.post(
-      buildUrl(`/batch-operations/${batchOperationKey}/suspension`),
+      buildUrl('/batch-operations/{batchOperationKey}/suspension', {
+        batchOperationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -69,7 +73,9 @@ export async function resumeBatchOperation(
   const result: Record<string, unknown> = {};
   await expect(async () => {
     const res = await request.post(
-      buildUrl(`/batch-operations/${batchOperationKey}/resumption`),
+      buildUrl('/batch-operations/{batchOperationKey}/resumption', {
+        batchOperationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -86,9 +92,14 @@ export async function createCompletedBatchOperation(
   const key = await createCancellationBatch(request);
 
   await expect(async () => {
-    const res = await request.get(buildUrl(`/batch-operations/${key}`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {
+        batchOperationKey: key,
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertStatusCode(res, 200);
     await validateResponse(
       {
@@ -115,7 +126,7 @@ export async function expectBatchState(
 ) {
   await expect(async () => {
     const statusRes = await request.get(
-      buildUrl(`/batch-operations/${batchOperationKey}`),
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
       {
         headers: jsonHeaders(),
       },

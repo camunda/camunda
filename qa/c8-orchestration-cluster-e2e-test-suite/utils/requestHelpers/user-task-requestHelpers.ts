@@ -71,9 +71,12 @@ export async function completeUserTask(
   userTaskKey: string,
   payload: unknown = {},
 ) {
-  return await request.post(buildUrl(`/user-tasks/${userTaskKey}/completion`), {
-    headers: jsonHeaders(),
-    data: payload,
-    timeout: 60_000,
-  });
+  return await request.post(
+    buildUrl('/user-tasks/{userTaskKey}/completion', {userTaskKey}),
+    {
+      headers: jsonHeaders(),
+      data: payload,
+      timeout: 60_000,
+    },
+  );
 }
