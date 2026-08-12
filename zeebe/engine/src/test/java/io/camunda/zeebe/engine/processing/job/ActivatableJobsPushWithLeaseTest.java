@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
@@ -183,6 +184,128 @@ public final class ActivatableJobsPushWithLeaseTest {
   }
 
   @Test
+  public void shouldNotPushRetriedLeasedJobToNonLeasingStream() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
+    final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
+    final String leaseToken = job.getLeaseToken();
+    final RecordingJobStream jobStream = registerStream(false);
+
+    // when
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .ofInstance(job.getProcessInstanceKey())
+        .withLeaseToken(leaseToken)
+        .withRetries(3)
+        .fail();
+
+    // then
+    awaitPushOrNotify(jobStream, notificationsBefore);
+    assertThat(jobStream.getActivatedJobs())
+        .describedAs(
+            "a leased job that becomes activatable again by failing with retries left "
+                + "must not be pushed to a non-leasing stream")
+        .isEmpty();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(jobMetric("skipped", jobType, JobKind.BPMN_ELEMENT))
+                    .describedAs(
+                        "demoting a push to notify-only counts the same skip signal the poll "
+                            + "path already counts for a lease mismatch")
+                    .isOne());
+  }
+
+  @Test
+  public void shouldNotPushRecurredLeasedJobToNonLeasingStream() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
+    final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
+    final String leaseToken = job.getLeaseToken();
+    final Duration backOff = Duration.ofDays(1);
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .ofInstance(job.getProcessInstanceKey())
+        .withLeaseToken(leaseToken)
+        .withRetries(3)
+        .withBackOff(backOff)
+        .fail();
+    final RecordingJobStream jobStream = registerStream(false);
+
+    // when
+    ENGINE.increaseTime(
+        backOff.plus(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)));
+
+    // then
+    jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).await();
+    awaitPushOrNotify(jobStream, notificationsBefore);
+    assertThat(jobStream.getActivatedJobs())
+        .describedAs(
+            "a leased job that recurs after its backoff elapses must not be pushed to a "
+                + "non-leasing stream")
+        .isEmpty();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(jobMetric("skipped", jobType, JobKind.BPMN_ELEMENT))
+                    .describedAs(
+                        "demoting a push to notify-only counts the same skip signal the poll "
+                            + "path already counts for a lease mismatch")
+                    .isOne());
+  }
+
+  @Test
+  public void shouldNotPushIncidentResolvedLeasedJobToNonLeasingStream() {
+    // given
+    final Record<JobRecordValue> created = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = created.getValue().getProcessInstanceKey();
+    final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
+    final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
+    final String leaseToken = job.getLeaseToken();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .ofInstance(processInstanceKey)
+        .withLeaseToken(leaseToken)
+        .withRetries(0)
+        .fail();
+    ENGINE.job().ofInstance(processInstanceKey).withType(jobType).withRetries(1).updateRetries();
+    final RecordingJobStream jobStream = registerStream(false);
+
+    // when
+    ENGINE.incident().ofInstance(processInstanceKey).resolve();
+
+    // then
+    awaitPushOrNotify(jobStream, notificationsBefore);
+    assertThat(jobStream.getActivatedJobs())
+        .describedAs(
+            "a leased job that becomes activatable again by resolving its incident must "
+                + "not be pushed to a non-leasing stream")
+        .isEmpty();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(jobMetric("skipped", jobType, JobKind.BPMN_ELEMENT))
+                    .describedAs(
+                        "demoting a push to notify-only counts the same skip signal the poll "
+                            + "path already counts for a lease mismatch")
+                    .isOne());
+  }
+
+  @Test
   public void shouldNotPushTimedOutLeasedJobToNonLeasingStream() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
@@ -277,6 +400,18 @@ public final class ActivatableJobsPushWithLeaseTest {
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .setWithLease(withLease);
     return JOB_STREAMER.addJobStream(BufferUtil.wrapString(jobType), properties);
+  }
+
+  private double jobMetric(final String action, final String type, final JobKind kind) {
+    return ENGINE
+        .getMeterRegistry()
+        .get("zeebe.job.events.total")
+        .tag("action", action)
+        .tag("partition", "1")
+        .tag("type", type)
+        .tag("job_kind", kind.name())
+        .counter()
+        .count();
   }
 
   private String persistedLeaseToken() {
