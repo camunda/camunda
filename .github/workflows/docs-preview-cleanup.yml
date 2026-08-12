@@ -29,6 +29,11 @@ jobs:
     name: Cleanup Orphaned Documentation Previews
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Shared with docs-build-deploy.yml and docs-preview.yml -- see the note there.
+    concurrency:
+      group: gh-pages-write
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: write
       pull-requests: read
