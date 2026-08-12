@@ -161,11 +161,14 @@ outputs:
         steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
   protobuf-changes:
-    description: Output whether any Protobuf files have changed
+    description: >-
+      Output whether the Protobuf backwards-compatibility check should be run based on GitHub event and files changed.
+      Restricted to pull requests and merge queues: the check's breaking-change comparison relies on PR/merge-group
+      context (e.g. a "BREAKING CHANGE:" acknowledgment) that isn't available on a plain push to main/stable.
     value: >-
       ${{
-        github.event_name == 'push' ||
-        (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
+        (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+        steps.filter-common.outputs.protobuf-change == 'true'
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
