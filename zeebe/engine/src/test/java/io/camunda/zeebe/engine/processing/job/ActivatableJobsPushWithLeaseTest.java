@@ -231,6 +231,28 @@ public final class ActivatableJobsPushWithLeaseTest {
         .isEmpty();
   }
 
+  @Test
+  public void shouldTreatLeasingAndNonLeasingRegistrationsAsDistinctIdentities() {
+    // given
+    final JobActivationPropertiesImpl leasing =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(TIMEOUT_MS)
+            .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+            .setWithLease(true);
+    final JobActivationPropertiesImpl nonLeasing =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(TIMEOUT_MS)
+            .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+            .setWithLease(false);
+
+    // then
+    assertThat(leasing)
+        .describedAs("a leasing and a non-leasing registration must remain distinct identities")
+        .isNotEqualTo(nonLeasing);
+  }
+
   /**
    * Waits until the job has settled on one of two outcomes: pushed to {@code jobStream}, or
    * notified for polling. The caller asserts on which outcome actually occurred.
