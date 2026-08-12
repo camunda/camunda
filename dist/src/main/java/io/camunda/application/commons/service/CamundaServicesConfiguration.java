@@ -58,6 +58,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
+import io.camunda.service.TenantRestoreEnvironment;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
@@ -175,6 +176,13 @@ public class CamundaServicesConfiguration {
                           tenantSecurity.getInitialization(),
                           tenantSecurity.getCompiledIdValidationPattern(),
                           tenantSecurity.getCompiledGroupIdValidationPattern()));
+
+              // -- per-tenant restore environment: which backup store this tenant runs and
+              // whether it takes continuous backups, both deployment-time choices --
+              final var restoreEnvironment =
+                  new TenantRestoreEnvironment(
+                      tenantConfig.getData().getSecondaryStorage().getType().name(),
+                      tenantConfig.getData().getPrimaryStorage().getBackup().isContinuous());
 
               // -- per-tenant process cache --
               final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
@@ -445,7 +453,8 @@ public class CamundaServicesConfiguration {
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
                           executor,
-                          converter))
+                          converter,
+                          restoreEnvironment))
                   .resourceServices(
                       tenantId,
                       new ResourceServices(

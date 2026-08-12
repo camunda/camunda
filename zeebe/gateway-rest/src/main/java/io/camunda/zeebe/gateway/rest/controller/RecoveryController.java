@@ -14,8 +14,6 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
-import io.camunda.spring.utils.DatabaseTypeUtils;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.BrokerRestoreStatus;
 import io.camunda.zeebe.dynamic.config.api.RestoreStatus.PartitionRestoreStatus;
@@ -28,12 +26,10 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,20 +41,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class RecoveryController {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryController.class);
-  private static final String CONTINUOUS_BACKUPS_PROPERTY =
-      "camunda.data.primary-storage.backup.continuous";
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final Environment environment;
 
   public RecoveryController(
       final ServiceRegistry serviceRegistry,
-      final CamundaAuthenticationProvider authenticationProvider,
-      final Environment environment) {
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
-    this.environment = environment;
   }
 
   @CamundaPatchMapping(
@@ -88,12 +79,12 @@ public final class RecoveryController {
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
     LOG.info("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    final var request = toRestoreRequest(physicalTenantId, restoreRequest, dryRun);
+    final var parameters = RestoreRequestMapper.toRestoreParameters(restoreRequest);
     return RequestExecutor.executeServiceMethod(
         () ->
             serviceRegistry
                 .recoveryServices(physicalTenantId)
-                .restore(request, authentication)
+                .restore(parameters, dryRun, authentication)
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
         ClusterModeChangeMapper::toClusterModeChangeResponse,
         HttpStatus.ACCEPTED);
@@ -113,29 +104,6 @@ public final class RecoveryController {
                 .thenApply(RecoveryController::restoreStatus),
         RecoveryController::mapRestoreStatus,
         HttpStatus.OK);
-  }
-
-  private RestoreRequest toRestoreRequest(
-      final String physicalTenantId,
-      final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
-      final boolean dryRun) {
-    final String databaseType = DatabaseTypeUtils.getDatabaseTypeOrDefault(environment);
-    final boolean continuousBackups =
-        environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class, false);
-    if (restoreRequest == null) {
-      return new RestoreRequest(
-          physicalTenantId, List.of(), null, null, databaseType, continuousBackups, dryRun);
-    }
-    final List<Long> backupIds =
-        restoreRequest.getBackupIds() == null ? List.of() : restoreRequest.getBackupIds();
-    return new RestoreRequest(
-        physicalTenantId,
-        backupIds,
-        restoreRequest.getFrom(),
-        restoreRequest.getTo(),
-        databaseType,
-        continuousBackups,
-        dryRun);
   }
 
   private static RestoreStatus restoreStatus(final ClusterConfiguration configuration) {
