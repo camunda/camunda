@@ -37,7 +37,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@camunda/design-system';
-import {Check, ChevronDown, Pencil, Plus, Trash2} from 'lucide-react';
+import {Check, ChevronDown, MoreVertical, Plus} from 'lucide-react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
@@ -134,13 +134,14 @@ const FilterSelectDS: React.FC<Props> = ({
 								const label = getCustomFilterLabel(filterId, name);
 
 								return (
-									// The row's actions are plain buttons inside the item, not a
-									// DropdownMenuSub. A Sub alongside the item needs a wrapper div,
+									// The actions live in their own DropdownMenu nested inside this item,
+									// not a DropdownMenuSub. A Sub alongside the item needs a wrapper div,
 									// which breaks Radix's menu-item collection — verified against the
-									// running app: the whole menu dismissed on hovering the trigger and
+									// running app: the whole menu dismissed on hovering the sub-trigger and
 									// leaked the body pointer-lock. A <button> inside this item is valid
-									// DOM (the item is a <div role="menuitemradio">, not a <button>) and
-									// adds no extra Radix layer.
+									// DOM, because the item is a <div role="menuitemradio"> rather than a
+									// <button>, and stopping pointerdown keeps the outer menu from treating
+									// the trigger as a selection.
 									<DropdownMenuRadioItem
 										key={filterId}
 										value={filterId}
@@ -149,42 +150,46 @@ const FilterSelectDS: React.FC<Props> = ({
 										{label}
 										{filter === filterId ? <Check className={styles.optionCheck} aria-hidden /> : null}
 										<span className={styles.rowActions}>
-											<button
-												type="button"
-												className={styles.rowAction}
-												aria-label={`${t('tasklist.taskFilterPanelEdit')} ${label}`}
-												title={t('tasklist.taskFilterPanelEdit')}
-												// Radix activates the item on pointerdown, so both events have
-												// to be stopped or selecting the filter races the action.
-												onPointerDown={(event) => {
-													event.preventDefault();
-													event.stopPropagation();
-												}}
-												onClick={(event) => {
-													event.preventDefault();
-													event.stopPropagation();
-													runRowAction(onEditFilter, filterId);
-												}}
-											>
-												<Pencil aria-hidden />
-											</button>
-											<button
-												type="button"
-												className={cn(styles.rowAction, styles.rowActionDanger)}
-												aria-label={`${t('tasklist.taskFilterPanelDelete')} ${label}`}
-												title={t('tasklist.taskFilterPanelDelete')}
-												onPointerDown={(event) => {
-													event.preventDefault();
-													event.stopPropagation();
-												}}
-												onClick={(event) => {
-													event.preventDefault();
-													event.stopPropagation();
-													runRowAction(onDeleteFilter, filterId);
-												}}
-											>
-												<Trash2 aria-hidden />
-											</button>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<button
+														type="button"
+														className={styles.rowAction}
+														aria-label={`${t('tasklist.taskFilterPanelCustomFilterActions')} — ${label}`}
+														title={t('tasklist.taskFilterPanelCustomFilterActions')}
+														// Only stopPropagation, never preventDefault: Radix opens the
+														// menu on pointerdown, so preventing the default would stop
+														// the trigger from opening at all. Stopping propagation is
+														// what keeps the outer menu from selecting the filter.
+														onPointerDown={(event) => {
+															event.stopPropagation();
+														}}
+														onClick={(event) => {
+															event.stopPropagation();
+														}}
+													>
+														<MoreVertical aria-hidden />
+													</button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end" side="right" sideOffset={4}>
+													<DropdownMenuItem
+														onSelect={() => {
+															runRowAction(onEditFilter, filterId);
+														}}
+													>
+														{t('tasklist.taskFilterPanelEdit')}
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														variant="destructive"
+														onSelect={() => {
+															runRowAction(onDeleteFilter, filterId);
+														}}
+													>
+														{t('tasklist.taskFilterPanelDelete')}
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
 										</span>
 									</DropdownMenuRadioItem>
 								);

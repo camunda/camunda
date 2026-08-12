@@ -90,7 +90,8 @@
 // Custom filters carry edit/delete actions, so they need room for two buttons
 // alongside the checkmark.
 .customOption {
-	padding-right: 4.5rem;
+	// Room for the actions trigger alongside the checkmark.
+	padding-right: 3.5rem;
 }
 
 .rowActions {
@@ -127,7 +128,10 @@
 	.customOption:hover &,
 	.customOption[data-highlighted] &,
 	&:focus,
-	&:focus-visible {
+	&:focus-visible,
+	// Stay visible while its own menu is open, so the row doesn't look like it
+	// lost its trigger once the pointer moves onto the menu.
+	&[data-state='open'] {
 		opacity: 1;
 	}
 
