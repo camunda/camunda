@@ -22,6 +22,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentTool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -144,12 +145,7 @@ public class AgentInstanceRequestValidator {
           }
 
           if (request.getTools() != null) {
-            for (int i = 0; i < request.getTools().size(); i++) {
-              final var tool = request.getTools().get(i);
-              if (tool.getName() == null || tool.getName().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tools[" + i + "].name"));
-              }
-            }
+            validateTools("tools", request.getTools(), violations);
           }
 
           if (request.getJobKey() != null) {
@@ -247,6 +243,16 @@ public class AgentInstanceRequestValidator {
     final var expiresAt = ref.getMetadata().getExpiresAt();
     if (expiresAt != null && !expiresAt.isBlank()) {
       validateDate(expiresAt, fieldPrefix + ".documentReference.metadata.expiresAt", violations);
+    }
+  }
+
+  private void validateTools(
+      final String fieldPrefix, final List<AgentTool> tools, final List<String> violations) {
+    for (int i = 0; i < tools.size(); i++) {
+      final var tool = tools.get(i);
+      if (tool.getName() == null || tool.getName().isBlank()) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "].name"));
+      }
     }
   }
 
