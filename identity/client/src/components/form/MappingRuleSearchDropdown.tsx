@@ -6,23 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
-type MappingRuleSearchDropdownProps = {
-  onSelect: (mappingRule: MappingRule) => void;
-  filter?: (mappingRule: MappingRule) => boolean;
-  placeholder: string;
-  autoFocus?: boolean;
-  errorTitle: string;
-  retryLabel: string;
-};
-
-const MappingRuleSearchDropdown: FC<MappingRuleSearchDropdownProps> = ({
+const MappingRuleSearchDropdown: EntitySearchDropdown<MappingRule> = ({
   onSelect,
   filter,
   placeholder,

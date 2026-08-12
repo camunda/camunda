@@ -6,23 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { roleQueries } from "src/utility/api/roles/queries";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
-type RoleSearchDropdownProps = {
-  onSelect: (role: Role) => void;
-  filter?: (role: Role) => boolean;
-  placeholder: string;
-  autoFocus?: boolean;
-  errorTitle: string;
-  retryLabel: string;
-};
-
-const RoleSearchDropdown: FC<RoleSearchDropdownProps> = ({
+const RoleSearchDropdown: EntitySearchDropdown<Role> = ({
   onSelect,
   filter,
   placeholder,
