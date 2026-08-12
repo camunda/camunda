@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 public interface BusinessValueTargetRepository {
 
@@ -22,12 +23,13 @@ public interface BusinessValueTargetRepository {
   List<BusinessValueTargetDto> scanAll();
 
   static String documentId(final String tenantId, final String processDefinitionKey) {
-    if (tenantId == null) {
-      throw new IllegalArgumentException("tenantId must not be null on a business-value target");
-    }
-    if (processDefinitionKey == null) {
+    if (StringUtils.isBlank(tenantId)) {
       throw new IllegalArgumentException(
-          "processDefinitionKey must not be null on a business-value target");
+          "tenantId must not be null or blank on a business-value target");
+    }
+    if (StringUtils.isBlank(processDefinitionKey)) {
+      throw new IllegalArgumentException(
+          "processDefinitionKey must not be null or blank on a business-value target");
     }
     return tenantId + ID_SEPARATOR + processDefinitionKey;
   }

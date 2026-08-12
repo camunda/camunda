@@ -9,7 +9,9 @@ package io.camunda.optimize.upgrade.plan.factories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
+import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -17,8 +19,9 @@ import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that {@link Upgrade89to810PlanFactory} creates the {@code business-value-target} index
- * on an 8.9 cluster, so upgraded and fresh-install schemas stay in parity.
+ * Verifies that {@link Upgrade89to810PlanFactory} creates the {@code business-value-target} and
+ * {@code business-value-overview} indices on an 8.9 cluster, so upgraded and fresh-install schemas
+ * stay in parity.
  */
 public class Upgrade89to810PlanFactoryIT extends AbstractUpgradeIT {
 
@@ -44,9 +47,34 @@ public class Upgrade89to810PlanFactoryIT extends AbstractUpgradeIT {
         .isNotEmpty();
   }
 
+  @Test
+  public void shouldCreateBusinessValueOverviewIndexOnUpgrade() {
+    // given an 8.9 cluster (schema version is set to the previous minor)
+    setMetadataVersion(FROM_PATCH);
+    final IndexMappingCreator businessValueOverviewIndex = businessValueOverviewIndex();
+    assertThat(getIndicesForMapping(businessValueOverviewIndex))
+        .as("business-value-overview index must not exist before the upgrade runs")
+        .isEmpty();
+
+    // when the 8.9 -> 8.10 upgrade plan runs
+    final UpgradePlan plan = new Upgrade89to810PlanFactory().createUpgradePlan(upgradeDependencies);
+    upgradeProcedure.performUpgrade(plan);
+
+    // then the business-value-overview index exists in the database
+    assertThat(getIndicesForMapping(businessValueOverviewIndex))
+        .as("business-value-overview index must exist after the upgrade runs")
+        .isNotEmpty();
+  }
+
   private IndexMappingCreator businessValueTargetIndex() {
     return isElasticSearchUpgrade()
         ? new BusinessValueTargetIndexES()
         : new BusinessValueTargetIndexOS();
+  }
+
+  private IndexMappingCreator businessValueOverviewIndex() {
+    return isElasticSearchUpgrade()
+        ? new BusinessValueOverviewIndexES()
+        : new BusinessValueOverviewIndexOS();
   }
 }
