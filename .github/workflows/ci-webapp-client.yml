@@ -18,7 +18,7 @@ jobs:
   typecheck:
     name: "Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -38,7 +38,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -54,7 +54,7 @@ jobs:
   eslint:
     name: "ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -74,7 +74,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -90,7 +90,7 @@ jobs:
   knip:
     name: "Knip"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -110,7 +110,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -126,7 +126,7 @@ jobs:
   prettier:
     name: "Prettier"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -146,7 +146,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
