@@ -15,7 +15,7 @@ import * as Common from '../sm-tests/Common.elements.js';
 import {loginToCloud} from './login.js';
 import * as e from './smokeTest.elements.js';
 
-if (!process.argv.includes('ci')) {
+if (!process.env.CI) {
   dotenv.config();
 }
 

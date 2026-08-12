@@ -42,6 +42,12 @@ const fillAndSubmit = ClientFunction((fieldName, value) => {
   input.dispatchEvent(new Event('change', {bubbles: true}));
 
   const submitter = form.querySelector('button[type="submit"]');
+  if (!submitter) {
+    // Submitting without it would drop `name="action"` and Auth0 would reject the request, so
+    // report the missing button rather than sending a payload we know is incomplete.
+    return 'no-submit-button';
+  }
+
   if (form.requestSubmit) {
     form.requestSubmit(submitter);
   } else {
