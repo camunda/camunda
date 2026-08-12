@@ -664,9 +664,26 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
             await completeJob(request, j.jobKey);
           }
 
-          // TODO: #54238 workaround — activate the failed job before searching
-          // so it is no longer in FAILED/RETRIES_UPDATED state when /jobs/search
-          // is called (those states cause HTTP 500 in the current backend).
+          await expect(async () => {
+            const res = await request.post(buildUrl('/jobs/search'), {
+              headers: jsonHeaders(),
+              data: {filter: {processInstanceKey: piKey, type: startElJobType}},
+            });
+            await assertStatusCode(res, 200);
+            const items = (await res.json()).items as Array<{
+              jobKey: string;
+              elementId: string;
+              state: string;
+            }>;
+            expect(items).toHaveLength(3);
+            const failedJob = items.find(
+              (j) => j.jobKey === String(startJobs[0].jobKey),
+            );
+            expect(failedJob).toBeDefined();
+            expect(failedJob?.state).toBe('FAILED');
+            expect(failedJob?.elementId).toBe('miTask');
+          }).toPass(extendedAssertionOptions);
+
           let retryJobs: Awaited<ReturnType<typeof activateJobsByType>> = [];
           await expect(async () => {
             retryJobs = await activateJobsByType(
@@ -678,14 +695,6 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           }).toPass(extendedAssertionOptions);
           await completeJob(request, retryJobs[0].jobKey);
 
-          // Search after activation: all start EL jobs are now out of FAILED state.
-          await expectJobsByType(
-            request,
-            piKey,
-            startElJobType,
-            3,
-            extendedAssertionOptions,
-          );
           await expectJobsByType(request, piKey, beforeAllJobType, 1);
 
           await expectJobsByType(
