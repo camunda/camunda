@@ -197,7 +197,11 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test('Cancel an instance', async ({operateProcessInstancePage, page}) => {
+  test('Cancel an instance', async ({
+    operateProcessInstancePage,
+    operateProcessesPage,
+    page,
+  }) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -235,7 +239,15 @@ test.describe('Process Instance', () => {
 
       await expect(operateProcessInstancePage.terminatedIcon).toBeVisible();
 
-      expect(await operateProcessInstancePage.endDateField.innerText()).toMatch(
+      // The instance header's End Date column is unmounted (not just
+      // visually hidden) below Carbon's `xlg` breakpoint, so verify the end
+      // date via the Processes list's End Date column instead -- that column
+      // always renders regardless of viewport width.
+      await page.goto(
+        `operate/processes?canceled=true&processInstanceKey=${instanceId}`,
+      );
+      await expect(operateProcessesPage.endDateCell).toBeVisible();
+      expect(await operateProcessesPage.endDateCell.innerText()).toMatch(
         DATE_REGEX,
       );
     });

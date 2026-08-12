@@ -27,6 +27,7 @@ export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 export class OperateFiltersPanelPage {
   private page: Page;
   readonly activeInstancesCheckbox: Locator;
+  readonly suspendedInstancesCheckbox: Locator;
   readonly incidentsInstancesCheckbox: Locator;
   readonly runningInstancesCheckbox: Locator;
   readonly completedInstancesCheckbox: Locator;
@@ -63,6 +64,9 @@ export class OperateFiltersPanelPage {
     this.activeInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
+    this.suspendedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Suspended'});
     this.completedInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Completed'});
@@ -393,6 +397,10 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  async clickSuspendedInstancesCheckbox(): Promise<void> {
+    await this.suspendedInstancesCheckbox.click({timeout: 60000});
   }
 
   async clickIncidentsInstancesCheckbox(): Promise<void> {

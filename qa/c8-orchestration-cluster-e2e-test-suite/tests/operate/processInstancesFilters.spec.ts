@@ -710,6 +710,11 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the "Select all
+      // rows" checkbox renders.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
       await operateProcessesPage.selectAllProcessInstances();
 
       await operateProcessesPage.clickCancelBatchOperationButton();
