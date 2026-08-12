@@ -8,6 +8,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
+import type {FC} from 'react';
 import {useSessionHeartbeat, type UseSessionHeartbeatOptions} from './react';
 
 const HEARTBEAT_URL = '/session/heartbeat';
@@ -19,7 +20,7 @@ function stubFetch(status = 204) {
 	return fetchSpy;
 }
 
-const Heartbeat: React.FC<Omit<UseSessionHeartbeatOptions, 'url' | 'intervalMs'>> = (options) => {
+const Heartbeat: FC<Omit<UseSessionHeartbeatOptions, 'url' | 'intervalMs'>> = (options) => {
 	useSessionHeartbeat({url: HEARTBEAT_URL, intervalMs: INTERVAL_MS, ...options});
 	return null;
 };
