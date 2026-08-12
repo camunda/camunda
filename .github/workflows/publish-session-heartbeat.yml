@@ -15,7 +15,6 @@ on:
   push:
     branches:
       - main
-      - '**'  # Allow testing from any branch
     paths:
       - '.github/workflows/publish-session-heartbeat.yml'
       - 'webapp/client/packages/session-heartbeat/**'
