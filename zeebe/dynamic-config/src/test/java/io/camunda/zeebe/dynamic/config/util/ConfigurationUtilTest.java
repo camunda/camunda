@@ -300,9 +300,13 @@ class ConfigurationUtilTest {
     final var clusterMembers = Set.of(member(0), member(1), member(2));
 
     // when
+    final var tenantConfigs =
+        Map.of(
+            "default", partitionConfig,
+            "tenantA", partitionConfig);
     final var configuration =
         ConfigurationUtil.getCurrentClusterConfigurationFrom(
-            clusterMembers, partitionDistribution, partitionConfig, "clusterId");
+            clusterMembers, partitionDistribution, tenantConfigs, "clusterId");
 
     // then — every cluster member is ACTIVE in the global configuration, regardless of partitions
     assertThat(configuration.globalConfiguration().members().keySet())
@@ -336,7 +340,7 @@ class ConfigurationUtilTest {
     // when
     final var configuration =
         ConfigurationUtil.getCurrentClusterConfigurationFrom(
-            Set.of(member(0)), Set.of(partitionOne), partitionConfig, null);
+            Set.of(member(0)), Set.of(partitionOne), Map.of(GROUP_NAME, partitionConfig), null);
 
     // then
     assertThat(configuration.globalConfiguration().clusterId()).isEmpty();

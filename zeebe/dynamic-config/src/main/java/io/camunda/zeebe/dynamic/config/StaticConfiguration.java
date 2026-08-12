@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -28,7 +29,7 @@ public record StaticConfiguration(
     MemberId localMemberId,
     List<PartitionId> partitionIds,
     int replicationFactor,
-    DynamicPartitionConfig partitionConfig,
+    Map<String, DynamicPartitionConfig> partitionConfigPerPhysicalTenant,
     @Nullable String clusterId) {
 
   public int partitionCount() {
@@ -42,7 +43,10 @@ public record StaticConfiguration(
         partitionDistribution.stream()
             .filter(p -> p.id().group().equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
             .collect(Collectors.toSet());
-    return ConfigurationUtil.getClusterConfigFrom(defaultPartitions, partitionConfig, clusterId);
+    return ConfigurationUtil.getClusterConfigFrom(
+        defaultPartitions,
+        partitionConfigPerPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
+        clusterId);
   }
 
   /**
@@ -55,7 +59,7 @@ public record StaticConfiguration(
   public CurrentClusterConfiguration generateCurrentClusterConfiguration() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getCurrentClusterConfigurationFrom(
-        clusterMembers, partitionDistribution, partitionConfig, clusterId);
+        clusterMembers, partitionDistribution, partitionConfigPerPhysicalTenant, clusterId);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

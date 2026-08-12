@@ -54,7 +54,9 @@ public final class StaticConfigurationGenerator {
                 Collectors.toMap(
                     Entry::getKey, e -> e.getValue().getCluster().getPartitionsCount()));
     final var partitionIds = getSortedPartitionIds(partitionCountPerTenant);
-    final var partitionConfig = generatePartitionConfig(brokerCfg);
+    final var partitionConfig =
+        physicalTenantConfigs.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> generatePartitionConfig(e.getValue())));
     final var clusterId = clusterCfg.getClusterId();
 
     return new StaticConfiguration(

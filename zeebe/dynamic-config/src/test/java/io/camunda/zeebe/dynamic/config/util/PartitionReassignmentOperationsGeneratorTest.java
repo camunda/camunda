@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class PartitionReassignmentOperationsGeneratorTest {
@@ -261,8 +262,16 @@ final class PartitionReassignmentOperationsGeneratorTest {
     for (int i = 0; i < 4; i++) {
       members.add(member(i));
     }
+
+    final var tenantConfig =
+        new HashSet<>(existing)
+            .stream()
+                .map(PartitionMetadata::id)
+                .map(PartitionId::group)
+                .distinct()
+                .collect(Collectors.toMap(group -> group, group -> partitionConfig));
     return ConfigurationUtil.getCurrentClusterConfigurationFrom(
-        members, existing, partitionConfig, "clusterId");
+        members, existing, tenantConfig, "clusterId");
   }
 
   private MemberId member(final int id) {

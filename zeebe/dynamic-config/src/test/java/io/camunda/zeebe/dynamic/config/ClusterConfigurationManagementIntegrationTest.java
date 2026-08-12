@@ -397,7 +397,8 @@ class ClusterConfigurationManagementIntegrationTest {
                   cluster.getMembershipService().getLocalMember().id(),
                   List.of(),
                   3,
-                  DynamicPartitionConfig.init(),
+                  Map.of(
+                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, DynamicPartitionConfig.init()),
                   "clusterId"),
               Map.of());
       startFuture.onComplete(

@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,12 +32,12 @@ import java.util.Set;
 public class PartitionGroupExporterStateInitializer
     implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
 
-  private final Set<String> configuredExporters;
+  private final Map<String, Set<String>> configuredExporters;
   private final MemberId localMemberId;
   private final boolean isCoordinator;
 
   public PartitionGroupExporterStateInitializer(
-      final Set<String> configuredExporters,
+      final Map<String, Set<String>> configuredExporters,
       final MemberId localMemberId,
       final boolean isCoordinator) {
     this.configuredExporters = configuredExporters;
@@ -63,7 +64,12 @@ public class PartitionGroupExporterStateInitializer
       if (updated.partitionGroup(groupId).hasMember(localMemberId)) {
         updated =
             updated.updatePartitionGroupConfig(
-                groupId, group -> group.updateMember(localMemberId, this::updateExporterState));
+                groupId,
+                group ->
+                    group.updateMember(
+                        localMemberId,
+                        brokerPartitionState ->
+                            updateExporterState(groupId, brokerPartitionState)));
       }
     }
     return updated;
@@ -76,20 +82,33 @@ public class PartitionGroupExporterStateInitializer
       for (final var memberId : updated.partitionGroup(groupId).members().keySet()) {
         updated =
             updated.updatePartitionGroupConfig(
-                groupId, group -> group.updateMember(memberId, this::updateExporterState));
+                groupId,
+                group ->
+                    group.updateMember(
+                        memberId,
+                        brokerPartitionState ->
+                            updateExporterState(groupId, brokerPartitionState)));
       }
     }
     return updated;
   }
 
   private BrokerPartitionState updateExporterState(
-      final BrokerPartitionState brokerPartitionState) {
+      final String groupId, final BrokerPartitionState brokerPartitionState) {
     BrokerPartitionState updated = brokerPartitionState;
+    if (!configuredExporters.containsKey(groupId)) {
+      // All partition groups should have a configuration. When we support disabling physical
+      // tenants, those groups must be filtered out before this call.
+      throw new IllegalStateException(
+          "No configuration found for partition group '%s'".formatted(groupId));
+    }
+
+    final Set<String> configuredExportersForGroup = configuredExporters.get(groupId);
     for (final var p : brokerPartitionState.partitions().keySet()) {
       final PartitionState currentPartitionState = brokerPartitionState.partitions().get(p);
       final var updatedPartitionState =
           ExporterStateInitializer.updateExporterStateInPartition(
-              currentPartitionState, configuredExporters);
+              currentPartitionState, configuredExportersForGroup);
       // Do not update the partition state if it is unchanged, otherwise the version would be
       // bumped during every restart and could interfere with other concurrent configuration
       // changes.

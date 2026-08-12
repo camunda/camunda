@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -367,8 +368,12 @@ final class AdditivePartitionReassignerTest {
     for (int i = 0; i < 5; i++) {
       members.add(member(i));
     }
+
+    final var tenantConfig =
+        existingGroups.keySet().stream()
+            .collect(Collectors.toMap(group -> group, group -> partitionConfig));
     return ConfigurationUtil.getCurrentClusterConfigurationFrom(
-        members, allExisting, partitionConfig, "clusterId");
+        members, allExisting, tenantConfig, "clusterId");
   }
 
   private Set<MemberId> members(final int count) {

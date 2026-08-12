@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ final class PartitionDistributorInitializerTest {
         MemberId.from("0"),
         List.of(new PartitionId("test", 1)),
         1,
-        DynamicPartitionConfig.init(),
+        Map.of("test", DynamicPartitionConfig.init()),
         null);
   }
 
