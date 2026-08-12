@@ -82,17 +82,21 @@ class WebappCacheHeadersIT {
 
   @Test
   void shouldServeUnifiedFavicon() {
+    // when
     final ResponseEntity<String> response = restTemplate.getForEntity("/favicon.ico", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo("test-favicon\n");
   }
 
   @Test
   void shouldServeUnifiedFaviconUnderPhysicalTenantPrefix() {
+    // when
     final ResponseEntity<String> response =
         restTemplate.getForEntity("/physical-tenants/test-tenant/favicon.ico", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo("test-favicon\n");
   }

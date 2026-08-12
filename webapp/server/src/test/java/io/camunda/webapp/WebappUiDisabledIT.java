@@ -38,8 +38,10 @@ class WebappUiDisabledIT {
   @ParameterizedTest
   @MethodSource("unifiedWebappPaths")
   void shouldNotExposeUnifiedWebappWhenTasklistUiIsDisabled(final String path) {
+    // when
     final var response = restTemplate.getForEntity(path, String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(response.getBody()).doesNotContain("unified-webapp-test-shell");
   }

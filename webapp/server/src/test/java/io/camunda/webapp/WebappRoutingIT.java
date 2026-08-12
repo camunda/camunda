@@ -46,8 +46,10 @@ class WebappRoutingIT {
   @ParameterizedTest
   @MethodSource("tasklistRoutes")
   void shouldServeUnifiedShellForTasklistRoutes(final String route) {
+    // when
     final var response = restTemplate.getForEntity(route, String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody())
         .contains("unified-webapp-test-shell")
@@ -67,26 +69,32 @@ class WebappRoutingIT {
   @ParameterizedTest
   @MethodSource("removedTasklistResources")
   void shouldNotServeUnifiedShellForRemovedTasklistResources(final String route) {
+    // when
     final var response = restTemplate.getForEntity(route, String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(response.getBody()).doesNotContain("unified-webapp-test-shell");
   }
 
   @Test
   void shouldNotServeUnifiedShellForNonGetRequests() {
+    // when
     final var response =
         restTemplate.exchange("/tasklist/processes", HttpMethod.POST, null, String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
     assertThat(response.getBody()).doesNotContain("unified-webapp-test-shell");
   }
 
   @Test
   void shouldServePhysicalTenantTasklistAtTenantRootBaseName() {
+    // when
     final var response =
         restTemplate.getForEntity("/physical-tenants/tenant-a/tasklist/processes", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody())
         .contains("unified-webapp-test-shell")
@@ -98,8 +106,10 @@ class WebappRoutingIT {
 
   @Test
   void shouldNotExposeWebappControllerNamespace() {
+    // when
     final var response = restTemplate.getForEntity("/webapp", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
 }

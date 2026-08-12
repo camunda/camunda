@@ -72,9 +72,11 @@ class CustomCssControllerIT {
 
   @Test
   void shouldReturnCssUnderPhysicalTenantPrefix() {
+    // when
     final ResponseEntity<String> response =
         restTemplate.getForEntity("/physical-tenants/test-tenant/custom.css", String.class);
 
+    // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getHeaders().getContentType()).isNotNull();
     assertThat(response.getHeaders().getContentType().getType()).isEqualTo("text");

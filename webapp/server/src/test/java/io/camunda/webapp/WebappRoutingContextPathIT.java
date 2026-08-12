@@ -34,8 +34,10 @@ class WebappRoutingContextPathIT {
 
   @Test
   void shouldServeTasklistUnderServletContextPath() {
+    // when
     final var response = restTemplate.getForEntity("/tasklist/processes", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody())
         .contains("unified-webapp-test-shell")
@@ -47,9 +49,11 @@ class WebappRoutingContextPathIT {
 
   @Test
   void shouldServePhysicalTenantTasklistUnderServletContextPath() {
+    // when
     final var response =
         restTemplate.getForEntity("/physical-tenants/tenant-a/tasklist/processes", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody())
         .contains("data-context-path=\"/camunda/physical-tenants/tenant-a\"")
@@ -60,8 +64,10 @@ class WebappRoutingContextPathIT {
 
   @Test
   void shouldServeAssetsUnderServletContextPath() {
+    // when
     final var response = restTemplate.getForEntity("/assets/test-asset.js", String.class);
 
+    // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getHeaders().getCacheControl())
         .isEqualTo("max-age=31536000, public, immutable");
