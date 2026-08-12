@@ -128,7 +128,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           Array.from(data, ([iteration, items]) => {
             const loopIterationNode = (
               <LoopIterationMarker>
-                {iteration}.&nbsp;loop&nbsp;iteration
+                {iteration}.&nbsp;iteration
               </LoopIterationMarker>
             );
             return (
