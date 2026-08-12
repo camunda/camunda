@@ -69,13 +69,17 @@ class LazyMembershipResolutionScopeTeardownTest {
 
         @Override
         public List<String> roleIds(final MembershipQuery query) {
-          query.resolvedGroupIds().isEmpty(); // forces groupIds — which itself forces mappingRuleIds
+          query
+              .resolvedGroupIds()
+              .isEmpty(); // forces groupIds — which itself forces mappingRuleIds
           return recordAndReturn("role");
         }
 
         @Override
         public List<String> tenantIds(final MembershipQuery query) {
-          query.resolvedRoleIds().isEmpty(); // forces roleIds — which itself forces groupIds, mappingRuleIds
+          query
+              .resolvedRoleIds()
+              .isEmpty(); // forces roleIds — which itself forces groupIds, mappingRuleIds
           return recordAndReturn("tenant");
         }
 
