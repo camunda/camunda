@@ -698,7 +698,7 @@ describe('<ConversationHistory />', () => {
     );
   });
 
-  it('should insert loop iteration markers after messages in most-recent sorting order', async () => {
+  it('should insert iteration markers after messages in most-recent sorting order', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -760,7 +760,7 @@ describe('<ConversationHistory />', () => {
     ).toBeTruthy();
   });
 
-  it('should insert loop iteration markers before messages in oldest first sorting order', async () => {
+  it('should insert iteration markers before messages in oldest first sorting order', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
