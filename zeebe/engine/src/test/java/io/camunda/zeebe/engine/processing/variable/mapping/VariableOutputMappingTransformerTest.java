@@ -234,37 +234,6 @@ public final class VariableOutputMappingTransformerTest {
 
   @Test
   @Disabled(
-      "Same regrouping bug as shouldPreserveDeclarationOrderAcrossRegroupedTargets, reproducing "
-          + "#11789 (originally input mappings) for output mappings. Tracked under #56387 — once "
-          + "fixed, move into parametersSuccessfulEvaluationToObject.")
-  void shouldPreserveDeclarationOrderForRegroupedNestedTargets() {
-    // given: same mapping shape as issue #11789's "breaks" scriptTask, translated to output
-    // mappings - notNested is declared BETWEEN the two "nested.*" entries
-    final var mappings =
-        List.of(
-            mapping("\"some text\"", "nested.property"),
-            mapping("\"abc\"", "notNested"),
-            mapping("notNested", "nested.nested.property"),
-            mapping("notNested", "notNestedAssigned"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
-
-    // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(
-        result.toBuffer(),
-        "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
-            + "'notNested':'abc', 'notNestedAssigned':'abc'}");
-  }
-
-  @Test
-  @Disabled(
       "context merge() on a scalar merge base silently nulls instead of replacing, unlike the "
           + "null-merge-base case. Tracked under #XXXX — once fixed, move into "
           + "parametersSuccessfulEvaluationToObject.")
