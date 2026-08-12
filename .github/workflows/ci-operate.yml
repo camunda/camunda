@@ -184,7 +184,7 @@ jobs:
     needs: [fe-unit-tests]
     name: "Unit - Front End - Merge Reports"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: { } # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -203,7 +203,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -227,7 +227,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -248,7 +248,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -266,7 +266,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -287,7 +287,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - run: npm run eslint
         name: ESLint
       - name: Observe build status
