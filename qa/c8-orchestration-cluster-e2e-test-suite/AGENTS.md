@@ -683,10 +683,73 @@ skipping.
    - Link to the failing nightly run(s)
    - Link to the triage run
 
+   The PR stays in draft at this point — do not mark it ready yet. The Live
+   Docker Verify loop below decides whether it can leave draft.
+
+### Live Docker Verify
+
+Unlike the c8-cross-component-e2e-tests SM fix agent, there is no standing
+cluster to reconnect to here — nightly runs entirely inside the ephemeral
+GitHub Actions runner via Docker Compose (or, for RDBMS, a Maven-built local
+binary). So instead of reconnecting to a live cluster, **stand up a fresh one
+and verify against it**, using the same general loop:
+
+1. **Set up the environment** with the branch you're already on (this reads
+   `qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml` —
+   or, for RDBMS, builds from source — from *this* checkout, so it always
+   matches the code you're fixing, including on `stable/8.7`'s pre-consolidation
+   shape):
+
+   ```bash
+   cd qa/c8-orchestration-cluster-e2e-test-suite
+   nvm install "$(cat .nvmrc)" && nvm use "$(cat .nvmrc)"
+   npm ci && npx playwright install --with-deps chromium
+
+   # For any test_type: "api" entry whose database is a real RDBMS engine
+   # (anything other than "elasticsearch"), do NOT provision that engine —
+   # use the same single H2-in-memory setup the on-demand workflow's RDBMS
+   # job already uses (fast, no container, no per-engine matrix):
+   ./scripts/start-verify-env.sh h2
+
+   # Otherwise (e2e or api-es entries):
+   ./scripts/start-verify-env.sh es
+   ```
+
+   If a dispatch mixes E2E/API-ES failures with RDBMS-flagged ones, run the
+   affected spec(s) against whichever environment matches each one — call
+   the script again with the other mode if you need both. Tear down with
+   `./scripts/stop-verify-env.sh` when the loop below ends (success or not).
+
+2. **Reproduce gate — before editing anything**, run only the dispatched
+   spec(s) unmodified against the fresh environment. If they PASS unmodified,
+   the nightly failure didn't reproduce (flake, or already fixed upstream) —
+   do not open a fix PR for it; record `"verify": "not-reproduced"` for that
+   test in the result manifest and fall back to the normal artifact-only
+   diagnosis for anything that *did* reproduce.
+
+3. **Fix + verify loop — max 3 iterations.** Apply your fix, re-run the same
+   spec(s) against the **same** running environment (no need to tear down and
+   restand between iterations — you're changing test code, not product code).
+   Green → stop. Still red → refine and retry. Never exceed 3 iterations —
+   this is a cost cap, not a suggestion.
+
+4. **Outcome — record it in `/tmp/fix-meta.json`'s `verify` field** (see
+   Result Manifest below):
+   - Green within 3 iterations → `"verify": "verified"`. The calling workflow
+     marks the PR ready-for-review and adds the `verified` label.
+   - Still red after 3 → `"verify": "unverified"`. The PR stays in draft, gets
+     the `unverified` label, and your PR body must describe what you tried and
+     the remaining failure.
+
+**Not eligible for this loop** (record `"verify": "skipped"` instead):
+the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
+the "fix" is a `test.skip()` annotation) and the Workflow-Level Failure Fix
+Agent (no single spec to reproduce against).
+
 ### Constraints
 
 - **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`.
-- **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
+- **Forbidden, EXCEPT inside the Live Docker Verify loop above:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. Outside that loop the fix agent does **not** execute tests — it fixes from artifact evidence only. The on-demand workflow triggered after the PR opens remains the full-matrix regression safety net regardless of the live-verify outcome.
 - **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden**. A bare `{"prs":[]}` is sanctioned ONLY for the Gate B manual-intervention case (an unpinnable green→red flip on a test that is already hardened) and must carry a `manual_intervention` note; never leave `{"prs":[]}` with no note and no issue filed for any other reason.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Never fix a responsive-layout failure by pinning or widening the viewport.** `test.use({viewport: ...})` and `page.setViewportSize(...)` are not fixes for a UI that reflows, collapses a toolbar into a menu, or hides a column at the suite's default width — they force the test to stop exercising the layout most users actually see, and a per-file `test.use` silently changes every other test in that file too. Interact with whatever the narrow-width UI actually offers (open the menu, click the item by its accessible name, scroll to reveal on-screen content) or, when the same information is genuinely rendered nowhere at that width, verify it through a different always-visible surface (a different tab, filter, or list column) instead. Confirm which case you're in by reading the component source — is the element conditionally never rendered (e.g. a JSX branch that returns `null` / omits the column) or only `display:none`-hidden by CSS? Only the former genuinely has no on-screen alternative. If a live/local environment is available to you in the session (it is not part of the automated dispatch's tool set — see Forbidden tools above), confirm by inspecting the rendered app instead of guessing from source alone. If no non-viewport fix exists at all, say so explicitly in the PR body rather than defaulting to a silent viewport pin.
@@ -710,6 +773,7 @@ Always write `/tmp/fix-meta.json` before stopping:
       "has_api": false,
       "root_cause": "One-sentence explanation of why the test was failing.",
       "fix": "One-sentence description of what was changed and why it resolves the failure.",
+      "verify": "verified",
       "tests_fixed": [
         {"file": "tests/api/v2/...", "test_name": "...", "test_type": "api"}
       ]
@@ -720,6 +784,14 @@ Always write `/tmp/fix-meta.json` before stopping:
 
 All six fields — `number`, `owner`, `repo`, `branch`, `has_e2e`, `has_api` — are
 **mandatory**. For all PRs in this repo: `"owner": "camunda", "repo": "camunda"`.
+
+**`verify`** — the outcome of the Live Docker Verify loop for this PR: one of
+`"verified"`, `"unverified"`, `"not-reproduced"`, or `"skipped"` (see that
+section above for what each means). Defaults to being treated as `"skipped"`
+if omitted — set it explicitly. The calling workflow creates the
+`verified`/`unverified` labels if missing, applies one of them mutually
+exclusively based on this field, and toggles the PR's ready/draft state to
+match (`skipped`/`not-reproduced` leave the label and draft state untouched).
 `root_cause` and `fix` are **strongly recommended** — they are surfaced directly
 in the GitHub job summary so reviewers understand the agent's decision without
 reading the full agent log.
@@ -751,7 +823,7 @@ filed/reused issue (a dispatch may yield several bugs):
 
 ```json
 {
-  "prs": [{"number": 1234, "owner": "camunda", "repo": "camunda", "branch": "fix/nightly-8.10-skip-operate-vars", "has_e2e": true, "has_api": false}],
+  "prs": [{"number": 1234, "owner": "camunda", "repo": "camunda", "branch": "fix/nightly-8.10-skip-operate-vars", "has_e2e": true, "has_api": false, "verify": "skipped"}],
   "category": "product-bug",
   "product_bugs": [
     {
