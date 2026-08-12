@@ -311,14 +311,17 @@ jobs:
     name: "Load Test / Detect Smoke Versions"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}
     outputs:
       matrix: ${{ steps.detect.outputs.matrix }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        # fetch-depth: 0 clones full history (needed to diff against origin/main below), so this
+        # needs the same longer timeout as the other fetch-depth: 0 checkout in this file — the
+        # default 1-minute step timeout used for shallow checkouts elsewhere isn't enough.
+        timeout-minutes: 5
         with:
           fetch-depth: 0
           persist-credentials: false
