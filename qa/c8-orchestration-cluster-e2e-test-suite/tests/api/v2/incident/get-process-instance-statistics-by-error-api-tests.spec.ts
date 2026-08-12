@@ -106,7 +106,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
     await test.step('Get process instance statistics by error', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/incidents/statistics/process-instances-by-error`),
+          buildUrl('/incidents/statistics/process-instances-by-error'),
           {
             headers: jsonHeaders(),
           },
@@ -161,7 +161,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
 
     await test.step('Get process instance statistics by error sorted ASC by activeInstancesWithErrorCount', async () => {
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(),
           data: {
@@ -198,7 +198,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(),
           data: {
@@ -222,7 +222,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
   }) => {
     const invalidSortField = 'invalid';
     const res = await request.post(
-      buildUrl(`/incidents/statistics/process-instances-by-error`),
+      buildUrl('/incidents/statistics/process-instances-by-error'),
       {
         headers: jsonHeaders(),
         data: {
@@ -245,7 +245,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/incidents/statistics/process-instances-by-error`),
+      buildUrl('/incidents/statistics/process-instances-by-error'),
       {
         headers: {},
         data: {},
@@ -263,7 +263,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(token),
           data: {},

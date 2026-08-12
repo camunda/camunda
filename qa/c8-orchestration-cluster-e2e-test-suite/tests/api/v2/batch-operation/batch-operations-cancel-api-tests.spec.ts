@@ -135,7 +135,9 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
 
     await test.step('Send cancel request without auth', async () => {
       const res = await request.post(
-        buildUrl(`/batch-operations/${key}/cancellation`),
+        buildUrl('/batch-operations/{batchOperationKey}/cancellation', {
+          batchOperationKey: key,
+        }),
         {
           data: {},
         },

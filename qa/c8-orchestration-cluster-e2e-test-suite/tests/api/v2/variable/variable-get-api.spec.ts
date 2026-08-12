@@ -34,9 +34,12 @@ test.describe.parallel('Get Variable API Tests', () => {
     await test.step('Get Variable by key', async () => {
       await expect(async () => {
         const variableKey = localState['variableKey'] as string;
-        const res = await request.get(buildUrl(`/variables/${variableKey}`), {
-          headers: jsonHeaders(),
-        });
+        const res = await request.get(
+          buildUrl('/variables/{variableKey}', {variableKey}),
+          {
+            headers: jsonHeaders(),
+          },
+        );
 
         await assertStatusCode(res, 200);
         await validateResponse(
@@ -63,7 +66,7 @@ test.describe.parallel('Get Variable API Tests', () => {
   test('Get Variable Not Found', async ({request}) => {
     const unknownVariableKey = '9999999999999999';
     const res = await request.get(
-      buildUrl(`/variables/${unknownVariableKey}`),
+      buildUrl('/variables/{variableKey}', {variableKey: unknownVariableKey}),
       {
         headers: jsonHeaders(),
       },
@@ -78,7 +81,7 @@ test.describe.parallel('Get Variable API Tests', () => {
   test('Get Variable Invalid Key', async ({request}) => {
     const invalidVariableKey = 'invalidKey123';
     const res = await request.get(
-      buildUrl(`/variables/${invalidVariableKey}`),
+      buildUrl('/variables/{variableKey}', {variableKey: invalidVariableKey}),
       {
         headers: jsonHeaders(),
       },
@@ -94,7 +97,9 @@ test.describe.parallel('Get Variable API Tests', () => {
 
     await test.step('Get Variable without auth', async () => {
       const res = await request.get(
-        buildUrl(`/variables/${localState['variableKey']}`),
+        buildUrl('/variables/{variableKey}', {
+          variableKey: localState['variableKey'] as string,
+        }),
         {
           headers: {
             'Content-Type': 'application/json',

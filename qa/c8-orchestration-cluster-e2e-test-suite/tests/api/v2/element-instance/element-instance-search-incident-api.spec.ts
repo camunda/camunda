@@ -94,13 +94,16 @@ test.describe('Element Instance Incident Search API', () => {
 
     await test.step('Fail job on called process', async () => {
       const jobKey = await activateJobToObtainAValidJobKey(request, 'meow');
-      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-        headers: jsonHeaders(),
-        data: {
-          retries: 0,
-          errorMessage: 'Simulated failure',
+      const failRes = await request.post(
+        buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
         },
-      });
+      );
 
       await assertStatusCode(failRes, 204);
     });
@@ -117,9 +120,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {},
@@ -147,9 +150,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -182,9 +185,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -224,9 +227,9 @@ test.describe('Element Instance Incident Search API', () => {
     const errorMessage2 = 'Simulated failure';
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -269,9 +272,9 @@ test.describe('Element Instance Incident Search API', () => {
     const notExistingProcessInstanceKey = '9999999999999';
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -300,9 +303,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -325,9 +328,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -350,9 +353,9 @@ test.describe('Element Instance Incident Search API', () => {
     const notExistingElementInstanceKey = '9999999999999';
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${notExistingElementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: notExistingElementInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {},
@@ -370,9 +373,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: {},
           data: {},
@@ -412,9 +415,9 @@ test.describe('Element Instance Incident Search API', () => {
     await test.step('Attempt to search element instance incidents without proper authorization', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(
-            `/element-instances/${state.elementInstanceKey}/incidents/search`,
-          ),
+          buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+            elementInstanceKey: state.elementInstanceKey as string,
+          }),
           {
             headers: jsonHeaders(token), // overrides default demo:demo
             data: {},
@@ -439,9 +442,9 @@ test.describe('Element Instance Incident Search API', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/incidents/search', {
+          elementInstanceKey: state.elementInstanceKey as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {

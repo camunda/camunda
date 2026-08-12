@@ -88,7 +88,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update user authorization to add UPDATE permission', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -111,9 +113,9 @@ test.describe.parallel('Update Authorization API', () => {
 
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedUserAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedUserAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -192,7 +194,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update role authorization with changed resourceId', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${roleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: roleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -214,9 +218,9 @@ test.describe.parallel('Update Authorization API', () => {
       };
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedRoleAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedRoleAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -287,7 +291,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update group authorization to new group ownerId', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${groupAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: groupAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -310,9 +316,9 @@ test.describe.parallel('Update Authorization API', () => {
       await waitForAssertion({
         assertion: async () => {
           const getAuthRes = await request.get(
-            buildUrl(
-              `/authorizations/${expectedGroupAuthorization.authorizationKey}`,
-            ),
+            buildUrl('/authorizations/{authorizationKey}', {
+              authorizationKey: expectedGroupAuthorization.authorizationKey,
+            }),
             {
               headers: jsonHeaders(),
             },
@@ -415,7 +421,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update mapping rule authorization with new ownerId, resourceId and permissionTypes', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${mappingRuleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: mappingRuleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -437,9 +445,9 @@ test.describe.parallel('Update Authorization API', () => {
       };
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedMappingRuleAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedMappingRuleAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -513,7 +521,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update role authorization with the same authorization', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${roleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: roleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -535,9 +545,9 @@ test.describe.parallel('Update Authorization API', () => {
       };
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedRoleAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedRoleAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -595,7 +605,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update user authorization with empty request body', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -621,9 +633,9 @@ test.describe.parallel('Update Authorization API', () => {
 
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedUserAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedUserAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -684,7 +696,9 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Update user authorization to add UPDATE permission', async () => {
       await expect(async () => {
         const authRes = await request.put(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: {
               'Content-Type': 'application/json',
@@ -738,7 +752,9 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Attempt to update non-existent authorization', async () => {
       await expect(async () => {
         const authRes = await request.put(
-          buildUrl(`/authorizations/${notExistingUserAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: notExistingUserAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(),
             data: {
@@ -812,7 +828,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update role authorization with changed resourceId', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${roleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: roleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -837,9 +855,9 @@ test.describe.parallel('Update Authorization API', () => {
       };
       await expect(async () => {
         const getAuthRes = await request.get(
-          buildUrl(
-            `/authorizations/${expectedRoleAuthorization.authorizationKey}`,
-          ),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: expectedRoleAuthorization.authorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -893,7 +911,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update user authorization with invalid resourceType', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -949,7 +969,9 @@ test.describe.parallel('Update Authorization API', () => {
 
     await test.step('Update user authorization with empty permissionTypes', async () => {
       const authRes = await request.put(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -1031,7 +1053,9 @@ test.describe.parallel('Update Authorization API', () => {
     await test.step('Update user authorization to add UPDATE permission', async () => {
       await expect(async () => {
         const authRes = await request.put(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(token), // overrides default demo:demo
             data: {

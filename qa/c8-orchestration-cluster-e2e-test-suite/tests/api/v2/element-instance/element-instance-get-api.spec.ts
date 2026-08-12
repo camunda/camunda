@@ -44,7 +44,9 @@ test.describe.parallel('Get Element Instance API', () => {
     await test.step('Get element instance', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/element-instances/${state.elementInstanceKey}`),
+          buildUrl('/element-instances/{elementInstanceKey}', {
+            elementInstanceKey: state.elementInstanceKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -72,7 +74,9 @@ test.describe.parallel('Get Element Instance API', () => {
 
   test('Get Element Instance - Unauthorized', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/element-instances/${state.elementInstanceKey}`),
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: state.elementInstanceKey,
+      }),
       {
         // No auth headers
       },
@@ -81,9 +85,14 @@ test.describe.parallel('Get Element Instance API', () => {
   });
 
   test('Get Element Instance - Not Found', async ({request}) => {
-    const res = await request.get(buildUrl(`/element-instances/999999999999`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: '999999999999',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertNotFoundRequest(
       res,
       "Element Instance with key '999999999999' not found",
@@ -91,9 +100,14 @@ test.describe.parallel('Get Element Instance API', () => {
   });
 
   test('Get Element Instance - Invalid Key Format', async ({request}) => {
-    const res = await request.get(buildUrl(`/element-instances/invalidKey`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: 'invalidKey',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertBadRequest(
       res,
       "Failed to convert 'elementInstanceKey' with value: 'invalidKey'",

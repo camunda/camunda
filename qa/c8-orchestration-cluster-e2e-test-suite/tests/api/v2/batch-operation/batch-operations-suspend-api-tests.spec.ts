@@ -126,7 +126,9 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
       });
 
     const res = await request.post(
-      buildUrl(`/batch-operations/${key}/suspension`),
+      buildUrl('/batch-operations/{batchOperationKey}/suspension', {
+        batchOperationKey: key,
+      }),
       {
         data: {},
       },
