@@ -33,6 +33,8 @@ jobs:
       branch: ${{ steps.resolve-branch.outputs.branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the fake dry-run tags and branch.
+        # zizmor: ignore[artipacked]
         with:
           ref: ${{ inputs.branch || 'main' }}
       - name: Create fake dry-run tags
@@ -96,6 +98,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the branch and tag deletions.
+        # zizmor: ignore[artipacked]
       - name: Delete temporary release branch
         if: ${{ needs.dry-run-release.result == 'success' }}
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
@@ -165,6 +169,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
