@@ -37,7 +37,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UpdateAgentInstanceCommandImpl
@@ -98,23 +97,7 @@ public class UpdateAgentInstanceCommandImpl
 
   @Override
   public UpdateAgentInstanceCommandStep2 tools(final List<AgentTool> tools) {
-    final List<io.camunda.client.protocol.rest.AgentTool> protocolTools =
-        tools.stream()
-            .map(
-                apiTool -> {
-                  final io.camunda.client.protocol.rest.AgentTool protocolTool =
-                      new io.camunda.client.protocol.rest.AgentTool();
-                  protocolTool.name(apiTool.getName());
-                  if (apiTool.getDescription() != null) {
-                    protocolTool.description(apiTool.getDescription());
-                  }
-                  if (apiTool.getElementId() != null) {
-                    protocolTool.elementId(apiTool.getElementId());
-                  }
-                  return protocolTool;
-                })
-            .collect(Collectors.toList());
-    request.tools(protocolTools);
+    request.tools(AgentInstanceHistoryMapper.toProtocolTools(tools));
     return this;
   }
 
