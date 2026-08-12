@@ -28,6 +28,7 @@ public final class AgentInstanceFixtures extends CommonFixtures {
     final var builder =
         new Builder()
             .agentInstanceKey(key)
+            .agentDefinitionKey(nextKey())
             .elementId("element-" + key)
             .processInstanceKey(processInstanceKey)
             .rootProcessInstanceKey(processInstanceKey)

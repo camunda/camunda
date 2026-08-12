@@ -153,6 +153,11 @@ public class AgentInstanceFetchIT {
               .assertThat(response.getAgentInstanceKey())
               .as("agentInstanceKey")
               .isEqualTo(agentInstanceKey1);
+          softly
+              .assertThat(response.getAgentDefinitionKey())
+              .as("agentDefinitionKey")
+              .isNotNull()
+              .isPositive();
           softly.assertThat(response.getElementId()).as("elementId").isEqualTo(AGENT_ELEMENT_ID);
           softly
               .assertThat(response.getProcessInstanceKey())
@@ -210,6 +215,11 @@ public class AgentInstanceFetchIT {
               .assertThat(response.getAgentInstanceKey())
               .as("agentInstanceKey")
               .isEqualTo(agentInstanceKey2);
+          softly
+              .assertThat(response.getAgentDefinitionKey())
+              .as("agentDefinitionKey")
+              .isNotNull()
+              .isPositive();
           softly.assertThat(response.getElementId()).as("elementId").isEqualTo(AGENT_ELEMENT_ID);
           softly
               .assertThat(response.getProcessInstanceKey())
