@@ -3,23 +3,33 @@
 # type: CI
 # owner: @camunda/optimize-frontend
 #
-# Deliberately not part of the PR gate (it used to be the `e2e-cloud-test` job in ci-optimize.yml).
-# The only thing this run covers beyond the self-managed smoke job is the Auth0 login path, and its
-# outcome depends on a shared, external Auth0 dev tenant that no pull request can influence. Gating
-# merges on that tenant's availability produced false failures rather than signal, so the check now
-# runs on a schedule where a real breakage is still caught and alerted on.
+# Deliberately not part of the general PR gate (it used to be the `e2e-cloud-test` job in
+# ci-optimize.yml). The only thing this run covers beyond the self-managed smoke job is the Auth0
+# login path, and its outcome depends on a shared, external Auth0 dev tenant that no ordinary pull
+# request can influence. Gating every Optimize merge on that tenant's availability produced false
+# failures rather than signal.
+#
+# It does run on pull requests that change the cloud test or this workflow, since those are exactly
+# the changes it can invalidate - and without that the test would be unverifiable until after merge.
 name: Optimize E2E Cloud (Nightly)
 
 on:
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/optimize-e2e-tests-cloud-nightly.yml"
+      - "optimize/client/e2e/cloud-tests/**"
+      - "optimize/client/e2e/config.js"
 
-# Not keyed on github.ref: a manual dispatch from a stable branch would otherwise run alongside the
-# scheduled run and authenticate the same user against the same Auth0 tenant at the same time.
+# One bucket for the whole workflow: every run authenticates the same user against the same Auth0
+# tenant, and concurrent logins are what trip its per-IP throttling. In-flight runs are left to
+# finish rather than cancelled - each one is a real login, and discarding it midway loses the signal
+# it was started for.
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 defaults:
   run:
@@ -37,6 +47,8 @@ env:
 jobs:
   e2e-cloud:
     name: "E2E Cloud (Smoke) [${{ matrix.branch }}]"
+    # Forks cannot read the Vault secrets this job needs, so it would only ever fail for them.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -46,9 +58,10 @@ jobs:
       # to stay clear of Auth0's per-IP brute-force throttling.
       max-parallel: 1
       matrix:
-        # A manual dispatch runs only the ref it was dispatched from, so a change to the cloud test
-        # can be verified on its own branch before merging; the schedule covers the real set.
-        branch: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', github.ref_name) || '["main","stable/8.8","stable/8.9"]') }}
+        # Only the schedule sweeps every maintained branch. A dispatch or a pull request runs
+        # against its own ref alone, so a change to the test is verified before merging and a manual
+        # run costs one Auth0 login instead of three.
+        branch: ${{ github.event_name == 'schedule' && fromJSON('["main","stable/8.8","stable/8.9"]') || fromJSON(format('["{0}"]', github.head_ref || github.ref_name)) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
