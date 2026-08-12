@@ -98,13 +98,6 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 					))}
 				</DropdownMenuRadioGroup>
 
-				<DropdownMenuSeparator />
-
-				<DropdownMenuItem onSelect={onCreateFilter}>
-					<Plus aria-hidden />
-					{t('tasklist.taskFilterPanelNewFilter')}
-				</DropdownMenuItem>
-
 				{customFilters.length > 0 ? (
 					<>
 						<DropdownMenuSeparator />
@@ -125,6 +118,15 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 						</DropdownMenuRadioGroup>
 					</>
 				) : null}
+
+				{/* Kept last so it stays the final option however many custom filters
+				    exist, rather than being buried between the two groups. */}
+				<DropdownMenuSeparator />
+
+				<DropdownMenuItem onSelect={onCreateFilter}>
+					<Plus aria-hidden />
+					{t('tasklist.taskFilterPanelNewFilter')}
+				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
