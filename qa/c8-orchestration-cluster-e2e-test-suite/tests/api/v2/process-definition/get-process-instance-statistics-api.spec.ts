@@ -84,7 +84,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
 
   test('Get process instance statistics - Success', async ({request}) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(),
       },
@@ -106,7 +106,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(),
         data: {
@@ -148,7 +148,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(),
         data: {
@@ -197,7 +197,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     // reverse relationship exact regardless of collation.
     const fetchProcessDefinitionIds = async (order: 'ASC' | 'DESC') => {
       const res = await request.post(
-        buildUrl(`/process-definitions/statistics/process-instances`),
+        buildUrl('/process-definitions/statistics/process-instances'),
         {
           headers: jsonHeaders(),
           data: {
@@ -252,7 +252,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   }) => {
     const notExistingField = 'meow';
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(),
         data: {
@@ -276,7 +276,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/process-definitions/statistics/process-instances`),
+        buildUrl('/process-definitions/statistics/process-instances'),
         {
           headers: jsonHeaders(),
           data: {
@@ -306,7 +306,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(),
         data: {
@@ -326,7 +326,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
 
   test('Get process instance statistics - Unauthorized', async ({request}) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: {},
       },
@@ -341,7 +341,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
+      buildUrl('/process-definitions/statistics/process-instances'),
       {
         headers: jsonHeaders(token), // overrides default demo:demo
       },

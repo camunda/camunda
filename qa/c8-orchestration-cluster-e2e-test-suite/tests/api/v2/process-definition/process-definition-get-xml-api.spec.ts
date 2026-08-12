@@ -39,7 +39,9 @@ test.describe.parallel('Process Definition Get XML API', () => {
   test('Get Process Definition XML - Success', async ({request}) => {
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/process-definitions/${state.processDefinitionKey}/xml`),
+        buildUrl('/process-definitions/{processDefinitionKey}/xml', {
+          processDefinitionKey: state.processDefinitionKey as string,
+        }),
         {headers: textXMLHeaders()},
       );
 
@@ -50,9 +52,14 @@ test.describe.parallel('Process Definition Get XML API', () => {
   });
 
   test('Get Process Definition XML - Not Found', async ({request}) => {
-    const res = await request.get(buildUrl(`/process-definitions/123456/xml`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/xml', {
+        processDefinitionKey: '123456',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertNotFoundRequest(
       res,
       "Process Definition with key '123456' not found",
@@ -61,14 +68,18 @@ test.describe.parallel('Process Definition Get XML API', () => {
 
   test('Get Process Definition XML - Unauthorized', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/${state.processDefinitionKey}/xml`),
+      buildUrl('/process-definitions/{processDefinitionKey}/xml', {
+        processDefinitionKey: state.processDefinitionKey as string,
+      }),
     );
     await assertUnauthorizedRequest(res);
   });
 
   test('Get Process Definition XML - Invalid Key', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/invalidKey/xml`),
+      buildUrl('/process-definitions/{processDefinitionKey}/xml', {
+        processDefinitionKey: 'invalidKey',
+      }),
       {
         headers: {...jsonHeaders()},
       },

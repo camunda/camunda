@@ -37,7 +37,9 @@ test.describe.parallel('Process Definition Get API', () => {
   test('Get Process Definition - Success', async ({request}) => {
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/process-definitions/${state.processDefinitionKey}`),
+        buildUrl('/process-definitions/{processDefinitionKey}', {
+          processDefinitionKey: state.processDefinitionKey as string,
+        }),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 200);
@@ -61,9 +63,14 @@ test.describe.parallel('Process Definition Get API', () => {
   });
 
   test('Get Process Definition - Not Found', async ({request}) => {
-    const res = await request.get(buildUrl(`/process-definitions/123456`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}', {
+        processDefinitionKey: '123456',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertNotFoundRequest(
       res,
       "Process Definition with key '123456' not found",
@@ -72,15 +79,22 @@ test.describe.parallel('Process Definition Get API', () => {
 
   test('Get Process Definition - Unauthorized', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/${state.processDefinitionKey}`),
+      buildUrl('/process-definitions/{processDefinitionKey}', {
+        processDefinitionKey: state.processDefinitionKey as string,
+      }),
     );
     await assertUnauthorizedRequest(res);
   });
 
   test('Get Process Definition - Invalid Key', async ({request}) => {
-    const res = await request.get(buildUrl(`/process-definitions/invalidKey`), {
-      headers: {...jsonHeaders()},
-    });
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}', {
+        processDefinitionKey: 'invalidKey',
+      }),
+      {
+        headers: {...jsonHeaders()},
+      },
+    );
     await assertBadRequest(
       res,
       "Failed to convert 'processDefinitionKey' with value: 'invalidKey'",

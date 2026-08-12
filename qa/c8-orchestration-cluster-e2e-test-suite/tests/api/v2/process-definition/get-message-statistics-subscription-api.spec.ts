@@ -192,7 +192,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
 
     await test.step('Get definitionKEy of process instance', async () => {
       const res = await request.get(
-        buildUrl(`/process-instances/${processInstanceKey}`),
+        buildUrl('/process-instances/{processInstanceKey}', {
+          processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
         },

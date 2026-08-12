@@ -42,7 +42,9 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
 
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet}`),
+        buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+          decisionEvaluationInstanceKey: decisionEvaluationInstanceKeyToGet,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -74,7 +76,9 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
     const someRandomNotExistingKey = '9999999999999999-1';
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-instances/${someRandomNotExistingKey}`),
+        buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+          decisionEvaluationInstanceKey: someRandomNotExistingKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -93,7 +97,9 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
       decisionInstanceToGet.decisionEvaluationInstanceKey;
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet}`),
+        buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+          decisionEvaluationInstanceKey: decisionEvaluationInstanceKeyToGet,
+        }),
         {
           headers: {
             'Content-Type': 'application/json',
@@ -109,7 +115,9 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
   test('Get Decision Instance - Bad Request', async ({request}) => {
     const invalidDecisionEvaluationInstanceKey = '+++';
     const res = await request.get(
-      buildUrl(`/decision-instances/${invalidDecisionEvaluationInstanceKey}`),
+      buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+        decisionEvaluationInstanceKey: invalidDecisionEvaluationInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {},

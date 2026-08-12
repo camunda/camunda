@@ -81,7 +81,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Delete Decision Instance', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/decision-instances/deletion`),
+          buildUrl('/decision-instances/deletion'),
           {
             headers: jsonHeaders(),
             data: {
@@ -115,7 +115,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify batch operation has two operations', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/batch-operations/${createdBatchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey: createdBatchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -141,7 +143,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res1 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete1}`),
+          buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+            decisionEvaluationInstanceKey: decisionEvaluationKeyToDelete1,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -157,7 +161,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res2 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete2}`),
+          buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+            decisionEvaluationInstanceKey: decisionEvaluationKeyToDelete2,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -235,7 +241,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify No Operations are done in Batch Operation', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/batch-operations/${createdBatchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey: createdBatchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },

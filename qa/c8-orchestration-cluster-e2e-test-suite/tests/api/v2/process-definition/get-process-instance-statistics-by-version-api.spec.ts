@@ -105,7 +105,7 @@ test.describe.parallel('Process instance statistics by version', () => {
     await expect(async () => {
       const res = await request.post(
         buildUrl(
-          `/process-definitions/statistics/process-instances-by-version`,
+          '/process-definitions/statistics/process-instances-by-version',
         ),
         {
           headers: jsonHeaders(),
@@ -153,7 +153,7 @@ test.describe.parallel('Process instance statistics by version', () => {
       for (const sortOption of sort) {
         const res = await request.post(
           buildUrl(
-            `/process-definitions/statistics/process-instances-by-version`,
+            '/process-definitions/statistics/process-instances-by-version',
           ),
           {
             headers: jsonHeaders(),
@@ -220,7 +220,7 @@ test.describe.parallel('Process instance statistics by version', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      buildUrl('/process-definitions/statistics/process-instances-by-version'),
       {
         headers: jsonHeaders(),
         data: {},
@@ -234,7 +234,7 @@ test.describe.parallel('Process instance statistics by version', () => {
   }) => {
     const notExistingField = {meow: 'meow'};
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      buildUrl('/process-definitions/statistics/process-instances-by-version'),
       {
         headers: jsonHeaders(),
         data: {
@@ -256,7 +256,7 @@ test.describe.parallel('Process instance statistics by version', () => {
   }) => {
     const nonExistingProcessDefinitionId = 'nonExistingProcessDefinitionId';
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      buildUrl('/process-definitions/statistics/process-instances-by-version'),
       {
         headers: jsonHeaders(),
         data: {
@@ -284,7 +284,7 @@ test.describe.parallel('Process instance statistics by version', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      buildUrl('/process-definitions/statistics/process-instances-by-version'),
       {
         headers: {},
         data: {
@@ -304,7 +304,7 @@ test.describe.parallel('Process instance statistics by version', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      buildUrl('/process-definitions/statistics/process-instances-by-version'),
       {
         headers: jsonHeaders(token), // overrides default demo:demo
         data: {
