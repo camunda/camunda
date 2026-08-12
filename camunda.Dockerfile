@@ -38,6 +38,36 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
+<<<<<<< HEAD
+=======
+### jattach download stage ###
+# hadolint ignore=DL3006,DL3007
+FROM alpine AS jattach
+ARG TARGETARCH
+ARG JATTACH_VERSION
+ARG JATTACH_CHECKSUM_AMD64
+ARG JATTACH_CHECKSUM_ARM64
+
+# hadolint ignore=DL4006,DL3018
+# --retry-all-errors is what makes the retry apply to a dropped or refused TLS
+# connection to github.com; without it curl only retries timeouts and 5xx, and
+# an SSL connect error (exit 35) fails the build on the first attempt.
+RUN apk add -q --no-cache curl && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+      BINARY="linux-x64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
+    else  \
+      BINARY="linux-arm64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
+    fi && \
+    curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+      "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
+      -o jattach.tgz && \
+    echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
+    tar -xzf "jattach.tgz" && \
+    chmod +x jattach && \
+    mv jattach /jattach
+>>>>>>> 3989bb64 (fix: retry the jattach download when the TLS connection to github.com fails)
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006,DL3007
