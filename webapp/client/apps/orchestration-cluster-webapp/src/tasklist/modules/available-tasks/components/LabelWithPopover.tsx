@@ -34,7 +34,7 @@ const LabelWithPopoverDS: React.FC<Props> = ({title, popoverContent, children, a
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<span className={cn(styles.label, styles.labelPrimary)} title={title}>
+				<span className={cn(styles.label, styles.labelPrimary, styles.labelDS)} title={title}>
 					{children}
 				</span>
 			</TooltipTrigger>

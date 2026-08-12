@@ -8,6 +8,8 @@
 
 import {Layer, Tag} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {BPMNDiagram} from './BPMNDiagram';
 import styles from './ProcessDiagramView.module.scss';
 
@@ -24,10 +26,12 @@ const ProcessDiagramView: React.FC<Props> = ({xml, elementId, processName, proce
 	return (
 		<Layer className={styles.container}>
 			<div className={styles.header}>
-				<span className={styles.processName}>{processName}</span>
+				<span className={cn(styles.processName, featureFlags.dsTasklistUI && styles.processNameDS)}>
+					{processName}
+				</span>
 				<Tag className={styles.version}>{t('tasklist.processViewProcessVersion', {version: processVersion})}</Tag>
 			</div>
-			<Layer className={styles.diagramFrame}>
+			<Layer className={cn(styles.diagramFrame, featureFlags.dsTasklistUI && styles.diagramFrameDS)}>
 				<BPMNDiagram xml={xml} highlightActivity={elementId} />
 			</Layer>
 		</Layer>

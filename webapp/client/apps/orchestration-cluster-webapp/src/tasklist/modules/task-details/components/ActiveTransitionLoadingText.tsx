@@ -8,6 +8,8 @@
 
 import {Loading} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './ActiveTransitionLoadingText.module.scss';
 
 type Props = {
@@ -45,7 +47,9 @@ const ActiveTransitionLoadingText: React.FC<Props> = ({taskState}) => {
 	return (
 		<div className={styles.container}>
 			<Loading small withOverlay={false} />
-			<p className={styles.message}>{statusLoadingMessage[taskState]}</p>
+			<p className={cn(styles.message, featureFlags.dsTasklistUI && styles.messageDS)}>
+				{statusLoadingMessage[taskState]}
+			</p>
 		</div>
 	);
 };

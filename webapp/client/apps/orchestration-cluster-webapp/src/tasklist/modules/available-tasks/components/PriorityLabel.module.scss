@@ -26,4 +26,11 @@
 	flex-shrink: 0;
 	vertical-align: text-bottom;
 	margin-right: var(--cds-spacing-01);
+
+	// DS-only (see PriorityLabel.tsx). Zeroes the Carbon-era margin — the
+	// icon-to-text gap is supplied by LabelWithPopover.module.scss's
+	// .labelDS `gap` instead, so the two don't stack.
+	&.inlineIconDS {
+		margin-right: 0;
+	}
 }

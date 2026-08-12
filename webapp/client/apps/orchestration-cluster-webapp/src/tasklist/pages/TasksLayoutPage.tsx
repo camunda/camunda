@@ -13,6 +13,8 @@ import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/Avai
 import {CollapsiblePanel} from '#/tasklist/modules/available-tasks/components/CollapsiblePanel';
 import {Filters} from '#/tasklist/modules/available-tasks/components/Filters';
 import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/components/AutoSelectNextTaskToggle';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './TasksLayoutPage.module.scss';
 import {Outlet} from '@tanstack/react-router';
 
@@ -38,7 +40,11 @@ const TasksLayoutPage: React.FC<Props> = ({
 	return (
 		<main id="main-content" className={styles.container}>
 			<CollapsiblePanel />
-			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasklist.tasksPanelLabel')}>
+			<Stack
+				as="section"
+				className={cn(styles.tasksPanel, featureFlags.dsTasklistUI && styles.tasksPanelDS)}
+				aria-label={t('tasklist.tasksPanelLabel')}
+			>
 				<Filters />
 				<AvailableTasks
 					tasks={tasks}
@@ -50,7 +56,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 				/>
 				<AutoSelectNextTaskToggle />
 			</Stack>
-			<div className={styles.detailsPanel}>
+			<div className={cn(styles.detailsPanel, featureFlags.dsTasklistUI && styles.detailsPanelDS)}>
 				<Outlet />
 			</div>
 		</main>

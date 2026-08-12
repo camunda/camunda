@@ -8,9 +8,15 @@
 
 import {Column, Grid, Link} from '#/shared/design-system-compat';
 import {useTranslation, Trans} from 'react-i18next';
+import {Check} from 'lucide-react';
+import {Button, EmptyState} from '@camunda/design-system';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './NoTaskSelectedPage.module.scss';
 import {SvgOrangeCheckMark} from '#/shared/svg/OrangeCheckMark';
+
+const TUTORIAL_URL = 'https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks';
 
 type Props = {
 	hasNoTasks: boolean;
@@ -22,6 +28,35 @@ const NoTaskSelectedPage: React.FC<Props> = ({hasNoTasks}) => {
 
 	if (hasNoTasks && isOldUser) {
 		return null;
+	}
+
+	// DS-only (see below — only ever rendered when featureFlags.dsTasklistUI is
+	// on and this is the first-time "Welcome to Tasklist" state, not the
+	// isOldUser "pick a task" prompt, which keeps its existing Grid/Column
+	// markup unchanged for both UIs). Uses the DS's own EmptyState component
+	// instead of the hand-rolled Grid/Column/h3/p structure below.
+	if (featureFlags.dsTasklistUI && !isOldUser) {
+		return (
+			<div className={styles.containerDS}>
+				<EmptyState
+					icon={<Check aria-hidden />}
+					heading={t('tasklist.taskEmptyHeader')}
+					description={
+						<>
+							{t('tasklist.taskEmptyDetail1')} {t('tasklist.taskEmptyDetail2')}
+							{!hasNoTasks ? <> {t('tasklist.taskEmptyTaskAvailablePrompt')}</> : null}
+						</>
+					}
+					action={
+						<Button asChild>
+							<a href={TUTORIAL_URL} target="_blank" rel="noreferrer">
+								{t('tasklist.taskEmptyTutorialCta')}
+							</a>
+						</Button>
+					}
+				/>
+			</div>
+		);
 	}
 
 	return (
@@ -44,7 +79,18 @@ const NoTaskSelectedPage: React.FC<Props> = ({hasNoTasks}) => {
 			>
 				<SvgOrangeCheckMark className={styles.image} aria-hidden />
 			</Column>
-			<Column className={isOldUser ? styles.oldUserText : styles.newUserText} sm={3} md={5} lg={10} xlg={10}>
+			<Column
+				className={cn(
+					isOldUser ? styles.oldUserText : styles.newUserText,
+					// Only isOldUser reaches this Column with the flag on — the
+					// !isOldUser DS path returns its own EmptyState render above.
+					isOldUser && featureFlags.dsTasklistUI && styles.oldUserTextDS,
+				)}
+				sm={3}
+				md={5}
+				lg={10}
+				xlg={10}
+			>
 				{isOldUser ? (
 					<h3>{t('tasklist.taskEmptyPickPrompt')}</h3>
 				) : (

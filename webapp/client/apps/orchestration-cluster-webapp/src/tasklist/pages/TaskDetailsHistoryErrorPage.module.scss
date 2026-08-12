@@ -23,8 +23,27 @@
 
 .title {
 	@include type.type-style('heading-03');
+
+	// DS-only (see TaskDetailsHistoryErrorPage.tsx). heading-03 is 20px/28px
+	// regular weight, matching Tailwind's text-xl exactly minus letter-spacing
+	// (Carbon sets none here anyway).
+	&.titleDS {
+		font-size: 1.25rem;
+		line-height: 1.75rem;
+		font-weight: 400;
+		letter-spacing: normal;
+	}
 }
 
 .description {
 	@include type.type-style('body-01');
+
+	// DS-only. body-01 (=body-long-01) is 14px/20px, matching Tailwind's
+	// text-sm exactly minus Carbon's 0.16px letter-spacing.
+	&.descriptionDS {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 400;
+		letter-spacing: normal;
+	}
 }

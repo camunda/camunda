@@ -9,6 +9,7 @@
 import {useCallback, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import {NoTasks} from './NoTasks';
 import {Task} from './Task';
@@ -59,7 +60,7 @@ const AvailableTasks: React.FC<Props> = ({
 		>
 			{tasks.length > 0 ? (
 				<div
-					className={styles.listContainer}
+					className={cn(styles.listContainer, featureFlags.dsTasklistUI && styles.listContainerDS)}
 					data-testid="scrollable-list"
 					ref={scrollableListRef}
 					onScroll={handleScroll}

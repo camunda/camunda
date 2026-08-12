@@ -28,6 +28,17 @@
 	@include type.type-style('heading-02');
 
 	color: var(--cds-text-primary);
+
+	// DS-only (see ProcessDiagramView.tsx). heading-02 is 16px/24px semibold,
+	// matching Tailwind's text-base + font-semibold exactly, minus letter-
+	// spacing (Carbon sets none here anyway).
+	&.processNameDS {
+		font-size: 1rem;
+		line-height: 1.5rem;
+		font-weight: 600;
+		letter-spacing: normal;
+		color: var(--neutral-foreground-strong);
+	}
 }
 
 .version {
@@ -39,4 +50,11 @@
 	min-height: 0;
 	flex: 1;
 	background-color: var(--cds-layer);
+
+	// DS-only (see ProcessDiagramView.tsx). DS's base surface token, matching the
+	// surrounding panels. Keep in sync with TaskDetailsProcessSkeleton's
+	// `.diagram`, which stands in for this frame while the diagram loads.
+	&.diagramFrameDS {
+		background-color: var(--background);
+	}
 }

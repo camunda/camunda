@@ -15,6 +15,7 @@ import {
 	UserAvatarFilledIcon,
 	UserAvatarIcon,
 } from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import styles from './AssigneeTag.module.scss';
 
@@ -45,6 +46,9 @@ const Tag: React.FC<TagProps<'div'> & AssigneeTagProps> = ({
 			[styles.assigned!]: $isAssigned,
 			[styles.highlighted!]: $isHighlighted,
 			[styles.small!]: size == 'sm',
+			[styles.tagDS!]: featureFlags.dsTasklistUI,
+			[styles.assignedDS!]: $isAssigned && featureFlags.dsTasklistUI,
+			[styles.highlightedDS!]: $isHighlighted && featureFlags.dsTasklistUI,
 		})}
 	>
 		{children}

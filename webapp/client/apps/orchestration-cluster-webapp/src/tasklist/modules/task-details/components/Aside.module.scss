@@ -11,9 +11,28 @@
 .itemHeading {
 	color: var(--cds-text-secondary);
 	@include type.type-style('body-short-01');
+
+	// DS-only (see Aside.tsx). body-short-01 is 14px/18px; Tailwind's text-sm
+	// (14px/20px) is the DS's own closest scale step, minus Carbon's 0.16px
+	// letter-spacing.
+	&.itemHeadingDS {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 400;
+		letter-spacing: normal;
+		color: var(--neutral-foreground-subtle);
+	}
 }
 
 .itemBody {
 	color: var(--cds-text-primary);
 	@include type.type-style('body-short-01');
+
+	&.itemBodyDS {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 400;
+		letter-spacing: normal;
+		color: var(--neutral-foreground-strong);
+	}
 }

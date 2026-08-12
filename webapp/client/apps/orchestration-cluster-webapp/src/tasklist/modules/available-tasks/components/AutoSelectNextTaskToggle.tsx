@@ -8,6 +8,8 @@
 
 import {Toggle} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './AutoSelectNextTaskToggle.module.scss';
 import {useCallback, useState} from 'react';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
@@ -24,7 +26,10 @@ const AutoSelectNextTaskToggle: React.FC = () => {
 	}, []);
 
 	return (
-		<section className={styles.container} aria-label={t('tasklist.taskOptionsSectionAria')}>
+		<section
+			className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}
+			aria-label={t('tasklist.taskOptionsSectionAria')}
+		>
 			<Toggle
 				id="toggle-auto-select-task"
 				size="sm"

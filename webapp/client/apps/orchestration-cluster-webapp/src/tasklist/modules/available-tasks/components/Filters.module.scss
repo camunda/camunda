@@ -14,12 +14,20 @@
 	flex-direction: row;
 	justify-content: space-between;
 	align-items: center;
-	padding: var(--cds-spacing-02) var(--cds-spacing-05);
+	padding: 0.5rem;
 	border-bottom: 1px solid var(--cds-border-subtle);
 	box-sizing: border-box;
-	height: layout.to-rem(48px);
+	height: layout.to-rem(52px);
+
+	// DS-only (see Filters.tsx). Same divider token as the other task-list/
+	// task-details container borders.
+	&.panelHeaderDS {
+		border-bottom-color: var(--border);
+	}
 }
 
+// Old-UI only now (see Filters.tsx — the DS path renders FilterSelectDS's
+// own Select instead of this <h1>, so its type-style/color are Carbon-only).
 .header {
 	@include type.type-style('heading-01');
 	color: var(--cds-text-primary);

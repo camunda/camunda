@@ -19,13 +19,31 @@
 
 	&.assigned {
 		color: var(--cds-text-primary);
+
+		&.assignedDS {
+			color: var(--neutral-foreground-strong);
+		}
 	}
 
 	&.highlighted {
 		background-color: var(--cds-layer-selected);
+
+		&.highlightedDS {
+			background-color: var(--neutral-background-strong);
+		}
 	}
 
 	&.small {
 		padding-left: var(--cds-spacing-01);
+	}
+
+	// DS-only (see AssigneeTag.tsx). This Tag is the compat-layer component —
+	// with the flag on it's already the real DS Tag underneath, which supplies
+	// its own correct font-size/weight. Only the color needs remapping from
+	// Carbon's --cds-text-secondary to the DS's own neutral-foreground token.
+	// Nested (not standalone) so it wins over .tag's own rule regardless of
+	// source order.
+	&.tagDS {
+		color: var(--neutral-foreground-subtle);
 	}
 }

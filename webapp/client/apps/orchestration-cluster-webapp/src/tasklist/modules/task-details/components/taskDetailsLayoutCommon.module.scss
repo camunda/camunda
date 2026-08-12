@@ -45,7 +45,6 @@
  */
 .headerBorder {
 	padding-bottom: var(--cds-spacing-05);
-	border-bottom: 1px solid var(--cds-border-subtle);
 }
 
 .headerLeftContainer {
@@ -68,6 +67,35 @@
 	display: flex;
 	flex-direction: column;
 	overflow: auto;
+
+	// DS-only (see Aside.tsx). Same divider token as Task.module.scss's
+	// .containerDS and .headerBorder/.content>[data-slot='tabs'] above.
+	&.asideDS {
+		border-left-color: var(--border);
+
+		// ContainedList/ContainedListItem are a SHIM-tier compat export (see
+		// carbon-compat/contained-list.tsx) — literally Carbon's own
+		// component re-exported unchanged, no DS equivalent yet. Its row
+		// dividers are a `::before` pseudo-element with a `background-color`
+		// (not a border — verified against @carbon/styles's own
+		// _contained-list.scss), real Carbon markup/classes regardless of the
+		// flag, so they can't be fixed via a prop/className on the component
+		// itself; this scopes the override to only ever apply under
+		// .asideDS (i.e. only when the flag is on), leaving old-UI's
+		// identical Carbon markup untouched. Removed per explicit request —
+		// rows are no longer divided by a line at all.
+		:global(.cds--contained-list-item:not(:last-of-type))::before {
+			background-color: transparent;
+		}
+
+		// Same SHIM-tier situation as above: `kind="disclosed"` (see Aside.tsx)
+		// compiles to `.cds--contained-list--disclosed`, whose header background
+		// is Carbon's `$layer` token (`_contained-list.scss`) — stood out white
+		// against the panel's `--background` fix. Scoped the same way.
+		:global(.cds--contained-list--disclosed .cds--contained-list__header) {
+			background-color: var(--background);
+		}
+	}
 }
 
 /*
@@ -104,5 +132,4 @@
 	align-self: flex-start;
 	padding-left: var(--cds-spacing-05);
 	padding-bottom: var(--cds-spacing-03);
-	border-bottom: 1px solid var(--cds-border-subtle);
 }

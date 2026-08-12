@@ -28,6 +28,13 @@
 	z-index: auto !important;
 	height: 100%;
 	border-right: 1px solid var(--cds-border-subtle);
+
+	// DS-only path (this class is only ever passed to AppSidebar in the
+	// dsTasklistUI branch). DS's base surface token, matching the task-list and
+	// task-details panels in TasksLayoutPage.module.scss so every panel shares
+	// one background. AppSidebar ships its own surface colour, so this needs to
+	// win over it.
+	background-color: var(--background) !important;
 }
 
 .base {

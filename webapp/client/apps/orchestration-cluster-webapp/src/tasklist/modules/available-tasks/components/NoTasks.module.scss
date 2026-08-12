@@ -8,6 +8,9 @@
 
 @use '@carbon/type';
 
+// Old-UI only now (see NoTasks.tsx — the DS path renders EmptyState instead
+// of this markup at all, so there's no DS variant of any class below left
+// to gate).
 .container {
 	width: 100%;
 	border: 1px solid var(--cds-border-subtle);

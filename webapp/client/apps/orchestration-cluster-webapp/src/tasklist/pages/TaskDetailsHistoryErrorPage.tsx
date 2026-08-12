@@ -12,6 +12,8 @@ import {Button, Layer, LaunchIcon, Link, Stack} from '#/shared/design-system-com
 import {requestErrorSchema} from '#/shared/http/request';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import SvgForbidden from '#/shared/svg/Forbidden';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './TaskDetailsHistoryErrorPage.module.scss';
 import {useCallback} from 'react';
 
@@ -48,8 +50,10 @@ const ForbiddenHistoryPage: React.FC = () => {
 					<SvgForbidden aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h3 className={styles.title}>{t('tasklist.taskDetailsHistoryForbiddenTitle')}</h3>
-							<div className={styles.description}>
+							<h3 className={cn(styles.title, featureFlags.dsTasklistUI && styles.titleDS)}>
+								{t('tasklist.taskDetailsHistoryForbiddenTitle')}
+							</h3>
+							<div className={cn(styles.description, featureFlags.dsTasklistUI && styles.descriptionDS)}>
 								<Trans i18nKey="tasklist.taskDetailsHistoryForbiddenDesc" components={{strong: <strong />}} />
 							</div>
 						</Stack>
@@ -77,8 +81,12 @@ const GenericHistoryErrorPage: React.FC<GenericHistoryErrorPageProps> = ({onRetr
 					<SvgErrorRobot aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h3 className={styles.title}>{t('tasklist.taskDetailsHistoryErrorTitle')}</h3>
-							<p className={styles.description}>{t('tasklist.taskDetailsHistoryErrorMessage')}</p>
+							<h3 className={cn(styles.title, featureFlags.dsTasklistUI && styles.titleDS)}>
+								{t('tasklist.taskDetailsHistoryErrorTitle')}
+							</h3>
+							<p className={cn(styles.description, featureFlags.dsTasklistUI && styles.descriptionDS)}>
+								{t('tasklist.taskDetailsHistoryErrorMessage')}
+							</p>
 						</Stack>
 						<Button onClick={onRetry}>{t('errorGenericErrorPageButtonLabel')}</Button>
 					</Stack>

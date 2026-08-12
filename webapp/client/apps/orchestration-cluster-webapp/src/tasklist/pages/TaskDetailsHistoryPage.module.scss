@@ -26,4 +26,10 @@
 	justify-content: center;
 	align-items: center;
 	background-color: var(--cds-layer);
+
+	// DS-only (see TaskDetailsHistoryPage.tsx). DS's base surface token, matching
+	// the surrounding panels in TasksLayoutPage.module.scss.
+	&.emptyContainerDS {
+		background-color: var(--background);
+	}
 }

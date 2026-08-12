@@ -42,7 +42,7 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 			case 'COMPLETED':
 				return (
 					<span
-						className={styles.taskStatus}
+						className={cn(styles.taskStatus, featureFlags.dsTasklistUI && styles.taskStatusDS)}
 						data-testid="completion-label"
 						title={t('tasklist.taskDetailsTaskCompletedBy')}
 					>
@@ -51,7 +51,10 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 							{assignee ? (
 								<>
 									{t('tasklist.taskDetailsTaskCompletedBy') + ' '}
-									<span className={styles.taskAssignee} data-testid="assignee">
+									<span
+										className={cn(styles.taskAssignee, featureFlags.dsTasklistUI && styles.taskAssigneeDS)}
+										data-testid="assignee"
+									>
 										<AssigneeTag currentUser={user} assignee={assignee} isShortFormat />
 									</span>
 								</>
@@ -66,7 +69,10 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 			case 'FAILED':
 				return (
 					<>
-						<span className={styles.taskAssignee} data-testid="assignee">
+						<span
+							className={cn(styles.taskAssignee, featureFlags.dsTasklistUI && styles.taskAssigneeDS)}
+							data-testid="assignee"
+						>
 							<AssigneeTag currentUser={user} assignee={assignee} isShortFormat={false} />
 						</span>
 						<span className={styles.assignButtonContainer}>{assignButton}</span>
@@ -77,7 +83,10 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 				return (
 					<>
 						<ActiveTransitionLoadingText taskState={taskState} />
-						<span className={styles.taskAssignee} data-testid="assignee">
+						<span
+							className={cn(styles.taskAssignee, featureFlags.dsTasklistUI && styles.taskAssigneeDS)}
+							data-testid="assignee"
+						>
 							<AssigneeTag currentUser={user} assignee={assignee} isShortFormat={false} />
 						</span>
 					</>
@@ -101,8 +110,10 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 			title={t('tasklist.taskDetailsHeader')}
 		>
 			<div className={layoutStyles.headerLeftContainer}>
-				<span className={styles.taskName}>{taskName}</span>
-				<span className={styles.processName}>{processName}</span>
+				<span className={cn(styles.taskName, featureFlags.dsTasklistUI && styles.taskNameDS)}>{taskName}</span>
+				<span className={cn(styles.processName, featureFlags.dsTasklistUI && styles.processNameDS)}>
+					{processName}
+				</span>
 			</div>
 			<div className={layoutStyles.headerRightContainer}>{renderRightContent()}</div>
 		</header>

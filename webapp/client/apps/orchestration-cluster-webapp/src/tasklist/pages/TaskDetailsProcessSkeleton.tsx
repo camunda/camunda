@@ -7,6 +7,8 @@
  */
 
 import {SkeletonText} from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './TaskDetailsProcessSkeleton.module.scss';
 
 const TaskDetailsProcessSkeleton: React.FC = () => {
@@ -16,7 +18,7 @@ const TaskDetailsProcessSkeleton: React.FC = () => {
 				<SkeletonText className={styles.title} />
 				<SkeletonText className={styles.tag} />
 			</div>
-			<div className={styles.diagram} />
+			<div className={cn(styles.diagram, featureFlags.dsTasklistUI && styles.diagramDS)} />
 		</div>
 	);
 };

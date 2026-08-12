@@ -139,10 +139,13 @@ import {
 	Calendar as LucideCalendar,
 	CalendarClock as LucideCalendarClock,
 	Check as LucideCheck,
+	ChevronsDown as LucideChevronsDown,
+	ChevronsUp as LucideChevronsUp,
 	CircleCheck as LucideCircleCheck,
 	CircleDashed as LucideCircleDashed,
 	CircleUser as LucideCircleUser,
 	Crosshair as LucideCrosshair,
+	Equal as LucideEqual,
 	ExternalLink as LucideExternalLink,
 	Filter as LucideFilter,
 	Info as LucideInfo,
@@ -150,9 +153,6 @@ import {
 	PanelLeftOpen as LucidePanelLeftOpen,
 	Plus as LucidePlus,
 	Search as LucideSearchIcon,
-	SignalHigh as LucideSignalHigh,
-	SignalLow as LucideSignalLow,
-	SignalMedium as LucideSignalMedium,
 	TriangleAlert as LucideTriangleAlert,
 	X as LucideX,
 	ZoomIn as LucideZoomIn,
@@ -437,13 +437,15 @@ export const NotificationIcon = featureFlags.dsTasklistUI ? LucideBell : CarbonN
 export const SortAscendingIcon = featureFlags.dsTasklistUI ? LucideArrowUpNarrowWide : CarbonSortAscending;
 
 // Carbon's SkillLevel* icons are used here as priority-level indicators
-// (low/medium/high signal bars), not a Camunda domain entity — no registry
-// match. Lucide's Signal* icons are the closest visual equivalent (bar-style
-// severity indicators). `Critical` maps to `TriangleAlert`, consistent with
-// the existing Carbon `WarningFilled`/`Caution` -> `TriangleAlert` precedent.
-export const SkillLevelBasicIcon = featureFlags.dsTasklistUI ? LucideSignalLow : CarbonSkillLevelBasic;
-export const SkillLevelIntermediateIcon = featureFlags.dsTasklistUI ? LucideSignalMedium : CarbonSkillLevelIntermediate;
-export const SkillLevelAdvancedIcon = featureFlags.dsTasklistUI ? LucideSignalHigh : CarbonSkillLevelAdvanced;
+// (low/medium/high), not a Camunda domain entity — no registry match.
+// Explicit choice (not the KB's default Signal* mapping): `ChevronsDown`/
+// `ChevronsUp` for low/high (directional magnitude reads clearer than bar
+// height at this icon size), `Equal` for medium (neither up nor down).
+// `Critical` maps to `TriangleAlert`, consistent with the existing Carbon
+// `WarningFilled`/`Caution` -> `TriangleAlert` precedent.
+export const SkillLevelBasicIcon = featureFlags.dsTasklistUI ? LucideChevronsDown : CarbonSkillLevelBasic;
+export const SkillLevelIntermediateIcon = featureFlags.dsTasklistUI ? LucideEqual : CarbonSkillLevelIntermediate;
+export const SkillLevelAdvancedIcon = featureFlags.dsTasklistUI ? LucideChevronsUp : CarbonSkillLevelAdvanced;
 export const CriticalIcon = featureFlags.dsTasklistUI ? LucideTriangleAlert : CarbonCritical;
 
 // EventSchedule: used here as a generic calendar/time-of-event glyph (audit

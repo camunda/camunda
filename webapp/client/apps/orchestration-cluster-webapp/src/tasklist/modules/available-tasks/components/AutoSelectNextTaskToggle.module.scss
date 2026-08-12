@@ -11,4 +11,11 @@
 	padding: var(--cds-spacing-04) var(--cds-spacing-05);
 	border-top: 1px solid var(--cds-border-subtle);
 	border-bottom: 1px solid var(--cds-border-subtle);
+
+	// DS-only (see AutoSelectNextTaskToggle.tsx). Same divider token as the
+	// other task-list/task-details container borders.
+	&.containerDS {
+		border-top-color: var(--border);
+		border-bottom-color: var(--border);
+	}
 }

@@ -11,6 +11,8 @@ import {Layer} from '#/shared/design-system-compat';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {TaskDetailsHistorySearch} from '#/tasklist/modules/task-details-history/sortUtils';
 import {HistoryTable} from '#/tasklist/modules/task-details-history/components/HistoryTable';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './TaskDetailsHistoryPage.module.scss';
 
 type Props = {
@@ -36,7 +38,7 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 	if (auditLogs.length === 0) {
 		return (
 			<div className={styles.container} data-testid="history-tab-content">
-				<div className={styles.emptyContainer}>
+				<div className={cn(styles.emptyContainer, featureFlags.dsTasklistUI && styles.emptyContainerDS)}>
 					<Layer>
 						<p>{t('tasklist.taskDetailsHistoryEmptyMessage')}</p>
 					</Layer>

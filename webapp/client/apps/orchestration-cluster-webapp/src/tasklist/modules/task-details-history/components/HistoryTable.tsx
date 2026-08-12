@@ -30,6 +30,7 @@ import {InformationIcon} from '#/shared/design-system-compat';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
+import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
@@ -120,7 +121,9 @@ const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				details:
 					log.operationType === 'ASSIGN' ? (
 						<>
-							<div className={styles.detailsLabel}>{t('tasklist.taskDetailsHistoryPropertyAssignee')}</div>
+							<div className={cn(styles.detailsLabel, featureFlags.dsTasklistUI && styles.detailsLabelDS)}>
+								{t('tasklist.taskDetailsHistoryPropertyAssignee')}
+							</div>
 							{log.relatedEntityKey}
 						</>
 					) : (

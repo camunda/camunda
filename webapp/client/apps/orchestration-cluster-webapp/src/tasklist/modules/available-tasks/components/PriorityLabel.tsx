@@ -13,6 +13,7 @@ import {
 	SkillLevelIntermediateIcon,
 } from '#/shared/design-system-compat';
 import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {LabelWithPopover, type Align} from './LabelWithPopover';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import styles from './PriorityLabel.module.scss';
@@ -50,7 +51,7 @@ const PriorityLabel: React.FC<PriorityLabelProps> = ({priority, align = 'top-end
 			}
 			align={align}
 		>
-			<PriorityIcon className={styles.inlineIcon} />
+			<PriorityIcon className={cn(styles.inlineIcon, featureFlags.dsTasklistUI && styles.inlineIconDS)} />
 			{priorityLabel.short}
 		</LabelWithPopover>
 	);

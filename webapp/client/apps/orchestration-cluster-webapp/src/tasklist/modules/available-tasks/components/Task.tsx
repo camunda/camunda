@@ -75,6 +75,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 				className={cn(styles.container, {
 					[styles.active!]: isActive,
 					[styles.activeDS!]: isActive && featureFlags.dsTasklistUI,
+					[styles.containerDS!]: featureFlags.dsTasklistUI,
 				})}
 			>
 				<Link
@@ -90,9 +91,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 				>
 					<Stack className={styles.fullWidthAndHeight} data-testid={`task-${userTaskKey}`} gap={3} ref={ref}>
 						<div className={cn(styles.flex, styles.flexColumn)}>
-							<span className={styles.name}>{displayName}</span>
-							<span className={styles.label}>{processDisplayName}</span>
-							{businessId !== null && <span className={styles.label}>{businessId}</span>}
+							<span className={cn(styles.name, featureFlags.dsTasklistUI && styles.nameDS)}>{displayName}</span>
+							<span className={cn(styles.label, featureFlags.dsTasklistUI && styles.labelDS)}>{processDisplayName}</span>
+							{businessId !== null && (
+								<span className={cn(styles.label, featureFlags.dsTasklistUI && styles.labelDS)}>{businessId}</span>
+							)}
 						</div>
 
 						<div className={cn(styles.flex, styles.flexRow)}>
@@ -105,7 +108,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={creationDate}
 									relativeLabel={t('tasklist.availableTasksCreatedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCreatedAbsoluteLabel')}
-									icon={<CalendarIcon className={styles.inlineIcon} />}
+									icon={
+										<CalendarIcon
+											className={cn(styles.inlineIcon, featureFlags.dsTasklistUI && styles.inlineIconDS)}
+										/>
+									}
 								/>
 							) : null}
 							{secondaryDate.followUpDate !== undefined ? (
@@ -114,7 +121,13 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									relativeLabel={t('tasklist.availableTasksFollowUpRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksFollowUpAbsoluteLabel')}
 									icon={
-										<NotificationIcon className={cn(styles.inlineIcon, 'fill-current text-info-foreground-strong')} />
+										<NotificationIcon
+											className={cn(
+												styles.inlineIcon,
+												featureFlags.dsTasklistUI && styles.inlineIconDS,
+												'fill-current text-info-foreground-strong',
+											)}
+										/>
 									}
 									align="top-end"
 								/>
@@ -124,7 +137,15 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={secondaryDate.overDueDate}
 									relativeLabel={t('tasklist.availableTasksOverdueRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksOverdueAbsoluteLabel')}
-									icon={<WarningIcon className={cn(styles.inlineIcon, 'fill-current text-danger-foreground-strong')} />}
+									icon={
+										<WarningIcon
+											className={cn(
+												styles.inlineIcon,
+												featureFlags.dsTasklistUI && styles.inlineIconDS,
+												'fill-current text-danger-foreground-strong',
+											)}
+										/>
+									}
 									align="top-end"
 								/>
 							) : null}
@@ -143,7 +164,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									absoluteLabel={t('tasklist.availableTasksCompletedAbsoluteLabel')}
 									icon={
 										<CheckmarkFilledIcon
-											className={cn(styles.inlineIcon, 'fill-current text-success-foreground-strong')}
+											className={cn(
+												styles.inlineIcon,
+												featureFlags.dsTasklistUI && styles.inlineIconDS,
+												'fill-current text-success-foreground-strong',
+											)}
 										/>
 									}
 									align="top-end"

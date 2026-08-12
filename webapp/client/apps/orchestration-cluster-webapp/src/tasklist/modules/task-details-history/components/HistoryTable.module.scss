@@ -10,6 +10,15 @@
 
 .detailsLabel {
 	@include type.type-style('caption-01');
+
+	// DS-only (see HistoryTable.tsx). caption-01 is 12px/16px, matching
+	// Tailwind's text-xs exactly minus Carbon's 0.32px letter-spacing.
+	&.detailsLabelDS {
+		font-size: 0.75rem;
+		line-height: 1rem;
+		font-weight: 400;
+		letter-spacing: normal;
+	}
 }
 
 .tableContainer {

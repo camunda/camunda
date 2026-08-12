@@ -14,6 +14,31 @@
 
 	&.labelPrimary {
 		color: var(--cds-text-primary);
+
+		// DS-only (see LabelWithPopover.tsx — applied conditionally, both DS and
+		// Legacy branches share this same trigger span markup, but only the DS
+		// one gets this class). Same Carbon-type-ramp-leak issue as
+		// Task.module.scss's .nameDS/.labelDS: label-01 carries an explicit
+		// 0.32px letter-spacing that doesn't belong to the DS's own font system
+		// (Tailwind's text-xs has none). Nested under &.labelPrimary (not a
+		// standalone .labelDS rule) so the color override actually has enough
+		// specificity to win — a standalone single-class .labelDS loses to the
+		// two-class .label.labelPrimary above regardless of source order.
+		&.labelDS {
+			font-size: 0.75rem;
+			line-height: 1rem;
+			font-weight: 400;
+			letter-spacing: normal;
+			color: var(--neutral-foreground-strong);
+			// Centers the icon+text pair vertically (Carbon's original
+			// vertical-align: text-bottom on the icon was an approximation, not
+			// a true center) and supplies the icon-to-text gap directly —
+			// .inlineIconDS zeroes each icon's own Carbon-era margin-right so
+			// the two spacing rules don't stack.
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+		}
 	}
 }
 

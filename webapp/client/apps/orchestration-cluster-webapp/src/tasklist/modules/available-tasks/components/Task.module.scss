@@ -24,6 +24,36 @@ $focused-border-width: 2px;
 	color: var(--cds-text-primary);
 }
 
+// DS-only (see Task.tsx — .labelDS/.nameDS are only ever added alongside
+// .label/.name when featureFlags.dsTasklistUI is on). Carbon's type-style
+// mixin carries Carbon-specific type-ramp details that don't belong to the
+// DS's own font system — label-01 sets an explicit 0.32px letter-spacing
+// (verified via computed style; Tailwind's text-xs has none), and both use
+// Carbon's --cds-text-primary/-secondary color tokens instead of the DS's
+// own --neutral-foreground-strong/-subtle. Sizes below match Tailwind's own
+// scale exactly (text-xs / text-base), same scale already used everywhere
+// else in this DS (Tooltip is text-xs, dialogs/sidebar are text-sm, etc.),
+// rather than Carbon's label-01/body-short-02 values, which are close but
+// not identical (line-height and letter-spacing both differ).
+.labelDS {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	font-weight: 400;
+	letter-spacing: normal;
+	color: var(--neutral-foreground-subtle);
+}
+
+// Sized down from Tailwind's text-base (1rem) to text-sm (0.875rem) — the
+// original text-base size read too large/disproportionate next to the
+// text-xs .labelDS row below it (per explicit feedback).
+.nameDS {
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	font-weight: 500;
+	letter-spacing: normal;
+	color: var(--neutral-foreground-strong);
+}
+
 .flex {
 	min-height: layout.to-rem(20px);
 	display: flex;
@@ -73,12 +103,12 @@ $focused-border-width: 2px;
 	// DS-only (see Task.tsx — .activeDS is only ever added alongside .active
 	// when featureFlags.dsTasklistUI is on). Trying out AppSidebar's own
 	// active-item pattern here instead of Carbon's left-border-accent: a plain
-	// neutral fill, no border, so padding doesn't need the border-width
-	// compensation .active's own rule above uses.
+	// neutral fill. Border/radius/padding now come entirely from
+	// .containerDS's own .taskLink rule below (uniform across every state —
+	// the DS card redesign no longer needs Carbon's border-width
+	// compensation, so there's nothing state-specific left to set here).
 	&.activeDS .taskLink {
 		background-color: var(--neutral-background-strong);
-		border-left: none;
-		padding: $spacing;
 	}
 
 	&:not(.active) {
@@ -111,6 +141,76 @@ $focused-border-width: 2px;
 	&:first-child .taskLink {
 		border-top-color: transparent;
 	}
+
+	// DS-only (see Task.tsx — .containerDS is only ever added alongside
+	// .container when featureFlags.dsTasklistUI is on). Redesigned as a
+	// standalone rounded card — per the DS's own Card component's
+	// rounded-xl corners — instead of a Carbon-style stacked row. Every card
+	// gets an identical border/radius/padding regardless of
+	// active/hover/adjacency/edge position, replacing Carbon's border-width
+	// compensation logic entirely (the border no longer changes width between
+	// states, so there's nothing left to compensate for).
+	&.containerDS {
+		.taskLink {
+			border: 1px solid var(--border);
+			// --radius-xl itself isn't emitted as a real custom property in this
+			// app's bundled CSS (verified live: only the base --radius resolves,
+			// derived aliases like --radius-xl/-lg/-sm come back empty) — using
+			// the DS's own formula for it directly (--radius-xl =
+			// calc(var(--radius) + 4px), per the DS repo's index.css) instead of
+			// referencing the alias.
+			border-radius: calc(var(--radius) + 4px);
+			padding: $spacing;
+		}
+
+		// Beats the Carbon-legacy `&:first-child .taskLink { border-top-color:
+		// transparent }` above (3 selector components; this compiles to 4)
+		// regardless of source order.
+		&:first-child .taskLink {
+			border-color: var(--border);
+		}
+
+		// Beats the Carbon-legacy `&.active + & .taskLink:not(:focus) {
+		// border-top: none }` above (5 components; nesting inside .containerDS
+		// makes this compile to 8, so it wins outright rather than relying on
+		// a same-specificity source-order tie). Must reset the full `border-top`
+		// shorthand, not just `border-color` — Carbon's rule sets `border-top:
+		// none`, which zeroes border-top-STYLE too; a color-only override loses
+		// that sub-property battle to Carbon's rule regardless of specificity
+		// here, since this rule never touched style at all, so the tile right
+		// after an active one still rendered with no visible top border.
+		&.active + & .taskLink:not(:focus) {
+			border-top: 1px solid var(--border);
+			padding: $spacing;
+		}
+
+		// Beats the Carbon-legacy `&:not(.active) .taskLink { border-top:
+		// ... }` above (3 components; this is 4). Also carries the resting
+		// (unselected, non-hover) surface color — the DS's card surface
+		// token, distinct from the page's --background so cards read as
+		// raised surfaces rather than blending into the list's own bg.
+		&:not(.active) .taskLink {
+			border-color: var(--border);
+			background-color: var(--popover);
+		}
+
+		// Beats the Carbon-legacy `&:not(.active):last-child .taskLink {
+		// border-bottom: ...; padding: calc(...) ... }` above (4 components;
+		// this is 5) — that rule's asymmetric padding compensated for
+		// Carbon's border width, which is now constant across every state.
+		&:not(.active):last-child .taskLink {
+			border-color: var(--border);
+			padding: $spacing;
+		}
+
+		&:not(.active):hover .taskLink {
+			background-color: var(--neutral-background-medium);
+		}
+
+		& .taskLink:focus {
+			outline-color: var(--ring);
+		}
+	}
 }
 
 .inlineIcon {
@@ -120,4 +220,11 @@ $focused-border-width: 2px;
 	flex-shrink: 0;
 	vertical-align: text-bottom;
 	margin-right: var(--cds-spacing-01);
+
+	// DS-only (see Task.tsx). Zeroes the Carbon-era margin — the icon-to-text
+	// gap is supplied by LabelWithPopover.module.scss's .labelDS `gap`
+	// instead, so the two don't stack.
+	&.inlineIconDS {
+		margin-right: 0;
+	}
 }

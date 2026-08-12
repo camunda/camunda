@@ -11,6 +11,8 @@ import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './Aside.module.scss';
 import layoutStyles from './taskDetailsLayoutCommon.module.scss';
 
@@ -44,69 +46,85 @@ const Aside: React.FC<Props> = ({
 	const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
 
 	return (
-		<aside className={layoutStyles.aside} aria-label={t('tasklist.taskDetailsRightPanel')}>
+		<aside
+			className={cn(layoutStyles.aside, featureFlags.dsTasklistUI && layoutStyles.asideDS)}
+			aria-label={t('tasklist.taskDetailsRightPanel')}
+		>
 			<ContainedList label={t('tasklist.taskDetailsDetailsLabel')} kind="disclosed">
 				<>
 					{taskTenant === undefined ? null : (
 						<ContainedListItem>
-							<span className={styles.itemHeading}>{t('tasklist.taskDetailsTenantLabel')}</span>
+							<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsTenantLabel')}</span>
 							<br />
-							<span className={styles.itemBody}>{taskTenant.name}</span>
+							<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{taskTenant.name}</span>
 						</ContainedListItem>
 					)}
 				</>
 				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsCreationDateLabel')}</span>
+					<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsCreationDateLabel')}</span>
 					<br />
-					<span className={styles.itemBody}>{formatISODateTime(creationDate)?.absolute.text ?? creationDate}</span>
+					<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{formatISODateTime(creationDate)?.absolute.text ?? creationDate}</span>
 				</ContainedListItem>
 				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsCandidatesLabel')}</span>
+					<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsCandidatesLabel')}</span>
 					<br />
 					{candidates.length === 0 ? (
-						<span className={styles.itemBody}>{t('tasklist.taskDetailsNoCandidatesLabel')}</span>
+						<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{t('tasklist.taskDetailsNoCandidatesLabel')}</span>
 					) : null}
-					{candidates.map((candidate) => (
-						<Tag size="sm" type="gray" key={candidate}>
-							{candidate}
-						</Tag>
-					))}
+					{candidates.length === 0 ? null : featureFlags.dsTasklistUI ? (
+						// DS-only wrapper — Legacy keeps candidates as direct siblings
+						// (its Tag has its own default Carbon spacing convention;
+						// wrapping it would touch old-UI markup for no reason).
+						<div className="flex flex-wrap gap-1">
+							{candidates.map((candidate) => (
+								<Tag size="sm" type="gray" key={candidate}>
+									{candidate}
+								</Tag>
+							))}
+						</div>
+					) : (
+						candidates.map((candidate) => (
+							<Tag size="sm" type="gray" key={candidate}>
+								{candidate}
+							</Tag>
+						))
+					)}
 				</ContainedListItem>
 				{typeof priority === 'number' ? (
 					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsPriorityLabel')}</span>
+						<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsPriorityLabel')}</span>
 						<br />
-						<span className={styles.itemBody}>{getPriorityLabel(priority).short}</span>
+						<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{getPriorityLabel(priority).short}</span>
 					</ContainedListItem>
 				) : null}
 				{completionDate ? (
 					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsCompletionDateLabel')}</span>
+						<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsCompletionDateLabel')}</span>
 						<br />
-						<span className={styles.itemBody}>
+						<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>
 							{formatISODateTime(completionDate)?.absolute.text ?? completionDate}
 						</span>
 					</ContainedListItem>
 				) : null}
 				<ContainedListItem>
-					<span className={styles.itemHeading}>{t('tasklist.taskDetailsDueDateLabel')}</span>
+					<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsDueDateLabel')}</span>
 					<br />
-					<span className={styles.itemBody}>
+					<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>
 						{dueDate ? (formatISODateTime(dueDate)?.absolute.text ?? dueDate) : t('tasklist.taskDetailsNoDueDateLabel')}
 					</span>
 				</ContainedListItem>
 				{followUpDate ? (
 					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsFollowUpDateLabel')}</span>
+						<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsFollowUpDateLabel')}</span>
 						<br />
-						<span className={styles.itemBody}>{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}</span>
+						<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}</span>
 					</ContainedListItem>
 				) : null}
 				{businessId ? (
 					<ContainedListItem>
-						<span className={styles.itemHeading}>{t('tasklist.taskDetailsBusinessIdLabel')}</span>
+						<span className={cn(styles.itemHeading, featureFlags.dsTasklistUI && styles.itemHeadingDS)}>{t('tasklist.taskDetailsBusinessIdLabel')}</span>
 						<br />
-						<span className={styles.itemBody}>{businessId}</span>
+						<span className={cn(styles.itemBody, featureFlags.dsTasklistUI && styles.itemBodyDS)}>{businessId}</span>
 					</ContainedListItem>
 				) : null}
 			</ContainedList>

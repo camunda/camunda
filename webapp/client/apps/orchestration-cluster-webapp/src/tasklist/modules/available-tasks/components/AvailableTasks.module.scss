@@ -20,4 +20,16 @@
 	overflow-y: auto;
 	width: 100%;
 	height: 100%;
+
+	// DS-only (see AvailableTasks.tsx). Each Task article is now a standalone
+	// rounded card (see Task.module.scss's .containerDS) rather than a
+	// Carbon-style stacked row, so it needs its own gap between cards and its
+	// own outer gutter instead of relying on shared borders between adjacent
+	// rows.
+	&.listContainerDS {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem; // 8px
+		padding: 0.5rem; // 8px
+	}
 }
