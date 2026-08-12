@@ -14,6 +14,15 @@ public final class SortOptionBuilders {
 
   private SortOptionBuilders() {}
 
+  public static AgentDefinitionSort.Builder agentDefinition() {
+    return new AgentDefinitionSort.Builder();
+  }
+
+  public static AgentDefinitionSort agentDefinition(
+      final Function<AgentDefinitionSort.Builder, ObjectBuilder<AgentDefinitionSort>> fn) {
+    return fn.apply(agentDefinition()).build();
+  }
+
   public static AgentInstanceSort.Builder agentInstance() {
     return new AgentInstanceSort.Builder();
   }
