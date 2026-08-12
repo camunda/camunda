@@ -51,6 +51,12 @@ jobs:
     needs: detect-changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Serializes every writer to the gh-pages branch. The group name must stay identical
+    # in docs-preview.yml and docs-preview-cleanup.yml, or the mutual exclusion breaks.
+    concurrency:
+      group: gh-pages-write
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: write
     environment:
