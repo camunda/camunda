@@ -498,6 +498,8 @@ paths:
     $ref: 'cluster.yaml#/paths/~1topology'
   /mode:
     $ref: 'cluster.yaml#/paths/~1mode'
+  /cluster/v2/mode: # New /cluster/v2/mode endpoint that works for all physical tenants.
+    $ref: 'cluster.yaml#/paths/~1cluster~1v2~1mode'
   /restore:
     $ref: 'cluster.yaml#/paths/~1restore'
 
