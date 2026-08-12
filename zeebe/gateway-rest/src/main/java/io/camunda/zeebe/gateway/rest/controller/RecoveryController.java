@@ -86,7 +86,7 @@ public final class RecoveryController {
                 .recoveryServices(physicalTenantId)
                 .restore(parameters, dryRun, authentication)
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
-        ClusterModeChangeMapper::toClusterModeChangeResponse,
+        ClusterModeChangeMapper::toClusterRestoreResponse,
         HttpStatus.ACCEPTED);
   }
 

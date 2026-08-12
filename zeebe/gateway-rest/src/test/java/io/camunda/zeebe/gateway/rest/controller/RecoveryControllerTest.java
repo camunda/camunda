@@ -475,6 +475,11 @@ public class RecoveryControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
   }
 
+  // The database type and continuous-backups flag are no longer resolved here: RecoveryServices
+  // (mocked above) now binds them per physical tenant. The controller only has to forward the
+  // backup selection and dryRun untouched, regardless of secondary storage — see
+  // RecoveryServicesTest#shouldStampItsBoundRestoreEnvironmentIntoTheRequest for that part.
+
   @ParameterizedTest
   @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
   void shouldForwardBackupIds(final String baseUrl) {

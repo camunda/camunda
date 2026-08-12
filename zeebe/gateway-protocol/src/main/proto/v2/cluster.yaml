@@ -129,7 +129,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClusterModeChangeResponse'
+                $ref: '#/components/schemas/ClusterRestoreResponse'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -429,6 +429,87 @@ components:
           type: string
           nullable: true
           example: RECOVERING
+
+    ClusterRestoreResponse:
+      description: The planned changes resulting from a restore request.
+      type: object
+      required:
+        - changeId
+        - plannedChanges
+      properties:
+        changeId:
+          description: The ID of the cluster change that was triggered by the request.
+          type: string
+          example: "7"
+        plannedChanges:
+          description: >-
+            The operations that will be applied to complete the restore, grouped by the physical
+            tenant they belong to. Groups are restored in parallel; the operations within a group
+            are applied in the given order.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRestorePlannedChange'
+
+    ClusterRestorePlannedChange:
+      description: The operations of a restore that apply to one physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - operations
+      properties:
+        physicalTenantId:
+          description: >-
+            The physical tenant the operations apply to; null for operations that are not scoped to
+            a single physical tenant, such as broker lifecycle operations.
+          type: string
+          nullable: true
+          example: default
+        operations:
+          description: The ordered list of operations that will be applied to the physical tenant.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRestoreOperation'
+
+    ClusterRestoreOperation:
+      description: >-
+        A single operation that is part of a restore. Which of the optional properties are reported
+        depends on the operation: partition operations carry `partitionId`, the operation that
+        restores a partition also carries the `backupIds` it restores from, and the operations that
+        return the broker to processing carry `mode`.
+      type: object
+      required:
+        - operation
+        - brokerId
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: PartitionRestoreOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionId:
+          description: The partition the operation applies to; null for operations that are not partition scoped.
+          type: integer
+          format: int32
+          nullable: true
+          example: 1
+        backupIds:
+          description: >-
+            The IDs of the backups the partition is restored from; null for every operation other
+            than the one that restores a partition.
+          type: array
+          nullable: true
+          items:
+            type: integer
+            format: int64
+          example: [ 100, 101 ]
+        mode:
+          description: The target mode of the operation, if applicable.
+          type: string
+          nullable: true
+          example: PROCESSING
 
     RestoreRequest:
       description: >-

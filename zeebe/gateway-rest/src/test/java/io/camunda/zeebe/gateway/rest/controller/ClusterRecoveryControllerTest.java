@@ -15,6 +15,7 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -22,17 +23,23 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -40,6 +47,7 @@ import org.springframework.test.json.JsonCompareMode;
 class ClusterRecoveryControllerTest extends RestControllerTest {
 
   private static final String MODE_URL = "/cluster/v2/mode";
+  private static final String RESTORE_URL = "/cluster/v2/restore";
 
   @MockitoBean ClusterRecoveryServices clusterRecoveryServices;
   @MockitoBean ServiceRegistry serviceRegistry;
@@ -185,20 +193,236 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
         .changeMode(Mockito.any(), Mockito.any(), Mockito.anyBoolean());
   }
 
+  @Test
+  void shouldRestoreEveryPhysicalTenantWithTheSameParametersWhenNoOverridesAreGiven() {
+    // given
+    givenRestoreAccepted(9L);
+
+    // when
+    webClient
+        .post()
+        .uri(RESTORE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100, 101]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .jsonPath("$.changeId")
+        .isEqualTo("9");
+
+    // then
+    Mockito.verify(clusterRecoveryServices)
+        .restore(
+            Optional.empty(),
+            new RestoreParameters(List.of(100L, 101L), null, null),
+            Map.of(),
+            false);
+  }
+
+  @Test
+  void shouldRestoreTheOverriddenPhysicalTenantsWithTheirOwnParameters() {
+    // given
+    givenRestoreAccepted(9L);
+
+    // when
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?dryRun=true")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "backupIds": [ 100 ],
+              "overrides": {
+                "tenant-b": { "backupIds": [ 55 ] },
+                "tenant-c": { "from": "2024-01-01T10:00:00Z", "to": "2024-01-01T12:00:00Z" }
+              }
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    Mockito.verify(clusterRecoveryServices)
+        .restore(
+            Optional.empty(),
+            new RestoreParameters(List.of(100L), null, null),
+            Map.of(
+                "tenant-b",
+                new RestoreParameters(List.of(55L), null, null),
+                "tenant-c",
+                new RestoreParameters(List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z")),
+            true);
+  }
+
+  @Test
+  void shouldRestoreTheRequestedPhysicalTenantOnly() {
+    // given
+    givenRestoreAccepted(9L);
+
+    // when
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?physicalTenantId=tenant-b")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [ 55 ]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    Mockito.verify(clusterRecoveryServices)
+        .restore(
+            Optional.of("tenant-b"),
+            new RestoreParameters(List.of(55L), null, null),
+            Map.of(),
+            false);
+  }
+
+  @Test
+  void shouldRejectOverridesOnATenantScopedRestore() {
+    // when / then
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?physicalTenantId=tenant-b")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            "{\"backupIds\": [ 55 ], \"overrides\": { \"tenant-c\": { \"backupIds\": [1] } }}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    Mockito.verify(clusterRecoveryServices, Mockito.never())
+        .restore(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+  }
+
+  @Test
+  void shouldReportTheBackupsEveryPlannedPartitionRestoreRestoresFrom() {
+    // given — the plan a restore produces: a partition is pre-restored, restored from its backups,
+    // and the broker is returned to processing
+    final var broker = MemberId.from("1");
+    when(clusterRecoveryServices.restore(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    plannedChange(
+                        9L,
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                "default",
+                                List.of(
+                                    new PartitionPreRestoreOperation(broker, 1),
+                                    new PartitionRestoreOperation(
+                                        broker, 1, new TreeSet<>(List.of(100L, 101L))),
+                                    new ModeChangeOperation(broker, Mode.PROCESSING))))))));
+
+    // when / then — an operator reviewing the plan can see which backups land on which partition
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?dryRun=true")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100, 101]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .json(
+            """
+            {
+              "changeId": "9",
+              "plannedChanges": [
+                {
+                  "physicalTenantId": "default",
+                  "operations": [
+                    {
+                      "operation": "PartitionPreRestoreOperation",
+                      "brokerId": "1",
+                      "partitionId": 1,
+                      "backupIds": null,
+                      "mode": null
+                    },
+                    {
+                      "operation": "PartitionRestoreOperation",
+                      "brokerId": "1",
+                      "partitionId": 1,
+                      "backupIds": [ 100, 101 ],
+                      "mode": null
+                    },
+                    {
+                      "operation": "ModeChangeOperation",
+                      "brokerId": "1",
+                      "partitionId": null,
+                      "backupIds": null,
+                      "mode": "PROCESSING"
+                    }
+                  ]
+                }
+              ]
+            }
+            """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapRestoreOutsideOfRecoveryModeToConflict() {
+    // given
+    when(clusterRecoveryServices.restore(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(
+                    new ErrorResponse(
+                        ErrorCode.INVALID_STATE, "the cluster is not in recovery mode"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri(RESTORE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [ 100 ]}")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT);
+  }
+
+  private void givenRestoreAccepted(final long changeId) {
+    when(clusterRecoveryServices.restore(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
+        .thenReturn(CompletableFuture.completedFuture(Either.right(plannedChange(changeId))));
+  }
+
+  /**
+   * A mode change plan that transitions each of the given physical tenants, defaulting to the
+   * single-tenant plan a cluster without additional partition groups produces.
+   */
   private ClusterConfigurationChangeResponse plannedChange(
       final long changeId, final String... physicalTenantIds) {
-    final var operation = new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING);
-    final Map<String, List<PartitionGroupOperation>> operationsPerTenant = new HashMap<>();
-    for (final var physicalTenantId : physicalTenantIds) {
-      operationsPerTenant.put(physicalTenantId, List.of(operation));
+    final var tenants =
+        physicalTenantIds.length == 0 ? new String[] {"default"} : physicalTenantIds;
+    final Map<String, List<PartitionGroupOperation>> groupOperations = new HashMap<>();
+    for (final var physicalTenantId : tenants) {
+      groupOperations.put(
+          physicalTenantId, List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     }
+    return plannedChange(changeId, new PartitionGroupParallelPhase(groupOperations));
+  }
+
+  private ClusterConfigurationChangeResponse plannedChange(
+      final long changeId, final PartitionGroupParallelPhase phase) {
+    final var flatOperations =
+        phase.groupOperations().values().stream()
+            .flatMap(List::stream)
+            .map(ClusterConfigurationChangeOperation.class::cast)
+            .toList();
     return new ClusterConfigurationChangeResponse(
         changeId,
-        new LegacyConfigurationChangeResponse(
-            Map.of(), Map.of(), List.<ClusterConfigurationChangeOperation>of(operation)),
+        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), flatOperations),
         new CurrentConfigurationChangeResponse(
             CurrentClusterConfiguration.uninitialized(),
             CurrentClusterConfiguration.uninitialized(),
-            List.of(new PartitionGroupParallelPhase(operationsPerTenant))));
+            List.of(phase)));
   }
 }
