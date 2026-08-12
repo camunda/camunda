@@ -18,6 +18,8 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Inc
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -348,6 +350,11 @@ public class RdbmsSchemaVersionStore {
    * is not a simple "table not found" condition so that unexpected errors (e.g. permission
    * failures, broken connections) abort startup instead of being silently treated as a missing
    * table.
+   *
+   * <p>Unquoted identifiers fold differently per vendor: H2 stores them upper case, while
+   * PostgreSQL stores them lower case. {@link java.sql.DatabaseMetaData#getTables} matches the
+   * stored identifier exactly, so every plausible casing is tried in turn rather than assuming one
+   * vendor's convention.
    */
   @VisibleForTesting
   protected boolean tableExists(final Connection connection, final String tableName)
@@ -355,16 +362,15 @@ public class RdbmsSchemaVersionStore {
     final var meta = connection.getMetaData();
     final var catalog = connection.getCatalog();
     final var schema = connection.getSchema();
-    // Try uppercase first (most databases store identifiers in upper case), then as-is.
-    try (final var rs =
-        meta.getTables(catalog, schema, tableName.toUpperCase(), new String[] {"TABLE"})) {
-      if (rs.next()) {
-        return true;
+    for (final var candidate :
+        new LinkedHashSet<>(List.of(tableName.toUpperCase(), tableName.toLowerCase(), tableName))) {
+      try (final var rs = meta.getTables(catalog, schema, candidate, new String[] {"TABLE"})) {
+        if (rs.next()) {
+          return true;
+        }
       }
     }
-    try (final var rs = meta.getTables(catalog, schema, tableName, new String[] {"TABLE"})) {
-      return rs.next();
-    }
+    return false;
   }
 
   /**
