@@ -52,6 +52,9 @@ public class WebappIndexController {
 
   @GetMapping({"/tasklist", "/tasklist/", "/tasklist/index.html"})
   public String webapp(final Model model) {
+    // The route tree already includes /tasklist, so the router basepath is the servlet root. During
+    // migration, only /tasklist/** enters this shell; root-level, Operate, and Admin document
+    // requests remain owned by the legacy controllers until their server routes are migrated.
     model.addAttribute("baseName", context.getContextPath() + "/");
     model.addAttribute("contextPath", context.getContextPath());
     model.addAttribute("isEnterprise", webappConfiguration.isEnterprise());
