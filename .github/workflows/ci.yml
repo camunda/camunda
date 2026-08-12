@@ -410,7 +410,7 @@ jobs:
 
   dependency-cycle-check:
     # Temporarily disabling the dependency-cycle-check as too brittle
-    if: ${{ false }}
+    if: false
     name: "Dependency Cycle Check"
     needs: [ detect-changes ]
     runs-on: gcp-core-16-default
