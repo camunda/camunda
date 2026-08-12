@@ -33,6 +33,8 @@ public class WebappIndexController {
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappIndexController.class);
 
   private static final String LOGIN_RESOURCE = "/login";
+  private static final String NON_SPA_SEGMENTS =
+      "(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)";
 
   private final ServletContext context;
 
@@ -65,7 +67,13 @@ public class WebappIndexController {
   }
 
   /**
-   * Forwards SPA routes to index.html.
+   * Forwards SPA routes to index.html, except legacy Tasklist resource paths.
+   *
+   * <p>{@code assets}, {@code custom.css}, and {@code favicon.ico} moved to the servlet root, while
+   * {@code client-config.js} was removed. Excluding their former {@code /tasklist/...} locations
+   * ensures stale resource requests return 404 instead of the SPA shell with a {@code text/html}
+   * content type. The end anchor excludes only exact segment names, so routes such as {@code
+   * /tasklist/assets-overview} still reach the shell.
    *
    * <p>The forward + login-redirect logic is intentionally inlined here rather than reusing the
    * legacy {@code WebappsRequestForwardManager} from {@code dist/}. Once Tasklist/Operate/Admin
@@ -75,8 +83,8 @@ public class WebappIndexController {
    */
   @GetMapping(
       value = {
-        "/tasklist/{path:^(?!(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)$).+}",
-        "/tasklist/{path:^(?!(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)$).+}/**"
+        "/tasklist/{path:^(?!" + NON_SPA_SEGMENTS + "$).+}",
+        "/tasklist/{path:^(?!" + NON_SPA_SEGMENTS + "$).+}/**"
       })
   public String forwardToWebapp(final HttpServletRequest request) {
     if (webappConfiguration.isLoginDelegated() && isNotLoggedIn()) {
