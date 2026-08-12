@@ -726,6 +726,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
+      // v1 flow-node-metadata can lag behind v2 incident export by more than
+      // the default 3 retries after a migration; give it more headroom.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -736,6 +738,7 @@ test.describe.serial('Process Instance Migration', () => {
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 6,
       });
     });
   });
