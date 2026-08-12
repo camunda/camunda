@@ -481,6 +481,7 @@ jobs:
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-load-test.outputs.concurrency_group_name }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -544,6 +545,7 @@ jobs:
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
+      queue: max
     uses: ./.github/workflows/zeebe-snyk.yml
     with:
       monitor: true
