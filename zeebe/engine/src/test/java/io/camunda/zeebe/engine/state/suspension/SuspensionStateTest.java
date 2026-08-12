@@ -214,6 +214,58 @@ public final class SuspensionStateTest {
   }
 
   @Test
+  public void shouldGetOldestBufferedCommandRegardlessOfInsertionOrder() {
+    // given
+    final long processInstanceKey = 1L;
+    suspensionState.bufferCommand(30L, bufferedCommandRecord(processInstanceKey, 3L));
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
+
+    // when
+    final var oldest = suspensionState.getOldestBufferedCommand(processInstanceKey);
+
+    // then
+    assertThat(oldest).isNotNull();
+    assertThat(oldest.key()).isEqualTo(10L);
+    assertThat(oldest.command().getCommandKey()).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldGetOldestBufferedCommandOfRequestedProcessInstanceOnly() {
+    // given
+    final long processInstanceKeyA = 1L;
+    final long processInstanceKeyB = 2L;
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKeyA, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKeyB, 2L));
+
+    // when - then
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKeyB).key()).isEqualTo(20L);
+  }
+
+  @Test
+  public void shouldNotGetOldestBufferedCommandWithNothingBuffered() {
+    // given
+    final long processInstanceKey = 1L;
+
+    // when - then
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey)).isNull();
+  }
+
+  @Test
+  public void shouldGetNextOldestBufferedCommandAfterTheOldestIsRemoved() {
+    // given
+    final long processInstanceKey = 1L;
+    suspensionState.bufferCommand(10L, bufferedCommandRecord(processInstanceKey, 1L));
+    suspensionState.bufferCommand(20L, bufferedCommandRecord(processInstanceKey, 2L));
+
+    // when - the drain removes the head of the buffer
+    suspensionState.removeBufferedCommand(10L);
+
+    // then
+    assertThat(suspensionState.getOldestBufferedCommand(processInstanceKey).key()).isEqualTo(20L);
+  }
+
+  @Test
   public void shouldRemoveExactlyOneBufferedCommand() {
     // given
     final long processInstanceKey = 1L;

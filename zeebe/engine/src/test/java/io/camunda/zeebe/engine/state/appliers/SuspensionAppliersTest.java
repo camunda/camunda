@@ -31,6 +31,7 @@ public class SuspensionAppliersTest {
 
   private MutableSuspensionState suspensionState;
   private ProcessInstanceSuspendedApplier suspendedApplier;
+  private ProcessInstanceResumingApplier resumingApplier;
   private ProcessInstanceResumedApplier resumedApplier;
   private ProcessInstanceBufferedCommandBufferedApplier bufferedApplier;
   private ProcessInstanceBufferedCommandDrainedApplier drainedApplier;
@@ -39,6 +40,7 @@ public class SuspensionAppliersTest {
   public void setup() {
     suspensionState = processingState.getSuspensionState();
     suspendedApplier = new ProcessInstanceSuspendedApplier(suspensionState);
+    resumingApplier = new ProcessInstanceResumingApplier(suspensionState);
     resumedApplier = new ProcessInstanceResumedApplier(suspensionState);
     bufferedApplier = new ProcessInstanceBufferedCommandBufferedApplier(suspensionState);
     drainedApplier = new ProcessInstanceBufferedCommandDrainedApplier(suspensionState);
@@ -57,6 +59,33 @@ public class SuspensionAppliersTest {
     assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
     assertThat(suspensionState.getSuspensionState(processInstanceKey))
         .isEqualTo(SuspensionState.State.SUSPENDED);
+  }
+
+  @Test
+  void shouldSwitchMarkerToResumingWithoutTouchingTheBuffer() {
+    // given
+    final long processInstanceKey = 5L;
+    final long bufferedCommandKey = 50L;
+    suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.SUSPENDED);
+    bufferedApplier.applyState(
+        bufferedCommandKey,
+        new ProcessInstanceBufferedCommandRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setCommandKey(51L));
+
+    // when
+    resumingApplier.applyState(processInstanceKey, new ProcessInstanceRecord());
+
+    // then - the marker is still present, so the suspension gate keeps recognizing the instance
+    assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
+    assertThat(suspensionState.getSuspensionState(processInstanceKey))
+        .isEqualTo(SuspensionState.State.RESUMING);
+
+    // and the buffered commands are left for the drain to replay
+    final List<Long> visitedKeys = new ArrayList<>();
+    suspensionState.visitBufferedCommands(
+        processInstanceKey, (key, command) -> visitedKeys.add(key));
+    assertThat(visitedKeys).containsExactly(bufferedCommandKey);
   }
 
   @Test
