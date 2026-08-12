@@ -393,6 +393,20 @@ jobs:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
+      # Bounds a hung test fork so it fails the build instead of running until the `timeout-minutes`
+      # above, which cancels the job and discards its test reports, leaving nothing to attribute the
+      # failure to -- INC-7108 sat idle for 23 of its 30 minutes on stable/8.8 and reported "no
+      # unsuccessful test cases". Failsafe instead kills the fork here and fails the build, dumping
+      # every one of the fork's threads to target/failsafe-reports/*.dump on the way out, which
+      # "Upload test artifacts" below already collects.
+      #
+      # Note this clock starts when the fork starts, not when the job does, so the usable margin is
+      # what is left of `timeout-minutes` after the steps ahead of Maven. On this branch those build
+      # three Docker images and take up to 6.5 min, and the reporting and upload steps afterwards take
+      # up to 2.5 min, which leaves about 16 min of the 25 min budget. 14 min therefore still fires
+      # inside it, while clearing the slowest shard's entire `verify` step (under 8.5 min, of which a
+      # single fork is a fraction). Keep the two in step if either changes.
+      IT_FORK_TIMEOUT_SECONDS: "840"
     services:
       registry:
         image: registry:2
@@ -443,6 +457,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.timeout=${{ env.IT_FORK_TIMEOUT_SECONDS }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
