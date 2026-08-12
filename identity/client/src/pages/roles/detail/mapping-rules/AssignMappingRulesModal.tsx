@@ -6,20 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useCallback, useEffect, useState } from "react";
-import styled from "styled-components";
-import { Tag } from "@carbon/react";
+import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { roleMutations } from "src/utility/api/roles/mutations";
-import MappingRuleSearchDropdown from "src/components/form/MappingRuleSearchDropdown";
+import { MappingRuleMultiSelect } from "src/components/form/entitySelection/MappingRuleSelection";
 import FormModal from "src/components/modal/FormModal";
 import type { MappingRule, Role } from "@camunda/camunda-api-zod-schemas/8.10";
-
-const SelectedMappingRules = styled.div`
-  margin-top: 0;
-`;
 
 const AssignMappingRulesModal: FC<
   UseEntityModalCustomProps<
@@ -38,31 +32,6 @@ const AssignMappingRulesModal: FC<
   const { mutateAsync: callAssignMappingRule } = useMutation(
     roleMutations.assignMappingRule(qc),
   );
-
-  const unassignedFilter = useCallback(
-    ({ mappingRuleId }: MappingRule) =>
-      !assignedMappingRules.some(
-        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
-      ) &&
-      !selectedMappingRules.some(
-        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
-      ),
-    [assignedMappingRules, selectedMappingRules],
-  );
-
-  const onSelectMappingRule = (mappingRule: MappingRule) => {
-    setSelectedMappingRules([...selectedMappingRules, mappingRule]);
-  };
-
-  const onUnselectMappingRule =
-    ({ mappingRuleId }: MappingRule) =>
-    () => {
-      setSelectedMappingRules(
-        selectedMappingRules.filter(
-          (mappingRule) => mappingRule.mappingRuleId !== mappingRuleId,
-        ),
-      );
-    };
 
   const canSubmit = role && selectedMappingRules.length;
 
@@ -110,28 +79,11 @@ const AssignMappingRulesModal: FC<
           Search and assign mapping rule to role
         </Translate>
       </p>
-      {selectedMappingRules.length > 0 && (
-        <SelectedMappingRules>
-          {selectedMappingRules.map((mappingRule) => (
-            <Tag
-              key={mappingRule.mappingRuleId}
-              onClose={onUnselectMappingRule(mappingRule)}
-              size="md"
-              type="blue"
-              filter
-            >
-              {mappingRule.mappingRuleId}
-            </Tag>
-          ))}
-        </SelectedMappingRules>
-      )}
-      <MappingRuleSearchDropdown
+      <MappingRuleMultiSelect
+        value={selectedMappingRules}
+        onChange={setSelectedMappingRules}
+        excluded={assignedMappingRules}
         autoFocus
-        placeholder={t("searchByMappingRuleId")}
-        onSelect={onSelectMappingRule}
-        filter={unassignedFilter}
-        errorTitle={t("mappingRulesCouldNotLoad")}
-        retryLabel={t("retry")}
       />
     </FormModal>
   );

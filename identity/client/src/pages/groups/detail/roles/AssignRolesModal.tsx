@@ -6,21 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useCallback, useEffect, useState } from "react";
-import { Tag } from "@carbon/react";
+import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { groupMutations } from "src/utility/api/groups/mutations";
-import styled from "styled-components";
-import RoleSearchDropdown from "src/components/form/RoleSearchDropdown";
+import { RoleMultiSelect } from "src/components/form/entitySelection/RoleSelection";
 import FormModal from "src/components/modal/FormModal";
 import { useNotifications } from "src/components/notifications";
 import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
-
-const SelectedRoles = styled.div`
-  margin-top: 0;
-`;
 
 const AssignRolesModal: FC<
   UseEntityModalCustomProps<{ id: Group["groupId"] }, { assignedRoles: Role[] }>
@@ -30,27 +24,10 @@ const AssignRolesModal: FC<
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
 
-  const unassignedFilter = useCallback(
-    ({ roleId }: Role) =>
-      !assignedRoles.some((role) => role.roleId === roleId) &&
-      !selectedRoles.some((role) => role.roleId === roleId),
-    [assignedRoles, selectedRoles],
-  );
-
   const qc = useQueryClient();
   const { mutateAsync: callAssignRole } = useMutation(
     groupMutations.assignRole(qc),
   );
-
-  const onSelectRole = (role: Role) => {
-    setSelectedRoles([...selectedRoles, role]);
-  };
-
-  const onUnselectRole =
-    ({ roleId }: Role) =>
-    () => {
-      setSelectedRoles(selectedRoles.filter((role) => role.roleId !== roleId));
-    };
 
   const canSubmit = group && selectedRoles.length;
 
@@ -108,28 +85,11 @@ const AssignRolesModal: FC<
           Search and assign role to group
         </Translate>
       </p>
-      {selectedRoles.length > 0 && (
-        <SelectedRoles>
-          {selectedRoles.map((role) => (
-            <Tag
-              key={role.roleId}
-              onClose={onUnselectRole(role)}
-              size="md"
-              type="blue"
-              filter
-            >
-              {role.roleId}
-            </Tag>
-          ))}
-        </SelectedRoles>
-      )}
-      <RoleSearchDropdown
+      <RoleMultiSelect
+        value={selectedRoles}
+        onChange={setSelectedRoles}
+        excluded={assignedRoles}
         autoFocus
-        placeholder={t("searchByRoleId")}
-        onSelect={onSelectRole}
-        filter={unassignedFilter}
-        errorTitle={t("rolesCouldNotLoad")}
-        retryLabel={t("retry")}
       />
     </FormModal>
   );
