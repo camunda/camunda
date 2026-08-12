@@ -21,11 +21,12 @@
 # openapi-generator-maven-plugin skip regenerating clients/java's model classes entirely. Don't
 # re-attempt an anchor/alias/merge-key variant here — duplicate the literal block instead.
 #
-# Every operation below requires the cluster-admin security chain (see
+# Every authenticated operation below sits behind the cluster-admin security chain (see
 # ClusterAdminBasicSecurityConfiguration / CLUSTER_ADMIN_API_PATTERN), a separate credential set
-# from the Orchestration Cluster API. The `bearerAuth` / `basicAuth` scheme names below are reused
-# from that API for convenience but resolve against different credentials — an Orchestration
-# Cluster user session cannot authenticate against these operations.
+# from the Orchestration Cluster API. Where an operation reuses the `bearerAuth` / `basicAuth`
+# scheme names from that API, it still resolves against different credentials — an Orchestration
+# Cluster user session cannot authenticate against it. `getClusterStatus` below is the one
+# exception: it is intentionally public (`security: []`), not cluster-admin-gated.
 
 paths:
   /cluster/v2/status:
@@ -57,6 +58,10 @@ paths:
         `HEALTHY` when every physical tenant is healthy, `DOWN` when no physical tenant can process
         work, and `DEGRADED` in every other case. No per-tenant detail is reported; use
         `GET /cluster/v2/topology` for that.
+
+
+        This endpoint is public and requires no authentication, unlike `PATCH /cluster/v2/mode`
+        below, which needs cluster-admin credentials.
       responses:
         "200":
           description: The cluster can process work; the body reports whether it is fully healthy or degraded.
@@ -101,6 +106,12 @@ paths:
 
         If the `physicalTenantId` parameter is not provided, all available physical tenants are
         transitioned individually.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
       parameters:
         - $ref: 'cluster.yaml#/components/parameters/ModeParameter'
         - $ref: '#/components/parameters/PhysicalTenantIdParameter'
