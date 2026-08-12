@@ -21,6 +21,7 @@ import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentInstanceLimits;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -190,5 +191,25 @@ final class AgentInstanceHistoryMapper {
       protocolTools.add(protocolTool);
     }
     return protocolTools;
+  }
+
+  static io.camunda.client.protocol.rest.AgentInstanceLimits toProtocolLimits(
+      final AgentInstanceLimits limits) {
+    if (limits == null) {
+      return null;
+    }
+    if (limits.getMaxTokens() < -1) {
+      throw new IllegalArgumentException("maxTokens must be >= -1");
+    }
+    if (limits.getMaxModelCalls() < -1) {
+      throw new IllegalArgumentException("maxModelCalls must be >= -1");
+    }
+    if (limits.getMaxToolCalls() < -1) {
+      throw new IllegalArgumentException("maxToolCalls must be >= -1");
+    }
+    return new io.camunda.client.protocol.rest.AgentInstanceLimits()
+        .maxTokens(limits.getMaxTokens())
+        .maxModelCalls(limits.getMaxModelCalls())
+        .maxToolCalls(limits.getMaxToolCalls());
   }
 }

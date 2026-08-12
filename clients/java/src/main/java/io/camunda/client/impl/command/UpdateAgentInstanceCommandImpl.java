@@ -158,7 +158,15 @@ public class UpdateAgentInstanceCommandImpl
         .content(AgentInstanceHistoryMapper.toProtocolContent(item.getContent()))
         .toolCalls(AgentInstanceHistoryMapper.toProtocolToolCalls(item.getToolCalls()))
         .metrics(AgentInstanceHistoryMapper.toProtocolMetrics(item.getMetrics()))
-        .producedAt(item.getProducedAt().toString());
+        .producedAt(item.getProducedAt().toString())
+        .tools(AgentInstanceHistoryMapper.toProtocolTools(item.getTools()))
+        .model(item.getModel())
+        .provider(item.getProvider())
+        .limits(AgentInstanceHistoryMapper.toProtocolLimits(item.getLimits()))
+        .systemPrompt(
+            item.getSystemPrompt() != null
+                ? AgentInstanceHistoryMapper.toProtocolContent(item.getSystemPrompt())
+                : null);
   }
 
   @Override
