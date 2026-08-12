@@ -2602,6 +2602,7 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-smoke-detect-versions
       - load-test-smoke-tests
       - maven-spotless-linter
       - openapi-lint
