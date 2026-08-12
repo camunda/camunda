@@ -49,7 +49,7 @@ import java.util.Set;
  * </ul>
  */
 public class AgentHistoryHandler
-    implements StorageOrdinalKeyExportHandler<AgentHistoryEntity, AgentHistoryRecordValue> {
+    implements OrdinalIndexExportHandler<AgentHistoryEntity, AgentHistoryRecordValue> {
 
   private static final Set<AgentHistoryIntent> HANDLED_INTENTS =
       Set.of(

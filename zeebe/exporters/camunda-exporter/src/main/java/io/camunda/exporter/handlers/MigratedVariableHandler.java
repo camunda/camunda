@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MigratedVariableHandler
-    implements StorageOrdinalKeyExportHandler<VariableEntity, VariableRecordValue> {
+    implements OrdinalIndexExportHandler<VariableEntity, VariableRecordValue> {
 
   private final String indexName;
 

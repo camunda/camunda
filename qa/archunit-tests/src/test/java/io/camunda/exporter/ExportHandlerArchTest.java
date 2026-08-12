@@ -22,7 +22,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.MainIndexExporterHandler;
-import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.store.BatchRequest;
@@ -86,7 +86,7 @@ public class ExportHandlerArchTest {
           .notBeAssignableTo(
               DescribedPredicate.and(
                   Predicates.assignableTo(MainIndexExporterHandler.class),
-                  Predicates.assignableTo(StorageOrdinalKeyExportHandler.class)));
+                  Predicates.assignableTo(OrdinalIndexExportHandler.class)));
 
   @ArchTest
   static final ArchRule EXPORT_HANDLERS_SHOULD_IMPLEMENT_MAIN_OR_ORDINAL_INTERFACES =
@@ -111,7 +111,7 @@ public class ExportHandlerArchTest {
           .beAssignableTo(
               DescribedPredicate.or(
                   Predicates.assignableTo(MainIndexExporterHandler.class),
-                  Predicates.assignableTo(StorageOrdinalKeyExportHandler.class)));
+                  Predicates.assignableTo(OrdinalIndexExportHandler.class)));
 
   @ArchTest
   static final ArchRule

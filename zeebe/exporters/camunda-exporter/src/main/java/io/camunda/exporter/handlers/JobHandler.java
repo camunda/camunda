@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class JobHandler implements StorageOrdinalKeyExportHandler<JobEntity, JobRecordValue> {
+public class JobHandler implements OrdinalIndexExportHandler<JobEntity, JobRecordValue> {
   protected static final Set<JobIntent> JOB_EVENTS =
       Set.of(
           JobIntent.CREATED,

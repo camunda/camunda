@@ -28,7 +28,7 @@ import java.util.Set;
 
 public class MessageSubscriptionFromProcessMessageSubscriptionHandler
     extends AbstractEventHandler<ProcessMessageSubscriptionRecordValue>
-    implements StorageOrdinalKeyExportHandler<
+    implements OrdinalIndexExportHandler<
         MessageSubscriptionEntity, ProcessMessageSubscriptionRecordValue> {
 
   public static final Set<Intent> STATES =

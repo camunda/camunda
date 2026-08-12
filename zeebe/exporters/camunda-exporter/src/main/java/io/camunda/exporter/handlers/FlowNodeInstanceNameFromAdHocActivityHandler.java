@@ -37,7 +37,7 @@ import java.util.Map;
  * the element that was activated (e.g. {@code listUsers} → "List users").
  */
 public class FlowNodeInstanceNameFromAdHocActivityHandler
-    implements StorageOrdinalKeyExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
   /**
    * Painless script that sets {@code flowNodeName} only when it is not already set (first-writer

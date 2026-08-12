@@ -20,7 +20,7 @@ import java.util.Set;
 
 public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler
     extends AbstractCorrelatedMessageSubscriptionHandler<ProcessMessageSubscriptionRecordValue>
-    implements StorageOrdinalKeyExportHandler<
+    implements OrdinalIndexExportHandler<
         CorrelatedMessageSubscriptionEntity, ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =

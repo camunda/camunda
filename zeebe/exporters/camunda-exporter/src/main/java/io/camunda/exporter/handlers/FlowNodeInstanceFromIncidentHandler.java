@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromIncidentHandler
-    implements StorageOrdinalKeyExportHandler<FlowNodeInstanceEntity, IncidentRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);

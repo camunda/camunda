@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromProcessInstanceHandler
-    implements StorageOrdinalKeyExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromProcessInstanceHandler.class);
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);

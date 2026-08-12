@@ -44,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserTaskJobBasedHandler
-    implements StorageOrdinalKeyExportHandler<TaskEntity, JobRecordValue> {
+    implements OrdinalIndexExportHandler<TaskEntity, JobRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskJobBasedHandler.class);
   private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");

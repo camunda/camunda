@@ -34,8 +34,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskHandler
-    implements StorageOrdinalKeyExportHandler<TaskEntity, UserTaskRecordValue> {
+public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, UserTaskRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =

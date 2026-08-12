@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewFlowNodeFromProcessInstanceHandler
-    implements StorageOrdinalKeyExportHandler<
+    implements OrdinalIndexExportHandler<
         FlowNodeInstanceForListViewEntity, ProcessInstanceRecordValue> {
 
   private static final Logger LOGGER =

@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 public class UserTaskCreatingHandler
-    implements StorageOrdinalKeyExportHandler<TaskEntity, UserTaskRecordValue> {
+    implements OrdinalIndexExportHandler<TaskEntity, UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS = EnumSet.of(UserTaskIntent.CREATING);
 

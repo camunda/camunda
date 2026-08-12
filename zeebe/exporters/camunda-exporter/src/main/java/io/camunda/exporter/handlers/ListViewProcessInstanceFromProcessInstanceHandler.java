@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewProcessInstanceFromProcessInstanceHandler
-    implements StorageOrdinalKeyExportHandler<
+    implements OrdinalIndexExportHandler<
         ProcessInstanceForListViewEntity, ProcessInstanceRecordValue> {
 
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;

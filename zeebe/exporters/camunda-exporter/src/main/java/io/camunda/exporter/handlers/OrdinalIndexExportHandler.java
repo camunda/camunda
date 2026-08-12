@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import java.util.List;
 
-public interface StorageOrdinalKeyExportHandler<
+public interface OrdinalIndexExportHandler<
         T extends ExporterEntity<T>, R extends RecordValue & StorageOrdinalKeyRelated>
     extends ExportHandler<T, R> {
 

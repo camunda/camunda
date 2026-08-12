@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 
 public class VariableHandler
-    implements StorageOrdinalKeyExportHandler<VariableEntity, VariableRecordValue> {
+    implements OrdinalIndexExportHandler<VariableEntity, VariableRecordValue> {
 
   private final int variableSizeThreshold;
   private final String indexName;

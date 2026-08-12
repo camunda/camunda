@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
 public class SequenceFlowHandler
-    implements StorageOrdinalKeyExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;

@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewVariableFromVariableHandler
-    implements StorageOrdinalKeyExportHandler<VariableForListViewEntity, VariableRecordValue> {
+    implements OrdinalIndexExportHandler<VariableForListViewEntity, VariableRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewVariableFromVariableHandler.class);
