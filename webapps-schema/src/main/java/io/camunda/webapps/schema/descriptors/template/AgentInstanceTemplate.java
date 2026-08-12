@@ -20,6 +20,7 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String INDEX_VERSION = "8.10.0";
 
   public static final String KEY = "key";
+  public static final String AGENT_DEFINITION_KEY = "agentDefinitionKey";
   public static final String ELEMENT_ID = "elementId";
   public static final String ELEMENT_INSTANCE_KEYS = "elementInstanceKeys";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
@@ -96,6 +97,7 @@ public class AgentInstanceHandler
 
     entity
         .setKey(record.getKey())
+        .setAgentDefinitionKey(value.getAgentDefinitionKey())
         .setPartitionId(record.getPartitionId())
         .setElementId(value.getElementId())
         .setProcessInstanceKey(value.getProcessInstanceKey())
@@ -140,6 +142,7 @@ public class AgentInstanceHandler
     // always included.
     updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    updateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     updateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     updateFields.put(VERSION_TAG, entity.getVersionTag());
     updateFields.put(ELEMENT_ID, entity.getElementId());
