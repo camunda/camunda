@@ -171,7 +171,7 @@ test.describe.parallel('Tenant Users API Tests', () => {
 
   test('Search Tenant Users Unauthorized', async ({request}) => {
     const tenantId: string = state['tenantId1'] as string;
-    const p = {userName: userFromState(tenantId, state) as string};
+    const p = {tenantId};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/users/search', p),
       {headers: {}, data: {}},
