@@ -42,6 +42,8 @@ jobs:
       run: echo "$PAYLOAD_CONTEXT"
 
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      # Credentials stay: this job commits and pushes the cache-disable change.
+      # zizmor: ignore[artipacked]
 
     - name: Git User Setup
       run: |
