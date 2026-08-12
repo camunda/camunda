@@ -742,7 +742,10 @@ public class BatchOperationIT {
                         .states(BatchOperationState.ACTIVE.name())
                         .build(),
                     BatchOperationSort.of(b -> b),
-                    SearchQueryPage.of(b -> b.from(0).size(10))));
+                    // need to make sure we request a large enough page size otherwise we might not
+                    // get the batch operation we just created if there are many other batch
+                    // operations in the database (created by the other tests)
+                    SearchQueryPage.of(b -> b.from(0).size(1000))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items()).isNotEmpty();
