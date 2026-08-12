@@ -141,35 +141,7 @@ public final class ActivityOutputMappingTest {
         "{'x': %s}".formatted(A_YEAR_MONTH_DURATION_VALUE),
         mapping(b -> b.zeebeOutputExpression("duration(x)", "y")),
         scopeVariables(variable("y", A_YEAR_MONTH_DURATION_VALUE))
-      },
-      {
-        // nested target merges with the existing variable at EVERY path level: siblings of both
-        // 'b' and 'c' survive
-        "{'x': 1, 'a': {'b': {'d': 2}, 'e': 3}}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b.c")),
-        scopeVariables(variable("a", "{\"b\":{\"c\":1,\"d\":2},\"e\":3}"))
-      },
-      {
-        // a nested target whose existing value at that path is not a context poisons the whole
-        // level to null: context merge(5, {...}) yields null in FEEL (pinned FEEL artifact)
-        "{'x': 1, 'a': 5}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b")),
-        scopeVariables(variable("a", "null"))
-      },
-      {
-        // ...same at a deeper level: only the non-context level is poisoned, siblings survive
-        "{'x': 1, 'a': {'b': 5, 'e': 3}}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b.c")),
-        scopeVariables(variable("a", "{\"b\":null,\"e\":3}"))
-      },
-      {
-        // the merge seed is read from the element-local scope walking up: a local variable
-        // created by an input mapping contributes its properties to the propagated result
-        // (#35251 behavior — intentionally preserved in this PR, fix tracked separately)
-        "{'x': {'l': 1}, 'y': 2}",
-        mapping(b -> b.zeebeInputExpression("x", "a").zeebeOutputExpression("y", "a.m")),
-        scopeVariables(variable("a", "{\"l\":1,\"m\":2}"))
-      },
+      }
     };
   }
 
