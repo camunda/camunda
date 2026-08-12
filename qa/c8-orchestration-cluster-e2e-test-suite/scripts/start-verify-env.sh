@@ -92,6 +92,10 @@ if [ "${DATABASE_MODE}" = "h2" ]; then
   fi
   chmod +x "${REPO_ROOT}/dev-dist/bin/camunda"
 
+  # This block is a deliberate full mirror of on-demand's "Start Camunda with
+  # H2/RDBMS" step -- every var it exports, exported here too, so the verify
+  # environment can't diverge from production and produce a false
+  # verified/unverified outcome. If that step changes, update this to match.
   export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,tasklist,operate"
   export ZEEBE_CLOCK_CONTROLLED="true"
   export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
@@ -103,14 +107,35 @@ if [ "${DATABASE_MODE}" = "h2" ]; then
   export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME="Demo"
   export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL="demo@example.com"
   export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0="demo"
+  export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME="lisa"
+  export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD="lisa"
+  export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME="lisa"
+  export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
+  export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
   export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="sa"
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD=""
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
+  export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
+  export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL="PT10S"
+  export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL="PT60S"
+  export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
+  export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0="ADMIN"
+  export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1="DEPLOYED_RESOURCES"
+  export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2="USER_TASKS"
+  export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0="VARIABLE"
+  export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1="BATCH"
+  export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
+  export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
   export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
-  export CAMUNDA_TASKLIST_V2_MODE_ENABLED="${TASKLIST_V2_ENABLED}"
+  # on-demand's own H2/RDBMS job never varies this server-side (there is no
+  # tasklist_mode dimension on its RDBMS matrix, only camunda_mode) -- match
+  # it exactly rather than introducing a toggle production doesn't have.
+  if [ "${2:-}" ] && [ "${2}" != "v2" ]; then
+    echo "::warning::RDBMS/H2 verify never varies Tasklist mode (on-demand's own H2/RDBMS job doesn't either) -- ignoring the requested '${2}'." >&2
+  fi
 
   "${REPO_ROOT}/dev-dist/bin/camunda" > "${REPO_ROOT}/dev-dist/camunda.log" 2>&1 &
   echo $! > "${REPO_ROOT}/dev-dist/camunda.pid"
@@ -121,10 +146,11 @@ if [ "${DATABASE_MODE}" = "h2" ]; then
     exit 1
   }
 
+  # Matches on-demand's own H2/RDBMS "Run API tests" client env exactly.
   write_env "CORE_APPLICATION_URL=http://localhost:8080
 ZEEBE_REST_ADDRESS=http://localhost:8080
 DATABASE=RDBMS
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=${TASKLIST_V2_ENABLED}"
+CAMUNDA_TASKLIST_V2_MODE_ENABLED=false"
 
   exit 0
 fi
