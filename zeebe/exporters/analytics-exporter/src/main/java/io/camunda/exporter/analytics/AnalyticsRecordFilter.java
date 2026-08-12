@@ -25,7 +25,7 @@ import java.util.Set;
  *   <li><b>Record type</b> — only {@link RecordType#EVENT} records pass; commands and rejections
  *       are skipped.
  *   <li><b>Value type</b> — only value types with registered handlers pass (e.g. {@link
- *       ValueType#PROCESS_INSTANCE_CREATION}).
+ *       ValueType#PROCESS_INSTANCE}).
  *   <li><b>Intent</b> — only intents with registered handlers pass. This is an intentional
  *       over-approximation: the set is flat across all value types, so a record may pass intent
  *       filtering even if its (ValueType, Intent) pair has no handler. Exact routing happens in

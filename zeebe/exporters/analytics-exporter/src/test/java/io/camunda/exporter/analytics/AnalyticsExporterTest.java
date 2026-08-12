@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -30,7 +29,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -84,7 +83,7 @@ class AnalyticsExporterTest {
     exporter.export(record);
 
     // then
-    final var value = (ProcessInstanceCreationRecordValue) record.getValue();
+    final var value = (ProcessInstanceRecordValue) record.getValue();
     assertThat(memoryExporter.getFinishedLogRecordItems())
         .singleElement()
         .satisfies(
@@ -780,19 +779,32 @@ class AnalyticsExporterTest {
 
   // -- helpers --
 
+  /** Activation of a root process element — the record the process-instance count is taken from. */
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
     return FACTORY.generateRecord(
-        ValueType.PROCESS_INSTANCE_CREATION,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+        ValueType.PROCESS_INSTANCE,
+        r ->
+            r.withRecordType(RecordType.EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withValue(rootProcessInstanceValue()));
   }
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent(final long position) {
     return FACTORY.generateRecord(
-        ValueType.PROCESS_INSTANCE_CREATION,
+        ValueType.PROCESS_INSTANCE,
         r ->
             r.withRecordType(RecordType.EVENT)
-                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withValue(rootProcessInstanceValue())
                 .withPosition(position));
+  }
+
+  private static ProcessInstanceRecordValue rootProcessInstanceValue() {
+    return ImmutableProcessInstanceRecordValue.builder()
+        .from(FACTORY.generateObject(ProcessInstanceRecordValue.class))
+        .withBpmnElementType(BpmnElementType.PROCESS)
+        .withParentProcessInstanceKey(-1L)
+        .build();
   }
 
   private static AnalyticsExporter exporterWithInMemory(

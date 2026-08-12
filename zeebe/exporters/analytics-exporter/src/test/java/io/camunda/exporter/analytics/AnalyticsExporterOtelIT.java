@@ -16,7 +16,10 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
 import java.util.List;
@@ -184,9 +187,19 @@ class AnalyticsExporterOtelIT {
             });
   }
 
+  /** Activation of a root process element — the record the process-instance count is taken from. */
   private io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
+    final var value =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(-1L)
+            .build();
     return factory.generateRecord(
-        ValueType.PROCESS_INSTANCE_CREATION,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+        ValueType.PROCESS_INSTANCE,
+        r ->
+            r.withRecordType(RecordType.EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withValue(value));
   }
 }

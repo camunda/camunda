@@ -15,11 +15,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.Map;
@@ -37,12 +35,10 @@ class AnalyticsHandlerCatalogTest {
     // when
     final var registry = AnalyticsHandlerCatalog.build(otelSdkManager, AnalyticsCategory.all());
 
-    // then — must contain at least all known contractual + optional handlers
+    // then
     assertThat(registry.registrations())
-        .contains(
-            Map.entry(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
+        .containsExactlyInAnyOrder(
             Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Map.entry(ValueType.USAGE_METRIC, UsageMetricIntent.EXPORTED),
             Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
             Map.entry(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
             Map.entry(ValueType.TENANT, TenantIntent.CREATED),
@@ -73,11 +69,18 @@ class AnalyticsHandlerCatalogTest {
     // then — contractual handlers present, optional handlers absent
     assertThat(registry.registrations())
         .contains(
-            Map.entry(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
-            Map.entry(ValueType.USAGE_METRIC, UsageMetricIntent.EXPORTED),
-            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED))
+            Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
+            Map.entry(ValueType.TENANT, TenantIntent.CREATED),
+            Map.entry(ValueType.TENANT, TenantIntent.DELETED),
+            Map.entry(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED))
         .doesNotContain(
-            Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            Map.entry(ValueType.INCIDENT, IncidentIntent.CREATED),
+            Map.entry(ValueType.PROCESS, ProcessIntent.CREATED),
+            Map.entry(ValueType.DECISION, DecisionIntent.CREATED),
+            Map.entry(ValueType.FORM, FormIntent.CREATED),
+            Map.entry(ValueType.AGENT_INSTANCE, AgentInstanceIntent.CREATED));
   }
 
   @Test
@@ -92,11 +95,23 @@ class AnalyticsHandlerCatalogTest {
 
     // then — optional handlers present, contractual handlers absent
     assertThat(registry.registrations())
-        .contains(Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .contains(
+            Map.entry(ValueType.INCIDENT, IncidentIntent.CREATED),
+            Map.entry(ValueType.INCIDENT, IncidentIntent.RESOLVED),
+            Map.entry(ValueType.PROCESS, ProcessIntent.CREATED),
+            Map.entry(ValueType.PROCESS, ProcessIntent.DELETED),
+            Map.entry(ValueType.DECISION, DecisionIntent.CREATED),
+            Map.entry(ValueType.DECISION, DecisionIntent.DELETED),
+            Map.entry(ValueType.FORM, FormIntent.CREATED),
+            Map.entry(ValueType.FORM, FormIntent.DELETED),
+            Map.entry(ValueType.AGENT_INSTANCE, AgentInstanceIntent.CREATED),
+            Map.entry(ValueType.AGENT_INSTANCE, AgentInstanceIntent.COMPLETED))
         .doesNotContain(
-            Map.entry(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
-            Map.entry(ValueType.USAGE_METRIC, UsageMetricIntent.EXPORTED),
-            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED));
+            Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
+            Map.entry(ValueType.TENANT, TenantIntent.CREATED),
+            Map.entry(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED));
   }
 
   @Test

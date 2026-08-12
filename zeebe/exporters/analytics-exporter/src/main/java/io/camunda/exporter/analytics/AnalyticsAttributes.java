@@ -48,7 +48,6 @@ public final class AnalyticsAttributes {
     public static final String PROCESS_INSTANCE_CREATED = "process_instance_created";
 
     public static final String ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
-    public static final String USAGE_METRIC_EXPORTED = "usage_metric_exported";
     public static final String HEARTBEAT = "heartbeat";
     public static final String USER_TASK_CREATED = "user_task_created";
     public static final String TENANT_CREATED = "camunda.tenant.created";
@@ -189,18 +188,5 @@ public final class AnalyticsAttributes {
         AttributeKey.stringKey("camunda.exporter.digest");
 
     private Exporter() {}
-  }
-
-  public static final class UsageMetric {
-    public static final AttributeKey<String> EVENT_TYPE =
-        AttributeKey.stringKey("camunda.usage_metric.event_type");
-    public static final AttributeKey<Long> COUNT =
-        AttributeKey.longKey("camunda.usage_metric.count");
-    public static final AttributeKey<Long> INTERVAL_START =
-        AttributeKey.longKey("camunda.usage_metric.interval_start");
-    public static final AttributeKey<Long> INTERVAL_END =
-        AttributeKey.longKey("camunda.usage_metric.interval_end");
-
-    private UsageMetric() {}
   }
 }

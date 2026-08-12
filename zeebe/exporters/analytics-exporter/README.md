@@ -153,31 +153,30 @@ variables, or any other end-user data.
 
 ### Event types
 
-|        Source record        |       Intent        |              Event name               |                                               Notes                                                |
-|-----------------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
-| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`            | Emitted for every new process instance.                                                            |
-| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated`          | Emitted only when the activated element is an ad-hoc sub-process.                                  |
-| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`               | Emitted once per usage metric export interval. Internal reset events are skipped.                  |
-| `USER_TASK`                 | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                   |
-| `USER_TASK`                 | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
-| `TENANT`                    | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
-| `TENANT`                    | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                  |
-| `INCIDENT`                  | `CREATED`           | `camunda.process.incident.created`    | Emitted for every raised incident.                                                                 |
-| `INCIDENT`                  | `RESOLVED`          | `camunda.process.incident.resolved`   | Emitted for every resolved incident.                                                               |
-| `PROCESS`                   | `CREATED`           | `camunda.process.definition.created`  | Emitted once per process definition, so a deployment of several processes produces one event each. |
-| `PROCESS`                   | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per deleted process definition.                                                       |
-| `DECISION`                  | `CREATED`           | `camunda.decision.definition.created` | Emitted once per decision in a deployed decision requirements graph.                               |
-| `DECISION`                  | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per deleted decision definition.                                                      |
-| `FORM`                      | `CREATED`           | `camunda.form.definition.created`     | Emitted once per deployed form.                                                                    |
-| `FORM`                      | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                          |
-| `AGENT_INSTANCE`            | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                          |
-| `AGENT_INSTANCE`            | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
-| —                           | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
+|   Source record    |       Intent        |              Event name               |                                               Notes                                                |
+|--------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
+| `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `process_instance_created`            | Emitted when a root process element is activated, so it covers every start type.                   |
+| `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated`          | Emitted only when the activated element is an ad-hoc sub-process.                                  |
+| `USER_TASK`        | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                   |
+| `USER_TASK`        | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
+| `TENANT`           | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
+| `TENANT`           | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                  |
+| `INCIDENT`         | `CREATED`           | `camunda.process.incident.created`    | Emitted for every raised incident.                                                                 |
+| `INCIDENT`         | `RESOLVED`          | `camunda.process.incident.resolved`   | Emitted for every resolved incident.                                                               |
+| `PROCESS`          | `CREATED`           | `camunda.process.definition.created`  | Emitted once per process definition, so a deployment of several processes produces one event each. |
+| `PROCESS`          | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per deleted process definition.                                                       |
+| `DECISION`         | `CREATED`           | `camunda.decision.definition.created` | Emitted once per decision in a deployed decision requirements graph.                               |
+| `DECISION`         | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per deleted decision definition.                                                      |
+| `FORM`             | `CREATED`           | `camunda.form.definition.created`     | Emitted once per deployed form.                                                                    |
+| `FORM`             | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                          |
+| `AGENT_INSTANCE`   | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                          |
+| `AGENT_INSTANCE`   | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
+| —                  | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
 
-The five signals that predate the analytics data contract — `process_instance_created`,
-`adhoc_subprocess_activated`, `usage_metric_exported`, `user_task_created`, and `heartbeat` — keep
-their flat snake_case names, which are frozen for compatibility with already-ingested data; every
-signal added since uses the canonical dotted contract name.
+The four signals that predate the analytics data contract — `process_instance_created`,
+`adhoc_subprocess_activated`, `user_task_created`, and `heartbeat` — keep their flat snake_case
+names, which are frozen for compatibility with already-ingested data; every signal added since uses
+the canonical dotted contract name.
 
 ### Common log record attributes
 
@@ -203,6 +202,11 @@ Beyond the common attributes above, each event type carries its own additional f
 | `camunda.process.instance_key`      | long   | Process instance key.                          |
 | `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
 | `camunda.tenant.id`                 | string | Tenant ID.                                     |
+
+The event is taken from the activation of the root process element, which is the single point every
+process instance passes through however it was started: the client API, or a message, timer, signal
+or conditional start event. Process instances started by a call activity are excluded, so the event
+counts root instances only.
 
 **`user_task_created`**
 
@@ -319,31 +323,25 @@ attribute names, and the version tag are all deliberately not exported.
 | `camunda.element.id`             | string | BPMN element ID of the ad-hoc sub-process. |
 | `camunda.tenant.id`              | string | Tenant ID.                                 |
 
-**`usage_metric_exported`**
-
-|               Attribute               |  Type  |                                                Description                                                 |
-|---------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
-| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (running process instances), `EDI` (executed decision instances), or `TU` (task users). |
-| `camunda.usage_metric.count`          | long   | Count for this metric type in this export interval.                                                        |
-| `camunda.usage_metric.interval_start` | long   | Epoch-ms start of the export window.                                                                       |
-| `camunda.usage_metric.interval_end`   | long   | Epoch-ms end of the export window.                                                                         |
-
 ### Pre-aggregated counters
 
 Alongside the events above, the exporter ships delta counters over OTLP metrics. Each counter
 is incremented once per source record and carries the dimensions listed below.
 
-|                Counter                |              Source record              |                              Dimensions                              |
-|---------------------------------------|-----------------------------------------|----------------------------------------------------------------------|
-| `camunda.process_instance.created`    | `PROCESS_INSTANCE_CREATION` / `CREATED` | `camunda.process.id`, `camunda.process.version`, `camunda.tenant.id` |
-| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED`     | `camunda.tenant.id`                                                  |
+|                Counter                |              Source record               |                              Dimensions                              |
+|---------------------------------------|------------------------------------------|----------------------------------------------------------------------|
+| `camunda.process_instance.created`    | `PROCESS_INSTANCE` / `ELEMENT_ACTIVATED` | `camunda.process.id`, `camunda.process.version`, `camunda.tenant.id` |
+| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED`      | `camunda.tenant.id`                                                  |
+
+`camunda.process_instance.created` is incremented on the same root-process-element activation as the
+event above, so it covers every start type and excludes call-activity children.
 
 `camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
 a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
-which is the same counting rule as the `EDI` usage metric. It is a real-time, per-tenant view; the
-`EDI` usage metric remains the authoritative figure, and the two can differ under sampling and at
-window boundaries. The counter also takes every `EVALUATED` record, whereas only version 2 of that
-record feeds `EDI` (version 1 is applied as a no-op), so records written by a broker older than 8.8
+which is the same counting rule as the `EDI` usage metric. It is the authoritative per-tenant EDI
+source the exporter ships; the engine's aggregated usage metric is no longer forwarded. The counter
+also takes every `EVALUATED` record, whereas only version 2 of that record feeds `EDI` (version 1 is
+applied as a no-op), so records written by a broker older than 8.8
 would count here but not there — that is outside the supported upgrade sources for 8.10, where the
 two agree.
 
