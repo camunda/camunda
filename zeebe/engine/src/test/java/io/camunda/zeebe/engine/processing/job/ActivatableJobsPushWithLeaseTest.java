@@ -19,6 +19,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
@@ -134,6 +137,32 @@ public final class ActivatableJobsPushWithLeaseTest {
     assertThat(timedOut.getLeaseToken())
         .describedAs("the lease token survives an engine restart and log replay")
         .isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldRejectCompleteWithLeaseTokenSupersededByPushReactivation() {
+    // given a job pushed with a lease, then failed with retries so it is immediately re-pushed
+    final RecordingJobStream jobStream = registerStream(true);
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
+    final String firstToken = jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken();
+
+    ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).withRetries(1).fail();
+    await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
+    final String secondToken = jobStream.getActivatedJobs().get(1).jobRecord().getLeaseToken();
+    assertThat(secondToken)
+        .describedAs("failing with retries re-pushes the job with a new, distinct lease token")
+        .isNotEmpty()
+        .isNotEqualTo(firstToken);
+
+    // when completing with the token from the superseded first push
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("the lease from the first push no longer fences the job once it is re-pushed")
+        .hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
