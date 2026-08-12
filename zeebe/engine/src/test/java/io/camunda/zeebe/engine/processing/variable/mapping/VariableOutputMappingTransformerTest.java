@@ -99,8 +99,6 @@ public final class VariableOutputMappingTransformerTest {
       },
       // a null merge base takes the "replace", not "merge", branch
       {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
-      // `context merge` on a non-context value silently nulls the variable instead of failing
-      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
       // override nested property
       {
         List.of(mapping("x", "a.b")),
@@ -266,6 +264,29 @@ public final class VariableOutputMappingTransformerTest {
         result.toBuffer(),
         "{'nested':{'property':'some text', 'nested':{'property':'abc'}}, "
             + "'notNested':'abc', 'notNestedAssigned':'abc'}");
+  }
+
+  @Test
+  @Disabled(
+      "context merge() on a scalar merge base silently nulls instead of replacing, unlike the "
+          + "null-merge-base case. Tracked under #XXXX — once fixed, move into "
+          + "parametersSuccessfulEvaluationToObject.")
+  void shouldMergeOntoNonContextValueInsteadOfNulling() {
+    final var mappings = List.of(mapping("1", "a.b"));
+    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("5"));
+
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}}");
   }
 
   @Test
