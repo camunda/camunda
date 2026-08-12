@@ -2557,7 +2557,7 @@ jobs:
     name: Deploy snapshot Optimize Docker image
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2583,12 +2583,8 @@ jobs:
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
-      # Optimize needs io.camunda artifacts from search/* and zeebe/* that deploy-snapshots
-      # publishes concurrently. Resolving them from Nexus fails both when a freshly bumped
-      # X.Y.Z-SNAPSHOT is not published yet (release back-merge) and when snapshot retention
-      # deletes a timestamped JAR its own metadata still advertises. A full-reactor install puts
-      # them all in the local repository, matching deploy-camunda-docker-snapshot. -Dquickly
-      # excludes optimize itself, which the next step builds with the assembly profile.
+      # Builds io.camunda deps from source instead of Nexus to avoid a race with deploy-snapshots.
+      # See https://github.com/camunda/camunda/pull/59937 for details.
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -Dquickly
