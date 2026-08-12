@@ -198,8 +198,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  // Skipped due to bug #55864: https://github.com/camunda/camunda/issues/55864
-  test.skip('Infinite scrolling', async ({
+  test('Infinite scrolling', async ({
     page,
     operateHomePage,
     operateProcessesPage,
