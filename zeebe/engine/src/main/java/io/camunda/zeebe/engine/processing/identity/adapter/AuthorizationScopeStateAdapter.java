@@ -34,8 +34,6 @@ import org.slf4j.Logger;
 @NullMarked
 public final class AuthorizationScopeStateAdapter implements AuthorizationScopeRepositoryPort {
 
-  private static final String NAMESPACE = "zeebe.authorization";
-
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final AuthorizationState authorizationState;
@@ -48,7 +46,8 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       final EngineConfiguration config,
       final MeterRegistry meterRegistry) {
     this.authorizationState = authorizationState;
-    final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "scope", meterRegistry);
+    final var statsCounter =
+        new CaffeineCacheStatsCounter(AuthorizationCacheMetrics.NAMESPACE, "scope", meterRegistry);
     scopeCache =
         Caffeine.newBuilder()
             .expireAfterWrite(config.getAuthorizationsCacheTtl())

@@ -33,8 +33,6 @@ import org.slf4j.Logger;
 @NullMarked
 public final class MembershipStateAdapter implements MembershipPort {
 
-  private static final String NAMESPACE = "zeebe.authorization";
-
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final MappingRuleState mappingRuleState;
@@ -48,7 +46,9 @@ public final class MembershipStateAdapter implements MembershipPort {
       final MeterRegistry meterRegistry) {
     this.mappingRuleState = mappingRuleState;
     this.membershipState = membershipState;
-    final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "membership", meterRegistry);
+    final var statsCounter =
+        new CaffeineCacheStatsCounter(
+            AuthorizationCacheMetrics.NAMESPACE, "membership", meterRegistry);
     membershipCache =
         Caffeine.newBuilder()
             .expireAfterWrite(config.getAuthorizationsCacheTtl())
