@@ -173,6 +173,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/dynamic-node-id-provider/ @camunda/zeebe-distributed-platform
 /zeebe/journal/             @camunda/zeebe-distributed-platform
 /zeebe/logstreams/          @camunda/zeebe-distributed-platform
+/zeebe/rebalance/           @camunda/zeebe-distributed-platform
 /zeebe/restore/             @camunda/zeebe-distributed-platform
 /zeebe/restore-standalone/  @camunda/zeebe-distributed-platform
 /zeebe/scheduler/           @camunda/zeebe-distributed-platform

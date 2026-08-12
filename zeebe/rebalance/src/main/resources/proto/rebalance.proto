@@ -1,0 +1,65 @@
+syntax = 'proto3';
+package rebalance_requests;
+
+option java_package = "io.camunda.zeebe.rebalance.protocol";
+
+message TriggerRebalanceRequest {
+  RebalanceOverrides overrides = 1;
+  bool dryRun = 2;
+}
+
+// Each override is absent unless specified when triggering the rebalance.
+message RebalanceOverrides {
+  optional uint64 replicationLagThresholdBytes = 1;
+  optional uint64 replicationTimeoutMillis = 2;
+  optional uint32 maxTransferAttempts = 3;
+}
+
+message RebalanceStatusResponse {
+  // Absent while no rebalance is running.
+  RunningRebalance running = 1;
+  // Absent until a rebalance has run on this coordinator.
+  CompletedRebalance lastCompleted = 2;
+}
+
+message RunningRebalance {
+  uint64 rebalanceId = 1;
+  RebalanceOverrides overrides = 2;
+  bool dryRun = 3;
+  bool cancelRequested = 4;
+}
+
+message CompletedRebalance {
+  uint64 rebalanceId = 1;
+  RebalanceOutcome outcome = 2;
+}
+
+message CancelRebalanceResponse {
+  bool wasRunning = 1;
+}
+
+enum RebalanceOutcome {
+  REBALANCE_OUTCOME_UNSPECIFIED = 0;
+  REBALANCE_COMPLETED = 1;
+  REBALANCE_CANCELLED = 2;
+  REBALANCE_FAILED = 3;
+}
+
+message Response {
+  oneof response {
+    RebalanceErrorResponse error = 1;
+    RebalanceStatusResponse status = 2;
+    CancelRebalanceResponse cancelled = 3;
+  }
+}
+
+message RebalanceErrorResponse {
+  RebalanceErrorCode errorCode = 1;
+  string errorMessage = 2;
+}
+
+enum RebalanceErrorCode {
+  REBALANCE_ERROR_UNSPECIFIED = 0;
+  REBALANCE_ERROR_IN_PROGRESS = 1;
+  REBALANCE_ERROR_NOT_COORDINATOR = 2;
+}
