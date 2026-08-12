@@ -258,14 +258,23 @@ export function octetStreamHeaders(token?: string): Record<string, string> {
 
 export function buildUrl(
   pathTemplate: string, // e.g., "/tenants/{tenantId}"
-  params?: Record<string, string | number | undefined>,
+  params?: Record<string, string | number>,
   query?: Record<string, string | number | undefined>,
 ): string {
   const version: string = 'v2';
   const base = credentials.baseUrl;
   let url = `${base}/${version}${pathTemplate}`.replace(/\{(\w+)}/g, (_, k) => {
     const v = params?.[k];
-    return v == null ? '__MISSING_PARAM__' : String(v);
+    // A substituted placeholder would build a request to a nonsense path that the
+    // gateway answers with a plausible 404, so a test asserting 404 would pass
+    // without exercising anything. Failing here points at the call site instead.
+    if (v == null) {
+      throw new Error(
+        `buildUrl: missing path parameter "${k}" for path template "${pathTemplate}". ` +
+          `Received params: ${JSON.stringify(params ?? {})}`,
+      );
+    }
+    return String(v);
   });
   if (query) {
     const q = Object.entries(query)
