@@ -13,12 +13,15 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -29,6 +32,11 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -257,6 +265,95 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           }
         });
     return future;
+  }
+
+  @Override
+  public ActorFuture<PartitionMigrationStatus> getMigrationStatus() {
+    final ActorFuture<PartitionMigrationStatus> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> {
+          try {
+            future.complete(readMigrationStatus());
+          } catch (final Exception e) {
+            LOG.error("Failed to determine the migration status of partition {}", partitionId, e);
+            future.complete(
+                new PartitionMigrationStatus(
+                    MigrationStatusCode.UNKNOWN,
+                    "partition "
+                        + partitionId
+                        + ": failed to read migration status: "
+                        + e.getMessage()));
+          }
+        });
+
+    return future;
+  }
+
+  /**
+   * Opens a second transaction on the already-open, live {@code ZeebeDb} to read {@code
+   * DbMigrationState.getMigratedByVersion()} without disturbing the stream processor's own state —
+   * the same technique {@link #banInstanceInState} already uses for {@code DbBannedInstanceState}.
+   */
+  private PartitionMigrationStatus readMigrationStatus() {
+    final var zeebeDb = adminControl.getZeebeDb();
+    if (zeebeDb == null) {
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.UNKNOWN,
+          "partition " + partitionId + ": no ZeebeDb open on this replica yet");
+    }
+
+    final var migrationState = new DbMigrationState(zeebeDb, zeebeDb.createContext());
+    final var migratedByVersion = migrationState.getMigratedByVersion();
+    if (migratedByVersion == null) {
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.MIGRATION_IN_PROGRESS,
+          "partition " + partitionId + ": no migrated-by-version recorded yet");
+    }
+
+    // Same comparison DbMigratorImpl itself uses to gate migrations — kept consistent so this
+    // read-only status check never disagrees with the engine's own compatibility decision.
+    final var result = VersionCompatibilityCheck.check(migratedByVersion, VersionUtil.getVersion());
+    return switch (result) {
+      case Compatible.SameVersion same -> migratedAndSnapshotted(same.version().toString());
+      case Compatible.PatchUpgrade patch ->
+          notYetMigrated(patch.from().toString(), patch.to().toString());
+      case Compatible.MinorUpgrade minor ->
+          notYetMigrated(minor.from().toString(), minor.to().toString());
+      case Incompatible incompatible ->
+          new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition " + partitionId + ": incompatible migration path: " + incompatible);
+      case Indeterminate indeterminate ->
+          new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition "
+                  + partitionId
+                  + ": cannot determine migration compatibility: "
+                  + indeterminate);
+    };
+  }
+
+  private PartitionMigrationStatus migratedAndSnapshotted(final String version) {
+    if (adminControl.isMigrationSnapshotTaken()) {
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.MIGRATED,
+          "partition " + partitionId + ": migrated to " + version + " and snapshotted");
+    }
+    return new PartitionMigrationStatus(
+        MigrationStatusCode.MIGRATION_IN_PROGRESS,
+        "partition " + partitionId + ": migrated to " + version + " but not yet snapshotted");
+  }
+
+  private PartitionMigrationStatus notYetMigrated(final String from, final String to) {
+    return new PartitionMigrationStatus(
+        MigrationStatusCode.MIGRATION_IN_PROGRESS,
+        "partition "
+            + partitionId
+            + ": migrated-by-version "
+            + from
+            + " has not yet migrated to "
+            + to);
   }
 
   private void writeErrorEventAndBanInstance(

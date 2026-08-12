@@ -40,15 +40,18 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private final ConcurrencyControl control;
   private final HealthMonitor healthMonitor;
   private final RetryState retryState = new RetryState();
+  private final Runnable onSnapshotTaken;
   private volatile boolean closed = false;
 
   public MigrationSnapshotDirector(
       final AsyncSnapshotDirector asyncSnapshotDirector,
       final ConcurrencyControl control,
-      final HealthMonitor healthMonitor) {
+      final HealthMonitor healthMonitor,
+      final Runnable onSnapshotTaken) {
     snapshotDirector = asyncSnapshotDirector;
     this.control = control;
     this.healthMonitor = healthMonitor;
+    this.onSnapshotTaken = onSnapshotTaken;
     healthReport = snapshotNotTaken();
     healthMonitor.registerComponent(this);
     LOG.debug("Initialized migration snapshot director. Scheduling snapshot");
@@ -158,6 +161,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                   LOG.debug("Snapshot taken after migrations: {}", snapshot.getId());
                   healthReport = HealthReport.healthy(this);
                   notifyListeners();
+                  onSnapshotTaken.run();
                 }
                 runningSnapshot = null;
                 return error != null

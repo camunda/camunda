@@ -93,6 +93,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private MeterRegistry transitionMeterRegistry;
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
+  private boolean migrationSnapshotTaken;
   private final ComponentTreeListener healthMetrics;
   private SnapshotCopy snapshotCopy;
   private ClusterConfigurationService clusterConfigurationService;
@@ -387,6 +388,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public boolean areMigrationsPerformed() {
     return migrationsPerformed;
+  }
+
+  @Override
+  public void markMigrationSnapshotTaken() {
+    migrationSnapshotTaken = true;
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTaken;
   }
 
   @Override

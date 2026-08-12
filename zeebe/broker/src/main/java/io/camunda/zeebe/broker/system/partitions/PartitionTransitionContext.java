@@ -164,6 +164,17 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   boolean areMigrationsPerformed();
 
+  /**
+   * Marks that a snapshot capturing the migrated state has been taken since this replica last ran
+   * its migrations. Once set, this must never be un-set: the underlying snapshot does not stop
+   * existing because of a later role transition, even though {@link
+   * io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector} itself is recreated
+   * on every transition.
+   */
+  void markMigrationSnapshotTaken();
+
+  boolean isMigrationSnapshotTaken();
+
   ComponentTreeListener getComponentTreeListener();
 
   ClusterConfigurationService getClusterConfigurationService();

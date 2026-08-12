@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
@@ -54,4 +55,13 @@ public interface PartitionAdminAccess {
    * the leader.
    */
   ActorFuture<ExporterPhase> getExporterPhase();
+
+  /**
+   * Whether this replica's RocksDB state is migrated to the current application version and a
+   * snapshot capturing that migrated state has been taken, for the upgrade-readiness endpoint
+   * (camunda/product-hub#3067). Every replica answers from its own local state — migration and
+   * migration-snapshotting run independently on every replica, leader or follower, so a caller must
+   * ask every replica to be sure a fail-over cannot promote an unmigrated one.
+   */
+  ActorFuture<PartitionMigrationStatus> getMigrationStatus();
 }

@@ -45,4 +45,11 @@ public interface PartitionAdminControl {
    * (leader-only) exporter director.
    */
   ExporterPhase getExporterPhase();
+
+  /**
+   * {@code true} once a snapshot capturing this replica's migrated state has been taken since it
+   * last ran its migrations (see {@code MigrationSnapshotDirector}). Never resets to {@code false}
+   * once set.
+   */
+  boolean isMigrationSnapshotTaken();
 }
