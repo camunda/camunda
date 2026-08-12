@@ -46,7 +46,9 @@ jobs:
       # to stay clear of Auth0's per-IP brute-force throttling.
       max-parallel: 1
       matrix:
-        branch: [ main, stable/8.8, stable/8.9 ]
+        # A manual dispatch runs only the ref it was dispatched from, so a change to the cloud test
+        # can be verified on its own branch before merging; the schedule covers the real set.
+        branch: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', github.ref_name) || '["main","stable/8.8","stable/8.9"]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
