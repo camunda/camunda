@@ -182,16 +182,20 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
-  record ModeChangeRequest(String physicalTenantId, Mode mode, boolean dryRun)
+  /**
+   * @param physicalTenantId the physical tenant to transition, or empty for every physical tenant
+   *     of the cluster
+   */
+  record ModeChangeRequest(Optional<String> physicalTenantId, Mode mode, boolean dryRun)
       implements ClusterConfigurationManagementRequest {
 
     public static ModeChangeRequest recovering(
-        final String physicalTenantId, final boolean dryRun) {
+        final Optional<String> physicalTenantId, final boolean dryRun) {
       return new ModeChangeRequest(physicalTenantId, Mode.RECOVERING, dryRun);
     }
 
     public static ModeChangeRequest processing(
-        final String physicalTenantId, final boolean dryRun) {
+        final Optional<String> physicalTenantId, final boolean dryRun) {
       return new ModeChangeRequest(physicalTenantId, Mode.PROCESSING, dryRun);
     }
   }

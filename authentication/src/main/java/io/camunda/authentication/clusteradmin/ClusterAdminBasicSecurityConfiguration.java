@@ -31,7 +31,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
@@ -48,9 +48,9 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * credentials to fall through to the global manager. Without this isolation, a DB-backed user could
  * authenticate on {@code /cluster/v2/**}.
  *
- * <p><strong>Statelessness:</strong> the chain binds a session-free {@link
- * NullSecurityContextRepository} explicitly and never creates a session, so an existing webapp
- * session cookie can never authenticate {@code /cluster/v2/**}.
+ * <p><strong>Statelessness:</strong> the chain binds a request-scoped, session-free {@link
+ * RequestAttributeSecurityContextRepository} explicitly and never creates a session, so an existing
+ * webapp session cookie can never authenticate {@code /cluster/v2/**}.
  *
  * <p><strong>OIDC:</strong> handled by separate {@link ClusterAdminOidcSecurityConfiguration},
  * gated by {@code @ConditionalOnAuthenticationMethod(OIDC)}.
@@ -96,11 +96,19 @@ public class ClusterAdminBasicSecurityConfiguration {
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .anonymous(AbstractHttpConfigurer::disable)
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         // Explicit session-free context repository so a webapp session cookie can't authenticate
         // this chain. Explicit is required: STATELESS installs one only if none was set already
         // (SessionManagementConfigurer's `if (repo == null)` guard).
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .securityContext(sc -> sc.securityContextRepository(new NullSecurityContextRepository()))
+        //
+        // Request-scoped rather than null: the cluster-admin endpoints return a CompletableFuture,
+        // so Spring MVC runs this chain a second time on the ASYNC dispatch and reloads the context
+        // from this repository. A NullSecurityContextRepository stores nothing, so that second pass
+        // finds no authentication and answers 401 even for a valid credential. Request scope keeps
+        // the chain session-free while surviving the dispatches of one request, and matches the
+        // OIDC chain.
+        .securityContext(
+            sc -> sc.securityContextRepository(new RequestAttributeSecurityContextRepository()))
         .requestCache(cache -> cache.requestCache(new NullRequestCache()))
         .csrf(AbstractHttpConfigurer::disable);
 

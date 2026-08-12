@@ -137,7 +137,7 @@ message ExportingStateChangeRequest {
 message ModeChangeRequest {
   Mode mode = 1;
   bool dryRun = 2;
-  string physicalTenantId = 3;
+  optional string physicalTenantId = 3;
 }
 
 message CancelTopologyChangeRequest {

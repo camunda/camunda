@@ -32,10 +32,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -73,14 +77,26 @@ public class RecoveryControllerTest extends RestControllerTest {
 
   private void stubValidationSuccess() {
     Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.right(
-                    new ClusterConfigurationChangeResponse(
-                        0L,
-                        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                            Map.of(), Map.of(), List.of()),
-                        null))));
+        .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse(0L, List.of()))));
+  }
+
+  /** A change plan that transitions the physical tenant this controller is addressed at. */
+  private static ClusterConfigurationChangeResponse changeResponse(
+      final long changeId, final List<PartitionGroupOperation> plannedChanges) {
+    final var phases =
+        plannedChanges.isEmpty()
+            ? List.<Phase>of()
+            : List.<Phase>of(
+                new PartitionGroupParallelPhase(
+                    Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, plannedChanges)));
+    return new ClusterConfigurationChangeResponse(
+        changeId,
+        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+            Map.of(), Map.of(), List.<ClusterConfigurationChangeOperation>copyOf(plannedChanges)),
+        new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+            CurrentClusterConfiguration.uninitialized(),
+            CurrentClusterConfiguration.uninitialized(),
+            phases));
   }
 
   @ParameterizedTest
@@ -88,13 +104,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   void shouldChangeClusterModeAndReturnPlannedChanges(final String baseUrl) {
     // given
     final var changeResponse =
-        new ClusterConfigurationChangeResponse(
-            7L,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(),
-                Map.of(),
-                List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING))),
-            null);
+        changeResponse(7L, List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     Mockito.when(
             recoveryServices.changeMode(
                 Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))
@@ -106,8 +116,13 @@ public class RecoveryControllerTest extends RestControllerTest {
           "changeId": "7",
           "plannedChanges": [
             {
-              "operation": "ModeChangeOperation",
-              "mode": "RECOVERING"
+              "physicalTenantId": "default",
+              "operations": [
+                {
+                  "operation": "ModeChangeOperation",
+                  "mode": "RECOVERING"
+                }
+              ]
             }
           ]
         }

@@ -14,6 +14,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
@@ -95,6 +96,7 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
+    ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
     ManagementServices managementServices)
     implements ServiceRegistry {
@@ -300,6 +302,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ClusterRecoveryServices clusterRecoveryServices() {
+    return clusterRecoveryServices;
+  }
+
+  @Override
   public ClusterStatusServices clusterStatusServices() {
     return clusterStatusServices;
   }
@@ -386,6 +393,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserServices> userByTenant = new HashMap<>();
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
+    private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
     private ManagementServices managementServices;
 
@@ -592,6 +600,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterRecoveryServices(final ClusterRecoveryServices service) {
+      clusterRecoveryServices = service;
+      return this;
+    }
+
     public Builder clusterStatusServices(final ClusterStatusServices service) {
       clusterStatusServices = service;
       return this;
@@ -642,6 +655,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
+          clusterRecoveryServices,
           clusterStatusServices,
           managementServices);
     }
