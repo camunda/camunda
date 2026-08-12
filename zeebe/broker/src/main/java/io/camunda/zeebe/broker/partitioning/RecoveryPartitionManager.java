@@ -683,6 +683,12 @@ public final class RecoveryPartitionManager
   }
 
   @Override
+  public ActorFuture<Void> deleteHistory() {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform deleteHistory on a recovering partition"));
+  }
+
+  @Override
   public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform scaleUp on a recovering partition"));

@@ -15,19 +15,6 @@ import java.util.Set;
 public interface ClusterChangeExecutor {
 
   /**
-   * This method will start an asynchronous deletion of the history storage, returning a future
-   * indicating success/failure.
-   *
-   * <p>When the future is completed successfully, all history data will have been purged. When a
-   * future is completed exceptionally, then not all (but none or some) may have been purged.
-   *
-   * <p>This operation should be idempotent, as it may be retried multiple times until successful.
-   *
-   * @return future when the operation is completed
-   */
-  ActorFuture<Void> deleteHistory();
-
-  /**
    * This method will start an asynchronous pre-scaling operation, preparing the member for a
    * cluster scaling event.
    *
@@ -51,11 +38,6 @@ public interface ClusterChangeExecutor {
   ActorFuture<Void> postScaling(Set<MemberId> clusterMembers);
 
   final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
-    @Override
-    public ActorFuture<Void> deleteHistory() {
-      return CompletableActorFuture.completed(null);
-    }
-
     @Override
     public ActorFuture<Void> preScaling(
         final int currentClusterSize, final Set<MemberId> clusterMembers) {

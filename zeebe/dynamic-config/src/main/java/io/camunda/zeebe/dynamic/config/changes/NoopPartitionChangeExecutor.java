@@ -73,4 +73,9 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
   public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Void> deleteHistory() {
+    return CompletableActorFuture.completed(null);
+  }
 }

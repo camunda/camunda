@@ -126,7 +126,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               restoreOperation.backupIds(),
               restoreChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
-          new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
+          new DeleteHistoryApplier(deleteHistoryOperation.memberId(), partitionChangeExecutor);
       case final ScaleUpOperation scaleUpOperation ->
           switch (scaleUpOperation) {
             case StartPartitionScaleUp(

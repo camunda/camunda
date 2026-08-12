@@ -91,7 +91,6 @@ final class NewModelConfigurationChangeCoordinatorTest {
         new PartitionGroupConfigurationChangeAppliersImpl(
             new NoopPartitionChangeExecutor(),
             new NoopPartitionScalingChangeExecutor(),
-            new NoopClusterChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
     coordinator = new ConfigurationChangeCoordinatorImpl(manager, localMemberId, executor);

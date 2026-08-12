@@ -344,7 +344,6 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           new PartitionGroupConfigurationChangeAppliersImpl(
               new NoopPartitionChangeExecutor(),
               new NoopPartitionScalingChangeExecutor(),
-              new NoopClusterChangeExecutor(),
               new NoopModeChangeExecutor(),
               new NoopRestoreChangeExecutor());
       try {

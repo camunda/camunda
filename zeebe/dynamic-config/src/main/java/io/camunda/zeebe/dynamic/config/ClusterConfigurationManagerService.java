@@ -543,7 +543,6 @@ public final class ClusterConfigurationManagerService
                 new PartitionGroupConfigurationChangeAppliersImpl(
                     partitionChangeExecutor,
                     partitionScalingChangeExecutor,
-                    clusterChangeExecutor,
                     modeChangeExecutor,
                     restoreChangeExecutor));
           }

@@ -119,4 +119,18 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the exporting state has been applied to all partitions
    */
   ActorFuture<Void> setExportingState(final ExportingState exportingState);
+
+  /**
+   * Starts an asynchronous deletion of the history exported by this partition group, returning a
+   * future indicating success/failure.
+   *
+   * <p>When the future is completed successfully, all history data of this partition group will
+   * have been purged. When the future is completed exceptionally, then not all (but none or some)
+   * may have been purged.
+   *
+   * <p>This operation must be idempotent, as it may be retried multiple times until successful.
+   *
+   * @return a future that completes when the history has been deleted
+   */
+  ActorFuture<Void> deleteHistory();
 }

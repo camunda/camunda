@@ -8,62 +8,27 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.cluster.PartitionId;
-import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.exporter.context.ExporterContext;
-import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
-import io.camunda.zeebe.dynamic.config.changes.ExporterPurgeException;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.api.StreamClock;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterChangeExecutorImpl.class);
 
   private final ConcurrencyControl concurrencyControl;
-  private final ExporterRepository exporterRepository;
   private final NodeIdProvider nodeIdProvider;
-  private final MeterRegistry meterRegistry;
   private final Optional<String> zone;
 
   public ClusterChangeExecutorImpl(
       final ConcurrencyControl concurrencyControl,
-      final ExporterRepository exporterRepository,
       final NodeIdProvider nodeIdProvider,
-      final MeterRegistry meterRegistry,
       final Optional<String> zone) {
     this.concurrencyControl = concurrencyControl;
-    this.exporterRepository = exporterRepository;
     this.nodeIdProvider = Objects.requireNonNull(nodeIdProvider);
-    this.meterRegistry = meterRegistry;
     this.zone = zone;
-  }
-
-  @Override
-  public ActorFuture<Void> deleteHistory() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
-    concurrencyControl.run(
-        () -> {
-          try {
-            exporterRepository.getExporters().forEach(this::purgeExporter);
-            result.complete(null);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          }
-        });
-
-    return result;
   }
 
   @Override
@@ -129,31 +94,5 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   private int membersInZone(final Set<MemberId> clusterMembers) {
     return (int)
         clusterMembers.stream().filter(m -> Optional.ofNullable(m.zone()).equals(zone)).count();
-  }
-
-  private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
-    final Exporter exporter = descriptor.newInstance();
-
-    final var exporterContext =
-        new ExporterContext(
-            Loggers.getExporterLogger(descriptor.getId()),
-            descriptor.getConfiguration(),
-            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
-            "",
-            exporterRepository.getLicenseKey(),
-            meterRegistry,
-            StreamClock.system());
-
-    try {
-      exporter.configure(exporterContext);
-      exporter.purge();
-      LOG.info("Purged history for {}", id);
-      exporter.close();
-    } catch (final Exception e) {
-      throw new ExporterPurgeException(
-          "Failed to purge C8 data from exporter %s of type %s; operation will be retried."
-              .formatted(id, exporter.getClass()),
-          e);
-    }
   }
 }

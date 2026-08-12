@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
-import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -21,15 +21,15 @@ import java.util.function.UnaryOperator;
  * single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
  * DeleteHistoryApplier} in {@code changes/}, which this does not replace or modify.
  *
- * <p>Ported against the current, unsplit {@link ClusterChangeExecutor} (same as the legacy applier)
- * — the split into a per-group history-deletion executor is Phase 3 scope, tracked separately.
+ * <p>History deletion is executed through the {@link PartitionChangeExecutor} of this partition
+ * group, so that only the history exported by this group is purged.
  */
 public final class DeleteHistoryApplier implements PartitionGroupConfigurationChangeApplier {
 
-  private final ClusterChangeExecutor clusterChangeExecutor;
+  private final PartitionChangeExecutor partitionChangeExecutor;
 
-  public DeleteHistoryApplier(final ClusterChangeExecutor clusterChangeExecutor) {
-    this.clusterChangeExecutor = clusterChangeExecutor;
+  public DeleteHistoryApplier(final PartitionChangeExecutor partitionChangeExecutor) {
+    this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
   @Override
@@ -48,7 +48,7 @@ public final class DeleteHistoryApplier implements PartitionGroupConfigurationCh
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
     final var result = new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
-    clusterChangeExecutor
+    partitionChangeExecutor
         .deleteHistory()
         .onComplete(
             (ignore, error) -> {
