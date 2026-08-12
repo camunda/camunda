@@ -48,6 +48,8 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: backport-action pushes the backport branches.
+        # zizmor: ignore[artipacked]
         with:
           # Token for git actions, e.g. git push
           token: ${{ steps.github-token.outputs.token }}

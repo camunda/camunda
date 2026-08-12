@@ -67,6 +67,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
+        persist-credentials: false
 
     - name: Resolve image tag
       id: resolve
@@ -94,6 +95,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
+        persist-credentials: false
 
     - uses: ./.github/actions/setup-build
       with:
@@ -303,6 +305,8 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()
@@ -343,6 +347,8 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()

@@ -15,7 +15,7 @@ on:
 jobs:
   auto-merge:
     # Only run for PRs from release branches created by release automation
-    if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
+    if: startsWith(github.head_ref, 'release-') && github.event.pull_request.user.login == 'camundait'
     name: Auto-merge release to stable
     runs-on: ubuntu-latest
     timeout-minutes: 240
@@ -37,6 +37,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
 
       - name: Validate branch matching
         id: validate_branches

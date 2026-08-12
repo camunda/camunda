@@ -35,6 +35,8 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       timeout-minutes: 1
+      with:
+        persist-credentials: false
     - name: Detect changes
       uses: ./.github/actions/paths-filter
       id: filter
@@ -78,6 +80,8 @@ jobs:
     steps:
     - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -189,6 +193,8 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

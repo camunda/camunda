@@ -35,6 +35,8 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the dry-run branches and tags.
+        # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           token: ${{ steps.github-token.outputs.token }}
@@ -139,6 +141,8 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the branch and tag deletions.
+        # zizmor: ignore[artipacked]
         with:
           token: ${{ steps.github-token.outputs.token }}
       - name: Delete temporary dryrun 8.9 branch and tag
@@ -218,6 +222,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

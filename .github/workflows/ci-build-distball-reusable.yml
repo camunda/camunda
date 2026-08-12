@@ -34,6 +34,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        with:
+          persist-credentials: false
       - name: Check for fork
         id: is-fork
         uses: ./.github/actions/is-fork

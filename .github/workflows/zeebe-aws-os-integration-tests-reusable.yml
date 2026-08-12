@@ -257,7 +257,7 @@ jobs:
     # TODO: Re-enable this once the pipeline is in a healthy and meaningful state
     # currently tracked in https://github.com/camunda/camunda/issues/52892
     # if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
-    if: ${{ false }}
+    if: false
 
     permissions:
       contents: read

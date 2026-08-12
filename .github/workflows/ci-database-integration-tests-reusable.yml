@@ -135,6 +135,8 @@ jobs:
             echo "DATABASE_CONTAINER=${{ inputs.database-container }}" >> "$GITHUB_ENV"
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -285,6 +287,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

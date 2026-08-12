@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Check all PRs for conflict
       uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
     - name: Observe build status
@@ -43,6 +45,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         sparse-checkout: .github
+        persist-credentials: false
     - name: Observe build status
       if: always()
       continue-on-error: true
