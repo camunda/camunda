@@ -50,7 +50,9 @@ jobs:
     # Forks cannot read the Vault secrets this job needs, so it would only ever fail for them.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Generous because the build eats most of it and the test may burn three login attempts before
+    # it passes; a retry killed by the timeout would report as the hard failure retries exist to avoid.
+    timeout-minutes: 45
     permissions: { }  # GITHUB_TOKEN unused in this job
     strategy:
       fail-fast: false
