@@ -299,6 +299,56 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  load-test-smoke-detect-versions:
+    # Only on pull_request events: the smoke tests below deploy the PR's actual head ref, which is
+    # only meaningful when there is a PR. On push/merge_group/schedule the job is skipped, which
+    # check-results treats as success — so the gate doesn't run there but also doesn't break those
+    # builds (same pattern as pin-check above).
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Detect Smoke Versions"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        name: Detect which setup versions changed
+        run: ./.github/scripts/load-test-detect-versions-changed.sh
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-smoke-tests:
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Smoke (${{ matrix.version }})"
+    needs: [ detect-changes, load-test-smoke-detect-versions ]
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.load-test-smoke-detect-versions.outputs.matrix) }}
+    uses: ./.github/workflows/camunda-load-test-smoke.yml
+    secrets: inherit
+    with:
+      target-version: ${{ matrix.version }}
+      orchestration-tag: ${{ matrix.orchestration-tag }}
+      ref: ${{ github.event.pull_request.head.ref }}
+
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -2546,6 +2596,7 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-smoke-tests
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
