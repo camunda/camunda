@@ -136,7 +136,9 @@ public class ProcessInstanceMigrationMigrateProcessor
             keyGenerator, stateWriter, elementInstanceState);
     migrationAgentInstanceBehaviour =
         new ProcessInstanceMigrationAgentInstanceBehavior(
-            stateWriter, processingState.getAgentInstanceState());
+            stateWriter,
+            processingState.getAgentInstanceState(),
+            processingState.getAgentDefinitionState());
   }
 
   @Override
@@ -196,6 +198,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     final Map<String, String> mappedElementIds =
         mapElementIds(
             mappingInstructions, processInstance, sourceProcessDefinition, targetProcessDefinition);
+
+    migrationAgentInstanceBehaviour.validateAgentInstanceMigrations(
+        processInstanceKey, sourceProcessDefinition, targetProcessDefinition, mappedElementIds);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));

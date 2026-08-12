@@ -60,7 +60,8 @@ public class AgentInstanceMigrationIT {
             client,
             Bpmn.createExecutableProcess("migration-agent-service-task_v2")
                 .startEvent()
-                .serviceTask(targetElementId, t -> t.zeebeJobType(agentJobType))
+                .serviceTask(
+                    targetElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
                 .userTask(targetNextElementId)
                 .endEvent()
                 .done(),
@@ -114,6 +115,7 @@ public class AgentInstanceMigrationIT {
                 .startEvent()
                 .adHocSubProcess(targetElementId, p -> p.task("agentTask2"))
                 .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
             "migration-agent-ahsp_v2.bpmn");

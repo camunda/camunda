@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
@@ -143,6 +145,18 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' and type '%s' is mapped to \
       an element with id '%s' and different type '%s'. \
       Elements must be mapped to elements of the same type.""";
+  private static final String ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION =
+      """
+      Expected to migrate process instance '%s' \
+      but the agent instance with element id '%s' would be migrated to element '%s' \
+      that has no agent definition. \
+      An agent instance must always belong to an agent definition.""";
+  private static final String ERROR_AGENT_DEFINITION_TYPE_CHANGED =
+      """
+      Expected to migrate process instance '%s' \
+      but the agent instance element with id '%s' has agent definition type '%s' \
+      while the mapped target element with id '%s' has a different agent definition type '%s'. \
+      An agent instance's type must not change on migration.""";
   private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
       """
       Expected to migrate process instance '%s' \
@@ -596,6 +610,73 @@ public final class ProcessInstanceMigrationPreconditions {
             targetElementType);
     throw new ProcessInstanceMigrationPreconditionFailedException(
         reason, RejectionType.INVALID_STATE);
+  }
+
+  /**
+   * Checks that the agent definition backing an agent instance is preserved across the migration.
+   * The method is only called for elements that already have an agent instance, so the source
+   * element always carries an agent definition. The migration is rejected when the mapped target
+   * element carries no agent definition (an agent instance must always belong to one) or carries an
+   * agent definition of a different type (an agent instance's type must not change).
+   *
+   * @param sourceProcessDefinition source process definition to resolve the source agent type
+   * @param targetProcessDefinition target process definition to resolve the target agent type
+   * @param sourceElementId the agent instance's source element id
+   * @param targetElementId the mapped target element id
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireCompatibleAgentDefinition(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final AgentDefinitionType sourceType =
+        resolveAgentDefinitionType(sourceProcessDefinition, sourceElementId);
+    final AgentDefinitionType targetType =
+        resolveAgentDefinitionType(targetProcessDefinition, targetElementId);
+
+    if (sourceType == targetType) {
+      return;
+    }
+
+    final String reason;
+    if (targetType == AgentDefinitionType.UNSPECIFIED) {
+      reason =
+          String.format(
+              ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION,
+              processInstanceKey,
+              sourceElementId,
+              targetElementId);
+    } else {
+      reason =
+          String.format(
+              ERROR_AGENT_DEFINITION_TYPE_CHANGED,
+              processInstanceKey,
+              sourceElementId,
+              sourceType,
+              targetElementId,
+              targetType);
+    }
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        reason, RejectionType.INVALID_STATE);
+  }
+
+  private static AgentDefinitionType resolveAgentDefinitionType(
+      final DeployedProcess processDefinition, final String elementId) {
+    final AbstractFlowElement element = processDefinition.getProcess().getElementById(elementId);
+    if (element == null) {
+      return AgentDefinitionType.UNSPECIFIED;
+    }
+    // the agent definition marker sits on the job worker element itself; unwrap a multi-instance
+    // body to reach it, mirroring how the agent definition is minted at deploy time
+    final ExecutableFlowElement activity =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+    return activity instanceof final ExecutableJobWorkerElement jobWorkerElement
+        ? jobWorkerElement.getAgentDefinitionType()
+        : AgentDefinitionType.UNSPECIFIED;
   }
 
   /**
