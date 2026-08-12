@@ -15,8 +15,10 @@ on:
     - cron: "0 3 * * *"
   workflow_dispatch:
 
+# Not keyed on github.ref: a manual dispatch from a stable branch would otherwise run alongside the
+# scheduled run and authenticate the same user against the same Auth0 tenant at the same time.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 defaults:
