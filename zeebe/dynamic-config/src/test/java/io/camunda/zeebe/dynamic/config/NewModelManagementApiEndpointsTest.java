@@ -568,7 +568,6 @@ final class NewModelManagementApiEndpointsTest {
         new PartitionGroupConfigurationChangeAppliersImpl(
             new NoopPartitionChangeExecutor(),
             new NoopPartitionScalingChangeExecutor(),
-            new NoopClusterChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
     manager
