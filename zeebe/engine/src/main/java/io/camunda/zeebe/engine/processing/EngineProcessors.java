@@ -123,8 +123,7 @@ public final class EngineProcessors {
             clock,
             transientProcessMessageSubscriptionState,
             config,
-            incidentMetrics,
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder());
+            incidentMetrics);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -255,8 +254,7 @@ public final class EngineProcessors {
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final IncidentMetrics incidentMetrics) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -269,8 +267,7 @@ public final class EngineProcessors {
         clock,
         transientProcessMessageSubscriptionState,
         config,
-        incidentMetrics,
-        evaluateDuplicateOutputMappingTargetsInOrder);
+        incidentMetrics);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

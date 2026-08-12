@@ -17,8 +17,7 @@ public record FeatureFlags(
     boolean enableTimerDueDateCheckerAsync,
     boolean enableStraightThroughProcessingLoopDetector,
     boolean enablePartitionScaling,
-    boolean enableMessageBodyOnExpired,
-    boolean evaluateDuplicateOutputMappingTargetsInOrder
+    boolean enableMessageBodyOnExpired
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -56,8 +55,6 @@ public record FeatureFlags(
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_PARTITION_SCALING = false;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
-  // Kill-switch for a bug fix; intentionally enabled by default.
-  private static final boolean EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
@@ -67,8 +64,7 @@ public record FeatureFlags(
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_PARTITION_SCALING,
-        ENABLE_MESSAGE_BODY_ON_EXPIRED,
-        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER
+        ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
 
@@ -85,8 +81,7 @@ public record FeatureFlags(
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         true, /* ENABLE_PARTITION_SCALING */
-        false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
-        true /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
+        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
 

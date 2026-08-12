@@ -67,8 +67,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final IncidentMetrics incidentMetrics) {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
@@ -112,11 +111,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionBehavior,
-            processingState,
-            variableBehavior,
-            eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            expressionBehavior, processingState, variableBehavior, eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
