@@ -14,9 +14,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -54,11 +51,6 @@ public final class BpmnVariableMappingBehavior {
   /**
    * Apply the input mappings for a BPMN element. Generally called on activating of the element.
    *
-   * <p>The mappings are evaluated one by one in modeling order. Each mapping's source expression
-   * sees the results of the earlier mappings (they take priority over same-named scope variables)
-   * and falls back to the element's variable scope otherwise. Evaluation stops at the first failing
-   * mapping and no variables are applied in that case.
-   *
    * @param context The current bpmn element context
    * @param element The current bpmn element
    * @return either void if successful, otherwise a failure
@@ -69,31 +61,23 @@ public final class BpmnVariableMappingBehavior {
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
-    final Optional<InputMappings> inputMappings = element.getInputMappings();
+    final Optional<Expression> inputMappingExpression = element.getInputMappings();
 
-    if (inputMappings.isEmpty()) {
-      return Either.right(null);
+    if (inputMappingExpression.isPresent()) {
+      return expressionProcessor
+          .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey)
+          .map(
+              result -> {
+                variableBehavior.mergeLocalDocument(
+                    scopeKey,
+                    processDefinitionKey,
+                    processInstanceKey,
+                    bpmnProcessId,
+                    context.getTenantId(),
+                    result);
+                return null;
+              });
     }
-
-    final var resultBuilder = new InputMappingResultBuilder();
-    final var processor = expressionProcessor.withPrimaryContext(resultBuilder::getVariable);
-
-    for (final InputMapping mapping : inputMappings.get().mappings()) {
-      final var result =
-          processor.evaluateVariableMappingSourceExpression(mapping.source(), scopeKey);
-      if (result.isLeft()) {
-        return Either.left(result.getLeft());
-      }
-      resultBuilder.put(mapping.targetPath(), result.get());
-    }
-
-    variableBehavior.mergeLocalDocument(
-        scopeKey,
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        context.getTenantId(),
-        resultBuilder.toDocument());
     return Either.right(null);
   }
 

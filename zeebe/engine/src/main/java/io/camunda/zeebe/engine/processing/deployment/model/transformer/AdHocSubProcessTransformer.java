@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
@@ -175,18 +174,17 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
       return adHocActivity
           .getInputMappings()
           .map(
-              inputMappings ->
-                  inputMappings.mappings().stream()
-                      .map(InputMapping::source)
-                      .filter(FeelExpression.class::isInstance)
-                      .map(FeelExpression.class::cast)
-                      .flatMap(
-                          feelExpression ->
-                              taggedParameterExtractor
-                                  .extractParameters(feelExpression.getParsedExpression())
-                                  .stream())
+              inputMappings -> {
+                if (inputMappings instanceof final FeelExpression feelExpression) {
+                  return taggedParameterExtractor
+                      .extractParameters(feelExpression.getParsedExpression())
+                      .stream()
                       .map(this::mapAdHocActivityParameter)
-                      .toList())
+                      .toList();
+                }
+
+                return null;
+              })
           .orElseGet(Collections::emptyList);
     } catch (final Exception e) {
       throw new RuntimeException(

@@ -10,12 +10,11 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.time.Instant;
@@ -186,32 +185,19 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final String expectedOutput) {
     // given
-    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
-    inputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
+    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
-    // when: evaluate the mappings one by one in modeling order, same as
-    // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
-    // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new InputMappingResultBuilder();
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return accumulated != null ? accumulated : variables.get(name);
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
 
     // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+
+    MsgPackUtil.assertEquality(result.toBuffer(), expectedOutput);
   }
 
   @Test
