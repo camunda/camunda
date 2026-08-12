@@ -358,44 +358,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/35251")
-  public void shouldNotLeakUntouchedLocalSiblingIntoParentScope() {
-    // given: 'a' is set locally on the sub-process with an untouched sibling 'p' that is never
-    // targeted by any output mapping
-    final var processId = "processId";
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .subProcess(
-                "sp",
-                sp ->
-                    sp.zeebeInputExpression("={p:0}", "a")
-                        .zeebeOutputExpression("1", "a.b")
-                        .embeddedSubProcess()
-                        .startEvent()
-                        .endEvent())
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    // when: only a.b is mapped - 'p' should stay local, never reach the process root
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    // then
-    final var propagatedA =
-        RecordingExporter.records()
-            .limitToProcessInstance(processInstanceKey)
-            .variableRecords()
-            .withScopeKey(processInstanceKey)
-            .withName("a")
-            .getFirst()
-            .getValue()
-            .getValue();
-    assertThat(propagatedA).isEqualTo("{\"b\":1}");
-  }
-
-  @Test
   public void shouldNotPropagateLocalVariablesIfNoOutputMappingOnAdHocSubProcess() {
     // given
     final var processId = "processId";
@@ -702,59 +664,6 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
-  }
-
-  @Test
-  @Ignore("https://github.com/camunda/camunda/issues/51496")
-  public void shouldMakeChildVariablesAvailableLocallyOnCallActivityWithoutOutputMapping() {
-    // given: propagateAllChildVariables=false and no output mapping - per the issue, child
-    // variables should still become local to the call activity scope instead of being discarded
-    final var parentProcessId = "parentProcessId";
-    final var childProcessId = "childProcessId";
-    final var parentProcess =
-        Bpmn.createExecutableProcess(parentProcessId)
-            .startEvent()
-            .callActivity(
-                "call",
-                c -> c.zeebeProcessId(childProcessId).zeebePropagateAllChildVariables(false))
-            .endEvent()
-            .done();
-    final var childProcess =
-        Bpmn.createExecutableProcess(childProcessId)
-            .startEvent()
-            .intermediateThrowEvent("nestedElement")
-            .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
-            .endEvent()
-            .done();
-
-    ENGINE
-        .deployment()
-        .withXmlResource("parent.bpmn", parentProcess)
-        .withXmlResource("child.bpmn", childProcess)
-        .deploy();
-
-    // when
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
-    final long callActivityInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("call")
-            .getFirst()
-            .getKey();
-
-    // then: LOCAL_VAR must be created at the call activity's own scope, not discarded entirely
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .variableRecords()
-                .withIntent(VariableIntent.CREATED)
-                .withScopeKey(callActivityInstanceKey)
-                .withName(LOCAL_VAR)
-                .exists())
-        .isTrue();
-    // ... and never propagated to the process root
-    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
   private static void assertVariableIsNotPropagatedToProcessInstance(
