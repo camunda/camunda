@@ -161,6 +161,9 @@ public class CamundaServicesConfiguration {
     // Collected here as well as registered per tenant, so the cluster-wide ClusterStatusServices
     // can fold over every tenant's topology below.
     final Map<String, TopologyServices> topologyServicesByTenant = new HashMap<>();
+    // Collected here as well as bound per tenant, so the cluster-wide ClusterRecoveryServices can
+    // resolve the restore environment of a tenant named in a cluster-admin restore's overrides.
+    final Map<String, TenantRestoreEnvironment> restoreEnvironmentByTenant = new HashMap<>();
 
     physicalTenantResolver
         .getAll()
@@ -188,6 +191,7 @@ public class CamundaServicesConfiguration {
                   new TenantRestoreEnvironment(
                       tenantConfig.getData().getSecondaryStorage().getType().name(),
                       tenantConfig.getData().getPrimaryStorage().getBackup().isContinuous());
+              restoreEnvironmentByTenant.put(tenantId, restoreEnvironment);
 
               // -- per-tenant process cache --
               final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
@@ -560,7 +564,8 @@ public class CamundaServicesConfiguration {
             physicalTenantId -> secondaryStorageReadiness.getObject().isReady(physicalTenantId)));
     builder.clusterTopologyServices(new ClusterTopologyServices(topologyServicesByTenant));
 
-    builder.clusterRecoveryServices(new ClusterRecoveryServices(clusterConfigurationRequestSender));
+    builder.clusterRecoveryServices(
+        new ClusterRecoveryServices(clusterConfigurationRequestSender, restoreEnvironmentByTenant));
 
     return builder.build();
   }

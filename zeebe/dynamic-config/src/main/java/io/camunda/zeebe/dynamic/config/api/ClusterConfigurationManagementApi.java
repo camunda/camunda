@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
@@ -105,4 +106,6 @@ public interface ClusterConfigurationManagementApi {
   ActorFuture<CurrentClusterConfiguration> getTopology();
 
   ActorFuture<ClusterConfigurationChangeResponse> restore(RestoreRequest request);
+
+  ActorFuture<ClusterConfigurationChangeResponse> clusterRestore(ClusterRestoreRequest request);
 }

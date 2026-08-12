@@ -56,6 +56,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerPurgeRequestHandler();
     registerModeChangeHandler();
     registerRestoreHandler();
+    registerClusterRestoreHandler();
     registerForceRemoveZoneHandler();
     registerAddZoneHandler();
     registerUpdateZonePrioritiesHandler();
@@ -251,6 +252,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.RESTORE.topic(),
         serializer::decodeRestoreRequest,
         request -> mapResponse(clusterConfigurationManagementApi.restore(request)),
+        this::encodeResponse);
+  }
+
+  private void registerClusterRestoreHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.CLUSTER_ADMIN_RESTORE.topic(),
+        serializer::decodeClusterRestoreRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.clusterRestore(request)),
         this::encodeResponse);
   }
 

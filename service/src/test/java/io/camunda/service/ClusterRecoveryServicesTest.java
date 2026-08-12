@@ -8,15 +8,21 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -29,11 +35,18 @@ import org.junit.jupiter.api.Test;
 
 final class ClusterRecoveryServicesTest {
 
+  private static final String DEFAULT_TENANT = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   private static final String TENANT_B = "tenant-b";
+  private static final TenantRestoreEnvironment DEFAULT_ENVIRONMENT =
+      new TenantRestoreEnvironment("elasticsearch", false);
+  private static final TenantRestoreEnvironment TENANT_B_ENVIRONMENT =
+      new TenantRestoreEnvironment("rdbms", true);
 
   private final ClusterConfigurationManagementRequestSender sender =
       mock(ClusterConfigurationManagementRequestSender.class);
-  private final ClusterRecoveryServices services = new ClusterRecoveryServices(sender);
+  private final ClusterRecoveryServices services =
+      new ClusterRecoveryServices(
+          sender, Map.of(DEFAULT_TENANT, DEFAULT_ENVIRONMENT, TENANT_B, TENANT_B_ENVIRONMENT));
 
   @Test
   void shouldRequestEveryPhysicalTenantWhenNoneIsGiven() {
@@ -98,6 +111,100 @@ final class ClusterRecoveryServicesTest {
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().code()).isEqualTo(ErrorCode.INVALID_STATE);
+  }
+
+  @Test
+  void shouldRestoreTheRequestedPhysicalTenantWithItsOwnEnvironment() {
+    // given — tenant-b runs rdbms with continuous backups, unlike the default tenant
+    givenRestoreAccepted();
+    final var parameters = new RestoreParameters(List.of(55L), null, null);
+
+    // when
+    services.restore(Optional.of(TENANT_B), parameters, Map.of(), false).join();
+
+    // then
+    verify(sender)
+        .clusterRestore(
+            new ClusterRestoreRequest(
+                Map.of(TENANT_B, new TenantRestoreArguments(parameters, "rdbms", true)), false));
+  }
+
+  @Test
+  void shouldRestoreEveryKnownPhysicalTenantWithItsOwnEnvironment() {
+    // given — a cluster-wide restore whose override spans a tenant on different secondary storage
+    givenRestoreAccepted();
+    final var defaultParameters = new RestoreParameters(List.of(100L), null, null);
+    final var tenantBParameters = new RestoreParameters(List.of(55L), null, null);
+
+    // when
+    services
+        .restore(Optional.empty(), defaultParameters, Map.of(TENANT_B, tenantBParameters), true)
+        .join();
+
+    // then — every physical tenant of the cluster is named, each with its own environment; the
+    // overridden tenant keeps its own selection, the other tenant gets the default selection
+    verify(sender)
+        .clusterRestore(
+            new ClusterRestoreRequest(
+                Map.of(
+                    DEFAULT_TENANT,
+                    new TenantRestoreArguments(defaultParameters, "elasticsearch", false),
+                    TENANT_B,
+                    new TenantRestoreArguments(tenantBParameters, "rdbms", true)),
+                true));
+  }
+
+  @Test
+  void shouldDropAnOverrideForAPhysicalTenantTheClusterDoesNotKnow() {
+    // given — a cluster-wide restore whose override names a tenant this cluster has no environment
+    // for; only the known tenants are ever restored, so the unknown override is simply not carried
+    // into the request rather than surfacing as an error
+    givenRestoreAccepted();
+    final var defaultParameters = new RestoreParameters(List.of(1L), null, null);
+
+    // when
+    services
+        .restore(
+            Optional.empty(),
+            defaultParameters,
+            Map.of("unknown-tenant", new RestoreParameters(List.of(2L), null, null)),
+            false)
+        .join();
+
+    // then
+    verify(sender)
+        .clusterRestore(
+            new ClusterRestoreRequest(
+                Map.of(
+                    DEFAULT_TENANT,
+                    new TenantRestoreArguments(defaultParameters, "elasticsearch", false),
+                    TENANT_B,
+                    new TenantRestoreArguments(defaultParameters, "rdbms", true)),
+                false));
+  }
+
+  @Test
+  void shouldRejectASingleTenantRestoreOfAnUnknownPhysicalTenant() {
+    // when / then — the request never reaches the wire; there is no environment to build it with
+    assertThatThrownBy(
+            () ->
+                services.restore(
+                    Optional.of("unknown-tenant"),
+                    new RestoreParameters(List.of(1L), null, null),
+                    Map.of(),
+                    false))
+        .isInstanceOf(NotFound.class);
+  }
+
+  private void givenRestoreAccepted() {
+    when(sender.clusterRestore(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new ClusterConfigurationChangeResponse(
+                        9L,
+                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
+                        null))));
   }
 
   private void givenModeChangeAccepted() {

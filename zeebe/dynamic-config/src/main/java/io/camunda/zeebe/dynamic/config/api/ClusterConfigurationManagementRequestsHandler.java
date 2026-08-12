@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
@@ -288,6 +289,13 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
     return handleRequest(
         request.dryRun(), new RestoreRequestTransformer(request, validatorRegistry));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> clusterRestore(
+      final ClusterRestoreRequest request) {
+    return handleRequest(
+        request.dryRun(), new ClusterRestoreRequestTransformer(request, validatorRegistry));
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(
