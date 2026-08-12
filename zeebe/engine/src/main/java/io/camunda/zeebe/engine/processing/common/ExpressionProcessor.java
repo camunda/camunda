@@ -454,27 +454,6 @@ public final class ExpressionProcessor {
         .map(EvaluationResult::toBuffer);
   }
 
-  /**
-   * Evaluates the source expression of a single variable mapping and returns the result as buffer.
-   * Unlike {@link #evaluateVariableMappingExpression(Expression, long, String)}, the result is not
-   * required to be a context: a single mapping's source may produce a value of any type, which is
-   * then stored under the mapping's target path.
-   *
-   * @param expression the mapping's source expression to evaluate
-   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
-   *     empty variable context)
-   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
-   * @return either the evaluation result as buffer, or a failure with {@link
-   *     ErrorType#IO_MAPPING_ERROR}
-   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
-   */
-  public Either<Failure, DirectBuffer> evaluateVariableMappingSourceExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
-        .map(EvaluationResult::toBuffer);
-  }
-
   private Either<Failure, EvaluationResult> typeCheck(
       final EvaluationResult result, final ResultType expectedResultType, final long scopeKey) {
     if (result.getType() != expectedResultType) {
