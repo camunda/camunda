@@ -48,10 +48,10 @@ ARG JATTACH_VERSION
 ARG JATTACH_CHECKSUM_AMD64
 ARG JATTACH_CHECKSUM_ARM64
 
-# hadolint ignore=DL4006,DL3018
 # --retry-all-errors is what makes the retry apply to a dropped or refused TLS
 # connection to github.com; without it curl only retries timeouts and 5xx, and
 # an SSL connect error (exit 35) fails the build on the first attempt.
+# hadolint ignore=DL4006,DL3018
 RUN apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
