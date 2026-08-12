@@ -277,6 +277,14 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     } else {
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE");
       addAudience(env, audiences, "CAMUNDA_OPTIMIZE_API_AUDIENCE");
+      // camunda.identity.audience: the login/session-token audience the official camunda-platform
+      // Helm chart's Optimize ConfigMap renders in place of CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE.
+      // Only bridged when that legacy env var is absent: application-ccsm.yaml mirrors it into
+      // camunda.identity.audience automatically for every docker-compose CCSM install, so bridging
+      // both would double-warn for a value the operator only set once.
+      if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE"))) {
+        addAudience(env, audiences, "camunda.identity.audience");
+      }
     }
     if (!audiences.isEmpty()) {
       derived.putIfAbsent(OIDC_PREFIX + "audiences", String.join(",", audiences));
@@ -298,6 +306,10 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       audiences.add(value.trim());
       warnDeprecated(legacyKey, OIDC_PREFIX + "audiences");
     }
+  }
+
+  private static boolean isBlank(final String value) {
+    return value == null || value.isBlank();
   }
 
   // HSTS max-age: negative disables the header in CSL.

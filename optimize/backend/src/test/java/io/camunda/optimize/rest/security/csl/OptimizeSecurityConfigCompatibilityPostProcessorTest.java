@@ -309,6 +309,67 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldBridgeHelmChartIdentityAudienceIntoAudiencesSet() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.audience", "optimize-api");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-api");
+  }
+
+  @Test
+  void shouldMergeHelmChartAudienceWithLegacyPublicApiAudience() {
+    // The Helm chart's camunda.identity.audience (login/session token audience) and the legacy
+    // CAMUNDA_OPTIMIZE_API_AUDIENCE (public-API bearer audience) must both survive: CSL applies one
+    // audiences set to both the login id_token decoder and the api bearer decoder.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
+    legacy.put("camunda.identity.audience", "optimize-login");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    // insertion order follows the code's call order: the pre-existing API-audience bridge call
+    // runs before the new Helm-chart identity-audience bridge call
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-public-api,optimize-login");
+  }
+
+  @Test
+  void
+      shouldNotBridgeHelmChartIdentityAudienceWhenLegacyIdentityAudienceIsAlreadySetAndNotDoubleWarn() {
+    // Mirrors what application-ccsm.yaml actually does in a real docker-compose CCSM deployment:
+    // CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE is mirrored into camunda.identity.audience automatically,
+    // with the identical value — not a second operator choice.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE", "optimize-login");
+    legacy.put("camunda.identity.audience", "optimize-login");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-login");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("camunda.identity.audience"),
+        "the mirrored camunda.identity.audience key must not get its own warning when the legacy env var already won");
+  }
+
+  @Test
+  void shouldNotBridgeHelmChartIdentityAudienceWhenAuth0IsConfigured() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
+    legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
+    legacy.put("camunda.identity.audience", "optimize-api");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    // the CCSM-only camunda.identity.audience must not leak into the Auth0 audience set
+    assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,cloud-client");
+  }
+
+  @Test
   void shouldBridgeClientAudienceAndClientIdInAuth0ModeIgnoringPublicApiAudience() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
