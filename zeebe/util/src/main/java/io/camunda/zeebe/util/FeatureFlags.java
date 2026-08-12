@@ -46,8 +46,6 @@ public final class FeatureFlags {
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
-  // Kill-switch for a bug fix; intentionally enabled by default.
-  private static final boolean EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -55,7 +53,6 @@ public final class FeatureFlags {
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enableMessageBodyOnExpired;
-  private boolean evaluateDuplicateOutputMappingTargetsInOrder;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -63,8 +60,7 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final boolean enableMessageBodyOnExpired,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder
+      final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -72,8 +68,6 @@ public final class FeatureFlags {
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   public static FeatureFlags createDefault() {
@@ -83,8 +77,7 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_MESSAGE_BODY_ON_EXPIRED,
-        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER
+        ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
 
@@ -100,8 +93,7 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
-        true /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
+        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -129,10 +121,6 @@ public final class FeatureFlags {
     return enableMessageBodyOnExpired;
   }
 
-  public boolean evaluateDuplicateOutputMappingTargetsInOrder() {
-    return evaluateDuplicateOutputMappingTargetsInOrder;
-  }
-
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
   }
@@ -156,12 +144,6 @@ public final class FeatureFlags {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
-  }
-
-  public void setEvaluateDuplicateOutputMappingTargetsInOrder(
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   @Override

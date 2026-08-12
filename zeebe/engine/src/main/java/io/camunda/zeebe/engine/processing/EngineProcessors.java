@@ -150,8 +150,7 @@ public final class EngineProcessors {
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
             config,
-            incidentMetrics,
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder());
+            incidentMetrics);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -386,8 +385,7 @@ public final class EngineProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final IncidentMetrics incidentMetrics) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -401,8 +399,7 @@ public final class EngineProcessors {
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
         config,
-        incidentMetrics,
-        evaluateDuplicateOutputMappingTargetsInOrder);
+        incidentMetrics);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
