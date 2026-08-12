@@ -9,16 +9,15 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ServiceLoader;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -40,9 +39,9 @@ import org.springframework.core.env.Environment;
  *       means running root's exporter — a different class belongs under a new, tenant-private id);
  *   <li>inherits root's {@code className}/{@code jarPath};
  *   <li>deep-merges the args if the exporter class ships an {@link ExporterConfigMerger}
- *       (discovered via {@link ServiceLoader}), and otherwise takes the tenant's args exactly as
- *       declared (whole-map replace — partial inheritance is not offered for classes whose config
- *       model we cannot introspect).
+ *       (discovered and invoked via {@link ExporterArgsMergers}), and otherwise takes the tenant's
+ *       args exactly as declared (whole-map replace — partial inheritance is not offered for
+ *       classes whose config model we cannot introspect).
  * </ul>
  *
  * <p>Entries the tenant does not touch stay inherited from root unchanged; ids the tenant declares
@@ -102,10 +101,7 @@ final class PhysicalTenantExporterConfigurations {
     }
 
     final Map<String, Exporter> catalog = root.getData().getExporters();
-    final List<ExporterConfigMerger> mergers =
-        ServiceLoader.load(ExporterConfigMerger.class).stream()
-            .map(ServiceLoader.Provider::get)
-            .toList();
+    final List<ExporterConfigMerger> mergers = ExporterArgsMergers.load();
 
     final Map<String, Exporter> resolved =
         new LinkedHashMap<>(physicalTenant.getData().getExporters());
@@ -175,8 +171,10 @@ final class PhysicalTenantExporterConfigurations {
       final String exporterId,
       final Exporter rootEntry,
       final Exporter tenantEntry) {
+    final String context =
+        String.format("exporter '%s' of physical tenant '%s'", exporterId, tenantId);
     final ExporterConfigMerger merger =
-        findMerger(mergers, tenantId, exporterId, rootEntry.getClassName());
+        ExporterArgsMergers.find(mergers, rootEntry.getClassName(), context);
     if (merger == null) {
       // no merger for this class: whole-map replace, the tenant's args exactly as declared
       LOG.debug(
@@ -194,48 +192,7 @@ final class PhysicalTenantExporterConfigurations {
         rootEntry.getClassName(),
         tenantId,
         merger.getClass().getName());
-    // defensive: a merger is third-party SPI code, so hand it immutable copies rather than the
-    // resolver's live args maps — the SPI contract forbids mutating its inputs, and this enforces
-    // it
-    final Map<String, Object> rootArgs = immutableCopy(rootEntry.getArgs());
-    final Map<String, Object> tenantArgs = immutableCopy(tenantEntry.getArgs());
-    try {
-      return merger.merge(rootArgs, tenantArgs);
-    } catch (final RuntimeException e) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Failed to merge exporter args for exporter '%s' of physical tenant '%s': %s",
-              exporterId, tenantId, e.getMessage()),
-          e);
-    }
-  }
-
-  private static @Nullable ExporterConfigMerger findMerger(
-      final List<ExporterConfigMerger> mergers,
-      final String tenantId,
-      final String exporterId,
-      final @Nullable String className) {
-    if (className == null) {
-      return null;
-    }
-    final List<ExporterConfigMerger> claimants =
-        mergers.stream().filter(merger -> merger.supports(className)).toList();
-    if (claimants.size() > 1) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Multiple ExporterConfigMerger implementations claim exporter class '%s' "
-                  + "(exporter '%s' of physical tenant '%s'): %s. Exactly one merger may support "
-                  + "a given exporter class.",
-              className,
-              exporterId,
-              tenantId,
-              claimants.stream().map(m -> m.getClass().getName()).toList()));
-    }
-    return claimants.isEmpty() ? null : claimants.getFirst();
-  }
-
-  private static Map<String, Object> immutableCopy(final @Nullable Map<String, Object> args) {
-    return args == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(args));
+    return ExporterArgsMergers.merge(merger, rootEntry.getArgs(), tenantEntry.getArgs(), context);
   }
 
   /**

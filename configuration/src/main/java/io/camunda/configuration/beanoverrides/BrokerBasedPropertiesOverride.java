@@ -14,6 +14,7 @@ import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.FixedPartition;
@@ -37,7 +38,6 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -73,13 +73,10 @@ import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.util.Preconditions;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -968,7 +965,7 @@ public class BrokerBasedPropertiesOverride {
       exporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
     }
-    if (exporter.getClassName() == null || exporter.getClassName().isBlank()) {
+    if (!hasText(exporter.getClassName())) {
       exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
     }
 
@@ -1233,10 +1230,7 @@ public class BrokerBasedPropertiesOverride {
 
     final boolean rdbmsReserved =
         camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms;
-    final List<ExporterConfigMerger> mergers =
-        ServiceLoader.load(ExporterConfigMerger.class).stream()
-            .map(ServiceLoader.Provider::get)
-            .toList();
+    final List<ExporterConfigMerger> mergers = ExporterArgsMergers.load();
 
     exporters.forEach(
         (name, exporter) -> {
@@ -1271,6 +1265,15 @@ public class BrokerBasedPropertiesOverride {
    * deep-merges them (unified wins per key, legacy fills gaps); otherwise the unified args replace
    * the legacy args wholesale — partial inheritance is only offered for classes whose config model
    * a merger can introspect. Never mutates the input maps.
+   *
+   * <p>Merging is therefore attempted only for a <em>bundled</em> exporter that both entries agree
+   * on. It is skipped — unified args replace the legacy map wholesale — when either entry declares
+   * a {@code jarPath}, i.e. an external exporter loaded from its own jar, and likewise when the two
+   * entries name different classes or leave the class unset. An external exporter's args are an
+   * opaque, user-defined shape: no bundled merger claims its class, and its jar is loaded in an
+   * isolated class loader after configuration resolution, so there is nothing here that can safely
+   * decide which legacy keys still apply. Replacing wholesale keeps the declared unified config
+   * authoritative rather than silently reviving keys from a possibly incompatible older setup.
    */
   private static Map<String, Object> mergeExporterArgs(
       final List<ExporterConfigMerger> mergers,
@@ -1287,65 +1290,15 @@ public class BrokerBasedPropertiesOverride {
         || !unifiedClassName.equals(legacyClassName)) {
       return unified.getArgs();
     }
+    final String context = String.format("exporter '%s'", exporterName);
     final ExporterConfigMerger merger =
-        findExporterConfigMerger(mergers, exporterName, unifiedClassName);
+        ExporterArgsMergers.find(mergers, unifiedClassName, context);
     if (merger == null) {
       // no merger for this class: whole-map replace, the unified args exactly as declared
       return unified.getArgs();
     }
-    // defensive: mergers are SPI code and must not mutate their inputs — hand them immutable
-    // copies. legacy is the base (root position), unified overrides (tenant position) so unified
-    // wins.
-    final Map<String, Object> legacyArgs = immutableArgsCopy(legacy.getArgs());
-    final Map<String, Object> unifiedArgs = immutableArgsCopy(unified.getArgs());
-    try {
-      return merger.merge(legacyArgs, unifiedArgs);
-    } catch (final RuntimeException e) {
-      throw new UnifiedConfigurationException(
-          String.format("Failed to merge exporter args for exporter '%s'", exporterName), e);
-    }
-  }
-
-  private static ExporterConfigMerger findExporterConfigMerger(
-      final List<ExporterConfigMerger> mergers, final String exporterName, final String className) {
-    if (className == null) {
-      return null;
-    }
-    final List<ExporterConfigMerger> claimants =
-        mergers.stream().filter(merger -> merger.supports(className)).toList();
-    if (claimants.size() > 1) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Multiple ExporterConfigMerger implementations claim exporter class '%s' (exporter "
-                  + "'%s'): %s. Exactly one merger may support a given exporter class.",
-              className,
-              exporterName,
-              claimants.stream().map(m -> m.getClass().getName()).toList()));
-    }
-    return claimants.isEmpty() ? null : claimants.getFirst();
-  }
-
-  private static Map<String, Object> immutableArgsCopy(final Map<String, Object> args) {
-    if (args == null) {
-      return Map.of();
-    }
-    final Map<String, Object> copy = new LinkedHashMap<>(args.size());
-    args.forEach((key, value) -> copy.put(key, immutableValueCopy(value)));
-    return Collections.unmodifiableMap(copy);
-  }
-
-  private static Object immutableValueCopy(final Object value) {
-    if (value instanceof final Map<?, ?> map) {
-      final Map<Object, Object> copy = new LinkedHashMap<>(map.size());
-      map.forEach((key, nestedValue) -> copy.put(key, immutableValueCopy(nestedValue)));
-      return Collections.unmodifiableMap(copy);
-    }
-    if (value instanceof final List<?> list) {
-      final List<Object> copy = new ArrayList<>(list.size());
-      list.forEach(item -> copy.add(immutableValueCopy(item)));
-      return Collections.unmodifiableList(copy);
-    }
-    return value;
+    // legacy is the base (root position), unified overrides (tenant position) so unified wins
+    return ExporterArgsMergers.merge(merger, legacy.getArgs(), unified.getArgs(), context);
   }
 
   private static boolean hasText(final String value) {
