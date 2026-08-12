@@ -8,7 +8,12 @@
 
 import {renderHook} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {useBatchOperationMutationRequestBody} from './useBatchOperationMutationRequestBody';
+import {
+  useBatchOperationMutationRequestBody,
+  useDeleteProcessInstancesBatchOperationMutationRequestBody,
+  useResumeProcessInstancesBatchOperationMutationRequestBody,
+  useSuspendProcessInstancesBatchOperationMutationRequestBody,
+} from './useBatchOperationMutationRequestBody';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
@@ -26,6 +31,29 @@ const getWrapper = (initialSearchParams?: Record<string, string>) => {
   };
   return Wrapper;
 };
+
+const processOperationHooks = [
+  {
+    name: 'cancel and retry',
+    useRequestBody: useBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'suspend',
+    useRequestBody: useSuspendProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleActiveRootIds',
+  },
+  {
+    name: 'resume',
+    useRequestBody: useResumeProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleSuspendedRootIds',
+  },
+  {
+    name: 'delete',
+    useRequestBody: useDeleteProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleFinishedIds',
+  },
+] as const;
 
 describe('useBatchOperationMutationRequestBody', () => {
   afterEach(() => {
@@ -58,18 +86,41 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should not include process instance keys when checkedRunningIds is empty', () => {
-    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.selectedIds = ['123', '456', '789'];
+  it.each(processOperationHooks)(
+    'should retain selected process instance keys for $name when eligible instances disappear',
+    ({useRequestBody, eligibleIdsKey}) => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['123'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 2,
+        visibleIds: ['123'],
+        [eligibleIdsKey]: ['123'],
+      });
 
-    const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
-      wrapper: getWrapper(),
-    });
+      const {result, rerender} = renderHook(() => useRequestBody(), {
+        wrapper: getWrapper(),
+      });
 
-    expect(result.current).toEqual({
-      filter: {},
-    });
-  });
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['123']},
+        },
+      });
+
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 2,
+        visibleIds: [],
+        [eligibleIdsKey]: [],
+      });
+      rerender();
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['123']},
+        },
+      });
+    },
+  );
 
   it('should not include process instance keys when selectedIds is empty', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
@@ -156,6 +207,11 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should combine search params, selected keys, and variable conditions', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
     processInstancesSelectionStore.state.selectedIds = ['123', '456'];
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      visibleIds: ['123', '456'],
+      visibleRunningIds: ['123', '456'],
+    });
 
     variableFilterStore.setConditions([
       {name: 'status', operator: 'equals', value: '"active"'},
@@ -171,6 +227,7 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
+        processInstanceKey: {$in: ['123', '456']},
         variables: [
           {
             name: 'status',

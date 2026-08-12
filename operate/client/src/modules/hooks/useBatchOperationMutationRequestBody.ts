@@ -17,6 +17,14 @@ import {parseDecisionInstancesSearchFilter} from 'modules/utils/filter/decisions
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
+const getIncludeIds = (selectedIds: string[], checkedEligibleIds: string[]) => {
+  if (selectedIds.length === 0) {
+    return [];
+  }
+
+  return checkedEligibleIds.length > 0 ? checkedEligibleIds : selectedIds;
+};
+
 const useProcessInstancesBatchOperationMutationRequestBody = (
   checkedEligibleIds: string[],
   includeSuspended = false,
@@ -26,7 +34,7 @@ const useProcessInstancesBatchOperationMutationRequestBody = (
 
   const {selectedIds, excludedIds} = processInstancesSelectionStore;
 
-  const includeIds = selectedIds.length > 0 ? checkedEligibleIds : [];
+  const includeIds = getIncludeIds(selectedIds, checkedEligibleIds);
 
   return buildMutationRequestBody({
     searchParams,
@@ -65,7 +73,7 @@ const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
   const {selectedIds, excludedIds, checkedFinishedIds} =
     processInstancesSelectionStore;
 
-  const includeIds = selectedIds.length > 0 ? checkedFinishedIds : [];
+  const includeIds = getIncludeIds(selectedIds, checkedFinishedIds);
 
   return buildMutationRequestBody({
     searchParams,
