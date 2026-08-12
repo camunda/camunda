@@ -7,13 +7,13 @@
  */
 
 import { FC } from "react";
-import { searchGroups } from "src/utility/api/groups";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
-import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
-import OwnerSelection from "./OwnerSelection";
 import OwnerSelectionSearch from "./OwnerSelectionSearch";
 import TextField from "src/components/form/TextField";
+import GroupSearchDropdown from "src/components/form/GroupSearchDropdown";
+import MappingRuleSearchDropdown from "src/components/form/MappingRuleSearchDropdown";
+import RoleSearchDropdown from "src/components/form/RoleSearchDropdown";
+import UserSearchDropdown from "src/components/form/UserSearchDropdown";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
@@ -82,6 +82,10 @@ const Selection: FC<SelectionProps> = ({
       return (
         <div onBlur={onBlur}>
           <OwnerSelectionSearch
+            searchDropdown={UserSearchDropdown}
+            getId={(user) => user.username}
+            itemToString={(user) => user.name || user.username}
+            errorTitle={t("usersCouldNotLoad")}
             onChange={onChange}
             ownerId={ownerId}
             isEmpty={isEmpty}
@@ -91,15 +95,17 @@ const Selection: FC<SelectionProps> = ({
     case "GROUP":
       if (isCamundaGroupsEnabled) {
         return (
-          <OwnerSelection
-            id="groupSelection"
-            onChange={onChange}
-            onBlur={onBlur}
-            searchFn={searchGroups}
-            getId={(group) => group.groupId}
-            itemToString={(group) => group.name || group.groupId}
-            isEmpty={isEmpty}
-          />
+          <div onBlur={onBlur}>
+            <OwnerSelectionSearch
+              searchDropdown={GroupSearchDropdown}
+              getId={(group) => group.groupId}
+              itemToString={(group) => group.name || group.groupId}
+              errorTitle={t("groupsCouldNotLoad")}
+              onChange={onChange}
+              ownerId={ownerId}
+              isEmpty={isEmpty}
+            />
+          </div>
         );
       }
       return (
@@ -123,29 +129,33 @@ const Selection: FC<SelectionProps> = ({
       );
     case "MAPPING_RULE":
       return (
-        <OwnerSelection
-          id="mappingRuleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchMappingRule}
-          getId={(mappingRule) => mappingRule.mappingRuleId}
-          itemToString={(mappingRule) =>
-            mappingRule.name || mappingRule.mappingRuleId
-          }
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <OwnerSelectionSearch
+            searchDropdown={MappingRuleSearchDropdown}
+            getId={(mappingRule) => mappingRule.mappingRuleId}
+            itemToString={(mappingRule) =>
+              mappingRule.name || mappingRule.mappingRuleId
+            }
+            errorTitle={t("mappingRulesCouldNotLoad")}
+            onChange={onChange}
+            ownerId={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "ROLE":
       return (
-        <OwnerSelection
-          id="roleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchRoles}
-          getId={(role) => role.roleId}
-          itemToString={(role) => role.name || role.roleId}
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <OwnerSelectionSearch
+            searchDropdown={RoleSearchDropdown}
+            getId={(role) => role.roleId}
+            itemToString={(role) => role.name || role.roleId}
+            errorTitle={t("rolesCouldNotLoad")}
+            onChange={onChange}
+            ownerId={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "CLIENT":
       return (
