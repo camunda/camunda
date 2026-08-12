@@ -50,8 +50,9 @@ From `webapp/client`:
 npm run dev:oc
 ```
 
-The dev server opens `http://localhost:3000`. Vite proxies `/v2`, `/login`, and
-`/logout` to `:8080`, so the frontend talks to the backend you started above.
+The dev server opens `http://localhost:3000`. Vite proxies `/v2`, `/login`,
+`/logout`, and `/session/heartbeat` to `:8080`, so the frontend talks to the
+backend you started above.
 
 ## Verify
 

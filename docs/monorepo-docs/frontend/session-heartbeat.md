@@ -30,7 +30,9 @@ Two consequences shape the frontend:
   `heartbeat.enabled=false`, which is what makes adopting the package independent of any host's
   rollout decision.
 - **CSRF applies.** CSL exempts only `/login` and `/logout` from CSRF protection, so a heartbeat from
-  a session-bearing browser must carry `X-CSRF-TOKEN` or it is rejected with `403`.
+  a session-bearing browser must carry `X-CSRF-TOKEN`. A missing or stale token is rejected with
+  `401` (the webapp chain routes the CSRF denial through its auth-failure handler, with the reason in
+  the response `detail`), so it reaches the frontend the same way an expired session does.
 
 ## Usage in the orchestration cluster webapp
 

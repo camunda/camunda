@@ -70,7 +70,7 @@ stopSessionHeartbeat();
 | `url`            | `string`                                     | —           | The heartbeat endpoint. Must be the current scope's `{basePath}/session/heartbeat`, context path included. |
 | `intervalMs`     | `number`                                     | `60000`     | How often activity is checked, and therefore the shortest gap between two heartbeats.                      |
 | `csrfToken`      | `string \| null \| undefined \| (() => …)`   | `undefined` | CSRF token, or a getter for it. Sent as `X-CSRF-TOKEN`; omitted when absent or empty.                      |
-| `onUnauthorized` | `() => void`                                 | `undefined` | Called when a heartbeat comes back `401`, i.e. the session is already gone.                                |
+| `onUnauthorized` | `() => void`                                 | `undefined` | Called when a heartbeat comes back `401` — an expired session, or a missing/stale CSRF token.              |
 | `onError`        | `(failure: SessionHeartbeatFailure) => void` | `undefined` | Called for network errors and for any other non-OK response.                                               |
 | `enabled`        | `boolean` (`./react` only)                   | `true`      | Set `false` to keep the hook mounted without sending heartbeats.                                           |
 
@@ -83,8 +83,13 @@ configured interval or less is a good rule of thumb; the `60s` default suits CSL
 ## Behavior worth knowing
 
 - **The endpoint needs a CSRF token.** CSL exempts only `/login` and `/logout` from CSRF protection,
-  so a session-bearing `POST /session/heartbeat` without `X-CSRF-TOKEN` is rejected with `403`. Pass
+  so a session-bearing `POST /session/heartbeat` without a valid `X-CSRF-TOKEN` is rejected — with
+  `401`, not `403`, since the webapp chain maps the CSRF denial onto its auth-failure handler. Pass
   `csrfToken` from wherever the application keeps it.
+- **A `401` therefore means "this heartbeat was not accepted", not strictly "the session is gone".**
+  A missing or stale token produces the same status as an expired session, so `onUnauthorized` fires
+  in both cases. That matches how a webapp's own request layer usually treats `401`; if an
+  application needs to tell the two apart, the response body carries a CSRF-specific `detail`.
 - **Starting counts as activity**, so the first interval always sends one heartbeat. This surfaces
   broken wiring immediately, at the cost of extending an abandoned session by one interval.
 - **At most one heartbeat per interval**, and none at all for an interval with no activity. A
