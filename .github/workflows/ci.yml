@@ -958,6 +958,23 @@ jobs:
       CAMUNDA_CONTAINER_VERSION: current-test
       DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
+      # Bounds a hung test fork so it fails the build instead of running until the `timeout-minutes`
+      # above, which cancels the job and discards its test reports, leaving nothing to attribute the
+      # failure to -- INC-7108 sat idle for 23 of its 30 minutes and reported "no unsuccessful test
+      # cases". Failsafe instead kills the fork here and fails the build, dumping every one of the
+      # fork's threads to target/failsafe-reports/*.dump on the way out, which "Upload test artifacts"
+      # below already collects.
+      #
+      # Note this clock starts when the fork starts, not when the job does, so the usable margin is
+      # what is left of `timeout-minutes` after the checkout, distball download and image build that
+      # come first -- about 2.5 min in INC-7108. 20 min therefore fires roughly 7 min before the job
+      # deadline, against the ~30 s the reporting and upload steps below actually need. It still
+      # clears a healthy fork comfortably: the slowest of this job's shards spends under 13 min in
+      # `verify` end-to-end, of which a single fork is a fraction. Keep the two in step if either
+      # changes; a job's `timeout-minutes` cannot read the env context, and routing it through the
+      # generated matrix instead would leave the conftest rule that caps job timeouts at 30 min
+      # comparing a string against a number, flagging every run of this job as over the cap.
+      IT_FORK_TIMEOUT_SECONDS: "1200"
     services:
       registry:
         image: registry:3
@@ -1055,6 +1072,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.timeout=${{ env.IT_FORK_TIMEOUT_SECONDS }}
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
