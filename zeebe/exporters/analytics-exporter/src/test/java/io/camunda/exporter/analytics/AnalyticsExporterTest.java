@@ -16,16 +16,31 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -326,6 +341,354 @@ class AnalyticsExporterTest {
               assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Log.POSITION))
                   .isEqualTo(record.getPosition());
             });
+  }
+
+  @Test
+  void shouldEmitTenantCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.TENANT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(TenantIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (TenantRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.TENANT_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Tenant.ID))
+                  .isEqualTo(value.getTenantId());
+            });
+  }
+
+  @Test
+  void shouldEmitTenantDeletedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.TENANT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(TenantIntent.DELETED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (TenantRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.TENANT_DELETED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Tenant.ID))
+                  .isEqualTo(value.getTenantId());
+            });
+  }
+
+  @Test
+  void shouldEmitIncidentCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(IncidentIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.PROCESS_INCIDENT_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Incident.KEY))
+                  .isEqualTo(record.getKey());
+            });
+  }
+
+  @Test
+  void shouldEmitIncidentResolvedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(IncidentIntent.RESOLVED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.PROCESS_INCIDENT_RESOLVED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Incident.KEY))
+                  .isEqualTo(record.getKey());
+            });
+  }
+
+  @Test
+  void shouldEmitProcessDefinitionCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (Process) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.PROCESS_DEFINITION_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Process.DEFINITION_KEY))
+                  .isEqualTo(value.getProcessDefinitionKey());
+            });
+  }
+
+  @Test
+  void shouldEmitProcessDefinitionDeletedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessIntent.DELETED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (Process) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.PROCESS_DEFINITION_DELETED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Process.DEFINITION_KEY))
+                  .isEqualTo(value.getProcessDefinitionKey());
+            });
+  }
+
+  @Test
+  void shouldEmitDecisionDefinitionCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.DECISION,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(DecisionIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (DecisionRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.DECISION_DEFINITION_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Decision.KEY))
+                  .isEqualTo(value.getDecisionKey());
+            });
+  }
+
+  @Test
+  void shouldEmitDecisionDefinitionDeletedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.DECISION,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(DecisionIntent.DELETED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (DecisionRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.DECISION_DEFINITION_DELETED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Decision.KEY))
+                  .isEqualTo(value.getDecisionKey());
+            });
+  }
+
+  @Test
+  void shouldEmitFormDefinitionCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.FORM, r -> r.withRecordType(RecordType.EVENT).withIntent(FormIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (Form) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.FORM_DEFINITION_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Form.KEY))
+                  .isEqualTo(value.getFormKey());
+            });
+  }
+
+  @Test
+  void shouldEmitFormDefinitionDeletedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.FORM, r -> r.withRecordType(RecordType.EVENT).withIntent(FormIntent.DELETED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (Form) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.FORM_DEFINITION_DELETED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Form.KEY))
+                  .isEqualTo(value.getFormKey());
+            });
+  }
+
+  @Test
+  void shouldEmitAgentInstanceCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(AgentInstanceIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (AgentInstanceRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.AGENT_INSTANCE_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Agent.INSTANCE_KEY))
+                  .isEqualTo(value.getAgentInstanceKey());
+            });
+  }
+
+  @Test
+  void shouldEmitAgentInstanceCompletedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(AgentInstanceIntent.COMPLETED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var value = (AgentInstanceRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.AGENT_INSTANCE_COMPLETED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Agent.INSTANCE_KEY))
+                  .isEqualTo(value.getAgentInstanceKey());
+            });
+  }
+
+  @Test
+  void shouldEmitUserTaskAssignedEvent() {
+    // given
+    final var value =
+        ImmutableUserTaskRecordValue.builder()
+            .from(FACTORY.generateObject(UserTaskRecordValue.class))
+            .withAssignee("john.doe@example.com")
+            .build();
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(value));
+
+    // when
+    exporter.export(record);
+
+    // then
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.USER_TASK_ASSIGNED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.KEY))
+                  .isEqualTo(value.getUserTaskKey());
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
+                  .isNotEqualTo("john.doe@example.com")
+                  .hasSize(64);
+            });
+  }
+
+  @Test
+  void shouldIncrementDecisionInstanceEvaluatedCounter() {
+    // given
+    final var metricReader = InMemoryMetricReader.create();
+    final var metricExporter =
+        newExporter(
+            TestOtelSdkManager.inMemoryWithMetrics(
+                InMemoryLogRecordExporter.create(), metricReader),
+            new ExporterTestController());
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(DecisionEvaluationIntent.EVALUATED));
+
+    // when
+    metricExporter.export(record);
+
+    // then
+    assertThat(metricReader.collectAllMetrics())
+        .filteredOn(
+            metric ->
+                metric.getName().equals(AnalyticsAttributes.Metric.DECISION_INSTANCE_EVALUATED))
+        .singleElement()
+        .satisfies(
+            metric ->
+                assertThat(metric.getLongSumData().getPoints())
+                    .singleElement()
+                    .satisfies(point -> assertThat(point.getValue()).isEqualTo(1)));
   }
 
   @Test

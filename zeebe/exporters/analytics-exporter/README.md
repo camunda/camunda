@@ -153,13 +153,26 @@ variables, or any other end-user data.
 
 ### Event types
 
-|        Source record        |       Intent        |          Event name          |                                       Notes                                       |
-|-----------------------------|---------------------|------------------------------|-----------------------------------------------------------------------------------|
-| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                           |
-| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                 |
-| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped. |
-| `USER_TASK`                 | `CREATED`           | `user_task_created`          | Emitted for every new user task.                                                  |
-| —                           | —                   | `heartbeat`                  | Emitted periodically by the partition leader (see `heartbeat-interval`).          |
+|        Source record        |       Intent        |              Event name               |                                                     Notes                                                      |
+|-----------------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`            | Emitted for every new process instance.                                                                        |
+| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated`          | Emitted only when the activated element is an ad-hoc sub-process.                                              |
+| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`               | Emitted once per usage metric export interval. Internal reset events are skipped.                              |
+| `USER_TASK`                 | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                               |
+| `USER_TASK`                 | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                              |
+| `TENANT`                    | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                                  |
+| `TENANT`                    | `DELETED`           | `camunda.tenant.deleted`              | Emitted for every deleted tenant.                                                                              |
+| `INCIDENT`                  | `CREATED`           | `camunda.process.incident.created`    | Emitted for every raised incident.                                                                             |
+| `INCIDENT`                  | `RESOLVED`          | `camunda.process.incident.resolved`   | Emitted for every resolved incident.                                                                           |
+| `PROCESS`                   | `CREATED`           | `camunda.process.definition.created`  | Emitted once per process definition, so a deployment of several processes produces one event each.             |
+| `PROCESS`                   | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per partition when a process definition is deleted; deduplicate downstream on the definition key. |
+| `DECISION`                  | `CREATED`           | `camunda.decision.definition.created` | Emitted once per decision in a deployed decision requirements graph.                                           |
+| `DECISION`                  | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per partition when a decision is deleted; deduplicate downstream on the decision key.             |
+| `FORM`                      | `CREATED`           | `camunda.form.definition.created`     | Emitted once per deployed form.                                                                                |
+| `FORM`                      | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per partition when a form is deleted; deduplicate downstream on the form key.                     |
+| `AGENT_INSTANCE`            | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                                      |
+| `AGENT_INSTANCE`            | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                                    |
+| —                           | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                                       |
 
 ### Common log record attributes
 
@@ -198,6 +211,99 @@ Beyond the common attributes above, each event type carries its own additional f
 
 Note: unlike `process_instance_created`, this event does not carry `camunda.process.version`.
 
+**`camunda.user_task.assigned`**
+
+|             Attribute             |  Type  |             Description             |
+|-----------------------------------|--------|-------------------------------------|
+| `camunda.user_task.key`           | long   | User task key.                      |
+| `camunda.user_task.assignee_hash` | string | SHA-256 hex digest of the assignee. |
+| `camunda.process.instance_key`    | long   | Process instance key.               |
+| `camunda.tenant.id`               | string | Tenant ID.                          |
+
+The raw assignee is never exported; a SHA-256 hash is emitted as a pseudonymous per-assignee
+identifier so distinct assignees can be counted. The hash is unsalted, so it is reversible for a
+known set of assignees and identical across clusters, and it is not joinable with the engine's TU
+usage metric, which hashes assignees differently. Assignments with an empty assignee produce no
+event, matching the engine's assignment guard.
+
+**`camunda.tenant.created`**
+
+|      Attribute      |  Type  | Description |
+|---------------------|--------|-------------|
+| `camunda.tenant.id` | string | Tenant ID.  |
+
+The tenant name, description, and associated entity are deliberately not exported.
+
+**`camunda.tenant.deleted`**
+
+|      Attribute      |  Type  | Description |
+|---------------------|--------|-------------|
+| `camunda.tenant.id` | string | Tenant ID.  |
+
+**`camunda.process.incident.created`** and **`camunda.process.incident.resolved`**
+
+|            Attribute             |  Type  |               Description                |
+|----------------------------------|--------|------------------------------------------|
+| `camunda.incident.key`           | long   | Incident key, taken from the record key. |
+| `camunda.process.id`             | string | BPMN process ID.                         |
+| `camunda.process.definition_key` | long   | Process definition key.                  |
+| `camunda.process.instance_key`   | long   | Process instance key.                    |
+| `camunda.tenant.id`              | string | Tenant ID.                               |
+
+Both events carry the same attributes, so time-to-resolution is a join on
+`camunda.incident.key`. The incident error message is deliberately not exported: it can
+quote expressions and variable values.
+
+**`camunda.process.definition.created`** and **`camunda.process.definition.deleted`**
+
+|            Attribute             |  Type  |       Description       |
+|----------------------------------|--------|-------------------------|
+| `camunda.process.id`             | string | BPMN process ID.        |
+| `camunda.process.version`        | long   | Process version.        |
+| `camunda.process.definition_key` | long   | Process definition key. |
+| `camunda.tenant.id`              | string | Tenant ID.              |
+
+The BPMN resource, resource name, and version tag are deliberately not exported.
+
+**`camunda.decision.definition.created`** and **`camunda.decision.definition.deleted`**
+
+|         Attribute          |  Type  |        Description        |
+|----------------------------|--------|---------------------------|
+| `camunda.decision.id`      | string | Decision ID from the DMN. |
+| `camunda.decision.key`     | long   | Decision key.             |
+| `camunda.decision.version` | long   | Decision version.         |
+| `camunda.tenant.id`        | string | Tenant ID.                |
+
+The decision name and version tag are deliberately not exported.
+
+**`camunda.form.definition.created`** and **`camunda.form.definition.deleted`**
+
+|       Attribute        |  Type  |  Description  |
+|------------------------|--------|---------------|
+| `camunda.form.id`      | string | Form ID.      |
+| `camunda.form.key`     | long   | Form key.     |
+| `camunda.form.version` | long   | Form version. |
+| `camunda.tenant.id`    | string | Tenant ID.    |
+
+The form resource, resource name, and version tag are deliberately not exported.
+
+**`camunda.agent.instance.created`** and **`camunda.agent.instance.completed`**
+
+|            Attribute             |  Type  |                       Description                        |
+|----------------------------------|--------|----------------------------------------------------------|
+| `camunda.agent.instance_key`     | long   | Agent instance key.                                      |
+| `camunda.agent.definition_key`   | long   | Agent definition key.                                    |
+| `camunda.agent.status`           | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
+| `camunda.process.id`             | string | BPMN process ID.                                         |
+| `camunda.process.definition_key` | long   | Process definition key.                                  |
+| `camunda.process.instance_key`   | long   | Process instance key.                                    |
+| `camunda.tenant.id`              | string | Tenant ID.                                               |
+
+Both events carry the same attributes, so agent run duration is a join on
+`camunda.agent.instance_key`. The agent definition (model, provider, system prompt), its
+tools, its collected metrics such as token counts, its configured limits, the changed
+attribute names, and the version tag are all deliberately not exported.
+
 **`adhoc_subprocess_activated`**
 
 |            Attribute             |  Type  |                Description                 |
@@ -216,6 +322,22 @@ Note: unlike `process_instance_created`, this event does not carry `camunda.proc
 | `camunda.usage_metric.count`          | long   | Count for this metric type in this export interval.                                                        |
 | `camunda.usage_metric.interval_start` | long   | Epoch-ms start of the export window.                                                                       |
 | `camunda.usage_metric.interval_end`   | long   | Epoch-ms end of the export window.                                                                         |
+
+### Pre-aggregated counters
+
+Alongside the events above, the exporter ships delta counters over OTLP metrics. Each counter
+is incremented once per source record and carries the dimensions listed below.
+
+|                Counter                |              Source record              |                              Dimensions                              |
+|---------------------------------------|-----------------------------------------|----------------------------------------------------------------------|
+| `camunda.process_instance.created`    | `PROCESS_INSTANCE_CREATION` / `CREATED` | `camunda.process.id`, `camunda.process.version`, `camunda.tenant.id` |
+| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED`     | `camunda.tenant.id`                                                  |
+
+`camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
+a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
+which is the same counting rule as the `EDI` usage metric. It is a real-time, per-tenant view; the
+`EDI` usage metric remains the authoritative figure, and the two can differ under sampling and at
+window boundaries.
 
 ### Heartbeat attributes
 
