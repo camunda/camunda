@@ -49,8 +49,10 @@ ARG JATTACH_CHECKSUM_AMD64
 ARG JATTACH_CHECKSUM_ARM64
 
 # hadolint ignore=DL4006,DL3018
-RUN --mount=type=cache,target=/root/.jattach,rw \
-    apk add -q --no-cache curl && \
+# --retry-all-errors is what makes the retry apply to a dropped or refused TLS
+# connection to github.com; without it curl only retries timeouts and 5xx, and
+# an SSL connect error (exit 35) fails the build on the first attempt.
+RUN apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
       BINARY="linux-x64"; \
       CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
@@ -58,7 +60,7 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
+    curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
       "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
       -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
