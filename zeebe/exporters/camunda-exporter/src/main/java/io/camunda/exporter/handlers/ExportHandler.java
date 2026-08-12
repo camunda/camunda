@@ -56,7 +56,7 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
       final TargetIndexLocator indexLocator, final Record<R> record) {
     final var indexName = getIndexName();
     return generateIds(record).stream()
-        .map(id -> new IdAndIndex(id, indexLocator.locate(indexName)))
+        .map(id -> new IdAndIndex(id, indexLocator.locateMainIndex(indexName)))
         .toList();
   }
 

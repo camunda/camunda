@@ -20,7 +20,7 @@ public interface MainIndexExporterHandler<T extends ExporterEntity<T>, R extends
   default List<IdAndIndex> extractIdAndIndexes(
       final TargetIndexLocator indexLocator, final Record<R> record) {
     final var indexName = getIndexName();
-    final var index = indexLocator.locate(indexName);
+    final var index = indexLocator.locateMainIndex(indexName);
     return generateIds(record).stream().map(id -> new IdAndIndex(id, index)).toList();
   }
 }

@@ -61,7 +61,7 @@ public class AuditLogCleanupHandler<R extends RecordValue>
 
   @Override
   TargetIndex locateTargetIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
-    return indexLocator.locate(getIndexName());
+    return indexLocator.locateMainIndex(getIndexName());
   }
 
   @VisibleForTesting

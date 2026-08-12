@@ -20,7 +20,7 @@ public class TargetIndexLocator {
     return TargetIndex.ordinalIndex(indexName, ordinal);
   }
 
-  public TargetIndex locate(final String indexName) {
+  public TargetIndex locateMainIndex(final String indexName) {
     return TargetIndex.mainIndex(indexName);
   }
 }

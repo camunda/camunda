@@ -134,7 +134,7 @@ public class AuditLogCleanupHandlerTest {
   void shouldExtractIdAndIndexes() {
     final var indexLocator = mock(TargetIndexLocator.class);
     final var index = TargetIndex.mainIndex("test-index");
-    when(indexLocator.locate(INDEX_NAME)).thenReturn(index);
+    when(indexLocator.locateMainIndex(INDEX_NAME)).thenReturn(index);
 
     final var idAndIndexes = handler.extractIdAndIndexes(indexLocator, record);
 

@@ -125,7 +125,7 @@ public class AuditLogHandler<R extends RecordValue>
   }
 
   TargetIndex locateMainIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
-    return indexLocator.locate(getIndexName());
+    return indexLocator.locateMainIndex(getIndexName());
   }
 
   TargetIndex locateOrdinalIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
