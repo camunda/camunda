@@ -39,7 +39,41 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     mv dist/target/camunda-zeebe .
 
 # hadolint ignore=DL3006,DL3007
+<<<<<<< HEAD
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS distball
+=======
+FROM alpine AS jattach
+ARG TARGETARCH
+ARG JATTACH_VERSION
+ARG JATTACH_CHECKSUM_AMD64
+ARG JATTACH_CHECKSUM_ARM64
+
+# hadolint ignore=DL4006,DL3018
+# --retry-all-errors is what makes the retry apply to a dropped or refused TLS
+# connection to github.com; without it curl only retries timeouts and 5xx, and
+# an SSL connect error (exit 35) fails the build on the first attempt.
+RUN apk add -q --no-cache curl && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+      BINARY="linux-x64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
+    else  \
+      BINARY="linux-arm64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
+    fi && \
+    curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+      "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
+      -o jattach.tgz && \
+    echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
+    tar -xzf "jattach.tgz" && \
+    chmod +x jattach && \
+    mv jattach /jattach
+
+### Extract camunda from distball ###
+# Use eclipse-temurin JDK (not JRE) so `jar` is available for repacking JARs,
+# avoiding a runtime dependency on external package servers for (un)zip.
+# hadolint ignore=DL3006,DL3007
+FROM eclipse-temurin:25-jdk-noble AS distball
+>>>>>>> 3989bb64 (fix: retry the jattach download when the TLS connection to github.com fails)
 
 # hadolint ignore=DL3002
 USER root
