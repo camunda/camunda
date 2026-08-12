@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
+import io.camunda.search.clients.reader.AgentDefinitionDocumentReader;
 import io.camunda.search.clients.reader.AgentHistoryDocumentReader;
 import io.camunda.search.clients.reader.AgentInstanceDocumentReader;
 import io.camunda.search.clients.reader.AuditLogDocumentReader;
@@ -55,6 +56,7 @@ import io.camunda.search.clients.reader.WaitStateDocumentReader;
 import io.camunda.search.clients.reader.WaitStateStatisticsDocumentReader;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -100,6 +102,8 @@ public final class SearchClientReadersFactory {
       final ProcessCache.Configuration processCacheConfig) {
 
     // --- Phase 1: Simple readers (no cross-reader dependencies) ---
+    final var agentDefinitionReader =
+        new AgentDefinitionDocumentReader(executor, descriptors.get(AgentDefinitionIndex.class));
     final var agentInstanceReader =
         new AgentInstanceDocumentReader(executor, descriptors.get(AgentInstanceTemplate.class));
     final var agentHistoryReader =
@@ -220,6 +224,7 @@ public final class SearchClientReadersFactory {
 
     // --- Assemble ---
     return new SearchClientReaders(
+        agentDefinitionReader,
         agentInstanceReader,
         agentHistoryReader,
         authorizationReader,

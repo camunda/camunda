@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read;
 
+import io.camunda.db.rdbms.read.service.AgentDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.AgentHistoryDbReader;
 import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
@@ -59,6 +60,7 @@ import io.camunda.search.clients.reader.SearchClientReaders;
  * datasource. Built from the tenant's {@link RdbmsMapperBundle} via {@link #create}.
  */
 public record RdbmsTenantReaders(
+    AgentDefinitionDbReader agentDefinitionReader,
     AgentInstanceDbReader agentInstanceReader,
     AgentHistoryDbReader agentHistoryReader,
     AuditLogDbReader auditLogReader,
@@ -110,6 +112,7 @@ public record RdbmsTenantReaders(
   public static RdbmsTenantReaders create(
       final RdbmsMapperBundle mappers, final RdbmsReaderConfig readerConfig) {
     return new RdbmsTenantReaders(
+        new AgentDefinitionDbReader(),
         new AgentInstanceDbReader(mappers.agentInstanceMapper(), readerConfig),
         new AgentHistoryDbReader(mappers.agentHistoryMapper(), readerConfig),
         new AuditLogDbReader(mappers.auditLogMapper(), readerConfig),
@@ -164,6 +167,7 @@ public record RdbmsTenantReaders(
 
   public SearchClientReaders toSearchClientReaders() {
     return new SearchClientReaders(
+        agentDefinitionReader,
         agentInstanceReader,
         agentHistoryReader,
         authorizationReader,
