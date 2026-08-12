@@ -79,10 +79,18 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * commands that were buffered while it was suspended are being drained, and the instance is not
    * fully resumed until {@link #RESUMED} is written.
    */
-  RESUMING((short) 21);
+  RESUMING((short) 21),
+
+  /**
+   * Represents the internal command that finalizes the resume lifecycle once the buffered-command
+   * drain is complete. The drain processor writes this command when the buffer is empty; a
+   * dedicated processor reacts by writing {@link #RESUMED} and triggering any post-resume actions
+   * (e.g. resuming suspended jobs).
+   */
+  CONTINUE_RESUMING((short) 22, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
-      EnumSet.of(CANCEL, SUSPEND, RESUME);
+      EnumSet.of(CANCEL, SUSPEND, RESUME, CONTINUE_RESUMING);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -153,6 +161,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return RESUMED;
       case 21:
         return RESUMING;
+      case 22:
+        return CONTINUE_RESUMING;
       default:
         return Intent.UNKNOWN;
     }
