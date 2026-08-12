@@ -1,0 +1,177 @@
+# Endpoint definitions for cluster-wide operations.
+#
+# These endpoints answer for the cluster as a whole, aggregated over every physical tenant, and are
+# served on the bare root rather than under the document's `/v2` server base. The `/cluster/v2` base
+# therefore lives in the path key, and each path item overrides `servers` to drop the document's
+# `/v2` suffix.
+#
+# Do not "align" the override by moving the base into it: `{host}:{port}/cluster/v2` plus the path
+# key resolves to `/cluster/v2/cluster/v2/status`. Shortening the keys to `/status` and `/mode`
+# instead is not an option either — both are already taken by `cluster.yaml` in the `rest-api.yaml`
+# path map, and `OpenApiYamlLoader.KNOWN_ROOTS` matches on the literal `/cluster/v2/` prefix to skip
+# the runtime `/v2` prefixing that every other path gets.
+#
+# Cluster endpoints that are scoped to a single physical tenant live in `cluster.yaml`.
+#
+# The identical `servers` block below is duplicated per path item on purpose, not YAML-anchored.
+# Two independent, concrete failures came out of trying to share it via a YAML anchor/alias:
+# a plain value-alias (`servers: *anchor`) broke IntelliJ's Swagger UI preview for the aliased
+# operation, and a later attempt produced a nested list (`servers: [*anchor]` where the anchor is
+# already a list), which broke swagger-parser's Jackson deserialization and silently made
+# openapi-generator-maven-plugin skip regenerating clients/java's model classes entirely. Don't
+# re-attempt an anchor/alias/merge-key variant here — duplicate the literal block instead.
+#
+# Every authenticated operation below sits behind the cluster-admin security chain (see
+# ClusterAdminBasicSecurityConfiguration / CLUSTER_ADMIN_API_PATTERN), a separate credential set
+# from the Orchestration Cluster API. Where an operation reuses the `bearerAuth` / `basicAuth`
+# scheme names from that API, it still resolves against different credentials — an Orchestration
+# Cluster user session cannot authenticate against it. `getClusterStatus` below is the one
+# exception: it is intentionally public (`security: []`), not cluster-admin-gated.
+
+paths:
+  /cluster/v2/status:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getClusterStatus
+      x-required-permissions: [ ]
+      # Public health-check endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
+      security: [ ]
+      summary: Get the status of the whole cluster
+      description: >-
+        Checks the health status of the whole cluster, aggregated over all physical tenants. Returns
+        `HEALTHY` when every physical tenant is healthy, `DOWN` when no physical tenant can process
+        work, and `DEGRADED` in every other case. No per-tenant detail is reported; use
+        `GET /cluster/v2/topology` for that.
+
+
+        This endpoint is public and requires no authentication, unlike `PATCH /cluster/v2/mode`
+        below, which needs cluster-admin credentials.
+      responses:
+        "200":
+          description: The cluster can process work; the body reports whether it is fully healthy or degraded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterStatusResponse'
+        "503":
+          description: The cluster is DOWN because no physical tenant can process work.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterStatusResponse'
+      x-added-in-version: "8.10"
+
+  /cluster/v2/mode:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: changeClusterModeAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Change the cluster mode of one or every physical tenant
+      description: >-
+        Transitions physical tenants between processing and recovery mode.
+
+
+        If the `physicalTenantId` parameter is not provided, all available physical tenants are
+        transitioned individually.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      parameters:
+        - $ref: 'cluster.yaml#/components/parameters/ModeParameter'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - $ref: 'cluster.yaml#/components/parameters/DryRunParameter'
+      responses:
+        "200":
+          description: >-
+            The mode change request was accepted; returns the planned cluster change covering every
+            requested physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: 'cluster.yaml#/components/schemas/ClusterModeChangeResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >-
+            The mode change conflicts with the cluster state, for example because another
+            configuration change is in progress.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+## Schema definitions
+
+components:
+  parameters:
+    PhysicalTenantIdParameter:
+      name: physicalTenantId
+      in: query
+      required: false
+      description: >-
+        The physical tenant to apply the change to. When omitted, the change is applied to every
+        physical tenant of the cluster.
+      schema:
+        type: string
+        example: default
+
+  schemas:
+    ClusterStatusResponse:
+      description: The aggregated status of the whole cluster.
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          description: >-
+            `HEALTHY` when every physical tenant is healthy, `DOWN` when no physical tenant can
+            process work, `DEGRADED` in every other case.
+          type: string
+          example: HEALTHY
+          enum:
+            - HEALTHY
+            - DEGRADED
+            - DOWN
