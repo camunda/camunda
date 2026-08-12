@@ -420,10 +420,11 @@ the repository root. See the **Building** section of the module README for the c
 # because the module's dependencies are not yet in the local repository.
 ./mvnw install -pl zeebe/exporters/analytics-exporter -am -Dquickly -T1C
 
-# Run just this module's tests. -Dtest keeps the run scoped; failIfNoSpecifiedTests stops the
-# build failing wherever the pattern matches no test.
-./mvnw verify -pl zeebe/exporters/analytics-exporter -DskipTests=false -DskipITs -Dquickly \
-    -Dtest='io.camunda.exporter.analytics.**' -Dsurefire.failIfNoSpecifiedTests=false
+# Run this module's tests. The install step above put the module and its dependencies in the
+# local repository, so -pl without -am resolves them and runs all of this module's tests. Do
+# not scope with -Dtest here: -Dsurefire.failIfNoSpecifiedTests=false would let a mistyped
+# pattern that matches nothing pass as a false green.
+./mvnw verify -pl zeebe/exporters/analytics-exporter -DskipTests=false -DskipITs -Dquickly
 
 # Format the Java in this module. Unscoped, spotless:apply reformats the whole repository.
 ./mvnw license:format spotless:apply -pl zeebe/exporters/analytics-exporter
