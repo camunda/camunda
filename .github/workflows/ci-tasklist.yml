@@ -80,9 +80,9 @@ jobs:
 
   fe-type-check:
     if: inputs.runFeTests
-    name: "Tool /  Front End - Type check"
+    name: "Tool / Front End - Type check"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -103,7 +103,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -120,7 +120,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -141,7 +141,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - run: npm run eslint
         name: ESLint
       - name: Observe build status
@@ -158,7 +158,7 @@ jobs:
     if: inputs.runFeTests
     name: "Tool / Front End - Stylelint"
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
@@ -178,7 +178,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
           max_attempts: "2"
-          timeout_minutes: "2"
+          timeout_minutes: "3"
       - run: npm run stylelint
         name: Stylelint
       - name: Observe build status
