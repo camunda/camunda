@@ -220,8 +220,13 @@ final class SecondaryStorageRollingUpdateIT {
       broker1.start();
 
       try (final var client = newClient(gateway1)) {
-        // create a second instance to exercise writes on the mixed-version cluster
+        // create instances to exercise writes on the mixed-version cluster. Process instance
+        // creation without an explicit business ID is dispatched round-robin across partitions
+        // (RequestDispatchStrategy#roundRobin), so calling this twice — matching the cluster's
+        // partitionsCount(2) below — guarantees both partitions (both brokers, both versions) get
+        // exercised here, not just whichever one the random round-robin offset happens to start on.
         LOGGER.info("=== Test Run 2 - New cluster version ===");
+        testCluster(client);
         testCluster(client);
       }
 
