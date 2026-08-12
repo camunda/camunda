@@ -440,5 +440,11 @@ public class IntermediateThrowEventProcessor
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, completed)));
     }
+
+    @Override
+    public void onTerminate(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
+      compensationSubscriptionBehaviour.deleteSubscriptionsOfCompensationThrowEvent(terminating);
+    }
   }
 }

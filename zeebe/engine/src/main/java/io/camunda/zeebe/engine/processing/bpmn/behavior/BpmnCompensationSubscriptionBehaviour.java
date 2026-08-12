@@ -459,6 +459,20 @@ public class BpmnCompensationSubscriptionBehaviour {
     deleteSubscriptionsTopToBottom(subscriptions, context.getElementInstanceKey());
   }
 
+  /**
+   * Deletes the compensation subscriptions that were triggered by the given compensation throw
+   * event. Called when the throw event is terminated, for example by a terminate end event or an
+   * interrupting event subprocess in its flow scope. The compensation is aborted together with the
+   * throw event; leaving the subscriptions behind would block the completion of their flow scope
+   * and of any later compensation that sweeps that scope.
+   */
+  public void deleteSubscriptionsOfCompensationThrowEvent(final BpmnElementContext context) {
+    compensationSubscriptionState
+        .findSubscriptionsByThrowEventInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey(), context.getElementInstanceKey())
+        .forEach(this::appendCompensationSubscriptionDeleteEvent);
+  }
+
   private void deleteSubscriptionsTopToBottom(
       final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
     subscriptions.stream()
