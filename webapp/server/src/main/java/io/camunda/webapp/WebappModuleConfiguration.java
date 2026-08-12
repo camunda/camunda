@@ -15,7 +15,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Profile;
 
-/** Entry point for the unified BFF webapp module. */
+/**
+ * Entry point for the unified BFF webapp module. It is currently gated on the legacy {@code
+ * tasklist} profile because the unified webapp now serves as the Tasklist UI; its activation will
+ * widen as Operate and Admin migrate.
+ */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = "io.camunda.webapp",
