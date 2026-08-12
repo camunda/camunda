@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,8 +65,28 @@ public final class JobSecretPushInjectionTest {
   private static final String SECRET_NAME = "token";
   private static final String SECRET_VALUE = "resolved-secret";
 
-  private final Map<String, String> cachedSecrets = new ConcurrentHashMap<>();
-  private final RecordingJobStreamer jobStreamer = new RecordingJobStreamer();
+  /**
+   * Jobs parked on one reference, padded so that their hand-outs cannot share a single record
+   * batch: the padding sits in a task header, which is part of the job record the reactivation
+   * sizes its batch against, and ten of them exceed the 4 MB maximum fragment size.
+   */
+  private static final int PADDED_JOB_COUNT = 10;
+
+  private static final int JOB_PADDING_SIZE = 500_000;
+
+  /**
+   * Jobs parked on one reference and handed out to a stream whose worker name is written twice per
+   * hand-out: the reserve leaves 8 KB of slack per job, so a name this size overruns it by two
+   * orders of magnitude and a handful of hand-outs exceed the 4 MB maximum fragment size.
+   */
+  private static final int OVERSIZED_WORKER_JOB_COUNT = 10;
+
+  private static final int OVERSIZED_WORKER_NAME_SIZE = 300_000;
+
+  // static, because the engine rule below reads them while it is initialized, and a field
+  // initializer can only read a field declared before it; setUp resets them per test
+  private static final Map<String, String> CACHED_SECRETS = new ConcurrentHashMap<>();
+  private static final RecordingJobStreamer JOB_STREAMER = new RecordingJobStreamer();
 
   /**
    * The background resolution is driven by hand: the tests write the {@code RESOLUTION_COMPLETE}
@@ -76,7 +98,7 @@ public final class JobSecretPushInjectionTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withJobStreamer(jobStreamer)
+          .withJobStreamer(JOB_STREAMER)
           .withSecretStoreRegistry(
               new SecretStoreRegistry(
                   Map.of("default", new NoopSecretStore()),
@@ -91,13 +113,18 @@ public final class JobSecretPushInjectionTest {
 
   @Before
   public void setUp() {
+    // the cache and the streamer outlive a single test, so each test starts from an empty cache,
+    // no stream and no recorded notification
+    CACHED_SECRETS.clear();
+    JOB_STREAMER.clearStreams();
+    JOB_STREAMER.clearNotifications();
     jobStream = registerJobStream();
   }
 
   @Test
   public void shouldPushJobWithResolvedSecretValue() {
     // given
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
 
     // when
@@ -148,6 +175,60 @@ public final class JobSecretPushInjectionTest {
   }
 
   @Test
+  public void shouldPushJobAfterItsSecretResolves() {
+    // given - a job parked for an uncached reference
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = jobKeyOf(processInstanceKey);
+    awaitResolutionRequests(1);
+
+    // when - the background resolution caches the value and completes
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+
+    // then - the job is pushed exactly once, with the resolved value
+    final ActivatedJob pushedJob = awaitPushedJob();
+    assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
+    assertThat(pushedJob.jobRecord().getVariables())
+        .containsEntry("authorization", "Bearer " + SECRET_VALUE);
+    final Record<JobBatchRecordValue> activated =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).getFirst();
+    assertThat(activated.getValue().getJobKeys()).containsExactly(jobKey);
+    assertThat(jobStream.getActivatedJobs()).hasSize(1);
+
+    // and - no exported record leaks the resolved secret value
+    assertNoRecordLeaksTheSecretValue();
+  }
+
+  @Test
+  public void shouldPushEveryJobWaitingOnTheSameReference() {
+    // given - two jobs parked for the same uncached reference
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long firstJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    final long secondJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    awaitResolutionRequests(2);
+
+    // when - the reference resolves
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+
+    // then - both jobs are pushed with the resolved value
+    Awaitility.await("until both waiting jobs are pushed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
+    assertThat(jobStream.getActivatedJobs())
+        .extracting(ActivatedJob::jobKey)
+        .containsExactlyInAnyOrder(firstJobKey, secondJobKey);
+    assertThat(jobStream.getActivatedJobs())
+        .allSatisfy(
+            job ->
+                assertThat(job.jobRecord().getVariables())
+                    .containsEntry("authorization", "Bearer " + SECRET_VALUE));
+  }
+
+  @Test
   public void shouldNotPushJobWhenItsSecretFailsToResolve() {
     // given - a job parked for a reference the store has no value for
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
@@ -164,6 +245,35 @@ public final class JobSecretPushInjectionTest {
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(jobStream.getActivatedJobs()).isEmpty();
     assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+  }
+
+  @Test
+  public void shouldRequestResolutionAgainWhenTheIncidentIsResolved() {
+    // given - a job with an incident for a reference that failed to resolve
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = jobKeyOf(processInstanceKey);
+    awaitResolutionRequests(1);
+    failResolution();
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
+
+    // when - the operator resolves the incident, which hands the job to this path again
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the resolution of the still uncached reference is requested a second time
+    final var requests = awaitResolutionRequests(2);
+    assertThat(requests)
+        .allSatisfy(record -> assertThat(record.getValue().getJobKeys()).containsExactly(jobKey));
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+
+    // and - once that resolution completes, the job is pushed with the value
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    final ActivatedJob pushedJob = awaitPushedJob();
+    assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
+    assertThat(pushedJob.jobRecord().getVariables())
+        .containsEntry("authorization", "Bearer " + SECRET_VALUE);
   }
 
   @Test
@@ -193,9 +303,34 @@ public final class JobSecretPushInjectionTest {
   }
 
   @Test
+  public void shouldPushJobOnlyOnceEveryReferenceIsCached() {
+    // given - a job with two references, only one of them cached
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    deploy(
+        t ->
+            t.zeebeInputExpression("camunda.secrets.token", "a")
+                .zeebeInputExpression("camunda.secrets.apiKey", "b"));
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long jobKey = jobKeyOf(processInstanceKey);
+    awaitResolutionRequests(1, "apiKey");
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+
+    // when - the second reference resolves too
+    CACHED_SECRETS.put("apiKey", "resolved-api-key");
+    completeResolution("apiKey");
+
+    // then - the job is pushed with both values
+    final ActivatedJob pushedJob = awaitPushedJob();
+    assertThat(pushedJob.jobKey()).isEqualTo(jobKey);
+    assertThat(pushedJob.jobRecord().getVariables())
+        .containsEntry("a", SECRET_VALUE)
+        .containsEntry("b", "resolved-api-key");
+  }
+
+  @Test
   public void shouldPushJobWithoutSecretReferencesUnchanged() {
     // given
-    cachedSecrets.put(SECRET_NAME, SECRET_VALUE);
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
     deploy(t -> t.zeebeInputExpression("\"plain-value\"", "authorization"));
 
     // when
@@ -211,7 +346,7 @@ public final class JobSecretPushInjectionTest {
   @Test
   public void shouldOnlyNotifyWorkersWhenNoStreamIsRegistered() {
     // given - no job stream for the job type, so the job is not pushed but only announced
-    jobStreamer.clearStreams();
+    JOB_STREAMER.clearStreams();
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
 
     // when
@@ -221,10 +356,146 @@ public final class JobSecretPushInjectionTest {
     // then - the job stays activatable for a long poll, which owns the check on that path
     Awaitility.await("until the workers are notified")
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(jobStreamer.notificationsForJob(JOB_TYPE)).isPositive());
+        .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isPositive());
     assertThat(jobState(jobKey)).isEqualTo(State.ACTIVATABLE);
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
+  }
+
+  @Test
+  public void shouldNotifyWorkersOncePerJobTypeWhenReactivatedJobsCannotBePushed() {
+    // given - two jobs parked for the same reference, and no job stream left to push them to
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    awaitResolutionRequests(2);
+    JOB_STREAMER.clearStreams();
+
+    // when - the reference resolves and both jobs become activatable again
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(SECRET_NAME)
+        .getFirst();
+
+    // then - the workers of the job type are notified once for the whole batch, not once per job
+    Awaitility.await("until the workers are notified")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(JOB_TYPE)).isEqualTo(1));
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+  }
+
+  /**
+   * A reactivation sizes its record batch against what handing each job out will write into that
+   * same batch, but the sizing and the writing live in different classes. The processor's own test
+   * mocks the writer, so it can only check the arithmetic; this drives the chain on a real record
+   * batch with jobs too large to share one, which is what turns the reserved bound into a checked
+   * one.
+   */
+  @Test
+  public void shouldPushEveryReactivatedJobWithoutExceedingTheRecordBatch() {
+    // given - parked jobs padded so that one record batch cannot hand out all of them
+    deploy(
+        t -> {
+          t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization");
+          t.zeebeTaskHeader("padding", "x".repeat(JOB_PADDING_SIZE));
+        });
+    for (int i = 0; i < PADDED_JOB_COUNT; i++) {
+      engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    }
+    awaitResolutionRequests(PADDED_JOB_COUNT);
+
+    // when - the reference resolves
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+
+    // then - every parked job is handed out, none left behind by the size cut
+    Awaitility.await("until every parked job is pushed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(PADDED_JOB_COUNT));
+
+    // and - no batch overflowed; that rejection strands the jobs of its cycle for good, since the
+    // reactivation command is written by the engine and has nobody to report the failure to
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(record -> record.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+
+    // and - the hand-outs really spanned several batches, so the cut was exercised rather than the
+    // jobs happening to fit one of them
+    assertThat(exportedCountOf(SecretReferenceIntent.BATCH_JOBS_REACTIVATED))
+        .describedAs("the padded jobs do not fit one batch, so the chain runs several cycles")
+        .isGreaterThan(1);
+  }
+
+  /**
+   * A reactivation sizes its batch against the stored job records, which carry no worker name: that
+   * name belongs to the stream that takes the job, and a hand-out writes it twice, on the job it
+   * puts in the activation batch and on the batch itself. A stream registered with a worker name
+   * larger than the per-job slack therefore makes every hand-out cost more than the batch reserved
+   * for it, and the reserve alone cannot keep the cycle inside the maximum fragment size.
+   */
+  @Test
+  public void shouldNotStrandReactivatedJobsWhenTheWorkerNameOutgrowsTheReserve() {
+    // given - a stream whose worker name dwarfs the slack the reserve leaves per job, and jobs
+    // parked on one reference
+    JOB_STREAMER.clearStreams();
+    jobStream = registerJobStream("w".repeat(OVERSIZED_WORKER_NAME_SIZE));
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final List<Long> jobKeys = parkJobsOnTheSecret(OVERSIZED_WORKER_JOB_COUNT);
+
+    // when - the reference resolves and the reactivation hands the parked jobs out
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    // an overflowing cycle writes no batch event at all, so waiting for one would only time out;
+    // waiting for either outcome lets the assertions below name what actually went wrong
+    Awaitility.await("until the reactivation cycle has run")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        exportedCountOf(SecretReferenceIntent.BATCH_JOBS_REACTIVATED) > 0
+                            || exportedBatchOverflowCount() > 0)
+                    .isTrue());
+
+    // then - no batch overflowed; that rejection rolls the cycle back, and since the reactivation
+    // command is written by the engine there is nobody to report it to
+    assertThat(exportedBatchOverflowCount()).isZero();
+
+    // and - the reactivation handed out what it could
+    Awaitility.await("until the reactivated jobs are pushed")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).isNotEmpty());
+
+    // and - no job is left waiting on a reference that is resolved already. A job the batch could
+    // not take stays activatable, so a long poll still collects it; a job left parked waits for a
+    // resolution that will not be requested again
+    assertThat(jobKeys)
+        .allSatisfy(
+            jobKey ->
+                assertThat(jobState(jobKey)).isNotEqualTo(State.WAITING_FOR_SECRET_RESOLUTION));
+  }
+
+  /** Counts the record batches rejected for exceeding the maximum fragment size. */
+  private long exportedBatchOverflowCount() {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getRejectionType() == RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
+        .count();
+  }
+
+  /** Creates {@code count} instances whose jobs all park on the test's secret reference. */
+  private List<Long> parkJobsOnTheSecret(final int count) {
+    final List<Long> jobKeys = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      jobKeys.add(jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create()));
+    }
+    awaitResolutionRequests(count);
+    return jobKeys;
+  }
+
+  /** Counts the records exported so far, without waiting for more of them to arrive. */
+  private long exportedCountOf(final SecretReferenceIntent intent) {
+    return RecordingExporter.getRecords().stream()
+        .filter(record -> record.getIntent() == intent)
+        .count();
   }
 
   /**
@@ -238,7 +509,7 @@ public final class JobSecretPushInjectionTest {
 
   private ActivatedJob awaitPushedJob() {
     Awaitility.await("until the job is pushed to the stream")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).isNotEmpty());
     return jobStream.getActivatedJobs().getFirst();
   }
@@ -282,13 +553,17 @@ public final class JobSecretPushInjectionTest {
   }
 
   private RecordingJobStream registerJobStream() {
-    final var worker = BufferUtil.wrapString("test");
+    return registerJobStream("test");
+  }
+
+  private RecordingJobStream registerJobStream(final String workerName) {
+    final var worker = BufferUtil.wrapString(workerName);
     final var properties =
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(30_000L)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-    return jobStreamer.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+    return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
   }
 
   private long jobKeyOf(final long processInstanceKey) {
@@ -318,15 +593,20 @@ public final class JobSecretPushInjectionTest {
   }
 
   /** Serves the test's cached secrets, and takes the values the background resolution caches. */
-  private final class TestSecretCache implements SecretCache {
+  private static final class TestSecretCache implements SecretCache {
     @Override
     public Optional<String> get(final String name) {
-      return Optional.ofNullable(cachedSecrets.get(name));
+      return Optional.ofNullable(CACHED_SECRETS.get(name));
     }
 
     @Override
     public void put(final String name, final String value) {
-      cachedSecrets.put(name, value);
+      CACHED_SECRETS.put(name, value);
+    }
+
+    @Override
+    public void remove(final String name) {
+      CACHED_SECRETS.remove(name);
     }
   }
 }

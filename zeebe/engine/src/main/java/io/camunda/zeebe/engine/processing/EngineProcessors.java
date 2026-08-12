@@ -542,7 +542,8 @@ public final class EngineProcessors {
         scheduledTaskStateFactory,
         secretStoreRegistry,
         config,
-        secretResolutionMetrics);
+        secretResolutionMetrics,
+        bpmnBehaviors.jobActivationBehavior());
 
     return typedRecordProcessors;
   }
