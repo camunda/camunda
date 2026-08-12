@@ -14,6 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.MigrationState;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -168,6 +169,115 @@ class RdbmsSchemaVersionStoreTest {
 
     // then - the datasource is never touched
     verify(dataSource, never()).getConnection();
+  }
+
+  // ---- getMigrationStatus (upgrade-readiness) ----
+
+  @Test
+  void shouldReportMigratedForSameVersion() {
+    // given - schema=8.10.0, app=8.10.0
+    final var status = versionStore("8.10.0", "8.10.0").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.MIGRATED);
+    assertThat(status.detail()).contains("8.10.0");
+  }
+
+  @Test
+  void shouldReportMigrationInProgressForPatchUpgrade() {
+    // given - schema=8.9.0, app=8.9.5 (not yet migrated to the running app's exact version)
+    final var status = versionStore("8.9.0", "8.9.5").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReportMigrationInProgressForMinorUpgrade() {
+    // given - schema=8.9.1, app=8.10.0
+    final var status = versionStore("8.9.1", "8.10.0").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReportMigrationInProgressForFreshDatabase() {
+    // given - resolveCurrentSchemaVersion returns null (fresh DB, not yet initialized)
+    final var status = versionStore(null, "8.11.0").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("fresh database");
+  }
+
+  @Test
+  void shouldReportUnknownForIncompatibleUpgradePath() {
+    // given - schema=8.9.0, app=8.11.0 (skipped 8.10) - a real problem, not "in progress"
+    final var status = versionStore("8.9.0", "8.11.0").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+  }
+
+  @Test
+  void shouldReportUnknownForIndeterminateSchemaVersion() {
+    // given - stored schema version is not a valid semantic version
+    final var status = versionStore("not-a-semver", "8.10.0").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+  }
+
+  @Test
+  void shouldReportUnknownForUnparseableApplicationVersion() {
+    // given - app=development (not a semantic version)
+    final var status = versionStore("8.9.0", "development").getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+    assertThat(status.detail()).contains("development");
+  }
+
+  @Test
+  void shouldReportUnknownWhenApplicationVersionIsNull() {
+    // given
+    final var store = new RdbmsSchemaVersionStore(mock(DataSource.class), "", null);
+
+    // when
+    final var status = store.getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+    assertThat(status.detail()).contains("applicationVersion is not configured");
+  }
+
+  @Test
+  void shouldReportUnknownWhenDataSourceIsNull() {
+    // given
+    final var store = new RdbmsSchemaVersionStore(null, "", "8.10.0");
+
+    // when
+    final var status = store.getMigrationStatus();
+
+    // then
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+    assertThat(status.detail()).contains("dataSource is not configured");
+  }
+
+  @Test
+  void shouldReportUnknownWhenReadingCurrentVersionFails() throws Exception {
+    // given - getConnection() throws
+    final var dataSource = mock(DataSource.class);
+    when(dataSource.getConnection()).thenThrow(new RuntimeException("DB connection refused"));
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when
+    final var status = store.getMigrationStatus();
+
+    // then - a read failure must never throw; it must be reported as UNKNOWN
+    assertThat(status.state()).isEqualTo(MigrationState.UNKNOWN);
+    assertThat(status.detail()).contains("DB connection refused");
   }
 
   // ---- toStableVersion ----

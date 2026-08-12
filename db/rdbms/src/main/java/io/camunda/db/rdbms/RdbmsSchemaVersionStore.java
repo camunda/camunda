@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.cluster.MigrationConditionStatus;
+import io.camunda.cluster.MigrationState;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -155,6 +157,87 @@ public class RdbmsSchemaVersionStore {
       LOG.error("[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
       throw new IllegalStateException(
           "[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
+    }
+  }
+
+  /**
+   * Resolves the current schema version and reports it as a {@link MigrationConditionStatus} for
+   * the upgrade-readiness endpoint, without side effects — unlike {@link #checkCompatibility()},
+   * this never throws and never writes; it only reads.
+   *
+   * <p>Mapping from the underlying facts:
+   *
+   * <ul>
+   *   <li>Schema version equals the application version ({@link Compatible.SameVersion}) → {@link
+   *       MigrationState#MIGRATED}.
+   *   <li>Schema version is one or more minors behind, on a supported upgrade path ({@link
+   *       Compatible.PatchUpgrade}/{@link Compatible.MinorUpgrade}), or no version has been
+   *       recorded yet (fresh database) → {@link MigrationState#MIGRATION_IN_PROGRESS}. This
+   *       includes externally-managed schemas ({@code auto-ddl=false}) that have not yet been
+   *       migrated by the operator's own tooling.
+   *   <li>An illegal upgrade path ({@link Incompatible}), an unparseable version ({@link
+   *       Indeterminate}, or an unparseable {@link #applicationVersion}), or any read failure (e.g.
+   *       a connection error) → {@link MigrationState#UNKNOWN} — this is a "we don't know," not a
+   *       "we know it's not done."
+   * </ul>
+   */
+  public MigrationConditionStatus getMigrationStatus() {
+    if (applicationVersion == null) {
+      return new MigrationConditionStatus(
+          MigrationState.UNKNOWN, "[RDBMS Schema] applicationVersion is not configured.");
+    }
+    if (dataSource == null) {
+      return new MigrationConditionStatus(
+          MigrationState.UNKNOWN,
+          "[RDBMS Schema] dataSource is not configured for prefix '" + prefix + "'.");
+    }
+
+    try (final var connection = dataSource.getConnection()) {
+      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection, prefix);
+      if (currentSchemaVersion == null) {
+        return new MigrationConditionStatus(
+            MigrationState.MIGRATION_IN_PROGRESS,
+            "no schema version recorded yet for prefix '" + prefix + "' (fresh database)");
+      }
+
+      final var stableAppVersion = toStableVersion(applicationVersion);
+      if (stableAppVersion.isEmpty()) {
+        return new MigrationConditionStatus(
+            MigrationState.UNKNOWN,
+            "cannot parse application version '" + applicationVersion + "' as a semantic version");
+      }
+
+      final var result =
+          VersionCompatibilityCheck.check(currentSchemaVersion, stableAppVersion.get());
+      return switch (result) {
+        case Compatible.SameVersion same ->
+            new MigrationConditionStatus(
+                MigrationState.MIGRATED,
+                "schema version " + same.version() + " matches the application version");
+        case Compatible.PatchUpgrade patch ->
+            new MigrationConditionStatus(
+                MigrationState.MIGRATION_IN_PROGRESS,
+                "schema version " + patch.from() + " has not yet migrated to " + patch.to());
+        case Compatible.MinorUpgrade minor ->
+            new MigrationConditionStatus(
+                MigrationState.MIGRATION_IN_PROGRESS,
+                "schema version " + minor.from() + " has not yet migrated to " + minor.to());
+        case Incompatible incompatible ->
+            new MigrationConditionStatus(
+                MigrationState.UNKNOWN, "incompatible schema upgrade path: " + incompatible);
+        case Indeterminate indeterminate ->
+            new MigrationConditionStatus(
+                MigrationState.UNKNOWN,
+                "cannot determine schema version compatibility: " + indeterminate);
+      };
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Schema] Failed to determine current schema version for prefix '{}' during "
+              + "upgrade-readiness check.",
+          prefix,
+          e);
+      return new MigrationConditionStatus(
+          MigrationState.UNKNOWN, "failed to read schema version: " + e.getMessage());
     }
   }
 

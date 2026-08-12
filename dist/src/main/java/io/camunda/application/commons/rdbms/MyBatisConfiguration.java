@@ -11,6 +11,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
@@ -40,6 +41,32 @@ public class MyBatisConfiguration {
   public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver) {
+    // VersionUtil.getVersion() may not be a valid semantic version during local development;
+    // the schema-version check is skipped in that case.
+    return DefaultRdbmsSchemaManagerRegistry.fromConfigs(
+        physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+        VersionUtil.getVersion());
+  }
+
+  /**
+   * Reports whether every physical tenant's RDBMS schema has migrated to the running application
+   * version, for the upgrade-readiness endpoint (camunda/product-hub#3067). Built from the same
+   * per-tenant configs as {@link #rdbmsSchemaManagerRegistry}, but independently — this needs to
+   * read the schema version regardless of whether this application's own Liquibase run applied it
+   * or an operator's external tooling did.
+   */
+  @Bean
+  public RdbmsSchemaMigrationStatusProvider rdbmsSchemaMigrationStatusProvider(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return RdbmsSchemaMigrationStatusProvider.fromConfigs(
+        physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+        VersionUtil.getVersion());
+  }
+
+  private Map<String, PerTenantSchemaConfig> physicalTenantSchemaConfigs(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
     final Map<String, PerTenantSchemaConfig> physicalTenantConfigs = new LinkedHashMap<>();
     for (final String physicalTenantId : physicalTenantResolver.getAll().keySet()) {
       final var rdbms =
@@ -62,10 +89,7 @@ public class MyBatisConfiguration {
               rdbms.getAutoDdl(),
               rdbms.getDdlLockWaitTimeout()));
     }
-    // VersionUtil.getVersion() may not be a valid semantic version during local development;
-    // the schema-version check is skipped in that case.
-    return DefaultRdbmsSchemaManagerRegistry.fromConfigs(
-        physicalTenantConfigs, VersionUtil.getVersion());
+    return physicalTenantConfigs;
   }
 
   @Bean
