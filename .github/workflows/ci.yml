@@ -300,10 +300,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   load-test-smoke-detect-versions:
-    # Only on pull_request events: the smoke tests below deploy the PR's actual head ref, which is
-    # only meaningful when there is a PR. On push/merge_group/schedule the job is skipped, which
-    # check-results treats as success — so the gate doesn't run there but also doesn't break those
-    # builds (same pattern as pin-check above).
+    # Only on pull_request events (same pattern as pin-check above): github.event.pull_request.*
+    # is empty under merge_group/push/schedule, so the job is skipped there rather than deploying
+    # a real cluster with no ref. Skipped is treated as success by check-results, so this doesn't
+    # break those builds — but it does mean the merge queue does not re-run the real Helm/cluster
+    # deploy against the batched merge-group commit; a queued PR merges on its last pull_request
+    # smoke result, not a fresh one. Accepted trade-off: re-running this on every merge_group entry
+    # would double real-cluster usage for every load-tests/setup/** PR.
     if: github.event_name == 'pull_request' && needs.detect-changes.outputs.load-test-setup-changes == 'true'
     name: "Load Test / Detect Smoke Versions"
     needs: [ detect-changes ]
