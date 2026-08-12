@@ -46,13 +46,16 @@ test.describe('Job Fail API Tests', () => {
 
     // Now fail the job
     await expect(async () => {
-      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-        headers: jsonHeaders(),
-        data: {
-          retries: 0,
-          errorMessage: 'Simulated failure',
+      const failRes = await request.post(
+        buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
         },
-      });
+      );
 
       await assertStatusCode(failRes, 204);
     }).toPass(defaultAssertionOptions);
@@ -61,13 +64,16 @@ test.describe('Job Fail API Tests', () => {
   test('Fail Job - Job not found', async ({request}) => {
     const jobKey = 2251799813738612;
 
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: 2,
-        errorMessage: 'Simulated failure',
+    const failRes = await request.post(
+      buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          retries: 2,
+          errorMessage: 'Simulated failure',
+        },
       },
-    });
+    );
     await assertNotFoundRequest(
       failRes,
       `Command 'FAIL' rejected with code 'NOT_FOUND': Expected to fail job with key '${jobKey}', but no such job was found`,
@@ -77,13 +83,16 @@ test.describe('Job Fail API Tests', () => {
   test('Fail Job - invalid request', async ({request}) => {
     const jobKey = 2251799813738612;
 
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: '2', // Wrong type
-        errorMessage: 2, // wrong type
+    const failRes = await request.post(
+      buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          retries: '2', // Wrong type
+          errorMessage: 2, // wrong type
+        },
       },
-    });
+    );
     await assertBadRequest(failRes, '');
   });
 
@@ -100,7 +109,9 @@ test.describe('Job Fail API Tests', () => {
     await test.step('fail the job for the first time', async () => {
       await expect(async () => {
         const failRes = await request.post(
-          buildUrl(`/jobs/${localState['jobKey']}/failure`),
+          buildUrl('/jobs/{jobKey}/failure', {
+            jobKey: localState['jobKey'] as string,
+          }),
           {
             headers: jsonHeaders(),
             data: {
@@ -115,7 +126,9 @@ test.describe('Job Fail API Tests', () => {
 
     await test.step('fail the job for the second time', async () => {
       const failAgainRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
+        buildUrl('/jobs/{jobKey}/failure', {
+          jobKey: localState['jobKey'] as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {

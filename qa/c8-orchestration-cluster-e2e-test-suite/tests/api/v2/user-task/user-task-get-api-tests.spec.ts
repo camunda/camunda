@@ -34,9 +34,12 @@ test.describe.parallel('Get User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     const responseBody = await res.json();
     validateResponseShape(
       {
@@ -51,7 +54,7 @@ test.describe.parallel('Get User Task Tests', () => {
   test('Get user task - not found', async ({request}) => {
     const unknownUserTaskKey = '9999999999999999';
     const res = await request.get(
-      buildUrl(`/user-tasks/${unknownUserTaskKey}`),
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey: unknownUserTaskKey}),
       {
         headers: jsonHeaders(),
       },
@@ -68,12 +71,15 @@ test.describe.parallel('Get User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
-      // No auth headers
-      headers: {
-        'Content-Type': 'application/json',
+    const res = await request.get(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        // No auth headers
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
     await assertUnauthorizedRequest(res);
   });
 });

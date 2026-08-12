@@ -37,7 +37,7 @@ test.describe.parallel('Assign User Task Tests', () => {
     );
     const assignee = 'demo';
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+      buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
       {
         headers: jsonHeaders(),
         data: {
@@ -57,7 +57,7 @@ test.describe.parallel('Assign User Task Tests', () => {
       'CREATED',
     );
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+      buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
       {
         headers: jsonHeaders(),
         data: {}, // Missing assignee
@@ -73,7 +73,7 @@ test.describe.parallel('Assign User Task Tests', () => {
       'CREATED',
     );
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+      buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
       {
         // No auth headers
         headers: {
@@ -92,7 +92,9 @@ test.describe.parallel('Assign User Task Tests', () => {
     // so the command reaches the engine and is rejected with NOT_FOUND (404).
     const unknownUserTaskKey = '4503599627370495';
     const res = await request.post(
-      buildUrl(`/user-tasks/${unknownUserTaskKey}/assignment`),
+      buildUrl('/user-tasks/{userTaskKey}/assignment', {
+        userTaskKey: unknownUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -115,7 +117,9 @@ test.describe.parallel('Assign User Task Tests', () => {
     // of a permanent 404.
     const outOfRangeUserTaskKey = '9999999999999999';
     const res = await request.post(
-      buildUrl(`/user-tasks/${outOfRangeUserTaskKey}/assignment`),
+      buildUrl('/user-tasks/{userTaskKey}/assignment', {
+        userTaskKey: outOfRangeUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -138,7 +142,7 @@ test.describe.parallel('Assign User Task Tests', () => {
 
     await test.step('First assignment', async () => {
       const res1 = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+        buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -151,7 +155,7 @@ test.describe.parallel('Assign User Task Tests', () => {
 
     await test.step('Second assignment with the same assignee', async () => {
       const res2 = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+        buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
