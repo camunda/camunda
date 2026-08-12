@@ -184,6 +184,7 @@ class SearchAgentInstanceTest extends ClientRestTest {
     final AgentInstanceResult provided =
         Instancio.create(AgentInstanceResult.class)
             .agentInstanceKey("42")
+            .agentDefinitionKey("84")
             .status(AgentInstanceStatusEnum.COMPLETED)
             .processInstanceKey("10")
             .rootProcessInstanceKey("5")
@@ -231,6 +232,7 @@ class SearchAgentInstanceTest extends ClientRestTest {
 
           final AgentInstance item = result.items().get(0);
           softly.assertThat(item.getAgentInstanceKey()).as("agentInstanceKey").isEqualTo(42L);
+          softly.assertThat(item.getAgentDefinitionKey()).as("agentDefinitionKey").isEqualTo(84L);
           softly.assertThat(item.getStatus()).as("status").isEqualTo(AgentInstanceStatus.COMPLETED);
           softly.assertThat(item.getProcessInstanceKey()).as("processInstanceKey").isEqualTo(10L);
           softly

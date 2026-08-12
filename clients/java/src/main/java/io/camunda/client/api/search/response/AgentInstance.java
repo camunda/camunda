@@ -25,6 +25,9 @@ public interface AgentInstance {
   /** Returns the unique key identifying this agent instance. */
   long getAgentInstanceKey();
 
+  /** Returns the key of the agent definition this instance is linked to. */
+  long getAgentDefinitionKey();
+
   /** Returns the current execution status of the agent instance. */
   AgentInstanceStatus getStatus();
 

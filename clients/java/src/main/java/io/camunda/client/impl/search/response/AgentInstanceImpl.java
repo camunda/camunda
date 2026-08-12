@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class AgentInstanceImpl implements AgentInstance {
 
   private final long agentInstanceKey;
+  private final long agentDefinitionKey;
   private final AgentInstanceStatus status;
   private final Definition definition;
   private final Metrics metrics;
@@ -49,6 +50,7 @@ public class AgentInstanceImpl implements AgentInstance {
 
   public AgentInstanceImpl(final AgentInstanceResult result) {
     agentInstanceKey = Long.parseLong(result.getAgentInstanceKey());
+    agentDefinitionKey = Long.parseLong(result.getAgentDefinitionKey());
     status = EnumUtil.convert(result.getStatus(), AgentInstanceStatus.class);
     definition = new DefinitionImpl(result.getDefinition());
     metrics = new MetricsImpl(result.getMetrics());
@@ -79,6 +81,11 @@ public class AgentInstanceImpl implements AgentInstance {
   @Override
   public long getAgentInstanceKey() {
     return agentInstanceKey;
+  }
+
+  @Override
+  public long getAgentDefinitionKey() {
+    return agentDefinitionKey;
   }
 
   @Override

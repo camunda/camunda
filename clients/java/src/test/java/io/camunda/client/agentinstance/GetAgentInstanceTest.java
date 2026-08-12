@@ -50,6 +50,7 @@ class GetAgentInstanceTest extends ClientRestTest {
         agentInstanceKey,
         Instancio.create(AgentInstanceResult.class)
             .agentInstanceKey(String.valueOf(agentInstanceKey))
+            .agentDefinitionKey("4321")
             .status(AgentInstanceStatusEnum.IDLE)
             .processInstanceKey("9000")
             .rootProcessInstanceKey("50")
@@ -93,6 +94,10 @@ class GetAgentInstanceTest extends ClientRestTest {
               .assertThat(result.getAgentInstanceKey())
               .as("agentInstanceKey")
               .isEqualTo(agentInstanceKey);
+          softly
+              .assertThat(result.getAgentDefinitionKey())
+              .as("agentDefinitionKey")
+              .isEqualTo(4321L);
           softly.assertThat(result.getStatus()).as("status").isEqualTo(AgentInstanceStatus.IDLE);
           softly
               .assertThat(result.getProcessInstanceKey())
