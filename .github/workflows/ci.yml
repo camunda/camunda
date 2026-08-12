@@ -86,6 +86,7 @@ jobs:
           ignore: |-
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
+            unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test -o github --policy .github .github/workflows/*.y*ml
@@ -1294,6 +1295,7 @@ jobs:
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
+      queue: max
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -1363,6 +1365,7 @@ jobs:
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
+      queue: max
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
