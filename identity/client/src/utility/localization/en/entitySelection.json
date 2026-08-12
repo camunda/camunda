@@ -1,0 +1,10 @@
+{
+  "usersCouldNotLoad": "Users could not be loaded.",
+  "groupsCouldNotLoad": "Groups could not be loaded.",
+  "rolesCouldNotLoad": "Roles could not be loaded.",
+  "mappingRulesCouldNotLoad": "Mapping rules could not be loaded.",
+  "searchByUsernameOrEmail": "Search by username or email",
+  "searchByGroupId": "Search by group ID",
+  "searchByRoleId": "Search by role ID",
+  "searchByMappingRuleId": "Search by mapping rule ID"
+}
