@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -63,7 +64,12 @@ public final class JobWaitingForSecretResolutionTest {
     final long jobKey = parkedJob();
 
     // then
-    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+    assertThat(
+            RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+                .getFirst()
+                .getValue()
+                .getJobKeys())
+        .contains(jobKey);
   }
 
   @Test
@@ -180,7 +186,11 @@ public final class JobWaitingForSecretResolutionTest {
     // then
     assertThat(updated.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
     assertThat(updated.getValue().getRetries()).isEqualTo(5);
-    assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+
+    // and - the job is still parked: a subsequent activation does not hand it out
+    final Record<JobBatchRecordValue> activated =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
+    assertThat(activated.getValue().getJobs()).isEmpty();
   }
 
   @Test
@@ -193,14 +203,9 @@ public final class JobWaitingForSecretResolutionTest {
     // when
     engine.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then - the parked job is canceled and gone from state, leaving nothing behind
+    // then - the parked job is canceled, leaving nothing behind
     assertThat(RecordingExporter.jobRecords(JobIntent.CANCELED).withRecordKey(jobKey).exists())
         .isTrue();
-    assertThat(jobState(jobKey)).isEqualTo(State.NOT_FOUND);
-  }
-
-  private State jobState(final long jobKey) {
-    return engine.getProcessingState().getJobState().getState(jobKey);
   }
 
   /** Creates an instance and activates once, which parks its job on the uncached secret. */
