@@ -97,7 +97,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
     await test.step('Verify process instance is listed and complete', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -118,7 +120,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
 
     await test.step('Delete the process instance', async () => {
       const response = await request.post(
-        buildUrl(`/process-instances/${processInstanceKeyToDelete}/deletion`),
+        buildUrl('/process-instances/{processInstanceKey}/deletion', {
+          processInstanceKey: processInstanceKeyToDelete,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -129,7 +133,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
     await test.step('Verify process instance is deleted', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -145,7 +151,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
   test('Delete Single Process Instance - Unauthorized', async ({request}) => {
     const someInstanceKey = '999999999999999';
     const response = await request.post(
-      buildUrl(`/process-instances/${someInstanceKey}/deletion`),
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: someInstanceKey,
+      }),
       {
         headers: {},
       },
@@ -159,7 +167,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const response = await request.post(
-      buildUrl(`/process-instances/${someInstanceKey}/deletion`),
+      buildUrl('/process-instances/{processInstanceKey}/deletion', {
+        processInstanceKey: someInstanceKey,
+      }),
       {
         headers: jsonHeaders(token), // overrides default demo:demo
       },
@@ -175,7 +185,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
 
     await test.step('Delete the process instance', async () => {
       const response = await request.post(
-        buildUrl(`/process-instances/${someNotExistingInstanceKey}/deletion`),
+        buildUrl('/process-instances/{processInstanceKey}/deletion', {
+          processInstanceKey: someNotExistingInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -191,7 +203,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
     await test.step('Verify process instance is listed and active', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${activeProcessInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: activeProcessInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -212,9 +226,9 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
 
     await test.step('Try to delete active process instance', async () => {
       const response = await request.post(
-        buildUrl(
-          `/process-instances/${activeProcessInstanceKeyToDelete}/deletion`,
-        ),
+        buildUrl('/process-instances/{processInstanceKey}/deletion', {
+          processInstanceKey: activeProcessInstanceKeyToDelete,
+        }),
         {
           headers: jsonHeaders(),
         },

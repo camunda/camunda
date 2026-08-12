@@ -51,9 +51,9 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
     await test.step('Get Process Instance Sequence Flows', async () => {
       await expect(async () => {
         const getResponse = await request.get(
-          buildUrl(
-            `/process-instances/${localState['processInstanceKey']}/sequence-flows`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}/sequence-flows', {
+            processInstanceKey: localState['processInstanceKey'] as string,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -88,7 +88,9 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-instances/2251799813685249/sequence-flows`),
+      buildUrl('/process-instances/{processInstanceKey}/sequence-flows', {
+        processInstanceKey: '2251799813685249',
+      }),
       {
         // No auth headers
       },
@@ -98,7 +100,9 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
 
   test('Get Process Instance Sequence Flows - No Items', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-instances/1111799813685211/sequence-flows`),
+      buildUrl('/process-instances/{processInstanceKey}/sequence-flows', {
+        processInstanceKey: '1111799813685211',
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -120,7 +124,9 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-instances/invalid-key/sequence-flows`),
+      buildUrl('/process-instances/{processInstanceKey}/sequence-flows', {
+        processInstanceKey: 'invalid-key',
+      }),
       {
         headers: jsonHeaders(),
       },
