@@ -15,6 +15,10 @@ on:
       version:
         description: 'Camunda version (8.7, 8.8, 8.9, or main)'
         required: true
+      target_ref_override:
+        description: 'TESTING ONLY: checkout this ref instead of main/stable/<version>. Leave empty for normal dispatches -- this exists so a scratch branch can be used to exercise this workflow without touching a real branch.'
+        required: false
+        default: ''
       test_specs:
         description: 'JSON array of {file, test_name, error, test_type, tasklist_mode?, database?}'
         required: true
@@ -73,27 +77,35 @@ jobs:
           # Read workflow_dispatch input through env to avoid template injection
           # (zizmor: template-injection — github.event.inputs.* is attacker-controllable)
           INPUT_VERSION: ${{ github.event.inputs.version }}
+          INPUT_TARGET_REF_OVERRIDE: ${{ github.event.inputs.target_ref_override }}
         run: |
           set -euo pipefail
           version="$INPUT_VERSION"
           case "$version" in
             main)
-              {
-                echo "ref=main"
-                echo "safe_version=main"
-              } >> "$GITHUB_OUTPUT"
+              safe_version="main"
+              ref="main"
               ;;
             8.7|8.8|8.9)
-              {
-                echo "ref=stable/${version}"
-                echo "safe_version=stable-${version}"
-              } >> "$GITHUB_OUTPUT"
+              safe_version="stable-${version}"
+              ref="stable/${version}"
               ;;
             *)
               echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, or main)"
               exit 1
               ;;
           esac
+          # TESTING ONLY: override the checkout ref (e.g. a scratch branch) while
+          # keeping safe_version/labels/artifact-naming derived from `version` as
+          # normal. Never used by real triage dispatches.
+          if [ -n "$INPUT_TARGET_REF_OVERRIDE" ]; then
+            echo "::warning::target_ref_override set — checking out '$INPUT_TARGET_REF_OVERRIDE' instead of '$ref'. This dispatch is for testing only."
+            ref="$INPUT_TARGET_REF_OVERRIDE"
+          fi
+          {
+            echo "ref=${ref}"
+            echo "safe_version=${safe_version}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout main for workflow tooling
         uses: actions/checkout@v7
