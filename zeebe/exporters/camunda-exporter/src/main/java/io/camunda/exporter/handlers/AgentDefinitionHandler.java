@@ -21,7 +21,7 @@ import java.util.Set;
 
 /** Exports {@code AgentDefinition:CREATED} records. */
 public class AgentDefinitionHandler
-    implements ExportHandler<AgentDefinitionEntity, AgentDefinitionRecordValue> {
+    implements MainIndexExporterHandler<AgentDefinitionEntity, AgentDefinitionRecordValue> {
 
   private static final Set<AgentDefinitionIntent> HANDLED_INTENTS =
       Set.of(AgentDefinitionIntent.CREATED);
