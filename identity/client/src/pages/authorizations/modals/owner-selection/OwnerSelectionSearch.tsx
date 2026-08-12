@@ -6,87 +6,64 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FormLabel, Tag } from "@carbon/react";
-import { useQuery } from "@tanstack/react-query";
-import { userQueries } from "src/utility/api/users/queries";
 import useTranslate from "src/utility/localization";
-import DropdownSearch from "src/components/form/DropdownSearch";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
+import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
 
-type OwnerSelectionSearchProps = {
+type OwnerSelectionSearchProps<Entity> = {
+  searchDropdown: EntitySearchDropdown<Entity>;
+  getId: (entity: Entity) => string;
+  itemToString: (entity: Entity) => string;
+  errorTitle: string;
   onChange: (ownerId: string) => void;
   ownerId?: string;
   isEmpty?: boolean;
 };
 
-const OwnerSelectionSearch: FC<OwnerSelectionSearchProps> = ({
+const OwnerSelectionSearch = <Entity,>({
+  searchDropdown: SearchDropdown,
+  getId,
+  itemToString,
+  errorTitle,
   onChange,
   ownerId,
   isEmpty = false,
-}) => {
+}: OwnerSelectionSearchProps<Entity>) => {
   const { t } = useTranslate("authorizations");
-  const [hasSearchText, setHasSearchText] = useState(false);
-  const USER_SEARCH_PAGE_LIMIT = 50;
-  const [search, setSearch] = useState<Record<string, unknown>>({
-    page: { limit: USER_SEARCH_PAGE_LIMIT },
-  });
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
 
   useEffect(() => {
     if (!ownerId) {
-      setSelectedUser(null);
+      setSelectedEntity(null);
     }
   }, [ownerId]);
 
-  const handleSearchChange = (searchText: string) => {
-    if (searchText === "") {
-      setSearch({ page: { limit: USER_SEARCH_PAGE_LIMIT } });
-      setHasSearchText(false);
-      return;
-    }
-
-    setHasSearchText(true);
-    setSearch({
-      filter: { username: { $like: `*${searchText}*` } },
-      page: { limit: USER_SEARCH_PAGE_LIMIT },
-    });
-  };
-
-  const { data: userSearchResults } = useQuery({
-    ...userQueries.search(search),
-    enabled: hasSearchText,
-  });
-
-  const handleSelect = (user: User) => {
-    setSelectedUser(user);
-    onChange(user.username);
+  const handleSelect = (entity: Entity) => {
+    setSelectedEntity(entity);
+    onChange(getId(entity));
   };
 
   const handleClear = () => {
-    setSelectedUser(null);
+    setSelectedEntity(null);
     onChange("");
   };
 
   return (
     <div>
       <FormLabel>{t("owner")}</FormLabel>
-      {selectedUser ? (
+      {selectedEntity ? (
         <div style={{ marginTop: "0.5rem" }}>
           <Tag filter onClose={handleClear} type="blue" size="md">
-            {selectedUser.name || selectedUser.username}
+            {itemToString(selectedEntity)}
           </Tag>
         </div>
       ) : (
-        <DropdownSearch
-          items={userSearchResults?.items || []}
-          keyAttribute="username"
-          itemTitle={({ username }) => username}
-          itemSubTitle={({ email }) => email}
+        <SearchDropdown
           placeholder={t("searchByOwnerId")}
           onSelect={handleSelect}
-          onChange={handleSearchChange}
-          invalid={isEmpty}
+          errorTitle={errorTitle}
+          retryLabel={t("retry")}
         />
       )}
       {isEmpty && (
