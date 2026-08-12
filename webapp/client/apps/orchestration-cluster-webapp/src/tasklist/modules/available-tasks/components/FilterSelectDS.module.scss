@@ -70,10 +70,11 @@
 	padding-left: 0.625rem;
 	padding-right: 2rem;
 
-	// The indicator span is the item's only direct <span> child (the label is bare
-	// text and the checkmark is an <svg>), so this targets it without relying on
-	// the DS package's generated class names.
-	> span {
+	// The DS renders its indicator span before the item's children, so target the
+	// first child specifically. Not `> span`, which would also hide the row-actions
+	// span on custom filters, and not the DS package's generated class names, which
+	// would break on a DS upgrade.
+	> span:first-child {
 		display: none;
 	}
 }
@@ -84,4 +85,59 @@
 	width: 1rem;
 	height: 1rem;
 	color: var(--primary-action-default);
+}
+
+// Custom filters carry edit/delete actions, so they need room for two buttons
+// alongside the checkmark.
+.customOption {
+	padding-right: 4.5rem;
+}
+
+.rowActions {
+	position: absolute;
+	// Clear of the checkmark's 0.5rem strip.
+	right: 2rem;
+	display: flex;
+	align-items: center;
+	gap: 0.125rem;
+}
+
+.rowAction {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	padding: 0;
+	border: none;
+	border-radius: 0.25rem;
+	background: transparent;
+	color: var(--neutral-foreground-subtle);
+	cursor: pointer;
+	opacity: 0;
+
+	svg {
+		width: 0.875rem;
+		height: 0.875rem;
+	}
+
+	// Revealed on row hover, and kept reachable without a pointer: the row is a
+	// menu item, so Radix moves focus to it with the arrow keys, and the buttons
+	// stay visible whenever the row is focused or highlighted.
+	.customOption:hover &,
+	.customOption[data-highlighted] &,
+	&:focus,
+	&:focus-visible {
+		opacity: 1;
+	}
+
+	&:hover {
+		background: var(--neutral-background-medium);
+		color: var(--neutral-foreground-strong);
+	}
+}
+
+.rowActionDanger:hover {
+	color: var(--danger-foreground-strong);
+	background: var(--danger-background-subtle);
 }

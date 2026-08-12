@@ -37,9 +37,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@camunda/design-system';
-import {Check, ChevronDown, Plus} from 'lucide-react';
+import {Check, ChevronDown, Pencil, Plus, Trash2} from 'lucide-react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {cn} from '#/shared/cn';
 import {isBuiltInFilter, type BuiltInFilter} from '#/tasklist/modules/available-tasks/searchSchema';
 import styles from './FilterSelectDS.module.scss';
 
@@ -54,11 +56,28 @@ type Props = {
 	filter: string;
 	onFilterChange: (filter: BuiltInFilter | string) => void;
 	onCreateFilter: () => void;
+	onEditFilter: (filterId: string) => void;
+	onDeleteFilter: (filterId: string) => void;
 };
 
-const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter}) => {
+const FilterSelectDS: React.FC<Props> = ({
+	filter,
+	onFilterChange,
+	onCreateFilter,
+	onEditFilter,
+	onDeleteFilter,
+}) => {
 	const {t} = useTranslation();
+	// Controlled so a row action can close the menu before its dialog opens —
+	// leaving the menu's layer under a dialog re-creates the stacked-layer problem
+	// documented in CollapsiblePanel.tsx.
+	const [isOpen, setIsOpen] = useState(false);
 	const customFilters = Object.entries(getStateLocally('tasklist.customFilters') ?? {});
+
+	function runRowAction(action: (filterId: string) => void, filterId: string) {
+		setIsOpen(false);
+		action(filterId);
+	}
 
 	function getCustomFilterLabel(filterId: string, name?: string): string {
 		return filterId === 'custom' || name === undefined ? t('tasklist.taskFilterPanelCustom') : name;
@@ -74,7 +93,7 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 	}
 
 	return (
-		<DropdownMenu>
+		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger
 				id="filter-select"
 				aria-label={t('tasklist.taskFiltersHeaderAria')}
@@ -111,12 +130,65 @@ const FilterSelectDS: React.FC<Props> = ({filter, onFilterChange, onCreateFilter
 								onFilterChange(next);
 							}}
 						>
-							{customFilters.map(([filterId, {name}]) => (
-								<DropdownMenuRadioItem key={filterId} value={filterId} className={styles.option}>
-									{getCustomFilterLabel(filterId, name)}
-									{filter === filterId ? <Check className={styles.optionCheck} aria-hidden /> : null}
-								</DropdownMenuRadioItem>
-							))}
+							{customFilters.map(([filterId, {name}]) => {
+								const label = getCustomFilterLabel(filterId, name);
+
+								return (
+									// The row's actions are plain buttons inside the item, not a
+									// DropdownMenuSub. A Sub alongside the item needs a wrapper div,
+									// which breaks Radix's menu-item collection — verified against the
+									// running app: the whole menu dismissed on hovering the trigger and
+									// leaked the body pointer-lock. A <button> inside this item is valid
+									// DOM (the item is a <div role="menuitemradio">, not a <button>) and
+									// adds no extra Radix layer.
+									<DropdownMenuRadioItem
+										key={filterId}
+										value={filterId}
+										className={cn(styles.option, styles.customOption)}
+									>
+										{label}
+										{filter === filterId ? <Check className={styles.optionCheck} aria-hidden /> : null}
+										<span className={styles.rowActions}>
+											<button
+												type="button"
+												className={styles.rowAction}
+												aria-label={`${t('tasklist.taskFilterPanelEdit')} ${label}`}
+												title={t('tasklist.taskFilterPanelEdit')}
+												// Radix activates the item on pointerdown, so both events have
+												// to be stopped or selecting the filter races the action.
+												onPointerDown={(event) => {
+													event.preventDefault();
+													event.stopPropagation();
+												}}
+												onClick={(event) => {
+													event.preventDefault();
+													event.stopPropagation();
+													runRowAction(onEditFilter, filterId);
+												}}
+											>
+												<Pencil aria-hidden />
+											</button>
+											<button
+												type="button"
+												className={cn(styles.rowAction, styles.rowActionDanger)}
+												aria-label={`${t('tasklist.taskFilterPanelDelete')} ${label}`}
+												title={t('tasklist.taskFilterPanelDelete')}
+												onPointerDown={(event) => {
+													event.preventDefault();
+													event.stopPropagation();
+												}}
+												onClick={(event) => {
+													event.preventDefault();
+													event.stopPropagation();
+													runRowAction(onDeleteFilter, filterId);
+												}}
+											>
+												<Trash2 aria-hidden />
+											</button>
+										</span>
+									</DropdownMenuRadioItem>
+								);
+							})}
 						</DropdownMenuRadioGroup>
 					</>
 				) : null}
