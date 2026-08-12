@@ -25,6 +25,7 @@ import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentInstanceLimits;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.HistoryItem;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
@@ -497,6 +498,236 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
       assertThat(body.getHistory())
           .singleElement()
           .satisfies(item -> assertThat(item.getHistoryItemId()).isEqualTo("item-1"));
+    }
+  }
+
+  @Nested
+  class ConfigurationFieldsTest {
+
+    @Test
+    void shouldMapHistoryItemToolsWithAllFields() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1")
+              .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getTools())
+          .singleElement()
+          .satisfies(
+              tool -> {
+                assertThat(tool.getName()).isEqualTo("search");
+                assertThat(tool.getDescription()).isEqualTo("A web search tool");
+                assertThat(tool.getElementId()).isEqualTo("searchTask");
+              });
+    }
+
+    @Test
+    void shouldMapHistoryItemToolWithNameOnlyOmittingNullOptionalFields() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1").tools(Arrays.asList(AgentTool.of("summarize")));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentTool tool =
+          body.getHistory().get(0).getTools().get(0);
+      assertThat(tool.getName()).isEqualTo("summarize");
+      assertThat(tool.getDescription()).isNull();
+      assertThat(tool.getElementId()).isNull();
+    }
+
+    @Test
+    void shouldMapHistoryItemModelAndProvider() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item = historyItem("item-1").model("gpt-4").provider("openai");
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getModel()).isEqualTo("gpt-4");
+      assertThat(mappedItem.getProvider()).isEqualTo("openai");
+    }
+
+    @Test
+    void shouldMapHistoryItemLimits() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item = historyItem("item-1").limits(AgentInstanceLimits.of(1000L, 10, 20));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceLimits limits =
+          body.getHistory().get(0).getLimits();
+      assertThat(limits.getMaxTokens()).isEqualTo(1000L);
+      assertThat(limits.getMaxModelCalls()).isEqualTo(10);
+      assertThat(limits.getMaxToolCalls()).isEqualTo(20);
+    }
+
+    @Test
+    void shouldRejectHistoryItemLimitsBelowMinimum() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").limits(AgentInstanceLimits.of(-2L, 0, 0)))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("maxTokens must be >= -1");
+    }
+
+    @Test
+    void shouldRejectHistoryItemMaxModelCallsBelowMinimum() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").limits(AgentInstanceLimits.of(1000L, -2, 0)))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("maxModelCalls must be >= -1");
+    }
+
+    @Test
+    void shouldRejectHistoryItemMaxToolCallsBelowMinimum() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").limits(AgentInstanceLimits.of(1000L, 10, -2)))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("maxToolCalls must be >= -1");
+    }
+
+    @Test
+    void shouldMapHistoryItemSystemPrompt() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1")
+              .systemPrompt(Collections.singletonList(AgentInstanceHistoryContent.text("be nice")));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getSystemPrompt()).hasSize(1);
+      assertThat(mappedItem.getSystemPrompt().get(0)).isInstanceOf(AgentInstanceTextContent.class);
+      assertThat(((AgentInstanceTextContent) mappedItem.getSystemPrompt().get(0)).getText())
+          .isEqualTo("be nice");
+    }
+
+    @Test
+    void shouldSendExplicitEmptyToolsAndSystemPromptDistinctFromAbsent() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1")
+              .tools(Collections.emptyList())
+              .systemPrompt(Collections.emptyList());
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getTools()).isNotNull().isEmpty();
+      assertThat(mappedItem.getSystemPrompt()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void shouldLeaveConfigurationFieldsNullWhenAbsentFromHistoryItem() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(historyItem("item-1")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getTools()).isNull();
+      assertThat(mappedItem.getModel()).isNull();
+      assertThat(mappedItem.getProvider()).isNull();
+      assertThat(mappedItem.getLimits()).isNull();
+      assertThat(mappedItem.getSystemPrompt()).isNull();
     }
   }
 
