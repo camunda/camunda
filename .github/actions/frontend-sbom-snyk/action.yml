@@ -60,9 +60,10 @@ runs:
 
     - name: Install dependencies with yarn
       if: inputs.package-manager == 'yarn'
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: yarn install --frozen-lockfile
+      uses: ./.github/actions/yarn-install-with-retry
+      with:
+        directory: ${{ inputs.directory }}
+        args: install --frozen-lockfile
 
     - name: Generate SBOM with npm
       if: inputs.package-manager == 'npm'
