@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -44,11 +46,8 @@ final class RestoreRequestTransformerTest {
   private static RestoreRequest restoreRequest() {
     return new RestoreRequest(
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        List.of(1L),
-        null,
-        null,
-        "elasticsearch",
-        false,
+        new TenantRestoreArguments(
+            new RestoreParameters(List.of(1L), null, null), "elasticsearch", false),
         false);
   }
 

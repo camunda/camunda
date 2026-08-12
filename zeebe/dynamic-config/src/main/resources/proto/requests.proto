@@ -144,14 +144,22 @@ message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }
 
-message RestoreRequest {
+message RestoreParameters {
   repeated int64 backupIds = 1;
   optional string from = 2;
   optional string to = 3;
-  string databaseType = 4;
-  bool continuousBackups = 5;
-  bool dryRun = 6;
-  string physicalTenantId = 7;
+}
+
+message RestoreArguments {
+  RestoreParameters parameters = 1;
+  string databaseType = 2;
+  bool continuousBackups = 3;
+}
+
+message RestoreRequest {
+  string physicalTenantId = 1;
+  RestoreArguments arguments = 2;
+  bool dryRun = 3;
 }
 
 message TopologyChangeResponse {

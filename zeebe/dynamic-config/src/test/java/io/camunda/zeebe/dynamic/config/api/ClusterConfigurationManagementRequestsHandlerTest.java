@@ -15,7 +15,9 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -41,11 +43,8 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
   private static RestoreRequest restoreRequest(final boolean dryRun) {
     return new RestoreRequest(
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        List.of(1L),
-        null,
-        null,
-        "elasticsearch",
-        false,
+        new TenantRestoreArguments(
+            new RestoreParameters(List.of(1L), null, null), "elasticsearch", false),
         dryRun);
   }
 

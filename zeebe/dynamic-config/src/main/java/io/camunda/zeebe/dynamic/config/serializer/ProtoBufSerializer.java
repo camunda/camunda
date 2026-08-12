@@ -30,7 +30,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
@@ -1641,39 +1643,63 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeRestoreRequest(final RestoreRequest request) {
-    final var builder = Requests.RestoreRequest.newBuilder();
-    builder.setPhysicalTenantId(request.physicalTenantId());
-    builder.addAllBackupIds(request.backupIds());
-    builder.setDatabaseType(request.databaseType());
-    builder.setContinuousBackups(request.continuousBackups());
-    builder.setDryRun(request.dryRun());
-    if (request.from() != null) {
-      builder.setFrom(request.from());
-    }
-    if (request.to() != null) {
-      builder.setTo(request.to());
-    }
-
-    return builder.build().toByteArray();
+    return Requests.RestoreRequest.newBuilder()
+        .setPhysicalTenantId(request.physicalTenantId())
+        .setArguments(encodeRestoreArguments(request.arguments()))
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
   }
 
   @Override
   public RestoreRequest decodeRestoreRequest(final byte[] encodedRequest) {
     try {
       final var request = Requests.RestoreRequest.parseFrom(encodedRequest);
-      final String from = request.hasFrom() ? request.getFrom() : null;
-      final String to = request.hasTo() ? request.getTo() : null;
       return new RestoreRequest(
           request.getPhysicalTenantId(),
-          request.getBackupIdsList(),
-          from,
-          to,
-          request.getDatabaseType(),
-          request.getContinuousBackups(),
+          decodeRestoreArguments(request.getArguments()),
           request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
+  }
+
+  private static Requests.RestoreArguments encodeRestoreArguments(
+      final TenantRestoreArguments arguments) {
+    return Requests.RestoreArguments.newBuilder()
+        .setParameters(encodeRestoreParameters(arguments.parameters()))
+        .setDatabaseType(arguments.databaseType())
+        .setContinuousBackups(arguments.continuousBackups())
+        .build();
+  }
+
+  private static TenantRestoreArguments decodeRestoreArguments(
+      final Requests.RestoreArguments arguments) {
+    return new TenantRestoreArguments(
+        decodeRestoreParameters(arguments.getParameters()),
+        arguments.getDatabaseType(),
+        arguments.getContinuousBackups());
+  }
+
+  private static Requests.RestoreParameters encodeRestoreParameters(
+      final RestoreParameters parameters) {
+    final var builder =
+        Requests.RestoreParameters.newBuilder().addAllBackupIds(parameters.backupIds());
+    if (parameters.from() != null) {
+      builder.setFrom(parameters.from());
+    }
+    if (parameters.to() != null) {
+      builder.setTo(parameters.to());
+    }
+    return builder.build();
+  }
+
+  private static RestoreParameters decodeRestoreParameters(
+      final Requests.RestoreParameters parameters) {
+    return new RestoreParameters(
+        parameters.getBackupIdsList(),
+        parameters.hasFrom() ? parameters.getFrom() : null,
+        parameters.hasTo() ? parameters.getTo() : null);
   }
 
   private static Mode toMode(final Requests.Mode mode) {

@@ -97,19 +97,20 @@ public final class RestoreValidator
 
   @VisibleForTesting
   void validateParameters(final RestoreRequest request) {
-    final var instantFrom = parseTimestamp(request.from(), "from");
-    final var instantTo = parseTimestamp(request.to(), "to");
+    final var parameters = request.arguments().parameters();
+    final var instantFrom = parseTimestamp(parameters.from(), "from");
+    final var instantTo = parseTimestamp(parameters.to(), "to");
     final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
-    final var hasBackupIds = !request.backupIds().isEmpty();
+    final var hasBackupIds = !parameters.backupIds().isEmpty();
     Preconditions.test(
         hasBackupIds && hasTimeRange,
         "Cannot specify both backupId and from/to parameters. Choose one approach.");
 
-    final var databaseType = request.databaseType().toLowerCase();
+    final var databaseType = request.arguments().databaseType().toLowerCase();
     switch (databaseType) {
       case "rdbms", "none" -> {
         Preconditions.test(
-            hasTimeRange && !request.continuousBackups(),
+            hasTimeRange && !request.arguments().continuousBackups(),
             "Time range restore (from/to) is only supported for continuous backups.");
 
         Preconditions.test(
@@ -128,18 +129,20 @@ public final class RestoreValidator
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
         Preconditions.test(!hasBackupIds, "No backupId specified");
         Preconditions.test(
-            request.backupIds().size() > 1,
+            parameters.backupIds().size() > 1,
             "Cannot restore from multiple backups against database type %s"
                 .formatted(databaseType));
       }
       default ->
-          throw new IllegalStateException("Invalid database type: " + request.databaseType());
+          throw new IllegalStateException(
+              "Invalid database type: " + request.arguments().databaseType());
     }
   }
 
   private Map<Integer, long[]> resolveBackups(final RestoreRequest request) {
-    if (!request.backupIds().isEmpty()) {
-      return resolveBackupsByPartition(request.backupIds());
+    final var backupIds = request.arguments().parameters().backupIds();
+    if (!backupIds.isEmpty()) {
+      return resolveBackupsByPartition(backupIds);
     }
     return resolveRdbmsRangeBackups(request);
   }
@@ -197,8 +200,8 @@ public final class RestoreValidator
   }
 
   private RestorableBackups findBackups(final RestoreRequest request) {
-    final Instant instantTo = parseTimestamp(request.to(), "to");
-    final Instant instantFrom = parseTimestamp(request.from(), "from");
+    final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
+    final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
     final var exportedPositions =
         exportedPositionSupplier == null
             ? null

@@ -27,8 +27,10 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
@@ -146,7 +148,12 @@ final class NewModelManagementApiEndpointsTest {
           public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
             return Either.right(
                 new RestoreResolvedRequest(
-                    Map.of(1, request.backupIds().stream().mapToLong(l -> l).toArray()), false));
+                    Map.of(
+                        1,
+                        request.arguments().parameters().backupIds().stream()
+                            .mapToLong(l -> l)
+                            .toArray()),
+                    false));
           }
         });
 
@@ -647,11 +654,8 @@ final class NewModelManagementApiEndpointsTest {
         handler.restore(
             new RestoreRequest(
                 PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                List.of(100L),
-                null,
-                null,
-                "elasticsearch",
-                false,
+                new TenantRestoreArguments(
+                    new RestoreParameters(List.of(100L), null, null), "elasticsearch", false),
                 true));
 
     // then — accepted, because toLegacyDefault projects the member back to RECOVERING
@@ -670,11 +674,10 @@ final class NewModelManagementApiEndpointsTest {
                     .restore(
                         new RestoreRequest(
                             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                            List.of(100L),
-                            null,
-                            null,
-                            "elasticsearch",
-                            false,
+                            new TenantRestoreArguments(
+                                new RestoreParameters(List.of(100L), null, null),
+                                "elasticsearch",
+                                false),
                             false))
                     .join())
         .hasMessageContaining("recovery mode");
