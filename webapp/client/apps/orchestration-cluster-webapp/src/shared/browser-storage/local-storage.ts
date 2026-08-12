@@ -20,6 +20,7 @@ const {
 	'tasklist.areNativeNotificationsEnabled': z.boolean(),
 	'tasklist.autoSelectNextTask': z.boolean(),
 	'tasklist.hasCompletedTask': z.boolean(),
+	'tasklist.hasConsentedToStartProcess': z.boolean(),
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
 	'operate.panelStates': z.record(z.string(), z.union([z.boolean(), z.array(z.number())])),
 });

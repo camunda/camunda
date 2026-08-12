@@ -9,6 +9,7 @@
 import EmptyMessageImage from '#/tasklist/modules/processes/empty-message-image.svg';
 import {ProcessesFilters} from '#/tasklist/modules/processes/components/ProcessesFilters';
 import {ProcessTile} from '#/tasklist/modules/processes/components/ProcessTile';
+import {FirstTimeProcessWarning} from '#/tasklist/modules/processes/components/FirstTimeProcessWarning';
 import {useStartProcess} from '#/tasklist/modules/processes/useStartProcess';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Button, Column, Grid, Layer, Link, Stack} from '@carbon/react';
@@ -135,7 +136,7 @@ const TasklistProcessesPage: React.FC<Props> = ({
 					</Stack>
 				</div>
 			</main>
-			{children}
+			<FirstTimeProcessWarning>{children}</FirstTimeProcessWarning>
 		</>
 	);
 };

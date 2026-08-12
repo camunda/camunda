@@ -36,7 +36,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 	const {t} = useTranslation();
 
 	return (
-		<main className={styles.container}>
+		<main id="main-content" className={styles.container}>
 			<CollapsiblePanel />
 			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasklist.tasksPanelLabel')}>
 				<Filters />
