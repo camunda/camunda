@@ -28,8 +28,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -42,22 +40,18 @@ public final class BpmnVariableMappingBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
-  private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final EventTriggerBehavior eventTriggerBehavior) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   /**
@@ -179,12 +173,7 @@ public final class BpmnVariableMappingBehavior {
       final var processor =
           expressionProcessor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
 
-      final var mappingsToEvaluate =
-          evaluateDuplicateOutputMappingTargetsInOrder
-              ? outputMappings.get()
-              : withoutSupersededDuplicateTargets(outputMappings.get());
-
-      for (final OutputMapping mapping : mappingsToEvaluate) {
+      for (final OutputMapping mapping : outputMappings.get()) {
         final var result =
             processor.evaluateVariableMappingExpression(
                 mapping.source(), elementInstanceKey, tenantId);
@@ -255,40 +244,5 @@ public final class BpmnVariableMappingBehavior {
     } else {
       return false;
     }
-  }
-
-  /**
-   * Reproduces the target-collision handling of the removed combined-FEEL-context builder, for the
-   * {@code evaluateDuplicateOutputMappingTargetsInOrder} kill-switch: a mapping whose target path
-   * collides with an earlier one (equal, or one a prefix of the other) replaces it outright,
-   * keeping the FIRST colliding mapping's position but the LAST one's value -- mirroring how
-   * re-inserting an existing key into a {@code LinkedHashMap} keeps its iteration position but
-   * replaces its value. The superseded mapping's source is dropped entirely and never evaluated.
-   */
-  static List<OutputMapping> withoutSupersededDuplicateTargets(final List<OutputMapping> mappings) {
-    record Survivor(int firstIndex, OutputMapping mapping) {}
-
-    final var survivors = new ArrayList<Survivor>();
-    for (int i = 0; i < mappings.size(); i++) {
-      final var mapping = mappings.get(i);
-      var firstIndex = i;
-      final var iterator = survivors.iterator();
-      while (iterator.hasNext()) {
-        final var existing = iterator.next();
-        if (collides(existing.mapping().targetPath(), mapping.targetPath())) {
-          firstIndex = Math.min(firstIndex, existing.firstIndex());
-          iterator.remove();
-        }
-      }
-      survivors.add(new Survivor(firstIndex, mapping));
-    }
-    survivors.sort(Comparator.comparingInt(Survivor::firstIndex));
-    return survivors.stream().map(Survivor::mapping).toList();
-  }
-
-  private static boolean collides(final List<String> a, final List<String> b) {
-    final var shorter = a.size() <= b.size() ? a : b;
-    final var longer = a.size() <= b.size() ? b : a;
-    return longer.subList(0, shorter.size()).equals(shorter);
   }
 }
