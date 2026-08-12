@@ -55,7 +55,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 
 /**
- * Rolling update test for secondary storage across mixed-version upgrades and rollbacks.
+ * Rolling update test for secondary storage across mixed-version upgrades.
  *
  * <p>The test drives a representative scenario across a rolling-update version boundary: it creates
  * identity resources, starts a process instance, advances it through a service task (job), message
@@ -161,10 +161,10 @@ final class SecondaryStorageRollingUpdateIT {
     final GenericContainer<?> storageContainer = storage.newContainer(network);
     final CamundaCluster cluster = storage.newCluster(network);
     final Collection<CamundaVolume> volumes = new LinkedList<>();
-    BrokerNode<?> oldVersionBroker = null;
-    BrokerNode<?> newVersionBroker = null;
-    final var oldVersionBrokerLogs = new ContainerLogBuffer();
-    final var newVersionBrokerLogs = new ContainerLogBuffer();
+    BrokerNode<?> broker0 = null;
+    BrokerNode<?> broker1 = null;
+    final var broker0Logs = new ContainerLogBuffer();
+    final var broker1Logs = new ContainerLogBuffer();
 
     try {
       LOGGER.info("Starting storage container for {}", storage.name);
@@ -182,27 +182,26 @@ final class SecondaryStorageRollingUpdateIT {
 
       final int oldNodeId = 0;
       final int newNodeId = 1;
-      oldVersionBroker = cluster.getBrokers().get(oldNodeId);
-      newVersionBroker = cluster.getBrokers().get(newNodeId);
-      oldVersionBroker.self().withLogConsumer(oldVersionBrokerLogs);
-      newVersionBroker.self().withLogConsumer(newVersionBrokerLogs);
-      final GatewayNode<?> oldVersionGateway = cluster.getGateways().get(String.valueOf(oldNodeId));
-      final GatewayNode<?> newVersionGateway = cluster.getGateways().get(String.valueOf(newNodeId));
+      broker0 = cluster.getBrokers().get(oldNodeId);
+      broker1 = cluster.getBrokers().get(newNodeId);
+      broker0.self().withLogConsumer(broker0Logs);
+      broker1.self().withLogConsumer(broker1Logs);
+      final GatewayNode<?> gateway0 = cluster.getGateways().get(String.valueOf(oldNodeId));
+      final GatewayNode<?> gateway1 = cluster.getGateways().get(String.valueOf(newNodeId));
 
-      updateBroker(oldVersionBroker, oldNodeId, from, storage);
-      updateBroker(newVersionBroker, newNodeId, from, storage);
+      updateBroker(broker0, oldNodeId, from, storage);
+      updateBroker(broker1, newNodeId, from, storage);
 
       // === Phase 1: both brokers on old version — deploy, start, drive to message subscription ===
       LOGGER.info("Starting brokers");
-      final CompletableFuture<Void> oldVersionStartFuture =
-          CompletableFuture.runAsync(oldVersionBroker::start);
+      final CompletableFuture<Void> broker0StartFuture = CompletableFuture.runAsync(broker0::start);
       awaitSecondOldBrokerStartDelay();
-      newVersionBroker.start();
-      oldVersionStartFuture.join();
+      broker1.start();
+      broker0StartFuture.join();
 
       LOGGER.info("Started brokers");
 
-      try (final var client = newClient(oldVersionGateway)) {
+      try (final var client = newClient(gateway0)) {
         LOGGER.info("Deploying process definition");
         deployProcessAndWaitForIt(client, RICH_PROCESS, "rolling-update-process.bpmn")
             .getProcessDefinitionKey();
@@ -213,34 +212,42 @@ final class SecondaryStorageRollingUpdateIT {
         testCluster(client);
       }
 
-      // === Phase 2: upgrade new broker, correlate message, user task becomes active ===
-      LOGGER.info("Stopping one broker to for upgrade");
-      newVersionBroker.stop();
+      // === Phase 2: upgrade broker 1, correlate message, user task becomes active ===
+      LOGGER.info("Stopping one broker for upgrade");
+      broker1.stop();
       LOGGER.info("Upgrading broker to new version");
-      updateBroker(newVersionBroker, newNodeId, to, storage);
-      newVersionBroker.start();
+      updateBroker(broker1, newNodeId, to, storage);
+      broker1.start();
 
-      try (final var client = newClient(newVersionGateway)) {
-        // create a second instance to exercise writes on the mixed-version cluster
+      try (final var client = newClient(gateway1)) {
+        // create instances to exercise writes on the mixed-version cluster. Process instance
+        // creation without an explicit business ID is dispatched round-robin across partitions
+        // (RequestDispatchStrategy#roundRobin), so calling this twice — matching the cluster's
+        // partitionsCount(2) below — guarantees both partitions (both brokers, both versions) get
+        // exercised here, not just whichever one the random round-robin offset happens to start on.
         LOGGER.info("=== Test Run 2 - New cluster version ===");
+        testCluster(client);
         testCluster(client);
       }
 
-      // === Phase 3: new broker restarts on old schema — complete process, verify new writes ===
-      LOGGER.info("Stopping new broker to complete rollback");
-      newVersionBroker.stop();
-      updateBroker(newVersionBroker, newNodeId, from, storage);
-      newVersionBroker.start();
+      // === Phase 3: upgrade broker 0 too, completing the rollout ===
+      // Downgrading a broker version is not a supported feature (confirmed with the dynamic-config
+      // owner) — a real rolling upgrade only ever moves forward, ending with every node on the new
+      // version. Do not reintroduce a downgrade step here; upgrade the remaining broker instead.
+      LOGGER.info("Stopping broker0 to complete the rollout");
+      broker0.stop();
+      updateBroker(broker0, oldNodeId, to, storage);
+      broker0.start();
 
-      try (final var client = newClient(oldVersionGateway)) {
-        // create a third instance to prove new writes work on the updated schema
-        LOGGER.info("=== Test Run 3 - Old cluster version again ===");
+      try (final var client = newClient(gateway0)) {
+        // create a third instance to prove writes still work once the cluster is fully upgraded
+        LOGGER.info("=== Test Run 3 - Fully upgraded cluster ===");
         testCluster(client);
       }
     } catch (final RuntimeException | Error e) {
       LOGGER.error("Test failed, dumping broker logs before rethrowing", e);
-      logBrokerContainerLogs("oldVersionBroker", oldVersionBroker, oldVersionBrokerLogs);
-      logBrokerContainerLogs("newVersionBroker", newVersionBroker, newVersionBrokerLogs);
+      logBrokerContainerLogs("broker0", broker0, broker0Logs);
+      logBrokerContainerLogs("broker1", broker1, broker1Logs);
       throw e;
     } finally {
       LOGGER.info("Stopping all components");
