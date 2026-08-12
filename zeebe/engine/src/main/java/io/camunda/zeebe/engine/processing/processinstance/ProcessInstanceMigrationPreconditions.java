@@ -145,12 +145,18 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' and type '%s' is mapped to \
       an element with id '%s' and different type '%s'. \
       Elements must be mapped to elements of the same type.""";
+  private static final String ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION =
+      """
+      Expected to migrate process instance '%s' \
+      but the agent instance with element id '%s' would be migrated to element '%s' \
+      that has no agent definition. \
+      An agent instance must always belong to an agent definition.""";
   private static final String ERROR_AGENT_DEFINITION_TYPE_CHANGED =
       """
       Expected to migrate process instance '%s' \
       but the agent instance element with id '%s' has agent definition type '%s' \
       while the mapped target element with id '%s' has a different agent definition type '%s'. \
-      An agent instance's agent definition type must not change on migration.""";
+      An agent instance's type must not change on migration.""";
   private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
       """
       Expected to migrate process instance '%s' \
@@ -607,12 +613,11 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the agent definition type is unchanged for an agent instance across the
-   * migration. An agent instance whose element carries an agent definition may only be migrated
-   * onto an element with the same agent definition type, or onto a plain element without an agent
-   * definition (in either direction). Migrating between two different agent definition types is
-   * rejected, because the migrated agent instance could not be re-resolved to a compatible agent
-   * definition on the target.
+   * Checks that the agent definition backing an agent instance is preserved across the migration.
+   * The method is only called for elements that already have an agent instance, so the source
+   * element always carries an agent definition. The migration is rejected when the mapped target
+   * element carries no agent definition (an agent instance must always belong to one) or carries an
+   * agent definition of a different type (an agent instance's type must not change).
    *
    * @param sourceProcessDefinition source process definition to resolve the source agent type
    * @param targetProcessDefinition target process definition to resolve the target agent type
@@ -620,7 +625,7 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param targetElementId the mapped target element id
    * @param processInstanceKey process instance key to be logged
    */
-  public static void requireSameAgentDefinitionType(
+  public static void requireCompatibleAgentDefinition(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String sourceElementId,
@@ -631,20 +636,28 @@ public final class ProcessInstanceMigrationPreconditions {
     final AgentDefinitionType targetType =
         resolveAgentDefinitionType(targetProcessDefinition, targetElementId);
 
-    if (sourceType == AgentDefinitionType.UNSPECIFIED
-        || targetType == AgentDefinitionType.UNSPECIFIED
-        || sourceType == targetType) {
+    if (sourceType == targetType) {
       return;
     }
 
-    final String reason =
-        String.format(
-            ERROR_AGENT_DEFINITION_TYPE_CHANGED,
-            processInstanceKey,
-            sourceElementId,
-            sourceType,
-            targetElementId,
-            targetType);
+    final String reason;
+    if (targetType == AgentDefinitionType.UNSPECIFIED) {
+      reason =
+          String.format(
+              ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION,
+              processInstanceKey,
+              sourceElementId,
+              targetElementId);
+    } else {
+      reason =
+          String.format(
+              ERROR_AGENT_DEFINITION_TYPE_CHANGED,
+              processInstanceKey,
+              sourceElementId,
+              sourceType,
+              targetElementId,
+              targetType);
+    }
     throw new ProcessInstanceMigrationPreconditionFailedException(
         reason, RejectionType.INVALID_STATE);
   }

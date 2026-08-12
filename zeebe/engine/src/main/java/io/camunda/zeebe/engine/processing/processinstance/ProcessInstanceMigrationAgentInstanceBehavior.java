@@ -18,8 +18,6 @@ import java.util.Map;
 
 public class ProcessInstanceMigrationAgentInstanceBehavior {
 
-  private static final long UNSET_AGENT_DEFINITION_KEY = -1L;
-
   private final StateWriter stateWriter;
   private final AgentInstanceState agentInstanceState;
   private final AgentDefinitionState agentDefinitionState;
@@ -34,10 +32,12 @@ public class ProcessInstanceMigrationAgentInstanceBehavior {
   }
 
   /**
-   * Rejects the migration when it would change the {@code AgentDefinitionType} backing any agent
-   * instance of the process instance. Every agent instance is validated, including orphaned ones
-   * whose owning element already completed and is therefore no longer part of the migrated element
-   * tree that {@link ProcessInstanceMigrationMigrateProcessor}'s per-element validation walks.
+   * Rejects the migration when it would leave any agent instance of the process instance without a
+   * backing agent definition of the same {@code AgentDefinitionType} — because an agent instance
+   * must always belong to an agent definition, and its type must not change. Every agent instance
+   * is validated, including orphaned ones whose owning element already completed and is therefore
+   * no longer part of the migrated element tree that {@link
+   * ProcessInstanceMigrationMigrateProcessor}'s per-element validation walks.
    *
    * @param mappedElementIds the source-to-target element id mapping resolved for this migration; an
    *     agent instance whose {@code elementId} has no entry keeps its current id
@@ -72,7 +72,7 @@ public class ProcessInstanceMigrationAgentInstanceBehavior {
     }
     final var sourceElementId = record.getElementId();
     final var targetElementId = mappedElementIds.getOrDefault(sourceElementId, sourceElementId);
-    ProcessInstanceMigrationPreconditions.requireSameAgentDefinitionType(
+    ProcessInstanceMigrationPreconditions.requireCompatibleAgentDefinition(
         sourceProcessDefinition,
         targetProcessDefinition,
         sourceElementId,
@@ -130,19 +130,37 @@ public class ProcessInstanceMigrationAgentInstanceBehavior {
             .setVersionTag(targetProcessDefinition.getVersionTag())
             .setElementId(targetElementId)
             .setAgentDefinitionKey(
-                resolveAgentDefinitionKey(targetProcessDefinition, targetElementId)));
+                resolveAgentDefinitionKey(
+                    targetProcessDefinition,
+                    targetElementId,
+                    agentInstanceKey,
+                    processInstanceKey)));
   }
 
   /**
    * Resolves the agent definition key the migrated agent instance should point at in the target
-   * process definition. Returns {@code -1} when the target element carries no agent definition,
-   * which is the allowed case of migrating an agent element onto a plain (non-agent) element.
+   * process definition. An agent instance must always belong to an agent definition, so the target
+   * element having none is a broken state that the migration preconditions already reject; if it is
+   * still reached here it is a bug rather than a rejectable user error.
    */
   private long resolveAgentDefinitionKey(
-      final DeployedProcess targetProcessDefinition, final String targetElementId) {
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final long agentInstanceKey,
+      final long processInstanceKey) {
     final var targetKey =
         agentDefinitionState.getAgentDefinitionKey(
             targetProcessDefinition.getKey(), BufferUtil.wrapString(targetElementId));
-    return targetKey == null ? UNSET_AGENT_DEFINITION_KEY : targetKey;
+    if (targetKey == null) {
+      throw new SafetyCheckFailedException(
+          String.format(
+              """
+              Expected to migrate agent instance with key '%d' of process instance with key '%d' \
+              to target element with id '%s', but that element has no agent definition. \
+              An agent instance must always belong to an agent definition. \
+              Please report this as a bug""",
+              agentInstanceKey, processInstanceKey, targetElementId));
+    }
+    return targetKey;
   }
 }

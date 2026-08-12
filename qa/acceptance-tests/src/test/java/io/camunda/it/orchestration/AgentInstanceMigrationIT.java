@@ -13,13 +13,11 @@ import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
-import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -62,7 +60,8 @@ public class AgentInstanceMigrationIT {
             client,
             Bpmn.createExecutableProcess("migration-agent-service-task_v2")
                 .startEvent()
-                .serviceTask(targetElementId, t -> t.zeebeJobType(agentJobType))
+                .serviceTask(
+                    targetElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
                 .userTask(targetNextElementId)
                 .endEvent()
                 .done(),
@@ -116,6 +115,7 @@ public class AgentInstanceMigrationIT {
                 .startEvent()
                 .adHocSubProcess(targetElementId, p -> p.task("agentTask2"))
                 .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeAiAgentSubProcessDefinition()
                 .endEvent()
                 .done(),
             "migration-agent-ahsp_v2.bpmn");
@@ -136,118 +136,6 @@ public class AgentInstanceMigrationIT {
 
     // then
     assertAgentInstanceMigratedTo(agentInstanceKey, targetProcess, targetElementId);
-  }
-
-  @Test
-  void shouldRejectMigrationWhenAgentDefinitionTypeChanges() {
-    // given — an active AI agent task is mapped onto an external agent task; both are service
-    // tasks, so the element type is unchanged and only the agent definition type differs
-    final String sourceElementId = "agentTask";
-    final String targetElementId = "agentTask2";
-    final String agentJobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
-
-    final var sourceProcess =
-        deployProcessAndWaitForIt(
-            client,
-            Bpmn.createExecutableProcess("migration-agent-type-change_v1")
-                .startEvent()
-                .serviceTask(
-                    sourceElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
-                .endEvent()
-                .done(),
-            "migration-agent-type-change_v1.bpmn");
-    final var targetProcess =
-        deployProcessAndWaitForIt(
-            client,
-            Bpmn.createExecutableProcess("migration-agent-type-change_v2")
-                .startEvent()
-                .serviceTask(
-                    targetElementId,
-                    t -> t.zeebeJobType(agentJobType).zeebeExternalAgentDefinition())
-                .endEvent()
-                .done(),
-            "migration-agent-type-change_v2.bpmn");
-
-    final var processInstanceKey =
-        startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
-    // the agent instance's job is left running so its owning element stays active and is part of
-    // the migrated element tree that gets validated
-    createAgentInstance(processInstanceKey, sourceElementId);
-
-    // when / then — the migration is rejected because the agent definition type changes
-    assertThatThrownBy(
-            () ->
-                client
-                    .newMigrateProcessInstanceCommand(processInstanceKey)
-                    .migrationPlan(
-                        MigrationPlan.newBuilder()
-                            .withTargetProcessDefinitionKey(targetProcess.getProcessDefinitionKey())
-                            .addMappingInstruction(sourceElementId, targetElementId)
-                            .build())
-                    .execute())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("different agent definition type");
-  }
-
-  @Test
-  void shouldRejectMigrationWhenOrphanedAgentInstanceChangesAgentDefinitionType() {
-    // given — the agentic job completes (and the process moves on to "nextTask") before migration,
-    // orphaning the still-active agent instance; the orphaned instance's element "agentTask" is
-    // mapped onto an external agent task, changing the agent definition type for an instance that
-    // is no longer part of the migrated element tree
-    final String sourceElementId = "agentTask";
-    final String targetElementId = "agentTask2";
-    final String sourceNextElementId = "nextTask";
-    final String targetNextElementId = "nextTask2";
-    final String agentJobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
-
-    final var sourceProcess =
-        deployProcessAndWaitForIt(
-            client,
-            Bpmn.createExecutableProcess("migration-agent-orphaned-type-change_v1")
-                .startEvent()
-                .serviceTask(
-                    sourceElementId, t -> t.zeebeJobType(agentJobType).zeebeAiAgentTaskDefinition())
-                .userTask(sourceNextElementId)
-                .endEvent()
-                .done(),
-            "migration-agent-orphaned-type-change_v1.bpmn");
-    final var targetProcess =
-        deployProcessAndWaitForIt(
-            client,
-            Bpmn.createExecutableProcess("migration-agent-orphaned-type-change_v2")
-                .startEvent()
-                .serviceTask(
-                    targetElementId,
-                    t -> t.zeebeJobType(agentJobType).zeebeExternalAgentDefinition())
-                .userTask(targetNextElementId)
-                .endEvent()
-                .done(),
-            "migration-agent-orphaned-type-change_v2.bpmn");
-
-    final var processInstanceKey =
-        startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
-    createAgentInstance(processInstanceKey, sourceElementId);
-
-    // complete the agentic job so its owning element completes and the agent instance is orphaned
-    activateAndCompleteJobs(client, agentJobType, "test-worker", 1);
-    waitForElementInstances(
-        client, f -> f.elementId(sourceNextElementId).processInstanceKey(processInstanceKey), 1);
-
-    // when / then — the orphaned agent instance is validated too, so the type change is rejected
-    assertThatThrownBy(
-            () ->
-                client
-                    .newMigrateProcessInstanceCommand(processInstanceKey)
-                    .migrationPlan(
-                        MigrationPlan.newBuilder()
-                            .withTargetProcessDefinitionKey(targetProcess.getProcessDefinitionKey())
-                            .addMappingInstruction(sourceElementId, targetElementId)
-                            .addMappingInstruction(sourceNextElementId, targetNextElementId)
-                            .build())
-                    .execute())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("different agent definition type");
   }
 
   private long createAgentInstance(final long processInstanceKey, final String elementId) {

@@ -72,7 +72,8 @@ public class MigrateAgentInstanceTest {
                 Bpmn.createExecutableProcess(targetProcessId)
                     .versionTag("v2")
                     .startEvent()
-                    .serviceTask("A2", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .serviceTask(
+                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                     .userTask("B2")
                     .endEvent()
                     .done())
@@ -134,13 +135,11 @@ public class MigrateAgentInstanceTest {
   }
 
   @Test
-  public void shouldKeepStaleElementIdWhenOwningElementIsRemovedFromTargetProcessDefinition() {
-    // given — service task "A" completes before a new version (v2) of the *same* process
-    // definition is deployed, dropping "A" entirely (a common case: requirements changed while
-    // instances were already running past it); since "A" has no active element instance at
-    // migration time, no mapping instruction is required or provided for it, and the target
-    // version does not define an element with this id either. This documents the current
-    // fallback behavior: the agent instance keeps its stale, no-longer-existing elementId
+  public void shouldRejectMigrationWhenOrphanedAgentInstanceOwningElementIsRemoved() {
+    // given — service task "A" completes, then a new v2 of the same process definition is deployed
+    // that drops "A". The agent instance created on "A" stays active (orphaned), but "A" no longer
+    // exists in v2 and is not mapped, so the orphaned instance could not keep an agent definition
+    // after migration — which an agent instance must always have
     final String processId = helper.getBpmnProcessId();
 
     engine
@@ -162,12 +161,7 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
-    final long agentInstanceKey =
-        engine
-            .agentInstances()
-            .withElementInstanceKey(agentTaskInstance.getKey())
-            .create()
-            .getKey();
+    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(AGENT_JOB_TYPE).await();
     engine.jobs().withType(AGENT_JOB_TYPE).activate();
@@ -181,9 +175,7 @@ public class MigrateAgentInstanceTest {
         .describedAs("The owning service task has completed before migration")
         .isTrue();
 
-    // deploy v2 of the same process definition only now, after "A" has already completed, to
-    // mirror the realistic sequence: the process model is corrected/simplified while instances
-    // are already running past the removed element
+    // deploy v2 of the same process definition, which no longer contains "A"
     final var deployment =
         engine
             .deployment()
@@ -198,34 +190,30 @@ public class MigrateAgentInstanceTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, processId);
 
-    // when — no mapping instruction is provided for "A" since it has no active element instance;
-    // v2 of the process definition does not define an element with id "A" either
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("B", "B2")
-        .migrate();
+    // when — "A" is not mapped: it has no active element instance and v2 has no "A" to map it to
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("B", "B2")
+            .expectRejection()
+            .migrate();
 
-    // then — the agent instance still migrates to version 2 of the process definition, but its
-    // elementId is left unchanged and now refers to an element that no longer exists in v2
-    Assertions.assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
-                .withRecordKey(agentInstanceKey)
-                .getFirst()
-                .getValue())
-        .describedAs(
-            "Definition fields are updated to point at version 2 of the (same) process "
-                + "definition")
-        .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .hasBpmnProcessId(processId)
-        .hasProcessDefinitionVersion(2)
-        .hasVersionTag("v2")
-        .describedAs(
-            "elementId keeps its stale value \"A\" since no mapping instruction was provided and "
-                + "v2 of the process definition no longer contains an element with this id")
-        .hasElementId("A");
+    // then — the orphaned agent instance is validated even though "A" is not part of the migrated
+    // element tree, so the migration is rejected
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%d' \
+                but the agent instance with element id 'A' would be migrated to element 'A' \
+                that has no agent definition. \
+                An agent instance must always belong to an agent definition.""",
+                processInstanceKey));
   }
 
   @Test
@@ -261,11 +249,13 @@ public class MigrateAgentInstanceTest {
                     .versionTag("v2")
                     .startEvent()
                     .parallelGateway("fork2")
-                    .serviceTask("A2", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                    .serviceTask(
+                        "A2", t -> t.zeebeJobType(AGENT_JOB_TYPE).zeebeAiAgentTaskDefinition())
                     .parallelGateway("join2")
                     .endEvent()
                     .moveToNode("fork2")
-                    .serviceTask("B", t -> t.zeebeJobType(otherJobType))
+                    .serviceTask(
+                        "B", t -> t.zeebeJobType(otherJobType).zeebeAiAgentTaskDefinition())
                     .connectTo("join2")
                     .done())
             .deploy();
@@ -387,6 +377,7 @@ public class MigrateAgentInstanceTest {
                     .adHocSubProcess(
                         "ahsp2",
                         ahsp -> {
+                          ahsp.zeebeAiAgentSubProcessDefinition();
                           ahsp.task("tool2");
                           ahsp.zeebeJobType(AGENT_JOB_TYPE);
                         })
@@ -577,9 +568,9 @@ public class MigrateAgentInstanceTest {
   }
 
   @Test
-  public void shouldResetAgentDefinitionKeyWhenTargetElementHasNoAgentDefinition() {
+  public void shouldRejectMigratingAgentInstanceToElementWithoutAgentDefinition() {
     // given — an agent-marked service task "A" is migrated onto a plain service task "A2" that
-    // carries no agent definition, the allowed agent-to-non-agent direction
+    // carries no agent definition; an agent instance must always belong to an agent definition
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
@@ -610,32 +601,31 @@ public class MigrateAgentInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .getFirst();
-    final long agentInstanceKey =
-        engine
-            .agentInstances()
-            .withElementInstanceKey(agentTaskInstance.getKey())
-            .create()
-            .getKey();
+    engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
 
     // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A2")
-        .migrate();
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A2")
+            .expectRejection()
+            .migrate();
 
-    // then — the agent instance no longer references any agent definition
-    Assertions.assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
-                .withRecordKey(agentInstanceKey)
-                .getFirst()
-                .getValue())
-        .hasElementId("A2")
-        .describedAs(
-            "agentDefinitionKey is reset because the target element has no agent definition")
-        .hasAgentDefinitionKey(-1L);
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%d' \
+                but the agent instance with element id 'A' would be migrated to element 'A2' \
+                that has no agent definition. \
+                An agent instance must always belong to an agent definition.""",
+                processInstanceKey));
   }
 
   private long agentDefinitionKey(final long processDefinitionKey, final String elementId) {
@@ -686,18 +676,18 @@ public class MigrateAgentInstanceTest {
     engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
 
     // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A2")
-        .expectRejection()
-        .migrate();
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A2")
+            .expectRejection()
+            .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+    Assertions.assertThat(rejection)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
@@ -707,7 +697,7 @@ public class MigrateAgentInstanceTest {
                 but the agent instance element with id 'A' has agent definition type 'AI_AGENT_TASK' \
                 while the mapped target element with id 'A2' has a different agent definition \
                 type 'EXTERNAL_AGENT'. \
-                An agent instance's agent definition type must not change on migration.""",
+                An agent instance's type must not change on migration.""",
                 processInstanceKey));
   }
 
@@ -767,20 +757,20 @@ public class MigrateAgentInstanceTest {
         .isTrue();
 
     // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A2")
-        .addMappingInstruction("B", "B2")
-        .expectRejection()
-        .migrate();
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A2")
+            .addMappingInstruction("B", "B2")
+            .expectRejection()
+            .migrate();
 
     // then — the orphaned agent instance is validated even though "A" is not part of the migrated
     // element tree, so the type change is rejected
-    Assertions.assertThat(
-            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+    Assertions.assertThat(rejection)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
@@ -790,14 +780,14 @@ public class MigrateAgentInstanceTest {
                 but the agent instance element with id 'A' has agent definition type 'AI_AGENT_TASK' \
                 while the mapped target element with id 'A2' has a different agent definition \
                 type 'EXTERNAL_AGENT'. \
-                An agent instance's agent definition type must not change on migration.""",
+                An agent instance's type must not change on migration.""",
                 processInstanceKey));
   }
 
   @Test
-  public void shouldAllowMigrationFromNonAgentToAgentElement() {
-    // given — a plain service task "A" (no agent definition) is mapped to an AI agent task "A2";
-    // the no-type-to-type direction must be allowed
+  public void shouldAllowMigratingElementWithoutAgentInstanceToAgentElement() {
+    // given — a plain service task "A" (no agent definition, no agent instance) is mapped to an AI
+    // agent task "A2". With no agent instance to preserve, the migration is allowed
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
@@ -843,7 +833,8 @@ public class MigrateAgentInstanceTest {
                     ProcessInstanceMigrationIntent.MIGRATED)
                 .withRecordKey(processInstanceKey)
                 .getFirst())
-        .describedAs("migrating a plain element onto an agent element is allowed")
+        .describedAs(
+            "migrating an element without an agent instance onto an agent element is allowed")
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 
@@ -890,18 +881,18 @@ public class MigrateAgentInstanceTest {
     engine.agentInstances().withElementInstanceKey(agentTaskInstance.getKey()).create();
 
     // when
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A2")
-        .expectRejection()
-        .migrate();
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A2")
+            .expectRejection()
+            .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+    Assertions.assertThat(rejection)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
@@ -911,7 +902,7 @@ public class MigrateAgentInstanceTest {
                 but the agent instance element with id 'A' has agent definition type 'AI_AGENT_TASK' \
                 while the mapped target element with id 'A2' has a different agent definition \
                 type 'EXTERNAL_AGENT'. \
-                An agent instance's agent definition type must not change on migration.""",
+                An agent instance's type must not change on migration.""",
                 processInstanceKey));
   }
 
