@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
@@ -3443,6 +3444,253 @@ public class CompensationEventExecutionTest {
             "adhoc-subprocess#innerInstance",
             "adhoc-subprocess",
             PROCESS_ID);
+  }
+
+  @Test
+  public void shouldCompleteCompensateAllAfterCompensationWasTerminatedByTerminateEndEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .embeddedSubProcess()
+            .startEvent()
+            .parallelGateway("inner-fork")
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .intermediateThrowEvent(
+                "inner-compensation-throw-event",
+                i -> i.compensateEventDefinition().compensateEventDefinitionDone())
+            .endEvent("inner-end")
+            .moveToNode("inner-fork")
+            .serviceTask("B", task -> task.zeebeJobType("B"))
+            .endEvent("terminate-end", EndEventBuilder::terminate)
+            .subProcessDone()
+            .serviceTask(
+                "C",
+                task ->
+                    task.zeebeJobType("C")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-C").zeebeJobType("Undo-C")))
+            .intermediateThrowEvent(
+                "compensation-throw-event",
+                i -> i.compensateEventDefinition().compensateEventDefinitionDone())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // A completes and the inner throw event starts compensating it; Undo-A is left pending
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("Undo-A")
+        .getFirst();
+
+    // the parallel branch reaches the terminate end event and terminates the pending compensation
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-C").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("Undo-C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void
+      shouldCompleteCompensateAllAfterCompensationEndEventWasTerminatedByTerminateEndEvent() {
+    // given a subprocess whose compensation is driven by a compensation *end* event (exercising
+    // EndEventProcessor), left pending when a parallel branch hits a terminate end event
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .embeddedSubProcess()
+            .startEvent()
+            .parallelGateway("inner-fork")
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .endEvent(
+                "inner-compensation-end",
+                e -> e.compensateEventDefinition().compensateEventDefinitionDone())
+            .moveToNode("inner-fork")
+            .serviceTask("B", task -> task.zeebeJobType("B"))
+            .endEvent("terminate-end", EndEventBuilder::terminate)
+            .subProcessDone()
+            .serviceTask(
+                "C",
+                task ->
+                    task.zeebeJobType("C")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-C").zeebeJobType("Undo-C")))
+            .intermediateThrowEvent(
+                "compensation-throw-event",
+                i -> i.compensateEventDefinition().compensateEventDefinitionDone())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // A completes and the compensation end event starts compensating it; Undo-A is left pending
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("Undo-A")
+        .getFirst();
+
+    // the parallel branch reaches the terminate end event and terminates the pending compensation
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-C").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("Undo-C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteCompensateAllAfterCompensationWasInterruptedByEventSubprocess() {
+    // given an interrupting event subprocess *inside* the subprocess: interrupting it terminates
+    // the
+    // pending compensation throw event while the subprocess completes (rather than terminates), so
+    // the orphaned subscription would strand the later root-level compensate-all
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .embeddedSubProcess()
+            .eventSubProcess(
+                "inner-event-subprocess",
+                eventSubProcess ->
+                    eventSubProcess
+                        .startEvent("interrupting-start")
+                        .message(m -> m.name("interrupt").zeebeCorrelationKeyExpression("\"key\""))
+                        .interrupting(true)
+                        .endEvent())
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .intermediateThrowEvent(
+                "inner-compensation-throw-event",
+                i -> i.compensateEventDefinition().compensateEventDefinitionDone())
+            .endEvent("inner-end")
+            .subProcessDone()
+            .serviceTask(
+                "C",
+                task ->
+                    task.zeebeJobType("C")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-C").zeebeJobType("Undo-C")))
+            .intermediateThrowEvent(
+                "compensation-throw-event",
+                i -> i.compensateEventDefinition().compensateEventDefinitionDone())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // A completes and the inner throw event starts compensating it; Undo-A is left pending
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("Undo-A")
+        .getFirst();
+
+    // the interrupting event subprocess terminates the pending compensation throw event
+    ENGINE
+        .message()
+        .withName("interrupt")
+        .withCorrelationKey("key")
+        .withVariables(Map.of())
+        .publish();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-C").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("Undo-C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
