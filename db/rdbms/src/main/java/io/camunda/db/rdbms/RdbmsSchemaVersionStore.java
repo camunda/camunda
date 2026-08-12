@@ -10,10 +10,6 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -46,7 +42,6 @@ public class RdbmsSchemaVersionStore {
   private static final String SCHEMA_VERSION_TABLE = "RDBMS_SCHEMA_VERSION";
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaVersionStore.class);
-
   private final DataSource dataSource;
   private final String prefix;
 
@@ -82,10 +77,10 @@ public class RdbmsSchemaVersionStore {
    *             #INFERRED_PRE_VERSIONING_SCHEMA_VERSION} (an existing 8.9.x database).
    *         <li>Otherwise → fresh database; skip the check entirely.
    *       </ul>
-   *   <li>Validates the transition using {@link VersionCompatibilityCheck}. Only a {@link
-   *       Compatible} result allows startup to continue. An {@link Incompatible} result throws a
-   *       {@link RdbmsSchemaVersionIncompatibleException}. An {@link Indeterminate} result (e.g.
-   *       the stored schema version is not a valid semantic version) aborts startup with an {@link
+   *   <li>Validates the transition. Only same-version, patch-upgrade, and next-minor-upgrade paths
+   *       allow startup to continue. Incompatible paths throw a {@link
+   *       RdbmsSchemaVersionIncompatibleException}. An indeterminate path (e.g. the stored schema
+   *       version is not a valid semantic version) aborts startup with an {@link
    *       IllegalStateException}.
    *   <li>Any unexpected error (e.g. a DB connection failure) causes startup to fail with an {@link
    *       IllegalStateException}.
@@ -116,16 +111,14 @@ public class RdbmsSchemaVersionStore {
         return;
       }
 
-      final var result =
-          VersionCompatibilityCheck.check(currentSchemaVersion, stableAppVersion.get());
-      if (result instanceof Compatible) {
+      final var result = isCompatibleUpgradePath(currentSchemaVersion, stableAppVersion.get());
+      if (result) {
         LOG.debug(
-            "[RDBMS Schema] Version check passed for prefix '{}': schema={}, app={}, result={}",
+            "[RDBMS Schema] Version check passed for prefix '{}': schema={}, app={}",
             prefix,
             currentSchemaVersion,
-            stableAppVersion.get(),
-            result.getClass().getSimpleName());
-      } else if (result instanceof Incompatible) {
+            stableAppVersion.get());
+      } else {
         LOG.error(
             "[RDBMS Schema] Illegal upgrade path for prefix '{}': schema={}, app={}. "
                 + "Upgrade sequentially ({} → next minor). Skipping minors is not supported.",
@@ -135,19 +128,6 @@ public class RdbmsSchemaVersionStore {
             currentSchemaVersion);
         throw new RdbmsSchemaVersionIncompatibleException(
             currentSchemaVersion, stableAppVersion.get());
-      } else if (result instanceof Indeterminate) {
-        LOG.error(
-            "[RDBMS Schema] Cannot determine version compatibility for prefix '{}': schema={}, app={}. "
-                + "The stored schema version may be invalid. Startup aborted.",
-            prefix,
-            currentSchemaVersion,
-            stableAppVersion.get());
-        throw new IllegalStateException(
-            "[RDBMS Schema] Cannot determine version compatibility: schema="
-                + currentSchemaVersion
-                + ", app="
-                + stableAppVersion.get()
-                + ". The stored schema version may be invalid. Startup aborted.");
       }
     } catch (final RdbmsSchemaVersionIncompatibleException | IllegalStateException e) {
       throw e;
@@ -155,6 +135,45 @@ public class RdbmsSchemaVersionStore {
       LOG.error("[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
       throw new IllegalStateException(
           "[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
+    }
+  }
+
+  /**
+   * Resolves the current schema-version facts for the upgrade-readiness endpoint, without side
+   * effects — unlike {@link #checkCompatibility()}, this never throws and never writes; it only
+   * reads. The caller is responsible for mapping these facts to upgrade-readiness states.
+   */
+  public CurrentSchemaVersion getCurrentSchemaVersion() {
+    if (applicationVersion == null) {
+      throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
+    }
+    if (dataSource == null) {
+      throw new IllegalStateException(
+          "[RDBMS Schema] dataSource is not configured for prefix '" + prefix + "'.");
+    }
+
+    try (final var connection = dataSource.getConnection()) {
+      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection, prefix);
+      if (currentSchemaVersion == null) {
+        return CurrentSchemaVersion.freshDatabase(prefix);
+      }
+
+      final var stableAppVersion = toStableVersion(applicationVersion);
+      return stableAppVersion
+          .map(s -> CurrentSchemaVersion.available(prefix, currentSchemaVersion, s))
+          .orElseThrow(
+              () ->
+                  new IllegalStateException(
+                      "[RDBMS Schema] cannot parse application version '"
+                          + applicationVersion
+                          + "' as a semantic version"));
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Schema] Failed to determine current schema version for prefix '{}' during "
+              + "upgrade-readiness check.",
+          prefix,
+          e);
+      return CurrentSchemaVersion.readFailure(prefix, e);
     }
   }
 
@@ -297,6 +316,42 @@ public class RdbmsSchemaVersionStore {
         .map(sv -> sv.major() + "." + sv.minor() + "." + sv.patch());
   }
 
+  private boolean isCompatibleUpgradePath(
+      final String currentSchemaVersion, final String stableAppVersion) {
+    final var parsedSchemaVersion = SemanticVersion.parse(currentSchemaVersion);
+    final var parsedAppVersion = SemanticVersion.parse(stableAppVersion);
+
+    if (parsedSchemaVersion.isEmpty() || parsedAppVersion.isEmpty()) {
+      LOG.error(
+          "[RDBMS Schema] Cannot determine version compatibility for prefix '{}': schema={}, app={}. "
+              + "The stored schema version may be invalid. Startup aborted.",
+          prefix,
+          currentSchemaVersion,
+          stableAppVersion);
+      throw new IllegalStateException(
+          "[RDBMS Schema] Cannot determine version compatibility: schema="
+              + currentSchemaVersion
+              + ", app="
+              + stableAppVersion
+              + ". The stored schema version may be invalid. Startup aborted.");
+    }
+
+    final var schemaVersion = parsedSchemaVersion.get();
+    final var appVersion = parsedAppVersion.get();
+    if (schemaVersion.compareTo(appVersion) == 0) {
+      return true;
+    }
+    if (schemaVersion.preRelease() != null || appVersion.preRelease() != null) {
+      return false;
+    }
+    if (schemaVersion.compareTo(appVersion) > 0) {
+      return false;
+    }
+
+    return schemaVersion.major() == appVersion.major()
+        && schemaVersion.minor() - appVersion.minor() >= -1;
+  }
+
   private void upsertSingleSchemaVersionRow(
       final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
@@ -330,6 +385,44 @@ public class RdbmsSchemaVersionStore {
         connection.prepareStatement("INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
       insertStmt.setString(1, stableVersion);
       insertStmt.executeUpdate();
+    }
+  }
+
+  public record CurrentSchemaVersion(
+      CurrentSchemaVersion.Kind kind,
+      String prefix,
+      Optional<String> schemaVersion,
+      Optional<String> stableApplicationVersion,
+      Optional<String> detail) {
+
+    static CurrentSchemaVersion available(
+        final String prefix, final String schemaVersion, final String stableApplicationVersion) {
+      return new CurrentSchemaVersion(
+          Kind.AVAILABLE,
+          prefix,
+          Optional.of(schemaVersion),
+          Optional.of(stableApplicationVersion),
+          Optional.empty());
+    }
+
+    static CurrentSchemaVersion freshDatabase(final String prefix) {
+      return new CurrentSchemaVersion(
+          Kind.FRESH_DATABASE, prefix, Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    static CurrentSchemaVersion readFailure(final String prefix, final Exception e) {
+      return new CurrentSchemaVersion(
+          Kind.READ_FAILURE,
+          prefix,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.of("failed to read schema version: " + e.getMessage()));
+    }
+
+    public enum Kind {
+      AVAILABLE,
+      FRESH_DATABASE,
+      READ_FAILURE
     }
   }
 }
