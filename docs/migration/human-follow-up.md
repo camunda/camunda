@@ -1403,6 +1403,32 @@ Not code fixes — for the Product Builder to raise with the Design System team.
 Kept at the bottom of this file deliberately, since everything above is an
 append-only scan log.
 
+- **2026-08-12 — no supported way to put a trailing action on a menu or select
+  row.** Wanted: each custom filter in the Tasklist filter picker showing a
+  hover-revealed "..." button with Edit/Delete, matching the overflow menu the
+  sidebar already renders on the same filters. There is no DS pattern for it and
+  both Radix routes fail, verified against the running app:
+  - **Inside `Select`**: an actions trigger placed in an open `SelectContent`
+    closed the Select on pointerdown, never opened its own menu, and leaked
+    `pointer-events: none` onto `<body>`. `stopPropagation` on
+    pointerdown/click does not help — the Select's dismissable layer closes as
+    focus moves into the nested layer. `SelectItem` also wraps children in
+    Radix's `ItemText`, whose content is cloned into the trigger when selected,
+    so a button placed there would render inside the closed trigger too.
+  - **Inside `DropdownMenu`**: pairing a `DropdownMenuRadioItem` with a
+    `DropdownMenuSub` inside a wrapper div broke the menu's item collection —
+    moving to the sub-trigger dismissed the entire menu and leaked the body lock
+    again. Radix menus expect items to be collection-managed descendants, which
+    rules out a row shaped as "one option plus one trailing control".
+  - **Shipped instead**: the picker is a `DropdownMenu` with a checked radio
+    group, a separator, a `+ New filter` item and a "Custom filters" group label.
+    Editing and deleting stay in the sidebar's overflow menu.
+  - **Ask**: a supported row-with-trailing-action pattern for menus and selects
+    — e.g. an `actions` / `trailingElement` slot on the item that renders the
+    control as a sibling inside the collection, the way `AppSidebar` items
+    already accept `trailingElement`. Related to the `AppSidebar` nested-button
+    item below: both come from items having no place to put a second control.
+
 - **2026-08-12 — deleting a custom filter leaves the whole page unclickable
   (`pointer-events: none` stuck on `<body>`).** Highest-severity DS issue found
   so far: the app looks fine but accepts no input at all, with zero dialogs on

@@ -314,6 +314,7 @@
 			"taskFilterPanelCustom": "Custom",
 			"taskFiltersCustomFilter": "Custom filter",
 			"taskFilterPanelCustomFilterActions": "Custom filter actions",
+			"taskFilterPanelCustomFiltersGroup": "Custom filters",
 			"taskFilterPanelEdit": "Edit",
 			"taskFilterPanelDelete": "Delete",
 			"taskFilterPanelNewFilter": "New filter",

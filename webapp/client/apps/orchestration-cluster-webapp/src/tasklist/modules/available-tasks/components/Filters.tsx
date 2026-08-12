@@ -17,6 +17,7 @@ import {queries} from '#/shared/http/queries';
 import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import {GhostSelect} from './GhostSelect';
+import {FilterSelectDS} from './FilterSelectDS';
 import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
 import {getCustomFilterSearch} from '../getCustomFilterSearch';
 import styles from './Filters.module.scss';
@@ -114,11 +115,63 @@ const Filters: React.FC = () => {
 
 	const customFilters = Object.entries(getStateLocally('tasklist.customFilters') ?? {});
 
+	const applyFilter = useCallback(
+		(newFilter: BuiltInFilter | string) => {
+			navigate({
+				to: '.',
+				search: newFilter === 'completed' ? {filter: newFilter, sortBy: 'completion'} : {filter: newFilter},
+			});
+		},
+		[navigate],
+	);
+
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<section className={cn(styles.panelHeader, styles.panelHeaderDS)} aria-label={t('tasklist.taskFiltersHeaderAria')}>
+				<FilterSelectDS
+					filter={filter}
+					onFilterChange={applyFilter}
+					onCreateFilter={() => {
+						setIsCustomFiltersModalOpen(true);
+					}}
+				/>
+				<CustomFiltersModal
+					filterId={undefined}
+					isOpen={isCustomFiltersModalOpen}
+					onClose={closeModal}
+					onSuccess={handleFilterSuccess}
+					onDelete={closeModal}
+				/>
+				<OverflowMenu
+					aria-label={t('tasklist.taskFiltersSortButton')}
+					iconDescription={t('tasklist.taskFiltersSortButton')}
+					renderIcon={ArrowDownWideNarrow}
+					size="md"
+					align="bottom"
+					menuOptionsClass={styles.overflowMenu}
+				>
+					{sortOptionsOrder.map((id) => (
+						<OverflowMenuItem
+							key={id}
+							aria-selected={sortBy === id}
+							itemText={
+								<div className={styles.sortItem}>
+									<CheckmarkIcon aria-label="" size={20} style={{visibility: sortBy === id ? undefined : 'hidden'}} />
+									{t(SORTING_OPTION_LABEL_KEYS[id])}
+								</div>
+							}
+							onClick={() => {
+								onSort(id);
+							}}
+						/>
+					))}
+				</OverflowMenu>
+			</section>
+		);
+	}
+
 	return (
-		<section
-			className={cn(styles.panelHeader, featureFlags.dsTasklistUI && styles.panelHeaderDS)}
-			aria-label={t('tasklist.taskFiltersHeaderAria')}
-		>
+		<section className={styles.panelHeader} aria-label={t('tasklist.taskFiltersHeaderAria')}>
 			<GhostSelect
 				id="filter-select"
 				hideLabel

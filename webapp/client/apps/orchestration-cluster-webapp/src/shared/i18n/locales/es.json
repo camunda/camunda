@@ -309,6 +309,7 @@
 			"taskFilterPanelUnassigned": "No asignada",
 			"taskFilterPanelCustom": "Personalizado",
 			"taskFilterPanelCustomFilterActions": "Acciones del filtro personalizado",
+			"taskFilterPanelCustomFiltersGroup": "Filtros personalizados",
 			"taskFilterPanelEdit": "Editar",
 			"taskFilterPanelDelete": "Eliminar",
 			"taskFilterPanelNewFilter": "Nuevo filtro",

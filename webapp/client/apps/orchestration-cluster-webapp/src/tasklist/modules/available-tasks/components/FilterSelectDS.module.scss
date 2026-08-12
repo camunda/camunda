@@ -1,0 +1,63 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+// DS-only (this whole file is imported by FilterSelectDS.tsx, which only renders
+// behind featureFlags.dsTasklistUI).
+
+// The picker is a DropdownMenu, so its trigger has to carry the select-trigger
+// look itself. Values mirror the DS SelectTrigger base (h-9, rounded-lg, px-3,
+// text-sm, border-input / bg-input-background) so the two controls stay
+// visually identical.
+.trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	height: 2.25rem;
+	padding: 0 0.75rem;
+	border: 1px solid var(--input);
+	border-radius: 0.5rem;
+	background: var(--input-background);
+	font-size: 0.875rem;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: all 0.2s;
+
+	&:hover {
+		background: var(--neutral-background-medium);
+	}
+
+	&:focus-visible {
+		outline: none;
+		border-color: var(--primary-border-strong);
+		box-shadow: 0 0 0 3px var(--ring);
+	}
+}
+
+.triggerLabel {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triggerIcon {
+	width: 1rem;
+	height: 1rem;
+	opacity: 0.5;
+	pointer-events: none;
+	flex-shrink: 0;
+}
+
+.menu {
+	min-width: 13rem;
+}
+
+.groupLabel {
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--neutral-foreground-subtle);
+}
