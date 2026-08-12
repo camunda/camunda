@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
@@ -178,6 +180,71 @@ public final class ActivatableJobsPushWithLeaseTest {
     assertThat(jobStream.getActivatedJobs().getFirst().jobRecord().getLeaseToken())
         .describedAs("a freshly created job pushed to a non-leasing stream carries no lease token")
         .isEmpty();
+  }
+
+  @Test
+  public void shouldNotPushTimedOutLeasedJobToNonLeasingStream() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final long timeout = 10L;
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTimeout(timeout).withLease().activate();
+    assertThat(batchRecord.getValue().getJobs().getFirst().getLeaseToken())
+        .describedAs("the job under test must actually be leased")
+        .isNotEmpty();
+    final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
+    final RecordingJobStream jobStream = registerStream(false);
+
+    // when
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+
+    // then
+    jobRecords(TIMED_OUT).withType(jobType).await();
+    awaitPushOrNotify(jobStream, notificationsBefore);
+    assertThat(jobStream.getActivatedJobs())
+        .describedAs("a timed-out job is never pushed, leased or not")
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotPushYieldedLeasedJobToNonLeasingStream() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
+    final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
+    assertThat(job.getLeaseToken())
+        .describedAs("the job under test must actually be leased")
+        .isNotEmpty();
+    final int notificationsBefore = JOB_STREAMER.notificationsForJob(jobType);
+    final RecordingJobStream jobStream = registerStream(false);
+
+    // when
+    ENGINE.job().withKey(jobKey).withType(jobType).ofInstance(job.getProcessInstanceKey()).yield();
+
+    // then
+    jobRecords(JobIntent.YIELDED).withType(jobType).await();
+    awaitPushOrNotify(jobStream, notificationsBefore);
+    assertThat(jobStream.getActivatedJobs())
+        .describedAs("a yielded job is never pushed, leased or not")
+        .isEmpty();
+  }
+
+  /**
+   * Waits until the job has settled on one of two outcomes: pushed to {@code jobStream}, or
+   * notified for polling. The caller asserts on which outcome actually occurred.
+   */
+  private void awaitPushOrNotify(
+      final RecordingJobStream jobStream, final int notificationsBefore) {
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        !jobStream.getActivatedJobs().isEmpty()
+                            || JOB_STREAMER.notificationsForJob(jobType) > notificationsBefore)
+                    .describedAs("the job must have settled by either being pushed or notified")
+                    .isTrue());
   }
 
   private RecordingJobStream registerStream(final boolean withLease) {
