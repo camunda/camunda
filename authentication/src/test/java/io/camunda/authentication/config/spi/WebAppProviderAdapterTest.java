@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 class WebAppProviderAdapterTest {
@@ -69,6 +71,16 @@ class WebAppProviderAdapterTest {
     assertThat(
             provider.webAppFor(get("/camunda", "/camunda/physical-tenants/tenant-a/tasklist/foo")))
         .contains("tasklist");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/physical-tenants/tasklist", "/physical-tenants//tasklist"})
+  void shouldReturnEmptyForMalformedPhysicalTenantPrefix(final String path) {
+    // when
+    final var webApp = provider.webAppFor(get(path));
+
+    // then
+    assertThat(webApp).isEmpty();
   }
 
   @Test
