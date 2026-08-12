@@ -730,8 +730,38 @@ class OperateProcessInstancePage {
   }
 
   async startModificationFlow(): Promise<void> {
-    await this.modifyInstanceButton.click();
+    await this.clickModifyInstanceButton();
     await this.continueButton.click();
+  }
+
+  // Below Carbon's `xlg` (1312px) breakpoint -- which Playwright's default
+  // viewport sits under -- the instance header collapses its operation
+  // buttons (Suspend/Cancel/Modify/Migrate) into an "Actions" menu instead of
+  // rendering them directly. Open that menu when present and click the
+  // corresponding item; otherwise click the direct button.
+  private async clickInstanceHeaderAction(
+    directButtonName: RegExp,
+    collapsedMenuItemName: string,
+  ): Promise<void> {
+    const actionsMenuButton = this.instanceHeader.getByRole('button', {
+      name: 'Actions',
+    });
+    const directButton = this.instanceHeader.getByRole('button', {
+      name: directButtonName,
+    });
+    // The header renders one of these two layouts asynchronously (it depends
+    // on data fetched after navigation), so wait for whichever one appears
+    // rather than snapshotting with .count() -- an immediate check would
+    // otherwise race the header's first render and find neither.
+    await actionsMenuButton.or(directButton).first().waitFor();
+    if (await actionsMenuButton.isVisible()) {
+      await actionsMenuButton.click();
+      await this.page
+        .getByRole('menuitem', {name: collapsedMenuItemName})
+        .click();
+      return;
+    }
+    await directButton.click();
   }
 
   async applyModifications(): Promise<void> {
@@ -812,7 +842,10 @@ class OperateProcessInstancePage {
   }
 
   async cancelInstance(instanceId: string): Promise<void> {
-    await this.cancelInstanceButton(instanceId).click();
+    await this.clickInstanceHeaderAction(
+      new RegExp(`Cancel Instance ${instanceId}`),
+      'Cancel',
+    );
     await this.applyButton.click();
   }
 
@@ -908,7 +941,7 @@ class OperateProcessInstancePage {
   }
 
   async clickModifyInstanceButton(): Promise<void> {
-    await this.modifyInstanceButton.click();
+    await this.clickInstanceHeaderAction(/modify instance/i, 'Modify');
   }
 
   async clickModifyDialogContinueButton(): Promise<void> {
