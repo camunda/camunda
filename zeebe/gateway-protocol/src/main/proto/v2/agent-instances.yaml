@@ -438,6 +438,7 @@ components:
       type: object
       required:
         - agentInstanceKey
+        - agentDefinitionKey
         - status
         - definition
         - metrics
@@ -460,6 +461,10 @@ components:
           description: The unique key for this agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+        agentDefinitionKey:
+          description: The key of the agent definition this agent instance runs on.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKey'
         status:
           $ref: '#/components/schemas/AgentInstanceStatusEnum'
         definition:
