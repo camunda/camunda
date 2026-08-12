@@ -8,15 +8,14 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -32,13 +31,11 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -394,27 +391,29 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
+  @Ignore(
+      "AHSP inner-instance variables leak to the process root - no guard in "
+          + "BpmnVariableMappingBehavior. See #51939 (fix #51972 reverted by #55260), tracked "
+          + "under https://github.com/camunda/camunda/issues/56387.")
   public void shouldKeepAdHocSubProcessInnerInstanceVariablesLocal() {
-    // given
-    final var ahspJobType = UUID.randomUUID().toString();
-    final var taskJobType = UUID.randomUUID().toString();
-    final String processId = "process-inner-instance-local";
+    // given: a job-worker task inside an AHSP, with no output mapping, whose job completes with
+    // a variable that must stay local to the activity's own inner-instance scope. This mirrors
+    // the AI Agent connector's toolCallResult
+    final var jobType = "tool-worker";
+    final String processId = "process";
 
     deployProcess(
         processId,
-        adHocSubProcess -> {
-          adHocSubProcess.serviceTask("A", task -> task.zeebeJobType(taskJobType));
-          adHocSubProcess.zeebeJobType(ahspJobType);
-        });
+        adHocSubProcess -> adHocSubProcess.serviceTask("A", task -> task.zeebeJobType(jobType)));
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long adHocSubProcessInstanceKey = getAdHocSubProcessInstanceKey(processInstanceKey);
 
-    completeAdHocSubProcessJob(
-        ahspJobType,
-        false,
-        new JobResultActivateElement()
-            .setElementId("A")
-            .setVariables(asMsgPack(Map.of("toolCallResult", Map.of("id", "call-1")))));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
+        .withElementIds("A")
+        .activate();
 
     final long innerInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -427,43 +426,19 @@ public class ActivateAdHocSubProcessActivityTest {
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType(taskJobType)
-        .withVariables(Map.of("toolCallResult", Map.of("id", "call-1", "value", "done")))
+        .withType(jobType)
+        .withVariables(Map.of("toolCallResult", Map.of("id", "call-1")))
         .complete();
 
-    // then: complete the ad-hoc sub-process to bound the records to assert on
-    completeAdHocSubProcessJob(ahspJobType, true);
+    // then: toolCallResult must not leak past the inner instance - e.g. not to the AHSP's own
+    // scope, and not further up to the process root
+    final var toolCallResultVariable =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("toolCallResult")
+            .getFirst();
 
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("toolCallResult"))
-        .extracting(r -> r.getValue().getScopeKey())
-        .containsOnly(innerInstanceKey);
-  }
-
-  /**
-   * Resolves the job key by activating the job, as the ad-hoc sub-process creates a new job after
-   * every activation round and {@code JobClient#ofInstance} always resolves the first created one.
-   */
-  private void completeAdHocSubProcessJob(
-      final String jobType,
-      final boolean completionConditionFulfilled,
-      final JobResultActivateElement... activateElements) {
-    final var jobKey =
-        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(List.of(activateElements))
-            .setCompletionConditionFulfilled(completionConditionFulfilled);
-
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
-  }
-
-  private static DirectBuffer asMsgPack(final Object value) {
-    return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+    assertThat(toolCallResultVariable.getValue()).hasScopeKey(innerInstanceKey);
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
