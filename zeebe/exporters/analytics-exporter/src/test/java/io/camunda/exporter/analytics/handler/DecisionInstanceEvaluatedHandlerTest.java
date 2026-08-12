@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
@@ -25,6 +26,7 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,10 +54,16 @@ class DecisionInstanceEvaluatedHandlerTest {
   }
 
   private static Record<?> evaluatedRecord(final String tenantId) {
+    return evaluatedRecord(tenantId, List.of(FACTORY.generateObject(EvaluatedDecisionValue.class)));
+  }
+
+  private static Record<?> evaluatedRecord(
+      final String tenantId, final List<EvaluatedDecisionValue> evaluatedDecisions) {
     final var value =
         ImmutableDecisionEvaluationRecordValue.builder()
             .from(FACTORY.generateObject(DecisionEvaluationRecordValue.class))
             .withTenantId(tenantId)
+            .withEvaluatedDecisions(evaluatedDecisions)
             .build();
     return FACTORY.generateRecord(
         ValueType.DECISION_EVALUATION,
@@ -89,6 +97,33 @@ class DecisionInstanceEvaluatedHandlerTest {
                       .sum();
               assertThat(total).isEqualTo(2);
             });
+  }
+
+  @Test
+  void shouldCountOncePerRecordWhenSeveralDecisionsAreEvaluated() {
+    // given a DRG evaluation: the requested decision plus its required sub-decisions
+    final Record<DecisionEvaluationRecordValue> record =
+        typed(
+            evaluatedRecord(
+                "tenant-a",
+                List.of(
+                    FACTORY.generateObject(EvaluatedDecisionValue.class),
+                    FACTORY.generateObject(EvaluatedDecisionValue.class),
+                    FACTORY.generateObject(EvaluatedDecisionValue.class))));
+    assertThat(record.getValue().getEvaluatedDecisions()).hasSize(3);
+
+    // when
+    handler.handle(record);
+
+    // then
+    assertThat(counter())
+        .isPresent()
+        .hasValueSatisfying(
+            metric ->
+                assertThat(metric.getLongSumData().getPoints())
+                    .singleElement()
+                    .extracting(LongPointData::getValue)
+                    .isEqualTo(1L));
   }
 
   @Test
