@@ -80,7 +80,7 @@ jobs:
 
   fe-type-check:
     if: inputs.runFeTests
-    name: "Tool /  Front End - Type check"
+    name: "Tool / Front End - Type check"
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions: {} # GITHUB_TOKEN unused in this job
