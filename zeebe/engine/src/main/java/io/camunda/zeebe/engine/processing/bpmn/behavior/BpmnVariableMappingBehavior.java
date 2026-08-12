@@ -86,7 +86,7 @@ public final class BpmnVariableMappingBehavior {
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
       final var result =
-          processor.evaluateVariableMappingExpression(mapping.source(), scopeKey, tenantId);
+          processor.evaluateVariableMappingSourceExpression(mapping.source(), scopeKey, tenantId);
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
@@ -175,7 +175,7 @@ public final class BpmnVariableMappingBehavior {
 
       for (final OutputMapping mapping : outputMappings.get()) {
         final var result =
-            processor.evaluateVariableMappingExpression(
+            processor.evaluateVariableMappingSourceExpression(
                 mapping.source(), elementInstanceKey, tenantId);
         if (result.isLeft()) {
           return Either.left(result.getLeft());
