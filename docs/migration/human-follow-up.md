@@ -1368,6 +1368,53 @@ Not code fixes — for the Product Builder to raise with the Design System team.
 Kept at the bottom of this file deliberately, since everything above is an
 append-only scan log.
 
+- **2026-08-12 — deleting a custom filter leaves the whole page unclickable
+  (`pointer-events: none` stuck on `<body>`).** Highest-severity DS issue found
+  so far: the app looks fine but accepts no input at all, with zero dialogs on
+  screen. Reproduced and traced by observing `document.body.style` mutations
+  through the delete flow:
+
+  | step | body `pointer-events` | dialogs | poppers |
+  |------|----------------------|---------|---------|
+  | OverflowMenu opens | `none` | 0 | 1 |
+  | menu closes, AlertDialog opens | cleared | 1 | 0 |
+  | AlertDialog closes | `none` | 0 | 0 |
+
+  The third step re-locks `<body>` and nothing ever restores it. `<Modal danger>`
+  renders a Radix `AlertDialog`, which locks the body while a layer is open and
+  restores it once the close sequence settles. Deleting a filter unmounts the
+  filter row — and the `OverflowMenu` that launched the dialog — in the same
+  commit that closes the dialog, so Radix's layer count never returns to zero
+  and the restore never fires. Needs the deleted filter to be the active one
+  (that pulls a `navigate()` into the same commit), which is why it reads as
+  intermittent.
+  - **Likely root cause, see the next item**: `AppSidebar` forces consumers to
+    nest a `<button>` inside its own `<button>`. That invalid DOM is a very
+    plausible reason the dismissable-layer bookkeeping loses track.
+  - **App-side workaround**: `CollapsiblePanel.tsx` now clears the leaked inline
+    style on the next frame after a delete, but only once no Radix layer remains
+    (so a legitimately open layer keeps its lock). Flag-gated — Carbon's Modal
+    has no body lock and its path is untouched.
+  - **Ask**: fix the layer accounting so closing a dialog whose trigger unmounted
+    in the same commit still restores `pointer-events`. A stuck body lock takes
+    the entire application down, so this deserves priority over the styling items
+    in this list.
+
+- **2026-08-12 — `AppSidebar` renders nav items as `<button>` with no slot for
+  trailing actions, forcing invalid nested buttons.** `NavItemRow` wraps each
+  item in `<button data-slot="app-sidebar-item">`. Tasklist's custom filters need
+  a per-row overflow menu, whose trigger is itself a `<button>`, so the result is
+  a button nested inside a button. React logs it as an error on every render:
+  `In HTML, <button> cannot be a descendant of <button>. This will cause a
+  hydration error.` Confirmed absent from the Carbon UI (zero `button button`
+  matches on 3001), so the migration introduced it.
+  - **Consequences**: invalid HTML, a hydration-error risk, confused assistive
+    tech (nested controls), and probably the pointer-lock leak above.
+  - **Ask**: give `AppSidebar` items a dedicated trailing-action/`actions` slot
+    rendered as a sibling of the row control rather than a descendant, so
+    per-item menus don't have to nest interactive elements. Alternatively let the
+    row render as a non-button element when it carries actions.
+
 - **2026-08-12 — `Select` trigger has no light-mode hover state, which costs
   affordance.** Checked the DS source directly
   (`src/components/ui/select.tsx:45`, the `SelectTrigger` cva base): the only

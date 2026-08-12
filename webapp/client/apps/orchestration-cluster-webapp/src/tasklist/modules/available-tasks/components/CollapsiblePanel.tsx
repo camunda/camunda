@@ -112,6 +112,35 @@ const CollapsiblePanel: React.FC = () => {
 		storeStateLocally('tasklist.customFilters', remainingFilters);
 	}, []);
 
+	// DS-only workaround for a Radix body-lock leak. The compat `<Modal danger>`
+	// renders a Radix AlertDialog, which sets `pointer-events: none` on <body>
+	// while a layer is open and restores it once the layer's close sequence
+	// settles. Deleting a filter tears down the row (and the OverflowMenu that
+	// launched the dialog) in the same commit that closes the dialog, so Radix's
+	// layer bookkeeping never returns to zero and the style is never restored —
+	// leaving the whole page unable to receive clicks with no dialog on screen.
+	// Observed sequence: menu open sets `none`, menu close clears it, dialog
+	// close sets `none` again with no matching restore.
+	// Carbon's own Modal has no body lock, so the flag-off path is left exactly
+	// as it was. Reported to the DS team in docs/migration/human-follow-up.md.
+	const releaseLeakedPointerLock = useCallback(() => {
+		if (!featureFlags.dsTasklistUI) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			// Only intervene once every Radix layer is genuinely gone, so a
+			// legitimately open dialog or popover keeps its own lock.
+			const openLayer = document.querySelector(
+				'[role="dialog"], [role="alertdialog"], [data-radix-popper-content-wrapper]',
+			);
+
+			if (openLayer === null && document.body.style.pointerEvents === 'none') {
+				document.body.style.pointerEvents = '';
+			}
+		});
+	}, []);
+
 	const handleDelete = useCallback(() => {
 		deleteFilter(customFilterToDelete!);
 
@@ -123,7 +152,8 @@ const CollapsiblePanel: React.FC = () => {
 		}
 
 		setCustomFilterToDelete(undefined);
-	}, [deleteFilter, customFilterToDelete, filter, navigate]);
+		releaseLeakedPointerLock();
+	}, [deleteFilter, customFilterToDelete, filter, navigate, releaseLeakedPointerLock]);
 
 	const handleModalDelete = useCallback(
 		(filterId: string) => {
@@ -135,8 +165,9 @@ const CollapsiblePanel: React.FC = () => {
 			});
 
 			closeModal();
+			releaseLeakedPointerLock();
 		},
-		[deleteFilter, navigate, closeModal],
+		[deleteFilter, navigate, closeModal, releaseLeakedPointerLock],
 	);
 
 	const filtersModal = (
