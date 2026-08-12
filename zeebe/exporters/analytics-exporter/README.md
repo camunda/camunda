@@ -165,11 +165,11 @@ variables, or any other end-user data.
 | `INCIDENT`                  | `CREATED`           | `camunda.process.incident.created`    | Emitted for every raised incident.                                                                             |
 | `INCIDENT`                  | `RESOLVED`          | `camunda.process.incident.resolved`   | Emitted for every resolved incident.                                                                           |
 | `PROCESS`                   | `CREATED`           | `camunda.process.definition.created`  | Emitted once per process definition, so a deployment of several processes produces one event each.             |
-| `PROCESS`                   | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per partition when a process definition is deleted; deduplicate downstream on the definition key. |
+| `PROCESS`                   | `DELETED`           | `camunda.process.definition.deleted`  | Emitted once per deleted process definition.                                                                   |
 | `DECISION`                  | `CREATED`           | `camunda.decision.definition.created` | Emitted once per decision in a deployed decision requirements graph.                                           |
-| `DECISION`                  | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per partition when a decision is deleted; deduplicate downstream on the decision key.             |
+| `DECISION`                  | `DELETED`           | `camunda.decision.definition.deleted` | Emitted once per deleted decision definition.                                                                  |
 | `FORM`                      | `CREATED`           | `camunda.form.definition.created`     | Emitted once per deployed form.                                                                                |
-| `FORM`                      | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per partition when a form is deleted; deduplicate downstream on the form key.                     |
+| `FORM`                      | `DELETED`           | `camunda.form.definition.deleted`     | Emitted once per deleted form definition.                                                                      |
 | `AGENT_INSTANCE`            | `CREATED`           | `camunda.agent.instance.created`      | Emitted for every created agent instance.                                                                      |
 | `AGENT_INSTANCE`            | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                                    |
 | —                           | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                                       |
