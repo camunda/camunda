@@ -844,7 +844,7 @@ jobs:
                 return 0
               fi
 
-              if echo "$out" | grep -Eq 'HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF'; then
+              if echo "$out" | grep -Eq 'HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF|tls:|certificate'; then
                 if (( attempt >= max_attempts )); then
                   echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
                   echo "$out" >&2
