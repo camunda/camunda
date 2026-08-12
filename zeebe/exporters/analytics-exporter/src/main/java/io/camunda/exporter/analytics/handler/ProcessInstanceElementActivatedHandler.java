@@ -60,7 +60,7 @@ public final class ProcessInstanceElementActivatedHandler
     }
     // Counts once per root process instance regardless of start trigger (client API, message,
     // timer, signal, conditional); the parent-key guard excludes call-activity children. This
-    // population is assumed equal to the licence RPI population, pending engine-team validation.
+    // population is assumed equal to the license RPI population, pending engine-team validation.
     if (value.getBpmnElementType() == BpmnElementType.PROCESS
         && value.getParentProcessInstanceKey() == NO_PARENT_INSTANCE) {
       emitProcessInstanceCreated(record, value);
