@@ -8,15 +8,20 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -79,8 +84,12 @@ public class UserTaskCreatingHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdForNewVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForNewVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 110;
@@ -101,16 +110,18 @@ public class UserTaskCreatingHandlerTest {
                             .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(userTaskRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(flowNodeInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, userTaskRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(flowNodeInstanceKey), index));
   }
 
   @Test
-  void shouldGenerateIdForPreviousVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForPreviousVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records referencing 8.6 records, the recordKey has to be less than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 90;
@@ -132,10 +143,10 @@ public class UserTaskCreatingHandlerTest {
                             .build()));
 
     // when
-    final var idList = underTest.generateIds(userTaskRecord);
+    final var idAndIndexList = underTest.extractIdAndIndexes(indexLocator, userTaskRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(recordKey));
+    assertThat(idAndIndexList).containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
   }
 
   @Test

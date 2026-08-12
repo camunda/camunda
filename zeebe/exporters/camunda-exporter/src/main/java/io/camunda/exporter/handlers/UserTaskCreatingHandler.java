@@ -30,7 +30,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTaskRecordValue> {
+public class UserTaskCreatingHandler
+    implements OrdinalIndexExportHandler<TaskEntity, UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS = EnumSet.of(UserTaskIntent.CREATING);
 

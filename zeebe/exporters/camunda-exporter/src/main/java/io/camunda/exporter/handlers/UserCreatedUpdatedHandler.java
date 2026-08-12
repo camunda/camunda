@@ -19,7 +19,8 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, UserRecordValue> {
+public class UserCreatedUpdatedHandler
+    implements MainIndexExporterHandler<UserEntity, UserRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(UserIntent.CREATED, UserIntent.UPDATED);
   private final String indexName;

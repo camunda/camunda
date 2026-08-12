@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DecisionEvaluationHandler
-    implements ExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
+    implements OrdinalIndexExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
   private static final String ID_PATTERN = "%s-%d";

@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 
 public class TenantEntityRemovedHandler
-    implements ExportHandler<TenantMemberEntity, TenantRecordValue> {
+    implements MainIndexExporterHandler<TenantMemberEntity, TenantRecordValue> {
 
   private final String indexName;
 

@@ -19,6 +19,11 @@ public class TenantEntityAuditLogTransformer implements AuditLogTransformer<Tena
   }
 
   @Override
+  public Class<TenantRecordValue> getRecordValueType() {
+    return TenantRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<TenantRecordValue> record, final AuditLogEntry log) {
     final TenantRecordValue value = record.getValue();
     log.setEntityKey(value.getTenantId())

@@ -19,7 +19,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import java.util.Set;
 
 public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler
-    extends AbstractCorrelatedMessageSubscriptionHandler<ProcessMessageSubscriptionRecordValue> {
+    extends AbstractCorrelatedMessageSubscriptionHandler<ProcessMessageSubscriptionRecordValue>
+    implements OrdinalIndexExportHandler<
+        CorrelatedMessageSubscriptionEntity, ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ProcessMessageSubscriptionIntent.CORRELATED);

@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Objects;
 
@@ -42,12 +45,20 @@ import java.util.Objects;
  */
 public class AuditLogHandler<R extends RecordValue>
     extends AbstractAuditLogHandler<AuditLogEntity, R> {
+  private final AuditLogIndexLocator<R> auditLogIndexLocator;
 
   public AuditLogHandler(
       final String indexName,
       final AuditLogTransformer<R> transformer,
       final AuditLogConfiguration configuration) {
     super(indexName, transformer, configuration);
+
+    // vary the logic we use for picking indexes based on what kind of record we are processing.
+    if (StorageOrdinalKeyRelated.class.isAssignableFrom(transformer.getRecordValueType())) {
+      auditLogIndexLocator = this::locateOrdinalIndex;
+    } else {
+      auditLogIndexLocator = this::locateMainIndex;
+    }
   }
 
   @Override
@@ -113,6 +124,20 @@ public class AuditLogHandler<R extends RecordValue>
     return transformer;
   }
 
+  TargetIndex locateMainIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
+    return indexLocator.locateMainIndex(getIndexName());
+  }
+
+  TargetIndex locateOrdinalIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
+    return indexLocator.locateOrdinalIndex(
+        getIndexName(), (StorageOrdinalKeyRelated) record.getValue());
+  }
+
+  @Override
+  TargetIndex locateTargetIndex(final TargetIndexLocator indexLocator, final Record<R> record) {
+    return auditLogIndexLocator.locate(indexLocator, record);
+  }
+
   private AuditLogOperationResult mapResult(final AuditLogEntry log) {
     return Objects.nonNull(log.getResult())
         ? AuditLogOperationResult.valueOf(log.getResult().name())
@@ -142,5 +167,9 @@ public class AuditLogHandler<R extends RecordValue>
         .map(AuditLogTenant::scope)
         .map(t -> io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope.valueOf(t.name()))
         .orElse(AuditLogTenantScope.GLOBAL);
+  }
+
+  interface AuditLogIndexLocator<R extends RecordValue> {
+    TargetIndex locate(final TargetIndexLocator indexLocator, final Record<R> record);
   }
 }

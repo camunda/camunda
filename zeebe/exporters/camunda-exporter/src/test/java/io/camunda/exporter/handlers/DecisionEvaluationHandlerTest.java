@@ -8,11 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
@@ -64,14 +69,16 @@ public class DecisionEvaluationHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final ImmutableEvaluatedDecisionValue decisionValue =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionEvaluationInstanceKey("123-1")
             .build();
-    final long expectedId = 123;
     final DecisionEvaluationRecordValue decisionRecordValue =
         ImmutableDecisionEvaluationRecordValue.builder()
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
@@ -86,11 +93,9 @@ public class DecisionEvaluationHandlerTest {
                     .withValue(decisionRecordValue)
                     .withKey(123L));
 
-    // when
-    final var idList = underTest.generateIds(decisionRecord);
-
-    // then
-    assertThat(idList).containsExactly(expectedId + "-" + 1);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, decisionRecord))
+        .containsExactly(new IdAndIndex("123-1", index));
   }
 
   @Test

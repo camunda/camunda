@@ -20,6 +20,11 @@ public class ProcessInstanceCreationAuditLogTransformer
   }
 
   @Override
+  public Class<ProcessInstanceCreationRecordValue> getRecordValueType() {
+    return ProcessInstanceCreationRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();

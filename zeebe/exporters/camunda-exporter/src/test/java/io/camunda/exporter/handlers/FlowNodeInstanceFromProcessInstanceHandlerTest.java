@@ -8,12 +8,17 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -144,13 +149,17 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
-    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+  void shouldExtractIdAndIndexes() {
+    // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+    final Record<ProcessInstanceRecordValue> record =
         createRecord(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    final var idList = underTest.generateIds(processInstanceRecord);
 
-    assertThat(idList).isNotNull();
-    assertThat(idList).containsExactly(String.valueOf(processInstanceRecord.getKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex(String.valueOf(record.getKey()), index));
   }
 
   @Test

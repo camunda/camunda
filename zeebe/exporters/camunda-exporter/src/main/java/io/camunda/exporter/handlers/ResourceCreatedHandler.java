@@ -18,7 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.util.List;
 
-public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
+public class ResourceCreatedHandler
+    implements MainIndexExporterHandler<DeployedResourceEntity, Resource> {
 
   private static final List<ResourceIntent> SUPPORTED_INTENTS =
       List.of(ResourceIntent.CREATED, ResourceIntent.REEXPORTED);

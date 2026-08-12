@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 public class AuthorizationCreatedUpdatedHandler
-    implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+    implements MainIndexExporterHandler<AuthorizationEntity, AuthorizationRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(AuthorizationIntent.CREATED, AuthorizationIntent.UPDATED);
   private final String indexName;

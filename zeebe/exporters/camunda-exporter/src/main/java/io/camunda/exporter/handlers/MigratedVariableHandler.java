@@ -20,7 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MigratedVariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class MigratedVariableHandler
+    implements OrdinalIndexExportHandler<VariableEntity, VariableRecordValue> {
 
   private final String indexName;
 

@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AgentInstanceHandler
-    implements ExportHandler<AgentInstanceEntity, AgentInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<AgentInstanceEntity, AgentInstanceRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AgentInstanceHandler.class);
 

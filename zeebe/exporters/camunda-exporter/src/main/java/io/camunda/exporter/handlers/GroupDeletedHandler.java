@@ -18,7 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
-public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupRecordValue> {
+public class GroupDeletedHandler
+    implements MainIndexExporterHandler<GroupEntity, GroupRecordValue> {
 
   private final String indexName;
 

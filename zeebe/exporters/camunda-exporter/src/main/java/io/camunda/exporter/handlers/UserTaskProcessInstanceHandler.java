@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
 public class UserTaskProcessInstanceHandler
-    implements ExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
 
   private final String indexName;
 

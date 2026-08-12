@@ -11,10 +11,15 @@ import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
@@ -82,12 +87,16 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdFromRecordKey() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<AgentHistoryRecordValue> record = factory.generateRecord(ValueType.AGENT_HISTORY);
 
     // when - then
-    assertThat(underTest.generateIds(record)).containsExactly(String.valueOf(record.getKey()));
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex(String.valueOf(record.getKey()), index));
   }
 
   @Test
