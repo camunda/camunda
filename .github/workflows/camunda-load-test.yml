@@ -92,7 +92,7 @@ on:
         required: false
         default: false
       build-frontend:
-        description: 'Build legacy frontend assets as part of the load test image build'
+        description: 'Build frontend assets as part of the load test image build'
         type: boolean
         required: false
         default: false
@@ -383,6 +383,7 @@ jobs:
       - uses: ./.github/actions/build-frontend
         name: Build Unified Webapp Frontend
         id: build-webapp-fe
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./webapp/client
           package-manager: "npm"
