@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -33,7 +32,12 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.function.Consumer;
+<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/NativeUserTaskTest.java
 import org.junit.Before;
+=======
+import java.util.function.Predicate;
+import org.assertj.core.groups.Tuple;
+>>>>>>> 48838c0e (test: stop engine tests reading live ZeebeDb state during processing):zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/CamundaUserTaskTest.java
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,8 +54,6 @@ public final class NativeUserTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private UserTaskState userTaskState;
-
   private static BpmnModelInstance process() {
     return process(b -> {});
   }
@@ -62,11 +64,6 @@ public final class NativeUserTaskTest {
     consumer.accept(builder);
 
     return builder.endEvent().done();
-  }
-
-  @Before
-  public void setUp() {
-    userTaskState = ENGINE.getProcessingState().getUserTaskState();
   }
 
   @Test
@@ -694,9 +691,6 @@ public final class NativeUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasAssignee("foo");
   }
 
   @Test
@@ -727,9 +721,6 @@ public final class NativeUserTaskTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue())
-        .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
         .hasAssignee("foo");
   }
 
@@ -784,6 +775,7 @@ public final class NativeUserTaskTest {
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.DUE_DATE,
+<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/NativeUserTaskTest.java
             UserTaskRecord.FOLLOW_UP_DATE);
 
     Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
@@ -792,6 +784,10 @@ public final class NativeUserTaskTest {
         .hasDueDate("")
         .hasFollowUpDate("")
         .hasNoChangedAttributes();
+=======
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY);
+>>>>>>> 48838c0e (test: stop engine tests reading live ZeebeDb state during processing):zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/CamundaUserTaskTest.java
   }
 
   @Test
