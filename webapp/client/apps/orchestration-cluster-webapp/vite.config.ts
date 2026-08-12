@@ -68,6 +68,10 @@ const config = defineConfig(({mode}) => ({
 				target: 'http://localhost:8080',
 				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
 			},
+			'/session/heartbeat': {
+				target: 'http://localhost:8080',
+				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+			},
 		},
 	},
 	build: {
