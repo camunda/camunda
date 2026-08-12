@@ -15,6 +15,13 @@ import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {ProcessDeployment as ProcessDeploymentDTO} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
+// The Operate process instance header collapses its operation buttons into an
+// "Actions" menu and hides secondary columns (Start/End Date, the "View all"
+// called-instances link) below Carbon's `xlg` (1312px) breakpoint. Run at a
+// wider desktop viewport so the full header renders and the tests can interact
+// with the individual controls directly.
+test.use({viewport: {width: 1920, height: 1080}});
+
 type ProcessDeployment = {
   readonly bpmnProcessId: string;
   readonly version: number;

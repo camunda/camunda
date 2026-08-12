@@ -15,6 +15,12 @@ import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from '../../utils/waitForAssertion';
 
+// The Operate process instance header collapses its operation buttons into an
+// "Actions" menu below Carbon's `xlg` (1312px) breakpoint. Run at a wider
+// desktop viewport so the full toolbar renders and the tests can click the
+// "Cancel Instance" control directly.
+test.use({viewport: {width: 1920, height: 1080}});
+
 type ProcessInstance = {
   processInstanceKey: string;
 };

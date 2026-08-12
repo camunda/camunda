@@ -138,7 +138,13 @@ class OperateProcessesPage {
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
-    this.singleOperationSpinner = page.getByTestId('operation-spinner');
+    // The per-row operation spinner in the instances list is a Carbon
+    // InlineLoading (no data-testid) rendered only while a single operation is
+    // in progress; scope to the list so it never matches the incidents-table
+    // spinner on the instance detail page.
+    this.singleOperationSpinner = page
+      .getByTestId('data-list')
+      .locator('.cds--inline-loading');
     this.processActiveCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});

@@ -164,6 +164,11 @@ test.describe('Operations', () => {
     });
 
     await test.step('Select all instances and retry', async () => {
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the row-selection
+      // checkboxes render.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
       await operateProcessesPage.selectAllRowsCheckbox.click();
 
       await operateProcessesPage.retryButton.click();
@@ -321,6 +326,11 @@ test.describe('Delete Operations', () => {
     });
 
     await test.step('Select all completed instances', async () => {
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the row-selection
+      // checkboxes render.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
       await operateProcessesPage.selectAllRowsCheckbox.click();
     });
 
