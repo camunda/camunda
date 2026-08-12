@@ -496,20 +496,14 @@ paths:
     $ref: 'cluster.yaml#/paths/~1topology'
   /mode:
     $ref: 'cluster.yaml#/paths/~1mode'
-  /cluster/v2/mode: # New /cluster/v2/mode endpoint that works for all physical tenants.
-    $ref: 'cluster.yaml#/paths/~1cluster~1v2~1mode'
   /restore:
     $ref: 'cluster.yaml#/paths/~1restore'
 
-  # Cluster-wide endpoints, served on the bare root rather than under the `/v2` server base: the
-  # `/cluster/v2` base is part of the path key, not the server URL, so these keys must stay
-  # absolute. They cannot be shortened to `/status` and `/mode` — both are already taken above by
-  # `cluster.yaml`, and `OpenApiYamlLoader.KNOWN_ROOTS` matches the literal `/cluster/v2/` prefix to
-  # skip the runtime `/v2` prefixing. See `cluster-wide.yaml`.
+  # Cluster-wide endpoints. Path keys must stay absolute — see `cluster-admin.yaml` for why.
   /cluster/v2/mode:
-    $ref: 'cluster-wide.yaml#/paths/~1cluster~1v2~1mode'
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
   /cluster/v2/status:
-    $ref: 'cluster-wide.yaml#/paths/~1cluster~1v2~1status'
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status'
 
   # User endpoints
   /users:
