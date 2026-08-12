@@ -2322,7 +2322,7 @@ jobs:
     name: Deploy snapshot Optimize Docker image
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2350,11 +2350,15 @@ jobs:
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
-      # -am fixes a race with deploy-snapshots by building reactor deps from source instead of Nexus
-      - name: Build zeebe-protocol from source
-        uses: ./.github/actions/run-maven
+      # Optimize needs io.camunda artifacts from search/* and zeebe/* that deploy-snapshots
+      # publishes concurrently. Resolving them from Nexus fails both when a freshly bumped
+      # X.Y.Z-SNAPSHOT is not published yet (release back-merge) and when snapshot retention
+      # deletes a timestamped JAR its own metadata still advertises. A full-reactor install puts
+      # them all in the local repository, matching deploy-camunda-docker-snapshot. -Dquickly
+      # excludes optimize itself, which the next step builds with the assembly profile.
+      - uses: ./.github/actions/build-zeebe
         with:
-          parameters: install -pl zeebe/protocol -am -Dquickly
+          maven-extra-args: -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
