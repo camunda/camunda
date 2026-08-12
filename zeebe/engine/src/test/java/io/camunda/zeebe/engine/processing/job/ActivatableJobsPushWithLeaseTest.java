@@ -355,6 +355,46 @@ public final class ActivatableJobsPushWithLeaseTest {
   }
 
   @Test
+  public void shouldPushLeasedJobToLeasingStreamWhenNonLeasingStreamAlsoOpen() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().getFirst();
+    final long jobKey = batchRecord.getValue().getJobKeys().getFirst();
+    final String leaseToken = job.getLeaseToken();
+
+    final RecordingJobStream nonLeasingStream = registerStream(false);
+    final RecordingJobStream leasingStream = registerStream(true);
+
+    // when
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .ofInstance(job.getProcessInstanceKey())
+        .withLeaseToken(leaseToken)
+        .withRetries(3)
+        .fail();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        leasingStream.getActivatedJobs().size()
+                            + nonLeasingStream.getActivatedJobs().size())
+                    .isPositive());
+    assertThat(leasingStream.getActivatedJobs())
+        .describedAs("a leased job must be pushed to the leasing stream, not left for pollers")
+        .hasSize(1);
+    assertThat(nonLeasingStream.getActivatedJobs())
+        .describedAs(
+            "a leased job must never be pushed to a non-leasing stream, even when a leasing "
+                + "stream is open alongside it")
+        .isEmpty();
+  }
+
+  @Test
   public void shouldTreatLeasingAndNonLeasingRegistrationsAsDistinctIdentities() {
     // given
     final JobActivationPropertiesImpl leasing =
