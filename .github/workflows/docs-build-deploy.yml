@@ -57,6 +57,7 @@ jobs:
     concurrency:
       group: gh-pages-write
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: write
       pages: read
