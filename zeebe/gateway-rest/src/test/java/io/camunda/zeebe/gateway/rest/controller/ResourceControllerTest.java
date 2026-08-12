@@ -645,6 +645,48 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldGetResourceContentBinaryWhenAcceptOctetStreamHeaderIsSet() {
+    // given
+    final var content =
+        """
+        {
+          "id": "test",
+          "name": "test RPA script",
+          "script": "foo"
+        }
+        """;
+    when(resourceServices.getContentByKey(eq(1L), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DeployedResourceEntity(
+                    1L,
+                    "test",
+                    "test.rpa",
+                    "rpa",
+                    1,
+                    null,
+                    100L,
+                    "tenant",
+                    content.getBytes(StandardCharsets.UTF_8))));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_RESOURCE_CONTENT_BINARY_ENDPOINT.formatted(1))
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .expectBody(byte[].class)
+        .consumeWith(
+            response ->
+                assertThat(response.getResponseBody())
+                    .isEqualTo(content.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  @Test
   void getResourceContentShouldYieldNotFoundWhenResourceNotFound() {
     // given
     when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
