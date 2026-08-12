@@ -12,10 +12,23 @@
 # the runtime `/v2` prefixing that every other path gets.
 #
 # Cluster endpoints that are scoped to a single physical tenant live in `cluster.yaml`.
+#
+# The identical `servers` block below is duplicated per path item on purpose, not YAML-anchored.
+# Two independent, concrete failures came out of trying to share it via a YAML anchor/alias:
+# a plain value-alias (`servers: *anchor`) broke IntelliJ's Swagger UI preview for the aliased
+# operation, and a later attempt produced a nested list (`servers: [*anchor]` where the anchor is
+# already a list), which broke swagger-parser's Jackson deserialization and silently made
+# openapi-generator-maven-plugin skip regenerating clients/java's model classes entirely. Don't
+# re-attempt an anchor/alias/merge-key variant here — duplicate the literal block instead.
+#
+# Every operation below requires the cluster-admin security chain (see
+# ClusterAdminBasicSecurityConfiguration / CLUSTER_ADMIN_API_PATTERN), a separate credential set
+# from the Orchestration Cluster API. The `bearerAuth` / `basicAuth` scheme names below are reused
+# from that API for convenience but resolve against different credentials — an Orchestration
+# Cluster user session cannot authenticate against these operations.
 
 paths:
   /cluster/v2/status:
-    # Bare root on purpose; the `/cluster/v2` base is in the path key. See the file header.
     servers:
       - url: "{schema}://{host}:{port}"
         variables:
@@ -60,7 +73,6 @@ paths:
       x-added-in-version: "8.10"
 
   /cluster/v2/mode:
-    # Bare root on purpose; the `/cluster/v2` base is in the path key. See the file header.
     servers:
       - url: "{schema}://{host}:{port}"
         variables:
