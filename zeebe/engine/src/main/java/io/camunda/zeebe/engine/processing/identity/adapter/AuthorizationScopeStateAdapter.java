@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,12 +42,17 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       scopeCache;
 
   public AuthorizationScopeStateAdapter(
-      final AuthorizationState authorizationState, final EngineConfiguration config) {
+      final AuthorizationState authorizationState,
+      final EngineConfiguration config,
+      final MeterRegistry meterRegistry) {
     this.authorizationState = authorizationState;
+    final var statsCounter =
+        new CaffeineCacheStatsCounter(AuthorizationCacheMetrics.NAMESPACE, "scope", meterRegistry);
     scopeCache =
-        CacheBuilder.newBuilder()
+        Caffeine.newBuilder()
             .expireAfterWrite(config.getAuthorizationsCacheTtl())
             .maximumSize(config.getAuthorizationsCacheCapacity())
+            .recordStats(() -> statsCounter)
             .build(new ScopeCacheLoader(authorizationState));
   }
 
@@ -145,8 +152,7 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       final String ownerId,
       final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType,
       final io.camunda.zeebe.protocol.record.value.PermissionType permissionType) {
-    return scopeCache.getUnchecked(
-        new ScopeCacheKey(ownerType, ownerId, resourceType, permissionType));
+    return scopeCache.get(new ScopeCacheKey(ownerType, ownerId, resourceType, permissionType));
   }
 
   /** Converts a CSL {@link EntityType} to the Zeebe {@link AuthorizationOwnerType}. */
@@ -189,7 +195,7 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
 
   /** Loads authorization scopes from {@link AuthorizationState}, bypassing the cache. */
   private static final class ScopeCacheLoader
-      extends CacheLoader<
+      implements CacheLoader<
           ScopeCacheKey, Set<io.camunda.zeebe.protocol.record.value.AuthorizationScope>> {
 
     private final AuthorizationState authorizationState;

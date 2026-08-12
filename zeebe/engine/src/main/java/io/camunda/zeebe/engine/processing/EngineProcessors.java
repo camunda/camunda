@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.PropertyAuthorizationEvaluator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.adapter.MicrometerAuthorizationCheckLatencyRecorder;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -187,9 +189,15 @@ public final class EngineProcessors {
     // Build CSL authorization ports for identity, UserTask, and Job domain processors
     final var membershipStateAdapter =
         new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
+            processingState.getMappingRuleState(),
+            processingState.getMembershipState(),
+            config,
+            typedRecordProcessorContext.getMeterRegistry());
     final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
+        new AuthorizationScopeStateAdapter(
+            processingState.getAuthorizationState(),
+            config,
+            typedRecordProcessorContext.getMeterRegistry());
     final var ports =
         AuthorizationPortsFactory.create(
             authorizationScopeStateAdapter,
@@ -246,7 +254,10 @@ public final class EngineProcessors {
             securityConfig.isMultiTenancyChecksEnabled(),
             Authorization.AUTHORIZED_USERNAME,
             Authorization.AUTHORIZED_CLIENT_ID,
-            false);
+            false,
+            MembershipResolutionContextPropagator.identity(),
+            new MicrometerAuthorizationCheckLatencyRecorder(
+                typedRecordProcessorContext.getMeterRegistry()));
     final AuthorizationCheckPort authzService = ports.checkPort();
     final LazyTokenClaimsConverter claimsConverter =
         (LazyTokenClaimsConverter) ports.claimsResolver();

@@ -20,11 +20,13 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,16 +38,23 @@ final class AuthorizationScopeStateAdapterTest {
   private MutableProcessingState processingState;
 
   private AuthorizationScopeStateAdapter adapter;
+  private SimpleMeterRegistry meterRegistry;
   private AuthorizationCreatedApplier authorizationCreatedApplier;
   private final Random random = new Random();
 
   @BeforeEach
   void setup() {
+    meterRegistry = new SimpleMeterRegistry();
     adapter =
         new AuthorizationScopeStateAdapter(
-            processingState.getAuthorizationState(), new EngineConfiguration());
+            processingState.getAuthorizationState(), new EngineConfiguration(), meterRegistry);
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
+  }
+
+  @AfterEach
+  void tearDown() {
+    meterRegistry.close();
   }
 
   @Test
@@ -231,6 +240,48 @@ final class AuthorizationScopeStateAdapterTest {
                 PermissionType.READ,
                 List.of("any-process-id")))
         .isTrue();
+  }
+
+  @Test
+  void shouldRecordCacheMissThenHitOnRepeatedScopeLookup() {
+    // given
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        "user1",
+        AuthorizationOwnerType.USER,
+        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION,
+        io.camunda.zeebe.protocol.record.value.PermissionType.READ,
+        resourceId);
+    final var ownerIds = Map.of(EntityType.USER, Set.of("user1"));
+
+    // when — first lookup misses and loads, second lookup hits the cache
+    adapter.findAuthorizedScopes(
+        ownerIds, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ);
+    adapter.findAuthorizedScopes(
+        ownerIds, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ);
+
+    // then
+    assertThat(
+            meterRegistry
+                .get("zeebe.authorization.scope.result")
+                .tag("type", "MISS")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+    assertThat(
+            meterRegistry
+                .get("zeebe.authorization.scope.result")
+                .tag("type", "HIT")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+    assertThat(meterRegistry.get("zeebe.authorization.scope.load.duration.success").timer())
+        .isNotNull();
+  }
+
+  @Test
+  void shouldRegisterEvictionsMeter() {
+    assertThat(meterRegistry.get("zeebe.authorization.scope.evictions").counter()).isNotNull();
   }
 
   // --- helpers ---
