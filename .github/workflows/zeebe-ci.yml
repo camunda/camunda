@@ -413,6 +413,10 @@ jobs:
       # push. jib's own retries all fall inside a ~5 minute window, so they re-hit the same bad
       # spell and the job fails. Each attempt here is capped well above the ~15s a healthy push
       # takes, so a hung one is abandoned quickly and the registry is sampled again a minute later.
+      #
+      # This is mitigation, not a fix — it makes a hanging registry survivable, it does not stop it
+      # hanging. Drop both wrappers once these images are published to GAR instead
+      # (camunda/team-infrastructure#992), which removes the dependency on this registry altogether.
       - name: Build Starter Image
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
