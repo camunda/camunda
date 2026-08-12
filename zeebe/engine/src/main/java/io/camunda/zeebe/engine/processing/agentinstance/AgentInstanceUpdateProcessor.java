@@ -276,7 +276,8 @@ public final class AgentInstanceUpdateProcessor
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
-              ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, allowedAttributes)));
+              ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(
+                  unknown, allowedAttributes.stream().sorted().toList())));
     }
 
     if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
@@ -317,8 +318,6 @@ public final class AgentInstanceUpdateProcessor
             : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
 
     final var effective = new ArrayList<String>(changed.size());
-    // Iterate ALLOWED_ATTRIBUTES (not the incoming set) so the output order is fixed regardless of
-    // the JVM's hash randomization or client ordering.
     for (final var attr : allowedAttributes) {
       if (!changed.contains(attr)) {
         continue;

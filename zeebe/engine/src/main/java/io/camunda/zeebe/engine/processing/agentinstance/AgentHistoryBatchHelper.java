@@ -180,7 +180,9 @@ public final class AgentHistoryBatchHelper {
               new Rejection(
                   RejectionType.INVALID_ARGUMENT,
                   ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(
-                      historyItemId, unknown, ALLOWED_CONFIGURATION_ATTRIBUTES)));
+                      historyItemId,
+                      unknown,
+                      ALLOWED_CONFIGURATION_ATTRIBUTES.stream().sorted().toList())));
         }
       }
     }
