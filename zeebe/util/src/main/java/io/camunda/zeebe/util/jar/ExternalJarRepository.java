@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +39,11 @@ public final class ExternalJarRepository implements AutoCloseable {
     return Collections.unmodifiableMap(loadedJars);
   }
 
-  public ExternalJarClassLoader remove(final String jarPath) {
+  public @Nullable ExternalJarClassLoader remove(final String jarPath) {
     return remove(Paths.get(jarPath));
   }
 
-  public ExternalJarClassLoader remove(final Path jarPath) {
+  public @Nullable ExternalJarClassLoader remove(final Path jarPath) {
     return loadedJars.remove(jarPath);
   }
 
