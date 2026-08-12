@@ -49,7 +49,11 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 
 	return (
 		<div className={styles.container} data-testid="history-tab-content">
-			<div className={styles.tableContainer} data-testid="history-scroll-container" onScroll={handleScroll}>
+			<div
+				className={cn(styles.tableContainer, featureFlags.dsTasklistUI && styles.tableContainerDS)}
+				data-testid="history-scroll-container"
+				onScroll={handleScroll}
+			>
 				<HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={search} />
 			</div>
 		</div>

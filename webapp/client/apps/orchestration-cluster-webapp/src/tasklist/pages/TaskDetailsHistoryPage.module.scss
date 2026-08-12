@@ -18,6 +18,14 @@
 .tableContainer {
 	flex: 1;
 	overflow: auto;
+
+	// DS-only (see TaskDetailsHistoryPage.tsx). Matches the horizontal inset the
+	// tabs row above gets from `.content > [data-slot='tabs']` in
+	// taskDetailsLayoutCommon.module.scss, so the table's left edge lines up with
+	// the tabs instead of sitting flush against the panel.
+	&.tableContainerDS {
+		padding-inline: var(--cds-spacing-05);
+	}
 }
 
 .emptyContainer {
