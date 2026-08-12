@@ -204,6 +204,31 @@ public class AgentInstanceRequestValidator {
     } else {
       validateDate(historyItem.getProducedAt(), "history[" + index + "].producedAt", violations);
     }
+    if (historyItem.getTools() != null) {
+      validateTools("history[" + index + "].tools", historyItem.getTools(), violations);
+    }
+    if (historyItem.getLimits() != null) {
+      final var limits = historyItem.getLimits();
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxTokens", limits.getMaxTokens()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxModelCalls", limits.getMaxModelCalls()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxToolCalls", limits.getMaxToolCalls()));
+    }
+    if (historyItem.getSystemPrompt() != null) {
+      if (historyItem.getSystemPrompt().isEmpty()) {
+        violations.add(
+            ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].systemPrompt"));
+      } else {
+        for (int i = 0; i < historyItem.getSystemPrompt().size(); i++) {
+          validateContentItem(
+              "history[" + index + "].systemPrompt[" + i + "]",
+              historyItem.getSystemPrompt().get(i),
+              violations);
+        }
+      }
+    }
   }
 
   private void validateContentItem(
