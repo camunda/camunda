@@ -17,6 +17,7 @@ import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
+import io.camunda.service.ClusterTopologyServices;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -102,6 +103,7 @@ public record DefaultServiceRegistry(
     Map<String, VariableServices> variableByTenant,
     ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
+    ClusterTopologyServices clusterTopologyServices,
     ManagementServices managementServices)
     implements ServiceRegistry {
 
@@ -326,6 +328,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ClusterTopologyServices clusterTopologyServices() {
+    return clusterTopologyServices;
+  }
+
+  @Override
   public ManagementServices managementServices() {
     return managementServices;
   }
@@ -411,6 +418,7 @@ public record DefaultServiceRegistry(
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
     private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
+    private ClusterTopologyServices clusterTopologyServices;
     private ManagementServices managementServices;
 
     public Builder adHocSubProcessActivityServices(
@@ -638,6 +646,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterTopologyServices(final ClusterTopologyServices service) {
+      clusterTopologyServices = service;
+      return this;
+    }
+
     public Builder managementServices(final ManagementServices service) {
       managementServices = service;
       return this;
@@ -687,6 +700,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(variableByTenant),
           clusterRecoveryServices,
           clusterStatusServices,
+          clusterTopologyServices,
           managementServices);
     }
   }

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 /**
  * Full-stack integration tests for the cluster-admin Basic-auth chain ({@code /cluster/v2/**}),
  * exercised against the real {@link
- * io.camunda.zeebe.gateway.rest.controller.DummyClusterTopologyController} endpoint — plus the one
+ * io.camunda.zeebe.gateway.rest.controller.ClusterTopologyController} endpoint — plus the one
  * carve-out from that chain, the unauthenticated {@link
  * io.camunda.zeebe.gateway.rest.controller.ClusterStatusController}.
  */
@@ -78,8 +78,15 @@ public class ClusterAdminBasicAuthenticationIT {
             clusterUri(PATH_CLUSTER_TOPOLOGY),
             basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
 
-    // then
+    // then — a real aggregated body, not the placeholder's empty 200
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    final var body = new ObjectMapper().readTree(response.body());
+    assertThat(body.get("physicalTenants")).isNotNull();
+    assertThat(body.get("physicalTenants"))
+        .anySatisfy(
+            physicalTenant ->
+                assertThat(physicalTenant.get("physicalTenantId").asText()).isEqualTo("default"));
+    assertThat(body.get("brokers")).isNotEmpty();
   }
 
   @Test

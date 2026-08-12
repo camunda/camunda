@@ -77,6 +77,54 @@ paths:
                 $ref: '#/components/schemas/ClusterStatusResponse'
       x-added-in-version: "8.10"
 
+  /cluster/v2/topology:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getClusterTopology
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get the topology of the whole cluster
+      description: >-
+        Obtains the topology of the whole cluster, aggregated over all physical tenants. Cluster-level
+        information is reported once; partition layout, replication and per-partition role, health and
+        state are reported per physical tenant.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Use `GET /v2/topology` for the topology of a single physical tenant.
+      responses:
+        "200":
+          description: The topology of the whole cluster, aggregated over all physical tenants.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTopologyResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /cluster/v2/mode:
     servers:
       - url: "{schema}://{host}:{port}"
@@ -175,3 +223,121 @@ components:
             - HEALTHY
             - DEGRADED
             - DOWN
+
+    ClusterTopologyResponse:
+      description: The topology of the whole cluster, aggregated over all physical tenants.
+      type: object
+      required:
+        - brokers
+        - clusterId
+        - clusterSize
+        - gatewayVersion
+        - physicalTenants
+      properties:
+        brokers:
+          description: The brokers that are part of this cluster, across all physical tenants.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterBrokerInfo'
+        clusterId:
+          description: The cluster Id.
+          type: string
+          nullable: true
+        clusterSize:
+          description: The number of brokers in the cluster.
+          type: integer
+          format: int32
+          example: 3
+        gatewayVersion:
+          description: The version of the Orchestration Cluster Gateway.
+          type: string
+          nullable: true
+          example: 8.10.0
+        physicalTenants:
+          description: The topology of each physical tenant of this cluster.
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalTenantTopology'
+
+    ClusterBrokerInfo:
+      description: Provides information on a broker node, independent of any physical tenant.
+      type: object
+      required:
+        - brokerId
+        - host
+        - port
+        - version
+      properties:
+        brokerId:
+          description: >
+            The unique (within a cluster) broker identifier. When the cluster is not zoned, then it's
+            a string that represents the nodeId (an integer). When the cluster is zoned, instead,
+            it's of the form "$zoneName_$nodeId", providing uniqueness even across zones.
+          type: string
+          example: "eu-west-1_0"
+        host:
+          description: The hostname for reaching the broker.
+          type: string
+          example: zeebe-0.zeebe-broker-service
+        port:
+          description: The port for reaching the broker.
+          type: integer
+          format: int32
+          example: 26501
+        version:
+          description: The broker version.
+          type: string
+          example: 8.10.0
+
+    PhysicalTenantTopology:
+      description: The topology of a single physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - partitionsCount
+        - replicationFactor
+        - lastCompletedChangeId
+        - brokers
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        partitionsCount:
+          description: The number of partitions spread across this physical tenant.
+          type: integer
+          format: int32
+          example: 3
+        replicationFactor:
+          description: The configured replication factor for this physical tenant.
+          type: integer
+          format: int32
+          example: 3
+        lastCompletedChangeId:
+          description: ID of the last completed change of this physical tenant.
+          type: string
+          example: "-1"
+        brokers:
+          description: The brokers holding partitions of this physical tenant.
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalTenantBrokerTopology'
+
+    PhysicalTenantBrokerTopology:
+      description: The partitions of one physical tenant that one broker manages or replicates.
+      type: object
+      required:
+        - brokerId
+        - partitions
+      properties:
+        brokerId:
+          description: >
+            The unique (within a cluster) identifier of the broker, as reported in the cluster-level
+            broker list.
+          type: string
+          example: "eu-west-1_0"
+        partitions:
+          description: The partitions of this physical tenant managed or replicated on this broker.
+          type: array
+          items:
+            $ref: 'cluster.yaml#/components/schemas/Partition'

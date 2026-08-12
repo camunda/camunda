@@ -26,8 +26,10 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClusterBrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse;
 import io.camunda.gateway.protocol.model.ClusterStatusResponse.StatusEnum;
+import io.camunda.gateway.protocol.model.ClusterTopologyResponse;
 import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
@@ -64,6 +66,7 @@ import io.camunda.gateway.protocol.model.MessagePublicationResult;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.Partition.StateEnum;
+import io.camunda.gateway.protocol.model.PhysicalTenantBrokerTopology;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
 import io.camunda.gateway.protocol.model.ResolvedSecret;
 import io.camunda.gateway.protocol.model.ResourceResult;
@@ -82,6 +85,10 @@ import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.service.ClusterStatusServices.AggregatedStatus;
+import io.camunda.service.ClusterTopologyServices.ClusterBroker;
+import io.camunda.service.ClusterTopologyServices.ClusterTopology;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantBroker;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantTopology;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -958,6 +965,51 @@ public final class ResponseMapper {
         .port(broker.port())
         .partitions(partitions)
         .version(broker.version())
+        .build();
+  }
+
+  public static ClusterTopologyResponse toClusterTopologyResponse(final ClusterTopology topology) {
+    final var brokers =
+        topology.brokers().stream().map(ResponseMapper::toClusterBrokerInfo).toList();
+    final var physicalTenants =
+        topology.physicalTenants().stream().map(ResponseMapper::toPhysicalTenantTopology).toList();
+    return ClusterTopologyResponse.Builder.create()
+        .brokers(brokers)
+        .clusterSize(topology.clusterSize())
+        .physicalTenants(physicalTenants)
+        .clusterId(topology.clusterId())
+        .gatewayVersion(topology.gatewayVersion())
+        .build();
+  }
+
+  @SuppressWarnings("NullAway") // host/port/version are null for a broker with unknown address
+  private static ClusterBrokerInfo toClusterBrokerInfo(final ClusterBroker broker) {
+    return ClusterBrokerInfo.Builder.create()
+        .brokerId(broker.brokerId().id())
+        .host(broker.host())
+        .port(broker.port())
+        .version(broker.version())
+        .build();
+  }
+
+  private static io.camunda.gateway.protocol.model.PhysicalTenantTopology toPhysicalTenantTopology(
+      final PhysicalTenantTopology topology) {
+    final var brokers =
+        topology.brokers().stream().map(ResponseMapper::toPhysicalTenantBrokerTopology).toList();
+    return io.camunda.gateway.protocol.model.PhysicalTenantTopology.Builder.create()
+        .physicalTenantId(topology.physicalTenantId())
+        .partitionsCount(topology.partitionsCount())
+        .replicationFactor(topology.replicationFactor())
+        .lastCompletedChangeId(keyToString(topology.lastCompletedChangeId()))
+        .brokers(brokers)
+        .build();
+  }
+
+  private static PhysicalTenantBrokerTopology toPhysicalTenantBrokerTopology(
+      final PhysicalTenantBroker broker) {
+    return PhysicalTenantBrokerTopology.Builder.create()
+        .brokerId(broker.brokerId().id())
+        .partitions(buildPartitions(broker.partitions()))
         .build();
   }
 
