@@ -8,7 +8,6 @@
 package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
@@ -49,7 +48,12 @@ class LazyMembershipResolutionScopeTeardownTest {
   /** Physical tenant observed on each membership lookup, in call order. */
   private final List<String> observedPhysicalTenants = new ArrayList<>();
 
-  /** Mirrors {@link DefaultMembershipService}, which routes every lookup via {@code current()}. */
+  /**
+   * Mirrors {@link DefaultMembershipService}, which routes every lookup via {@code current()} and
+   * reads an earlier step's resolved list before that — e.g. {@code roleIds()} reads {@code
+   * resolvedGroupIds()} before resolving its own tenant. Touching those fields here forces the same
+   * nesting: one decorated supplier resolving from inside another's still-open propagated scope.
+   */
   private final MembershipPort recordingMembershipPort =
       new MembershipPort() {
         @Override
@@ -59,16 +63,19 @@ class LazyMembershipResolutionScopeTeardownTest {
 
         @Override
         public List<String> groupIds(final MembershipQuery query) {
+          query.resolvedMappingRuleIds().isEmpty(); // forces mappingRuleIds, nested here
           return recordAndReturn("group");
         }
 
         @Override
         public List<String> roleIds(final MembershipQuery query) {
+          query.resolvedGroupIds().isEmpty(); // forces groupIds — which itself forces mappingRuleIds
           return recordAndReturn("role");
         }
 
         @Override
         public List<String> tenantIds(final MembershipQuery query) {
+          query.resolvedRoleIds().isEmpty(); // forces roleIds — which itself forces groupIds, mappingRuleIds
           return recordAndReturn("tenant");
         }
 
@@ -84,7 +91,7 @@ class LazyMembershipResolutionScopeTeardownTest {
   }
 
   @Test
-  void shouldResolveMembershipsAgainstOriginatingTenantAfterScopeTeardown() {
+  void shouldResolveMembershipsAgainstOriginatingTenantAfterScopeTeardown() throws IOException {
     // given an authentication built while a request for this physical tenant is in scope
     final String physicalTenantId = "tenant-" + UUID.randomUUID();
     bindRequestWithPhysicalTenant(physicalTenantId);
@@ -104,7 +111,7 @@ class LazyMembershipResolutionScopeTeardownTest {
     assertThat(observedPhysicalTenants).as("no membership resolved eagerly").isEmpty();
 
     // when the authentication is serialised, forcing every lazy membership list to materialise
-    assertThatCode(() -> serialize(authentication)).doesNotThrowAnyException();
+    serialize(authentication);
 
     // then every lookup ran against the tenant captured at build time — never the default, never
     // unresolved. 4 = one per lazy membership field: mapping rules, groups, roles, tenants.
