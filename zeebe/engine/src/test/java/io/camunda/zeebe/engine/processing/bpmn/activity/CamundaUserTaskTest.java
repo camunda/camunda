@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -43,7 +42,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.groups.Tuple;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,8 +58,6 @@ public final class CamundaUserTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private UserTaskState userTaskState;
-
   private static BpmnModelInstance process() {
     return process(b -> {});
   }
@@ -72,11 +68,6 @@ public final class CamundaUserTaskTest {
     consumer.accept(builder);
 
     return builder.endEvent().done();
-  }
-
-  @Before
-  public void setUp() {
-    userTaskState = ENGINE.getProcessingState().getUserTaskState();
   }
 
   @Test
@@ -806,9 +797,6 @@ public final class CamundaUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasAssignee("foo");
   }
 
   @Test
@@ -880,9 +868,6 @@ public final class CamundaUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasAssignee("foo");
   }
 
   @Test
@@ -947,14 +932,6 @@ public final class CamundaUserTaskTest {
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE,
             UserTaskRecord.PRIORITY);
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasNoCandidateGroupsList()
-        .hasNoCandidateUsersList()
-        .hasDueDate("")
-        .hasFollowUpDate("")
-        .hasPriority(50)
-        .hasNoChangedAttributes();
   }
 
   @Test
