@@ -10,15 +10,32 @@ set -euo pipefail
 # actually verifying against.
 #
 # Usage:
-#   scripts/start-verify-env.sh es      # default -- Elasticsearch via docker compose
-#   scripts/start-verify-env.sh h2      # RDBMS-flagged failures: same H2 setup the
-#                                       # on-demand workflow's RDBMS job uses --
-#                                       # no container, builds camunda from source.
+#   scripts/start-verify-env.sh es [v1|v2]   # default -- Elasticsearch via docker compose
+#   scripts/start-verify-env.sh h2 [v1|v2]   # RDBMS-flagged failures: same H2 setup the
+#                                            # on-demand workflow's RDBMS job uses --
+#                                            # no container, builds camunda from source.
+#
+# The second argument MUST match the dispatched test's `tasklist_mode` field
+# when the failure is an e2e entry -- running the wrong Tasklist generation
+# can silently fail to reproduce a v1-specific bug (or falsely "verify" a fix
+# that was never exercised in the mode that actually failed). Defaults to v2
+# (matching docker-compose.yml's own default) when omitted, which is correct
+# for API-only dispatches (tasklist_mode is absent from api test_specs
+# entries) and for `main` (whose e2e matrix is v2-only anyway).
 #
 # Idempotent-ish: safe to call once per verify session. Call stop-verify-env.sh
 # (same directory) to tear down when the verify loop is done.
 
 DATABASE_MODE="${1:-es}"
+TASKLIST_MODE="${2:-v2}"
+case "${TASKLIST_MODE}" in
+  v1) TASKLIST_V2_ENABLED=false ;;
+  v2) TASKLIST_V2_ENABLED=true ;;
+  *)
+    echo "::error::Unknown tasklist mode '${TASKLIST_MODE}' -- expected v1 or v2." >&2
+    exit 1
+    ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUITE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -93,6 +110,7 @@ if [ "${DATABASE_MODE}" = "h2" ]; then
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
   export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
   export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
+  export CAMUNDA_TASKLIST_V2_MODE_ENABLED="${TASKLIST_V2_ENABLED}"
 
   "${REPO_ROOT}/dev-dist/bin/camunda" > "${REPO_ROOT}/dev-dist/camunda.log" 2>&1 &
   echo $! > "${REPO_ROOT}/dev-dist/camunda.pid"
@@ -106,7 +124,7 @@ if [ "${DATABASE_MODE}" = "h2" ]; then
   write_env "CORE_APPLICATION_URL=http://localhost:8080
 ZEEBE_REST_ADDRESS=http://localhost:8080
 DATABASE=RDBMS
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=false"
+CAMUNDA_TASKLIST_V2_MODE_ENABLED=${TASKLIST_V2_ENABLED}"
 
   exit 0
 fi
@@ -117,14 +135,23 @@ fi
 # services with no consolidated image. Never assume -- always read the
 # checked-out branch's own compose file.
 if grep -qE '^\s{2}camunda:' "${CONFIG_DIR}/docker-compose.yml"; then
-  echo "=== Detected consolidated 'camunda' service shape ==="
-  ( cd "${CONFIG_DIR}" && DATABASE=elasticsearch docker compose up -d camunda )
+  echo "=== Detected consolidated 'camunda' service shape (Tasklist ${TASKLIST_MODE}) ==="
+  # Match on-demand's own invocation exactly: CAMUNDA_TASKLIST_V2_MODE_ENABLED
+  # must be set at `docker compose up` time -- the compose file only reads it
+  # via ${CAMUNDA_TASKLIST_V2_MODE_ENABLED:-true} at container-creation time,
+  # so exporting it after the container exists has no effect.
+  ( cd "${CONFIG_DIR}" && CAMUNDA_TASKLIST_V2_MODE_ENABLED="${TASKLIST_V2_ENABLED}" \
+      DATABASE=elasticsearch docker compose up -d camunda )
   wait_for "http://localhost:8080/v2/topology" "Camunda"
   write_env "CORE_APPLICATION_URL=http://localhost:8080
 ZEEBE_REST_ADDRESS=http://localhost:8080
-DATABASE_CONTAINER=elasticsearch"
+DATABASE_CONTAINER=elasticsearch
+CAMUNDA_TASKLIST_V2_MODE_ENABLED=${TASKLIST_V2_ENABLED}"
 else
   echo "=== Detected pre-consolidation shape (zeebe/tasklist/operate) -- e.g. stable/8.7 ==="
+  if [ "${2:-}" = "v2" ]; then
+    echo "::warning::stable/8.7's Tasklist predates the v1/v2 toggle -- there is nothing to switch, ignoring the requested v2 mode." >&2
+  fi
   ( cd "${CONFIG_DIR}" && DATABASE=elasticsearch docker compose up -d tasklist operate )
   wait_for "http://localhost:8080" "Tasklist"
   wait_for "http://localhost:8081" "Operate"

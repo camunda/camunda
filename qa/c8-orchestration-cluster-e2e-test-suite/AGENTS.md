@@ -709,11 +709,23 @@ and verify against it**, using the same general loop:
    # (anything other than "elasticsearch"), do NOT provision that engine —
    # use the same single H2-in-memory setup the on-demand workflow's RDBMS
    # job already uses (fast, no container, no per-engine matrix):
-   ./scripts/start-verify-env.sh h2
+   ./scripts/start-verify-env.sh h2 [v1|v2]
 
    # Otherwise (e2e or api-es entries):
-   ./scripts/start-verify-env.sh es
+   ./scripts/start-verify-env.sh es [v1|v2]
    ```
+
+   **The second argument matters for e2e failures — pass the dispatched
+   test's `tasklist_mode` field verbatim.** Running the wrong Tasklist
+   generation can silently fail to reproduce a v1-specific bug, or "verify"
+   a fix that was never actually exercised in the mode that failed —
+   `CAMUNDA_TASKLIST_V2_MODE_ENABLED` has to be set at container-creation
+   time (ES path) or as a server env var before starting the binary (H2
+   path), matching exactly how the on-demand workflow's own matrix does it.
+   Omit it for api entries — `tasklist_mode` is absent from those because
+   on-demand's own API-ES and API-RDBMS jobs have no `tasklist_mode` matrix
+   dimension at all (only `camunda_mode`); the script's default is fine.
+   `stable/8.7` predates the toggle entirely; the script ignores it there.
 
    If a dispatch mixes E2E/API-ES failures with RDBMS-flagged ones, run the
    affected spec(s) against whichever environment matches each one — call
