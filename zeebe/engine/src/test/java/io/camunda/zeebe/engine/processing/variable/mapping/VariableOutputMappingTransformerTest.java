@@ -226,7 +226,8 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -254,7 +255,7 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -281,7 +282,8 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
@@ -305,7 +307,8 @@ public final class VariableOutputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
