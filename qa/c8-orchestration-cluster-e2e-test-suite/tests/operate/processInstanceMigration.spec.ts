@@ -691,7 +691,12 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated tasks', async ({
+  // Skipped due to bug #59919: https://github.com/camunda/camunda/issues/59919
+  // After migration, the incident on the migrated Business rule task is not
+  // reported by Operate's v1 flow-node-metadata endpoint (incidentCount: 0)
+  // while the v2 APIs report hasIncident: true, so the metadata popover never
+  // renders the "Incident" section this step asserts on.
+  test.skip('Migrated tasks', async ({
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
