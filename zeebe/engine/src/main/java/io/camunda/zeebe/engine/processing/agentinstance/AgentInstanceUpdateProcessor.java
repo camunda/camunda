@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -39,11 +39,10 @@ import java.util.Set;
 public final class AgentInstanceUpdateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
-  // Iteration order matters: it determines the order of names in the emitted changedAttributes
-  // list and must be stable across JVMs and replays. Used both as the allow-list for incoming
-  // changedAttributes and as the iteration order for applying the patch.
-  private static final List<String> ALLOWED_ATTRIBUTES =
-      List.of(
+  private static final Set<String> ALLOWED_REQUEST_LEVEL_ATTRIBUTES =
+      Set.of(AgentInstanceRecord.ATTR_STATUS);
+  private static final Set<String> BACKWARDS_COMPAT_ATTRIBUTES =
+      Set.of(
           AgentInstanceRecord.ATTR_STATUS,
           AgentInstanceRecord.ATTR_METRICS,
           AgentInstanceRecord.ATTR_TOOLS);
@@ -214,42 +213,11 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-
-    final var unknown =
-        changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();
-    if (!unknown.isEmpty()) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, ALLOWED_ATTRIBUTES));
+    final var validPatch = validateRequestLevelChanges(command, current);
+    if (validPatch.isLeft()) {
+      final var rejection = validPatch.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
-    }
-
-    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
-        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
-      final var metrics = commandValue.getMetrics();
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_INVALID_METRIC_DELTA.formatted(
-              metrics.getInputTokens(),
-              metrics.getOutputTokens(),
-              metrics.getModelCalls(),
-              metrics.getToolCalls()));
-      return;
-    }
-
-    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
-      final var from = current.getStatus();
-      final var to = commandValue.getStatus();
-      if (!isAllowedTransition(from, to)) {
-        writeRejection(
-            command,
-            RejectionType.INVALID_STATE,
-            ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to));
-        return;
-      }
     }
 
     if (!current.getElementInstanceKeys().contains(newElementInstanceKey)) {
@@ -257,31 +225,76 @@ public final class AgentInstanceUpdateProcessor
     }
     current.setElementInstanceKey(newElementInstanceKey);
 
-    current.setChangedAttributes(applyPatch(current, commandValue, changed));
+    final var changedAttributes = applyRequestLevelChanges(current, commandValue, validPatch.get());
+
+    current.setChangedAttributes(changedAttributes.stream().sorted().toList());
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
-  /**
-   * <strong>Mutates {@code current} in place.</strong> For each attribute named in {@code changed},
-   * applies the corresponding value from {@code delta} to {@code current} (status/tools are
-   * overwritten, metrics fields are summed). The caller's {@code current} reference observes every
-   * mutation directly — nothing is copied.
-   *
-   * <p>Returns the effective {@code changedAttributes} for the UPDATED event — i.e. the subset of
-   * {@code changed} whose values actually moved.
-   */
-  @SuppressWarnings("checkstyle:MissingSwitchDefault") // exhaustive over ALLOWED_ATTRIBUTES
-  private static List<String> applyPatch(
+  private Either<Rejection, List<String>> validateRequestLevelChanges(
+      final TypedRecord<AgentInstanceRecord> command, final AgentInstanceRecord current) {
+
+    final var commandValue = command.getValue();
+    final var agentInstanceKey = current.getAgentInstanceKey();
+    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
+
+    final var allowedAttributes =
+        commandValue.getHistory().isEmpty()
+            ? BACKWARDS_COMPAT_ATTRIBUTES
+            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
+
+    final var unknown = changed.stream().filter(attr -> !allowedAttributes.contains(attr)).toList();
+    if (!unknown.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, allowedAttributes)));
+    }
+
+    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
+        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
+      final var metrics = commandValue.getMetrics();
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_INVALID_METRIC_DELTA.formatted(
+                  metrics.getInputTokens(),
+                  metrics.getOutputTokens(),
+                  metrics.getModelCalls(),
+                  metrics.getToolCalls())));
+    }
+
+    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
+      final var from = current.getStatus();
+      final var to = commandValue.getStatus();
+      if (!isAllowedTransition(from, to)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_STATE,
+                ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to)));
+      }
+    }
+
+    return Either.right(new ArrayList<>(changed));
+  }
+
+  private List<String> applyRequestLevelChanges(
       final AgentInstanceRecord current,
       final AgentInstanceRecord delta,
-      final Set<String> changed) {
+      final List<String> changed) {
+
+    final var allowedAttributes =
+        delta.getHistory().isEmpty()
+            ? BACKWARDS_COMPAT_ATTRIBUTES
+            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
+
     final var effective = new ArrayList<String>(changed.size());
     // Iterate ALLOWED_ATTRIBUTES (not the incoming set) so the output order is fixed regardless of
     // the JVM's hash randomization or client ordering.
-    for (final var attr : ALLOWED_ATTRIBUTES) {
+    for (final var attr : allowedAttributes) {
       if (!changed.contains(attr)) {
         continue;
       }
@@ -302,6 +315,9 @@ public final class AgentInstanceUpdateProcessor
             current.setTools(delta.getTools());
             effective.add(AgentInstanceRecord.ATTR_TOOLS);
           }
+        }
+        default -> {
+          // allowedAttributes only ever contains the three cases above; nothing else to apply.
         }
       }
     }
