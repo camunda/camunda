@@ -964,6 +964,39 @@ components:
           description: The agent-side timestamp of when this message was produced.
           type: string
           format: date-time
+        tools:
+          description: |
+            The complete list of tools available to the agent as of this entry. CONFIGURATION
+            items only; omit for other roles. Omit to leave the tool list unchanged; send an
+            empty array to clear it.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AgentTool'
+        model:
+          description: |
+            The LLM model identifier as of this entry. CONFIGURATION items only; omit for other
+            roles.
+          type: string
+        provider:
+          description: |
+            The LLM provider as of this entry. CONFIGURATION items only; omit for other roles.
+          type: string
+        limits:
+          description: |
+            The operational limits as of this entry. CONFIGURATION items only; omit for other
+            roles.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceLimits'
+        systemPrompt:
+          description: |
+            The system prompt, as content blocks, as of this entry. CONFIGURATION items only;
+            omit for other roles. Omit to leave the system prompt unchanged; when present, must
+            be non-empty.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
 
     AgentInstanceHistoryItemCreationResult:
       description: Response returned after successfully appending a history item.
