@@ -22,9 +22,11 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * A {@link NameResolver.Factory} that decorates the default DNS resolver so that the resulting
- * {@link NameResolver} re-resolves on a fixed interval, in addition to whatever triggers grpc-java
- * would normally rely on.
+ * A {@link NameResolver.Factory} that decorates whatever resolver a delegate factory returns for a
+ * given target URI, so that the resulting {@link NameResolver} re-resolves on a fixed interval, in
+ * addition to whatever triggers grpc-java would normally rely on. The delegate's resolver is chosen
+ * by grpc-java based on the target URI's scheme; in practice this is always the DNS resolver, since
+ * the sole call site of this factory always builds a {@code dns:///} target.
  *
  * <p>grpc-java's DNS resolver never re-resolves on its own: it resolves once on {@link
  * NameResolver#start} and afterwards only when something external calls {@link

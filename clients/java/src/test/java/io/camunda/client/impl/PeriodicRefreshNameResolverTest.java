@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -56,15 +57,14 @@ final class PeriodicRefreshNameResolverTest {
       new PeriodicRefreshNameResolver(delegate, scheduledExecutorService, REFRESH_INTERVAL, logger);
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   void shouldRefreshDelegateRepeatedlyOnSchedule() {
     // given — a fake scheduler whose scheduled task we invoke ourselves, standing in for
     // grpc-java's channel-owned scheduled executor actually firing it on an interval.
     final ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
     final ArgumentCaptor<Runnable> taskCaptor = ArgumentCaptor.forClass(Runnable.class);
-    when(scheduledExecutorService.scheduleWithFixedDelay(
-            taskCaptor.capture(), anyLong(), anyLong(), any()))
-        .thenReturn((ScheduledFuture) scheduledFuture);
+    doReturn(scheduledFuture)
+        .when(scheduledExecutorService)
+        .scheduleWithFixedDelay(taskCaptor.capture(), anyLong(), anyLong(), any());
 
     // when
     resolver.start(mock(Listener2.class));
@@ -84,13 +84,12 @@ final class PeriodicRefreshNameResolverTest {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   void shouldStopSchedulingRefreshesAfterShutdown() {
     // given
     final ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
-    when(scheduledExecutorService.scheduleWithFixedDelay(
-            any(Runnable.class), anyLong(), anyLong(), any()))
-        .thenReturn((ScheduledFuture) scheduledFuture);
+    doReturn(scheduledFuture)
+        .when(scheduledExecutorService)
+        .scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), any());
     resolver.start(mock(Listener2.class));
 
     // when
@@ -124,7 +123,6 @@ final class PeriodicRefreshNameResolverTest {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   void shouldLogAtInfoOnlyWhenResolvedAddressesChange() {
     // given
     mockScheduling();
@@ -170,12 +168,11 @@ final class PeriodicRefreshNameResolverTest {
     verify(logger, never()).info(anyString(), any(), any());
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void mockScheduling() {
     final ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
-    when(scheduledExecutorService.scheduleWithFixedDelay(
-            any(Runnable.class), anyLong(), anyLong(), any()))
-        .thenReturn((ScheduledFuture) scheduledFuture);
+    doReturn(scheduledFuture)
+        .when(scheduledExecutorService)
+        .scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), any());
   }
 
   private static ResolutionResult resolutionResultOf(final EquivalentAddressGroup... addresses) {
