@@ -203,6 +203,22 @@ class PhysicalTenantExporterConfigurationsTest {
   }
 
   @Test
+  void shouldPreventMergerFromMutatingNestedInputs() {
+    // given — a catalog entry with nested root args whose merger tries to mutate them in place
+    properties.put(
+        "camunda.data.exporters.nested.class-name",
+        TestExporterConfigMergers.NESTED_MUTATING_CLASS);
+    properties.put("camunda.data.exporters.nested.args.nested.a", 1);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters.nested.args.b", 2);
+
+    // when / then — the merger is handed recursively immutable copies, so the nested write fails
+    // rather than corrupting the root catalog every later tenant still resolves against
+    assertThatThrownBy(this::resolveTenantA)
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasRootCauseInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
   void shouldWrapMergeFailureWithExporterAndTenantId() {
     // given — a catalog entry whose merger throws
     properties.put(
@@ -211,10 +227,13 @@ class PhysicalTenantExporterConfigurationsTest {
     properties.put("camunda.physical-tenants.tenanta.data.exporters.failing.args.a", 2);
 
     // when / then
+    // the wrapper names the entry and stays stable; the merger's own detail rides on the cause, so
+    // a merger throwing with a null message can never render "null" into the top-level message
     assertThatThrownBy(this::resolveTenantA)
         .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("failing")
-        .hasMessageContaining("tenanta")
+        .hasMessage(
+            "Failed to merge exporter args for exporter 'failing' of physical tenant 'tenanta'")
+        .rootCause()
         .hasMessageContaining("intentional test merge failure");
   }
 
