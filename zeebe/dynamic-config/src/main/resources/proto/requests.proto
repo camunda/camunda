@@ -168,6 +168,11 @@ message RestoreRequest {
   bool dryRun = 3;
 }
 
+message ClusterRestoreRequest {
+  map<string, RestoreArguments> tenantArguments = 1;
+  bool dryRun = 2;
+}
+
 message TopologyChangeResponse {
   int64 changeId = 1;
   map<string, topology_protocol.MemberState> currentTopology = 2;

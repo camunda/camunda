@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
@@ -221,4 +222,21 @@ public sealed interface ClusterConfigurationManagementRequest {
 
   record RestoreResolvedRequest(Map<Integer, long[]> backups, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
+
+  record ClusterRestoreRequest(Map<String, TenantRestoreArguments> tenantArguments, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+
+    public TenantRestoreArguments argumentsFor(final String physicalTenantId) {
+      final var arguments = tenantArguments.get(physicalTenantId);
+      if (arguments == null) {
+        throw new NoSuchElementException(
+            "No restore arguments for physical tenant '%s'".formatted(physicalTenantId));
+      }
+      return arguments;
+    }
+
+    public RestoreRequest toRestoreRequest(final String physicalTenantId) {
+      return new RestoreRequest(physicalTenantId, argumentsFor(physicalTenantId), dryRun);
+    }
+  }
 }

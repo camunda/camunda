@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
@@ -30,6 +31,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Requests;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
@@ -108,6 +111,49 @@ final class ProtoBufSerializerTest {
 
     // then
     final var decodedRequest = protoBufSerializer.decodeModeChangeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterRestoreRequestForOnePhysicalTenant() {
+    // given
+    final var request =
+        new ClusterRestoreRequest(
+            Map.of(
+                "tenant-b",
+                new TenantRestoreArguments(
+                    new RestoreParameters(List.of(100L, 101L), null, null),
+                    "elasticsearch",
+                    false)),
+            true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterRestoreRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterRestoreRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterRestoreRequestWithPerTenantArguments() {
+    // given — a cluster-wide restore naming several physical tenants at once
+    final var request =
+        new ClusterRestoreRequest(
+            Map.of(
+                "tenant-b",
+                new TenantRestoreArguments(
+                    new RestoreParameters(List.of(55L), null, null), "rdbms", true),
+                "tenant-c",
+                new TenantRestoreArguments(
+                    new RestoreParameters(List.of(), "2024-02-01T10:00:00Z", null), "rdbms", true)),
+            false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterRestoreRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterRestoreRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 
