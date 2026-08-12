@@ -19,7 +19,7 @@ type EntitySearchDropdownProps<Entity> = {
 
 /**
  * Shared type definition for entity search dropdowns.
- * 
+ *
  * Implementations are kept separate by choice to avoid all entity searches having to function the same way.
  */
 export type EntitySearchDropdown<Entity> = FC<

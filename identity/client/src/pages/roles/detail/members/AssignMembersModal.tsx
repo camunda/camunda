@@ -6,20 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useCallback, useEffect, useState } from "react";
-import { Tag } from "@carbon/react";
+import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
-import styled from "styled-components";
-import UserSearchDropdown from "src/components/form/UserSearchDropdown";
+import { UserMultiSelect } from "src/components/form/entitySelection/UserSelection";
 import FormModal from "src/components/modal/FormModal";
 import type { Role, User } from "@camunda/camunda-api-zod-schemas/8.10";
-
-const SelectedUsers = styled.div`
-  margin-top: 0;
-`;
 
 const AssignMembersModal: FC<
   UseEntityModalCustomProps<
@@ -35,25 +29,6 @@ const AssignMembersModal: FC<
   const { mutateAsync: callAssignUser } = useMutation(
     membershipMutations.assignRoleMember(qc),
   );
-
-  const unassignedFilter = useCallback(
-    ({ username }: User) =>
-      !assignedUsers.some((user) => user.username === username) &&
-      !selectedUsers.some((user) => user.username === username),
-    [assignedUsers, selectedUsers],
-  );
-
-  const onSelectUser = (user: User) => {
-    setSelectedUsers([...selectedUsers, user]);
-  };
-
-  const onUnselectUser =
-    ({ username }: User) =>
-    () => {
-      setSelectedUsers(
-        selectedUsers.filter((user) => user.username !== username),
-      );
-    };
 
   const canSubmit = roleId && selectedUsers.length;
 
@@ -94,28 +69,11 @@ const AssignMembersModal: FC<
       overflowVisible
     >
       <p>{t("searchAndAssignUserToRole")}</p>
-      {selectedUsers.length > 0 && (
-        <SelectedUsers>
-          {selectedUsers.map((user) => (
-            <Tag
-              key={user.username}
-              onClose={onUnselectUser(user)}
-              size="md"
-              type="blue"
-              filter
-            >
-              {user.username}
-            </Tag>
-          ))}
-        </SelectedUsers>
-      )}
-      <UserSearchDropdown
+      <UserMultiSelect
+        value={selectedUsers}
+        onChange={setSelectedUsers}
+        excluded={assignedUsers}
         autoFocus
-        placeholder={t("searchByUsernameOrName")}
-        onSelect={onSelectUser}
-        filter={unassignedFilter}
-        errorTitle={t("usersCouldNotLoad")}
-        retryLabel={t("retry")}
       />
     </FormModal>
   );

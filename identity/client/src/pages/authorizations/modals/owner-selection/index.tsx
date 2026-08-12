@@ -8,12 +8,11 @@
 
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
-import OwnerSelectionSearch from "./OwnerSelectionSearch";
 import TextField from "src/components/form/TextField";
-import GroupSearchDropdown from "src/components/form/GroupSearchDropdown";
-import MappingRuleSearchDropdown from "src/components/form/MappingRuleSearchDropdown";
-import RoleSearchDropdown from "src/components/form/RoleSearchDropdown";
-import UserSearchDropdown from "src/components/form/UserSearchDropdown";
+import { UserSingleSelect } from "src/components/form/entitySelection/UserSelection";
+import { GroupSingleSelect } from "src/components/form/entitySelection/GroupSelection";
+import { RoleSingleSelect } from "src/components/form/entitySelection/RoleSelection";
+import { MappingRuleSingleSelect } from "src/components/form/entitySelection/MappingRuleSelection";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
@@ -81,13 +80,12 @@ const Selection: FC<SelectionProps> = ({
       }
       return (
         <div onBlur={onBlur}>
-          <OwnerSelectionSearch
-            searchDropdown={UserSearchDropdown}
-            getId={(user) => user.username}
-            itemToString={(user) => user.name || user.username}
-            errorTitle={t("usersCouldNotLoad")}
+          <UserSingleSelect
+            label={t("owner")}
+            placeholder={t("searchByOwnerId")}
+            requiredText={t("ownerRequired")}
             onChange={onChange}
-            ownerId={ownerId}
+            value={ownerId}
             isEmpty={isEmpty}
           />
         </div>
@@ -96,13 +94,12 @@ const Selection: FC<SelectionProps> = ({
       if (isCamundaGroupsEnabled) {
         return (
           <div onBlur={onBlur}>
-            <OwnerSelectionSearch
-              searchDropdown={GroupSearchDropdown}
-              getId={(group) => group.groupId}
-              itemToString={(group) => group.name || group.groupId}
-              errorTitle={t("groupsCouldNotLoad")}
+            <GroupSingleSelect
+              label={t("owner")}
+              placeholder={t("searchByOwnerId")}
+              requiredText={t("ownerRequired")}
               onChange={onChange}
-              ownerId={ownerId}
+              value={ownerId}
               isEmpty={isEmpty}
             />
           </div>
@@ -130,15 +127,12 @@ const Selection: FC<SelectionProps> = ({
     case "MAPPING_RULE":
       return (
         <div onBlur={onBlur}>
-          <OwnerSelectionSearch
-            searchDropdown={MappingRuleSearchDropdown}
-            getId={(mappingRule) => mappingRule.mappingRuleId}
-            itemToString={(mappingRule) =>
-              mappingRule.name || mappingRule.mappingRuleId
-            }
-            errorTitle={t("mappingRulesCouldNotLoad")}
+          <MappingRuleSingleSelect
+            label={t("owner")}
+            placeholder={t("searchByOwnerId")}
+            requiredText={t("ownerRequired")}
             onChange={onChange}
-            ownerId={ownerId}
+            value={ownerId}
             isEmpty={isEmpty}
           />
         </div>
@@ -146,13 +140,12 @@ const Selection: FC<SelectionProps> = ({
     case "ROLE":
       return (
         <div onBlur={onBlur}>
-          <OwnerSelectionSearch
-            searchDropdown={RoleSearchDropdown}
-            getId={(role) => role.roleId}
-            itemToString={(role) => role.name || role.roleId}
-            errorTitle={t("rolesCouldNotLoad")}
+          <RoleSingleSelect
+            label={t("owner")}
+            placeholder={t("searchByOwnerId")}
+            requiredText={t("ownerRequired")}
             onChange={onChange}
-            ownerId={ownerId}
+            value={ownerId}
             isEmpty={isEmpty}
           />
         </div>

@@ -11,33 +11,39 @@ import { FormLabel, Tag } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
 
-type OwnerSelectionSearchProps<Entity> = {
+type EntitySearchSingleSelectProps<Entity> = {
   searchDropdown: EntitySearchDropdown<Entity>;
   getId: (entity: Entity) => string;
   itemToString: (entity: Entity) => string;
+  label: string;
+  placeholder: string;
   errorTitle: string;
-  onChange: (ownerId: string) => void;
-  ownerId?: string;
+  requiredText: string;
+  onChange: (id: string) => void;
+  value?: string;
   isEmpty?: boolean;
 };
 
-const OwnerSelectionSearch = <Entity,>({
+const EntitySearchSingleSelect = <Entity,>({
   searchDropdown: SearchDropdown,
   getId,
   itemToString,
+  label,
+  placeholder,
   errorTitle,
+  requiredText,
   onChange,
-  ownerId,
+  value,
   isEmpty = false,
-}: OwnerSelectionSearchProps<Entity>) => {
-  const { t } = useTranslate("authorizations");
+}: EntitySearchSingleSelectProps<Entity>) => {
+  const { t } = useTranslate();
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
 
   useEffect(() => {
-    if (!ownerId) {
+    if (!value) {
       setSelectedEntity(null);
     }
-  }, [ownerId]);
+  }, [value]);
 
   const handleSelect = (entity: Entity) => {
     setSelectedEntity(entity);
@@ -51,7 +57,7 @@ const OwnerSelectionSearch = <Entity,>({
 
   return (
     <div>
-      <FormLabel>{t("owner")}</FormLabel>
+      <FormLabel>{label}</FormLabel>
       {selectedEntity ? (
         <div style={{ marginTop: "0.5rem" }}>
           <Tag filter onClose={handleClear} type="blue" size="md">
@@ -60,7 +66,7 @@ const OwnerSelectionSearch = <Entity,>({
         </div>
       ) : (
         <SearchDropdown
-          placeholder={t("searchByOwnerId")}
+          placeholder={placeholder}
           onSelect={handleSelect}
           errorTitle={errorTitle}
           retryLabel={t("retry")}
@@ -74,11 +80,11 @@ const OwnerSelectionSearch = <Entity,>({
             marginTop: "0.25rem",
           }}
         >
-          {t("ownerRequired")}
+          {requiredText}
         </p>
       )}
     </div>
   );
 };
 
-export default OwnerSelectionSearch;
+export default EntitySearchSingleSelect;
