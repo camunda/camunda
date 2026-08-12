@@ -99,6 +99,8 @@ public final class VariableOutputMappingTransformerTest {
       },
       // a null merge base takes the "replace", not "merge", branch
       {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("null")), "{'a':{'b':1}}"},
+      // `context merge` on a non-context value silently nulls the variable instead of failing
+      {List.of(mapping("1", "a.b")), Map.of("a", asMsgPack("5")), "{'a':null}"},
       // override nested property
       {
         List.of(mapping("x", "a.b")),
@@ -147,6 +149,19 @@ public final class VariableOutputMappingTransformerTest {
         List.of(mapping("append(x, y)", "a")),
         Map.of("x", asMsgPack("[1,2]"), "y", asMsgPack("3")),
         "{'a':[1,2,3]}"
+      },
+      // a later entry's back-reference resolves the POST-merge value of an earlier entry sharing
+      // its root key
+      {
+        List.of(mapping("1", "a.b"), mapping("a", "d")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'a':{'p':0, 'b':1}, 'd':{'p':0, 'b':1}}"
+      },
+      // same back-reference, opposite declaration order: now it sees the PRE-merge value instead
+      {
+        List.of(mapping("a", "d"), mapping("1", "a.b")),
+        Map.of("a", asMsgPack("{'p':0}")),
+        "{'a':{'p':0, 'b':1}, 'd':{'p':0}}"
       },
     };
   }
@@ -213,8 +228,7 @@ public final class VariableOutputMappingTransformerTest {
   @Test
   @Disabled(
       "Output-mapping target-regrouping still breaks declaration order - #58801 fixed "
-          + "this for input mappings only. Tracked under #56387 (mapping ordering). — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
+          + "this for input mappings only. Tracked under #56387 (mapping ordering).")
   void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
     // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
     // see c's just-assigned value
@@ -233,79 +247,6 @@ public final class VariableOutputMappingTransformerTest {
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
     MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1, 'd':1}, 'c':1}");
-  }
-
-  @Test
-  @Disabled(
-      "context merge() on a scalar merge base silently nulls instead of replacing, unlike the "
-          + "null-merge-base case. Tracked under #XXXX — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
-  void shouldMergeOntoNonContextValueInsteadOfNulling() {
-    final var mappings = List.of(mapping("1", "a.b"));
-    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("5"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
-
-    // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}}");
-  }
-
-  @Test
-  @Disabled(
-      "context merge() with the current scope leaks an untouched sibling ('p') into the merge "
-          + "target and a later back-reference to it, instead of building a mapping-only result "
-          + "(input mappings already do this post-#58801). Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
-  void shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference() {
-    final var mappings = List.of(mapping("1", "a.b"), mapping("a", "d"));
-    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
-
-    // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'b':1}}");
-  }
-
-  @Test
-  @Disabled(
-      "Same leak as shouldNotLeakUntouchedSiblingIntoMergeTargetOrBackReference, opposite "
-          + "mapping order: the back-reference runs before 'a' is ever written, so it correctly "
-          + "keeps 'p'; only the later merge target should drop it. Tracked under "
-          + "https://github.com/camunda/camunda/issues/35251 — once fixed, move into "
-          + "parametersSuccessfulEvaluationToObject.")
-  void shouldNotLeakUntouchedSiblingIntoMergeTargetOppositeOrder() {
-    final var mappings = List.of(mapping("a", "d"), mapping("1", "a.b"));
-    final Map<String, DirectBuffer> variables = Map.of("a", asMsgPack("{'p':0}"));
-
-    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-
-    // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
-
-    // then
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-    MsgPackUtil.assertEquality(result.toBuffer(), "{'a':{'b':1}, 'd':{'p':0}}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
