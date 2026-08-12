@@ -494,9 +494,16 @@ jobs:
             else
               pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
               if [ "$pr_count" -eq 0 ]; then
-                echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
-                # Surface root_cause from the empty-prs object if the agent wrote one
-                reason=$(jq -r '.reason // .root_cause // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                verify=$(jq -r '.verify // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ "$verify" = "not-reproduced" ]; then
+                  echo ":grey_question: **Decision: not reproduced** — the dispatched failure(s) did not reproduce against a live Docker environment (Live Docker Verify). Likely a flake, or already fixed."
+                else
+                  echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
+                fi
+                # Surface an explanation from whichever field the agent wrote --
+                # .reason/.root_cause for the classic no-fix case, .note for a
+                # Live Docker Verify not-reproduced/skipped outcome.
+                reason=$(jq -r '.reason // .root_cause // .note // ""' /tmp/fix-meta.json 2>/dev/null || true)
                 if [ -n "$reason" ] && [ "$reason" != "null" ]; then
                   echo ""
                   echo "**Reason:** ${reason}"
@@ -578,9 +585,13 @@ jobs:
           prs_json="[]"
           pbugs_json="[]"
           category=""
+          verify=""
+          note=""
           if [ -f /tmp/fix-meta.json ]; then
             prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
             category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+            verify=$(jq -r '.verify // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+            note=$(jq -r '.note // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
             # Accept product_bugs (array) and/or a singular product_bug (object).
             pbugs_json=$(jq -c '(.product_bugs // []) + (if .product_bug then [.product_bug] else [] end)' /tmp/fix-meta.json 2>/dev/null || echo '[]')
           fi
@@ -632,6 +643,10 @@ jobs:
             [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
           elif [ "$JOB_STATUS" = "failure" ]; then
             icon=":x:"; summary="Agent failed (no fix applied)"
+          elif [ "$verify" = "not-reproduced" ]; then
+            icon=":grey_question:"
+            summary="Not reproduced against a live Docker environment — likely a flake, or already fixed"
+            [ -n "$note" ] && summary="${summary}: ${note}"
           elif [ "$category" = "not-determined" ]; then
             icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
