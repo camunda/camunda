@@ -31,8 +31,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
-    return TestActorFuture.completedFuture(currentTopology);
+  public ActorFuture<CurrentClusterConfiguration> getClusterConfiguration() {
+    return TestActorFuture.completedFuture(CurrentClusterConfiguration.fromLegacy(currentTopology));
   }
 
   @Override
@@ -69,7 +69,7 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> cancelChange(final long changeId) {
+  public ActorFuture<CurrentClusterConfiguration> cancelChange(final long changeId) {
     return TestActorFuture.failedFuture(new UnsupportedOperationException());
   }
 

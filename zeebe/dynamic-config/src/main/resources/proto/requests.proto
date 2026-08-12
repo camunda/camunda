@@ -171,6 +171,7 @@ message Response {
     ErrorResponse error = 1;
     TopologyChangeResponse topologyChangeResponse = 2;
     topology_protocol.ClusterTopology clusterTopology = 3;
+    topology_protocol.CurrentClusterConfiguration currentClusterConfiguration = 4;
   }
 }
 

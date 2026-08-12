@@ -35,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -313,13 +314,14 @@ public class RecoveryServicesTest {
   @Test
   public void shouldGetRestoreStatusWhenAuthorizationsDisabled() {
     // given
-    stubTopologySuccess();
+    final var configuration = stubTopologySuccess();
 
     // when
     final var future = services.restoreStatus(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
+    assertThat(future.join().get()).isEqualTo(configuration.toLegacyDefault());
     verify(clusterConfigurationRequestSender).getTopology();
   }
 
@@ -327,13 +329,14 @@ public class RecoveryServicesTest {
   public void shouldGetRestoreStatusWhenUserHasBackupRestorePermission() {
     // given
     grant(AuthorizationResourceType.BACKUP, PermissionType.RESTORE);
-    stubTopologySuccess();
+    final var configuration = stubTopologySuccess();
 
     // when
     final var future = services.restoreStatus(authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
+    assertThat(future.join().get()).isEqualTo(configuration.toLegacyDefault());
     verify(clusterConfigurationRequestSender).getTopology();
   }
 
@@ -386,9 +389,11 @@ public class RecoveryServicesTest {
         PHYSICAL_TENANT_ID, List.of(100L), null, null, "elasticsearch", false, false);
   }
 
-  private void stubTopologySuccess() {
+  private CurrentClusterConfiguration stubTopologySuccess() {
+    final var configuration = CurrentClusterConfiguration.fromLegacy(ClusterConfiguration.init());
     when(clusterConfigurationRequestSender.getTopology())
-        .thenReturn(CompletableFuture.completedFuture(Either.right(ClusterConfiguration.init())));
+        .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
+    return configuration;
   }
 
   private void stubRestoreSuccess() {

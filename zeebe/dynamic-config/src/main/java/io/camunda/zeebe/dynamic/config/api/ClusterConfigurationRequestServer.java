@@ -11,7 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
@@ -84,7 +84,8 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     }
   }
 
-  byte[] encodeClusterTopologyResponse(final Either<ErrorResponse, ClusterConfiguration> response) {
+  byte[] encodeClusterTopologyResponse(
+      final Either<ErrorResponse, CurrentClusterConfiguration> response) {
     if (response.isLeft()) {
       return serializer.encodeResponse(response.getLeft());
     } else {
@@ -144,7 +145,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     communicationService.replyTo(
         ClusterConfigurationRequestTopics.QUERY_TOPOLOGY.topic(),
         Function.identity(),
-        request -> mapClusterTopologyResponse(clusterConfigurationManagementApi.getTopology()),
+        request -> mapResponse(clusterConfigurationManagementApi.getTopology()),
         this::encodeClusterTopologyResponse);
   }
 
@@ -152,9 +153,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     communicationService.replyTo(
         ClusterConfigurationRequestTopics.CANCEL_CHANGE.topic(),
         serializer::decodeCancelChangeRequest,
-        request ->
-            mapClusterTopologyResponse(
-                clusterConfigurationManagementApi.cancelTopologyChange(request)),
+        request -> mapResponse(clusterConfigurationManagementApi.cancelTopologyChange(request)),
         this::encodeClusterTopologyResponse);
   }
 
@@ -279,19 +278,11 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         this::encodeResponse);
   }
 
-  private CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> mapResponse(
-      final ActorFuture<ClusterConfigurationChangeResponse> topologyManagementApi) {
+  private <T> CompletableFuture<Either<ErrorResponse, T>> mapResponse(
+      final ActorFuture<T> topologyManagementApi) {
     return topologyManagementApi
         .toCompletableFuture()
-        .thenApply(Either::<ErrorResponse, ClusterConfigurationChangeResponse>right)
-        .exceptionally(ClusterConfigurationRequestServer::mapError);
-  }
-
-  private CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> mapClusterTopologyResponse(
-      final ActorFuture<ClusterConfiguration> topologyManagementApi) {
-    return topologyManagementApi
-        .toCompletableFuture()
-        .thenApply(Either::<ErrorResponse, ClusterConfiguration>right)
+        .thenApply(Either::<ErrorResponse, T>right)
         .exceptionally(ClusterConfigurationRequestServer::mapError);
   }
 

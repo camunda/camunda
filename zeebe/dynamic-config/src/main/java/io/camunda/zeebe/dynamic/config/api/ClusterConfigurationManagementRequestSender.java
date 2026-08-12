@@ -30,7 +30,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -207,23 +207,23 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> getTopology() {
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> getTopology() {
     return communicationService.send(
         ClusterConfigurationRequestTopics.QUERY_TOPOLOGY.topic(),
         new byte[0],
         Function.identity(),
-        serializer::decodeClusterTopologyResponse,
+        serializer::decodeClusterConfigurationResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> cancelTopologyChange(
+  public CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> cancelTopologyChange(
       final ClusterConfigurationManagementRequest.CancelChangeRequest request) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.CANCEL_CHANGE.topic(),
         request,
         serializer::encodeCancelChangeRequest,
-        serializer::decodeClusterTopologyResponse,
+        serializer::decodeClusterConfigurationResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }

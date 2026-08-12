@@ -26,7 +26,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -74,7 +75,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
-      Set.of("dryRun", "force", "replicationFactor");
+      Set.of("dryRun", "force", "replicationFactor", "physicalTenant");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
 
@@ -84,9 +85,28 @@ public class ClusterEndpoint {
   }
 
   @GetMapping(produces = "application/json")
-  public ResponseEntity<?> clusterTopology() {
+  public ResponseEntity<?> clusterTopology(
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final Optional<String> tenant = Optional.ofNullable(physicalTenant).filter(s -> !s.isBlank());
     try {
-      return ClusterApiUtils.mapClusterTopologyResponse(requestSender.getTopology().join());
+      return withCurrentConfiguration(
+          configuration -> {
+            // the validity check needs the fetched configuration, so it can only happen after
+            // the query returns, not before.
+            // an uninitialized configuration has no partition groups yet (broker startup, or
+            // right after a restore) - absence there means "not bootstrapped", not "unknown
+            // tenant", so skip the check until the configuration is actually initialized.
+            if (tenant.isPresent()
+                && !configuration.isUninitialized()
+                && !configuration.hasPartitionGroup(tenant.get())) {
+              return ClusterApiUtils.mapErrorResponse(
+                  new ErrorResponse(
+                      ErrorCode.NOT_FOUND,
+                      "Physical tenant '" + tenant.get() + "' does not exist"));
+            }
+            return ResponseEntity.status(200)
+                .body(ClusterApiUtils.mapClusterTopology(configuration, tenant.orElse(null)));
+          });
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
@@ -117,18 +137,14 @@ public class ClusterEndpoint {
     }
   }
 
-  /**
-   * Fetches the current topology and, until the coordinator's query response itself carries the new
-   * multi-partition-group model, converts it from the legacy {@link ClusterConfiguration} on every
-   * call before handing it to {@code action}.
-   */
+  /** Fetches the current topology and hands it to {@code action}. */
   private ResponseEntity<?> withCurrentConfiguration(
       final Function<CurrentClusterConfiguration, ResponseEntity<?>> action) {
     final var topology = requestSender.getTopology().join();
     if (topology.isLeft()) {
       return ClusterApiUtils.mapErrorResponse(topology.getLeft());
     }
-    return action.apply(CurrentClusterConfiguration.fromLegacy(topology.get()));
+    return action.apply(topology.get());
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {

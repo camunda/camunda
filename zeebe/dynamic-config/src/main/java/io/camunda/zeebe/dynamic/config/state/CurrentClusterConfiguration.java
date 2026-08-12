@@ -195,66 +195,81 @@ public record CurrentClusterConfiguration(
 
   /**
    * Projects this multi-group configuration back to a legacy single-group {@link
-   * ClusterConfiguration} representing the {@link #DEFAULT_GROUP}. This is the inverse of {@link
+   * ClusterConfiguration} representing the named partition group. This is the inverse of {@link
    * #fromLegacy(ClusterConfiguration)} and backs the {@code getClusterConfiguration()} compat
    * accessor used by read consumers (e.g. the REST topology API) that have not yet migrated to the
    * multi-group model.
    *
    * <p>Each member combines its cluster-wide lifecycle state (from {@link #globalConfiguration})
-   * with its default-group partition assignment (from {@code partitionGroups[default]}); a member
-   * whose default-group operating mode is {@link Mode#RECOVERING} is projected to the legacy {@link
-   * MemberState.State#RECOVERING} state. {@code routingState} and {@code incarnationNumber} come
-   * from the default group; {@code clusterId} and {@code partitionDistributorConfig} from the
-   * global configuration.
+   * with its partition assignment in {@code groupId} (from {@code partitionGroups[groupId]}); a
+   * member whose operating mode in that group is {@link Mode#RECOVERING} is projected to the legacy
+   * {@link MemberState.State#RECOVERING} state. {@code routingState} and {@code incarnationNumber}
+   * come from that group; {@code clusterId} and {@code partitionDistributorConfig} from the global
+   * configuration.
    *
    * <p>The pending/last change is a best-effort projection: {@code pendingChanges} reflects
-   * whichever sub-config currently has an active plan (global first, then the default group), and
-   * {@code lastChange} is derived from the {@link PhasedChangeState}. Cross-sub-config change
-   * details cannot be represented losslessly in the flat legacy plan, so this projection is
-   * intended for display and equivalence checks, not for driving legacy change execution.
+   * whichever sub-config currently has an active plan (global first, then the named group), and
+   * {@code lastChange} is derived from the {@link PhasedChangeState} — which is cluster-wide, not
+   * per-group, so the projected {@code lastChange} is the same regardless of which group is
+   * requested. This is intended: the phased change plan spans the whole cluster (see {@link
+   * PhasedChangeState}), so there is no group-scoped completed-change history to derive it from
+   * instead. Cross-sub-config change details cannot be represented losslessly in the flat legacy
+   * plan, so this projection is intended for display and equivalence checks, not for driving legacy
+   * change execution.
    *
    * <p>Uninitialized is projected explicitly: {@link #isUninitialized()} is driven by {@code
    * globalConfiguration}'s own uninitialized sentinel version, which is {@code 0} — distinct from
    * the legacy {@link ClusterConfiguration}'s sentinel version of {@code -1}. Deriving the legacy
-   * version as {@code Math.max(globalConfiguration.version(), defaultGroup.version())} would
-   * therefore never equal the legacy sentinel, so callers of {@code
-   * ClusterConfiguration#isUninitialized()} on the projection could never observe {@code true}.
+   * version as {@code Math.max(globalConfiguration.version(), group.version())} would therefore
+   * never equal the legacy sentinel, so callers of {@code ClusterConfiguration#isUninitialized()}
+   * on the projection could never observe {@code true}.
+   *
+   * @param groupId the partition group to project; looked up with {@link
+   *     PartitionGroupConfiguration#empty(long)} as the fallback when absent
    */
-  public ClusterConfiguration toLegacyDefault() {
+  public ClusterConfiguration toLegacy(final String groupId) {
     if (isUninitialized()) {
       return ClusterConfiguration.uninitialized();
     }
 
-    final PartitionGroupConfiguration defaultGroup =
-        partitionGroups.getOrDefault(DEFAULT_GROUP, PartitionGroupConfiguration.empty(version));
+    final PartitionGroupConfiguration group =
+        partitionGroups.getOrDefault(groupId, PartitionGroupConfiguration.empty(version));
 
     final Map<MemberId, MemberState> members = new HashMap<>();
     globalConfiguration
         .members()
         .forEach(
             (memberId, brokerState) ->
-                members.put(
-                    memberId, toLegacyMemberState(brokerState, defaultGroup.getMember(memberId))));
+                members.put(memberId, toLegacyMemberState(brokerState, group.getMember(memberId))));
 
     final Optional<ClusterChangePlan> pendingChanges =
         globalConfiguration
             .pendingChanges()
             .filter(ClusterChangePlan::hasPendingChanges)
-            .or(() -> defaultGroup.pendingChanges().filter(ClusterChangePlan::hasPendingChanges));
+            .or(() -> group.pendingChanges().filter(ClusterChangePlan::hasPendingChanges));
 
     final Optional<CompletedChange> lastChange =
         phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
 
     return ClusterConfiguration.builder()
-        .version(Math.max(globalConfiguration.version(), defaultGroup.version()))
+        .version(Math.max(globalConfiguration.version(), group.version()))
         .members(members)
         .lastChange(lastChange)
         .pendingChanges(pendingChanges)
-        .routingState(defaultGroup.routingState())
+        .routingState(group.routingState())
         .clusterId(globalConfiguration.clusterId())
-        .incarnationNumber(defaultGroup.incarnationNumber())
+        .incarnationNumber(group.incarnationNumber())
         .partitionDistributorConfig(globalConfiguration.partitionDistributorConfig())
         .build();
+  }
+
+  /**
+   * Delegates to {@link #toLegacy(String)} for {@link #DEFAULT_GROUP}. Kept as the stable entry
+   * point for the many call sites that only ever cared about the single default group, from before
+   * this class supported more than one partition group.
+   */
+  public ClusterConfiguration toLegacyDefault() {
+    return toLegacy(DEFAULT_GROUP);
   }
 
   private static MemberState toLegacyMemberState(

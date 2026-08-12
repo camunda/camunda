@@ -1452,9 +1452,9 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeResponse(final ClusterConfiguration response) {
+  public byte[] encodeResponse(final CurrentClusterConfiguration response) {
     return Response.newBuilder()
-        .setClusterTopology(encodeClusterTopology(response))
+        .setCurrentClusterConfiguration(encodeCurrentClusterConfigurationProto(response))
         .build()
         .toByteArray();
   }
@@ -1493,7 +1493,7 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public Either<ErrorResponse, ClusterConfiguration> decodeClusterTopologyResponse(
+  public Either<ErrorResponse, CurrentClusterConfiguration> decodeClusterConfigurationResponse(
       final byte[] encodedResponse) {
     try {
       final var response = Response.parseFrom(encodedResponse);
@@ -1502,10 +1502,12 @@ public class ProtoBufSerializer
             new ErrorResponse(
                 decodeErrorCode(response.getError().getErrorCode()),
                 response.getError().getErrorMessage()));
-      } else if (response.hasClusterTopology()) {
-        return Either.right(decodeClusterTopology(response.getClusterTopology()));
+      } else if (response.hasCurrentClusterConfiguration()) {
+        return Either.right(
+            decodeCurrentClusterConfiguration(response.getCurrentClusterConfiguration()));
       } else {
-        throw new DecodingFailed("Response does not have an error or a valid cluster topology");
+        throw new DecodingFailed(
+            "Response does not have an error or a valid cluster configuration");
       }
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

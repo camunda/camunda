@@ -87,6 +87,7 @@ import io.camunda.zeebe.management.cluster.PartitionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.management.cluster.PhysicalTenantInfo;
 import io.camunda.zeebe.management.cluster.PhysicalTenantState;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandling;
@@ -107,9 +108,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 
 final class ClusterApiUtils {
@@ -177,7 +180,7 @@ final class ClusterApiUtils {
   }
 
   static ResponseEntity<?> mapClusterTopologyResponse(
-      final Either<ErrorResponse, ClusterConfiguration> response) {
+      final Either<ErrorResponse, CurrentClusterConfiguration> response) {
     if (response.isRight()) {
       return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
     } else {
@@ -518,46 +521,88 @@ final class ClusterApiUtils {
 
   /**
    * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
-   * the REST response: each broker's partitions from every physical tenant it participates in are
-   * merged onto that one broker entry, tagged with their owning tenant.
+   * the REST response: every broker in {@code brokers} is included (broker lifecycle has no tenant
+   * dimension, so this is always the global configuration's full membership), and each broker's
+   * partitions from every physical tenant group in {@code groupsInView} it participates in are
+   * merged onto that one broker entry, tagged with their owning tenant. A broker replicating
+   * nothing in {@code groupsInView} gets an empty partition list.
+   *
+   * <p>{@code groupsInView} is deliberately a parameter rather than derived from the configuration
+   * the {@code brokers} came from: it is the subset of partition groups the request is scoped to,
+   * so deriving all groups instead would report every tenant's partitions on a request scoped to
+   * one. Where no scoping applies, use {@link
+   * #mapBrokerStatesFromPhysicalTenantsConfig(CurrentClusterConfiguration)}, which does derive
+   * them. It is iterated in a fresh {@link TreeMap}, not the caller's map directly: {@link
+   * CurrentClusterConfiguration}'s constructor stores partition groups via {@code Map.copyOf(...)},
+   * whose iteration order is randomised per JVM (see {@code
+   * jdk.internal.util.ImmutableCollections#SALT32L}), and the JSON response must have a stable,
+   * deterministic order.
    */
   private static List<BrokerState> mapBrokerStatesFromPhysicalTenantsConfig(
-      final CurrentClusterConfiguration configuration) {
-    final Map<String, PartitionGroupConfiguration> partitionGroups =
-        configuration.partitionGroups();
-    return configuration.globalConfiguration().members().entrySet().stream()
+      final Map<MemberId, io.camunda.zeebe.dynamic.config.state.BrokerState> brokers,
+      final Map<String, PartitionGroupConfiguration> groupsInView) {
+    final Map<String, PartitionGroupConfiguration> sortedGroups = new TreeMap<>(groupsInView);
+    return brokers.entrySet().stream()
         .map(
             entry ->
                 mapBrokerStateFromPhysicalTenantsConfig(
-                    entry.getKey(), entry.getValue(), partitionGroups))
+                    entry.getKey(), entry.getValue(), sortedGroups))
         .toList();
   }
 
+  /** Maps every broker of {@code configuration}, covering all of its partition groups. */
+  private static List<BrokerState> mapBrokerStatesFromPhysicalTenantsConfig(
+      final CurrentClusterConfiguration configuration) {
+    return mapBrokerStatesFromPhysicalTenantsConfig(
+        configuration.globalConfiguration().members(), configuration.partitionGroups());
+  }
+
+  /**
+   * Maps one broker, merging its partitions across {@code partitionGroups}. {@code version} is
+   * reported only while those cover at most one physical tenant: it is then the same fold the
+   * legacy {@link CurrentClusterConfiguration#toLegacy} projection applies (see {@code
+   * toLegacyMemberState}), so a consumer watching {@code brokers[].version} for change detection
+   * still sees partition-state changes and not only broker-lifecycle ones — the two counters are
+   * independent, and a partition join bumps the group's without touching the broker's. Across more
+   * than one tenant that maximum is no longer the version of anything, so it is left absent. {@code
+   * lastUpdatedAt} is folded either way, where it keeps meaning "something about this broker last
+   * changed at this time".
+   */
   private static BrokerState mapBrokerStateFromPhysicalTenantsConfig(
       final MemberId memberId,
       final io.camunda.zeebe.dynamic.config.state.BrokerState brokerState,
       final Map<String, PartitionGroupConfiguration> partitionGroups) {
     final List<PartitionState> partitions = new ArrayList<>();
     final List<PhysicalTenantState> physicalTenants = new ArrayList<>();
-    partitionGroups.forEach(
-        (physicalTenantId, group) -> {
-          final var brokerPartitionState = group.members().get(memberId);
-          if (brokerPartitionState != null) {
-            physicalTenants.add(
-                new PhysicalTenantState()
-                    .id(physicalTenantId)
-                    .mode(mapPhysicalTenantMode(brokerPartitionState.mode())));
-            partitions.addAll(
-                mapPartitionStates(physicalTenantId, brokerPartitionState.partitions()));
-          }
-        });
-    return new BrokerState()
-        .id(brokerIdValue(memberId))
-        .state(mapBrokerLifecycleState(brokerState.state()))
-        .lastUpdatedAt(mapInstantToDateTime(brokerState.lastUpdated()))
-        .version(brokerState.version())
-        .partitions(partitions)
-        .physicalTenants(physicalTenants);
+    long version = brokerState.version();
+    Instant lastUpdated = brokerState.lastUpdated();
+    for (final var entry : partitionGroups.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      final var group = entry.getValue();
+      final var brokerPartitionState = group.members().get(memberId);
+      if (brokerPartitionState != null) {
+        physicalTenants.add(
+            new PhysicalTenantState()
+                .id(physicalTenantId)
+                .mode(mapPhysicalTenantMode(brokerPartitionState.mode())));
+        partitions.addAll(mapPartitionStates(physicalTenantId, brokerPartitionState.partitions()));
+        version = Math.max(version, brokerPartitionState.version());
+        if (brokerPartitionState.lastUpdated().isAfter(lastUpdated)) {
+          lastUpdated = brokerPartitionState.lastUpdated();
+        }
+      }
+    }
+    final var mapped =
+        new BrokerState()
+            .id(brokerIdValue(memberId))
+            .state(mapBrokerLifecycleState(brokerState.state()))
+            .lastUpdatedAt(mapInstantToDateTime(lastUpdated))
+            .partitions(partitions)
+            .physicalTenants(physicalTenants);
+    if (partitionGroups.size() <= 1) {
+      mapped.version(version);
+    }
+    return mapped;
   }
 
   private static BrokerStateCode mapBrokerLifecycleState(
@@ -660,25 +705,111 @@ final class ClusterApiUtils {
     };
   }
 
-  private static GetTopologyResponse mapClusterTopology(final ClusterConfiguration topology) {
-    final var response = new GetTopologyResponse();
-    // temp: convert to new model from legacy, because the query response from the coordinator now
-    // only returns the legacy format.
-    final List<BrokerState> brokers =
-        mapBrokerStatesFromPhysicalTenantsConfig(CurrentClusterConfiguration.fromLegacy(topology));
+  static GetTopologyResponse mapClusterTopology(final CurrentClusterConfiguration configuration) {
+    return mapClusterTopology(configuration, null);
+  }
 
-    response.version(topology.version()).brokers(brokers);
-    topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
-    topology.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
-    topology
-        .routingState()
-        .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
-    topology.clusterId().ifPresent(response::clusterId);
-    topology
+  /**
+   * Maps the multi-partition-group configuration to the REST response, scoped to {@code
+   * physicalTenant} when given, or to every known physical tenant otherwise. {@code brokers},
+   * {@code clusterId} and {@code partitionDistribution} always reflect the global configuration, as
+   * they have no tenant dimension.
+   *
+   * <p>The remaining top-level fields are mutually exclusive, single-tenant-shaped or
+   * multi-tenant-shaped, never both, so a request that predates physical tenants keeps exactly the
+   * top-level field set it always had, and no physical tenant's routing state is ever reported
+   * twice for a tenant the caller did not ask about. Per-broker {@code physicalTenants} and
+   * per-partition {@code physicalTenant} are always present regardless of scope — they predate this
+   * method — so the response is not byte-identical to before, only the top-level field set is
+   * unchanged:
+   *
+   * <ul>
+   *   <li>at most one group in view (an unscoped request against a single-tenant cluster, a request
+   *       scoped to one physical tenant, or an uninitialized configuration with zero groups):
+   *       {@code version}, {@code lastChange} and {@code pendingChange} are populated from {@link
+   *       CurrentClusterConfiguration#toLegacy}'s cluster-wide projection — {@code version} is the
+   *       higher of the global and this one group's version, {@code lastChange} always reflects the
+   *       cluster-wide change history regardless of which group is in view, and {@code
+   *       pendingChange} prefers the global pending change and falls back to this group's own; only
+   *       {@code routing} is genuinely this one group's own state.
+   *   <li>more than one group in view (an unscoped request against a multi-tenant cluster): none of
+   *       {@code version}, {@code lastChange}, {@code pendingChange} or {@code routing} are
+   *       populated at the top level — reporting any one group's routing state there would
+   *       misrepresent the tenants left out, and the cluster-wide change state has no single
+   *       physical tenant to be scoped to. Per-broker {@code version} is left absent as well, see
+   *       {@link #mapBrokerStateFromPhysicalTenantsConfig}.
+   * </ul>
+   *
+   * <p>{@code physicalTenants} lists every group in view, and is omitted only for an unscoped
+   * request whose single tenant is already fully described by the top-level fields. A caller that
+   * names a physical tenant therefore reads that tenant's routing state the same way as a caller
+   * that names none, at the cost of repeating it under {@code routing}; the two agree by
+   * construction, both being the one group in view's own state.
+   */
+  static GetTopologyResponse mapClusterTopology(
+      final CurrentClusterConfiguration configuration, final @Nullable String physicalTenant) {
+    // the caller (ClusterEndpoint) guarantees physicalTenant, when given, names an existing group
+    // only once the configuration is initialized. An uninitialized configuration has zero groups
+    // by construction (see CurrentClusterConfiguration.uninitialized()/init()), so a requested
+    // tenant is then legitimately absent - fall back to an empty view rather than NPE-ing on
+    // configuration.partitionGroup's @Nullable result; this lands in the at-most-one-group branch
+    // below and yields the uninitialized toLegacy(DEFAULT_GROUP) projection.
+    final Map<String, PartitionGroupConfiguration> groupsInView;
+    if (physicalTenant == null) {
+      groupsInView = configuration.partitionGroups();
+    } else {
+      final var group = configuration.partitionGroup(physicalTenant);
+      groupsInView = group == null ? Map.of() : Map.of(physicalTenant, group);
+    }
+
+    final boolean singleTenantShape = groupsInView.size() <= 1;
+
+    final var response = new GetTopologyResponse();
+    response.brokers(
+        mapBrokerStatesFromPhysicalTenantsConfig(
+            configuration.globalConfiguration().members(), groupsInView));
+
+    if (singleTenantShape) {
+      final String groupId =
+          groupsInView.isEmpty()
+              ? CurrentClusterConfiguration.DEFAULT_GROUP
+              : groupsInView.keySet().iterator().next();
+      final var legacy = configuration.toLegacy(groupId);
+      response.version(legacy.version());
+      legacy.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
+      legacy.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
+      legacy
+          .routingState()
+          .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
+    }
+
+    if (physicalTenant == null && singleTenantShape) {
+      // the generated model defaults physicalTenants to an empty (non-null) list, not absent; it
+      // must be explicitly nulled out here so it is genuinely omitted from the response body of a
+      // request that predates physical tenants, per the mutually-exclusive contract.
+      response.physicalTenants(null);
+    } else {
+      response.physicalTenants(
+          new TreeMap<>(groupsInView)
+              .entrySet().stream()
+                  .map(entry -> mapPhysicalTenantInfo(entry.getKey(), entry.getValue()))
+                  .toList());
+    }
+
+    configuration.clusterId().ifPresent(response::clusterId);
+    configuration
+        .globalConfiguration()
         .partitionDistributorConfig()
         .ifPresent(
             config -> response.partitionDistribution(mapPartitionDistributionConfig(config)));
     return response;
+  }
+
+  private static PhysicalTenantInfo mapPhysicalTenantInfo(
+      final String groupId, final PartitionGroupConfiguration group) {
+    final var info = new PhysicalTenantInfo().id(groupId);
+    group.routingState().ifPresent(routingState -> info.routing(mapRoutingState(routingState)));
+    return info;
   }
 
   private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig

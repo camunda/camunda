@@ -354,9 +354,9 @@ final class NewModelConfigurationChangeCoordinatorTest {
     // when
     final var cancelled = coordinator.cancelChange(changeId).join();
 
-    // then — the returned (legacy-projected) configuration and the real one both reflect the
-    // cancellation: no pending plan, cleared on every sub-config that had one, marked CANCELLED
-    assertThat(cancelled.pendingChanges()).isEmpty();
+    // then — the returned configuration and the real one both reflect the cancellation: no
+    // pending plan, cleared on every sub-config that had one, marked CANCELLED
+    assertThat(cancelled.phasedChangeState().pending()).isEmpty();
     final var config = configuration();
     assertThat(config.phasedChangeState().pending()).isEmpty();
     assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();

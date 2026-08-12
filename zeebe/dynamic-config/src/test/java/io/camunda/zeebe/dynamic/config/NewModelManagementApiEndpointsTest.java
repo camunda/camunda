@@ -699,7 +699,7 @@ final class NewModelManagementApiEndpointsTest {
     final var response = handler.cancelTopologyChange(new CancelChangeRequest(changeId)).join();
 
     // then — no pending change remains, on both the response and the real configuration
-    assertThat(response.pendingChanges()).isEmpty();
+    assertThat(response.phasedChangeState().pending()).isEmpty();
     final var config = manager.getMultiConfiguration().join();
     assertThat(config.phasedChangeState().pending()).isEmpty();
     assertThat(config.phasedChangeState().lastChange())
@@ -715,8 +715,8 @@ final class NewModelManagementApiEndpointsTest {
     // when
     final var topology = handler.getTopology().join();
 
-    // then — the default-group projection carries all cluster members
-    assertThat(topology.members()).containsKeys(ID_0, ID_1);
+    // then — the global configuration carries all cluster members
+    assertThat(topology.globalConfiguration().members()).containsKeys(ID_0, ID_1);
   }
 
   private ClusterConfiguration fourMemberTwoPartitionCluster() {
