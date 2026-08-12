@@ -21,6 +21,7 @@ import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.grpc.Status.Code;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,15 +72,10 @@ final class PhysicalTenantPurgeIT {
     // when - purging tenant A only
     ClusterActuator.of(broker).purge(false, TENANT_A);
 
-    // then - tenant A loses its process. NOT_FOUND, rather than any failure, is asserted so that
-    // a partition that is merely unavailable mid-purge does not end the wait early.
+    // then - tenant A loses its process
     await("tenant A no longer knows its process")
         .atMost(Duration.ofMinutes(2))
-        .untilAsserted(
-            () ->
-                assertThatThrownBy(() -> createInstance(tenantAClient))
-                    .isInstanceOf(ClientStatusException.class)
-                    .hasMessageContaining("NOT_FOUND"));
+        .untilAsserted(() -> assertProcessNotFound(tenantAClient));
 
     // and - tenant A serves commands again on empty state
     deploy(tenantAClient);
@@ -105,13 +101,21 @@ final class PhysicalTenantPurgeIT {
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(
             () -> {
-              assertThatThrownBy(() -> createInstance(tenantAClient))
-                  .isInstanceOf(ClientStatusException.class)
-                  .hasMessageContaining("NOT_FOUND");
-              assertThatThrownBy(() -> createInstance(defaultClient))
-                  .isInstanceOf(ClientStatusException.class)
-                  .hasMessageContaining("NOT_FOUND");
+              assertProcessNotFound(tenantAClient);
+              assertProcessNotFound(defaultClient);
             });
+  }
+
+  /**
+   * Asserts that the tenant this client targets no longer has the process. NOT_FOUND, rather than
+   * any failure, is asserted so that a partition that is merely unavailable mid-purge does not end
+   * the wait early.
+   */
+  private void assertProcessNotFound(final CamundaClient client) {
+    assertThatThrownBy(() -> createInstance(client))
+        .isInstanceOf(ClientStatusException.class)
+        .satisfies(
+            t -> assertThat(((ClientStatusException) t).getStatusCode()).isEqualTo(Code.NOT_FOUND));
   }
 
   /**

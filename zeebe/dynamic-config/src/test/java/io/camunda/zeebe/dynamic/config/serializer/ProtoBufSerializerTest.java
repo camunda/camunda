@@ -377,7 +377,7 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodePurgeRequestWithPhysicalTenantId() {
     // given
-    final var purgeRequest = new PurgeRequest(Optional.of("tenant-a"), true);
+    final var purgeRequest = new PurgeRequest(Optional.of("tenanta"), true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodePurgeRequest(purgeRequest);

@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
 
 final class ClusterPurgeRequestTransformerTest {
 
-  private static final String TENANT_A = "tenant-a";
-  private static final String TENANT_B = "tenant-b";
+  private static final String TENANT_A = "tenanta";
+  private static final String TENANT_B = "tenantb";
 
   private final MemberId id0 = MemberId.from("0");
   private final MemberId id1 = MemberId.from("1");
@@ -164,7 +164,7 @@ final class ClusterPurgeRequestTransformerTest {
   @Test
   void shouldRejectAnUnknownPhysicalTenantId() {
     // given
-    final var transformer = new PurgeRequestTransformer(Optional.of("unknown-tenant"));
+    final var transformer = new PurgeRequestTransformer(Optional.of("unknowntenant"));
     final var clusterConfiguration =
         withPartitionGroups(Map.of(TENANT_A, group().addMember(id0, member(Map.of(0, active(1))))));
 
@@ -173,9 +173,7 @@ final class ClusterPurgeRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(NotFound.class)
-        .hasMessageContaining("unknown-tenant");
+    assertThat(result.getLeft()).isInstanceOf(NotFound.class).hasMessageContaining("unknowntenant");
   }
 
   @Test
