@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.List;
 
 public class MappingRuleDeletedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
+    implements MainIndexExporterHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private final String indexName;
 
   public MappingRuleDeletedHandler(final String indexName) {

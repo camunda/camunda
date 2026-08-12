@@ -106,6 +106,7 @@ import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandl
 import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.usage.UsageMetricTUExportedHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateHandlerBuilder;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -533,7 +534,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public BiConsumer<String, Error> getCustomErrorHandlers() {
     return (index, error) -> {
-      indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
+      final var indexFamily = TargetIndex.getIndexFamilyFromName(index);
+      indicesWithCustomErrorHandlers
+          .getOrDefault(indexFamily.name(), ErrorHandlers.THROWING)
+          .handle(error);
     };
   }
 

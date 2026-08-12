@@ -9,11 +9,14 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.errorhandling.Error;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
@@ -37,6 +40,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DefaultExporterResourceProviderTest {
 
@@ -368,6 +373,53 @@ public class DefaultExporterResourceProviderTest {
                 .isEqualTo(expectedValueType);
           }
         });
+  }
+
+  @Test
+  void shouldNotIgnoreErrorsByDefault() {
+    final var handlers = getCustomErrorHandlers();
+    assertThatThrownBy(
+            () -> handlers.accept("some-index", new Error("Simulated error", "problem", 404)))
+        .isInstanceOf(PersistenceException.class)
+        .hasMessageContaining("Simulated error");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"operate-operation-8.4.1_", "operate-list-view-8.3.0_"})
+  void shouldIgnoreDocumentDoesNotExistForAppropriateIndexes(final String index) {
+    final var handlers = getCustomErrorHandlers();
+    handlers.accept(
+        index,
+        new io.camunda.exporter.errorhandling.Error(
+            "Simulated error", "document_missing_exception", 500));
+    handlers.accept(index, new Error("Simulated error", "problem", 404));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"operate-operation-8.4.1_ord00001", "operate-list-view-8.3.0_ord12345"})
+  void shouldIgnoreDocumentDoesNotExistForAppropriateOrdinalIndexes(final String index) {
+    final var handlers = getCustomErrorHandlers();
+    handlers.accept(
+        index,
+        new io.camunda.exporter.errorhandling.Error(
+            "Simulated error", "document_missing_exception", 500));
+    handlers.accept(index, new Error("Simulated error", "problem", 404));
+  }
+
+  private static BiConsumer<String, Error> getCustomErrorHandlers() {
+    final var config = new ExporterConfiguration();
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    final var handlers = provider.getCustomErrorHandlers();
+    return handlers;
   }
 
   /**

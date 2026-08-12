@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class ClusterVariableCreatedUpdatedHandler
-    implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
+    implements MainIndexExporterHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ClusterVariableIntent.CREATED, ClusterVariableIntent.UPDATED);

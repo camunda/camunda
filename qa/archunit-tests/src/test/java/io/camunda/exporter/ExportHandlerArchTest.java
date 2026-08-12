@@ -7,8 +7,11 @@
  */
 package io.camunda.exporter;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClass.Predicates;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -18,12 +21,29 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.MainIndexExporterHandler;
+import io.camunda.exporter.handlers.StorageOrdinalKeyExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.operation.AbstractOperationHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AnalyzeClasses(packages = "io.camunda.exporter", importOptions = DoNotIncludeTestsOrTestJars.class)
 public class ExportHandlerArchTest {
+  static final Set<Class<?>> RAW_TYPES_THAT_NEED_ORDINAL_HANDLING =
+      Set.of(StorageOrdinalKeyRelated.class, OperationEntity.class);
+  static final DescribedPredicate<? super JavaClass>
+      RAW_TYPES_THAT_NEED_ORDINAL_HANDLING_PREDICATE =
+          DescribedPredicate.or(
+              RAW_TYPES_THAT_NEED_ORDINAL_HANDLING.stream()
+                  .map(Predicates::assignableTo)
+                  .toArray(DescribedPredicate[]::new));
 
   @ArchTest
   static final ArchRule EXPORT_HANDLERS_SHOULD_ONLY_WRITE_TO_ONE_INDEX =
@@ -68,4 +88,81 @@ public class ExportHandlerArchTest {
                   }
                 }
               });
+
+  @ArchTest
+  static final ArchRule EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_AND_ORDINAL_INTERFACES =
+      ArchRuleDefinition.classes()
+          .that()
+          .areAssignableTo(ExportHandler.class)
+          .should()
+          .notBeAssignableTo(
+              DescribedPredicate.and(
+                  Predicates.assignableTo(MainIndexExporterHandler.class),
+                  Predicates.assignableTo(StorageOrdinalKeyExportHandler.class)));
+
+  @ArchTest
+  static final ArchRule EXPORT_HANDLERS_SHOULD_IMPLEMENT_MAIN_OR_ORDINAL_INTERFACES =
+      ArchRuleDefinition.classes()
+          .that()
+          .areAssignableTo(ExportHandler.class)
+          .and()
+          .doNotHaveModifier(JavaModifier.ABSTRACT)
+          .and()
+          .areNotAssignableTo(
+              DescribedPredicate.or(
+                  // operation handler needs to be excluded as it needs slight custom handling
+                  Predicates.assignableTo(AbstractOperationHandler.class),
+                  // audit log handlers also have custom handling
+                  Predicates.assignableTo(AuditLogHandler.class),
+                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
+          .and()
+          // TODO remove these exclusions once we have refactored the handlers to implement the
+          // correct interface
+          .resideOutsideOfPackages("io.camunda.exporter.handlers.batchoperation..")
+          .should()
+          .beAssignableTo(
+              DescribedPredicate.or(
+                  Predicates.assignableTo(MainIndexExporterHandler.class),
+                  Predicates.assignableTo(StorageOrdinalKeyExportHandler.class)));
+
+  @ArchTest
+  static final ArchRule
+      EXPORT_HANDLERS_SHOULD_NOT_IMPLEMENT_MAIN_FOR_STORAGE_ORDINAL_KEY_RELATED_RECORDS_AND_ENTITIES =
+          ArchRuleDefinition.classes()
+              .that()
+              .areAssignableTo(MainIndexExporterHandler.class)
+              .and()
+              .doNotHaveModifier(JavaModifier.ABSTRACT)
+              .should(
+                  new ArchCondition<>(
+                      "not target main indexes when using raw types: "
+                          + RAW_TYPES_THAT_NEED_ORDINAL_HANDLING) {
+                    @Override
+                    public void check(final JavaClass item, final ConditionEvents events) {
+                      final var violatingRawTypes = new LinkedHashSet<JavaClass>();
+                      for (final var clazz : item.getClassHierarchy()) {
+                        for (final var interf : clazz.getInterfaces()) {
+                          for (final var rawType : interf.getAllInvolvedRawTypes()) {
+                            if (rawType.isAssignableTo(
+                                RAW_TYPES_THAT_NEED_ORDINAL_HANDLING_PREDICATE)) {
+                              violatingRawTypes.add(rawType);
+                            }
+                          }
+                        }
+                      }
+                      for (final var rawType : violatingRawTypes) {
+                        events.add(
+                            SimpleConditionEvent.violated(
+                                item,
+                                "Class "
+                                    + item.getName()
+                                    + " implements "
+                                    + MainIndexExporterHandler.class.getSimpleName()
+                                    + " but uses raw type ("
+                                    + rawType.getName()
+                                    + ") that implements one of:"
+                                    + RAW_TYPES_THAT_NEED_ORDINAL_HANDLING));
+                      }
+                    }
+                  });
 }

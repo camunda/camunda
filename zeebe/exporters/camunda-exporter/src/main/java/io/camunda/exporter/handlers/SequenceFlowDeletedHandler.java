@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
 public class SequenceFlowDeletedHandler
-    implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
+    implements StorageOrdinalKeyExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;

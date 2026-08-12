@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DecisionHandler
-    implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
+    implements MainIndexExporterHandler<DecisionDefinitionEntity, DecisionRecordValue> {
 
   private static final Set<String> STATES = Set.of(ProcessIntent.CREATED.name());
   private final String indexName;

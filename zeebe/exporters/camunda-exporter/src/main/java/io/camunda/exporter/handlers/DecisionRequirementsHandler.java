@@ -23,7 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class DecisionRequirementsHandler
-    implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
+    implements MainIndexExporterHandler<
+        DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
   private final String indexName;

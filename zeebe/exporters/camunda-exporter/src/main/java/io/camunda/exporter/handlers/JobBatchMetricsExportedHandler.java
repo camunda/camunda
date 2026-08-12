@@ -23,7 +23,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 public class JobBatchMetricsExportedHandler
-    implements ExportHandler<JobMetricsBatchEntity, JobMetricsBatchRecordValue> {
+    implements MainIndexExporterHandler<JobMetricsBatchEntity, JobMetricsBatchRecordValue> {
 
   private final String indexName;
 

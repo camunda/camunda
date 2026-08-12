@@ -21,6 +21,11 @@ public class VariableAddUpdateAuditLogTransformer
   }
 
   @Override
+  public Class<VariableRecordValue> getRecordValueType() {
+    return VariableRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
     final VariableRecordValue value = record.getValue();
     log.setEntityDescription(value.getName());

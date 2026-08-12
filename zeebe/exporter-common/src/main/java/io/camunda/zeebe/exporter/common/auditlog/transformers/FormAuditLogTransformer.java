@@ -19,6 +19,11 @@ public class FormAuditLogTransformer implements AuditLogTransformer<Form> {
   }
 
   @Override
+  public Class<Form> getRecordValueType() {
+    return Form.class;
+  }
+
+  @Override
   public void transform(final Record<Form> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(String.valueOf(value.getFormKey()))
