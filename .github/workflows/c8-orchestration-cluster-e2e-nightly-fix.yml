@@ -61,7 +61,10 @@ jobs:
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 90 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
+    # Camunda distribution from source for RDBMS-flagged failures, mirroring
+    # c8-orchestration-cluster-e2e-tests-on-demand.yml's own H2/RDBMS job.
+    timeout-minutes: 90
 
     steps:
       - name: Resolve target branch
@@ -434,6 +437,45 @@ jobs:
             done
           fi
 
+      - name: Finalize PR verification status (verified/unverified)
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO:     ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh label create "verified" --repo "$REPO" --color "0E8A16" \
+            --description "Fix verified green in a local Docker environment" 2>/dev/null || true
+          gh label create "unverified" --repo "$REPO" --color "FBCA04" \
+            --description "Fix could not be verified green in a local Docker environment" 2>/dev/null || true
+
+          if [ ! -f /tmp/fix-meta.json ]; then
+            echo "No fix-meta.json — nothing to finalize."
+            exit 0
+          fi
+
+          jq -c '.prs[]?' /tmp/fix-meta.json | while read -r pr_obj; do
+            pr_num=$(echo "$pr_obj" | jq -r '.number')
+            verify=$(echo "$pr_obj" | jq -r '.verify // "skipped"')
+            echo "PR #${pr_num}: verify=${verify}"
+            case "$verify" in
+              verified)
+                gh pr edit "$pr_num" --repo "$REPO" --add-label "verified" --remove-label "unverified" 2>/dev/null || true
+                gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+                ;;
+              unverified)
+                gh pr edit "$pr_num" --repo "$REPO" --add-label "unverified" --remove-label "verified" 2>/dev/null || true
+                gh pr ready "$pr_num" --repo "$REPO" --undo 2>/dev/null || true
+                ;;
+              *)
+                # not-reproduced / skipped: leave the draft/ready state alone,
+                # just make sure no stale verified/unverified label lingers
+                # from a previous run of the same PR.
+                gh pr edit "$pr_num" --repo "$REPO" --remove-label "verified" --remove-label "unverified" 2>/dev/null || true
+                ;;
+            esac
+          done
+
       - name: Write job summary
         if: always()
         env:
@@ -466,9 +508,14 @@ jobs:
                   (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
                    elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
                    else $repo end) as $full_repo |
+                  (.verify // "skipped") as $verify |
+                  (if $verify == "verified" then ":white_check_mark: verified"
+                   elif $verify == "unverified" then ":warning: unverified — still red after 3 attempts"
+                   elif $verify == "not-reproduced" then ":grey_question: not-reproduced (likely flake)"
+                   else ":no_entry_sign: skipped" end) as $verify_badge |
                   "### :white_check_mark: Decision: fix applied — [PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))",
                   "",
-                  "**Branch:** `\(.branch)`"
+                  "**Branch:** `\(.branch)`  **Live Docker Verify:** \($verify_badge)"
                 ' /tmp/fix-meta.json
                 echo ""
 
