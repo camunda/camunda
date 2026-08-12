@@ -6,25 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { groupQueries } from "src/utility/api/groups/queries";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
-
-type GroupSearchDropdownProps = {
-  onSelect: (group: Group) => void;
-  filter?: (group: Group) => boolean;
-  placeholder: string;
-  autoFocus?: boolean;
-  errorTitle: string;
-  retryLabel: string;
-};
 
 // Searches and fetches groups on its own, so callers only need to render it
 // and react to the selection.
-const GroupSearchDropdown: FC<GroupSearchDropdownProps> = ({
+const GroupSearchDropdown: EntitySearchDropdown<Group> = ({
   onSelect,
   filter,
   placeholder,
