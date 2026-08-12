@@ -15,6 +15,7 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
+import { Route as TasklistLoginRouteImport } from './routes/tasklist.login'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthOperateBatchOperationsRouteImport } from './routes/_auth/operate/batch-operations'
@@ -61,6 +62,11 @@ const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
   id: '/tasklist',
   path: '/tasklist',
   getParentRoute: () => AuthRouteRoute,
+} as any)
+const TasklistLoginRoute = TasklistLoginRouteImport.update({
+  id: '/tasklist/login',
+  path: '/tasklist/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
   id: '/',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/tasklist/login': typeof TasklistLoginRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
   '/operate/decisions': typeof AuthOperateDecisionsRouteWithChildren
@@ -184,6 +191,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/tasklist': typeof AuthTasklistTasksIndexRoute
+  '/tasklist/login': typeof TasklistLoginRoute
   '/': typeof AuthIndexRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/tasklist/login': typeof TasklistLoginRoute
   '/_auth/': typeof AuthIndexRoute
   '/_auth/tasklist/_tasks': typeof AuthTasklistTasksRouteRouteWithChildren
   '/_auth/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/tasklist/login'
     | '/tasklist/processes'
     | '/operate/batch-operations'
     | '/operate/decisions'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/tasklist'
+    | '/tasklist/login'
     | '/'
     | '/tasklist/processes'
     | '/operate/batch-operations'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/_auth/admin'
     | '/_auth/operate'
     | '/_auth/tasklist'
+    | '/tasklist/login'
     | '/_auth/'
     | '/_auth/tasklist/_tasks'
     | '/_auth/tasklist/processes'
@@ -297,6 +309,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
+  TasklistLoginRoute: typeof TasklistLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist'
       preLoaderRoute: typeof AuthTasklistRouteRouteImport
       parentRoute: typeof AuthRouteRoute
+    }
+    '/tasklist/login': {
+      id: '/tasklist/login'
+      path: '/tasklist/login'
+      fullPath: '/tasklist/login'
+      preLoaderRoute: typeof TasklistLoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_auth/admin/': {
       id: '/_auth/admin/'
@@ -612,6 +632,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   LoginRoute: LoginRoute,
+  TasklistLoginRoute: TasklistLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

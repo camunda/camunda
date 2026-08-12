@@ -20,12 +20,14 @@ import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
+import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
 	network: NetworkFixture;
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
+	tasklistLoginPage: TasklistLoginPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
 	taskDetailPage: TaskDetailPage;
@@ -44,6 +46,9 @@ const test = base.extend<Fixtures>({
 	},
 	loginPage: async ({page}, use) => {
 		await use(new LoginPage(page));
+	},
+	tasklistLoginPage: async ({page}, use) => {
+		await use(new TasklistLoginPage(page));
 	},
 	tasklistIndexPage: async ({page}, use) => {
 		await use(new TasklistIndexPage(page));

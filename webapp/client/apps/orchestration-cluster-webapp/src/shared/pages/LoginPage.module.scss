@@ -25,6 +25,13 @@
 	padding-bottom: var(--cds-spacing-02);
 }
 
+.title {
+	padding-bottom: var(--cds-spacing-10);
+	text-align: center;
+	color: var(--cds-text-primary);
+	@include type.type-style('productive-heading-05');
+}
+
 .field {
 	min-height: layout.to-rem(84px);
 }

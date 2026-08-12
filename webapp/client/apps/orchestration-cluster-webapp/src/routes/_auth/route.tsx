@@ -16,6 +16,7 @@ import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 import {Header} from '#/shared/header/components/Header';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
+import {isTasklistPath} from '#/shared/auth/isTasklistPath';
 
 const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -30,9 +31,11 @@ const Route = createFileRoute('/_auth')({
 		} catch {
 			queryClient.cancelQueries();
 			queryClient.clear();
+			const isTasklistIndex = location.href === '/tasklist';
+
 			throw redirect({
-				to: '/login',
-				search: location.href === '/' ? {} : {redirect: location.href},
+				to: isTasklistPath(location.pathname) ? '/tasklist/login' : '/login',
+				search: location.href === '/' || isTasklistIndex ? {} : {redirect: location.href},
 			});
 		}
 	},

@@ -40,7 +40,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('logout', () => {
-	test('should show a notification and redirect to login page after clicking logout', async ({
+	test('should show a notification and redirect to Tasklist login after clicking logout', async ({
 		network,
 		tasklistIndexPage,
 		page,
@@ -66,7 +66,7 @@ test.describe('logout', () => {
 		await expect(logoutNotification).toBeVisible();
 		await expect(logoutNotification).toContainText('You are being logged out...');
 
-		await expect(page).toHaveURL(/\/login/);
+		await expect(page).toHaveURL('/tasklist/login');
 	});
 });
 

@@ -23,20 +23,23 @@ type FormValues = {
 	password: string;
 };
 
-const LoginPage: React.FC = () => {
+type Props = {
+	title?: string;
+};
+
+const LoginPage: React.FC<Props> = ({title}) => {
 	const router = useRouter();
 	const {t} = useTranslation();
 
 	return (
 		<Grid as="main" condensed className={styles.container}>
-			<h1 className="cds--visually-hidden">Login</h1>
 			<Form<FormValues>
 				onSubmit={async ({username, password}) => {
 					try {
 						const {error} = await authenticationStore.handleLogin(username, password);
 
 						if (error === null) {
-							// Re-triggers /login beforeLoad, which detects the active session and redirects
+							// Re-triggers the login route, which detects the active session and redirects
 							await router.invalidate();
 							return;
 						}
@@ -93,6 +96,7 @@ const LoginPage: React.FC = () => {
 								<div className={styles.logo}>
 									<CamundaLogo aria-label={t('loginLogoLabel')} />
 								</div>
+								<h1 className={title === undefined ? 'cds--visually-hidden' : styles.title}>{title ?? 'Login'}</h1>
 							</Stack>
 							<Stack gap={3}>
 								<div className={styles.error}>

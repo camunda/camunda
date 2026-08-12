@@ -12,12 +12,14 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {isTasklistPath} from '#/shared/auth/isTasklistPath';
 
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();
 	const {status} = authenticationStore;
 	const removeNotification = useRef<(() => void) | null>(null);
 	const {t} = useTranslation();
+	const isTasklistIndex = location.href === '/tasklist';
 
 	const isSessionExpired =
 		status === 'logged-out' ||
@@ -25,7 +27,7 @@ const SessionWatcher: React.FC = observer(() => {
 		(status === 'session-invalid' && location.pathname !== '/');
 
 	useEffect(() => {
-		if (location.pathname === '/login') {
+		if (location.pathname.endsWith('/login')) {
 			return;
 		}
 
@@ -36,7 +38,7 @@ const SessionWatcher: React.FC = observer(() => {
 				isDismissable: true,
 			});
 		}
-	}, [status, t, location.pathname]);
+	}, [location.pathname, status, t]);
 
 	useEffect(() => {
 		if (status === 'logged-in') {
@@ -45,7 +47,13 @@ const SessionWatcher: React.FC = observer(() => {
 	}, [status]);
 
 	if (isSessionExpired) {
-		return <Navigate to="/login" search={location.href === '/' ? {} : {redirect: location.href}} replace />;
+		return (
+			<Navigate
+				to={isTasklistPath(location.pathname) ? '/tasklist/login' : '/login'}
+				search={location.href === '/' || isTasklistIndex ? {} : {redirect: location.href}}
+				replace
+			/>
+		);
 	}
 
 	return null;
