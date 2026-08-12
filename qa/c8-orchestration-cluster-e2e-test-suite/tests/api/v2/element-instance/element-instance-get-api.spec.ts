@@ -24,23 +24,22 @@ import {EXPECTED_ELEMENT_INSTANCE_GET_SUCCESS} from '../../../../utils/beans/ele
 test.describe.parallel('Get Element Instance API', () => {
   const state: Record<string, string> = {};
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({request}) => {
     await deploy(['./resources/element_instance_get_update_tests.bpmn']);
     await createInstances('element_instance_get_update_tests', 1, 1).then(
       (instances) => {
         state.processInstanceKey = instances[0].processInstanceKey;
       },
     );
+    // The tests in this describe run in parallel, so resolving the element
+    // instance key inside one of them leaves the others racing it.
+    state.elementInstanceKey = await searchActiveElementInstance(
+      request,
+      state.processInstanceKey,
+    );
   });
 
   test('Get Element Instance - Success', async ({request}) => {
-    await test.step('Find element instance key of active element', async () => {
-      state.elementInstanceKey = await searchActiveElementInstance(
-        request,
-        state.processInstanceKey,
-      );
-    });
-
     await test.step('Get element instance', async () => {
       await expect(async () => {
         const res = await request.get(

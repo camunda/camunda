@@ -116,7 +116,8 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
   }) => {
     const res = await request.get(
       buildUrl('/process-definitions/{processDefinitionKey}/form', {
-        processDefinitionKey: state.processDefinitionKey as string,
+        processDefinitionKey:
+          state.processDefinitionKey_withLinkedForm as string,
       }),
     );
     await assertUnauthorizedRequest(res);
