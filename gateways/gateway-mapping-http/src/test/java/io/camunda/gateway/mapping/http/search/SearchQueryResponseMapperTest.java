@@ -1066,6 +1066,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getAgentDefinitionKey()).isEqualTo("654");
   }
 
   @Test

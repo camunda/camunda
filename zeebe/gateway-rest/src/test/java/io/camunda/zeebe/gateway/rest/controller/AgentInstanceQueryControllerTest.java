@@ -84,6 +84,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
         "items": [
           {
             "agentInstanceKey": "%d",
+            "agentDefinitionKey": "%d",
             "status": "COMPLETED",
             "definition": {
               "model": "gpt-4o",
@@ -132,6 +133,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
       """
           .formatted(
               AGENT_INSTANCE_KEY,
+              AGENT_DEFINITION_KEY,
               PROCESS_INSTANCE_KEY,
               ROOT_PROCESS_INSTANCE_KEY,
               PROCESS_DEFINITION_KEY,
@@ -169,6 +171,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             """
             {
               "agentInstanceKey": "%d",
+              "agentDefinitionKey": "%d",
               "status": "COMPLETED",
               "definition": {
                 "model": "gpt-4o",
@@ -209,6 +212,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             """
                 .formatted(
                     AGENT_INSTANCE_KEY,
+                    AGENT_DEFINITION_KEY,
                     PROCESS_INSTANCE_KEY,
                     ROOT_PROCESS_INSTANCE_KEY,
                     PROCESS_DEFINITION_KEY,

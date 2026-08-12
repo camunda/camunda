@@ -2154,6 +2154,7 @@ public final class SearchQueryResponseMapper {
 
     return AgentInstanceResult.Builder.create()
         .agentInstanceKey(keyToString(entity.agentInstanceKey()))
+        .agentDefinitionKey(keyToString(entity.agentDefinitionKey()))
         .status(AgentInstanceStatusEnum.fromValue(entity.status().name()))
         .definition(definition)
         .metrics(metrics)
