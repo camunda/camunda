@@ -7,15 +7,17 @@
  */
 
 import {useMemo} from 'react';
-// FLAG: this whole render-props DataTable cluster stays on @carbon/react — it
-// is NOT a safe SHIM despite the pre-flight bucketing. The carbon-compat
-// `DataTable` adapter takes a single generic (`DataTable<TData>`) whereas
-// Carbon's is `DataTable<RowType, ColTypes>` (two params), so the call below
+// The flag-off path below stays on @carbon/react's render-props `DataTable`. It
+// is NOT a safe SHIM despite the pre-flight bucketing: the carbon-compat adapter
+// takes a single generic (`DataTable<TData>`) whereas Carbon's is
+// `DataTable<RowType, ColTypes>` (two params), so the call below
 // (`DataTable<RowData, RowCellValues>`) is a hard tsc error against the compat
-// adapter; and that adapter renders its own TanStack table from `columns`/
-// `data`, ignoring Carbon's render-props `children` entirely. Migrating this
-// needs a full rewrite to the DS declarative DataTable API — human judgement
-// required. Logged in docs/migration/human-follow-up.md under "## FLAG symbols".
+// adapter; and that adapter renders its own TanStack table from `columns`/`data`,
+// ignoring Carbon's render-props `children` entirely.
+//
+// Rather than swap imports, the DS path is a separate declarative rewrite in
+// HistoryTableDS.tsx, dispatched on the flag at the bottom of this file. The
+// Carbon implementation here is deliberately left exactly as it was.
 import {
 	DataTable,
 	Table,
@@ -36,6 +38,7 @@ import {formatHistoryDate} from '../formatHistoryDate';
 import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
 import type {TaskDetailsHistorySearch} from '../sortUtils';
 import {ColumnHeader} from './ColumnHeader';
+import {HistoryTableDS} from './HistoryTableDS';
 import styles from './HistoryTable.module.scss';
 
 type HeaderConfig = {
@@ -101,7 +104,7 @@ type Props = {
 	search: TaskDetailsHistorySearch;
 };
 
-const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
+const HistoryTableLegacy: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 	const {t} = useTranslation();
 
 	const headers = useMemo<DataTableHeader[]>(
@@ -202,6 +205,14 @@ const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 			)}
 		</DataTable>
 	);
+};
+
+const HistoryTable: React.FC<Props> = (props) => {
+	if (featureFlags.dsTasklistUI) {
+		return <HistoryTableDS {...props} />;
+	}
+
+	return <HistoryTableLegacy {...props} />;
 };
 
 export {HistoryTable};

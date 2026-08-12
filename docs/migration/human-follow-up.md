@@ -1336,6 +1336,41 @@ HOT hold lifted (investigation confirmed the legacy-to-unified-webapp migration 
 - **Closest DS component:** none shipped as a 1:1 `ButtonSet`; a DS flex/stack layout primitive is the nearest analog for the single-button grouping used here.
 - **Current state in file:** import isolated to its own `@carbon/react` line with a `// FLAG:` comment; usage at the call site carries a `{/* FLAG: ... */}` marker. Import/usage left functionally untouched; the file still renders identically. All other symbols in the file (`Button`, `OverflowMenu`, `OverflowMenuItem`, `Layer`, and the three `@carbon/react/icons` — `Filter`, `SidePanelClose`, `SidePanelOpen`) were migrated to the `#/shared/design-system-compat` swap point in the same pass (2026-07-23).
 
+> **RESOLVED 2026-08-12 — both HistoryTable FLAG entries below are now migrated.**
+> Done as a full render-props to declarative rewrite in a new DS-only component,
+> `HistoryTableDS.tsx`, with `HistoryTable.tsx` dispatching on
+> `featureFlags.dsTasklistUI` and keeping the Carbon render-props implementation
+> (renamed `HistoryTableLegacy`) byte-identical for the flag-off path. The two
+> blockers recorded below were sidestepped rather than solved: no import was
+> repointed, so the generic-arity tsc error never arises, and the compat
+> adapter's dropped `children` is irrelevant because the DS path never uses
+> render props.
+>
+> How the hard parts landed:
+> - **Sorting** stays server-driven through the URL. The DS table runs in
+>   `sorting={{manual: true, sortState, onSortingChange}}`, so it renders the
+>   sort affordance and reports intent but never reorders `data` itself — no
+>   conflict with the existing `search.sort` refetch. An explicit
+>   `COLUMN_ID_TO_SORT_FIELD` map bridges column ids to the API's sort field
+>   names (`operation`/`actor`/`date` to `operationType`/`actorId`/`timestamp`).
+> - **The custom cells** became `ColumnDef.cell` renderers: `details` returns its
+>   ReactNode directly (so the ASSIGN case keeps its "Assignee" label) instead of
+>   being coerced to text, and `actions` renders the info `Link`. `details` and
+>   `actions` carry `enableSorting: false`.
+> - **`ColumnHeader.tsx` is now used only by the legacy path** — the DS table
+>   renders its own sort headers.
+>
+> Verified against the running app: table renders with zero `cds--*` nodes,
+> sorting round-trips through the URL (`operationType+asc` then `+desc`) and the
+> rows genuinely reorder via refetch, `aria-sort` tracks the active column, the
+> per-row info links carry the correct `auditLogKey` and preserve the sort param,
+> and the details modal opens. Carbon 3001 confirmed still rendering its original
+> `cds--data-table`.
+>
+> Not carried over: the DS `DataTable` in 0.32.1 has no `rowHref`, so the info
+> link stays a cell renderer rather than a primary row action. Fine here, but
+> worth knowing if row-level navigation is ever wanted.
+
 ### webapp/client/apps/orchestration-cluster-webapp/src/tasklist/modules/task-details-history/components/HistoryTable.tsx:10-20,128-192 — DataTable (render-props) + TableContainer, Table, TableBody, TableCell, TableHead, TableRow
 
 - **Tier:** FLAG (escalated — the 2026-07-23 pre-flight bucketed `DataTable`/`TableContainer` as SHIM and only `DataTableHeader` as FLAG; that is wrong for this file's actual usage, see below).
