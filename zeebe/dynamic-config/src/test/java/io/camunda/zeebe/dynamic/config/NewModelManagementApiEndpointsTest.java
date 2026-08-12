@@ -484,7 +484,7 @@ final class NewModelManagementApiEndpointsTest {
             .updateMember(ID_0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
 
     // when
-    final var response = handler.purge(new PurgeRequest(false)).join();
+    final var response = handler.purge(new PurgeRequest(Optional.empty(), false)).join();
 
     // then — purge produces a plan and preserves the partition assignment of every member
     assertThat(response.legacyResponse().plannedChanges()).isNotEmpty();

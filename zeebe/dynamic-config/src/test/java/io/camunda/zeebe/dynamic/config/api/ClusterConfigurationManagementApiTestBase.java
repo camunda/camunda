@@ -907,7 +907,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 memberFactory.apply(2),
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
-    final var request = new PurgeRequest(false);
+    final var request = new PurgeRequest(Optional.empty(), false);
 
     // when
     final var changeStatus = clientApi.purge(request).join().get();

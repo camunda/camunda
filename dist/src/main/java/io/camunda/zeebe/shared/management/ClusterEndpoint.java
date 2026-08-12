@@ -485,7 +485,7 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
       return requestSender
-          .purge(new PurgeRequest(dryRun))
+          .purge(new PurgeRequest(Optional.empty(), dryRun))
           .thenApply(ClusterApiUtils::mapOperationResponse)
           .exceptionally(ClusterApiUtils::mapError);
     } catch (final Exception error) {
