@@ -205,14 +205,12 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
-  record RestoreRequest(
-      String physicalTenantId,
-      List<Long> backupIds,
-      @Nullable String from,
-      @Nullable String to,
-      String databaseType,
-      boolean continuousBackups,
-      boolean dryRun)
+  record RestoreParameters(List<Long> backupIds, @Nullable String from, @Nullable String to) {}
+
+  record TenantRestoreArguments(
+      RestoreParameters parameters, String databaseType, boolean continuousBackups) {}
+
+  record RestoreRequest(String physicalTenantId, TenantRestoreArguments arguments, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record RestoreResolvedRequest(Map<Integer, long[]> backups, boolean dryRun)

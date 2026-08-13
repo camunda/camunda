@@ -21,7 +21,9 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -45,6 +47,7 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
+  private final TenantRestoreEnvironment tenantRestoreEnvironment;
 
   public RecoveryServices(
       final String physicalTenantId,
@@ -54,7 +57,8 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final TenantRestoreEnvironment tenantRestoreEnvironment) {
     super(
         physicalTenantId,
         brokerClient,
@@ -64,6 +68,7 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
     this.clusterConfigurationRequestSender = clusterConfigurationRequestSender;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
+    this.tenantRestoreEnvironment = tenantRestoreEnvironment;
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> changeMode(
@@ -77,11 +82,24 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> restore(
-      final RestoreRequest restoreRequest, final CamundaAuthentication authentication) {
+      final RestoreParameters parameters,
+      final boolean dryRun,
+      final CamundaAuthentication authentication) {
     return withAnyPermission(
         RESTORE_AUTHORIZATIONS,
         authentication,
-        () -> clusterConfigurationRequestSender.restore(restoreRequest));
+        () -> clusterConfigurationRequestSender.restore(toRestoreRequest(parameters, dryRun)));
+  }
+
+  private RestoreRequest toRestoreRequest(
+      final RestoreParameters parameters, final boolean dryRun) {
+    return new RestoreRequest(
+        getPhysicalTenantId(),
+        new TenantRestoreArguments(
+            parameters,
+            tenantRestoreEnvironment.databaseType(),
+            tenantRestoreEnvironment.continuousBackups()),
+        dryRun);
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfiguration>> restoreStatus(

@@ -10,7 +10,9 @@ package io.camunda.zeebe.restore.validation;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -40,7 +42,10 @@ final class RestoreParameterValidatorTest {
       final String databaseType,
       final boolean continuousBackups) {
     return new RestoreRequest(
-        "default", backupIds, from, to, databaseType, continuousBackups, false);
+        "default",
+        new TenantRestoreArguments(
+            new RestoreParameters(backupIds, from, to), databaseType, continuousBackups),
+        false);
   }
 
   @Test

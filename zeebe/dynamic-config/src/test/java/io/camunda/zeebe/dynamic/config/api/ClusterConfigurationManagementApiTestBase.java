@@ -23,8 +23,10 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -839,11 +841,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-            List.of(100L, 101L),
-            null,
-            null,
-            "elasticsearch",
-            false,
+            new TenantRestoreArguments(
+                new RestoreParameters(List.of(100L, 101L), null, null), "elasticsearch", false),
             false);
 
     // when
@@ -860,11 +859,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-            List.of(100L),
-            null,
-            null,
-            "elasticsearch",
-            false,
+            new TenantRestoreArguments(
+                new RestoreParameters(List.of(100L), null, null), "elasticsearch", false),
             false);
 
     // when

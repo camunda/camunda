@@ -24,7 +24,9 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
@@ -239,11 +241,8 @@ public class RestoreApp implements ApplicationRunner {
     final var restoreRequest =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-            backupIds,
-            fromStr,
-            toStr,
-            databaseType,
-            continuousBackups,
+            new TenantRestoreArguments(
+                new RestoreParameters(backupIds, fromStr, toStr), databaseType, continuousBackups),
             false);
     final var partitionCount = camunda.getCluster().getPartitionCount();
     final RestoreValidator validator =

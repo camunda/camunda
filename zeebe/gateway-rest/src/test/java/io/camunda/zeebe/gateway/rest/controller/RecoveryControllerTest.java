@@ -14,7 +14,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.protocol.model.RestoreBrokerStatus;
 import io.camunda.gateway.protocol.model.RestorePartitionStatus;
 import io.camunda.gateway.protocol.model.RestoreStatusResponse;
@@ -23,7 +22,7 @@ import io.camunda.service.RecoveryServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
@@ -49,7 +48,6 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,7 +55,6 @@ import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -75,8 +72,8 @@ public class RecoveryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
-  private void stubValidationSuccess() {
-    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+  private void stubRestoreAccepted() {
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse(0L, List.of()))));
   }
 
@@ -192,7 +189,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldRejectRestoreWhenCallerIsNotAuthorized() {
     // given
-    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.createForbiddenException(BACKUP_RESTORE_AUTHORIZATION)));
@@ -222,7 +219,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapInvalidRequestErrorFromCoordinator() {
     // given
-    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "bad params"))));
@@ -241,7 +238,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapInternalErrorFromCoordinator() {
     // given
-    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, "boom"))));
@@ -260,7 +257,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   @Test
   void shouldMapConcurrentModificationFromCoordinator() {
     // given
-    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.any()))
+    Mockito.when(recoveryServices.restore(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 Either.left(new ErrorResponse(ErrorCode.CONCURRENT_MODIFICATION, "boom"))));
@@ -478,202 +475,87 @@ public class RecoveryControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
   }
 
-  @Nested
-  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
-  class Elasticsearch extends SecondaryStorage {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardBackupIds(final String baseUrl) {
+    // given
+    stubRestoreAccepted();
 
-    @Override
-    String expectedDatabaseType() {
-      return "elasticsearch";
-    }
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100, 101]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+    Mockito.verify(recoveryServices)
+        .restore(eq(new RestoreParameters(List.of(100L, 101L), null, null)), eq(false), any());
   }
 
-  @Nested
-  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=opensearch"})
-  class OpenSearch extends SecondaryStorage {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardNoParameters(final String baseUrl) {
+    // given
+    stubRestoreAccepted();
 
-    @Override
-    String expectedDatabaseType() {
-      return "opensearch";
-    }
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    Mockito.verify(recoveryServices)
+        .restore(eq(new RestoreParameters(List.of(), null, null)), eq(false), any());
   }
 
-  @Nested
-  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
-  class Rdbms extends SecondaryStorage {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardTimeRange(final String baseUrl) {
+    // given
+    stubRestoreAccepted();
 
-    @Override
-    String expectedDatabaseType() {
-      return "rdbms";
-    }
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"from\": \"2024-01-01T10:00:00Z\", \"to\": \"2024-01-01T12:00:00Z\"}")
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    Mockito.verify(recoveryServices)
+        .restore(
+            eq(new RestoreParameters(List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z")),
+            eq(false),
+            any());
   }
 
-  @Nested
-  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=none"})
-  class None extends SecondaryStorage {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardDryRun(final String baseUrl) {
+    // given
+    stubRestoreAccepted();
 
-    @Override
-    String expectedDatabaseType() {
-      return "none";
-    }
-  }
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl + "?dryRun=true")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted();
 
-  @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.secondary-storage.type=rdbms",
-        "camunda.data.primary-storage.backup.continuous=true"
-      })
-  class RdbmsWithContinuousBackups extends RdbmsSecondaryStorageWithContinuousBackups {
-
-    @Override
-    String expectedDatabaseType() {
-      return "rdbms";
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.secondary-storage.type=none",
-        "camunda.data.primary-storage.backup.continuous=true"
-      })
-  class NoneWithContinuousBackups extends RdbmsSecondaryStorageWithContinuousBackups {
-
-    @Override
-    String expectedDatabaseType() {
-      return "none";
-    }
-  }
-
-  abstract class SecondaryStorage {
-
-    abstract String expectedDatabaseType();
-
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardBackupIds(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue("{\"backupIds\": [100, 101]}")
-          .exchange()
-          .expectStatus()
-          .isAccepted()
-          .expectBody()
-          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
-
-      Mockito.verify(recoveryServices)
-          .restore(
-              eq(
-                  new RestoreRequest(
-                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                      List.of(100L, 101L),
-                      null,
-                      null,
-                      expectedDatabaseType(),
-                      false,
-                      false)),
-              any());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardNoParameters(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isAccepted();
-
-      Mockito.verify(recoveryServices)
-          .restore(
-              eq(
-                  new RestoreRequest(
-                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                      List.of(),
-                      null,
-                      null,
-                      expectedDatabaseType(),
-                      false,
-                      false)),
-              any());
-    }
-  }
-
-  abstract class RdbmsSecondaryStorageWithContinuousBackups {
-
-    abstract String expectedDatabaseType();
-
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardContinuousFlagWithBackupIds(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue("{\"backupIds\": [100, 101]}")
-          .exchange()
-          .expectStatus()
-          .isAccepted();
-
-      Mockito.verify(recoveryServices)
-          .restore(
-              eq(
-                  new RestoreRequest(
-                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                      List.of(100L, 101L),
-                      null,
-                      null,
-                      expectedDatabaseType(),
-                      true,
-                      false)),
-              any());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardContinuousFlagWithTimeRange(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue("{\"from\": \"2024-01-01T10:00:00Z\", \"to\": \"2024-01-01T12:00:00Z\"}")
-          .exchange()
-          .expectStatus()
-          .isAccepted();
-
-      Mockito.verify(recoveryServices)
-          .restore(
-              eq(
-                  new RestoreRequest(
-                      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-                      List.of(),
-                      "2024-01-01T10:00:00Z",
-                      "2024-01-01T12:00:00Z",
-                      expectedDatabaseType(),
-                      true,
-                      false)),
-              any());
-    }
+    Mockito.verify(recoveryServices)
+        .restore(eq(new RestoreParameters(List.of(100L), null, null)), eq(true), any());
   }
 }

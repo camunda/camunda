@@ -25,8 +25,10 @@ import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -164,7 +166,11 @@ final class RestoreValidatorResolverTest {
   }
 
   private static RestoreRequest rdbmsRequest(final String databaseType, final boolean dryRun) {
-    return new RestoreRequest("default", List.of(), null, null, databaseType, false, dryRun);
+    return new RestoreRequest(
+        "default",
+        new TenantRestoreArguments(
+            new RestoreParameters(List.of(), null, null), databaseType, false),
+        dryRun);
   }
 
   private static BackupMetadata singleCheckpointMetadata(final int partitionId) {
@@ -232,7 +238,12 @@ final class RestoreValidatorResolverTest {
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request =
           new RestoreRequest(
-              "default", List.of(), CHECKPOINT_TIMESTAMP.toString(), null, "rdbms", true, false);
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(), CHECKPOINT_TIMESTAMP.toString(), null),
+                  "rdbms",
+                  true),
+              false);
 
       // when
       final var result = validator.validate(request);
@@ -249,7 +260,12 @@ final class RestoreValidatorResolverTest {
       final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
       final var request =
           new RestoreRequest(
-              "default", List.of(), null, CHECKPOINT_TIMESTAMP.toString(), "rdbms", true, false);
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(), null, CHECKPOINT_TIMESTAMP.toString()),
+                  "rdbms",
+                  true),
+              false);
 
       // when
       final var result = validator.validate(request);
@@ -267,11 +283,13 @@ final class RestoreValidatorResolverTest {
       final var request =
           new RestoreRequest(
               "default",
-              List.of(),
-              CHECKPOINT_TIMESTAMP.toString(),
-              CHECKPOINT_TIMESTAMP.plusSeconds(3600).toString(),
-              "rdbms",
-              true,
+              new TenantRestoreArguments(
+                  new RestoreParameters(
+                      List.of(),
+                      CHECKPOINT_TIMESTAMP.toString(),
+                      CHECKPOINT_TIMESTAMP.plusSeconds(3600).toString()),
+                  "rdbms",
+                  true),
               false);
 
       // when
@@ -414,7 +432,11 @@ final class RestoreValidatorResolverTest {
       stubBackupExists(42L);
       final var validator = new RestoreValidator(3, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(42L), null, null, "rdbms", false, false);
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(42L), null, null), "rdbms", false),
+              false);
 
       // when
       final var result = validator.validate(request);
@@ -430,7 +452,11 @@ final class RestoreValidatorResolverTest {
       stubNoBackupExists();
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(42L), null, null, "rdbms", false, false);
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(42L), null, null), "rdbms", false),
+              false);
 
       // when / then
       final var result = validator.validate(request);
@@ -449,7 +475,11 @@ final class RestoreValidatorResolverTest {
       stubBackupExists(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L), null, null, databaseType, false, false);
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(1L), null, null), databaseType, false),
+              false);
 
       // when
       final var result = validator.validate(request);
@@ -464,7 +494,11 @@ final class RestoreValidatorResolverTest {
       // given
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L, 2L), null, null, databaseType, false, false);
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(1L, 2L), null, null), databaseType, false),
+              false);
 
       // when
       final var result = validator.validate(request);
@@ -482,7 +516,11 @@ final class RestoreValidatorResolverTest {
       stubBackupMissing(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L), null, null, "elasticsearch", false, false);
+          new RestoreRequest(
+              "default",
+              new TenantRestoreArguments(
+                  new RestoreParameters(List.of(1L), null, null), "elasticsearch", false),
+              false);
 
       // when
       final var result = validator.validate(request);

@@ -30,7 +30,9 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
@@ -59,6 +61,9 @@ public class RecoveryServicesTest {
   private static final String RESTORE_FORBIDDEN_MESSAGE =
       "Unauthorized to perform operation 'RESTORE' on resource 'BACKUP'";
 
+  private static final TenantRestoreEnvironment RESTORE_ENVIRONMENT =
+      new TenantRestoreEnvironment("elasticsearch", false);
+
   private RecoveryServices services;
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender =
       mock(ClusterConfigurationManagementRequestSender.class);
@@ -79,7 +84,8 @@ public class RecoveryServicesTest {
             authorizationChecker,
             authorizationsConfig,
             mock(ApiServicesExecutorProvider.class),
-            mock(BrokerRequestAuthorizationConverter.class));
+            mock(BrokerRequestAuthorizationConverter.class),
+            RESTORE_ENVIRONMENT);
   }
 
   @ParameterizedTest
@@ -206,19 +212,25 @@ public class RecoveryServicesTest {
   }
 
   @Test
-  public void shouldForwardRestoreRequestUnchanged() {
-    // given
-    final var request =
-        new RestoreRequest(
-            PHYSICAL_TENANT_ID, List.of(100L, 101L), null, null, "elasticsearch", false, false);
+  public void shouldStampItsBoundRestoreEnvironmentIntoTheRequest() {
+    // given — the tenant's own database type and continuous-backups flag, not a global default
+    final var parameters = new RestoreParameters(List.of(100L, 101L), null, null);
     stubRestoreSuccess();
 
     // when
-    final var future = services.restore(request, authentication);
+    final var future = services.restore(parameters, false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
-    verify(clusterConfigurationRequestSender).restore(request);
+    verify(clusterConfigurationRequestSender)
+        .restore(
+            new RestoreRequest(
+                PHYSICAL_TENANT_ID,
+                new TenantRestoreArguments(
+                    parameters,
+                    RESTORE_ENVIRONMENT.databaseType(),
+                    RESTORE_ENVIRONMENT.continuousBackups()),
+                false));
   }
 
   @Test
@@ -227,7 +239,7 @@ public class RecoveryServicesTest {
     stubRestoreSuccess();
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
@@ -241,7 +253,7 @@ public class RecoveryServicesTest {
     stubRestoreSuccess();
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
@@ -256,7 +268,7 @@ public class RecoveryServicesTest {
         .thenReturn(Collections.emptySet());
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
@@ -270,7 +282,7 @@ public class RecoveryServicesTest {
     grant(AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertForbidden(future, RESTORE_FORBIDDEN_MESSAGE);
@@ -285,7 +297,7 @@ public class RecoveryServicesTest {
         .thenReturn(Collections.emptySet());
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertThat(future)
@@ -304,7 +316,7 @@ public class RecoveryServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.left(rejection)));
 
     // when
-    final var future = services.restore(restoreRequest(), authentication);
+    final var future = services.restore(restoreParameters(), false, authentication);
 
     // then
     assertThat(future).succeedsWithin(ofSeconds(1));
@@ -384,9 +396,8 @@ public class RecoveryServicesTest {
     assertThat(future.join().getLeft()).isEqualTo(rejection);
   }
 
-  private static RestoreRequest restoreRequest() {
-    return new RestoreRequest(
-        PHYSICAL_TENANT_ID, List.of(100L), null, null, "elasticsearch", false, false);
+  private static RestoreParameters restoreParameters() {
+    return new RestoreParameters(List.of(100L), null, null);
   }
 
   private CurrentClusterConfiguration stubTopologySuccess() {
