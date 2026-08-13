@@ -20,7 +20,7 @@ describe('InstanceHistoryTab', () => {
 
     expect(ElementInstanceLog).toHaveBeenCalledWith(
       {isPanel: true, showHeader: false},
-      {},
+      undefined,
     );
   });
 });
