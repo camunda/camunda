@@ -93,7 +93,7 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 						{displayName === process.processDefinitionId ? '' : process.processDefinitionId}
 					</span>
 				</Stack>
-				<div className={styles.buttonRow}>
+				<div className={cn(styles.buttonRow, featureFlags.dsTasklistUI && styles.buttonRowDS)}>
 					<ul
 						className={styles.attributes}
 						title={t('tasklist.processesProcessTileAttributes')}

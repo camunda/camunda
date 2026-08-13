@@ -78,6 +78,13 @@
 	gap: var(--cds-spacing-05);
 }
 
+// DS-only (see ProcessTile.tsx). The row has no align-items, so the attributes
+// list stretches to the row height and the Badge inside it sits at the top,
+// above the button's centre line. Centre the row's children instead.
+.buttonRowDS {
+	align-items: center;
+}
+
 .attributes {
 	margin: 0;
 	padding: 0;
