@@ -7,6 +7,9 @@
  */
 
 import {expect, APIResponse} from '@playwright/test';
+import type {ApiPath} from './_generated/apiPaths';
+
+export type {ApiPath};
 
 export type Credentials = {
   baseUrl: string;
@@ -268,7 +271,9 @@ export function octetStreamHeaders(token?: string): Record<string, string> {
 }
 
 export function buildUrl(
-  pathTemplate: string, // e.g., "/tenants/{tenantId}"
+  // Constrained to the spec's declared paths so a typo or a path renamed in
+  // rest-api.yaml fails to compile instead of returning a plausible 404.
+  pathTemplate: ApiPath, // e.g., "/tenants/{tenantId}"
   params?: Record<string, string | number>,
   query?: Record<string, string | number | undefined>,
 ): string {

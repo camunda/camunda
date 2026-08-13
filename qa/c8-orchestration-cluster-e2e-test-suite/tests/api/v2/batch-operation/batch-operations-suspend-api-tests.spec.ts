@@ -106,7 +106,9 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl('/batch-operations/not-a-valid-key/suspension'),
+      buildUrl('/batch-operations/{batchOperationKey}/suspension', {
+        batchOperationKey: 'not-a-valid-key',
+      }),
       {
         headers: jsonHeaders(),
       },

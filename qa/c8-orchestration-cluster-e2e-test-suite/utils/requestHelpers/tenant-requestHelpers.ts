@@ -43,14 +43,14 @@ export async function assignUsersToTenant(
   for (let i = 1; i <= numberOfUsers; i++) {
     const user = await createUser(request, {}, 'user' + generateUniqueId());
     const p = {
-      userId: user.username,
+      username: user.username,
       tenantId: tenantId,
     };
     // Retry to absorb read-after-write lag: the user created above may not
     // yet be visible to the assign endpoint on a shared cluster (404 → 204).
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/tenants/{tenantId}/users/{userId}', p),
+        buildUrl('/tenants/{tenantId}/users/{username}', p),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 204);

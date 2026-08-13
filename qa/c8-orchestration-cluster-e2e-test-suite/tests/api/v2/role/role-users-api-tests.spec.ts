@@ -64,13 +64,13 @@ test.describe.parallel('Role Users API Tests', () => {
     const user = await createUser(request, state, 'test-user');
     createdUserIds.push(user.username);
     const p = {
-      userId: user.username,
+      username: user.username,
       roleId: role.roleId as string,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/users/{userId}', p),
+        buildUrl('/roles/{roleId}/users/{username}', p),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 204);
@@ -79,11 +79,11 @@ test.describe.parallel('Role Users API Tests', () => {
 
   test('Assign Role To User Non Existent User NotFound', async ({request}) => {
     const p = {
-      userId: 'invalidUserId',
+      username: 'invalidUserId',
       roleId: state['roleId1'] as string,
     };
     const res = await request.put(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -94,11 +94,11 @@ test.describe.parallel('Role Users API Tests', () => {
 
   test('Assign Role To User Non Existent Role Not Found', async ({request}) => {
     const p = {
-      userId: userFromState('roleId1', state) as string,
+      username: userFromState('roleId1', state) as string,
       roleId: 'invalidRoleId',
     };
     const res = await request.put(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -110,13 +110,13 @@ test.describe.parallel('Role Users API Tests', () => {
   test('Assign Role To User Unauthorized', async ({request}) => {
     const roleId: string = state['roleId1'] as string;
     const p = {
-      userId: userFromState('roleId1', state) as string,
+      username: userFromState('roleId1', state) as string,
       roleId: roleId,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/users/{userId}', p),
+        buildUrl('/roles/{roleId}/users/{username}', p),
         {headers: {}},
       );
       await assertUnauthorizedRequest(res);
@@ -126,13 +126,13 @@ test.describe.parallel('Role Users API Tests', () => {
   test('Assign Already Added User To Role Conflict', async ({request}) => {
     const roleId: string = state['roleId1'] as string;
     const p = {
-      userId: userFromState('roleId1', state) as string,
+      username: userFromState('roleId1', state) as string,
       roleId: roleId,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/roles/{roleId}/users/{userId}', p),
+        buildUrl('/roles/{roleId}/users/{username}', p),
         {headers: jsonHeaders()},
       );
       await assertConflictRequest(res);
@@ -205,14 +205,14 @@ test.describe.parallel('Role Users API Tests', () => {
     const roleId: string = state['roleId2'] as string;
     const roleUser: string = userFromState('roleId2', state, 1);
     const p = {
-      userId: roleUser,
+      username: roleUser,
       roleId: roleId,
     };
 
     await test.step('Unassign Role From User', async () => {
       await expect(async () => {
         const res = await request.delete(
-          buildUrl('/roles/{roleId}/users/{userId}', p),
+          buildUrl('/roles/{roleId}/users/{username}', p),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 204);
@@ -244,11 +244,11 @@ test.describe.parallel('Role Users API Tests', () => {
   test('Unassign Role From User Unauthorized', async ({request}) => {
     const roleId: string = state['roleId1'] as string;
     const p = {
-      userId: userFromState('roleId1', state) as string,
+      username: userFromState('roleId1', state) as string,
       roleId: roleId,
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: {}},
     );
     await assertUnauthorizedRequest(res);
@@ -258,11 +258,11 @@ test.describe.parallel('Role Users API Tests', () => {
     request,
   }) => {
     const p = {
-      userId: 'invalidUserId',
+      username: 'invalidUserId',
       roleId: state['roleId1'] as string,
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -275,11 +275,11 @@ test.describe.parallel('Role Users API Tests', () => {
     request,
   }) => {
     const p = {
-      userId: userFromState('roleId1', state) as string,
+      username: userFromState('roleId1', state) as string,
       roleId: 'invalidRoleId',
     };
     const res = await request.delete(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(

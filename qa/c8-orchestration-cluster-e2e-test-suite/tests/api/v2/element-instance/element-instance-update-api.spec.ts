@@ -50,9 +50,9 @@ test.describe('Element Instance Update API', () => {
 
     await test.step('Update element instance', async () => {
       const res = await request.put(
-        buildUrl(
-          '/element-instances/' + state.elementInstanceKey + '/variables',
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/variables', {
+          elementInstanceKey: state.elementInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -116,9 +116,9 @@ test.describe('Element Instance Update API', () => {
 
     await test.step('Update local element instance', async () => {
       const res = await request.put(
-        buildUrl(
-          '/element-instances/' + state.secondElementInstanceKey + '/variables',
-        ),
+        buildUrl('/element-instances/{elementInstanceKey}/variables', {
+          elementInstanceKey: state.secondElementInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
