@@ -72,6 +72,31 @@ function hashmod_zone() {
     echo "$zone"
 }
 
+# Retry a command with exponential backoff. Only the invoked command's own
+# exit status is inspected — stdout/stderr of every attempt are shown live,
+# and on final failure the real exit code from the last attempt is returned
+# unchanged, so a permanent/logical error (bad chart name, malformed values)
+# still fails clearly, it's just tried max_attempts times first. Guards
+# against transient network blips (e.g. a "Get ...: EOF" on a Helm chart
+# download) without masking real failures.
+# Usage: retry_with_backoff <max_attempts> <base_delay_seconds> <command...>
+retry_with_backoff() {
+  local max_attempts="$1"; shift
+  local delay="$1"; shift
+  local attempt=1
+  until "$@"; do
+    local status=$?
+    if (( attempt >= max_attempts )); then
+      echo "Command failed after ${attempt} attempt(s), giving up: $*" >&2
+      return "$status"
+    fi
+    echo "Attempt ${attempt}/${max_attempts} failed (exit ${status}); retrying in ${delay}s: $*" >&2
+    sleep "$delay"
+    delay=$(( delay * 2 ))
+    ((attempt++))
+  done
+}
+
 # Check whether a value is present in a list (pass the list as trailing args).
 # Usage: if contains "$value" "${some_array[@]}"; then ...
 contains() {

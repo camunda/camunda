@@ -100,6 +100,14 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
+    --print-platform-chart-version)
+      # Internal plumbing hook for the golden-file test harness's chart
+      # pre-warm step (like GIT_AUTHOR, undocumented in usage()) — prints the
+      # version resolved above for -t/--target-version and exits before the
+      # namespace argument is required.
+      echo "$camunda_platform_helm_chart_version"
+      exit 0
+      ;;
     *)
       remaining_args+=("$1")
       shift
@@ -327,23 +335,55 @@ postgresql:
 EOF
 } > load-test-setup-values.yaml
 
-# Add/update helm repositories
-helm repo add camunda https://helm.camunda.io/ --force-update
-if [[ "$secondary_storage" == "opensearch" ]]; then
-  helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
+# Add/update helm repositories. Skippable via LOAD_TEST_SKIP_REPO_UPDATE for
+# callers (the golden-file test harness) that already primed the repo index
+# once before spawning many scenarios; unset by default, so a manual
+# invocation behaves exactly as before, just retried on transient failures.
+if [[ "${LOAD_TEST_SKIP_REPO_UPDATE:-false}" != "true" ]]; then
+  retry_with_backoff 4 5 helm repo add camunda https://helm.camunda.io/ --force-update
+  if [[ "$secondary_storage" == "opensearch" ]]; then
+    retry_with_backoff 4 5 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
+  fi
+  retry_with_backoff 4 5 helm repo update
 fi
-helm repo update
 
 # The directory where local Helm Charts will be stored in.
 CHARTS_DIR="charts"
+mkdir -p "$CHARTS_DIR"
 
-echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
-helm pull camunda/camunda-platform \
-    --untar --untardir "$CHARTS_DIR" \
-    --version "$camunda_platform_helm_chart_version"
+# If LOAD_TEST_CHART_CACHE_DIR points at a pre-warmed cache (populated once,
+# per version, before this script runs), reuse it instead of pulling over the
+# network again. Unset by default, so a manual invocation always pulls fresh.
+platform_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/${camunda_platform_helm_chart_version}/camunda-platform"
+if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
+  echo "Using pre-warmed camunda-platform $camunda_platform_helm_chart_version chart from cache..."
+  cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"
+else
+  echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
+  retry_with_backoff 4 5 helm pull camunda/camunda-platform \
+      --untar --untardir "$CHARTS_DIR" \
+      --version "$camunda_platform_helm_chart_version"
+fi
 
-echo "Resolving load-test-setup subchart dependencies..."
-helm dependency update "$CHARTS_DIR/load-test-setup"
+# Skip re-resolving load-test-setup's dependencies when the charts/ copy
+# already carries them, freshly resolved (not just present — a stale leftover
+# from an unrelated manual session must not be mistaken for a valid resolve
+# after a Chart.lock bump). In CI this is true because the harness resolves
+# the shared source tree once before copying it into every scenario; on a
+# manual run it's naturally false, so this falls through to today's behavior.
+subchart_deps_dir="$CHARTS_DIR/load-test-setup/charts"
+lockfile="$CHARTS_DIR/load-test-setup/Chart.lock"
+deps_already_resolved=false
+if [[ -d "$subchart_deps_dir" ]] && [[ -n "$(ls -A "$subchart_deps_dir" 2>/dev/null)" ]] \
+   && [[ -z "$(find "$subchart_deps_dir" -type f ! -newer "$lockfile" -print -quit)" ]]; then
+  deps_already_resolved=true
+fi
+if [[ "$deps_already_resolved" == "true" ]]; then
+  echo "load-test-setup subchart dependencies already resolved; skipping helm dependency update."
+else
+  echo "Resolving load-test-setup subchart dependencies..."
+  retry_with_backoff 4 5 helm dependency update "$CHARTS_DIR/load-test-setup"
+fi
 
 echo
 echo "Scaffolding complete. Next steps:"
