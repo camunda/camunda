@@ -460,5 +460,11 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, completed)));
     }
+
+    @Override
+    public void onTerminate(
+        final ExecutableEndEvent element, final BpmnElementContext terminating) {
+      compensationSubscriptionBehaviour.deleteSubscriptionsOfCompensationThrowEvent(terminating);
+    }
   }
 }
