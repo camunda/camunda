@@ -15,7 +15,6 @@ import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 
 public abstract class JobRegistryWriter {
@@ -45,12 +44,8 @@ public abstract class JobRegistryWriter {
 
   public void updateJobStatus(final String id, final JobStatus status, final String errorMessage) {
     LOG.debug("Updating job registry entry [{}] to status [{}].", id, status);
-    final OffsetDateTime completedAt =
-        (status == JobStatus.COMPLETED || status == JobStatus.FAILED)
-            ? LocalDateUtil.getCurrentDateTime()
-            : null;
     final JobRegistryEntryUpdateDto update =
-        new JobRegistryEntryUpdateDto(status, errorMessage, completedAt);
+        new JobRegistryEntryUpdateDto(status, errorMessage, LocalDateUtil.getCurrentDateTime());
     try {
       performUpdatingJobStatus(id, update);
     } catch (final IOException e) {

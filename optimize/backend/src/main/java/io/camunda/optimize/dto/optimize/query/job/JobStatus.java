@@ -9,7 +9,6 @@ package io.camunda.optimize.dto.optimize.query.job;
 
 public enum JobStatus {
   QUEUED,
-  RUNNING,
   COMPLETED,
   FAILED
 }
