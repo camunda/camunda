@@ -220,6 +220,15 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.async-replication-change == 'true'
       }}
+  release-notes-action:
+    description: Output whether the release-notes action's tests and bundle-drift guards should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.release-notes-action-change == 'true'
+      }}
   renovate-config-changes:
     description: Output whether renovate config validator needs to be run
     value: >-
@@ -302,6 +311,22 @@ runs:
         renovate-config-change:
           - '**/renovate.json5'
           - '.github/renovate/**.json5'
+
+        # The gate workflow is included so a change to it still runs the action's
+        # tests and the bundle-drift guard that back it.
+        #
+        # The first two globs overlap `ci-relevant` (which already covers
+        # .github/actions/** and .github/workflows/**) and are kept on purpose:
+        # ci-relevant additionally requires check.sh to judge the change
+        # CI-relevant, so an excluded path there would otherwise skip the
+        # action's own tests. The last two are not GitHub Actions files at all,
+        # so only this filter catches them — and both are drift-guarded by the
+        # action's CI, which is exactly what must run when they change.
+        release-notes-action-change:
+          - '.github/actions/release-notes/**'
+          - '.github/workflows/release-notes*'
+          - '.github/pull_request_template.md'
+          - 'commitlint.config.cjs'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes
