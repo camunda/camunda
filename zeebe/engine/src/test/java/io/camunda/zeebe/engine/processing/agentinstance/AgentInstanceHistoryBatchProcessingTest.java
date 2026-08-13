@@ -273,10 +273,34 @@ public class AgentInstanceHistoryBatchProcessingTest {
   public void shouldEmitHistoryEventForEachItemInOrderOnUpdate() {
     // given
     final var context = deployCreateAgentInstanceAndActivateJob();
-    final var userItem = userItem("item-user", "Please summarize this document.");
+    final var userItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-user")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("Please summarize this document."));
     final var assistantItem =
-        assistantItem("item-assistant", "Sure, here is the summary.", 100L, 40L);
-    final var toolResultItem = toolResultItem("item-tool-result", "lookup result");
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-assistant")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("Sure, here is the summary."));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    final var toolResultItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-tool-result")
+            .setRole(AgentHistoryRole.TOOL_RESULT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("lookup result"));
 
     // when
     final var updated =
