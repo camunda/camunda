@@ -15,6 +15,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.ROOT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CREATION_DATE;
@@ -44,6 +45,7 @@ public class AgentInstanceFilterTransformer extends IndexFilterTransformer<Agent
   public SearchQuery toSearchQuery(final AgentInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.addAll(longOperations(KEY, filter.agentInstanceKeyOperations()));
+    queries.addAll(longOperations(AGENT_DEFINITION_KEY, filter.agentDefinitionKeyOperations()));
     queries.addAll(longOperations(ELEMENT_INSTANCE_KEYS, filter.elementInstanceKeyOperations()));
     queries.addAll(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
     queries.addAll(

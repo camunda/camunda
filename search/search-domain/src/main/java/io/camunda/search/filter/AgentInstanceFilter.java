@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 public record AgentInstanceFilter(
     List<Operation<Long>> agentInstanceKeyOperations,
+    List<Operation<Long>> agentDefinitionKeyOperations,
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> rootProcessInstanceKeyOperations,
@@ -43,6 +44,7 @@ public record AgentInstanceFilter(
   public static final class Builder implements ObjectBuilder<AgentInstanceFilter> {
 
     private List<Operation<Long>> agentInstanceKeyOperations;
+    private List<Operation<Long>> agentDefinitionKeyOperations;
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> rootProcessInstanceKeyOperations;
@@ -70,6 +72,21 @@ public record AgentInstanceFilter(
 
     public Builder agentInstanceKeys(final Long value, final Long... values) {
       return agentInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder agentDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      agentDefinitionKeyOperations = addValuesToList(agentDefinitionKeyOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder agentDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return agentDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder agentDefinitionKeys(final Long value, final Long... values) {
+      return agentDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -261,6 +278,7 @@ public record AgentInstanceFilter(
     public AgentInstanceFilter build() {
       return new AgentInstanceFilter(
           Objects.requireNonNullElse(agentInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(agentDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(rootProcessInstanceKeyOperations, Collections.emptyList()),
