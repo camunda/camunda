@@ -639,7 +639,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
   });
 
   test('Delete Mapping Rule Unauthorized', async ({request}) => {
-    const p = {mappingRuleId: state['mappingRuleId1'] as string};
+    const p = {mappingRuleId: mappingRule2.mappingRuleId as string};
     const res = await request.delete(
       buildUrl('/mapping-rules/{mappingRuleId}', p),
       {headers: {}},

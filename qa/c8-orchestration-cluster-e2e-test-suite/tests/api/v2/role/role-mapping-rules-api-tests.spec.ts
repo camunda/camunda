@@ -42,6 +42,12 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
     await createRoleAndStoreResponseFields(request, 3, state);
     await assignRolesToMappingRules(
       request,
+      1,
+      state['roleId1'] as string,
+      state,
+    );
+    await assignRolesToMappingRules(
+      request,
       2,
       state['roleId2'] as string,
       state,

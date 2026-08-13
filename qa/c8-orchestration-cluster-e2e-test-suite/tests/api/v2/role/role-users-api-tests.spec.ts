@@ -172,7 +172,7 @@ test.describe.parallel('Role Users API Tests', () => {
 
   test('Search Role Users Unauthorized', async ({request}) => {
     const roleId: string = state['roleId1'] as string;
-    const p = {userId: userFromState(roleId, state) as string};
+    const p = {roleId};
     const res = await request.post(
       buildUrl('/roles/{roleId}/users/search', p),
       {headers: {}, data: {}},
