@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchHelper;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentHistoryBatchBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
@@ -45,7 +45,7 @@ public final class AgentHistoryCreateProcessor
   private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
-  private final AgentHistoryBatchHelper historyHelper;
+  private final AgentHistoryBatchBehavior historyHelper;
 
   public AgentHistoryCreateProcessor(
       final Writers writers,
@@ -59,7 +59,7 @@ public final class AgentHistoryCreateProcessor
     jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
-    historyHelper = new AgentHistoryBatchHelper(keyGenerator, processingState);
+    historyHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override

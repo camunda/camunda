@@ -85,7 +85,7 @@ public final class AgentInstanceUpdateProcessor
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
-  private final AgentHistoryBatchHelper historyBatchHelper;
+  private final AgentHistoryBatchBehavior historyBatchHelper;
 
   public AgentInstanceUpdateProcessor(
       final Writers writers,
@@ -98,7 +98,7 @@ public final class AgentInstanceUpdateProcessor
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
-    historyBatchHelper = new AgentHistoryBatchHelper(keyGenerator, processingState);
+    historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override

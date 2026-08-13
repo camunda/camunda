@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * embedded {@code history[]} batch: validating the job a batch is attributed to, validating the
  * shape of the batch itself, and applying it to an {@code AgentInstanceRecord}.
  */
-public final class AgentHistoryBatchHelper {
+public final class AgentHistoryBatchBehavior {
 
   /** The names of the {@code AgentInstanceRecord} attributes a history item can affect. */
   static final Set<String> ALLOWED_CONFIGURATION_ATTRIBUTES =
@@ -73,7 +73,7 @@ public final class AgentHistoryBatchHelper {
   private final KeyGenerator keyGenerator;
   private final ProcessingState processingState;
 
-  public AgentHistoryBatchHelper(
+  public AgentHistoryBatchBehavior(
       final KeyGenerator keyGenerator, final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     this.processingState = processingState;

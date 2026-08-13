@@ -63,7 +63,7 @@ public final class AgentInstanceCreateProcessor
   private final AgentDefinitionState agentDefinitionState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
-  private final AgentHistoryBatchHelper historyBatchHelper;
+  private final AgentHistoryBatchBehavior historyBatchHelper;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
@@ -78,7 +78,7 @@ public final class AgentInstanceCreateProcessor
     agentDefinitionState = processingState.getAgentDefinitionState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
-    historyBatchHelper = new AgentHistoryBatchHelper(keyGenerator, processingState);
+    historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override

@@ -60,7 +60,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
   @Test
   public void shouldRejectHistoryBatchWithoutJobKeyOnCreate() {
-    // given — CREATE applies the exact same job-context rule as UPDATE (AgentHistoryBatchHelper
+    // given — CREATE applies the exact same job-context rule as UPDATE (AgentHistoryBatchBehavior
     // is shared, unchanged, between the two processors).
     final var serviceTaskInstance = deployAndCreateProcessInstance();
 
