@@ -346,31 +346,58 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldAccumulateMetricsImmediatelyOnUpdate() {
-    // given
+  public void shouldAccumulateMetricsAcrossSeparateUpdates() {
+    // given — first batch: a single ASSISTANT item with its own token metrics and one tool call.
     final var context = deployCreateAgentInstanceAndActivateJob();
-    final var assistantItem =
-        assistantItem("item-assistant", "Sure, here is the summary.", 100L, 40L);
-    assistantItem.addToolCall(
+    final var firstAssistantItem =
+        assistantItem("item-assistant-1", "Sure, here is the summary.", 100L, 40L);
+    firstAssistantItem.addToolCall(
         new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
 
-    // when
-    final var updated =
+    // when — the first update applies the first batch
+    final var firstUpdate =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(context.agentInstanceKey())
             .withElementInstanceKey(context.elementInstanceKey())
             .withJobKey(context.jobKey())
-            .withHistory(List.of(assistantItem))
+            .withHistory(List.of(firstAssistantItem))
             .update();
 
-    // then — the supplied token metrics are applied, and modelCalls/toolCalls are derived from the
-    // ASSISTANT item itself: one model call, plus one tool call for the one it dispatched.
-    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
-    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
-    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
-    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(1);
-    assertThat(updated.getValue().getChangedAttributes()).contains("metrics");
+    // then — the first batch's metrics are applied immediately: one model call, one tool call.
+    assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(firstUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(firstUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(firstUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(firstUpdate.getValue().getChangedAttributes()).contains("metrics");
+
+    // given — second batch: two more ASSISTANT items, each with their own metrics and tool calls.
+    final var secondAssistantItem =
+        assistantItem("item-assistant-2", "Here is more detail.", 50L, 20L);
+    secondAssistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-2").setToolName("lookup"));
+    secondAssistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-3").setToolName("search"));
+    final var thirdAssistantItem = assistantItem("item-assistant-3", "One more detail.", 25L, 10L);
+
+    // when — the second update applies the second batch on top of the first
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(context.agentInstanceKey())
+            .withElementInstanceKey(context.elementInstanceKey())
+            .withJobKey(context.jobKey())
+            .withHistory(List.of(secondAssistantItem, thirdAssistantItem))
+            .update();
+
+    // then — metrics accumulate on top of the first update's totals: two more model calls (three
+    // total), two more tool calls from the second item and none from the third (three total), and
+    // token counts summed across all three items.
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(175L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(70L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(3);
+    assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(3);
+    assertThat(secondUpdate.getValue().getChangedAttributes()).contains("metrics");
   }
 
   @Test
