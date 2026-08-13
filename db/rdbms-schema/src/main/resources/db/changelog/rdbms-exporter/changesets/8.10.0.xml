@@ -289,6 +289,105 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_agent_definition_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}AGENT_DEFINITION">
+      <column name="AGENT_DEFINITION_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="AGENT_TYPE" type="VARCHAR(50)"/>
+      <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+      <column name="PROCESS_DEFINITION_VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_TENANT_ID"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_TENANT_ID">
+      <column name="TENANT_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_pd_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_PD_KEY"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_pd_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_PD_ID"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_PD_ID">
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_element_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_ELEMENT_ID"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_ELEMENT_ID">
+      <column name="ELEMENT_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_pd_version_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_PD_VERSION"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_PD_VERSION">
+      <column name="PROCESS_DEFINITION_VERSION"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_definition_pd_version_tag_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_DEFINITION_PD_VERSION_TAG"
+          tableName="${prefix}AGENT_DEFINITION"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_DEFINITION"
+      indexName="${prefix}IDX_AGENT_DEFINITION_PD_VERSION_TAG">
+      <column name="PROCESS_DEFINITION_VERSION_TAG"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_wait_state_table" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
