@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheKeyNames;
 import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -247,15 +246,13 @@ class SecretStoreRegistryTest {
   }
 
   @Test
-  void shouldPublishWhatTheDefaultCacheOfEachStoreDoes() {
-    // given two stores, each on a default cache built by the registry
+  void shouldPublishWhatTheCacheOfEachStoreDoes() {
+    // given two stores, each on a cache the factory built for its own store ID
     final var meterRegistry = new SimpleMeterRegistry();
     final var registry =
         new SecretStoreRegistry(
             Map.of("store-a", storeHolding("token", "a"), "store-b", storeHolding("token", "b")),
-            Map.of(),
-            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
-            meterRegistry);
+            meteredCacheFactory(meterRegistry));
 
     // when only one of them resolves the name
     registry.getStores().get("store-a").resolve(Set.of("token"));
@@ -263,66 +260,62 @@ class SecretStoreRegistryTest {
 
     // then each cache reports under its own store ID, so one store's numbers never answer for
     // another's — the registry is the only place that knows which cache belongs to which store
-    assertThat(cacheResults(meterRegistry, "store-a", SecretCacheResult.MISS)).isOne();
-    assertThat(cacheResults(meterRegistry, "store-a", SecretCacheResult.HIT)).isOne();
-    assertThat(cacheResults(meterRegistry, "store-b", SecretCacheResult.MISS)).isZero();
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-a", SecretCacheResult.MISS)).isOne();
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-a", SecretCacheResult.HIT)).isOne();
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-b", SecretCacheResult.MISS))
+        .isZero();
   }
 
   @Test
-  void shouldPublishNothingForAStoreThatCachesNatively() {
-    // given a store that holds what it resolves itself, so the registry builds it no cache
+  void shouldBuildNoCacheForAStoreThatCachesNatively() {
+    // given a store that holds what it resolves itself
     final var meterRegistry = new SimpleMeterRegistry();
+    final var storeIdsBuiltFor = new ArrayList<String>();
     final var registry =
         new SecretStoreRegistry(
             Map.of("default", new NativelyCachingSecretStore()),
-            Map.of(),
-            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
-            meterRegistry);
+            storeId -> {
+              storeIdsBuiltFor.add(storeId);
+              return meteredCacheFactory(meterRegistry).create(storeId);
+            });
 
     // when it is resolved through
     registry.getStores().get("default").resolve(Set.of("token"));
 
-    // then no cache meter exists for it at all: there is nothing here to measure, its cache being
-    // its SDK's business
-    assertThat(cacheMeterNames(meterRegistry)).isEmpty();
+    // then the factory was never called for it, so no cache meter exists either: wrapping such a
+    // store would put a second cache in front of its own, and meters registered for a cache it
+    // never resolves through would sit at zero forever
+    assertThat(storeIdsBuiltFor).isEmpty();
+    assertThat(SecretCacheMeters.cacheMeterNames(meterRegistry)).isEmpty();
   }
 
   @Test
   void shouldPublishNothingForACacheTheCallerSupplied() {
-    // given a store whose cache the caller chose instead of the default one
+    // given a store whose cache the caller chose instead of an instrumented one
     final var meterRegistry = new SimpleMeterRegistry();
     final var registry =
         new SecretStoreRegistry(
             Map.of("default", storeHolding("token", "value")),
             Map.of("default", new InMemorySecretCache()),
-            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
-            meterRegistry);
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")));
 
     // when it is resolved through
     registry.getStores().get("default").resolve(Set.of("token"));
 
     // then nothing is published: an arbitrary SecretCache exposes nothing to measure, so this seam
     // stays a plain test double rather than half-instrumenting one
-    assertThat(cacheMeterNames(meterRegistry)).isEmpty();
+    assertThat(SecretCacheMeters.cacheMeterNames(meterRegistry)).isEmpty();
   }
 
-  private static List<String> cacheMeterNames(final SimpleMeterRegistry meterRegistry) {
-    return meterRegistry.getMeters().stream()
-        .map(meter -> meter.getId().getName())
-        .filter(name -> name.startsWith("camunda.secret.cache."))
-        .toList();
-  }
-
-  private static double cacheResults(
-      final SimpleMeterRegistry meterRegistry,
-      final String storeId,
-      final SecretCacheResult result) {
-    return meterRegistry
-        .get(SecretCacheMetricsDoc.CACHE_RESULT.getName())
-        .tag(SecretCacheKeyNames.STORE.asString(), storeId)
-        .tag(SecretCacheKeyNames.RESULT.asString(), result.name())
-        .counter()
-        .count();
+  /** A factory building the instrumented cache the Spring wiring builds, as it builds it. */
+  private static SecretCacheFactory meteredCacheFactory(final SimpleMeterRegistry meterRegistry) {
+    return storeId ->
+        CaffeineSecretCache.create(
+            CaffeineSecretCache.DEFAULT_MAX_SIZE,
+            CaffeineSecretCache.DEFAULT_TTL,
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+            meterRegistry,
+            storeId);
   }
 
   private static Optional<String> lookupLocal(

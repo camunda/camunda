@@ -491,16 +491,24 @@ class SecretStoreConfigurationTest {
                   "tenantb-admin",
                   "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                   "tenantb"));
+      final var meterRegistry = new SimpleMeterRegistry();
 
       // when / then — the build fails and the failure propagates (Mockito wraps the construction
       // failure, but it is still a RuntimeException the rollback path catches)
-      assertThatThrownBy(() -> registries(resolver))
+      assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry))
           .isInstanceOf(RuntimeException.class)
           .hasRootCauseInstanceOf(IllegalStateException.class);
 
       // then — the first tenant's already-built store is rolled back (closed) so its client does
       // not leak
       verify(construction.constructed().get(0)).close();
+      // and so is the registry its cache meters were published on: a failed startup that left them
+      // behind would keep exporting the hit rate and size of a cache nothing resolves through
+      assertThat(
+              meterRegistry.getMeters().stream()
+                  .map(meter -> meter.getId().getName())
+                  .filter(name -> name.startsWith("camunda.secret.cache.")))
+          .isEmpty();
     }
   }
 

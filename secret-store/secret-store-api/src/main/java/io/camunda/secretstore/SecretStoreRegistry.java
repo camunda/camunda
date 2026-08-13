@@ -7,8 +7,6 @@
  */
 package io.camunda.secretstore;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,9 +52,10 @@ public final class SecretStoreRegistry {
    * constructor to drive the default cache's expiry from another time source (production wiring
    * passes the actor clock, so {@code /actuator/clock} time travel reaches it).
    *
-   * <p>A cache given here is used as it is and is not instrumented: only the default cache this
-   * registry builds itself reports on {@link SecretCacheMetricsDoc}'s meters, since an arbitrary
-   * {@link SecretCache} exposes nothing to measure.
+   * <p>A cache given here is used as it is and is not instrumented: whether it reports on {@link
+   * SecretCacheMetricsDoc}'s meters is the caller's business, and an arbitrary {@link SecretCache}
+   * exposes nothing to measure. See the {@link SecretCacheFactory} constructor for the seam a
+   * caller that does instrument its caches has to use.
    *
    * @throws IllegalArgumentException if a cache is given for a store ID nothing is configured for,
    *     or if two store IDs are given the same cache instance — the cache is keyed by the bare
@@ -69,39 +68,43 @@ public final class SecretStoreRegistry {
   }
 
   /**
-   * Creates a registry as the two-argument constructor does, but drives the default cache's expiry
-   * from {@code timeSource} instead of the system clock — the choice of default cache is already
-   * the registry's job, and that default is now time-driven.
+   * Creates a registry as the {@code Map}-and-{@code Map} constructor does, but drives the default
+   * cache's expiry from {@code timeSource} instead of the system clock — the choice of default
+   * cache is already the registry's job, and that default is now time-driven.
    *
-   * <p>The default caches publish nothing: see the four-argument constructor to have them report on
-   * a registry.
+   * <p>The default caches publish nothing on {@link SecretCacheMetricsDoc}'s meters: see the {@link
+   * SecretCacheFactory} constructor for the seam that builds instrumented ones.
    */
   public SecretStoreRegistry(
       final Map<String, SecretStore> stores,
       final Map<String, SecretCache> caches,
       final InstantSource timeSource) {
-    this(stores, caches, timeSource, new CompositeMeterRegistry());
+    rejectUnusableCaches(stores, caches);
+    this.stores =
+        locallyCachedStores(
+            stores,
+            storeId -> {
+              final var configured = caches.get(storeId);
+              return configured != null
+                  ? configured
+                  : CaffeineSecretCache.createDefault(timeSource);
+            });
   }
 
   /**
-   * Creates a registry as the three-argument constructor does, and has each default cache publish
-   * what it does on {@code meterRegistry}, tagged with the store ID it was built for. Choosing the
-   * default cache is the registry's job, so registering its meters is too — no caller can reach a
-   * cache to instrument it afterwards.
+   * Creates a registry whose stores cache in whatever {@code cacheFactory} builds for them. This is
+   * the seam for a caller that instruments the caches it builds: the factory is called only for a
+   * store this registry actually wraps, so a store that caches natively — for which no cache is
+   * built at all — shows up on none of {@link SecretCacheMetricsDoc}'s meters, as they document.
    *
-   * <p>A store ID is unique only within one physical tenant, and this registry knows nothing about
-   * tenants. A caller that builds one registry per tenant must therefore pass a registry that
-   * already carries the tenant as a tag, otherwise two tenants using the same store ID register the
-   * same series twice: Micrometer hands back the meter that already exists, and the two caches
-   * silently share it.
+   * <p>Both rules the {@code Map}-based constructors validate hold by construction here: the
+   * factory is called once per configured store, so it can neither be given a cache for a store
+   * nothing is configured for nor share one instance between two store IDs — as long as it returns
+   * a fresh cache per ID, which is its documented contract.
    */
   public SecretStoreRegistry(
-      final Map<String, SecretStore> stores,
-      final Map<String, SecretCache> caches,
-      final InstantSource timeSource,
-      final MeterRegistry meterRegistry) {
-    rejectUnusableCaches(stores, caches);
-    this.stores = locallyCachedStores(stores, caches, timeSource, meterRegistry);
+      final Map<String, SecretStore> stores, final SecretCacheFactory cacheFactory) {
+    this.stores = locallyCachedStores(stores, cacheFactory);
   }
 
   /**
@@ -148,41 +151,27 @@ public final class SecretStoreRegistry {
   }
 
   private static Map<String, LocallyCachedSecretStore> locallyCachedStores(
-      final Map<String, SecretStore> stores,
-      final Map<String, SecretCache> caches,
-      final InstantSource timeSource,
-      final MeterRegistry meterRegistry) {
+      final Map<String, SecretStore> stores, final SecretCacheFactory cacheFactory) {
     final Map<String, LocallyCachedSecretStore> locallyCached = new LinkedHashMap<>();
     stores.forEach(
         (storeId, store) ->
-            locallyCached.put(
-                storeId, locallyCached(storeId, store, caches, timeSource, meterRegistry)));
+            locallyCached.put(storeId, locallyCached(storeId, store, cacheFactory)));
     return Collections.unmodifiableMap(locallyCached);
   }
 
   /**
    * Returns the store itself when it caches natively — wrapping it would put a second cache in
-   * front of its own — and otherwise the store behind the cache configured for it, or a fresh
-   * time-and-size-bounded one when the configured caches do not cover it.
+   * front of its own — and otherwise the store behind the cache the factory builds for it.
    *
-   * <p>Only that fresh cache is instrumented, which is also why a natively caching store shows up
-   * on none of {@link SecretCacheMetricsDoc}'s meters: there is no cache here to measure, and its
-   * own is the SDK's business.
+   * <p>The factory is not called at all for a natively caching store, which is what keeps such a
+   * store off {@link SecretCacheMetricsDoc}'s meters however the caller instruments the caches it
+   * builds: there is no cache here to measure, and its own is the SDK's business.
    */
   private static LocallyCachedSecretStore locallyCached(
-      final String storeId,
-      final SecretStore store,
-      final Map<String, SecretCache> caches,
-      final InstantSource timeSource,
-      final MeterRegistry meterRegistry) {
+      final String storeId, final SecretStore store, final SecretCacheFactory cacheFactory) {
     if (store instanceof final LocallyCachedSecretStore locallyCached) {
       return locallyCached;
     }
-    final var configured = caches.get(storeId);
-    return new CachingSecretStore(
-        store,
-        configured != null
-            ? configured
-            : CaffeineSecretCache.createDefault(timeSource, meterRegistry, storeId));
+    return new CachingSecretStore(store, cacheFactory.create(storeId));
   }
 }

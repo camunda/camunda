@@ -141,6 +141,16 @@ final class SecretCacheMetricsDocTest {
   }
 
   @Test
+  void shouldMapARemovalByNameToExplicit() {
+    // when/then — Caffeine reports this cause to no StatsCounter
+    // (RemovalCause.EXPLICIT.wasEvicted()
+    // is false), so CaffeineSecretCache.remove counts it itself and nothing else exercises this
+    // arm. Without this it could be mapped to any other cause and every test would still pass
+    assertThat(SecretCacheEvictionCause.from(RemovalCause.EXPLICIT))
+        .isEqualTo(SecretCacheEvictionCause.EXPLICIT);
+  }
+
+  @Test
   void shouldRejectAReplacedValueAsAnEviction() {
     // when/then — the entry stays and only its value changes, which CachingSecretStore does on
     // every re-resolve. Folding it into a cause would bury the evictions that mean something

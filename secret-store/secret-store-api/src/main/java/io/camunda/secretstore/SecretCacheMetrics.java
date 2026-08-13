@@ -17,6 +17,7 @@ import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheResult;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +39,14 @@ import java.util.Objects;
  */
 final class SecretCacheMetrics implements StatsCounter {
 
+  /**
+   * The store ID a counter publishing nothing is tagged with. Never reaches a metrics endpoint, and
+   * deliberately not spellable as a store ID — those are property-path segments under {@code
+   * camunda.secrets.stores.<type>.<id>} — so it cannot be mistaken for a configured store if one
+   * ever does.
+   */
+  private static final String UNMETERED_STORE_ID = "<unmetered>";
+
   private final MeterRegistry registry;
   private final String storeId;
   private final Counter hits;
@@ -53,6 +62,17 @@ final class SecretCacheMetrics implements StatsCounter {
     for (final var cause : SecretCacheEvictionCause.values()) {
       evictions.put(cause, registerEvictionCounter(cause));
     }
+  }
+
+  /**
+   * A counter that records everything and publishes nothing, for a cache no caller named a registry
+   * for. Spelled as a {@link CompositeMeterRegistry} with nothing behind it — Micrometer's own way
+   * to say "no metrics" — rather than as a second {@link StatsCounter} implementation, so the cache
+   * takes the same code path either way. One per cache rather than a shared static, so the meters
+   * it holds are collected along with the cache that registered them.
+   */
+  static SecretCacheMetrics none() {
+    return new SecretCacheMetrics(new CompositeMeterRegistry(), UNMETERED_STORE_ID);
   }
 
   @Override

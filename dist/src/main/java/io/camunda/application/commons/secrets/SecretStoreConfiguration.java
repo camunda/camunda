@@ -17,7 +17,7 @@ import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.NoopSecretStore;
-import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.SecretCacheFactory;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
@@ -70,8 +70,9 @@ public class SecretStoreConfiguration {
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
    *     forwarded to. Each tenant gets its own {@link MicrometerUtil#wrap wrapped registry} tagging
    *     them with {@link PartitionKeyNames#PHYSICAL_TENANT}, as {@code RdbmsDataSources} does for
-   *     its pools — a store ID is unique only within a tenant, and {@link SecretStoreRegistry}'s
-   *     four-argument constructor documents what sharing a series between two would do.
+   *     its pools — a store ID is unique only within a tenant, so without that tag two tenants
+   *     using the same store ID would register the same series twice: Micrometer hands back the
+   *     meter that already exists, and the two caches silently share it.
    */
   @Bean
   public SecretStoreRegistries secretStoreRegistries(
@@ -166,40 +167,31 @@ public class SecretStoreConfiguration {
             meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
     tenantMeterRegistries.add(tenantMeterRegistry);
     return new SecretStoreRegistry(
-        Map.copyOf(stores),
-        caches(stores.keySet(), cacheConfig, timeSource, tenantMeterRegistry),
-        timeSource);
+        Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
   }
 
   /**
-   * One cache per store, keyed by the same store IDs the registry is given. Building from the
-   * finalized store IDs with a fresh instance per ID is what keeps {@link SecretStoreRegistry} from
-   * rejecting the map: no cache for a store nothing is configured for, and no instance shared by
-   * two store IDs (a cache is keyed by the bare secret name, so a shared one would let one store's
-   * value answer for another store's secret of the same name).
+   * Builds one cache per store the registry wraps, at the configured ttl and max-size, publishing
+   * what it does under the store ID it was built for. A fresh instance per call is what the factory
+   * contract requires: a cache is keyed by the bare secret name, so an instance shared by two
+   * stores would let one store's value answer for another store's secret of the same name.
    *
-   * <p>The noop fallback store is covered too. It never caches anything — only a resolved value is
-   * cached and it resolves none — but covering it keeps this a single loop over the finalized store
-   * IDs, with no branch that could later leave a real store on the registry's own cache defaults
-   * instead of the configured ttl and max-size.
+   * <p>Handed to the registry rather than applied to a map of prebuilt caches so that a store that
+   * caches natively never reaches this at all. Only the registry knows it leaves such a store
+   * unwrapped, so building a cache for every configured store ID here would register the meters of
+   * a cache nothing ever resolves through — seven series stuck at zero, for a store {@link
+   * io.camunda.secretstore.SecretCacheMetricsDoc} promises emits none.
    *
-   * <p>Each cache is instrumented here rather than by the registry, which only meters the default
-   * caches it builds itself: a cache handed to it is used as it is. The registry is already wrapped
-   * per tenant, so the meters carry both the tenant and the store ID they belong to.
+   * <p>The registry is already wrapped per tenant, so the meters carry both the tenant and the
+   * store ID they belong to.
    */
-  private static Map<String, SecretCache> caches(
-      final Set<String> storeIds,
+  private static SecretCacheFactory cacheFactory(
       final Secrets.Cache config,
       final InstantSource timeSource,
       final MeterRegistry meterRegistry) {
-    final Map<String, SecretCache> caches = new LinkedHashMap<>();
-    storeIds.forEach(
-        storeId ->
-            caches.put(
-                storeId,
-                CaffeineSecretCache.create(
-                    config.getMaxSize(), config.getTtl(), timeSource, meterRegistry, storeId)));
-    return Map.copyOf(caches);
+    return storeId ->
+        CaffeineSecretCache.create(
+            config.getMaxSize(), config.getTtl(), timeSource, meterRegistry, storeId);
   }
 
   private static void closeAll(final List<SecretStore> stores) {

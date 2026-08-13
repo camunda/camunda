@@ -11,7 +11,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
@@ -46,14 +45,6 @@ public final class CaffeineSecretCache implements SecretCache {
   public static final Duration DEFAULT_TTL = Duration.ofMinutes(20);
   public static final int DEFAULT_MAX_SIZE = 1000;
 
-  /**
-   * The store ID a cache publishing nothing is tagged with. Never reaches a metrics endpoint, and
-   * deliberately not spellable as a store ID — those are property-path segments under {@code
-   * camunda.secrets.stores.<type>.<id>} — so it cannot be mistaken for a configured store if one
-   * ever does.
-   */
-  private static final String UNMETERED_STORE_ID = "<unmetered>";
-
   private final Cache<String, String> cache;
   private final SecretCacheMetrics metrics;
 
@@ -72,38 +63,13 @@ public final class CaffeineSecretCache implements SecretCache {
       final InstantSource timeSource,
       final MeterRegistry meterRegistry,
       final String storeId) {
-    final var metrics = new SecretCacheMetrics(meterRegistry, storeId);
-    final Cache<String, String> cache =
-        Caffeine.newBuilder()
-            .maximumSize(maxSize)
-            .expireAfterWrite(ttl)
-            .ticker(toTicker(timeSource))
-            // hits, misses and the evictions Caffeine performs itself are reported from here, so
-            // they need no call site of their own
-            .recordStats(() -> metrics)
-            .build();
-    metrics.registerSizeGauge(cache);
-    return new CaffeineSecretCache(cache, metrics);
+    return create(maxSize, ttl, timeSource, new SecretCacheMetrics(meterRegistry, storeId));
   }
 
-  /**
-   * Creates a cache as the five-argument factory does, but publishing nothing: the meters are
-   * registered on a registry that is discarded with the cache.
-   */
+  /** Creates a cache as the five-argument factory does, but publishing nothing. */
   public static CaffeineSecretCache create(
       final int maxSize, final Duration ttl, final InstantSource timeSource) {
-    return create(maxSize, ttl, timeSource, discardedRegistry(), UNMETERED_STORE_ID);
-  }
-
-  /**
-   * Creates a new cache with {@link #DEFAULT_MAX_SIZE} and {@link #DEFAULT_TTL}, publishing what it
-   * does on the given registry under the given store ID.
-   *
-   * @return a new cache
-   */
-  public static CaffeineSecretCache createDefault(
-      final InstantSource timeSource, final MeterRegistry meterRegistry, final String storeId) {
-    return create(DEFAULT_MAX_SIZE, DEFAULT_TTL, timeSource, meterRegistry, storeId);
+    return create(maxSize, ttl, timeSource, SecretCacheMetrics.none());
   }
 
   /**
@@ -116,13 +82,22 @@ public final class CaffeineSecretCache implements SecretCache {
     return create(DEFAULT_MAX_SIZE, DEFAULT_TTL, timeSource);
   }
 
-  /**
-   * A registry that discards everything registered on it — Micrometer's own way to spell "no
-   * metrics". One per cache rather than a shared static, so the meters it holds are collected along
-   * with the cache that registered them.
-   */
-  private static MeterRegistry discardedRegistry() {
-    return new CompositeMeterRegistry();
+  private static CaffeineSecretCache create(
+      final int maxSize,
+      final Duration ttl,
+      final InstantSource timeSource,
+      final SecretCacheMetrics metrics) {
+    final Cache<String, String> cache =
+        Caffeine.newBuilder()
+            .maximumSize(maxSize)
+            .expireAfterWrite(ttl)
+            .ticker(toTicker(timeSource))
+            // hits, misses and the evictions Caffeine performs itself are reported from here, so
+            // they need no call site of their own
+            .recordStats(() -> metrics)
+            .build();
+    metrics.registerSizeGauge(cache);
+    return new CaffeineSecretCache(cache, metrics);
   }
 
   private static Ticker toTicker(final InstantSource timeSource) {

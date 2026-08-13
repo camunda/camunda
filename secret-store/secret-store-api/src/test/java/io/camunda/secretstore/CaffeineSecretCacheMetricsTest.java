@@ -232,12 +232,7 @@ final class CaffeineSecretCacheMetricsTest {
   }
 
   private double results(final String storeId, final SecretCacheResult result) {
-    return registry
-        .get(SecretCacheMetricsDoc.CACHE_RESULT.getName())
-        .tag(SecretCacheKeyNames.STORE.asString(), storeId)
-        .tag(SecretCacheKeyNames.RESULT.asString(), result.name())
-        .counter()
-        .count();
+    return SecretCacheMeters.results(registry, storeId, result);
   }
 
   private double evictions(final SecretCacheEvictionCause cause) {
@@ -245,19 +240,10 @@ final class CaffeineSecretCacheMetricsTest {
   }
 
   private double evictions(final String storeId, final SecretCacheEvictionCause cause) {
-    return registry
-        .get(SecretCacheMetricsDoc.CACHE_EVICTIONS.getName())
-        .tag(SecretCacheKeyNames.STORE.asString(), storeId)
-        .tag(SecretCacheKeyNames.CAUSE.asString(), cause.name())
-        .counter()
-        .count();
+    return SecretCacheMeters.evictions(registry, storeId, cause);
   }
 
   private double size(final String storeId) {
-    return registry
-        .get(SecretCacheMetricsDoc.CACHE_SIZE.getName())
-        .tag(SecretCacheKeyNames.STORE.asString(), storeId)
-        .gauge()
-        .value();
+    return SecretCacheMeters.size(registry, storeId);
   }
 }

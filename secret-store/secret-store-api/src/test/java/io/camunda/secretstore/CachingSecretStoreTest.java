@@ -10,7 +10,6 @@ package io.camunda.secretstore;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheEvictionCause;
-import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheKeyNames;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -376,12 +375,7 @@ class CachingSecretStoreTest {
 
   private static double evictions(
       final SimpleMeterRegistry registry, final SecretCacheEvictionCause cause) {
-    return registry
-        .get(SecretCacheMetricsDoc.CACHE_EVICTIONS.getName())
-        .tag(SecretCacheKeyNames.STORE.asString(), STORE_ID)
-        .tag(SecretCacheKeyNames.CAUSE.asString(), cause.name())
-        .counter()
-        .count();
+    return SecretCacheMeters.evictions(registry, STORE_ID, cause);
   }
 
   private static final class RecordingSecretStore implements SecretStore {
