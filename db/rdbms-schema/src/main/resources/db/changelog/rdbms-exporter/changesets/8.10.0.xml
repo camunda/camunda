@@ -230,6 +230,19 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_agent_instance_ad_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_AD_KEY"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_AD_KEY">
+      <column name="AGENT_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_agent_instance_element_id_index" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
