@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
+import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 
 public interface AgentDefinitionState {
@@ -16,4 +18,16 @@ public interface AgentDefinitionState {
    *     null} if no agent definition has been created for it
    */
   Long getAgentDefinitionKey(long processDefinitionKey, DirectBuffer elementId);
+
+  /**
+   * @return the fully-populated agent definition record stored for the given agent definition key,
+   *     or {@code null} if no such agent definition exists
+   */
+  AgentDefinitionRecord getAgentDefinition(long agentDefinitionKey);
+
+  /**
+   * Invokes {@code callback} with the agent definition key of each agent definition minted for the
+   * given process definition.
+   */
+  void forEachAgentDefinitionKey(long processDefinitionKey, LongConsumer callback);
 }

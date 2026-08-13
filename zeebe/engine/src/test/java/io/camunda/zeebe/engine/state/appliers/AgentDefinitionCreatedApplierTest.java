@@ -59,4 +59,43 @@ public class AgentDefinitionCreatedApplierTest {
             processDefinitionKey, BufferUtil.wrapString("agent-task"));
     assertThat(stored).isEqualTo(agentDefinitionKey);
   }
+
+  @Test
+  void shouldPersistFullAgentDefinitionRecordByAgentDefinitionKey() {
+    // given
+    final long agentDefinitionKey = 42L;
+    final long processDefinitionKey = 3L;
+    final var record =
+        new AgentDefinitionRecord()
+            .setAgentDefinitionKey(agentDefinitionKey)
+            .setAgentType(AgentDefinitionType.AI_AGENT_TASK)
+            .setName("agent")
+            .setElementId("agent-task")
+            .setBpmnProcessId("process")
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setProcessDefinitionVersion(1)
+            .setTenantId("<default>");
+
+    // when
+    applier.applyState(agentDefinitionKey, record);
+
+    // then
+    final var stored = agentDefinitionState.getAgentDefinition(agentDefinitionKey);
+    assertThat(stored)
+        .as(
+            "Expecting the full record to be reconstructable by its agent definition key, so it"
+                + " can be emitted when the owning process definition is deleted")
+        .extracting(
+            AgentDefinitionRecord::getAgentType,
+            AgentDefinitionRecord::getName,
+            AgentDefinitionRecord::getElementId,
+            AgentDefinitionRecord::getBpmnProcessId,
+            AgentDefinitionRecord::getProcessDefinitionKey)
+        .containsExactly(
+            AgentDefinitionType.AI_AGENT_TASK,
+            "agent",
+            "agent-task",
+            "process",
+            processDefinitionKey);
+  }
 }
