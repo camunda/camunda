@@ -1156,6 +1156,7 @@ public class ProtoBufSerializer
     updateRoutingStateRequest
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    updateRoutingStateRequest.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
 
     return builder.build().toByteArray();
   }
@@ -1531,7 +1532,9 @@ public class ProtoBufSerializer
       throw new DecodingFailed(e);
     }
     final var routingState = decodeRoutingState(proto.getRoutingState());
-    return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
+    final Optional<String> physicalTenantId =
+        proto.hasPhysicalTenantId() ? Optional.of(proto.getPhysicalTenantId()) : Optional.empty();
+    return new UpdateRoutingStateRequest(routingState, physicalTenantId, proto.getDryRun());
   }
 
   @Override

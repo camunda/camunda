@@ -372,6 +372,30 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun);
 
+  /**
+   * Writes the routing state scoped to {@code physicalTenant}, either with the given body or, when
+   * {@code routingState} is omitted, by fetching it from the engine.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("PATCH /routing-state?dryRun={dryRun}&physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  void patchRoutingState(
+      @RequestBody final RoutingState routingState,
+      @Param boolean dryRun,
+      @Param final String physicalTenant);
+
+  /**
+   * Fetches the routing state from the engine and writes it scoped to {@code physicalTenant}.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("PATCH /routing-state?dryRun={dryRun}&physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  void patchRoutingState(@Param boolean dryRun, @Param final String physicalTenant);
+
   @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse updatePartitionDistribution(

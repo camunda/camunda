@@ -106,7 +106,13 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
-  record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
+  /**
+   * Writes the routing state. If physicalTenantId is provided, only that physical tenant's routing
+   * state is updated; otherwise, the default physical tenant's routing state is updated, unlike the
+   * other per-tenant requests where an absent physicalTenantId means "every tenant".
+   */
+  record UpdateRoutingStateRequest(
+      Optional<RoutingState> routingState, Optional<String> physicalTenantId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record UpdatePartitionDistributorConfigRequest(PartitionDistributorConfig config, boolean dryRun)

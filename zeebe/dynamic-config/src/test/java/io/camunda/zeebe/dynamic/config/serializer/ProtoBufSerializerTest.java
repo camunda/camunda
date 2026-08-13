@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Requests;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
@@ -309,6 +310,43 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeExporterEnableRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeUpdateRoutingStateRequestWithPhysicalTenantId() {
+    // given
+    final var routingState =
+        Optional.of(
+            new io.camunda.zeebe.dynamic.config.state.RoutingState(
+                1L,
+                new RequestHandling.AllPartitions(3),
+                new io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod(
+                    3)));
+    final var updateRoutingStateRequest =
+        new UpdateRoutingStateRequest(routingState, Optional.of("tenant-a"), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeUpdateRoutingStateRequest(updateRoutingStateRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeUpdateRoutingStateRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(updateRoutingStateRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeUpdateRoutingStateRequestWithoutPhysicalTenantId() {
+    // given
+    final var updateRoutingStateRequest =
+        new UpdateRoutingStateRequest(Optional.empty(), Optional.empty(), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeUpdateRoutingStateRequest(updateRoutingStateRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeUpdateRoutingStateRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(updateRoutingStateRequest);
   }
 
   @ParameterizedTest

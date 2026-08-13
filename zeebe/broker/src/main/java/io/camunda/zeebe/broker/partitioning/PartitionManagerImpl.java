@@ -127,7 +127,8 @@ public final class PartitionManagerImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
-    scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
+    scalingExecutor =
+        new BrokerClientPartitionScalingExecutor(partitionGroup, brokerClient, concurrencyControl);
     brokerMeterRegistry = meterRegistry;
     exporterHistoryPurger =
         new ExporterHistoryPurger(partitionGroup, exporterRepository, meterRegistry);

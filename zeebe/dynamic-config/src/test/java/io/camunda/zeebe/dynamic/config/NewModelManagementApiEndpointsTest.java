@@ -612,12 +612,54 @@ final class NewModelManagementApiEndpointsTest {
     // when
     final var response =
         handler
-            .updateRoutingState(new UpdateRoutingStateRequest(Optional.of(routingState), false))
+            .updateRoutingState(
+                new UpdateRoutingStateRequest(Optional.of(routingState), Optional.empty(), false))
             .join();
 
     // then
     assertThat(response.legacyResponse().plannedChanges())
         .containsExactly(new UpdateRoutingState(ID_0, Optional.of(routingState)));
+  }
+
+  @Test
+  void shouldApplyRoutingStateUpdateToOnlyTheRequestedPhysicalTenant() {
+    // given
+    wireTwoPhysicalTenants();
+    final var routingState = RoutingState.initializeWithPartitionCount(1);
+
+    // when
+    handler
+        .updateRoutingState(
+            new UpdateRoutingStateRequest(Optional.of(routingState), Optional.of(TENANT_B), false))
+        .join();
+
+    // then — only tenant-b's routing state changed; the default group's is left untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).routingState()).contains(routingState);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).routingState())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldApplyRoutingStateUpdateToTheDefaultPhysicalTenantWhenUnscoped() {
+    // given — unlike mode changes, where an absent physicalTenantId means "every tenant", an
+    // unscoped routing-state update keeps writing only the default group
+    wireTwoPhysicalTenants();
+    final var routingState = RoutingState.initializeWithPartitionCount(1);
+
+    // when
+    handler
+        .updateRoutingState(
+            new UpdateRoutingStateRequest(Optional.of(routingState), Optional.empty(), false))
+        .join();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).routingState())
+        .contains(routingState);
+    assertThat(config.partitionGroup(TENANT_B).routingState()).isEmpty();
   }
 
   @Test

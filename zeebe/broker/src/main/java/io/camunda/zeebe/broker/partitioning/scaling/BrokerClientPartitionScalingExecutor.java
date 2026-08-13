@@ -36,9 +36,13 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
       LoggerFactory.getLogger(BrokerClientPartitionScalingExecutor.class);
   private final BrokerClient brokerClient;
   private final ConcurrencyControl concurrencyControl;
+  private final String partitionGroup;
 
   public BrokerClientPartitionScalingExecutor(
-      final BrokerClient brokerClient, final ConcurrencyControl concurrencyControl) {
+      final String partitionGroup,
+      final BrokerClient brokerClient,
+      final ConcurrencyControl concurrencyControl) {
+    this.partitionGroup = partitionGroup;
     this.brokerClient = brokerClient;
     this.concurrencyControl = concurrencyControl;
   }
@@ -47,8 +51,10 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
   public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
     final var result = concurrencyControl.<Void>createFuture();
 
+    final var request = new BrokerPartitionScaleUpRequest(desiredPartitionCount);
+    request.setPartitionGroup(partitionGroup);
     brokerClient.sendRequestWithRetry(
-        new BrokerPartitionScaleUpRequest(desiredPartitionCount),
+        request,
         (key, response) -> {
           result.complete(null);
         },
@@ -79,8 +85,10 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
         concurrencyControl.createFuture();
 
+    final var request = new BrokerPartitionBootstrappedRequest(partitionId);
+    request.setPartitionGroup(partitionGroup);
     brokerClient
-        .sendRequestWithRetry(new BrokerPartitionBootstrappedRequest(partitionId))
+        .sendRequestWithRetry(request)
         .whenCompleteAsync(bootstrapFuture, concurrencyControl);
     return bootstrapFuture.andThen(
         response -> {
@@ -101,8 +109,10 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
   @Override
   public ActorFuture<RoutingState> getRoutingState() {
     final var result = concurrencyControl.<RoutingState>createFuture();
+    final var request = new GetScaleUpProgress();
+    request.setPartitionGroup(partitionGroup);
     brokerClient.sendRequestWithRetry(
-        new GetScaleUpProgress(),
+        request,
         (key, record) -> result.complete(RoutingStateConverter.fromScaleRecord(record)),
         result::completeExceptionally);
     return result;
@@ -126,8 +136,10 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
       final Set<Integer> redistributedPartitions,
       final int partitionId) {
     final var result = concurrencyControl.<Void>createFuture();
+    final var request = new GetScaleUpProgress(partitionId);
+    request.setPartitionGroup(partitionGroup);
     brokerClient.sendRequestWithRetry(
-        new GetScaleUpProgress(partitionId),
+        request,
         (key, response) -> {
           if (response.getDesiredPartitionCount() != desiredPartitionCount) {
             LOGGER.warn("Invalid GetScaleUpProgress response: got {}", response);
@@ -168,6 +180,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     final var request =
         new SnapshotBrokerRequest(
             new DeleteSnapshotForBootstrapRequest(Protocol.DEPLOYMENT_PARTITION));
+    request.setPartitionGroup(partitionGroup);
     final var future = concurrencyControl.<Void>createFuture();
     brokerClient.sendRequestWithRetry(
         request,
