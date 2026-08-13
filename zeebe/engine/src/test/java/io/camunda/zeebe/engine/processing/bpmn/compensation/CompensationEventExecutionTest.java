@@ -3508,7 +3508,10 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
+                .limit(
+                    r ->
+                        r.getIntent() == CompensationSubscriptionIntent.DELETED
+                            && r.getValue().getCompensationHandlerId().equals("Undo-A")))
         .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
 
@@ -3587,7 +3590,10 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
+                .limit(
+                    r ->
+                        r.getIntent() == CompensationSubscriptionIntent.DELETED
+                            && r.getValue().getCompensationHandlerId().equals("Undo-A")))
         .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
 
@@ -3677,7 +3683,10 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
+                .limit(
+                    r ->
+                        r.getIntent() == CompensationSubscriptionIntent.DELETED
+                            && r.getValue().getCompensationHandlerId().equals("Undo-A")))
         .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .contains(tuple(CompensationSubscriptionIntent.DELETED, "Undo-A"));
 
