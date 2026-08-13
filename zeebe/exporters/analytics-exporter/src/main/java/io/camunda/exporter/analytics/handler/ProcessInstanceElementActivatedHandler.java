@@ -21,14 +21,12 @@ import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.opentelemetry.api.common.Attributes;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED}, emitting {@code process_instance_created} plus
- * the {@code camunda.process_instance.created} counter for a root process element. All other element
- * types are skipped silently.
+ * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED}, emitting {@code process_instance_created} for
+ * a root process element. All other element types are skipped silently.
  */
 public final class ProcessInstanceElementActivatedHandler
     implements AnalyticsHandler<ProcessInstanceRecordValue> {
@@ -74,14 +72,5 @@ public final class ProcessInstanceElementActivatedHandler
                 .setAttribute(ROOT_INSTANCE_KEY, value.getRootProcessInstanceKey())
                 .setAttribute(ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
-
-    otelSdkManager.incrementMetric(
-        AnalyticsAttributes.Metric.PROCESS_INSTANCE_CREATED,
-        record.getPosition(),
-        record.getTimestamp(),
-        Attributes.of(
-            BPMN_PROCESS_ID, value.getBpmnProcessId(),
-            VERSION, (long) value.getVersion(),
-            ID, value.getTenantId()));
   }
 }

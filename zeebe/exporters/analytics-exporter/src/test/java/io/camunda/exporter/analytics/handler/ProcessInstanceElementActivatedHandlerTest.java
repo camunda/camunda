@@ -23,12 +23,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.opentelemetry.sdk.metrics.data.LongPointData;
-import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
-import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,23 +34,18 @@ class ProcessInstanceElementActivatedHandlerTest {
   private static final long NO_PARENT_INSTANCE = -1L;
 
   private InMemoryLogRecordExporter logExporter;
-  private InMemoryMetricReader metricReader;
   private ProcessInstanceElementActivatedHandler handler;
 
   @BeforeEach
   void setUp() {
     logExporter = InMemoryLogRecordExporter.create();
-    metricReader = InMemoryMetricReader.create();
-    handler =
-        new ProcessInstanceElementActivatedHandler(
-            TestOtelSdkManager.inMemoryWithMetrics(logExporter, metricReader));
+    handler = new ProcessInstanceElementActivatedHandler(TestOtelSdkManager.inMemory(logExporter));
   }
 
   @Test
-  void shouldEmitEventAndCounterForRootProcessInstance() {
+  void shouldEmitEventForRootProcessInstance() {
     // given
     final var record = elementActivated(BpmnElementType.PROCESS, NO_PARENT_INSTANCE);
-    final var value = (ProcessInstanceRecordValue) record.getValue();
 
     // when
     handler.handle(typed(record));
@@ -81,40 +71,6 @@ class ProcessInstanceElementActivatedHandlerTest {
               assertThat(logRecord.getTimestampEpochNanos())
                   .isEqualTo(TimeUnit.MILLISECONDS.toNanos(record.getTimestamp()));
             });
-
-    assertThat(findProcessInstanceCounter(metricReader.collectAllMetrics()))
-        .isPresent()
-        .hasValueSatisfying(
-            metric ->
-                assertThat(metric.getLongSumData().getPoints())
-                    .singleElement()
-                    .satisfies(
-                        point -> {
-                          assertThat(point.getValue()).isEqualTo(1);
-                          assertThat(point.getAttributes().get(BPMN_PROCESS_ID))
-                              .isEqualTo(value.getBpmnProcessId());
-                          assertThat(point.getAttributes().get(VERSION)).isEqualTo(3L);
-                          assertThat(point.getAttributes().get(ID)).isEqualTo(value.getTenantId());
-                        }));
-  }
-
-  @Test
-  void shouldAggregateCounterAcrossRootProcessInstances() {
-    // when
-    handler.handle(typed(elementActivated(BpmnElementType.PROCESS, NO_PARENT_INSTANCE)));
-    handler.handle(typed(elementActivated(BpmnElementType.PROCESS, NO_PARENT_INSTANCE)));
-    handler.handle(typed(elementActivated(BpmnElementType.PROCESS, NO_PARENT_INSTANCE)));
-
-    // then
-    assertThat(findProcessInstanceCounter(metricReader.collectAllMetrics()))
-        .isPresent()
-        .hasValueSatisfying(
-            metric ->
-                assertThat(
-                        metric.getLongSumData().getPoints().stream()
-                            .mapToLong(LongPointData::getValue)
-                            .sum())
-                    .isEqualTo(3));
   }
 
   @Test
@@ -127,7 +83,6 @@ class ProcessInstanceElementActivatedHandlerTest {
 
     // then
     assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
-    assertThat(findProcessInstanceCounter(metricReader.collectAllMetrics())).isEmpty();
   }
 
   @Test
@@ -140,7 +95,6 @@ class ProcessInstanceElementActivatedHandlerTest {
 
     // then
     assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
-    assertThat(findProcessInstanceCounter(metricReader.collectAllMetrics())).isEmpty();
   }
 
   private static Record<?> elementActivated(
@@ -163,13 +117,6 @@ class ProcessInstanceElementActivatedHandlerTest {
             r.withRecordType(RecordType.EVENT)
                 .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withValue(value));
-  }
-
-  private static Optional<MetricData> findProcessInstanceCounter(
-      final Collection<MetricData> metrics) {
-    return metrics.stream()
-        .filter(m -> m.getName().equals(AnalyticsAttributes.Metric.PROCESS_INSTANCE_CREATED))
-        .findFirst();
   }
 
   @SuppressWarnings("unchecked")

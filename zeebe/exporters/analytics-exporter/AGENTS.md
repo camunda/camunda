@@ -67,7 +67,7 @@ Replicated log
 
 |      ValueType      |      Intent       |                Handler                 |              event.name               |                         Extra filter                         |
 |---------------------|-------------------|----------------------------------------|---------------------------------------|--------------------------------------------------------------|
-| PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `process_instance_created` + counter  | bpmnElementType == PROCESS && parentProcessInstanceKey == -1 |
+| PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `process_instance_created`            | bpmnElementType == PROCESS && parentProcessInstanceKey == -1 |
 | USER_TASK           | CREATED           | UserTaskCreatedHandler                 | `user_task_created`                   | —                                                            |
 | USER_TASK           | ASSIGNED          | UserTaskAssignedHandler                | `camunda.user_task.assigned`          | skips empty assignee                                         |
 | TENANT              | CREATED           | TenantCreatedHandler                   | `camunda.tenant.created`              | —                                                            |
@@ -119,12 +119,10 @@ Signature: HMAC-SHA256(licenseKey, `fingerprint|clusterId|timestamp`)
 
 ### Pre-Aggregated Metrics
 
-- Counter `camunda.process_instance.created` with delta temporality (resets each flush), one
-  increment per root process-element activation, so it covers client, message, timer, signal and
-  conditional starts and excludes call-activity children
-- Counter `camunda.decision.instance.evaluated`, one increment per DECISION_EVALUATION/EVALUATED
-  record (never per sub-decision), dimension `camunda.tenant.id`. This is the authoritative
-  per-tenant EDI source; the engine's aggregated usage metric is not forwarded.
+- Counter `camunda.decision.instance.evaluated` with delta temporality (resets each flush), one
+  increment per DECISION_EVALUATION/EVALUATED record (never per sub-decision), dimension
+  `camunda.tenant.id`. This is the authoritative per-tenant EDI source; the engine's aggregated
+  usage metric is not forwarded.
 - Companion gauge `camunda.metric.export_window` per flush carries:
   - `camunda.metric.sequence_number` — contiguous per flush, gap = lost push
   - `camunda.log.position_start/end` — for replay/overlap detection

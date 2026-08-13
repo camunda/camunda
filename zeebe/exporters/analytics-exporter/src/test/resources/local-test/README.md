@@ -98,8 +98,8 @@ Open http://localhost:3333 → **Explore**
 
 |                                 Query                                  |                      What it shows                       |
 |------------------------------------------------------------------------|----------------------------------------------------------|
-| `camunda_process_instance_created_total`                               | Pre-aggregated counter                                   |
-| `sum by (camunda_process_id) (camunda_process_instance_created_total)` | Breakdown by process                                     |
+| `camunda_decision_instance_evaluated_total`                            | Pre-aggregated counter                                   |
+| `sum by (camunda_tenant_id) (camunda_decision_instance_evaluated_total)` | Breakdown by tenant                                    |
 | `camunda_metric_export_window`                                         | Companion gauge (flush sequence, positions, event times) |
 
 ### Logs (Loki datasource)

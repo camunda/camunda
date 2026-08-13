@@ -41,12 +41,7 @@ public final class AnalyticsAttributes {
 
     // Event name values
 
-    /**
-     * Shares its simple name with {@link Metric#PROCESS_INSTANCE_CREATED}, which holds a different
-     * string: a static import of the wrong one compiles. Import the qualified form.
-     */
     public static final String PROCESS_INSTANCE_CREATED = "process_instance_created";
-
     public static final String HEARTBEAT = "heartbeat";
     public static final String USER_TASK_CREATED = "user_task_created";
     public static final String TENANT_CREATED = "camunda.tenant.created";
@@ -159,12 +154,6 @@ public final class AnalyticsAttributes {
   }
 
   public static final class Metric {
-    /**
-     * Shares its simple name with {@link Event#PROCESS_INSTANCE_CREATED}, which holds a different
-     * string: a static import of the wrong one compiles. Import the qualified form.
-     */
-    public static final String PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
-
     public static final String DECISION_INSTANCE_EVALUATED = "camunda.decision.instance.evaluated";
     public static final String EXPORT_WINDOW = "camunda.metric.export_window";
     public static final AttributeKey<Long> SEQUENCE_NUMBER =

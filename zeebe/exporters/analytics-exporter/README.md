@@ -319,11 +319,7 @@ is incremented once per source record and carries the dimensions listed below.
 
 |                Counter                |              Source record               |                              Dimensions                              |
 |---------------------------------------|------------------------------------------|----------------------------------------------------------------------|
-| `camunda.process_instance.created`    | `PROCESS_INSTANCE` / `ELEMENT_ACTIVATED` | `camunda.process.id`, `camunda.process.version`, `camunda.tenant.id` |
 | `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED`      | `camunda.tenant.id`                                                  |
-
-`camunda.process_instance.created` is incremented on the same root-process-element activation as the
-event above, so it covers every start type and excludes call-activity children.
 
 `camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
 a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
