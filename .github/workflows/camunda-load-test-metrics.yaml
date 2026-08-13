@@ -50,6 +50,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   AT: ${{ inputs.at }}
   DURATION_SECONDS: ${{ inputs.duration-seconds }}
   NAMESPACE: ${{ inputs.namespace }}

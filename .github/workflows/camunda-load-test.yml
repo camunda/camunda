@@ -239,6 +239,8 @@ on:
         required: false
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
 
