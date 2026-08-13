@@ -242,6 +242,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildDeleteProcessDefinitionDataRequest(
+      final String processDefinitionKey) {
+    path =
+        PublicApiRestService.PUBLIC_PATH
+            + PublicApiRestService.PROCESS_DEFINITION_SUB_PATH
+            + "/"
+            + processDefinitionKey;
+    method = DELETE;
+    return this;
+  }
+
   public OptimizeRequestExecutor withBearerToken(final String token) {
     requestHeaders.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
     authCookie = null;
