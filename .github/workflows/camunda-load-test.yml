@@ -196,6 +196,7 @@ on:
         required: false
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
   HELM_CHART: camunda-platform-8.7
