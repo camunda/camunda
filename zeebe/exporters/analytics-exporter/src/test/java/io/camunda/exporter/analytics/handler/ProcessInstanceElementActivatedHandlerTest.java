@@ -74,6 +74,51 @@ class ProcessInstanceElementActivatedHandlerTest {
   }
 
   @Test
+  void shouldEmitForRootProcessInstanceNotStartedByTheClientApi() {
+    // given — the activation record a message start writes: no PROCESS_INSTANCE_CREATION record
+    // precedes it, and only the fields EventHandle populates are set, the rest left at the
+    // engine's defaults
+    final var value =
+        ImmutableProcessInstanceRecordValue.builder()
+            .withBpmnProcessId("order-process")
+            .withVersion(1)
+            .withProcessDefinitionKey(7L)
+            .withProcessInstanceKey(55L)
+            .withRootProcessInstanceKey(55L)
+            .withElementId("order-process")
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(NO_PARENT_INSTANCE)
+            .withTenantId("<default>")
+            .build();
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                    .withValue(value));
+
+    // when
+    handler.handle(typed(record));
+
+    // then
+    assertThat(logExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord ->
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(
+                        AnalyticsAttributes.Event.NAME,
+                        AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED)
+                    .containsEntry(BPMN_PROCESS_ID, "order-process")
+                    .containsEntry(VERSION, 1L)
+                    .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 7L)
+                    .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 55L)
+                    .containsEntry(AnalyticsAttributes.Process.ROOT_INSTANCE_KEY, 55L)
+                    .containsEntry(ID, "<default>"));
+  }
+
+  @Test
   void shouldSkipCallActivityChildProcessInstance() {
     // given — a process element whose parent key is set, i.e. a call-activity child
     final var record = elementActivated(BpmnElementType.PROCESS, 77L);
