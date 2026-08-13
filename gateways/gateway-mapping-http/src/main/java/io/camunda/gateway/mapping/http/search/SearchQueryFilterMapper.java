@@ -1573,6 +1573,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getAgentInstanceKey())
           .map(mapToKeyOperations("agentInstanceKey", validationErrors))
           .ifPresent(builder::agentInstanceKeyOperations);
+      ofNullable(filter.getAgentDefinitionKey())
+          .map(mapToKeyOperations("agentDefinitionKey", validationErrors))
+          .ifPresent(builder::agentDefinitionKeyOperations);
       ofNullable(filter.getStatus())
           .map(mapToStringOperations())
           .ifPresent(builder::statusOperations);
