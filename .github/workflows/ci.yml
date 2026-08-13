@@ -2085,8 +2085,7 @@ jobs:
       # set the comparison based on the type of workflow trigger:
       #   - for PRs, we use the last commit of the base
       #   - for merge queues, we use the last commit of the target merge queue
-      #   - for a push, we use the last commit before the push
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
@@ -2102,13 +2101,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
-        # by the default the action will compare against the base branch, or if on push, against the
-        # previous commit
       - uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1.4.0
         if: |
           !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
-            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
-            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:'))
         with:
           format: false
           lint: false
