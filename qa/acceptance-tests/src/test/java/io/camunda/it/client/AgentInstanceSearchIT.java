@@ -45,6 +45,10 @@ public class AgentInstanceSearchIT {
   private static String processDefinitionId;
   private static long processDefinitionKey2;
   private static String processDefinitionId2;
+  // agentDefinitionKey is derived from (processDefinitionKey, elementId): ai1 and ai2 share
+  // process definition 1's element, so they share one key; ai3 has a distinct one from pd2.
+  private static long agentDefinitionKey1;
+  private static long agentDefinitionKey3;
 
   @BeforeAll
   static void setup() {
@@ -171,6 +175,20 @@ public class AgentInstanceSearchIT {
         camundaClient, agentInstanceKey1, AgentInstanceStatus.THINKING);
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey2);
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey3);
+
+    // Capture the engine-assigned agent definition keys for filter/sort assertions.
+    agentDefinitionKey1 = fetchAgentDefinitionKey(agentInstanceKey1);
+    agentDefinitionKey3 = fetchAgentDefinitionKey(agentInstanceKey3);
+  }
+
+  private static long fetchAgentDefinitionKey(final long agentInstanceKey) {
+    return camundaClient
+        .newAgentInstanceSearchRequest()
+        .filter(f -> f.agentInstanceKey(agentInstanceKey))
+        .execute()
+        .items()
+        .getFirst()
+        .getAgentDefinitionKey();
   }
 
   @Test
@@ -270,6 +288,60 @@ public class AgentInstanceSearchIT {
   }
 
   @Test
+  void shouldFilterByAgentDefinitionKey() {
+    // when — ai1 and ai2 share pd1's agent definition
+    final var response1 =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .filter(f -> f.agentDefinitionKey(agentDefinitionKey1))
+            .execute();
+
+    // then
+    assertThat(response1.items())
+        .extracting(AgentInstance::getAgentInstanceKey)
+        .containsExactlyInAnyOrder(agentInstanceKey1, agentInstanceKey2);
+
+    // when — ai3 has pd2's distinct agent definition
+    final var response2 =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .filter(f -> f.agentDefinitionKey(agentDefinitionKey3))
+            .execute();
+
+    // then
+    assertThat(response2.items())
+        .singleElement()
+        .satisfies(ai -> assertThat(ai.getAgentInstanceKey()).isEqualTo(agentInstanceKey3));
+  }
+
+  @Test
+  void shouldFilterByAgentDefinitionKeyWithAdvancedOperators() {
+    // when — in matches both agent definitions, so it returns all three instances
+    final var inResponse =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .filter(f -> f.agentDefinitionKey(b -> b.in(agentDefinitionKey1, agentDefinitionKey3)))
+            .execute();
+
+    // then
+    assertThat(inResponse.items())
+        .extracting(AgentInstance::getAgentInstanceKey)
+        .containsExactlyInAnyOrder(agentInstanceKey1, agentInstanceKey2, agentInstanceKey3);
+
+    // when — every agent instance is derived from an agent definition, so exists(true) matches all
+    final var existsResponse =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .filter(f -> f.agentDefinitionKey(b -> b.exists(true)))
+            .execute();
+
+    // then
+    assertThat(existsResponse.items())
+        .extracting(AgentInstance::getAgentInstanceKey)
+        .containsExactlyInAnyOrder(agentInstanceKey1, agentInstanceKey2, agentInstanceKey3);
+  }
+
+  @Test
   void shouldFilterByProcessDefinitionId() {
     // when — pd1 has 2 agent instances
     final var responsePd1 =
@@ -357,6 +429,19 @@ public class AgentInstanceSearchIT {
 
     // then — keys must be in ascending order; this is the canonical stable pagination tiebreaker
     assertThat(response.items()).extracting(AgentInstance::getAgentInstanceKey).isSorted();
+  }
+
+  @Test
+  void shouldSortByAgentDefinitionKeyAscending() {
+    // when
+    final var response =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .sort(s -> s.agentDefinitionKey().asc())
+            .execute();
+
+    // then — all three agent instances ordered by their agent definition key
+    assertThat(response.items()).extracting(AgentInstance::getAgentDefinitionKey).isSorted();
   }
 
   @Test

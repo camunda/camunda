@@ -17,6 +17,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.filter.AgentInstanceFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -43,6 +44,76 @@ public class AgentInstanceFilterIT {
 
     assertThat(result.total()).isEqualTo(1);
     assertThat(result.items().getFirst().agentInstanceKey()).isEqualTo(model.agentInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByAgentDefinitionKey(final CamundaRdbmsTestApplication testApplication) {
+    final long agentDefinitionKey = nextKey();
+    final var model =
+        createAndSaveRandomAgentInstance(
+            testApplication, b -> b.agentDefinitionKey(agentDefinitionKey));
+    createAndSaveRandomAgentInstance(testApplication, b -> b);
+
+    final var result =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder().agentDefinitionKeys(agentDefinitionKey).build());
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items().getFirst().agentInstanceKey()).isEqualTo(model.agentInstanceKey());
+    assertThat(result.items().getFirst().agentDefinitionKey()).isEqualTo(agentDefinitionKey);
+  }
+
+  @TestTemplate
+  public void shouldFilterByAgentDefinitionKeyIn(
+      final CamundaRdbmsTestApplication testApplication) {
+    final long agentDefinitionKey1 = nextKey();
+    final long agentDefinitionKey2 = nextKey();
+    createAndSaveRandomAgentInstance(
+        testApplication, b -> b.agentDefinitionKey(agentDefinitionKey1));
+    createAndSaveRandomAgentInstance(
+        testApplication, b -> b.agentDefinitionKey(agentDefinitionKey2));
+    createAndSaveRandomAgentInstance(testApplication, b -> b);
+
+    final var result =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder()
+                .agentDefinitionKeyOperations(
+                    Operation.in(agentDefinitionKey1, agentDefinitionKey2))
+                .build());
+
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting(AgentInstanceEntity::agentDefinitionKey)
+        .containsExactlyInAnyOrder(agentDefinitionKey1, agentDefinitionKey2);
+  }
+
+  @TestTemplate
+  public void shouldFilterByAgentDefinitionKeyExists(
+      final CamundaRdbmsTestApplication testApplication) {
+    final String procDefId = "agent-def-exists-" + nextStringId();
+    createAndSaveRandomAgentInstance(testApplication, b -> b.processDefinitionId(procDefId));
+    createAndSaveRandomAgentInstance(testApplication, b -> b.processDefinitionId(procDefId));
+
+    // every agent instance is derived from an agent definition, so its key is always populated
+    final var existing =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder()
+                .processDefinitionIds(procDefId)
+                .agentDefinitionKeyOperations(Operation.exists(true))
+                .build());
+    assertThat(existing.total()).isEqualTo(2);
+
+    final var missing =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder()
+                .processDefinitionIds(procDefId)
+                .agentDefinitionKeyOperations(Operation.exists(false))
+                .build());
+    assertThat(missing.total()).isEqualTo(0);
   }
 
   @TestTemplate
