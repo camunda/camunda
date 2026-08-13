@@ -13,20 +13,13 @@ import io.camunda.cluster.MigrationState;
 import io.camunda.cluster.MigrationStatusProvider;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusPayload;
 import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,52 +83,8 @@ public class ClusterRocksDbMigrationStatusProvider implements MigrationStatusPro
 
   @Override
   public Map<String, MigrationConditionStatus> getMigrationStatus() {
-    final var futuresByPhysicalTenant =
-        new LinkedHashMap<String, CompletableFuture<PartitionMigrationStatus>>();
-    for (final var physicalTenantId : physicalTenantIds.known()) {
-      futuresByPhysicalTenant.put(physicalTenantId, fetchTenantStatus(physicalTenantId));
-    }
-
-    // One shared timeout budget for every tenant's fan-out, run concurrently -- not one timeout
-    // per tenant, which would let a large multi-tenant cluster's total latency grow with the
-    // tenant count.
-    try {
-      CompletableFuture.allOf(futuresByPhysicalTenant.values().toArray(CompletableFuture<?>[]::new))
-          .get(fetchTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (final Exception e) {
-      LOG.warn(
-          "Not every physical tenant's RocksDB migration status could be determined within {}.",
-          fetchTimeout,
-          e);
-    }
-
-    final var statuses = new LinkedHashMap<String, MigrationConditionStatus>();
-    futuresByPhysicalTenant.forEach(
-        (physicalTenantId, future) ->
-            statuses.put(physicalTenantId, resolve(physicalTenantId, future)));
-    return statuses;
-  }
-
-  /**
-   * Reports each tenant's best available answer independently: a tenant whose fan-out finished
-   * (successfully or not) reports its actual result; a tenant still pending when the shared budget
-   * ran out reports {@code UNKNOWN} on its own, without holding back tenants that did finish.
-   */
-  private MigrationConditionStatus resolve(
-      final String physicalTenantId, final CompletableFuture<PartitionMigrationStatus> future) {
-    if (future.isDone() && !future.isCompletedExceptionally()) {
-      return toConditionStatus(future.join());
-    }
-    if (future.isCompletedExceptionally()) {
-      return new MigrationConditionStatus(
-          MigrationState.UNKNOWN,
-          "physical tenant '" + physicalTenantId + "': failed to determine migration status");
-    }
-    return new MigrationConditionStatus(
-        MigrationState.UNKNOWN,
-        "physical tenant '"
-            + physicalTenantId
-            + "': timed out waiting for every partition replica to respond");
+    return ClusterMigrationStatusReader.resolveTenants(
+        physicalTenantIds, fetchTimeout, this::fetchTenantStatus, LOG, "RocksDB migration status");
   }
 
   private CompletableFuture<PartitionMigrationStatus> fetchTenantStatus(
@@ -146,12 +95,15 @@ public class ClusterRocksDbMigrationStatusProvider implements MigrationStatusPro
         topology.getPartitions().stream()
             .flatMap(
                 partitionId ->
-                    membersOfPartition(topology, partitionId).stream()
+                    PartitionReplicas.allOf(topology, partitionId).stream()
                         .map(brokerId -> requestStatus(physicalTenantId, partitionId, brokerId)))
             .toList();
 
     return CompletableFuture.allOf(responses.toArray(CompletableFuture<?>[]::new))
-        .thenApply(ignored -> aggregate(responses.stream().map(CompletableFuture::join).toList()));
+        .thenApply(
+            ignored ->
+                ClusterMigrationStatusReader.aggregate(
+                    responses.stream().map(CompletableFuture::join).toList()));
   }
 
   private CompletableFuture<PartitionMigrationStatus> requestStatus(
@@ -165,58 +117,5 @@ public class ClusterRocksDbMigrationStatusProvider implements MigrationStatusPro
         .sendRequest(request)
         .thenApply(
             response -> MigrationStatusPayload.decode(response.getResponseOrThrow().getPayload()));
-  }
-
-  private Set<BrokerMemberId> membersOfPartition(
-      final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
-    final var followers = topology.getFollowersForPartition(partitionId);
-    final var inactive = topology.getInactiveNodesForPartition(partitionId);
-
-    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
-    if (leader != null) {
-      members.add(leader);
-    }
-    members.addAll(followers);
-    members.addAll(inactive);
-    return members;
-  }
-
-  /**
-   * Combines every replica's status with {@code UNKNOWN > MIGRATION_IN_PROGRESS > MIGRATED}
-   * precedence: any replica we can't confidently assess makes the whole tenant's condition {@code
-   * UNKNOWN} rather than silently reporting a partial answer as though it were complete.
-   */
-  private static PartitionMigrationStatus aggregate(final List<PartitionMigrationStatus> statuses) {
-    if (statuses.isEmpty()) {
-      return new PartitionMigrationStatus(
-          MigrationStatusCode.UNKNOWN, "no partitions found in the topology");
-    }
-
-    var overallCode = MigrationStatusCode.MIGRATED;
-    for (final var status : statuses) {
-      if (status.code() == MigrationStatusCode.UNKNOWN) {
-        overallCode = MigrationStatusCode.UNKNOWN;
-        break;
-      }
-      if (status.code() == MigrationStatusCode.MIGRATION_IN_PROGRESS) {
-        overallCode = MigrationStatusCode.MIGRATION_IN_PROGRESS;
-      }
-    }
-
-    final var detail =
-        statuses.stream().map(PartitionMigrationStatus::detail).collect(Collectors.joining("; "));
-    return new PartitionMigrationStatus(overallCode, detail);
-  }
-
-  /** Maps the wire-level protocol type to the upgrade-readiness API/SPI type. */
-  private static MigrationConditionStatus toConditionStatus(final PartitionMigrationStatus status) {
-    final var state =
-        switch (status.code()) {
-          case MIGRATED -> MigrationState.MIGRATED;
-          case MIGRATION_IN_PROGRESS -> MigrationState.MIGRATION_IN_PROGRESS;
-          case UNKNOWN -> MigrationState.UNKNOWN;
-        };
-    return new MigrationConditionStatus(state, status.detail());
   }
 }
