@@ -73,16 +73,18 @@ function hashmod_zone() {
 }
 
 # Retry a command with exponential backoff. Only the invoked command's own
-# exit status is inspected — stdout/stderr of every attempt are shown live,
+# exit status is inspected (stdout/stderr of every attempt are shown live),
 # and on final failure the real exit code from the last attempt is returned
 # unchanged, so a permanent/logical error (bad chart name, malformed values)
 # still fails clearly, it's just tried max_attempts times first. Guards
 # against transient network blips (e.g. a "Get ...: EOF" on a Helm chart
 # download) without masking real failures.
-# Usage: retry_with_backoff <max_attempts> <base_delay_seconds> <command...>
+# Tuning: set RETRY_MAX_ATTEMPTS/RETRY_BASE_DELAY_SECONDS in the environment;
+# defaults below apply when unset.
+# Usage: retry_with_backoff <command...>
 retry_with_backoff() {
-  local max_attempts="$1"; shift
-  local delay="$1"; shift
+  local max_attempts="${RETRY_MAX_ATTEMPTS:-4}"
+  local delay="${RETRY_BASE_DELAY_SECONDS:-5}"
   local attempt=1
   until "$@"; do
     local status=$?

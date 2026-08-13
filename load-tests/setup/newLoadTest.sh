@@ -9,6 +9,14 @@ ROOT_DIR="$SCRIPT_DIR"
 
 AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89)
 
+# Internal plumbing hook for the golden-file test harness (like GIT_AUTHOR,
+# undocumented in usage()): lets callers enumerate versions without
+# duplicating AVAILABLE_VERSIONS.
+if [[ " $* " == *" --list-versions "* ]]; then
+  echo "${AVAILABLE_VERSIONS[*]}"
+  exit 0
+fi
+
 # Pre-scan argv for --target-version/-t so the version config (and its
 # allowed storage list) is known before any usage/help text needs printing.
 target_version="main"
@@ -100,12 +108,25 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    --print-platform-chart-version)
+    --warm-platform-chart-cache)
       # Internal plumbing hook for the golden-file test harness's chart
-      # pre-warm step (like GIT_AUTHOR, undocumented in usage()) — prints the
-      # version resolved above for -t/--target-version and exits before the
-      # namespace argument is required.
-      echo "$camunda_platform_helm_chart_version"
+      # pre-warm step (like GIT_AUTHOR, undocumented in usage()): pulls the
+      # camunda-platform version resolved above for -t/--target-version into
+      # LOAD_TEST_CHART_CACHE_DIR (if not already there) and exits before the
+      # namespace argument is required. Reuses the same version resolution
+      # and cache path convention as the per-scenario pull below, so the two
+      # can never drift apart.
+      if [[ -z "${LOAD_TEST_CHART_CACHE_DIR:-}" ]]; then
+        echo "Error: --warm-platform-chart-cache requires LOAD_TEST_CHART_CACHE_DIR to be set." >&2
+        exit 1
+      fi
+      dest="$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version/camunda-platform"
+      if [[ ! -d "$dest" ]]; then
+        echo "Pre-pulling camunda-platform $camunda_platform_helm_chart_version for $target_version..."
+        retry_with_backoff helm pull camunda/camunda-platform \
+            --untar --untardir "$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version" \
+            --version "$camunda_platform_helm_chart_version"
+      fi
       exit 0
       ;;
     *)
@@ -340,16 +361,16 @@ EOF
 # once before spawning many scenarios; unset by default, so a manual
 # invocation behaves exactly as before, just retried on transient failures.
 if [[ "${LOAD_TEST_SKIP_REPO_UPDATE:-false}" != "true" ]]; then
-  retry_with_backoff 4 5 helm repo add camunda https://helm.camunda.io/ --force-update
+  retry_with_backoff helm repo add camunda https://helm.camunda.io/ --force-update
   if [[ "$secondary_storage" == "opensearch" ]]; then
-    retry_with_backoff 4 5 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
+    retry_with_backoff helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
   fi
-  retry_with_backoff 4 5 helm repo update
+  retry_with_backoff helm repo update
 fi
 
-# The directory where local Helm Charts will be stored in.
+# The directory where local Helm Charts will be stored in. Already exists:
+# the always-copied charts/ tree scaffolded earlier in this script creates it.
 CHARTS_DIR="charts"
-mkdir -p "$CHARTS_DIR"
 
 # If LOAD_TEST_CHART_CACHE_DIR points at a pre-warmed cache (populated once,
 # per version, before this script runs), reuse it instead of pulling over the
@@ -360,13 +381,13 @@ if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
   cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"
 else
   echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
-  retry_with_backoff 4 5 helm pull camunda/camunda-platform \
+  retry_with_backoff helm pull camunda/camunda-platform \
       --untar --untardir "$CHARTS_DIR" \
       --version "$camunda_platform_helm_chart_version"
 fi
 
 # Skip re-resolving load-test-setup's dependencies when the charts/ copy
-# already carries them, freshly resolved (not just present — a stale leftover
+# already carries them, freshly resolved (not just present: a stale leftover
 # from an unrelated manual session must not be mistaken for a valid resolve
 # after a Chart.lock bump). In CI this is true because the harness resolves
 # the shared source tree once before copying it into every scenario; on a
@@ -382,7 +403,7 @@ if [[ "$deps_already_resolved" == "true" ]]; then
   echo "load-test-setup subchart dependencies already resolved; skipping helm dependency update."
 else
   echo "Resolving load-test-setup subchart dependencies..."
-  retry_with_backoff 4 5 helm dependency update "$CHARTS_DIR/load-test-setup"
+  retry_with_backoff helm dependency update "$CHARTS_DIR/load-test-setup"
 fi
 
 echo
