@@ -61,10 +61,8 @@ public class JobRegistryWriterOS extends JobRegistryWriter {
     final UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed() > 0) {
-      final String message =
-          String.format("Was not able to update job registry entry with id [%s].", id);
-      LOG.error(message);
-      throw new OptimizeRuntimeException(message);
+      LOG.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 }

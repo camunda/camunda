@@ -9,6 +9,9 @@ package io.camunda.optimize.dto.optimize.query.job;
 
 import java.time.OffsetDateTime;
 
+// Nulls must serialize - a retry that completes successfully needs to clear a stale
+// errorMessage left by a prior FAILED state, so this class deliberately has no
+// @JsonInclude(NON_NULL).
 public class JobRegistryEntryUpdateDto {
 
   private JobStatus status;
