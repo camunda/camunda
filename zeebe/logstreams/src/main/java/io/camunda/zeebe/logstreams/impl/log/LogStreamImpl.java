@@ -34,7 +34,8 @@ public final class LogStreamImpl implements LogStream, CommitListener, AppendedL
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private final Collection<LogStreamReader> readers = new CopyOnWriteArrayList<>();
-  private final Collection<LogRecordAwaiter> recordAwaiters = new CopyOnWriteArrayList<>();
+  private final Collection<LogRecordAwaiter> committedRecordAwaiters = new CopyOnWriteArrayList<>();
+  private final Collection<LogRecordAwaiter> appendedRecordAwaiters = new CopyOnWriteArrayList<>();
 
   private @Nullable final String logName;
   private final int partitionId;
@@ -130,13 +131,25 @@ public final class LogStreamImpl implements LogStream, CommitListener, AppendedL
   @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     ensureOpen();
-    recordAwaiters.add(recordAwaiter);
+    committedRecordAwaiters.add(recordAwaiter);
   }
 
   @Override
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     ensureOpen();
-    recordAwaiters.remove(recordAwaiter);
+    committedRecordAwaiters.remove(recordAwaiter);
+  }
+
+  @Override
+  public void registerAppendedRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    ensureOpen();
+    appendedRecordAwaiters.add(recordAwaiter);
+  }
+
+  @Override
+  public void removeAppendedRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    ensureOpen();
+    appendedRecordAwaiters.remove(recordAwaiter);
   }
 
   @Override
@@ -152,22 +165,22 @@ public final class LogStreamImpl implements LogStream, CommitListener, AppendedL
 
   @Override
   public void onCommit() {
-    notifyRecordAvailable();
+    notifyRecordAvailable(committedRecordAwaiters);
   }
 
   @Override
   public void onAppend(final long highestPosition) {
-    notifyRecordAvailable();
+    notifyRecordAvailable(appendedRecordAwaiters);
   }
 
-  private void notifyRecordAvailable() {
+  private void notifyRecordAvailable(final Collection<LogRecordAwaiter> awaiters) {
     if (closed) {
       // This can be called by the raft thread after we've already closed the log stream.
       // We can just ignore it in that case. Using `ensureOpen` would throw an exception that would
       // break the raft thread.
       return;
     }
-    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
+    awaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
   private void ensureOpen() {
