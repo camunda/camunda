@@ -374,7 +374,7 @@ describe('<DetailsTab />', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+      await screen.findByRole('heading', {name: 'Agent Instance', level: 5}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {name: 'Element Instance', level: 5}),
@@ -415,7 +415,7 @@ describe('<DetailsTab />', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+      await screen.findByRole('heading', {name: 'Agent Instance', level: 5}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {name: 'Element Instance', level: 5}),
@@ -1107,7 +1107,7 @@ describe('<DetailsTab />', () => {
     });
 
     const agentHeading = await screen.findByRole('heading', {
-      name: 'AI Agent',
+      name: 'Agent Instance',
       level: 5,
     });
     const elementInstanceHeading = await screen.findByRole('heading', {
