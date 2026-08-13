@@ -471,7 +471,7 @@ final class ClusterConfigurationInitializerTest {
         member,
         List.of(partitionId),
         1,
-        DynamicPartitionConfig.init(),
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, DynamicPartitionConfig.init()),
         null);
   }
 

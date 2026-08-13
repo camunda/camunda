@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import net.jqwik.api.ForAll;
@@ -81,8 +82,13 @@ final class AdditivePartitionReassignerPropertyTest {
 
   private CurrentClusterConfiguration configurationWith(
       final Set<MemberId> targetMembers, final Set<PartitionMetadata> distribution) {
+    final var tenantConfigs =
+        distribution.stream()
+            .map(p -> p.id().group())
+            .distinct()
+            .collect(Collectors.toMap(Function.identity(), p -> partitionConfig));
     return ConfigurationUtil.getCurrentClusterConfigurationFrom(
-        targetMembers, distribution, partitionConfig, "clusterId");
+        targetMembers, distribution, tenantConfigs, "clusterId");
   }
 
   private Set<MemberId> members(final int count) {

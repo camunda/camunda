@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
@@ -739,9 +740,9 @@ final class ClusterConfigurationManagerImplNewConfigTest {
             new ControllablePartitionDistributor().withPartitions(Set.of(partition)),
             Set.of(MEMBER_0, MEMBER_1),
             MEMBER_0,
-            List.of(new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, 1)),
+            List.of(new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1)),
             1,
-            partitionConfig,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionConfig),
             "cluster-x");
 
     // when

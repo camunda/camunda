@@ -13,7 +13,6 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -130,14 +129,11 @@ public class PhysicalTenantProvisioningInitializer
     final var targetDistribution =
         getTargetDistribution(configuration, targetMembers, targetPartitionIds);
 
-    final Map<String, DynamicPartitionConfig> partitionConfigByNewGroup =
-        newTenantIds.stream()
-            .collect(
-                Collectors.toMap(
-                    tenantId -> tenantId, ignored -> staticConfiguration.partitionConfig()));
     final var operationsByGroup =
         PartitionReassignmentOperationsGenerator.generateOperations(
-            configuration, targetDistribution, partitionConfigByNewGroup);
+            configuration,
+            targetDistribution,
+            staticConfiguration.partitionConfigPerPhysicalTenant());
 
     var result = configuration;
     for (final var newTenantId : newTenantIds) {

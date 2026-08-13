@@ -94,20 +94,18 @@ final class PhysicalTenantExporterConfigIT {
       TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static final String ES_URL;
-
-  static {
-    ES.start();
-    ES_URL = "http://" + ES.getHttpHostAddress();
-  }
-
   private static final HttpClient HTTP = HttpClient.newHttpClient();
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
           .withTenant(TENANT_A, Storage.none())
           .build();
+
+  static {
+    ES.start();
+    ES_URL = "http://" + ES.getHttpHostAddress();
+  }
 
   // The exporters are declared in the ROOT config (so they are enabled on every partition group).
   // tenantA redeclares the location exporter fully with a different "target" arg (the
@@ -225,11 +223,6 @@ final class PhysicalTenantExporterConfigIT {
    * present in the tenant's ExporterRepository. To be re-enabled once the cluster-configuration
    * layer supports per-physical-tenant exporters.
    */
-  @Disabled(
-      "Tenant-only exporters require per-physical-tenant exporter support in the"
-          + " cluster-configuration layer (initial DynamicPartitionConfig is generated from the"
-          + " root BrokerCfg only); tracked in"
-          + " https://github.com/camunda/camunda/issues/56652")
   @Test
   void shouldApplyExporterConfiguredOnlyForPhysicalTenant() {
     // given — records flow through tenantA's partition group

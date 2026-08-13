@@ -49,8 +49,9 @@ final class PartitionGroupExporterStateInitializerTest {
             PhasedChangeState.empty());
 
     // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -78,8 +79,9 @@ final class PartitionGroupExporterStateInitializerTest {
             PhasedChangeState.empty());
 
     // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -118,8 +120,9 @@ final class PartitionGroupExporterStateInitializerTest {
             PhasedChangeState.empty());
 
     // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
@@ -143,13 +146,100 @@ final class PartitionGroupExporterStateInitializerTest {
             PhasedChangeState.empty());
 
     // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 
     // then
     assertThat(result).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldOnlyUpdateTenantWhoseExportersAdded() {
+    // given — local member replicates a partition in two different groups, but only one has
+    // exporter changes
+    final var configA = DynamicPartitionConfig.init();
+    final var configB =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of("expA", new ExporterState(0, State.ENABLED, Optional.empty()))));
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a", groupWithMember(LOCAL_MEMBER_ID, configA),
+                "tenant-b", groupWithMember(LOCAL_MEMBER_ID, configB)),
+            PhasedChangeState.empty());
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — only tenant-a is updated; tenant-b is unchanged
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(result.partitionGroup("tenant-b"))
+        .isEqualTo(configuration.partitionGroup("tenant-b"));
+  }
+
+  @Test
+  void shouldOnlyUpdateTenantWhoseExporterRemoved() {
+    // given — local member replicates a partition in two different groups, but only one has
+    // exporter changes
+    final var configA =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of("expA", new ExporterState(0, State.ENABLED, Optional.empty()))));
+    final var configB =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of("expA", new ExporterState(0, State.ENABLED, Optional.empty()))));
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a", groupWithMember(LOCAL_MEMBER_ID, configA),
+                "tenant-b", groupWithMember(LOCAL_MEMBER_ID, configB)),
+            PhasedChangeState.empty());
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.<String>of());
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — only tenant-b is updated; tenant-a is unchanged
+    assertThat(result.partitionGroup("tenant-a"))
+        .isEqualTo(configuration.partitionGroup("tenant-a"));
+    assertThat(
+            result
+                .partitionGroup("tenant-b")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters()
+                .get("expA")
+                .state())
+        .isEqualTo(State.CONFIG_NOT_FOUND);
   }
 
   @Test
@@ -171,8 +261,9 @@ final class PartitionGroupExporterStateInitializerTest {
             postRestorePendingState());
 
     // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.of("expA"));
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, true)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, true)
             .modify(configuration)
             .join();
 
@@ -216,10 +307,11 @@ final class PartitionGroupExporterStateInitializerTest {
             GlobalConfiguration.init(),
             Map.of("tenant-a", groupWithMember(LOCAL_MEMBER_ID, config)),
             postRestorePendingState());
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
 
     // when
     final var result =
-        new PartitionGroupExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, false)
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
             .modify(configuration)
             .join();
 

@@ -75,14 +75,11 @@ public final class ConfigurationUtil {
    * per distinct {@link PartitionId#group()} found in it, each with its own {@link RoutingState}
    * initialized from that group's own partition count; only members that replicate at least one
    * partition of a group appear in that group.
-   *
-   * <p>{@code partitionConfig} (exporter state) is applied uniformly to every partition regardless
-   * of group, since {@code StaticConfiguration} has no per-group exporter configuration yet.
    */
   public static CurrentClusterConfiguration getCurrentClusterConfigurationFrom(
       final Set<MemberId> clusterMembers,
       final Set<PartitionMetadata> partitionDistribution,
-      final DynamicPartitionConfig partitionConfig,
+      final Map<String, DynamicPartitionConfig> partitionConfig,
       @Nullable final String clusterId) {
     final Map<MemberId, BrokerState> brokerStates = new HashMap<>();
     for (final var member : clusterMembers) {
@@ -107,7 +104,7 @@ public final class ConfigurationUtil {
         partitionStatesByGroupAndMember
             .computeIfAbsent(groupId, ignored -> new HashMap<>())
             .computeIfAbsent(member, ignored -> new HashMap<>())
-            .put(partitionId, PartitionState.active(memberPriority, partitionConfig));
+            .put(partitionId, PartitionState.active(memberPriority, partitionConfig.get(groupId)));
       }
     }
 

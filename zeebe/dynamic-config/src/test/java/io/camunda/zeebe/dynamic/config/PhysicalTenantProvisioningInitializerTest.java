@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -210,7 +211,7 @@ final class PhysicalTenantProvisioningInitializerTest {
             LOCAL_MEMBER_ID,
             List.of(new PartitionId("tenantA", 1), new PartitionId("tenantA", 2)),
             5,
-            partitionConfig,
+            Map.of("tenantA", partitionConfig),
             "clusterId");
     final var initializer = new PhysicalTenantProvisioningInitializer(staticConfiguration);
 
@@ -231,13 +232,17 @@ final class PhysicalTenantProvisioningInitializerTest {
       final List<List<PartitionId>> tenantPartitionIds, final int replicationFactor) {
     final List<PartitionId> allPartitionIds =
         tenantPartitionIds.stream().flatMap(List::stream).toList();
+    final var tenantConfigs =
+        tenantPartitionIds.stream()
+            .map(list -> list.get(0).group())
+            .collect(Collectors.toMap(Function.identity(), list -> partitionConfig));
     return new StaticConfiguration(
         new RoundRobinPartitionDistributor(),
         Set.of(member(0), member(1), member(2)),
         LOCAL_MEMBER_ID,
         allPartitionIds,
         replicationFactor,
-        partitionConfig,
+        tenantConfigs,
         "clusterId");
   }
 
@@ -263,8 +268,13 @@ final class PhysicalTenantProvisioningInitializerTest {
     for (int i = 0; i < 3; i++) {
       members.add(member(i));
     }
+    final var tenantConfigs =
+        existing.stream()
+            .map(p -> p.id().group())
+            .distinct()
+            .collect(Collectors.toMap(Function.identity(), group -> partitionConfig));
     return ConfigurationUtil.getCurrentClusterConfigurationFrom(
-        members, existing, partitionConfig, "clusterId");
+        members, existing, tenantConfigs, "clusterId");
   }
 
   /**

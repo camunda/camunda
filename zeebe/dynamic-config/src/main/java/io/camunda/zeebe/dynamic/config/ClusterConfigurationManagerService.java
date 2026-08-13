@@ -58,6 +58,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -231,7 +232,12 @@ public final class ClusterConfigurationManagerService
                 ClusterConfiguration.uninitialized()))
         .andThen(
             new ExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration
+                    .partitionConfigPerPhysicalTenant()
+                    .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                    .exporting()
+                    .exporters()
+                    .keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
@@ -265,7 +271,12 @@ public final class ClusterConfigurationManagerService
         .orThen(new StaticInitializer<>(staticConfiguration::generateTopology))
         .andThen(
             new ExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration
+                    .partitionConfigPerPhysicalTenant()
+                    .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                    .exporting()
+                    .exporters()
+                    .keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
@@ -307,11 +318,7 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper::updateCurrentClusterConfiguration,
                 managerActor,
                 CurrentClusterConfiguration.uninitialized()))
-        .andThen(
-            new PartitionGroupExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
-                staticConfiguration.localMemberId(),
-                false))
+        .andThen(exporterStateModifier(staticConfiguration, false))
         .andThen(
             PartitionDistributorInitializer
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
@@ -342,11 +349,7 @@ public final class ClusterConfigurationManagerService
                 gossiperConfig.bootstrapTimeout(),
                 CurrentClusterConfiguration.uninitialized()))
         .orThen(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
-        .andThen(
-            new PartitionGroupExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
-                staticConfiguration.localMemberId(),
-                true))
+        .andThen(exporterStateModifier(staticConfiguration, true))
         .andThen(
             PartitionDistributorInitializer
                 .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
@@ -354,6 +357,17 @@ public final class ClusterConfigurationManagerService
             new PartitionGroupExportingStateInitializer(
                 legacyExportingStates, staticConfiguration.localMemberId()))
         .andThen(new PhysicalTenantProvisioningInitializer(staticConfiguration));
+  }
+
+  private static PartitionGroupExporterStateInitializer exporterStateModifier(
+      final StaticConfiguration staticConfiguration, final boolean isCoordinator) {
+    return new PartitionGroupExporterStateInitializer(
+        staticConfiguration.partitionConfigPerPhysicalTenant().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey, e -> e.getValue().exporting().exporters().keySet())),
+        staticConfiguration.localMemberId(),
+        isCoordinator);
   }
 
   private Supplier<List<MemberId>> initializationMembers(
