@@ -81,7 +81,7 @@ final class SideEffectRunner implements CommittedPositionListener {
         new SideEffects(
             position,
             responses,
-            new AggregatePostCommitTask(position, postCommitTasks),
+            new AggregatePostCommitTask(partitionId, position, postCommitTasks),
             completionCallback));
     processingMetrics.setPendingSideEffects(sideEffects.size());
     executeNextSideEffects();
@@ -110,8 +110,10 @@ final class SideEffectRunner implements CommittedPositionListener {
       // actor job, which fails the whole stream processor. It would also leave the queue stuck on
       // this entry forever, so no later side effect would ever run either.
       LOG.error(
-          "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
+          "Expected to execute the side effects of the processing result at position '{}' on partition '{}' successfully, but exception was thrown. The result carried {} response(s) and its post-commit tasks.",
           sideEffects.position(),
+          partitionId,
+          sideEffects.responses().size(),
           e);
     }
     completeSideEffects(sideEffects);
@@ -127,11 +129,11 @@ final class SideEffectRunner implements CommittedPositionListener {
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {
     for (final var processingResponse : responses) {
+      final var responseValue = processingResponse.responseValue();
+      final var recordMetadata = responseValue.recordMetadata();
       // Isolated per response, like the post-commit tasks: one client that cannot be answered must
       // not cost the others their response.
       try {
-        final var responseValue = processingResponse.responseValue();
-        final var recordMetadata = responseValue.recordMetadata();
         responseWriter
             .intent(recordMetadata.getIntent())
             .key(responseValue.key())
@@ -144,7 +146,10 @@ final class SideEffectRunner implements CommittedPositionListener {
             .tryWriteResponse(processingResponse.requestStreamId(), processingResponse.requestId());
       } catch (final Exception e) {
         LOG.error(
-            "Expected to send response for request '{}' on stream '{}', but exception was thrown.",
+            "Expected to send response '{}' for key '{}' on partition '{}' to request '{}' of stream '{}', but exception was thrown.",
+            recordMetadata,
+            responseValue.key(),
+            partitionId,
             processingResponse.requestId(),
             processingResponse.requestStreamId(),
             e);
@@ -166,24 +171,33 @@ final class SideEffectRunner implements CommittedPositionListener {
    *     snapshot taken by the processing result when it is built.
    */
   private static final class AggregatePostCommitTask implements PostCommitTask {
+    private final int partitionId;
     private final long position;
     private final List<PostCommitTask> postCommitTasks;
 
     private AggregatePostCommitTask(
-        final long position, final List<PostCommitTask> postCommitTasks) {
+        final int partitionId, final long position, final List<PostCommitTask> postCommitTasks) {
+      this.partitionId = partitionId;
       this.position = position;
       this.postCommitTasks = postCommitTasks;
     }
 
     @Override
     public void flush() {
-      for (final PostCommitTask task : postCommitTasks) {
+      for (int i = 0; i < postCommitTasks.size(); i++) {
         try {
-          task.flush();
+          postCommitTasks.get(i).flush();
         } catch (final Exception e) {
+          // The task is a lambda closed over by its processor, so its class name is the only handle
+          // on which side effect failed. Its index identifies it among the tasks of the same
+          // result.
           LOG.error(
-              "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
+              "Expected to execute post-commit task {} of {} ('{}') for the processing result at position '{}' on partition '{}' successfully, but exception was thrown.",
+              i + 1,
+              postCommitTasks.size(),
+              postCommitTasks.get(i).getClass().getName(),
               position,
+              partitionId,
               e);
         }
       }
