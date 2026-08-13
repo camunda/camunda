@@ -11,7 +11,6 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -22,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
@@ -35,9 +35,12 @@ public class ListLogStorage implements LogStorage {
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
   private final ConcurrentSkipListMap<Integer, Entry> entries;
   private @Nullable LongConsumer positionListener;
-  private final Set<CommitListener> commitListeners = new HashSet<>();
-  private final Set<CommittedPositionListener> committedPositionListeners = new HashSet<>();
-  private final Set<AppendedListener> appendedListeners = new HashSet<>();
+  // Appends and commits notify listeners from the appending thread while tests add and remove
+  // listeners from their own thread, so these sets must tolerate concurrent iteration and mutation.
+  private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
+  private final Set<CommittedPositionListener> committedPositionListeners =
+      new CopyOnWriteArraySet<>();
+  private final Set<AppendedListener> appendedListeners = new CopyOnWriteArraySet<>();
   private final Queue<Runnable> pendingCommits = new ConcurrentLinkedQueue<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
