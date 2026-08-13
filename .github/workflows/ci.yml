@@ -2322,7 +2322,7 @@ jobs:
     name: Deploy snapshot Optimize Docker image
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2350,11 +2350,11 @@ jobs:
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
-      # -am fixes a race with deploy-snapshots by building reactor deps from source instead of Nexus
-      - name: Build zeebe-protocol from source
-        uses: ./.github/actions/run-maven
+      # Builds io.camunda deps from source instead of Nexus to avoid a race with deploy-snapshots.
+      # See https://github.com/camunda/camunda/pull/59937 for details.
+      - uses: ./.github/actions/build-zeebe
         with:
-          parameters: install -pl zeebe/protocol -am -Dquickly
+          maven-extra-args: -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
