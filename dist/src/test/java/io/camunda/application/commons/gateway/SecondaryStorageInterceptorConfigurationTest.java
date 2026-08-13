@@ -39,8 +39,6 @@ import org.springframework.web.method.HandlerMethod;
 })
 class SecondaryStorageInterceptorConfigurationTest {
 
-  @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
-
   @AfterEach
   void tearDown() {
     RequestContextHolder.resetRequestAttributes();
@@ -62,6 +60,8 @@ class SecondaryStorageInterceptorConfigurationTest {
   @Nested
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
   class WithMatchingLegacyAndUnifiedRdbmsType {
+    @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
     @Test
     void shouldAllowRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() {
       final boolean result =
@@ -77,6 +77,8 @@ class SecondaryStorageInterceptorConfigurationTest {
   @Nested
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=none"})
   class WithMatchingLegacyAndUnifiedNoneType {
+    @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
     @Test
     void shouldRejectRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() {
       assertThatThrownBy(
@@ -92,6 +94,8 @@ class SecondaryStorageInterceptorConfigurationTest {
   @Nested
   @TestPropertySource(properties = "camunda.database.type=elasticsearch")
   class WithOnlyLegacySetMatchingUnifiedDefault {
+    @Autowired private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
     @Test
     void shouldAllowRequestsRequiringSecondaryStorage() {
       final boolean result =
