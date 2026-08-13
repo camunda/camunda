@@ -23,6 +23,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
 jobs:
   detect-versions:
     name: Detect changed versions

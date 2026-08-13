@@ -33,6 +33,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
 jobs:
   dispatch:
     name: Dispatch benchmark matrix

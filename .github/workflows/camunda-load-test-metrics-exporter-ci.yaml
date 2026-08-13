@@ -26,6 +26,9 @@ defaults:
   run:
     working-directory: ./load-tests/metrics-exporter
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
 jobs:
   test:
     name: Tests
