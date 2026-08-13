@@ -5,9 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin;
+package io.camunda.zeebe.dynamic.config.api;
 
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -29,16 +32,26 @@ public enum ExportingStatus {
   MIXED;
 
   /**
-   * Aggregates the phases reported by the individual replicas: a single phase if they all agree,
-   * {@link #MIXED} otherwise.
-   *
-   * <p>Throws on a phase this gateway does not know rather than folding it into {@link #MIXED}: a
-   * phase added to the broker's {@code ExporterPhase} would otherwise be reported as a benign
-   * "pause still in flight" forever, and the mismatch would never surface. Failing the request
-   * makes it a visible error instead. This gateway is not the only thing that would need updating
-   * anyway -- a new phase also needs a status to map onto in the REST response.
+   * Aggregates the states of the individual replicas: a single status if they all agree, {@link
+   * #MIXED} otherwise. {@link ExportingState#UNKNOWN} means the replica has never been touched by a
+   * state-change operation, which is equivalent to actively exporting.
    */
-  public static ExportingStatus aggregate(final Set<String> reportedPhases) {
+  public static ExportingStatus aggregate(final Collection<ExportingState> replicaStates) {
+    return aggregatePhases(
+        replicaStates.stream()
+            .map(state -> state == ExportingState.UNKNOWN ? ExportingState.EXPORTING : state)
+            .map(Enum::name)
+            .collect(Collectors.toSet()));
+  }
+
+  /**
+   * Throws on a phase this enum does not know rather than folding it into {@link #MIXED}: a phase
+   * added to the broker's {@code ExporterPhase} would otherwise be reported as a benign "pause
+   * still in flight" forever, and the mismatch would never surface. Failing the request makes it a
+   * visible error instead. This enum is not the only thing that would need updating anyway -- a new
+   * phase also needs a status to map onto in the REST response.
+   */
+  private static ExportingStatus aggregatePhases(final Set<String> reportedPhases) {
     if (reportedPhases.size() != 1) {
       return MIXED;
     }

@@ -14,6 +14,8 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
@@ -41,9 +43,13 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final PartitionManager partitionManager;
+  private final ExportingStateController.ByTenant exportingStateController;
 
-  public BrokerAdminServiceImpl(final PartitionManager partitionManager) {
+  public BrokerAdminServiceImpl(
+      final PartitionManager partitionManager,
+      final ExportingStateController.ByTenant exportingStateController) {
     this.partitionManager = partitionManager;
+    this.exportingStateController = exportingStateController;
   }
 
   @Override
@@ -57,18 +63,23 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   @Override
-  public void pauseExporting() {
-    actor.call(this::pauseExportingOnAllPartitions);
+  public CompletableFuture<Void> pauseExporting() {
+    return exportingStateController.pauseExporting();
   }
 
   @Override
-  public void softPauseExporting() {
-    actor.call(this::softPauseExportingOnAllPartitions);
+  public CompletableFuture<Void> softPauseExporting() {
+    return exportingStateController.softPauseExporting();
   }
 
   @Override
-  public void resumeExporting() {
-    actor.call(this::resumeExportingOnAllPartitions);
+  public CompletableFuture<Void> resumeExporting() {
+    return exportingStateController.resumeExporting();
+  }
+
+  @Override
+  public CompletableFuture<ExportingStatus> getExportingStatus() {
+    return exportingStateController.getExportingStatus();
   }
 
   @Override
@@ -238,30 +249,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> softPauseExportingOnAllPartitions() {
-    LOG.info("Soft Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::softPauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> pauseExportingOnAllPartitions() {
-    LOG.info("Pausing exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::pauseExporting)
-        .collect(new ActorFutureCollector<>(actor));
-  }
-
-  private ActorFuture<List<Void>> resumeExportingOnAllPartitions() {
-    LOG.info("Resuming exporting on all partitions.");
-    return partitionManager.getZeebePartitions().stream()
-        .map(ZeebePartition::getAdminAccess)
-        .map(PartitionAdminAccess::resumeExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
 }

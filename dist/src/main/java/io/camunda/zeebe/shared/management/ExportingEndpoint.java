@@ -9,8 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -25,15 +24,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
+
+  private final ExportingStateController exportingStateController;
 
   @Autowired
-  public ExportingEndpoint(final BrokerClient brokerClient) {
-    this(new ExportingRequestBroadcaster(brokerClient));
-  }
-
-  ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
-    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
+  public ExportingEndpoint(final ExportingStateController exportingStateController) {
+    this.exportingStateController = exportingStateController;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -42,13 +38,11 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
+      final var controller = exportingStateController.getByTenant(DEFAULT_PHYSICAL_TENANT_ID);
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingRequestBroadcaster.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
-            case PAUSE ->
-                soft
-                    ? exportingRequestBroadcaster.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
-                    : exportingRequestBroadcaster.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case RESUME -> controller.resumeExporting();
+            case PAUSE -> soft ? controller.softPauseExporting() : controller.pauseExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();

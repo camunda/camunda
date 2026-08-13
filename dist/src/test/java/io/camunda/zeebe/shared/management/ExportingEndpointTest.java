@@ -7,16 +7,17 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -24,16 +25,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 
 final class ExportingEndpointTest {
+
   @ParameterizedTest
   @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
   void pauseAndResumeFailsIfCallFailsDirectly(final String operation) {
     // given
-    final var service = mock(ExportingRequestBroadcaster.class);
-    final var endpoint = new ExportingEndpoint(service);
+    final var controller = mock(ExportingStateController.ByTenant.class);
+    final var endpoint = new ExportingEndpoint(tenantId -> controller);
 
     // when
-    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
-    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
+    when(controller.pauseExporting()).thenThrow(new RuntimeException());
+    when(controller.resumeExporting()).thenThrow(new RuntimeException());
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -45,13 +47,13 @@ final class ExportingEndpointTest {
   @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
   void pauseAndResumeFailIfCallReturnsFailedFuture(final String operation) {
     // given
-    final var service = mock(ExportingRequestBroadcaster.class);
-    final var endpoint = new ExportingEndpoint(service);
+    final var controller = mock(ExportingStateController.ByTenant.class);
+    final var endpoint = new ExportingEndpoint(tenantId -> controller);
 
     // when
-    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
+    when(controller.pauseExporting())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
-    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
+    when(controller.resumeExporting())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
@@ -64,18 +66,32 @@ final class ExportingEndpointTest {
   @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
   void pauseAndResumeCanSucceed(final String operation) {
     // given
-    final var service = mock(ExportingRequestBroadcaster.class);
-    final var endpoint = new ExportingEndpoint(service);
+    final var controller = mock(ExportingStateController.ByTenant.class);
+    final var endpoint = new ExportingEndpoint(tenantId -> controller);
 
     // when
-    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    when(controller.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
+    when(controller.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
 
     // then
     assertThat(endpoint.post(operation, false))
         .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
+  }
+
+  @Test
+  void pauseWithSoftFlagSoftPauses() {
+    // given
+    final var controller = mock(ExportingStateController.ByTenant.class);
+    final var endpoint = new ExportingEndpoint(tenantId -> controller);
+    when(controller.softPauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(ExportingEndpoint.PAUSE, true);
+
+    // then
+    assertThat(response)
+        .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
+    verify(controller).softPauseExporting();
   }
 
   @ParameterizedTest
@@ -83,14 +99,13 @@ final class ExportingEndpointTest {
   void shouldReturnResponseCorrectlyWhenExceptionIsThrown(
       final String operation, final String message) {
     // given
-    final var service = mock(ExportingRequestBroadcaster.class);
-    final var endpoint = new ExportingEndpoint(service);
+    final var controller = mock(ExportingStateController.ByTenant.class);
+    final var endpoint = new ExportingEndpoint(tenantId -> controller);
     final var exception = new RuntimeException(message);
 
     // when
-    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.failedFuture(exception));
-    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
+    when(controller.pauseExporting()).thenReturn(CompletableFuture.failedFuture(exception));
+    when(controller.resumeExporting())
         .thenReturn(CompletableFuture.failedFuture(new CompletionException(exception)));
 
     // then

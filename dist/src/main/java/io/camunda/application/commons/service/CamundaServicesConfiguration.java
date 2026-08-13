@@ -77,7 +77,7 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -145,12 +145,12 @@ public class CamundaServicesConfiguration {
       final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
       final ObjectProvider<HistoryBackupApi> historyBackupApi,
       final ApiServicesExecutorProvider executor,
-      final SecretStoreRegistries secretStoreRegistries) {
+      final SecretStoreRegistries secretStoreRegistries,
+      final ExportingStateController exportingStateController) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
-    final var exportingRequestBroadcaster = new ExportingRequestBroadcaster(brokerClient);
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
@@ -369,7 +369,7 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          exportingRequestBroadcaster,
+                          exportingStateController,
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
                           executor,

@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
@@ -261,6 +262,13 @@ public final class ClusterConfigurationManagementRequestsHandler
             enableRequest.exporterId(),
             enableRequest.initializeFrom(),
             enableRequest.physicalTenantId()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> changeExportingState(
+      final ExportingStateChangeRequest request) {
+    return handleRequest(
+        request.dryRun(), new ExportingStateChangeRequestTransformer(request.state()));
   }
 
   @Override

@@ -10,6 +10,11 @@ package io.camunda.zeebe.broker.bootstrap;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
@@ -35,10 +40,17 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var tenantIds = brokerStartupContext.getPhysicalTenantIds().known();
+    final var exportingStateController = createExportingStateController(brokerStartupContext);
 
     final var futures =
         tenantIds.stream()
-            .map(tenantId -> startTenantService(brokerStartupContext, tenantId, concurrencyControl))
+            .map(
+                tenantId ->
+                    startTenantService(
+                        brokerStartupContext,
+                        tenantId,
+                        exportingStateController,
+                        concurrencyControl))
             .collect(new ActorFutureCollector<>(concurrencyControl));
 
     concurrencyControl.runOnCompletion(
@@ -76,14 +88,32 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
         });
   }
 
+  /**
+   * Builds the {@link ExportingStateController} that routes exporting changes through the dynamic
+   * cluster configuration coordinator (the durable path). It is the same abstraction the actuator
+   * and the v2 exporting API use, so all three share how a state change is submitted and awaited.
+   */
+  private ExportingStateController createExportingStateController(final BrokerStartupContext ctx) {
+    final var configurationService = ctx.getClusterConfigurationService();
+    final var requestSender =
+        new ClusterConfigurationManagementRequestSender(
+            ctx.getClusterServices().getCommunicationService(),
+            ClusterConfigurationCoordinatorSupplier.from(
+                configurationService::getCurrentClusterConfiguration),
+            new ProtoBufSerializer());
+    return new DynamicConfigExportingStateController(requestSender);
+  }
+
   private ActorFuture<BrokerAdminServiceImpl> startTenantService(
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
+      final ExportingStateController exportingStateController,
       final ConcurrencyControl concurrencyControl) {
 
     final var adminService =
         new BrokerAdminServiceImpl(
-            brokerStartupContext.getPartitionManagers().get(physicalTenantId));
+            brokerStartupContext.getPartitionManagers().get(physicalTenantId),
+            exportingStateController.getByTenant(physicalTenantId));
 
     final var result = concurrencyControl.<BrokerAdminServiceImpl>createFuture();
     final var submitActorFuture =

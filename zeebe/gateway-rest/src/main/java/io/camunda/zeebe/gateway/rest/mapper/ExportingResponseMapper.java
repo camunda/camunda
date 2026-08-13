@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.mapper;
 
 import io.camunda.gateway.protocol.model.ExportingStatusCode;
 import io.camunda.gateway.protocol.model.ExportingStatusResponse;
-import io.camunda.zeebe.gateway.admin.ExportingStatus;
+import io.camunda.zeebe.dynamic.config.api.ExportingStatus;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked

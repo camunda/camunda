@@ -15,16 +15,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
 @Endpoint(id = "partitions")
+@NullMarked
 public class BrokerAdminServiceEndpoint {
 
   @Autowired private SpringBrokerBridge springBrokerBridge;
@@ -36,9 +38,11 @@ public class BrokerAdminServiceEndpoint {
     operations.put("pauseProcessing", BrokerAdminService::pauseStreamProcessing);
     operations.put("resumeProcessing", BrokerAdminService::resumeStreamProcessing);
     operations.put("takeSnapshot", BrokerAdminService::takeSnapshot);
-    operations.put("pauseExporting", BrokerAdminService::pauseExporting);
-    operations.put("softPauseExporting", BrokerAdminService::softPauseExporting);
-    operations.put("resumeExporting", BrokerAdminService::resumeExporting);
+    // Exporting operations are asynchronous; join so the response reflects the applied state,
+    // as the other operations already do.
+    operations.put("pauseExporting", service -> service.pauseExporting().join());
+    operations.put("softPauseExporting", service -> service.softPauseExporting().join());
+    operations.put("resumeExporting", service -> service.resumeExporting().join());
   }
 
   /**
@@ -49,7 +53,8 @@ public class BrokerAdminServiceEndpoint {
    * it keeps today's flat, single-tenant shape.
    */
   @WriteOperation
-  public Object trigger(@Selector final String operation, @Nullable final String physicalTenant) {
+  public @Nullable Object trigger(
+      @Selector final String operation, @Nullable final String physicalTenant) {
     final var consumer = operations.get(operation);
     if (consumer == null) {
       // Not a valid operation
@@ -143,6 +148,9 @@ public class BrokerAdminServiceEndpoint {
     return springBrokerBridge.getBrokerAdminServiceTenantIds();
   }
 
+  @SuppressWarnings("NullAway")
+  // nullaway cannot infer that Optional.ofNullable returns Optional<String> not Optional<@Nullable
+  // String>
   private Optional<String> normalize(@Nullable final String physicalTenant) {
     return Optional.ofNullable(physicalTenant).filter(t -> !t.isBlank());
   }
