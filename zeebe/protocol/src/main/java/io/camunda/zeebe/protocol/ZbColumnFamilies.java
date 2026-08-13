@@ -366,7 +366,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
   // deploy time and replicated identically to every partition (like process/decision/form
   // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
-  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL);
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL),
+
+  // agentDefinitionKey -> DbAgentDefinition (the full AgentDefinitionRecord). Populated alongside
+  // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
+  // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
+  // reason as the sibling CF above.
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
