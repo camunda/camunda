@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.search;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.gateway.protocol.model.AgentDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
@@ -21,6 +22,7 @@ import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
+import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
@@ -1369,6 +1371,83 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldMapAgentDefinition() {
+    // given
+    final var entity =
+        new AgentDefinitionEntity(
+            123L, // agentDefinitionKey
+            AgentDefinitionEntity.AgentType.AI_AGENT_TASK, // agentType
+            "My Agent", // name
+            "agentElement", // elementId
+            "processId", // processDefinitionId
+            456L, // processDefinitionKey
+            2, // processDefinitionVersion
+            "v1", // processDefinitionVersionTag
+            "tenant"); // tenantId
+
+    // when
+    final var result = SearchQueryResponseMapper.toAgentDefinition(entity);
+
+    // then
+    assertThat(result.getAgentDefinitionKey()).isEqualTo("123");
+    assertThat(result.getAgentType()).isEqualTo(AgentDefinitionTypeEnum.AI_AGENT_TASK);
+    assertThat(result.getName()).isEqualTo("My Agent");
+    assertThat(result.getElementId()).isEqualTo("agentElement");
+    assertThat(result.getProcessDefinitionId()).isEqualTo("processId");
+    assertThat(result.getProcessDefinitionKey()).isEqualTo("456");
+    assertThat(result.getProcessDefinitionVersion()).isEqualTo(2);
+    assertThat(result.getProcessDefinitionVersionTag()).isEqualTo("v1");
+    assertThat(result.getTenantId()).isEqualTo("tenant");
+  }
+
+  @Test
+  void shouldMapAgentDefinitionWithNullVersionTag() {
+    // given
+    final var entity =
+        new AgentDefinitionEntity(
+            123L,
+            AgentDefinitionEntity.AgentType.EXTERNAL_AGENT,
+            "My Agent",
+            "agentElement",
+            "processId",
+            456L,
+            1,
+            null, // processDefinitionVersionTag is nullable
+            "tenant");
+
+    // when
+    final var result = SearchQueryResponseMapper.toAgentDefinition(entity);
+
+    // then
+    assertThat(result.getProcessDefinitionVersionTag()).isNull();
+  }
+
+  @Test
+  void shouldMapAgentDefinitionSearchQueryResponse() {
+    // given
+    final var entity =
+        new AgentDefinitionEntity(
+            123L,
+            AgentDefinitionEntity.AgentType.AI_AGENT_SUB_PROCESS,
+            "My Agent",
+            "agentElement",
+            "processId",
+            456L,
+            1,
+            "v1",
+            "tenant");
+
+    // when
+    final var response =
+        SearchQueryResponseMapper.toAgentDefinitionSearchQueryResponse(
+            new SearchQueryResult<AgentDefinitionEntity>(1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(response.getItems()).hasSize(1);
+    assertThat(response.getItems().getFirst().getAgentDefinitionKey()).isEqualTo("123");
   }
 
   @Nested

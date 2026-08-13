@@ -49,6 +49,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
+import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
@@ -1558,6 +1559,43 @@ public class SearchQueryFilterMapper {
           .map(mapToKeyOperations("deploymentKey", validationErrors))
           .ifPresent(builder::deploymentKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentDefinitionFilter> toAgentDefinitionFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentDefinitionFilter filter) {
+    final var builder = FilterBuilders.agentDefinition();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getAgentDefinitionKey())
+          .map(mapToKeyOperations("agentDefinitionKey", validationErrors))
+          .ifPresent(builder::agentDefinitionKeyOperations);
+      ofNullable(filter.getAgentType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::agentTypeOperations);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionVersionTagOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::tenantIdOperations);
     }
 
     return validationErrors.isEmpty()

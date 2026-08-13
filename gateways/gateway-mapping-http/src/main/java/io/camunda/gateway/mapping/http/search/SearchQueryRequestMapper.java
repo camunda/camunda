@@ -24,6 +24,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
@@ -250,6 +251,23 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
     final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, AgentDefinitionQuery> toAgentDefinitionQuery(
+      final @Nullable AgentDefinitionSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.agentDefinitionSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromAgentDefinitionSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::agentDefinition,
+            SearchQuerySortRequestMapper::applyAgentDefinitionSortField);
+    final var filter = SearchQueryFilterMapper.toAgentDefinitionFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::agentDefinitionSearchQuery);
   }
 
   public static Either<ProblemDetail, AgentInstanceQuery> toAgentInstanceQuery(

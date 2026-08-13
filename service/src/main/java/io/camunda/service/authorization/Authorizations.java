@@ -22,6 +22,7 @@ import static io.camunda.security.api.model.authz.PermissionType.RESTORE;
 import static io.camunda.security.api.model.authz.PermissionType.REVEAL;
 import static io.camunda.security.api.model.authz.PermissionType.UPDATE;
 
+import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
@@ -50,6 +51,10 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.security.core.auth.RequiredAuthorization;
 
 public abstract class Authorizations {
+
+  public static final RequiredAuthorization<AgentDefinitionEntity>
+      AGENT_DEFINITION_READ_AUTHORIZATION =
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
   public static final RequiredAuthorization<AgentInstanceEntity> AGENT_INSTANCE_READ_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());

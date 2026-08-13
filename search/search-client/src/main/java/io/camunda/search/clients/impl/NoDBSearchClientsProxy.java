@@ -8,6 +8,7 @@
 package io.camunda.search.clients.impl;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
@@ -57,6 +58,7 @@ import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.NoSecondaryStorageException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
@@ -107,6 +109,17 @@ import io.camunda.security.core.auth.SecurityContext;
 import java.util.List;
 
 public class NoDBSearchClientsProxy implements SearchClientsProxy {
+
+  @Override
+  public AgentDefinitionEntity getAgentDefinition(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<AgentDefinitionEntity> searchAgentDefinitions(
+      final AgentDefinitionQuery query) {
+    throw new NoSecondaryStorageException();
+  }
 
   @Override
   public AgentInstanceEntity getAgentInstance(final long key) {

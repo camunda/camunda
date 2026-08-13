@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_UNKN
 
 import io.camunda.gateway.protocol.model.*;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQuerySortRequest.FieldEnum;
+import io.camunda.search.sort.AgentDefinitionSort;
 import io.camunda.search.sort.AgentInstanceHistorySort;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.AuthorizationSort;
@@ -1039,6 +1040,35 @@ public class SearchQuerySortRequestMapper {
         case AFTER_NON_GLOBAL -> builder.afterNonGlobal();
         case PRIORITY -> builder.priority();
         case SOURCE -> builder.source();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<SearchQuerySortRequest<AgentDefinitionSearchQuerySortRequest.FieldEnum>>
+      fromAgentDefinitionSearchQuerySortRequest(
+          final List<AgentDefinitionSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<String> applyAgentDefinitionSortField(
+      final AgentDefinitionSearchQuerySortRequest.FieldEnum field,
+      final AgentDefinitionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case AGENT_DEFINITION_KEY -> builder.agentDefinitionKey();
+        case AGENT_TYPE -> builder.agentType();
+        case NAME -> builder.name();
+        case ELEMENT_ID -> builder.elementId();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case PROCESS_DEFINITION_VERSION_TAG -> builder.processDefinitionVersionTag();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

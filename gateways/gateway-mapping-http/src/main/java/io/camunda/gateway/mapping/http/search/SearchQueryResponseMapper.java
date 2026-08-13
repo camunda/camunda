@@ -16,6 +16,9 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
+import io.camunda.gateway.protocol.model.AgentDefinitionResult;
+import io.camunda.gateway.protocol.model.AgentDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.AgentDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusEnum;
@@ -179,6 +182,7 @@ import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeEnum;
 import io.camunda.gateway.protocol.model.WaitStateTypeEnum;
+import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
@@ -1188,6 +1192,25 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
+  private static List<AgentDefinitionResult> toAgentDefinitions(
+      final List<AgentDefinitionEntity> definitions) {
+    return definitions.stream().map(SearchQueryResponseMapper::toAgentDefinition).toList();
+  }
+
+  public static AgentDefinitionResult toAgentDefinition(final AgentDefinitionEntity d) {
+    return AgentDefinitionResult.Builder.create()
+        .agentDefinitionKey(keyToString(d.agentDefinitionKey()))
+        .agentType(AgentDefinitionTypeEnum.fromValue(d.agentType().name()))
+        .name(d.name())
+        .elementId(d.elementId())
+        .processDefinitionId(d.processDefinitionId())
+        .processDefinitionKey(keyToString(d.processDefinitionKey()))
+        .processDefinitionVersion(d.processDefinitionVersion())
+        .processDefinitionVersionTag(d.processDefinitionVersionTag())
+        .tenantId(d.tenantId())
+        .build();
+  }
+
   private static List<DecisionRequirementsResult> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
@@ -2103,6 +2126,18 @@ public final class SearchQueryResponseMapper {
         .resourceId(entity.resourceId())
         .tenantId(entity.tenantId())
         .resourceKey(keyToString(entity.resourceKey()))
+        .build();
+  }
+
+  public static AgentDefinitionSearchQueryResult toAgentDefinitionSearchQueryResponse(
+      final SearchQueryResult<AgentDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return AgentDefinitionSearchQueryResult.Builder.create()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toAgentDefinitions)
+                .orElseGet(Collections::emptyList))
         .build();
   }
 
