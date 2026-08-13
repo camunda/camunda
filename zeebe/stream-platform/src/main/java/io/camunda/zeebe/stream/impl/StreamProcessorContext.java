@@ -203,7 +203,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return requireNonNull(logStreamReader);
   }
 
-  /** Returns the reader used for processing records, which may also read uncommitted records. */
+  /**
+   * Returns the reader used for processing records, which may also read uncommitted records.
+   *
+   * <p>Only set in {@link StreamProcessorMode#PROCESSING}, because replay never reads uncommitted
+   * records.
+   */
   public LogStreamReader getProcessingLogStreamReader() {
     return requireNonNull(processingLogStreamReader);
   }
