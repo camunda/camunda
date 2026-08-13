@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.es.writer;
 import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
@@ -50,17 +51,26 @@ public class JobRegistryWriterES extends JobRegistryWriter {
   @Override
   protected void performUpdatingJobStatus(final String id, final JobRegistryEntryUpdateDto update)
       throws IOException {
-    final UpdateResponse<JobRegistryEntryUpdateDto> updateResponse =
-        esClient.update(
-            new OptimizeUpdateRequestBuilderES<
-                    JobRegistryEntryUpdateDto, JobRegistryEntryUpdateDto>()
-                .optimizeIndex(esClient, JOB_REGISTRY_INDEX_NAME)
-                .id(id)
-                .doc(update)
-                .refresh(Refresh.True)
-                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                .build(),
-            JobRegistryEntryUpdateDto.class);
+    final UpdateResponse<JobRegistryEntryUpdateDto> updateResponse;
+    try {
+      updateResponse =
+          esClient.update(
+              new OptimizeUpdateRequestBuilderES<
+                      JobRegistryEntryUpdateDto, JobRegistryEntryUpdateDto>()
+                  .optimizeIndex(esClient, JOB_REGISTRY_INDEX_NAME)
+                  .id(id)
+                  .doc(update)
+                  .refresh(Refresh.True)
+                  .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                  .build(),
+              JobRegistryEntryUpdateDto.class);
+    } catch (final ElasticsearchException e) {
+      final String message =
+          String.format(
+              "Was not able to update job registry entry with id [%s]. It may not exist.", id);
+      LOG.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
 
     if (!updateResponse.shards().failures().isEmpty()) {
       final String message =
