@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.Collection;
 import java.util.List;
@@ -17,10 +18,15 @@ import java.util.concurrent.CompletionStage;
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
   /**
-   * Returns the list of not finished batch operations. We can use endDate field to distinguish
-   * finished from running.
+   * Returns the not finished batch operations. We can use endDate field to distinguish finished
+   * from running.
+   *
+   * <p>The state and the total operations count are returned alongside the key because a batch
+   * operation with no single operations at all is indistinguishable, from the aggregation alone,
+   * from one whose single operations are simply not in the operation index anymore. See {@link
+   * BatchOperationUpdateTask}.
    */
-  CompletionStage<Collection<String>> getNotFinishedBatchOperations();
+  CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations();
 
   /**
    * Counts amount of single operations by state that are included in given batch operations.
@@ -39,6 +45,17 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * @return the number of updated documents
    */
   CompletionStage<Integer> bulkUpdate(List<DocumentUpdate> documentUpdates);
+
+  /**
+   * A batch operation that has no endDate yet, with the two stored fields the update task needs to
+   * decide whether an endDate can be derived for it.
+   *
+   * @param id the batch operation key
+   * @param state the stored state, {@code null} if the document had no readable source
+   * @param operationsTotalCount the number of items the engine selected for this batch operation
+   */
+  record NotFinishedBatchOperation(
+      String id, BatchOperationState state, long operationsTotalCount) {}
 
   /**
    * Represents a specific document store agnostic update to execute.
@@ -74,7 +91,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
 
     @Override
-    public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
+    public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
       return CompletableFuture.completedFuture(List.of());
     }
 
