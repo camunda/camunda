@@ -222,6 +222,32 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldTreatAnExplicitlyBlankIssuerUriAsMissingForThePartialConfigGuard() {
+    // An operator (or another property source) can set
+    // camunda.security.authentication.oidc.issuer-uri to an empty string rather than leaving it
+    // absent. The partial-config guard must treat that the same as "no issuer-uri set": otherwise
+    // it would let clientId/CAMUNDA_IDENTITY_CLIENT_SECRET bridge through with a blank issuer-uri,
+    // reintroducing the CSL startup failure the guard exists to prevent.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+    legacy.put(OIDC + "issuer-uri", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
+    logs.assertContains(
+        entry -> entry.getMessage().contains("camunda.identity.issuer"),
+        "expected a warning naming the missing issuer key");
+    logs.assertDoesNotContain(
+        entry -> entry.getMessage().contains("helm-secret"),
+        "client secret value must never be logged");
+  }
+
+  @Test
   void shouldNotBridgeHelmChartIdentityConfigWhenAuth0IsConfigured() {
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");

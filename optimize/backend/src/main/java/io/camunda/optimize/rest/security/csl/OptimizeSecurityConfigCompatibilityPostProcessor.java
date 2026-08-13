@@ -158,7 +158,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // all-or-nothing on the issuer-uri: withhold both credentials rather than trade a login problem
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (!derived.containsKey(OIDC_PREFIX + "issuer-uri")
-        && env.getProperty(OIDC_PREFIX + "issuer-uri") == null) {
+        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))) {
       final String clientId = env.getProperty("camunda.identity.clientId");
       final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
       if (!isBlank(clientId) || !isBlank(clientSecret)) {
