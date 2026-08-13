@@ -242,14 +242,25 @@ Main building blocks:
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 - Camunda Security Library (CSL): Library that performs the authorization and authentication decisions and assembles the Spring Security filter chain, and that supplies the boundary types OC passes across it (`SecurityContext`, `CamundaAuthentication`, `RequiredAuthorization`, `TenantAccess`). Developed in a separate repository ([camunda/camunda-security-library](https://github.com/camunda/camunda-security-library)) but compiled into the Orchestration Cluster artifact, not a remote service. Consumed as `camunda-security-library-api`, `-core`, `-spring-boot-starter`, and `-validation`, version pinned by the `version.camunda-security-library` property in `parent/pom.xml`.
 
-#### CSL ports and OC's adapters
+#### CSL extension points and OC's adapters
 
 CSL follows a ports-and-adapters design: it owns the authorization and authentication logic and
-declares ports for everything it needs from the host. This table is the contract surface between the
-two repositories — CSL's internal behaviour is documented in the
+declares extension points for everything it needs from the host. The two tables below are the
+contract surface between the two repositories — CSL's internal behaviour is documented in the
 [CSL architecture documentation](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md),
 sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration), and is not
 repeated here.
+
+Two kinds of type cross the boundary, and they point in opposite directions:
+
+- **Callback extension points** — interfaces CSL declares and *calls into*. OC implements them, so
+  CSL can reach host data (RocksDB, the search index, the session store) and host decisions without
+  depending on OC. Not all are named `*Port`.
+- **Data contracts** — shapes OC's *own* domain types implement so CSL can *read* them. No adapter
+  is involved; the coupling is that OC's entities carry the members CSL expects.
+
+Both couple at compile time, which is why both are named here (see the naming convention below), but
+only the first is a ports-and-adapters seam.
 
 **Naming convention used in this document and the linked authorization docs:** CSL names appear only
 where they are part of that contract surface — the ports OC implements, and the types OC's own code
@@ -259,22 +270,49 @@ boundary does not oblige a change here. A few named types live in CSL's `core` r
 public `api` package; they are named anyway because OC's own code declares them, so a CSL rename
 breaks our compile and forces a docs pass regardless.
 
-|                CSL port                 |                                                                       OC implementation                                                                       |
-|-----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `AuthorizationCheckPort` (inbound)      | Primarily consumed. One local implementation, `TenantAwareAuthorizationCheckPort` (`dist`), routes each request to the per-physical-tenant port CSL assembles |
-| `AuthorizationScopeRepositoryPort`      | `SearchAuthorizationScopeRepository` (`security-services`, secondary storage) · `AuthorizationScopeStateAdapter` (`zeebe/engine`, RocksDB)                    |
-| `MembershipPort`                        | `DefaultMembershipService` / `NoDBMembershipService` (`authentication`) · `MembershipStateAdapter` (`zeebe/engine`)                                           |
-| `BasicAuthUserDetailsPort`              | `BasicAuthUserDetailsAdapter` (`authentication`)                                                                                                              |
-| `CamundaUserPort` (inbound)             | `BasicCamundaUserService` (`authentication`)                                                                                                                  |
-| `SessionStorePort`                      | `SessionStoreAdapter` (`authentication`)                                                                                                                      |
-| `ScopedSessionStorePortProvider`        | `PhysicalTenantScopedSessionStorePortProvider` (`authentication`) — hands out one `SessionStorePort` per physical tenant                                      |
-| `SecurityPathPort`                      | `SecurityPathAdapter` (`authentication`)                                                                                                                      |
-| `ResourceAccessProvider` (`core.authz`) | `DefaultResourceAccessProvider` (`search-client-query-transformer`)                                                                                           |
+##### Callback extension points
+
+|    CSL package     |                  Type                   |                                                                                                       OC implementation                                                                                                        |
+|--------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `core.port.in`     | `AuthorizationCheckPort`                | Primarily consumed. `TenantAwareAuthorizationCheckPort` (`dist`) routes each request to the per-physical-tenant port CSL assembles. `OidcProviderConfigurationPort` is likewise consumed, not implemented                      |
+| `core.port.in`     | `CamundaUserPort`                       | `BasicCamundaUserService` (`authentication`)                                                                                                                                                                                   |
+| `core.port.out`    | `AuthorizationScopeRepositoryPort`      | `SearchAuthorizationScopeRepository` (`security-services`, secondary storage) · `AuthorizationScopeStateAdapter` (`zeebe/engine`, RocksDB)                                                                                     |
+| `core.port.out`    | `MembershipPort`                        | `DefaultMembershipService` / `NoDBMembershipService` (`authentication`) · `MembershipStateAdapter` (`zeebe/engine`)                                                                                                            |
+| `core.port.out`    | `BasicAuthUserDetailsPort`              | `BasicAuthUserDetailsAdapter` (`authentication`)                                                                                                                                                                               |
+| `core.port.out`    | `SessionStorePort`                      | `SessionStoreAdapter` (`authentication`)                                                                                                                                                                                       |
+| `core.port.out`    | `ScopedSessionStorePortProvider`        | `PhysicalTenantScopedSessionStorePortProvider` (`authentication`) — hands out one `SessionStorePort` per physical tenant                                                                                                       |
+| `core.port.out`    | `SecurityPathPort`                      | `SecurityPathAdapter` (`authentication`)                                                                                                                                                                                       |
+| `core.port.out`    | `AdminUserPresencePort`                 | `AdminUserPresenceAdapter` (`authentication`) — answers whether an admin user is provisioned, which gates CSL's setup-redirect filter                                                                                          |
+| `core.port.out`    | `AuthorizedComponentsPort`              | `AuthorizedComponentsAdapter` (`authentication`) — resolves which webapp components the principal may open, for `/v2/authentication/me`                                                                                        |
+| `core.authz`       | `ResourceAccessProvider`                | `DefaultResourceAccessProvider` (`search-client-query-transformer`)                                                                                                                                                            |
+| `core.authz`       | `ResourceAccessController`              | `AbstractResourceAccessController` (`search-client`) and its subclasses `DocumentBasedResourceAccessController` / `RdbmsResourceAccessController` · `AnonymousResourceAccessController` · `ResourceAccessDelegatingController` |
+| `api.context`      | `CamundaAuthenticationConverter`        | `ClusterAdminAuthenticationConverter` (`authentication`) — membership-free principal for cluster admins, registered ahead of CSL's DB-backed converter                                                                         |
+| `api.context`      | `CamundaSecurityScopeProvider`          | `PhysicalTenantScopeProvider` (`authentication`) — one security descriptor per configured physical tenant, from which CSL builds the per-tenant filter chains                                                                  |
+| `api.context`      | `MembershipResolutionContextPropagator` | `PhysicalTenantMembershipContextPropagator` (`authentication`) — rebinds the physical tenant around lazy membership lookups that resolve outside request scope                                                                 |
+| `spring.converter` | `OidcUserAuthenticationConverter`       | `ProviderAwareOidcUserAuthenticationConverter` (`authentication`) extends it to pick the right converter per configured IdP (see [5.2.1](#521-authentication---level-2))                                                       |
+| `spring.oidc`      | `OidcTokenEndpointCustomizer`           | `OidcTokenEndpointCustomizer` (`authentication`) — builds the `private_key_jwt` client assertion converter (see [6.3.2](#632-oidc-with-private_key_jwt-client-authentication))                                                 |
+| `spring.security`  | `OidcResourceServerCustomizer`          | `ProtectedResourceMetadataCustomizer` (`authentication`)                                                                                                                                                                       |
+| `spring.session`   | `WebSessionAttributeConverter`          | `MigratingWebSessionAttributeConverter` (`dist`)                                                                                                                                                                               |
+| `spring.spi`       | `WebAppProviderPort`                    | `WebAppProviderAdapter` (`authentication`) — derives the web app id from the request path prefix                                                                                                                               |
 
 The pattern to note: the authorization *read* ports each have two implementations, one per storage
-layer — search-index-backed for the REST layer, RocksDB-backed for the engine. Optimize supplies its
-own adapters for the ports it needs (`OptimizeMembershipAdapter`, `OptimizeSecurityPathAdapter`,
-`OptimizeSessionStoreAdapter`), which is why some are stubs rather than full implementations.
+layer — search-index-backed for the REST layer, RocksDB-backed for the engine.
+
+Optimize is out of scope for this table. It wires CSL separately and supplies its own adapters, some
+of them stubs; one CSL extension point (`spring.spi.OidcAuthenticationEntryPoint`) is implemented
+only there and so appears in neither table.
+
+##### Data contracts
+
+These are not adapters. CSL declares the shape, and OC's own domain types carry it so CSL can read
+them directly.
+
+|            CSL package            |                                        Type                                        |                                                                          OC types implementing it                                                                           |
+|-----------------------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `core.authz`                      | `TenantOwnedEntity`                                                                | 18 `search-domain` entities (`ProcessDefinitionEntity`, `UserTaskEntity`, `IncidentEntity`, `VariableEntity`, …) — the marker by which CSL recognises a tenant-owned record |
+| `core.auth`                       | `MappingRuleMatcher` (and its nested `MappingRule`)                                | `MappingRuleEntity` (`search-domain`) · `PersistedMappingRule` (`zeebe/engine`) · `ClusterAdminJwtAuthenticationConverter` (`authentication`)                               |
+| `api.model.config.initialization` | `ConfiguredAuthorization`, `ConfiguredGroup`, `ConfiguredRole`, `ConfiguredTenant` | the four configurers in `zeebe/engine/.../processing/identity/initialize/`                                                                                                  |
+| `spring`                          | `CamundaSecurityLibraryProperties`                                                 | `Security` (`configuration`)                                                                                                                                                |
 
 ### 5.2 Building Blocks
 
@@ -394,7 +432,7 @@ Key responsibilities:
   - OIDC Provider Repository (CSL): reads the OIDC provider configuration (issuer URIs, client credentials, additional JWKS URIs) from `SecurityConfiguration`.
   - OAuth2AuthorizedClientRepository (`HttpSessionOAuth2AuthorizedClientRepository` -- a Spring Security class, registered by CSL by default): stores authorized client state in the HTTP session.
   - OIDC Token Converter (CSL): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only).
-  - OIDC User Converter (CSL): post-processes the OIDC user for the browser login flow. OC overrides it with `ProviderAwareOidcUserAuthenticationConverter` (`authentication/`) to pick the right converter per configured IdP — the OIDC counterpart to `BasicAuthUserDetailsAdapter` on the Basic auth path.
+  - OIDC User Converter (CSL): post-processes the OIDC user for the browser login flow. OC overrides it with `ProviderAwareOidcUserAuthenticationConverter` (`authentication/`) to pick the right converter per configured IdP — the OIDC counterpart to `BasicAuthUserDetailsAdapter` on the Basic auth path. Unlike the other beans in this list it extends a CSL class rather than replacing it, so it is listed among the [callback extension points](#callback-extension-points).
 - Claims Converter (CSL): converts token claims into a `CamundaAuthentication`; group, role, and tenant memberships come from OC's `MembershipPort` implementation.
 - Mapping Rules Processor (CSL): applies mapping rules to IdP claims, yielding roles, groups, tenants, and authorizations. The rules themselves are OC data, loaded via `MappingRuleServices`.
 - Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.

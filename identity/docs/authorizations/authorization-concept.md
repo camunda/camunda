@@ -16,7 +16,7 @@ These are combined into a `RequiredAuthorization` record that represents a singl
 
 ### RequiredAuthorization Record
 
-**Location:** `io.camunda.security.core.auth.RequiredAuthorization` (defined in CSL's `core` module, not its public `api` package). It is named here despite that, because OC's own code constructs it on every check — a rename in CSL breaks our compile, so these docs would have to be revisited regardless. See the [naming convention](../architecture.md#csl-ports-and-ocs-adapters) for CSL types this document does *not* name.
+**Location:** `io.camunda.security.core.auth.RequiredAuthorization` (defined in CSL's `core` module, not its public `api` package). It is named here despite that, because OC's own code constructs it on every check — a rename in CSL breaks our compile, so these docs would have to be revisited regardless. See the [naming convention](../architecture.md#csl-extension-points-and-ocs-adapters) for CSL types this document does *not* name.
 
 The `RequiredAuthorization<T>` record is the central type. The fields OC code actually varies when
 declaring a check:
