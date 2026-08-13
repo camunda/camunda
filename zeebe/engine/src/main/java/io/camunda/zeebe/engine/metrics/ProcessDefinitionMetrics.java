@@ -29,6 +29,7 @@ public final class ProcessDefinitionMetrics {
 
   private final MeterRegistry registry;
   private final AtomicLong totalUniqueProcessIds = new AtomicLong(0);
+  private final AtomicLong drainingProcessDefinitions = new AtomicLong(0);
 
   // processDefinitionKey -> (bpmnProcessId, sizeBytes) — to know what to subtract on deletion
   private final Map<Long, KeyEntry> entriesByKey = new HashMap<>();
@@ -43,12 +44,15 @@ public final class ProcessDefinitionMetrics {
     this.registry = Objects.requireNonNull(registry);
 
     final long startNanos = System.nanoTime();
+    final var drainingCount = new AtomicLong(0);
     processState.forEachProcess(
         null,
         process -> {
           if (process.getState() == PersistedProcessState.ACTIVE) {
             final String bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
             addEntry(process.getKey(), bpmnProcessId, process.getResource().capacity());
+          } else if (process.getState() == PersistedProcessState.DRAINING) {
+            drainingCount.incrementAndGet();
           }
           return true;
         });
@@ -58,10 +62,16 @@ public final class ProcessDefinitionMetrics {
         Duration.ofNanos(System.nanoTime() - startNanos));
 
     totalUniqueProcessIds.set(keysByProcessId.size());
+    drainingProcessDefinitions.set(drainingCount.get());
 
     final var definitionsDoc = EngineMetricsDoc.DEPLOYED_PROCESS_DEFINITIONS;
     Gauge.builder(definitionsDoc.getName(), totalUniqueProcessIds, AtomicLong::get)
         .description(definitionsDoc.getDescription())
+        .register(registry);
+
+    final var drainingDoc = EngineMetricsDoc.DRAINING_PROCESS_DEFINITIONS;
+    Gauge.builder(drainingDoc.getName(), drainingProcessDefinitions, AtomicLong::get)
+        .description(drainingDoc.getDescription())
         .register(registry);
   }
 
@@ -78,11 +88,29 @@ public final class ProcessDefinitionMetrics {
     }
   }
 
+  /** Moves a definition from the deployed count into the draining count. Live processing only. */
+  public void processDefinitionDraining(final long processDefinitionKey) {
+    removeDeployedDefinition(processDefinitionKey);
+    drainingProcessDefinitions.incrementAndGet();
+  }
+
   /**
-   * Records the deletion of a deployed process definition version. Must be called from live event
-   * processing only (not during replay).
+   * Records that a draining process definition finalized its deletion. Must be called from live
+   * event processing only (not during replay).
+   */
+  public void processDefinitionDrainFinalized() {
+    drainingProcessDefinitions.decrementAndGet();
+  }
+
+  /**
+   * Removes a definition deleted outright from the deployed count, without ever entering the
+   * draining count (its last instance was already gone). Live processing only.
    */
   public void processDefinitionDeleted(final long processDefinitionKey) {
+    removeDeployedDefinition(processDefinitionKey);
+  }
+
+  private void removeDeployedDefinition(final long processDefinitionKey) {
     final var entry = entriesByKey.remove(processDefinitionKey);
     if (entry == null) {
       return;

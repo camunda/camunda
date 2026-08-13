@@ -79,10 +79,9 @@ public final class MessageStartEventCorrelateDrainingRejectionTest {
   }
 
   /**
-   * Puts the given process definition into the {@code DRAINING} state. Since no processor writes
-   * the {@code DRAINING} event yet, the event is injected onto the log while the engine is stopped
-   * so it is applied to state on the next start (replay). TODO(#56978): drive draining via a real
-   * {@code RESOURCE_DELETION.DELETE} once that change lands, and remove this injection helper.
+   * Injects a {@code DRAINING} event directly (applied on the next start via replay), bypassing the
+   * deletion processor so the message start-event subscription stays intact. A real deletion cannot
+   * produce this state, since it unsubscribes start events as it drains.
    */
   private void drain(final ProcessMetadataValue metadata) {
     engine.stop();
