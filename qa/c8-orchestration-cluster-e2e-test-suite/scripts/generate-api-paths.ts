@@ -42,8 +42,10 @@ const LICENSE_HEADER = `/*
 const PATH_KEY = /^ {2}(\/[^:\s]*):(?:\s|$)/;
 
 function extractPaths(spec: string): string[] {
-  const lines = spec.split('\n');
-  const start = lines.indexOf('paths:');
+  // `.gitattributes` does not normalise line endings, so a Windows checkout
+  // yields CRLF and every line would carry a trailing `\r`.
+  const lines = spec.split('\n').map((line) => line.replace(/\r$/, ''));
+  const start = lines.findIndex((line) => /^paths:\s*$/.test(line));
   if (start === -1) {
     throw new Error(`No top-level "paths:" block found in ${SPEC_PATH}`);
   }
