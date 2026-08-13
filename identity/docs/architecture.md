@@ -277,12 +277,13 @@ Everything else on CSL's side is referred to by role ("Basic Auth Converter (CSL
 name, so a refactor behind the boundary does not oblige a change here.
 
 Note that "does the name appear in an OC `.java` file" is *not* the test, and would give the wrong
-answer. `AuthorizationChecker` is referenced by 14 non-test OC files and is deliberately absent from
-these docs: OC obtains one from `AuthorizationCheckerFactory.forPhysicalTenant` and hands it straight
-to `DefaultResourceAccessProvider` without ever reading it. It is an opaque handle, not a value OC
-builds — category 2 turns on constructing the value, not on holding the reference. Package location
-does not decide it either: `AuthorizationChecker` sits in `core.authz`, the same package as
-`ResourceAccessProvider` and `TenantAccess`, which are both named here.
+answer. `AuthorizationChecker` is the case to check a proposed name against: it is referenced by 14
+non-test OC files, yet it is used nowhere in these docs to describe the engine or REST check paths —
+those say "the CSL check" instead. OC obtains one from `AuthorizationCheckerFactory.forPhysicalTenant`
+and hands it straight to `DefaultResourceAccessProvider` without ever reading it, so it is an opaque
+handle rather than a value OC builds; category 2 turns on constructing the value, not on holding the
+reference. Package location does not decide it either — `AuthorizationChecker` sits in `core.authz`,
+the same package as `ResourceAccessProvider` and `TenantAccess`, which are both named here.
 
 ##### Callback extension points
 
@@ -817,9 +818,17 @@ sequenceDiagram
 From the Bearer token onwards this is the normal OIDC path from [6.3.1](#631-bearer-token--oidc).
 
 On the OC side, when OC itself authenticates to the IdP token endpoint (authorization code exchange,
-refresh, or an OC-initiated client credentials flow), CSL loads OC's private key and certificate from
-the configured keystore and builds a JSON Web Key including `kid` and `x5t#S256`; Spring Security's
-`NimbusJwtClientAuthenticationParametersConverter` then signs and attaches the `client_assertion`.
+refresh, or an OC-initiated client credentials flow), three parties are involved and it is worth
+keeping them apart:
+
+- **CSL** loads OC's private key and certificate from the configured keystore and builds the JSON Web
+  Key, including `kid` and `x5t#S256`.
+- **OC** wires that key into the token endpoint. `OidcTokenEndpointCustomizer` (`authentication/`)
+  implements CSL's SPI of the same name — it is one of the [callback extension
+  points](#callback-extension-points) — constructs the converter below, and caches the resolved JWK
+  per client registration.
+- **Spring Security's** `NimbusJwtClientAuthenticationParametersConverter` signs the assertion and
+  attaches it to the token request.
 
 #### 6.3.3 Basic Auth
 
