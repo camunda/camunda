@@ -9,6 +9,7 @@
 export * from './element-instance-requestHelpers';
 export * from './decision-version-tag-requestHelpers';
 export * from './resource-requestHelpers';
+export * from './form-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
 export * from './get-value-from-state-requestHelpers';

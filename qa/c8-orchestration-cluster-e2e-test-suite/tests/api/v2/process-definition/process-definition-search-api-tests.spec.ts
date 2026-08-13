@@ -19,6 +19,7 @@ import {
 import {validateResponseShape} from '../../../../json-body-assertions';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {
+  DEFAULT_PAGE_LIMIT,
   defaultAssertionOptions,
   extendedAssertionOptions,
 } from '../../../../utils/constants';
@@ -62,7 +63,11 @@ test.describe.parallel('Process Definition Search API', () => {
       );
       expect(body.page.totalItems).toBeGreaterThan(1);
       expect(body.items.length).toBeGreaterThan(1);
-      expect(body.page.totalItems).toBe(body.items.length);
+      // totalItems counts the whole result set while items holds one page, so
+      // the two only match while the cluster has fewer definitions than the
+      // default page size.
+      expect(body.items.length).toBeLessThanOrEqual(DEFAULT_PAGE_LIMIT);
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(body.items.length);
     }).toPass(defaultAssertionOptions);
   });
 

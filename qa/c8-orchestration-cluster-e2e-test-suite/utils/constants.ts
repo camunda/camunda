@@ -33,6 +33,10 @@ export const createUniqueUser = (customId?: string) => {
   };
 };
 
+// Default `page.limit` applied by the v2 search endpoints when a request does
+// not set one.
+export const DEFAULT_PAGE_LIMIT = 100;
+
 export const defaultAssertionOptions = {
   intervals: [5_000, 10_000, 15_000],
   timeout: 30_000,
