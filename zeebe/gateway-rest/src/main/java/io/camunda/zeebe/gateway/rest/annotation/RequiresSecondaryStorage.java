@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
+import io.camunda.search.connect.configuration.DatabaseType;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,8 +18,15 @@ import java.lang.annotation.Target;
  * Annotation to mark controllers or methods that require secondary storage to be enabled. When
  * secondary storage is not configured (camunda.data.secondary-storage.type=none), endpoints with
  * this annotation will return HTTP 403 Forbidden with a clear error message.
+ *
+ * <p>{@link #value()} narrows this to endpoints that only work on some secondary storages; those
+ * also return HTTP 403 on a physical tenant configured with any other storage.
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface RequiresSecondaryStorage {}
+public @interface RequiresSecondaryStorage {
+
+  /** Secondary storages this endpoint supports. Empty means any configured secondary storage. */
+  DatabaseType[] value() default {};
+}

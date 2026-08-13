@@ -10,13 +10,16 @@ package io.camunda.zeebe.gateway.rest.interceptor;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.exception.SecondaryStorageDegradedException;
+import io.camunda.service.exception.SecondaryStorageTypeNotSupportedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -29,6 +32,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * <ul>
  *   <li>HTTP 403 Forbidden when secondary storage is not configured at all
  *       (camunda.data.secondary-storage.type = none).
+ *   <li>HTTP 403 Forbidden when the endpoint declares the secondary storages it supports and the
+ *       tenant's configured one is not among them.
  *   <li>HTTP 503 Service Unavailable, with a {@code Retry-After} hint, when secondary storage is
  *       configured but the request's physical tenant's secondary storage is currently degraded (see
  *       {@link SecondaryStorageReadiness}).
@@ -57,25 +62,42 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
   public boolean preHandle(
       final HttpServletRequest request, final HttpServletResponse response, final Object handler) {
 
-    if (handler instanceof final HandlerMethod handlerMethod
-        && requiresSecondaryStorage(handlerMethod)) {
-      validateSecondaryStorageReady(request, response);
+    if (handler instanceof final HandlerMethod handlerMethod) {
+      final var annotation = requiresSecondaryStorage(handlerMethod);
+      if (annotation != null) {
+        final String physicalTenantId = PhysicalTenantContext.current();
+        validateSecondaryStorageType(annotation, databaseTypeProvider.apply(physicalTenantId));
+        validateSecondaryStorageReady(request, response, physicalTenantId);
+      }
     }
 
     return true;
   }
 
-  private static boolean requiresSecondaryStorage(final HandlerMethod handlerMethod) {
-    return handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)
-        || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
+  private static @Nullable RequiresSecondaryStorage requiresSecondaryStorage(
+      final HandlerMethod handlerMethod) {
+    final var methodAnnotation = handlerMethod.getMethodAnnotation(RequiresSecondaryStorage.class);
+    return methodAnnotation != null
+        ? methodAnnotation
+        : handlerMethod.getBeanType().getAnnotation(RequiresSecondaryStorage.class);
+  }
+
+  private static void validateSecondaryStorageType(
+      final RequiresSecondaryStorage annotation, final DatabaseType databaseType) {
+    if (databaseType == DatabaseType.NONE) {
+      throw new SecondaryStorageUnavailableException();
+    }
+    final var supported = List.of(annotation.value());
+    if (!supported.isEmpty() && !supported.contains(databaseType)) {
+      throw new SecondaryStorageTypeNotSupportedException(
+          supported.stream().map(DatabaseType::toString).toList(), databaseType.toString());
+    }
   }
 
   private void validateSecondaryStorageReady(
-      final HttpServletRequest request, final HttpServletResponse response) {
-    final String physicalTenantId = PhysicalTenantContext.current();
-    if (databaseTypeProvider.apply(physicalTenantId) == DatabaseType.NONE) {
-      throw new SecondaryStorageUnavailableException();
-    }
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final String physicalTenantId) {
     // Only checked on the initial dispatch: CompletableFuture-returning controllers resume on an
     // ASYNC re-dispatch, at which point the result is already computed and must not be rejected a
     // second time based on the (possibly since-changed) readiness state.

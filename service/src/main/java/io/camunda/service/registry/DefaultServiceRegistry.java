@@ -28,6 +28,7 @@ import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
+import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ManagementServices;
@@ -78,6 +79,7 @@ public record DefaultServiceRegistry(
     Map<String, FormServices> formByTenant,
     Map<String, GlobalListenerServices> globalListenerByTenant,
     Map<String, GroupServices> groupByTenant,
+    Map<String, HistoryBackupServices> historyBackupByTenant,
     Map<String, IncidentServices> incidentByTenant,
     Map<String, JobServices<?>> jobByTenant,
     Map<String, MappingRuleServices> mappingRuleByTenant,
@@ -208,6 +210,11 @@ public record DefaultServiceRegistry(
   @Override
   public GroupServices groupServices(final String physicalTenantId) {
     return byTenant(groupByTenant, physicalTenantId);
+  }
+
+  @Override
+  public HistoryBackupServices historyBackupServices(final String physicalTenantId) {
+    return byTenant(historyBackupByTenant, physicalTenantId);
   }
 
   @Override
@@ -373,6 +380,7 @@ public record DefaultServiceRegistry(
     private final Map<String, FormServices> formByTenant = new HashMap<>();
     private final Map<String, GlobalListenerServices> globalListenerByTenant = new HashMap<>();
     private final Map<String, GroupServices> groupByTenant = new HashMap<>();
+    private final Map<String, HistoryBackupServices> historyBackupByTenant = new HashMap<>();
     private final Map<String, IncidentServices> incidentByTenant = new HashMap<>();
     private final Map<String, JobServices<?>> jobByTenant = new HashMap<>();
     private final Map<String, MappingRuleServices> mappingRuleByTenant = new HashMap<>();
@@ -507,6 +515,12 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder historyBackupServices(
+        final String tenantId, final HistoryBackupServices service) {
+      historyBackupByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder incidentServices(final String tenantId, final IncidentServices service) {
       incidentByTenant.put(tenantId, service);
       return this;
@@ -637,6 +651,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(formByTenant),
           Map.copyOf(globalListenerByTenant),
           Map.copyOf(groupByTenant),
+          Map.copyOf(historyBackupByTenant),
           Map.copyOf(incidentByTenant),
           Map.copyOf(jobByTenant),
           Map.copyOf(mappingRuleByTenant),

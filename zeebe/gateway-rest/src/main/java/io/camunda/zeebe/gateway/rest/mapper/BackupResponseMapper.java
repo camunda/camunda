@@ -11,14 +11,21 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.BackupInfo;
 import io.camunda.gateway.protocol.model.BackupType;
 import io.camunda.gateway.protocol.model.CheckpointType;
+import io.camunda.gateway.protocol.model.HistoryBackupInfo;
+import io.camunda.gateway.protocol.model.HistoryBackupSnapshotInfo;
+import io.camunda.gateway.protocol.model.HistoryBackupStateCode;
 import io.camunda.gateway.protocol.model.PartitionBackupInfo;
 import io.camunda.gateway.protocol.model.PartitionBackupRange;
 import io.camunda.gateway.protocol.model.PartitionBackupState;
 import io.camunda.gateway.protocol.model.PartitionCheckpointState;
 import io.camunda.gateway.protocol.model.RuntimeBackupState;
 import io.camunda.gateway.protocol.model.StateCode;
+import io.camunda.gateway.protocol.model.TakeHistoryBackupResponse;
 import io.camunda.gateway.protocol.model.TakeRuntimeBackupResponse;
 import io.camunda.service.RuntimeBackupServices;
+import io.camunda.service.backup.HistoryBackupSnapshot;
+import io.camunda.service.backup.HistoryBackupState;
+import io.camunda.service.backup.HistoryBackupTaken;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
@@ -212,5 +219,48 @@ public final class BackupResponseMapper {
 
   private static String toDateString(final Instant instant) {
     return ResponseMapper.formatDate(OffsetDateTime.ofInstant(instant, ZoneId.of("UTC")));
+  }
+
+  public static TakeHistoryBackupResponse toTakeHistoryBackupResponse(
+      final HistoryBackupTaken taken) {
+    return TakeHistoryBackupResponse.Builder.create()
+        .backupId(taken.backupId())
+        .scheduledSnapshots(taken.scheduledSnapshots())
+        .build();
+  }
+
+  public static HistoryBackupInfo toHistoryBackupInfo(final HistoryBackupState state) {
+    return HistoryBackupInfo.Builder.create()
+        .backupId(state.backupId())
+        .state(toHistoryBackupStateCode(state.state()))
+        .failureReason(state.failureReason())
+        .details(state.snapshots().stream().map(BackupResponseMapper::toSnapshotInfo).toList())
+        .build();
+  }
+
+  public static List<HistoryBackupInfo> toHistoryBackupInfoList(
+      final List<HistoryBackupState> states) {
+    return states.stream().map(BackupResponseMapper::toHistoryBackupInfo).toList();
+  }
+
+  private static HistoryBackupSnapshotInfo toSnapshotInfo(final HistoryBackupSnapshot snapshot) {
+    return HistoryBackupSnapshotInfo.Builder.create()
+        .snapshotName(snapshot.snapshotName())
+        .state(snapshot.state())
+        .startTime(
+            snapshot.startTime() == null ? null : ResponseMapper.formatDate(snapshot.startTime()))
+        .failures(snapshot.failures())
+        .build();
+  }
+
+  private static HistoryBackupStateCode toHistoryBackupStateCode(
+      final io.camunda.service.backup.HistoryBackupStateCode state) {
+    return switch (state) {
+      case IN_PROGRESS -> HistoryBackupStateCode.IN_PROGRESS;
+      case COMPLETED -> HistoryBackupStateCode.COMPLETED;
+      case FAILED -> HistoryBackupStateCode.FAILED;
+      case INCOMPLETE -> HistoryBackupStateCode.INCOMPLETE;
+      case INCOMPATIBLE -> HistoryBackupStateCode.INCOMPATIBLE;
+    };
   }
 }

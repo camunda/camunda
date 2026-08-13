@@ -419,6 +419,7 @@ class CamundaServicesConfigurationTest {
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),
         readinessProvider(),
+        mock(ObjectProvider.class),
         new ApiServicesExecutorProvider(Executors.newSingleThreadExecutor()),
         secretStoreRegistries);
   }

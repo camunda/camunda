@@ -63,10 +63,16 @@ class SecondaryStorageInterceptorConfigurationTest {
     return request;
   }
 
-  private static HandlerMethod requiresSecondaryStorageHandler() {
-    final var handlerMethod = mock(HandlerMethod.class);
-    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
-    return handlerMethod;
+  private static HandlerMethod requiresSecondaryStorageHandler() throws NoSuchMethodException {
+    final var controller = new SecondaryStorageEndpoint();
+    return new HandlerMethod(controller, controller.getClass().getMethod("handle"));
+  }
+
+  @RequiresSecondaryStorage
+  static class SecondaryStorageEndpoint {
+    public String handle() {
+      return "ok";
+    }
   }
 
   @Configuration
@@ -87,7 +93,7 @@ class SecondaryStorageInterceptorConfigurationTest {
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
   class WithMatchingLegacyAndUnifiedRdbmsType {
     @Test
-    void shouldAllowRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() {
+    void shouldAllowRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() throws Exception {
       final boolean result =
           secondaryStorageInterceptor.preHandle(
               requestDispatch(),
@@ -102,7 +108,7 @@ class SecondaryStorageInterceptorConfigurationTest {
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=none"})
   class WithMatchingLegacyAndUnifiedNoneType {
     @Test
-    void shouldRejectRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() {
+    void shouldRejectRequestsRequiringSecondaryStorageWhenBothPropertiesAgree() throws Exception {
       assertThatThrownBy(
               () ->
                   secondaryStorageInterceptor.preHandle(
@@ -117,7 +123,7 @@ class SecondaryStorageInterceptorConfigurationTest {
   @TestPropertySource(properties = "camunda.database.type=elasticsearch")
   class WithOnlyLegacySetMatchingUnifiedDefault {
     @Test
-    void shouldAllowRequestsRequiringSecondaryStorage() {
+    void shouldAllowRequestsRequiringSecondaryStorage() throws Exception {
       final boolean result =
           secondaryStorageInterceptor.preHandle(
               requestDispatch(),

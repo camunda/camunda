@@ -151,6 +151,11 @@ public class BackupServiceRegistryConfiguration {
     return new BackupServiceRegistry(backups);
   }
 
+  @Bean
+  public RegistryHistoryBackupApi registryHistoryBackupApi(final BackupServiceRegistry registry) {
+    return new RegistryHistoryBackupApi(registry);
+  }
+
   private static BackupRepository backupRepository(
       final String physicalTenantId,
       final SearchClients searchClients,

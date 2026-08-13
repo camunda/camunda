@@ -88,7 +88,7 @@ public class BackupServiceImpl implements BackupService {
     // NOTE: The following checks are non-locking on purpose to be quick.
 
     if (!requestsQueue.isEmpty()) {
-      throw new InvalidRequestException(ANOTHER_BACKUP_RUNS_MSG);
+      throw new BackupAlreadyRunningException(ANOTHER_BACKUP_RUNS_MSG);
     }
 
     if (!request.isSkipSchemaCheck()) {
@@ -101,7 +101,7 @@ public class BackupServiceImpl implements BackupService {
 
     synchronized (requestsQueue) {
       if (!requestsQueue.isEmpty()) {
-        throw new InvalidRequestException(ANOTHER_BACKUP_RUNS_MSG);
+        throw new BackupAlreadyRunningException(ANOTHER_BACKUP_RUNS_MSG);
       }
 
       return scheduleSnapshots(request);

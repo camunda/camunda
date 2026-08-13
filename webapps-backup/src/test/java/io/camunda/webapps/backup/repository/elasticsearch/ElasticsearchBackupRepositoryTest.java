@@ -34,7 +34,9 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.util.ObjectBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
@@ -56,6 +58,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -298,6 +301,30 @@ public class ElasticsearchBackupRepositoryTest {
       ctx.updateLoggers();
       appender.stop();
     }
+  }
+
+  @Test
+  void shouldRejectADuplicateBackupId() throws IOException {
+    // given a snapshot already exists for the requested backup id
+    final var existingSnapshot = mock(SnapshotInfo.class);
+    when(existingSnapshot.snapshot()).thenReturn(snapshotName);
+    final var snapshotResponse = mock(GetSnapshotResponse.class);
+    when(snapshotResponse.snapshots()).thenReturn(List.of(existingSnapshot));
+    // validateNoDuplicateBackupId builds its request with a lambda, so the Function overload is the
+    // one that has to be stubbed here — not the GetSnapshotRequest one the other tests use.
+    when(esClient
+            .snapshot()
+            .get(
+                ArgumentMatchers
+                    .<Function<GetSnapshotRequest.Builder, ObjectBuilder<GetSnapshotRequest>>>
+                        any()))
+        .thenReturn(snapshotResponse);
+
+    // when / then
+    assertThatExceptionOfType(DuplicateBackupIdException.class)
+        .isThrownBy(() -> backupRepository.validateNoDuplicateBackupId(repositoryName, backupId))
+        .withMessage(
+            "A backup with ID [%d] already exists. Found snapshots: [%s]", backupId, snapshotName);
   }
 
   @Test

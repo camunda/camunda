@@ -44,6 +44,7 @@ import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
+import io.camunda.service.HistoryBackupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ManagementServices;
@@ -64,6 +65,7 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.backup.HistoryBackupApi;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
@@ -141,6 +143,7 @@ public class CamundaServicesConfiguration {
       final Environment environment,
       final ManagementServices managementServices,
       final ObjectProvider<SecondaryStorageReadiness> secondaryStorageReadiness,
+      final ObjectProvider<HistoryBackupApi> historyBackupApi,
       final ApiServicesExecutorProvider executor,
       final SecretStoreRegistries secretStoreRegistries) {
 
@@ -513,6 +516,17 @@ public class CamundaServicesConfiguration {
                           converter))
                   .userTaskServices(tenantId, userTask)
                   .variableServices(tenantId, variable);
+
+              historyBackupApi.ifAvailable(
+                  historyBackup ->
+                      builder.historyBackupServices(
+                          tenantId,
+                          new HistoryBackupServices(
+                              tenantId,
+                              historyBackup,
+                              authorizationChecker,
+                              tenantSecurity.getAuthorizations(),
+                              executor)));
             });
 
     // The readiness bean must be resolved lazily, not injected directly: on Elasticsearch and
