@@ -23,6 +23,7 @@ import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -427,6 +428,49 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                             .processDefinitionVersionOperations(List.of(Operation.eq(1)))
                             .versionTagOperations(List.of(Operation.eq("v1")))
                             .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSortAgentInstancesByAgentDefinitionKey() {
+    // given
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(AGENT_INSTANCE_ENTITY))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [
+                { "field": "agentDefinitionKey", "order": "ASC" }
+              ]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(agentInstanceServices)
+        .search(
+            eq(
+                new AgentInstanceQuery.Builder()
+                    .sort(AgentInstanceSort.of(s -> s.agentDefinitionKey().asc()))
                     .build()),
             any());
   }
