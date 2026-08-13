@@ -172,7 +172,9 @@ Hash-based deterministic sampling in `OtelSdkManager.logEvent()`. See `docs/samp
 
 - **Unit tests** (`AnalyticsExporterTest`) — handler routing, attributes, config validation, error resilience
 - **SDK tests** (`OtelSdkManagerTest`) — OTel pipeline contract: non-blocking queue, failure recovery
-- **Integration tests** (`AnalyticsExporterOtelIT`) — real OTel Collector in Docker, end-to-end
+- **Metric pipeline test** (`MetricExportPipelineTest`) — production `OtelSdkManager` against an in-JVM HTTP server, asserting the metric OTLP POST reaches `/v1/metrics` independent of any business counter (a synthetic counter name, so dropping a real counter cannot silently delete this coverage)
+- **Integration tests** (`AnalyticsExporterOtelIT`) — real OTel Collector in Docker, end-to-end. Developer-run only: this module is not in any CI IT group, so this suite is not CI-gated
 - **Benchmarks** (`AnalyticsExporterBenchmark`, `HashSamplerBenchmark`) — JMH, manual only, not in CI
 
-Always run unit + integration tests before submitting changes to this module.
+The surefire tests above (unit, SDK, metric pipeline) run in CI. Run `AnalyticsExporterOtelIT`
+locally with Docker before submitting changes that touch the OTLP transport or collector wiring.
