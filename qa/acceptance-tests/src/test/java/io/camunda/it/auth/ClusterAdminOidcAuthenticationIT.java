@@ -118,7 +118,7 @@ public class ClusterAdminOidcAuthenticationIT {
     // when — a valid token whose client id (azp) matches the configured cluster-admin client
     final HttpResponse<String> response = get(clusterUri(), bearer(accessToken(CLIENT_BY_ID)));
 
-    // then — a real aggregated body, not the placeholder's empty 200
+    // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     final JsonNode body = JSON.readTree(response.body());
     assertThat(body.get("physicalTenants"))
