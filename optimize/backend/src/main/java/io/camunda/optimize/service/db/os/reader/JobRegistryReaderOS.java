@@ -64,4 +64,36 @@ public class JobRegistryReaderOS extends JobRegistryReader {
     }
     return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
   }
+
+  @Override
+  protected Optional<JobRegistryEntryDto> performFindByJobTypeAndTargetEntityId(
+      final JobType jobType, final String targetEntityId) {
+    final BoolQuery boolQuery =
+        new BoolQuery.Builder()
+            .must(QueryDSL.term(JobRegistryIndex.JOB_TYPE, jobType.name()))
+            .must(QueryDSL.term(JobRegistryIndex.TARGET_ENTITY_ID, targetEntityId))
+            .build();
+
+    final SearchRequest.Builder searchReqBuilder =
+        new SearchRequest.Builder()
+            .index(JOB_REGISTRY_INDEX_NAME)
+            .size(1)
+            .query(boolQuery.toQuery())
+            .sort(
+                new SortOptions.Builder()
+                    .field(f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Desc))
+                    .build());
+
+    final String errorMessage =
+        String.format(
+            "Was not able to fetch job registry entry for [%s] target [%s].",
+            jobType, targetEntityId);
+    final SearchResponse<JobRegistryEntryDto> searchResponse =
+        osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
+
+    if (searchResponse.hits().hits().isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
+  }
 }
