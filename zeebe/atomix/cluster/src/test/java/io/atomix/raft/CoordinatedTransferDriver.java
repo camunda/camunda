@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 
 /** Drives a coordinated leadership transfer the way a coordinator would. */
 final class CoordinatedTransferDriver {
+  /** For tests we don't install a real coordinator check, so any version will do. */
+  private static final long CONFIG_VERSION = 7;
 
   private final RaftRule raftRule;
   private final RaftServer leader;
@@ -92,7 +94,7 @@ final class CoordinatedTransferDriver {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(memberId(desiredLeader))
             .withCoordinator(coordinatorId)
-            .withCoordinatorConfigIndex(leader.getContext().getCluster().getConfiguration().index())
+            .withCoordinatorConfigVersion(CONFIG_VERSION)
             .withCorrelationId(nextCorrelationId++);
     overrides.accept(builder);
     return leader

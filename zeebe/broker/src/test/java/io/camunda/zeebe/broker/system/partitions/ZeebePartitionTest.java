@@ -77,7 +77,10 @@ public class ZeebePartitionTest {
     final var partitionId = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 0);
     when(raft.id()).thenReturn(partitionId);
     when(raft.getRole()).thenReturn(Role.INACTIVE);
-    when(raft.getServer()).thenReturn(mock(RaftPartitionServer.class));
+    final var raftPartitionServer = mock(RaftPartitionServer.class);
+    when(raftPartitionServer.setLeadershipTransferCoordinatorCheck(any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(raft.getServer()).thenReturn(raftPartitionServer);
 
     healthMonitor = mock(CriticalComponentsHealthMonitor.class);
 
