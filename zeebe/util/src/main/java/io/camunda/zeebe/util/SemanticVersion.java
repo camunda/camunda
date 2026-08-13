@@ -58,6 +58,10 @@ public record SemanticVersion(
     return preRelease != null;
   }
 
+  public String toMinorVersionString() {
+    return major + "." + minor;
+  }
+
   public static Optional<SemanticVersion> parse(final @Nullable String version) {
     if (version == null) {
       return Optional.empty();

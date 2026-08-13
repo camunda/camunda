@@ -290,6 +290,29 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     return future;
   }
 
+  @Override
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    final ActorFuture<PartitionMigrationStatus> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> {
+          final var exporterDirector = adminControl.getExporterDirector();
+          if (exporterDirector == null) {
+            future.complete(
+                new PartitionMigrationStatus(
+                    MigrationStatusCode.UNKNOWN,
+                    "partition "
+                        + partitionId
+                        + ": no exporter director running on this replica"
+                        + " yet"));
+            return;
+          }
+          exporterDirector.getExportingMigrationStatus().onComplete(future);
+        });
+
+    return future;
+  }
+
   /**
    * Opens a second transaction on the already-open, live {@code ZeebeDb} to read {@code
    * DbMigrationState.getMigratedByVersion()} without disturbing the stream processor's own state —
@@ -315,16 +338,17 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     // read-only status check never disagrees with the engine's own compatibility decision.
     final var result = VersionCompatibilityCheck.check(migratedByVersion, VersionUtil.getVersion());
     return switch (result) {
-      case Compatible.SameVersion same -> migratedAndSnapshotted(same.version().toString());
-      case Compatible.PatchUpgrade patch ->
-          notYetMigrated(patch.from().toString(), patch.to().toString());
-      case Compatible.MinorUpgrade minor ->
-          notYetMigrated(minor.from().toString(), minor.to().toString());
-      case Incompatible incompatible ->
+      case final Compatible.SameVersion same ->
+          migratedAndSnapshotted(same.version().toMinorVersionString());
+      case final Compatible.PatchUpgrade patch ->
+          migratedAndSnapshotted(patch.to().toMinorVersionString());
+      case final Compatible.MinorUpgrade minor ->
+          notYetMigrated(minor.from().toMinorVersionString(), minor.to().toMinorVersionString());
+      case final Incompatible incompatible ->
           new PartitionMigrationStatus(
               MigrationStatusCode.UNKNOWN,
               "partition " + partitionId + ": incompatible migration path: " + incompatible);
-      case Indeterminate indeterminate ->
+      case final Indeterminate indeterminate ->
           new PartitionMigrationStatus(
               MigrationStatusCode.UNKNOWN,
               "partition "

@@ -64,4 +64,15 @@ public interface PartitionAdminAccess {
    * ask every replica to be sure a fail-over cannot promote an unmigrated one.
    */
   ActorFuture<PartitionMigrationStatus> getMigrationStatus();
+
+  /**
+   * Whether every exporter on this replica has finished exporting and acknowledging every record
+   * written under a previous application version, for the upgrade-readiness endpoint
+   * (camunda/product-hub#3067). Unlike {@link #getMigrationStatus()}, exporting genuinely only runs
+   * on the partition leader; a follower answers from its own mirrored exporter positions, which can
+   * only lag the leader's, never diverge from or run ahead of them, so a caller only needs one
+   * reachable replica per partition (preferring the leader) to get a confident, never
+   * falsely-optimistic answer.
+   */
+  ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus();
 }

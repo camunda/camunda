@@ -81,6 +81,8 @@ public class AdminApiRequestHandler
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
       case GET_EXPORTING_STATE -> getExportingState(responseWriter, partitionId, errorWriter);
       case GET_MIGRATION_STATUS -> getMigrationStatus(responseWriter, partitionId, errorWriter);
+      case GET_EXPORTING_MIGRATION_STATUS ->
+          getExportingMigrationStatus(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
   }
@@ -208,6 +210,43 @@ public class AdminApiRequestHandler
                     Either.left(
                         errorWriter.internalError(
                             "Failed to get the migration status on partition %s", partitionId)));
+              }
+            });
+
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getExportingMigrationStatus(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Partition %s failed to report its exporting migration status. Could not find"
+                      + " the partition.",
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
+        .getExportingMigrationStatus()
+        .onComplete(
+            (status, t) -> {
+              if (t == null) {
+                responseWriter.setPayload(MigrationStatusPayload.encode(status));
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error(
+                    "Failed to get the exporting migration status on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to get the exporting migration status on partition %s",
+                            partitionId)));
               }
             });
 
