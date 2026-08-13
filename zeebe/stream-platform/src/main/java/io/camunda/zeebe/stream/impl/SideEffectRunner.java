@@ -96,9 +96,19 @@ final class SideEffectRunner implements CommittedPositionListener {
   }
 
   private void executeSideEffects(final SideEffects sideEffects) {
-    sendResponses(sideEffects.responses());
-    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
-      sideEffects.postCommitTask().flush();
+    try {
+      sendResponses(sideEffects.responses());
+      try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+        sideEffects.postCommitTask().flush();
+      }
+    } catch (final Exception e) {
+      // Side effects are best-effort: an exception escaping here would be an uncaught failure in an
+      // actor job, which fails the whole stream processor. It would also leave the queue stuck on
+      // this entry forever, so no later side effect would ever run either.
+      LOG.error(
+          "Expected to execute side effects for processing result at position '{}' successfully, but exception was thrown.",
+          sideEffects.position(),
+          e);
     }
     completeSideEffects(sideEffects);
   }
@@ -113,18 +123,28 @@ final class SideEffectRunner implements CommittedPositionListener {
 
   private void sendResponses(final Collection<ProcessingResponse> responses) {
     for (final var processingResponse : responses) {
-      final var responseValue = processingResponse.responseValue();
-      final var recordMetadata = responseValue.recordMetadata();
-      responseWriter
-          .intent(recordMetadata.getIntent())
-          .key(responseValue.key())
-          .recordType(recordMetadata.getRecordType())
-          .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-          .rejectionType(recordMetadata.getRejectionType())
-          .partitionId(partitionId)
-          .valueType(recordMetadata.getValueType())
-          .valueWriter(responseValue.recordValue())
-          .tryWriteResponse(processingResponse.requestStreamId(), processingResponse.requestId());
+      // Isolated per response, like the post-commit tasks: one client that cannot be answered must
+      // not cost the others their response.
+      try {
+        final var responseValue = processingResponse.responseValue();
+        final var recordMetadata = responseValue.recordMetadata();
+        responseWriter
+            .intent(recordMetadata.getIntent())
+            .key(responseValue.key())
+            .recordType(recordMetadata.getRecordType())
+            .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+            .rejectionType(recordMetadata.getRejectionType())
+            .partitionId(partitionId)
+            .valueType(recordMetadata.getValueType())
+            .valueWriter(responseValue.recordValue())
+            .tryWriteResponse(processingResponse.requestStreamId(), processingResponse.requestId());
+      } catch (final Exception e) {
+        LOG.error(
+            "Expected to send response for request '{}' on stream '{}', but exception was thrown.",
+            processingResponse.requestId(),
+            processingResponse.requestStreamId(),
+            e);
+      }
     }
   }
 
