@@ -465,6 +465,12 @@ public class BpmnCompensationSubscriptionBehaviour {
    * interrupting event subprocess in its flow scope. The compensation is aborted together with the
    * throw event; leaving the subscriptions behind would block the completion of their flow scope
    * and of any later compensation that sweeps that scope.
+   *
+   * <p>Deleting unconditionally is safe only because a compensation throw event cannot be
+   * terminated on its own today: it always goes down together with its flow scope, taking any
+   * activated compensation handlers with it. If a future change allowed a compensation throw event
+   * to be interrupted by itself (e.g. a boundary event on it), a still-running handler's completion
+   * would be silently stranded instead of blocked, since its subscription would already be gone.
    */
   public void deleteSubscriptionsOfCompensationThrowEvent(final BpmnElementContext context) {
     compensationSubscriptionState
