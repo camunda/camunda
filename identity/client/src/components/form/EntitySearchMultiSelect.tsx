@@ -10,14 +10,17 @@ import { useCallback } from "react";
 import { Tag } from "@carbon/react";
 import styled from "styled-components";
 import useTranslate from "src/utility/localization";
-import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
+import EntitySearchDropdown, {
+  type EntitySearchQuery,
+} from "src/components/form/EntitySearchDropdown";
 
 const SelectedEntities = styled.div`
   margin-top: 0;
 `;
 
-type EntitySearchMultiSelectProps<Entity> = {
-  searchDropdown: EntitySearchDropdown<Entity>;
+type EntitySearchMultiSelectProps<Entity extends Record<string, unknown>> = {
+  search: (search: string) => EntitySearchQuery<Entity>;
+  itemSubTitle?: (entity: Entity) => string;
   getId: (entity: Entity) => string;
   value: Entity[];
   onChange: (entities: Entity[]) => void;
@@ -27,8 +30,9 @@ type EntitySearchMultiSelectProps<Entity> = {
   autoFocus?: boolean;
 };
 
-const EntitySearchMultiSelect = <Entity,>({
-  searchDropdown: SearchDropdown,
+const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
+  search,
+  itemSubTitle,
   getId,
   value,
   onChange,
@@ -71,7 +75,10 @@ const EntitySearchMultiSelect = <Entity,>({
           ))}
         </SelectedEntities>
       )}
-      <SearchDropdown
+      <EntitySearchDropdown
+        search={search}
+        itemTitle={getId}
+        itemSubTitle={itemSubTitle}
         autoFocus={autoFocus}
         placeholder={placeholder}
         onSelect={handleSelect}
