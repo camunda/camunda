@@ -61,8 +61,8 @@ public class CamundaManagementClientPurgeTest {
       "{"
           + HEALTHY_BROKERS
           + ", \"physicalTenants\": ["
-          + "  {\"id\": \"tenant-a\", \"routing\": {\"version\": 1}},"
-          + "  {\"id\": \"tenant-b\", \"routing\": {\"version\": 1}}"
+          + "  {\"id\": \"tenanta\", \"routing\": {\"version\": 1}},"
+          + "  {\"id\": \"tenantb\", \"routing\": {\"version\": 1}}"
           + "]}";
 
   /** The same response, but naming no physical tenant to scope a follow-up request to. */
@@ -80,7 +80,7 @@ public class CamundaManagementClientPurgeTest {
     // given
     stubPurge();
     stubUnscopedTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
-    stubScopedTopology("tenant-a", scopedTopology(CHANGE_ID));
+    stubScopedTopology("tenanta", scopedTopology(CHANGE_ID));
 
     // when
     assertThatCode(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
@@ -89,7 +89,7 @@ public class CamundaManagementClientPurgeTest {
     // then
     MANAGEMENT_API.verify(
         getRequestedFor(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenant-a")));
+            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenanta")));
   }
 
   @Test
@@ -97,7 +97,7 @@ public class CamundaManagementClientPurgeTest {
     // given
     stubPurge();
     stubUnscopedTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
-    stubScopedTopology("tenant-a", scopedTopology(CHANGE_ID - 1));
+    stubScopedTopology("tenanta", scopedTopology(CHANGE_ID - 1));
 
     // when
     assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(1)))
@@ -107,7 +107,7 @@ public class CamundaManagementClientPurgeTest {
     // completed
     MANAGEMENT_API.verify(
         getRequestedFor(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenant-a")));
+            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenanta")));
   }
 
   @Test
@@ -169,7 +169,7 @@ public class CamundaManagementClientPurgeTest {
         + HEALTHY_BROKERS
         + ", "
         + lastChange(lastChangeId)
-        + ", \"physicalTenants\": [{\"id\": \"tenant-a\", \"routing\": {\"version\": 1}}]}";
+        + ", \"physicalTenants\": [{\"id\": \"tenanta\", \"routing\": {\"version\": 1}}]}";
   }
 
   /** A response of a cluster that has a single physical tenant, which predates physical tenants. */

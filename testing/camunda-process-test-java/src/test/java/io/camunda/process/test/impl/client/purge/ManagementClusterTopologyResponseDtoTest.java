@@ -139,7 +139,7 @@ public class ManagementClusterTopologyResponseDtoTest {
       throws IOException {
     // given
     final ManagementClusterTopologyResponseDto topology =
-        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenant-a") + "}");
+        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenanta") + "}");
 
     // when
     final ChangeCompletion completion = topology.getChangeCompletion(CHANGE_ID);
@@ -159,7 +159,7 @@ public class ManagementClusterTopologyResponseDtoTest {
                 + ", "
                 + lastChange(CHANGE_ID)
                 + ", "
-                + physicalTenants("tenant-a")
+                + physicalTenants("tenanta")
                 + "}");
 
     // when
@@ -173,7 +173,7 @@ public class ManagementClusterTopologyResponseDtoTest {
   void shouldReportNotReportedWhenTheResponseCoversMultiplePhysicalTenants() throws IOException {
     // given a response that omits lastChange because it covers more than one physical tenant
     final ManagementClusterTopologyResponseDto topology =
-        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenant-a", "tenant-b") + "}");
+        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenanta", "tenantb") + "}");
 
     // when
     final ChangeCompletion completion = topology.getChangeCompletion(CHANGE_ID);
@@ -186,13 +186,13 @@ public class ManagementClusterTopologyResponseDtoTest {
   void shouldReadAPhysicalTenantToScopeTo() throws IOException {
     // given
     final ManagementClusterTopologyResponseDto topology =
-        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenant-a", "tenant-b") + "}");
+        parse("{" + HEALTHY_BROKERS + ", " + physicalTenants("tenanta", "tenantb") + "}");
 
     // when
     final String physicalTenantId = topology.getFirstPhysicalTenantId();
 
     // then
-    assertThat(physicalTenantId).isEqualTo("tenant-a");
+    assertThat(physicalTenantId).isEqualTo("tenanta");
   }
 
   @Test
