@@ -8,6 +8,7 @@
 package io.camunda.service.registry;
 
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentDefinitionServices;
 import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
@@ -59,6 +60,7 @@ import java.util.function.Consumer;
  */
 public record DefaultServiceRegistry(
     Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant,
+    Map<String, AgentDefinitionServices> agentDefinitionByTenant,
     Map<String, AgentHistoryServices> agentHistoryByTenant,
     Map<String, AgentInstanceServices> agentInstanceByTenant,
     Map<String, AuditLogServices> auditLogByTenant,
@@ -113,6 +115,11 @@ public record DefaultServiceRegistry(
   public AdHocSubProcessActivityServices adHocSubProcessActivityServices(
       final String physicalTenantId) {
     return byTenant(adHocSubProcessActivityByTenant, physicalTenantId);
+  }
+
+  @Override
+  public AgentDefinitionServices agentDefinitionServices(final String physicalTenantId) {
+    return byTenant(agentDefinitionByTenant, physicalTenantId);
   }
 
   @Override
@@ -352,6 +359,7 @@ public record DefaultServiceRegistry(
 
     private final Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant =
         new HashMap<>();
+    private final Map<String, AgentDefinitionServices> agentDefinitionByTenant = new HashMap<>();
     private final Map<String, AgentHistoryServices> agentHistoryByTenant = new HashMap<>();
     private final Map<String, AgentInstanceServices> agentInstanceByTenant = new HashMap<>();
     private final Map<String, AuditLogServices> auditLogByTenant = new HashMap<>();
@@ -400,6 +408,12 @@ public record DefaultServiceRegistry(
     public Builder adHocSubProcessActivityServices(
         final String tenantId, final AdHocSubProcessActivityServices service) {
       adHocSubProcessActivityByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder agentDefinitionServices(
+        final String tenantId, final AgentDefinitionServices service) {
+      agentDefinitionByTenant.put(tenantId, service);
       return this;
     }
 
@@ -618,6 +632,7 @@ public record DefaultServiceRegistry(
     public DefaultServiceRegistry build() {
       return new DefaultServiceRegistry(
           Map.copyOf(adHocSubProcessActivityByTenant),
+          Map.copyOf(agentDefinitionByTenant),
           Map.copyOf(agentHistoryByTenant),
           Map.copyOf(agentInstanceByTenant),
           Map.copyOf(auditLogByTenant),

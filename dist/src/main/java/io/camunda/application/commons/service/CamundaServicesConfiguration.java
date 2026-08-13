@@ -23,6 +23,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentDefinitionServices;
 import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -262,6 +263,15 @@ public class CamundaServicesConfiguration {
                       tenantId,
                       new AdHocSubProcessActivityServices(
                           tenantId, brokerClient, securityContextProvider, executor, converter))
+                  .agentDefinitionServices(
+                      tenantId,
+                      new AgentDefinitionServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .agentHistoryServices(
                       tenantId,
                       new AgentHistoryServices(
