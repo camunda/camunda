@@ -21,6 +21,12 @@ function useSessionHeartbeat({enabled = true, url, intervalMs, ...perRequestOpti
 	 */
 	const perRequestOptionsRef = useRef(perRequestOptions);
 
+	/*
+	 * Deliberately no deps array: this must run after every render to keep the ref
+	 * current. Passing [perRequestOptions] would behave identically -- rest
+	 * destructuring builds a new object each render -- while implying a
+	 * memoization that does not exist.
+	 */
 	useEffect(() => {
 		perRequestOptionsRef.current = perRequestOptions;
 	});
