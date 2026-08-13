@@ -13,7 +13,9 @@ import EntitySearchDropdown, {
   type EntitySearchQuery,
 } from "src/components/form/EntitySearchDropdown";
 
-type EntitySearchSingleSelectProps<Entity extends Record<string, unknown>> = {
+type AbstractEntitySearchSingleSelectProps<
+  Entity extends Record<string, unknown>,
+> = {
   search: (search: string) => EntitySearchQuery<Entity>;
   itemSubTitle?: (entity: Entity) => string;
   getId: (entity: Entity) => string;
@@ -27,6 +29,18 @@ type EntitySearchSingleSelectProps<Entity extends Record<string, unknown>> = {
   isEmpty?: boolean;
 };
 
+/**
+ * Public props for a concrete per-entity single-select (e.g. UserSingleSelect):
+ * everything technical (search, getId, itemToString, itemSubTitle, errorTitle)
+ * is bound by the concrete implementation, leaving only the business props.
+ */
+export type EntitySearchSingleSelectProps<
+  Entity extends Record<string, unknown>,
+> = Omit<
+  AbstractEntitySearchSingleSelectProps<Entity>,
+  "search" | "getId" | "itemToString" | "itemSubTitle" | "errorTitle"
+>;
+
 const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   search,
   itemSubTitle,
@@ -39,7 +53,7 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   onChange,
   value,
   isEmpty = false,
-}: EntitySearchSingleSelectProps<Entity>) => {
+}: AbstractEntitySearchSingleSelectProps<Entity>) => {
   const { t } = useTranslate();
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
 

@@ -8,8 +8,12 @@
 
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
-import EntitySearchMultiSelect from "src/components/form/EntitySearchMultiSelect";
-import EntitySearchSingleSelect from "src/components/form/EntitySearchSingleSelect";
+import EntitySearchMultiSelect, {
+  type EntitySearchMultiSelectProps,
+} from "src/components/form/EntitySearchMultiSelect";
+import EntitySearchSingleSelect, {
+  type EntitySearchSingleSelectProps,
+} from "src/components/form/EntitySearchSingleSelect";
 import { roleQueries } from "src/utility/api/roles/queries";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -19,14 +23,9 @@ const itemSubTitle = (role: Role) => role.name;
 const search = (search: string) =>
   roleQueries.search(search === "" ? {} : { filter: { name: search } });
 
-type RoleMultiSelectProps = {
-  value: Role[];
-  onChange: (roles: Role[]) => void;
-  excluded?: Role[];
-  autoFocus?: boolean;
-};
-
-export const RoleMultiSelect: FC<RoleMultiSelectProps> = (props) => {
+export const RoleMultiSelect: FC<EntitySearchMultiSelectProps<Role>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchMultiSelect
@@ -40,16 +39,9 @@ export const RoleMultiSelect: FC<RoleMultiSelectProps> = (props) => {
   );
 };
 
-type RoleSingleSelectProps = {
-  label: string;
-  placeholder: string;
-  requiredText: string;
-  onChange: (roleId: string) => void;
-  value?: string;
-  isEmpty?: boolean;
-};
-
-export const RoleSingleSelect: FC<RoleSingleSelectProps> = (props) => {
+export const RoleSingleSelect: FC<EntitySearchSingleSelectProps<Role>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchSingleSelect
