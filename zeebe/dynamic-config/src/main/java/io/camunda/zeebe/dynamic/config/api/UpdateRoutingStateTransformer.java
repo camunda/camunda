@@ -7,21 +7,43 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Writes the routing state, either for a single physical tenant or, when none is given, for the
+ * default physical tenant. Unlike the other per-tenant requests, an absent {@code physicalTenantId}
+ * does not mean "every tenant" here: it keeps the pre-existing behaviour of writing only the
+ * default group, so unscoped callers see no change once physical tenants exist.
+ */
 public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest {
 
   private final Optional<RoutingState> routingState;
+  private final Optional<String> physicalTenantId;
 
   public UpdateRoutingStateTransformer(final Optional<RoutingState> routingState) {
+    this(routingState, Optional.empty());
+  }
+
+  public UpdateRoutingStateTransformer(
+      final Optional<RoutingState> routingState, final Optional<String> physicalTenantId) {
     this.routingState = routingState;
+    this.physicalTenantId = physicalTenantId;
   }
 
   @Override
@@ -31,5 +53,50 @@ public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest
         ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
     final var coordinator = coordinatorSupplier.getDefaultCoordinator();
     return Either.right(List.of(new UpdateRoutingState(coordinator, routingState)));
+  }
+
+  @Override
+  public Either<Exception, List<Phase>> phases(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    if (physicalTenantId.isPresent()
+        && !clusterConfiguration.hasPartitionGroup(physicalTenantId.get())) {
+      return Either.left(
+          new NotFound(
+              "Expected to update the routing state of physical tenant '%s', but there's no such tenant"
+                  .formatted(physicalTenantId.get())));
+    }
+
+    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+    final var group =
+        Objects.requireNonNull(
+            clusterConfiguration.partitionGroup(groupId),
+            () -> "Expected partition group '%s' to exist".formatted(groupId));
+    final var memberId = lowestMemberWithPartitions(group, groupId);
+
+    return Either.right(
+        List.of(
+            new PartitionGroupParallelPhase(
+                Map.of(groupId, List.of(new UpdateRoutingState(memberId, routingState))))));
+  }
+
+  /**
+   * The lowest member id, among the members of {@code group} that hold at least one partition,
+   * mirroring {@link ModeChangeRequestTransformer#membersToTransition}. The applier is registered
+   * per group on the members that actually replicate it (see {@code
+   * ClusterConfigurationManagerImpl#applyPartitionGroupConfigurationChangeOperation}, which
+   * dispatches via {@code group.pendingChangesFor(localMemberId)}), so a member with no partitions
+   * in the group would never pick up the operation and the change would stall.
+   */
+  private MemberId lowestMemberWithPartitions(
+      final PartitionGroupConfiguration group, final String groupId) {
+    return group.members().entrySet().stream()
+        .filter(member -> !member.getValue().partitions().isEmpty())
+        .map(Entry::getKey)
+        .min(MemberId.ID_COMPARATOR)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Cannot update the routing state of physical tenant '%s': none of its members hold any partitions"
+                        .formatted(groupId)));
   }
 }

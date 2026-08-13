@@ -174,7 +174,9 @@ public final class ClusterConfigurationManagementRequestsHandler
       final UpdateRoutingStateRequest updateRoutingStateRequest) {
     return handleRequest(
         updateRoutingStateRequest.dryRun(),
-        new UpdateRoutingStateTransformer(updateRoutingStateRequest.routingState()));
+        new UpdateRoutingStateTransformer(
+            updateRoutingStateRequest.routingState(),
+            updateRoutingStateRequest.physicalTenantId()));
   }
 
   @Override

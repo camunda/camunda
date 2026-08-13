@@ -502,7 +502,9 @@ public class ClusterEndpoint {
   @PatchMapping(path = "/routing-state", consumes = "application/json")
   public ResponseEntity<?> updateRoutingState(
       @RequestBody(required = false) final RoutingState routingState,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final Optional<String> tenant = Optional.ofNullable(physicalTenant).filter(s -> !s.isBlank());
     try {
       Optional<io.camunda.zeebe.dynamic.config.state.RoutingState> internalRoutingState =
           Optional.empty();
@@ -531,7 +533,7 @@ public class ClusterEndpoint {
                     requestHandling,
                     messageCorrelation));
       }
-      final var updateRequest = new UpdateRoutingStateRequest(internalRoutingState, dryRun);
+      final var updateRequest = new UpdateRoutingStateRequest(internalRoutingState, tenant, dryRun);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.updateRoutingState(updateRequest).join());
     } catch (final Exception error) {

@@ -204,6 +204,9 @@ paths:
         applying it to the configuration.
         No validation is performed on the user provided routing state, so it must be
         used only in the rare circumstances when it's not possible to fetch it from the engine.
+        When physicalTenant is given, only that physical tenant's routing state is written;
+        when omitted, the default physical tenant's routing state is written, regardless of
+        which other physical tenants exist.
       requestBody:
         content:
           application/json:
@@ -211,11 +214,14 @@ paths:
               $ref: "components.yaml#/schemas/RoutingState"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/RoutingStatePhysicalTenantParameter'
       responses:
         '202':
           description: Accepted
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
         '409':
           $ref: 'components.yaml#/responses/ConcurrentChangeError'
         '500':
@@ -397,6 +403,15 @@ components:
     PhysicalTenantParameter:
       name: physicalTenant
       description: Id of the physical tenant to target. If not specified, the operation applies to all physical tenants.
+      in: query
+      style: form
+      required: false
+      schema:
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
+    RoutingStatePhysicalTenantParameter:
+      name: physicalTenant
+      description: Id of the physical tenant to target. If not specified, the default physical tenant is targeted,
+        not every physical tenant - unlike the other operations taking this parameter.
       in: query
       style: form
       required: false

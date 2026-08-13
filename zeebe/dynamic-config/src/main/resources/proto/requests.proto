@@ -60,6 +60,9 @@ message ClusterPatchRequest {
 message UpdateRoutingStateRequest{
   topology_protocol.RoutingState routing_state = 1;
   bool dryRun = 2;
+  // When physicalTenantId is set, only that tenant's routing state is updated.
+  // If not set, the default tenant's routing state is updated.
+  optional string physicalTenantId = 3;
 }
 
 message UpdatePartitionDistributorConfigRequest {
