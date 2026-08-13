@@ -68,6 +68,7 @@ jobs:
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
+          persist-credentials: false
 
       #########################################################################
       # Setup: define env variables

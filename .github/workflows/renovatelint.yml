@@ -24,4 +24,6 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - run: renovate-config-validator --strict

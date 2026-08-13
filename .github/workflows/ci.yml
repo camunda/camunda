@@ -60,6 +60,8 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -80,6 +82,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
+        with:
+          persist-credentials: false
       - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
@@ -131,6 +135,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
+          persist-credentials: false
       - uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6.2.1
         with:
           commitDepth: ${{ github.event.pull_request.commits }}
@@ -157,6 +162,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: maven-spotless-linter
@@ -184,6 +191,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
       - name: Observe build status
@@ -208,6 +217,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: validate-pom-metadata
@@ -239,6 +249,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks
@@ -266,6 +278,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -297,6 +311,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -416,6 +432,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -502,6 +520,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
@@ -565,6 +585,8 @@ jobs:
       saas: ${{ steps.db-versions.outputs.saas }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions
@@ -589,6 +611,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           config: ./.hadolint.yaml
@@ -693,6 +717,7 @@ jobs:
           # Sticky alert reconciliation uses `git log -L` for method-level
           # modification detection; needs full history reachable from HEAD.
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Check for bypass label
         id: bypass
@@ -885,6 +910,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "20"
@@ -935,6 +962,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
@@ -1008,6 +1037,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Check for vulnerable dependencies
         uses: camunda/infra-global-github-actions/dependency-vuln-check@20384346f55213d43c85943363f40d29e3911f97 # main
         with:
@@ -1054,6 +1085,8 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
@@ -1107,6 +1140,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - id: pr-body
         name: Fetch latest PR body
         if: github.event_name == 'pull_request'
@@ -1157,6 +1192,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1211,6 +1248,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Install bats and xmllint
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -1270,6 +1309,8 @@ jobs:
       - zeebe-ci
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
@@ -1310,6 +1351,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -1380,6 +1423,8 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true

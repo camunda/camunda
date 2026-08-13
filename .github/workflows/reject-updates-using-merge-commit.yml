@@ -25,6 +25,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           filter: tree:0
+          persist-credentials: false
 
       - name: Check for invalid merge commits
         run: |

@@ -35,6 +35,7 @@ jobs:
         with:
           ref: refs/heads/${{ github.head_ref }}
           fetch-depth: 0 # fetches all history for all branches and tags
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-build
         with:
