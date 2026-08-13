@@ -1,0 +1,116 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.page {
+	display: grid;
+	grid-template-rows: 1fr auto;
+	place-items: center;
+	gap: 2rem;
+	min-height: 100dvh;
+	padding: 2rem 1rem 1rem;
+	background:
+		radial-gradient(circle at top, color-mix(in srgb, var(--primary-background-subtle) 40%, transparent), transparent 45%),
+		var(--background);
+	color: var(--foreground);
+}
+
+.card {
+	width: min(100%, 28rem);
+	align-self: end;
+	padding-block: 1.5rem;
+	box-shadow: var(--shadow-md);
+}
+
+.header {
+	place-items: center;
+	gap: 0.75rem;
+	text-align: center;
+}
+
+.logo {
+	display: grid;
+	place-items: center;
+}
+
+.logoMark {
+	width: 3rem;
+	height: 3rem;
+}
+
+.form {
+	display: grid;
+	gap: 1rem;
+}
+
+.field {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.fieldError {
+	margin: 0;
+	color: var(--danger-foreground-strong);
+}
+
+.passwordInput {
+	position: relative;
+}
+
+.passwordInput input {
+	padding-right: 3rem;
+}
+
+.passwordToggle {
+	position: absolute;
+	top: 50%;
+	right: 0.25rem;
+	transform: translateY(-50%);
+}
+
+.passwordToggle svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.submitButton {
+	width: 100%;
+	margin-top: 0.5rem;
+}
+
+.disclaimer,
+.copyrightNotice {
+	margin: 0;
+	color: var(--neutral-foreground-subtle);
+	text-align: center;
+}
+
+.disclaimer {
+	padding-top: 1.25rem;
+}
+
+.disclaimer a {
+	color: var(--info-action-default);
+	text-decoration: underline;
+	text-underline-offset: 0.125rem;
+}
+
+.copyrightNotice {
+	align-self: end;
+}
+
+@media (max-width: 40rem) {
+	.page {
+		align-content: center;
+		padding-top: 1rem;
+	}
+
+	.card {
+		align-self: center;
+		box-shadow: none;
+	}
+}

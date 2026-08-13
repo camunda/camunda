@@ -6,17 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {C4Provider} from '@camunda/design-system';
+import {C4Provider, useResolvedTheme} from '@camunda/design-system';
 import '@camunda/design-system/styles.css';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import './index.scss';
 
 const Route = createFileRoute('/shadcn')({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
+	const theme = useResolvedTheme();
+
 	return (
-		<C4Provider>
+		<C4Provider theme={theme}>
 			<Outlet />
 		</C4Provider>
 	);

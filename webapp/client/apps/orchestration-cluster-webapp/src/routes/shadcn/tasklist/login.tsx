@@ -9,13 +9,16 @@
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
 import {z} from 'zod';
 import {queries} from '#/shared/http/queries';
+import {TasklistLoginPage} from '#/tasklist/pages/TasklistLoginPage';
 
 const Route = createFileRoute('/shadcn/tasklist/login')({
 	validateSearch: z.object({
 		redirect: z
 			.string()
 			.refine(
-				(value) => /^\/shadcn(?:[/?#]|$)/.test(value) && !/^\/shadcn\/tasklist\/login(?:[/?#]|$)/.test(value),
+				(value) =>
+					/^\/shadcn\/tasklist(?:[/?#]|$)/.test(value) &&
+					!/^\/shadcn\/tasklist\/login(?:[/?#]|$)/.test(value),
 				'Redirect must be a shadcn path',
 			)
 			.optional(),
@@ -30,11 +33,7 @@ const Route = createFileRoute('/shadcn/tasklist/login')({
 			}
 		}
 	},
-	component: RouteComponent,
+	component: TasklistLoginPage,
 });
-
-function RouteComponent() {
-	return <div>Hello "/shadcn/tasklist/login"!</div>;
-}
 
 export {Route};
