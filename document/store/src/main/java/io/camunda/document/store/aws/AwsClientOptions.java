@@ -31,6 +31,22 @@ public record AwsClientOptions(
 
   private static final String REDACTED = "<redacted>";
 
+  /**
+   * Guards the one combination that fails silently instead of loudly: with only one half of the key
+   * pair {@link #hasStaticCredentials()} is false, so the store keeps the AWS SDK default chain —
+   * the process-wide credentials it was configured to stop using. Callers reaching this record
+   * through {@link AwsDocumentStoreProvider} are already rejected there with a message naming the
+   * store and the offending properties; this covers whoever constructs it directly.
+   */
+  public AwsClientOptions {
+    if ((accessKey == null) != (secretKey == null)) {
+      throw new IllegalArgumentException(
+          "accessKey and secretKey must be set together: with only one of them the store"
+              + " authenticates with the AWS SDK default credential chain, which is shared with"
+              + " every other store in the process.");
+    }
+  }
+
   public static AwsClientOptions sdkDefaults() {
     return new AwsClientOptions(null, null, null, null, null, null, null);
   }

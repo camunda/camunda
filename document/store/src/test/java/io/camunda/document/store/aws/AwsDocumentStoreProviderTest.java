@@ -466,6 +466,17 @@ public class AwsDocumentStoreProviderTest {
   }
 
   @Test
+  public void shouldRejectHalfOfAKeyPair() {
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> new AwsClientOptions(null, null, null, null, null, "tenant-a-key", null))
+        .withMessageContaining("must be set together");
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> new AwsClientOptions(null, null, null, null, null, null, "tenant-a-secret"))
+        .withMessageContaining("must be set together");
+  }
+
+  @Test
   public void shouldLeaveEverySettingToTheSdkWhenNothingIsOverridden() {
     // the path every deployment without per-store credentials still takes, and the one no
     // integration test can exercise
