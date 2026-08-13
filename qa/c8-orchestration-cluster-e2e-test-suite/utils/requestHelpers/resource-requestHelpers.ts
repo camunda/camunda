@@ -411,19 +411,10 @@ export async function deployInlineResource(
   return resources[0];
 }
 
-export async function searchResources(
-  request: APIRequestContext,
-  body: Record<string, unknown> = {},
-): Promise<APIResponse> {
-  return request.post(buildUrl('/resources/search'), {
-    headers: jsonHeaders(),
-    data: body,
-  });
-}
-
 // The endpoint constants are exported because a spec needs the same literal a
 // second time for `validateResponse({path, ...})`. Reusing the constant keeps
 // the requested path and the validated path from drifting apart.
+export const RESOURCE_SEARCH_ENDPOINT = '/resources/search';
 export const RESOURCE_ENDPOINT = '/resources/{resourceKey}';
 export const RESOURCE_CONTENT_ENDPOINT = '/resources/{resourceKey}/content';
 export const RESOURCE_CONTENT_BINARY_ENDPOINT =
@@ -436,6 +427,17 @@ export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
 // cases send none.
 interface ResourceRequestOptions {
   headers?: Record<string, string>;
+}
+
+export async function searchResources(
+  request: APIRequestContext,
+  body: Record<string, unknown> = {},
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.post(buildUrl(RESOURCE_SEARCH_ENDPOINT), {
+    headers: options.headers ?? jsonHeaders(),
+    data: body,
+  });
 }
 
 export function getResource(
