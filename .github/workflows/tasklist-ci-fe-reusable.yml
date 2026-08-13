@@ -17,6 +17,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -47,6 +49,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -77,6 +81,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -107,6 +113,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -141,6 +149,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: SetSetup NodeJShe
         uses: actions/setup-node@v4
         with:
@@ -186,6 +196,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
