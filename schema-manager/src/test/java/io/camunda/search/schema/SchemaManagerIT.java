@@ -1027,6 +1027,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-history-deletion-8.9.0_",
             newPrefix + "-camunda-agent-instance-8.10.0_",
             newPrefix + "-camunda-agent-history-8.10.0_",
+            newPrefix + "-camunda-agent-definition-8.10.0_",
             newPrefix + "-camunda-deployed-resource-8.10.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
