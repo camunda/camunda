@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.gateway.protocol.model.AgentDefinitionTypeFilterProperty;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusFilterProperty;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleFilterProperty;
 import io.camunda.gateway.protocol.model.AgentInstanceStatusFilterProperty;
@@ -51,6 +52,7 @@ import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentDefinitionTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryCommitStatusFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryRoleFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceStatusFilterPropertyDeserializer;
@@ -162,6 +164,9 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceModificationTerminateInstruction.class,
         new ProcessInstanceModificationTerminateInstructionDeserializer());
+    module.addDeserializer(
+        AgentDefinitionTypeFilterProperty.class,
+        new AgentDefinitionTypeFilterPropertyDeserializer());
     module.addDeserializer(
         AgentInstanceStatusFilterProperty.class,
         new AgentInstanceStatusFilterPropertyDeserializer());
