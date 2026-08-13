@@ -641,12 +641,13 @@ jobs:
             icon=":white_check_mark:"
             summary="$(printf '%s\n' "${lines[@]}")"
             [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
-          elif [ "$JOB_STATUS" = "failure" ]; then
-            icon=":x:"; summary="Agent failed (no fix applied)"
           elif [ "$verify" = "not-reproduced" ]; then
             icon=":grey_question:"
             summary="Not reproduced against a live Docker environment — likely a flake, or already fixed"
             [ -n "$note" ] && summary="${summary}: ${note}"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary}"$'\n'"_(post-processing failed — see run)_"
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            icon=":x:"; summary="Agent failed (no fix applied)"
           elif [ "$category" = "not-determined" ]; then
             icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
