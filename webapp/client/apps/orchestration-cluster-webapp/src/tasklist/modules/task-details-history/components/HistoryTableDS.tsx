@@ -181,7 +181,7 @@ const HistoryTableDS: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 			columns={columns}
 			data={data}
 			getRowId={(row) => row.id}
-			size="sm"
+			size="md"
 			sorting={{
 				manual: true,
 				sortState,
