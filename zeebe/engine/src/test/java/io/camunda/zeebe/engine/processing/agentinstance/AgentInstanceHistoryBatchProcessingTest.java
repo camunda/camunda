@@ -222,10 +222,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withType(JOB_TYPE)
+            .withType(jobType(processInstanceKey))
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    ENGINE.jobs().withType(jobType(processInstanceKey)).withLease().activate();
 
     // when — carries no lease even though the job has one
     final var rejection =
@@ -627,6 +627,11 @@ public class AgentInstanceHistoryBatchProcessingTest {
     return new Context(agentInstanceKey, elementInstanceKey, jobKey);
   }
 
+  // Each process instance gets its own job type, resolved at runtime from its own
+  // processInstanceKey via a job-type expression rather than baked in at deploy time (the
+  // process instance doesn't exist yet when this BPMN model is deployed). This keeps
+  // ENGINE.jobs().withType(...).activate() — which isn't scoped by process instance — from ever
+  // picking up a job left over from a different test case in this class's shared @ClassRule.
   private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
     ENGINE
         .deployment()
@@ -634,7 +639,11 @@ public class AgentInstanceHistoryBatchProcessingTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
-                    SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobTypeExpression(
+                                "\"" + JOB_TYPE + "\" + string(camunda.processInstance.key)")
+                            .zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -646,11 +655,15 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .getFirst();
   }
 
+  private static String jobType(final long processInstanceKey) {
+    return JOB_TYPE + processInstanceKey;
+  }
+
   private static long activateJobForProcessInstance(final long processInstanceKey) {
-    ENGINE.jobs().withType(JOB_TYPE).activate();
+    ENGINE.jobs().withType(jobType(processInstanceKey)).activate();
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withType(JOB_TYPE)
+        .withType(jobType(processInstanceKey))
         .getFirst()
         .getKey();
   }
