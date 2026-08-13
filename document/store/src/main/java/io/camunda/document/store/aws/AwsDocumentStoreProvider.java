@@ -45,12 +45,8 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
         Optional.ofNullable(configuration.properties().get(BUCKET_NAME_PROPERTY))
             .orElseThrow(
                 () ->
-                    new IllegalArgumentException(
-                        "Failed to configure document store with id '"
-                            + configuration.id()
-                            + "': missing required property '"
-                            + BUCKET_NAME_PROPERTY
-                            + "'"));
+                    configurationError(
+                        configuration, "missing required property '" + BUCKET_NAME_PROPERTY + "'"));
 
     final URI endpoint = getEndpoint(configuration);
     final String accessKey = getTrimmedProperty(configuration, ACCESS_KEY);
@@ -65,9 +61,9 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
         executorService,
         new AwsClientOptions(
             endpoint,
-            getForcePathStyle(configuration),
-            getChunkedEncodingEnabled(configuration),
-            getSupportLegacyMd5(configuration),
+            getBoolean(configuration, FORCE_PATH_STYLE),
+            getBoolean(configuration, CHUNKED_ENCODING_ENABLED),
+            getBoolean(configuration, SUPPORT_LEGACY_MD5),
             getRegion(configuration, endpoint),
             accessKey,
             secretKey));
@@ -108,10 +104,9 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     if ((accessKey == null) == (secretKey == null)) {
       return;
     }
-    throw new IllegalArgumentException(
-        "Failed to configure document store with id '"
-            + configuration.id()
-            + "': '"
+    throw configurationError(
+        configuration,
+        "'"
             + ACCESS_KEY
             + "' and '"
             + SECRET_KEY
@@ -130,12 +125,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     try {
       return Long.valueOf(bucketTTL);
     } catch (final NumberFormatException e) {
-      throw new IllegalArgumentException(
-          "Failed to configure document store with id '"
-              + configuration.id()
-              + "': '"
-              + BUCKET_TTL
-              + " must be a number'");
+      throw configurationError(configuration, "'" + BUCKET_TTL + " must be a number'");
     }
   }
 
@@ -144,33 +134,23 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
         Objects.requireNonNullElse(configuration.properties().get(BUCKET_PATH), "");
 
     if (INVALID_CHARACTERS.matcher(bucketPath).find()) {
-      throw new IllegalArgumentException(
-          "Failed to configure document store with id '"
-              + configuration.id()
-              + "': '"
-              + BUCKET_PATH
-              + " is invalid. Must not contain \\ character'");
+      throw configurationError(
+          configuration, "'" + BUCKET_PATH + " is invalid. Must not contain \\ character'");
     }
 
     return DocumentStorePaths.keyPrefix(bucketPath);
   }
 
   private static URI getEndpoint(final DocumentStoreConfigurationRecord configuration) {
-    final String endpoint = configuration.properties().get(ENDPOINT);
-    if (endpoint == null || endpoint.isBlank()) {
+    final String endpoint = getTrimmedProperty(configuration, ENDPOINT);
+    if (endpoint == null) {
       return null;
     }
     try {
       return new URI(endpoint);
     } catch (final URISyntaxException e) {
-      throw new IllegalArgumentException(
-          "Failed to configure document store with id '"
-              + configuration.id()
-              + "': '"
-              + ENDPOINT
-              + "' is not a valid URI: "
-              + endpoint,
-          e);
+      throw configurationError(
+          configuration, "'" + ENDPOINT + "' is not a valid URI: " + endpoint, e);
     }
   }
 
@@ -189,13 +169,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
       return null;
     }
     if (!REGION_PATTERN.matcher(region).matches()) {
-      throw new IllegalArgumentException(
-          "Failed to configure document store with id '"
-              + configuration.id()
-              + "': '"
-              + REGION
-              + "' is not a valid region: "
-              + region);
+      throw configurationError(configuration, "'" + REGION + "' is not a valid region: " + region);
     }
     if (endpoint == null && !Region.regions().contains(Region.of(region))) {
       LOG.warn(
@@ -215,19 +189,23 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     return value == null || value.isBlank() ? null : value.trim();
   }
 
-  private static Boolean getForcePathStyle(final DocumentStoreConfigurationRecord configuration) {
-    final String value = configuration.properties().get(FORCE_PATH_STYLE);
+  private static Boolean getBoolean(
+      final DocumentStoreConfigurationRecord configuration, final String property) {
+    final String value = configuration.properties().get(property);
     return value == null ? null : Boolean.parseBoolean(value);
   }
 
-  private static Boolean getChunkedEncodingEnabled(
-      final DocumentStoreConfigurationRecord configuration) {
-    final String value = configuration.properties().get(CHUNKED_ENCODING_ENABLED);
-    return value == null ? null : Boolean.parseBoolean(value);
+  private static IllegalArgumentException configurationError(
+      final DocumentStoreConfigurationRecord configuration, final String message) {
+    return configurationError(configuration, message, null);
   }
 
-  private static Boolean getSupportLegacyMd5(final DocumentStoreConfigurationRecord configuration) {
-    final String value = configuration.properties().get(SUPPORT_LEGACY_MD5);
-    return value == null ? null : Boolean.parseBoolean(value);
+  private static IllegalArgumentException configurationError(
+      final DocumentStoreConfigurationRecord configuration,
+      final String message,
+      final Throwable cause) {
+    return new IllegalArgumentException(
+        "Failed to configure document store with id '" + configuration.id() + "': " + message,
+        cause);
   }
 }
