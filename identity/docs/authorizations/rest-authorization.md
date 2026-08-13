@@ -14,6 +14,8 @@ The REST-side check operates after data has been written to secondary storage. W
 
 This is a **query-time / pre-forwarding check** that reads authorization data from the search index. For how CSL reaches its decision, see the [CSL architecture documentation](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md), section 5.4.
 
+The check class itself is deliberately not named on this page -- only the port OC implements behind it. See the [naming convention](../architecture.md#csl-extension-points-and-ocs-adapters) for which CSL types these docs name and why.
+
 ## Data Source
 
 Unlike the engine checks, which read authorization state from RocksDB directly, the REST-side check reads everything through its `AuthorizationScopeRepositoryPort`. OC's implementation of that port for the REST/search-filtering path, `SearchAuthorizationScopeRepository`, queries authorization records through an `AuthorizationReader` against the secondary storage index. This means it operates on eventually-consistent data -- there is a small delay between an authorization being granted in the engine and it becoming visible in the search index.

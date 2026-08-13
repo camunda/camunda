@@ -15,6 +15,8 @@ This is a **pre-execution check**: it may read existing state, but always runs b
 
 How CSL reaches its decision is deliberately not described here -- see the [CSL architecture documentation](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md), sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration). Note that the order in which CSL evaluates a principal's grants is CSL-internal and is not documented in either repository.
 
+For the same reason, the CSL classes behind those ports are not named on this page. Only the ports the engine implements and the types it constructs are -- see the [naming convention](../architecture.md#csl-extension-points-and-ocs-adapters) for which CSL types these docs name and why.
+
 `CslTenantCheck#checkTenant` checks tenant assignment on its own, independently of the RBAC step. Engine command processors use it when a command needs a tenant-membership gate at a different granularity than its resource-permission check.
 
 ## Configuration

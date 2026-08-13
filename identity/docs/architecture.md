@@ -262,13 +262,27 @@ Two kinds of type cross the boundary, and they point in opposite directions:
 Both couple at compile time, which is why both are named here (see the naming convention below), but
 only the first is a ports-and-adapters seam.
 
-**Naming convention used in this document and the linked authorization docs:** CSL names appear only
-where they are part of that contract surface — the ports OC implements, and the types OC's own code
-constructs and passes to CSL. CSL's implementation classes behind those ports are referred to by
-role ("Basic Auth Converter (CSL)"), never by class name, so a refactor on CSL's side of the
-boundary does not oblige a change here. A few named types live in CSL's `core` rather than its
-public `api` package; they are named anyway because OC's own code declares them, so a CSL rename
-breaks our compile and forces a docs pass regardless.
+**Naming convention used in this document and the linked authorization docs.** A CSL class name may
+appear here only if it falls into one of two categories, both defined by whether a rename on CSL's
+side would break our build:
+
+1. **Types OC implements or extends** — everything in the two tables below. This half is mechanical:
+   the tables *are* the list, and the sweep described under [10. Risks](#10-risks-and-technical-debt)
+   regenerates it.
+2. **Types OC builds the value of and passes across the boundary** — `RequiredAuthorization`,
+   `SecurityContext`, `TenantAccess`, `AuthorizationCondition`, `ResourceAccessChecks`. OC code
+   populates these field by field on the way in or reads them on the way out.
+
+Everything else on CSL's side is referred to by role ("Basic Auth Converter (CSL)"), never by class
+name, so a refactor behind the boundary does not oblige a change here.
+
+Note that "does the name appear in an OC `.java` file" is *not* the test, and would give the wrong
+answer. `AuthorizationChecker` is referenced by 14 non-test OC files and is deliberately absent from
+these docs: OC obtains one from `AuthorizationCheckerFactory.forPhysicalTenant` and hands it straight
+to `DefaultResourceAccessProvider` without ever reading it. It is an opaque handle, not a value OC
+builds — category 2 turns on constructing the value, not on holding the reference. Package location
+does not decide it either: `AuthorizationChecker` sits in `core.authz`, the same package as
+`ResourceAccessProvider` and `TenantAccess`, which are both named here.
 
 ##### Callback extension points
 
@@ -1086,7 +1100,10 @@ Dual identity model during transition
 :   Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime. Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
 Cross-repo coupling to the Camunda Security Library
-:   The authorization and authentication decisions themselves, the boundary types they are expressed in (`CamundaAuthentication`, `SecurityContext`, `RequiredAuthorization`, `TenantAccess`), and the Spring Security filter chain assembly now live in the separately-versioned [camunda-security-library](https://github.com/camunda/camunda-security-library) repo rather than in this codebase. Changes to authorization/authentication behavior can originate from a CSL release bump (`version.camunda-security-library` in `parent/pom.xml`) rather than from a change in this repo, so this document can drift out of sync with actual behavior whenever CSL absorbs more of the auth path. Mitigation: re-verify class names and responsibilities against the current tree (not this document) before relying on it for anything beyond a high-level orientation.
+:   The authorization and authentication decisions themselves, the boundary types they are expressed in (`CamundaAuthentication`, `SecurityContext`, `RequiredAuthorization`, `TenantAccess`), and the Spring Security filter chain assembly now live in the separately-versioned [camunda-security-library](https://github.com/camunda/camunda-security-library) repo rather than in this codebase. Changes to authorization/authentication behavior can originate from a CSL release bump (`version.camunda-security-library` in `parent/pom.xml`) rather than from a change in this repo. The two risks that follow from that are different, and only one of them is now controlled:
+
+- *The inventory* in [5.1](#csl-extension-points-and-ocs-adapters) is verifiable. Every entry is a type OC implements or extends, so it can be regenerated from the tree: sweep the non-test sources that import `io.camunda.security.*` and resolve each type declaration's `implements`/`extends` clause against that file's imports, then diff against the tables. Run it after a version bump. Discount three things or it will report false positives — generic type parameters (`implements PhysicalTenantScoped<ResourceAccessProvider>` is not a row for `ResourceAccessProvider`), Optimize's separate CSL wiring, and fully-qualified `implements` clauses with no matching import, which any import-driven sweep misses.
+- *Behavior* is not verifiable this way. A CSL release can change how a decision is reached without changing a single signature OC declares, and nothing in this repo will show it. The prose describing CSL's role — as opposed to the names in the tables — can therefore go stale silently, which is why this document deliberately describes CSL's internals by role and links [CSL's own docs](https://github.com/camunda/camunda-security-library/blob/main/docs/architecture/05-building-block-view.md) instead of restating them.
 
 ## 11. Glossary
 
