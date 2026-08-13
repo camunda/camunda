@@ -138,18 +138,22 @@ Authorization checks happen in two places in the codebase, corresponding to the 
 
 2. **[REST Layer Authorization](rest-authorization.md)** -- checks performed in the REST API layer against Elasticsearch/OpenSearch (secondary storage). This handles search result filtering, pre-validation of actions before forwarding to the engine, and permission collection for UI feature toggling.
 
-Both layers use the same underlying authorization model described on this page, but they differ in how they operate:
+Both layers use the same underlying authorization model described on this page, and both hand the
+decision itself to the **same CSL check** -- neither implements its own evaluation. What differs is
+the data that check reads, how the check instance is obtained, and where the OC-side entry point
+sits:
 
-|         Aspect          |                  Engine (`CslAuthorizationCheck`/`CslTenantCheck`)                  |             REST (`AuthorizationChecker`, CSL)              |
-|-------------------------|-------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| **When**                | Before command processing                                                           | At query time / before forwarding to engine                 |
-| **Data source**         | RocksDB (primary, strongly consistent)                                              | Elasticsearch/OpenSearch (secondary, eventually consistent) |
-| **Identity resolution** | Extracts from command claims, resolves groups/roles/mapping rules from engine state | Receives pre-resolved `CamundaAuthentication`               |
-| **Tenant checks**       | Built-in multi-tenancy support                                                      | Handled separately (not in this class)                      |
-| **Caching**             | Guava LoadingCache with configurable TTL                                            | No caching (relies on search index performance)             |
-| **Property-based auth** | Evaluated by CSL; OR-composition for user tasks done locally                        | Returns property scopes for upstream filtering              |
-| **Internal commands**   | Can bypass checks for engine-internal commands                                      | Not applicable                                              |
-| **Primary use**         | Gate state mutations                                                                | Filter search results and pre-validate actions              |
+|           Aspect           |                 Engine (`CslAuthorizationCheck` / `CslTenantCheck`)                 |                                REST (`DefaultResourceAccessProvider`)                                 |
+|----------------------------|-------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| **Authorization decision** | The CSL check, reached through CSL's `AuthorizationCheckPort`                       | The same CSL check, constructed per physical tenant so it reads that tenant's index                   |
+| **When**                   | Before command processing                                                           | At query time / before forwarding to engine                                                           |
+| **Data source**            | RocksDB (primary, strongly consistent), via `AuthorizationScopeStateAdapter`        | Elasticsearch/OpenSearch (secondary, eventually consistent), via `SearchAuthorizationScopeRepository` |
+| **Identity resolution**    | Extracts from command claims, resolves groups/roles/mapping rules from engine state | Receives pre-resolved `CamundaAuthentication`                                                         |
+| **Tenant checks**          | Built-in multi-tenancy support                                                      | Handled separately, outside this check                                                                |
+| **Caching**                | Guava LoadingCache with configurable TTL, held by the engine's port adapters        | No caching (relies on search index performance)                                                       |
+| **Property-based auth**    | Evaluated by CSL; OR-composition for user tasks done locally                        | Returns property scopes for upstream filtering                                                        |
+| **Internal commands**      | Can bypass checks for engine-internal commands                                      | Not applicable                                                                                        |
+| **Primary use**            | Gate state mutations                                                                | Filter search results and pre-validate actions                                                        |
 
 See the individual pages for details.
 
