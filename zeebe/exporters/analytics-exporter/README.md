@@ -296,15 +296,16 @@ The form resource, resource name, and version tag are deliberately not exported.
 
 **`camunda.agent.instance.created`** and **`camunda.agent.instance.completed`**
 
-|            Attribute             |  Type  |                       Description                        |
-|----------------------------------|--------|----------------------------------------------------------|
-| `camunda.agent.instance_key`     | long   | Agent instance key.                                      |
-| `camunda.agent.definition_key`   | long   | Agent definition key.                                    |
-| `camunda.agent.status`           | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
-| `camunda.process.id`             | string | BPMN process ID.                                         |
-| `camunda.process.definition_key` | long   | Process definition key.                                  |
-| `camunda.process.instance_key`   | long   | Process instance key.                                    |
-| `camunda.tenant.id`              | string | Tenant ID.                                               |
+|              Attribute              |  Type  |                       Description                        |
+|-------------------------------------|--------|----------------------------------------------------------|
+| `camunda.agent.instance_key`        | long   | Agent instance key.                                      |
+| `camunda.agent.definition_key`      | long   | Agent definition key.                                    |
+| `camunda.agent.status`              | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
+| `camunda.process.id`                | string | BPMN process ID.                                         |
+| `camunda.process.definition_key`    | long   | Process definition key.                                  |
+| `camunda.process.instance_key`      | long   | Process instance key.                                    |
+| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes).           |
+| `camunda.tenant.id`                 | string | Tenant ID.                                               |
 
 Both events carry the same attributes, so agent run duration is a join on
 `camunda.agent.instance_key`. The agent definition (model, provider, system prompt), its

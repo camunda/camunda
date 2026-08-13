@@ -53,6 +53,9 @@ public final class AgentInstanceCompletedHandler
                     AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
                 .setAttribute(
                     AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
+                .setAttribute(
+                    AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
+                    value.getRootProcessInstanceKey())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
