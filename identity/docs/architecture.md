@@ -251,11 +251,13 @@ two repositories — CSL's internal behaviour is documented in the
 sections 5.4 (hexagonal architecture) and 5.5 (engine authorization integration), and is not
 repeated here.
 
-**Naming convention used throughout this document:** CSL names appear only where they are part of
-that contract surface — the ports OC implements, and the types OC's own code constructs and passes
-to CSL. CSL's implementation classes behind those ports are referred to by role ("Basic Auth
-Converter (CSL)"), never by class name, so a refactor on CSL's side of the boundary does not oblige
-a change here.
+**Naming convention used in this document and the linked authorization docs:** CSL names appear only
+where they are part of that contract surface — the ports OC implements, and the types OC's own code
+constructs and passes to CSL. CSL's implementation classes behind those ports are referred to by
+role ("Basic Auth Converter (CSL)"), never by class name, so a refactor on CSL's side of the
+boundary does not oblige a change here. A few named types live in CSL's `core` rather than its
+public `api` package; they are named anyway because OC's own code declares them, so a CSL rename
+breaks our compile and forces a docs pass regardless.
 
 |                CSL port                 |                                                                       OC implementation                                                                       |
 |-----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
