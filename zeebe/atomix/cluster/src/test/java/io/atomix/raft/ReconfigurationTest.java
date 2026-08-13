@@ -18,6 +18,7 @@ import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ConfigureRequest;
+import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
@@ -245,6 +246,45 @@ final class ReconfigurationTest {
           .as("m2 can join when retrying after a failed first attempt")
           .succeedsWithin(Duration.ofSeconds(30));
       awaitLeader(m1, retriedM2);
+    }
+
+    /**
+     * A partition that is scaled from one to two replicas has a single assisting member, so one
+     * transport error is enough to leave the join without another member to try. The join must keep
+     * retrying until its deadline passes instead of failing immediately.
+     */
+    @Test
+    void joinShouldSucceedWhenFirstRequestFailsAtTransportLevel(@TempDir final Path tmp) {
+      // given - a single-member cluster, as after the bootstrap of a scaled-up partition
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      awaitLeader(m1);
+
+      // m1 is the only member that can assist the join: like RaftPartitionServer, we pass all
+      // members of the partition and the joiner filters itself out
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+
+      // when - the connection fails before the first join request is delivered, and connectivity
+      // returns well within the configuration change timeout
+      final var joinRequests = new AtomicInteger();
+      final var joinerProtocol = (TestRaftServerProtocol) m2.getContext().getProtocol();
+      joinerProtocol.interceptRequest(
+          JoinRequest.class,
+          (final JoinRequest request) -> {
+            if (joinRequests.incrementAndGet() == 1) {
+              return CompletableFuture.failedFuture(new ConnectException());
+            }
+            return CompletableFuture.completedFuture(null);
+          });
+
+      // then - the join still succeeds because it is retried while its deadline has budget left
+      assertThat(m2.join(id1, id2))
+          .as("m2 can join although its first join request failed at the transport level")
+          .succeedsWithin(Duration.ofSeconds(30));
+      assertThat(joinRequests).as("the join request was retried").hasValueGreaterThan(1);
     }
 
     /**
