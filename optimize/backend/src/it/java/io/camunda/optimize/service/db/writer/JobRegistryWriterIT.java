@@ -85,18 +85,29 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void shouldUpdateJobStatusToRunningWithoutCompletionTimestamp() {
+  void shouldClearErrorMessageWhenRetryCompletesSuccessfully() {
     final JobRegistryEntryDto created =
         jobRegistryWriter.createJobEntry(
             JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
-    jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.RUNNING, null);
+    // Move the entry into a FAILED state first, so errorMessage is populated. A retry that
+    // completes successfully must clear it back to null -- the JobRegistryEntryUpdateDto relies
+    // on nulls actually serializing for that partial-doc update to work, and a test starting
+    // straight from QUEUED can't catch a regression there.
+    jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.FAILED, "boom");
+    final List<JobRegistryEntryDto> afterFailure =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
+    assertThat(afterFailure.get(0).getErrorMessage()).isNotNull();
+
+    jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
 
     final List<JobRegistryEntryDto> stored =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
     assertThat(stored).hasSize(1);
-    assertThat(stored.get(0).getStatus()).isEqualTo(JobStatus.RUNNING);
-    assertThat(stored.get(0).getCompletedAt()).isNull();
+    assertThat(stored.get(0).getStatus()).isEqualTo(JobStatus.COMPLETED);
+    assertThat(stored.get(0).getCompletedAt()).isNotNull();
+    assertThat(stored.get(0).getErrorMessage()).isNull();
   }
 }
