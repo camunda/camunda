@@ -296,7 +296,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void tearDown() {
     closeReplayReader();
     CloseHelper.close(processingLogStreamReader);
-    logStream.removeRecordAvailableListener(this);
+    logStream.removeAppendedRecordAvailableListener(this);
     CloseHelper.close(processingStateMachine);
     CloseHelper.close(replayStateMachine);
     scheduledCommandCache.clear();
@@ -315,7 +315,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             recordProcessors,
             scheduledCommandCache);
 
-    logStream.registerRecordAvailableListener(this);
+    // Processing reads uncommitted records, so it must be woken as soon as records are appended;
+    // the later commit of those same records would tell it nothing new.
+    logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));

@@ -135,6 +135,16 @@ public class TestLogStream implements LogStream {
   }
 
   @Override
+  public void registerAppendedRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    logStream.registerAppendedRecordAvailableListener(recordAwaiter);
+  }
+
+  @Override
+  public void removeAppendedRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    logStream.removeAppendedRecordAvailableListener(recordAwaiter);
+  }
+
+  @Override
   public void registerCommittedPositionListener(final CommittedPositionListener listener) {
     logStream.registerCommittedPositionListener(listener);
   }

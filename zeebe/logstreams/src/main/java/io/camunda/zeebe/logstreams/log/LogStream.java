@@ -77,8 +77,9 @@ public interface LogStream extends AutoCloseable {
   void resumeWrites();
 
   /**
-   * Registers a listener that will be notified when new records are available to read from the
-   * logstream.
+   * Registers a listener that will be notified when new <em>committed</em> records are available to
+   * read from the logstream. This is what a consumer reading through {@link #newLogStreamReader()}
+   * wants: an append tells it nothing, because the record it appended is not yet visible to it.
    *
    * @param recordAwaiter the listener to be notified
    */
@@ -90,6 +91,23 @@ public interface LogStream extends AutoCloseable {
    * @param recordAwaiter the listener to remove
    */
   void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  /**
+   * Registers a listener that will be notified as soon as new records are <em>appended</em>, before
+   * they are committed. This is what a consumer reading through {@link
+   * #newUncommittedLogStreamReader()} wants: it can read the record straight away, and the later
+   * commit reveals nothing new to it.
+   *
+   * @param recordAwaiter the listener to be notified
+   */
+  void registerAppendedRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  /**
+   * Removes the listener.
+   *
+   * @param recordAwaiter the listener to remove
+   */
+  void removeAppendedRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 
   /**
    * Registers a listener that is notified with the highest committed position of the records that
