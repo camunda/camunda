@@ -61,7 +61,7 @@ public class PartitionGroupExporterStateInitializer
   private CurrentClusterConfiguration updateLocalMemberExporterState(
       final CurrentClusterConfiguration configuration) {
     var updated = configuration;
-    for (final var groupId : enabledGroupIds(configuration)) {
+    for (final var groupId : reconcilableGroupIds(configuration)) {
       if (updated.partitionGroup(groupId).hasMember(localMemberId)) {
         updated =
             updated.updatePartitionGroupConfig(
@@ -79,7 +79,7 @@ public class PartitionGroupExporterStateInitializer
   private CurrentClusterConfiguration updateExporterStateForAllMembers(
       final CurrentClusterConfiguration configuration) {
     var updated = configuration;
-    for (final var groupId : enabledGroupIds(configuration)) {
+    for (final var groupId : reconcilableGroupIds(configuration)) {
       for (final var memberId : updated.partitionGroup(groupId).members().keySet()) {
         updated =
             updated.updatePartitionGroupConfig(
@@ -95,29 +95,30 @@ public class PartitionGroupExporterStateInitializer
   }
 
   /**
-   * Every partition group to reconcile, excluding a disabled one (removed from local static
-   * configuration after being provisioned, see {@link PhysicalTenantAvailabilityInitializer}) - it
-   * has nothing to reconcile, since it is not running anywhere.
+   * The groups to reconcile: exactly the local broker's own currently-configured physical tenants
+   * (the keys of {@code configuredExporters}) that already have a provisioned group in {@code
+   * configuration.partitionGroups()} - a locally-configured tenant not yet provisioned has nothing
+   * to reconcile yet.
+   *
+   * <p>Deliberately keyed off local configuration rather than each group's persisted {@code
+   * disabled} flag (see {@link PhysicalTenantAvailabilityInitializer}): that flag is only updated
+   * by the coordinator-only availability initializer, so on the very first restart after a tenant
+   * is removed from local configuration, the persisted group is still enabled while {@code
+   * configuredExporters} already lacks it - and the reverse on the first restart after a tenant
+   * reappears, where the persisted group is still disabled while {@code configuredExporters}
+   * already has it again. Local configuration is authoritative for both directions immediately,
+   * with no dependency on the availability initializer having already run - on this node or, since
+   * it never runs at all on a non-coordinator, on any node.
    */
-  private static Set<String> enabledGroupIds(final CurrentClusterConfiguration configuration) {
-    return configuration.partitionGroups().entrySet().stream()
-        .filter(entry -> !entry.getValue().isDisabled())
-        .map(Map.Entry::getKey)
+  private Set<String> reconcilableGroupIds(final CurrentClusterConfiguration configuration) {
+    return configuredExporters.keySet().stream()
+        .filter(configuration.partitionGroups()::containsKey)
         .collect(Collectors.toSet());
   }
 
   private BrokerPartitionState updateExporterState(
       final String groupId, final BrokerPartitionState brokerPartitionState) {
     BrokerPartitionState updated = brokerPartitionState;
-    if (!configuredExporters.containsKey(groupId)) {
-      // An enabled group must always have a local exporter configuration - this initializer only
-      // reaches enabled groups (see enabledGroupIds), so a missing entry here means the local
-      // configuration is inconsistent with the cluster configuration, not that the tenant is
-      // disabled.
-      throw new IllegalStateException(
-          "No configuration found for partition group '%s'".formatted(groupId));
-    }
-
     final Set<String> configuredExportersForGroup = configuredExporters.get(groupId);
     for (final var p : brokerPartitionState.partitions().keySet()) {
       final PartitionState currentPartitionState = brokerPartitionState.partitions().get(p);
