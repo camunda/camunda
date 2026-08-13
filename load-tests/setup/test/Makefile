@@ -50,7 +50,12 @@ endif
 # Renovate version bump can never see a stale cache; test/update-golden
 # remove it once go test finishes (see below).
 ifneq ($(filter test update-golden warm-chart-cache,$(MAKECMDGOALS)),)
-export LOAD_TEST_CHART_CACHE_DIR := $(shell mktemp -d)
+# An explicit template (rather than bare `mktemp -d`) is required by BSD/macOS
+# mktemp and also accepted by GNU mktemp, so this works on both.
+export LOAD_TEST_CHART_CACHE_DIR := $(shell mktemp -d "$${TMPDIR:-/tmp}/load-test-chart-cache.XXXXXXXXXX")
+ifeq ($(LOAD_TEST_CHART_CACHE_DIR),)
+$(error mktemp -d failed to create LOAD_TEST_CHART_CACHE_DIR)
+endif
 # helm-repos (below) already primes the repo index once for the whole run;
 # scenarios don't each need to repeat it themselves.
 export LOAD_TEST_SKIP_REPO_UPDATE := true
