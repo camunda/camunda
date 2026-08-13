@@ -50,11 +50,15 @@
 	min-height: 0;
 	flex: 1;
 	background-color: var(--cds-layer);
+}
 
-	// DS-only (see ProcessDiagramView.tsx). DS's base surface token, matching the
-	// surrounding panels. Keep in sync with TaskDetailsProcessSkeleton's
-	// `.diagram`, which stands in for this frame while the diagram loads.
-	&.diagramFrameDS {
-		background-color: var(--background);
-	}
+// DS-only (see ProcessDiagramView.tsx). The Card supplies the surface, ring and
+// radius; this only makes it fill the remaining height and drops the Card's own
+// vertical padding so the canvas reaches the card's edges. Keep in sync with
+// TaskDetailsProcessSkeleton's `.diagramCard`.
+.diagramCard {
+	width: 100%;
+	min-height: 0;
+	flex: 1;
+	padding-block: 0;
 }

@@ -7,6 +7,7 @@
  */
 
 import {Layer, Tag} from '#/shared/design-system-compat';
+import {Card} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
@@ -31,9 +32,21 @@ const ProcessDiagramView: React.FC<Props> = ({xml, elementId, processName, proce
 				</span>
 				<Tag className={styles.version}>{t('tasklist.processViewProcessVersion', {version: processVersion})}</Tag>
 			</div>
-			<Layer className={cn(styles.diagramFrame, featureFlags.dsTasklistUI && styles.diagramFrameDS)}>
-				<BPMNDiagram xml={xml} highlightActivity={elementId} />
-			</Layer>
+			{/* DS-only: the diagram canvas sat flush on the panel background. The DS Card
+			    gives it the same raised surface as the embedded form and the task cards.
+			    No CardContent wrapper — the canvas fills the card edge to edge, and Card
+			    already clips to its own rounded corners. Keep in sync with
+			    TaskDetailsProcessSkeleton, which stands in for this while the diagram
+			    loads. */}
+			{featureFlags.dsTasklistUI ? (
+				<Card className={styles.diagramCard}>
+					<BPMNDiagram xml={xml} highlightActivity={elementId} />
+				</Card>
+			) : (
+				<Layer className={styles.diagramFrame}>
+					<BPMNDiagram xml={xml} highlightActivity={elementId} />
+				</Layer>
+			)}
 		</Layer>
 	);
 };

@@ -35,11 +35,14 @@
 	min-height: 0;
 	flex: 1;
 	background-color: var(--cds-layer);
+}
 
-	// DS-only (see TaskDetailsProcessSkeleton.tsx). Mirrors ProcessDiagramView's
-	// `.diagramFrameDS` so the skeleton and the loaded diagram share one
-	// background and there is no colour flash on load.
-	&.diagramDS {
-		background-color: var(--background);
-	}
+// DS-only (see TaskDetailsProcessSkeleton.tsx). Mirrors ProcessDiagramView's
+// `.diagramCard` so the skeleton and the loaded diagram share one surface and
+// the card does not appear only once the diagram resolves.
+.diagramCard {
+	width: 100%;
+	min-height: 0;
+	flex: 1;
+	padding-block: 0;
 }

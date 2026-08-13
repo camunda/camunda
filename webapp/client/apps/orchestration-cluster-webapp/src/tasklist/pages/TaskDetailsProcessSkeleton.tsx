@@ -7,8 +7,8 @@
  */
 
 import {SkeletonText} from '#/shared/design-system-compat';
+import {Card} from '@camunda/design-system';
 import {featureFlags} from '#/shared/feature-flags';
-import {cn} from '#/shared/cn';
 import styles from './TaskDetailsProcessSkeleton.module.scss';
 
 const TaskDetailsProcessSkeleton: React.FC = () => {
@@ -18,7 +18,10 @@ const TaskDetailsProcessSkeleton: React.FC = () => {
 				<SkeletonText className={styles.title} />
 				<SkeletonText className={styles.tag} />
 			</div>
-			<div className={cn(styles.diagram, featureFlags.dsTasklistUI && styles.diagramDS)} />
+			{/* Mirrors ProcessDiagramView's DS branch so the loading state and the loaded
+			    diagram share the same card surface — otherwise the card appears only once
+			    the diagram resolves. */}
+			{featureFlags.dsTasklistUI ? <Card className={styles.diagramCard} /> : <div className={styles.diagram} />}
 		</div>
 	);
 };
