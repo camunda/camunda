@@ -26,6 +26,10 @@ final class TestExporterConfigMergers {
   /** Exporter class name whose merger always fails — exercises the error wrapping. */
   static final String FAILING_CLASS = "io.camunda.configuration.test.FailingMergeExporter";
 
+  /** Exporter class whose merger attempts to mutate nested input — inputs must reject it. */
+  static final String NESTED_MUTATING_CLASS =
+      "io.camunda.configuration.test.NestedMutatingMergeExporter";
+
   /** Exporter class name claimed by two mergers — must fail startup. */
   static final String DUPLICATE_CLAIMED_CLASS =
       "io.camunda.configuration.test.DuplicateClaimedExporter";
@@ -67,6 +71,23 @@ final class TestExporterConfigMergers {
     public Map<String, Object> merge(
         final Map<String, Object> rootArgs, final Map<String, Object> tenantArgs) {
       throw new IllegalStateException("intentional test merge failure");
+    }
+  }
+
+  public static final class NestedMutatingMerger implements ExporterConfigMerger {
+
+    @Override
+    public boolean supports(final String className) {
+      return NESTED_MUTATING_CLASS.equals(className);
+    }
+
+    @Override
+    public Map<String, Object> merge(
+        final Map<String, Object> rootArgs, final Map<String, Object> tenantArgs) {
+      @SuppressWarnings("unchecked")
+      final var nested = (Map<String, Object>) rootArgs.get("nested");
+      nested.put("mutated", true);
+      return tenantArgs;
     }
   }
 

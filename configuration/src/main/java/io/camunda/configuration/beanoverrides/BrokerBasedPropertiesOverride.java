@@ -14,6 +14,7 @@ import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.FixedPartition;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
@@ -960,9 +962,11 @@ public class BrokerBasedPropertiesOverride {
     ExporterCfg exporter = override.getCamundaExporter();
     if (exporter == null) {
       exporter = new ExporterCfg();
-      exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
       exporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
+    }
+    if (!hasText(exporter.getClassName())) {
+      exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
     }
 
     // https://github.com/camunda/camunda/issues/37880
@@ -1226,6 +1230,8 @@ public class BrokerBasedPropertiesOverride {
 
     final boolean rdbmsReserved =
         camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms;
+    final List<ExporterConfigMerger> mergers = ExporterArgsMergers.load();
+
     exporters.forEach(
         (name, exporter) -> {
           // The reserved 'rdbms' exporter is provisioned from
@@ -1236,7 +1242,12 @@ public class BrokerBasedPropertiesOverride {
             warnReservedRdbmsExporter("camunda.data.exporters.rdbms.*");
             return;
           }
-          override.getExporters().put(name, exporter.toExporterCfg());
+          final ExporterCfg newCfg = exporter.toExporterCfg();
+          final ExporterCfg existing = override.getExporters().get(name);
+          if (existing != null && existing.getArgs() != null) {
+            newCfg.setArgs(mergeExporterArgs(mergers, name, newCfg, existing));
+          }
+          override.getExporters().put(name, newCfg);
         });
   }
 
@@ -1246,6 +1257,52 @@ public class BrokerBasedPropertiesOverride {
             + "property '{}'. This configuration is ignored; configure it through "
             + "'camunda.data.secondary-storage.rdbms.*' instead.",
         genericProperty);
+  }
+
+  /**
+   * Merges the legacy {@code args} (base) with the unified {@code args} (overlay) for one exporter.
+   * When an {@link ExporterConfigMerger} ships for the exporter's class, that class-aware merger
+   * deep-merges them (unified wins per key, legacy fills gaps); otherwise the unified args replace
+   * the legacy args wholesale — partial inheritance is only offered for classes whose config model
+   * a merger can introspect. Never mutates the input maps.
+   *
+   * <p>Merging is therefore attempted only for a <em>bundled</em> exporter that both entries agree
+   * on. It is skipped — unified args replace the legacy map wholesale — when either entry declares
+   * a {@code jarPath}, i.e. an external exporter loaded from its own jar, and likewise when the two
+   * entries name different classes or leave the class unset. An external exporter's args are an
+   * opaque, user-defined shape: no bundled merger claims its class, and its jar is loaded in an
+   * isolated class loader after configuration resolution, so there is nothing here that can safely
+   * decide which legacy keys still apply. Replacing wholesale keeps the declared unified config
+   * authoritative rather than silently reviving keys from a possibly incompatible older setup.
+   */
+  private static Map<String, Object> mergeExporterArgs(
+      final List<ExporterConfigMerger> mergers,
+      final String exporterName,
+      final ExporterCfg unified,
+      final ExporterCfg legacy) {
+    if (hasText(unified.getJarPath()) || hasText(legacy.getJarPath())) {
+      return unified.getArgs();
+    }
+    final String unifiedClassName = unified.getClassName();
+    final String legacyClassName = legacy.getClassName();
+    if (!hasText(unifiedClassName)
+        || !hasText(legacyClassName)
+        || !unifiedClassName.equals(legacyClassName)) {
+      return unified.getArgs();
+    }
+    final String context = String.format("exporter '%s'", exporterName);
+    final ExporterConfigMerger merger =
+        ExporterArgsMergers.find(mergers, unifiedClassName, context);
+    if (merger == null) {
+      // no merger for this class: whole-map replace, the unified args exactly as declared
+      return unified.getArgs();
+    }
+    // legacy is the base (root position), unified overrides (tenant position) so unified wins
+    return ExporterArgsMergers.merge(merger, legacy.getArgs(), unified.getArgs(), context);
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 
   private static void populateFromGlobalListeners(
