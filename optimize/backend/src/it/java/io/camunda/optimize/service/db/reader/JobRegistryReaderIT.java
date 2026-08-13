@@ -106,4 +106,47 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(found.get().getId()).isEqualTo(queuedEntry.getId());
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.QUEUED);
   }
+
+  @Test
+  void shouldFindJobByJobTypeAndTargetEntityId() {
+    final JobRegistryEntryDto created =
+        jobRegistryWriter.createJobEntry(
+            JobType.PROCESS_DEFINITION_DATA_DELETE,
+            TargetEntityType.PROCESS_DEFINITION,
+            "2251799813685251");
+
+    final Optional<JobRegistryEntryDto> found =
+        jobRegistryReader.findByJobTypeAndTargetEntityId(
+            JobType.PROCESS_DEFINITION_DATA_DELETE, "2251799813685251");
+
+    assertThat(found).isPresent();
+    assertThat(found.get().getId()).isEqualTo(created.getId());
+  }
+
+  @Test
+  void shouldFindJobByJobTypeAndTargetEntityIdRegardlessOfStatus() {
+    final JobRegistryEntryDto created =
+        jobRegistryWriter.createJobEntry(
+            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+    jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
+
+    final Optional<JobRegistryEntryDto> found =
+        jobRegistryReader.findByJobTypeAndTargetEntityId(
+            JobType.PROCESS_DEFINITION_DATA_DELETE, "1");
+
+    assertThat(found).isPresent();
+    assertThat(found.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
+  }
+
+  @Test
+  void shouldNotFindJobForUnknownTargetEntityId() {
+    jobRegistryWriter.createJobEntry(
+        JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+
+    final Optional<JobRegistryEntryDto> found =
+        jobRegistryReader.findByJobTypeAndTargetEntityId(
+            JobType.PROCESS_DEFINITION_DATA_DELETE, "does-not-exist");
+
+    assertThat(found).isEmpty();
+  }
 }
