@@ -504,7 +504,7 @@ public class ClusterEndpoint {
       @RequestBody(required = false) final RoutingState routingState,
       @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestParam(required = false) final @Nullable String physicalTenant) {
-    final Optional<String> tenant = Optional.ofNullable(physicalTenant).filter(s -> !s.isBlank());
+    final Optional<String> tenant = nonBlank(physicalTenant);
     try {
       Optional<io.camunda.zeebe.dynamic.config.state.RoutingState> internalRoutingState =
           Optional.empty();
