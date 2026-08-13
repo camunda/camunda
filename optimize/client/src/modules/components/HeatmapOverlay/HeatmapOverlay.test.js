@@ -82,13 +82,12 @@ it('should update heatmap if data changes', () => {
 });
 
 it('should attach onClick with sanitized ids if passed', () => {
-  // given
   const dottedId = 'flow.with.dot';
   const heatmapData = {[dottedId]: 1};
   const spy = jest.fn();
-  // when
+
   shallow(<HeatmapOverlay viewer={viewer} data={heatmapData} onNodeClick={spy} />);
-  // then
+
   expect(escapeMock).toHaveBeenCalledWith(dottedId);
   expect(eventSpy).toHaveBeenCalledWith('element.click', spy);
   expect(selectorSpy).toHaveBeenCalledWith(`[data-element-id=${MOCKED_ESCAPE_RESULT}]`);
