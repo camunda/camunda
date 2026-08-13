@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.security;
 
-import static io.camunda.optimize.AbstractIT.OPENSEARCH_SINGLE_TEST_FAIL_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +18,6 @@ import io.camunda.security.api.model.session.PersistentSession;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -31,10 +29,10 @@ import org.junit.jupiter.api.Test;
  * with {@code optimize.security.csl.enabled=true}, which would swap the whole security chain and
  * break this rig's authentication. The store path exercised here is the same either way.
  *
- * <p>Elasticsearch-only until the OpenSearch store lands (#58472), hence the tag that keeps it out
- * of the OpenSearch pipeline.
+ * <p>Runs against both Elasticsearch and OpenSearch: the rig injects the {@link
+ * PersistentWebSessionRepository} implementation for the database under test, so the same
+ * assertions pin the behaviour of both stores.
  */
-@Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 public class OptimizeSessionStoreAdapterIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private static final String ATTRIBUTE_NAME = "SPRING_SECURITY_CONTEXT";

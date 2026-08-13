@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.csl;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
@@ -380,38 +383,24 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty("contextPath")).isEqualTo("/explicit");
   }
 
-  @Test
-  void shouldEnablePersistentSessionsOnElasticsearch() {
-    // given the default database, which is Elasticsearch
-    final StandardEnvironment env = environmentWith(cslEnabledConfig());
-
-    // when
-    processor.postProcessEnvironment(env, null);
-
-    // then the CSL session store is active, so sessions survive a restart and are shared
-    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY)).isEqualTo("true");
-  }
-
-  @Test
-  void shouldNotEnablePersistentSessionsOnOpenSearch() {
+  @ParameterizedTest
+  @ValueSource(strings = {ELASTICSEARCH_DATABASE_PROPERTY, OPENSEARCH_DATABASE_PROPERTY})
+  void shouldEnablePersistentSessionsOnEveryDatabase(final String database) {
     // given
     final Map<String, Object> legacy = cslEnabledConfig();
-    legacy.put(CAMUNDA_OPTIMIZE_DATABASE, OPENSEARCH_DATABASE_PROPERTY);
+    legacy.put(CAMUNDA_OPTIMIZE_DATABASE, database);
     final StandardEnvironment env = environmentWith(legacy);
 
     // when
     processor.postProcessEnvironment(env, null);
 
-    // then CSL keeps its in-memory sessions: enabling persistence without an OpenSearch store
-    // would leave CSL's session repository without a SessionStorePort and fail startup
-    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY)).isNull();
-    logs.assertContains(
-        entry -> entry.getMessage().contains("Persistent web sessions are not enabled"),
-        "expected a warning that sessions are kept in memory on OpenSearch");
+    // then the CSL session store is active on both editions, so sessions survive a restart and are
+    // shared across instances rather than being kept in memory on one of them
+    assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY)).isEqualTo("true");
   }
 
   @Test
-  void shouldLetOperatorTurnOffPersistentSessionsOnElasticsearch() {
+  void shouldLetOperatorTurnOffPersistentSessions() {
     // given an operator who explicitly opted out
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY, "false");

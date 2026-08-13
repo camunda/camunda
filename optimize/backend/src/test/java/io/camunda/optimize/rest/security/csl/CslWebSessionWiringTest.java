@@ -24,8 +24,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
  * Pins the contract between CSL's session lifecycle and Optimize's store: {@link
  * WebSessionConfiguration} activates on {@code camunda.security.session.persistent.enabled} and
  * then <em>requires</em> a {@code SessionStorePort}. That coupling is why {@link
- * OptimizeSecurityConfigCompatibilityPostProcessor} only sets the property for the database
- * Optimize has a store for.
+ * OptimizeSecurityConfigCompatibilityPostProcessor} may only set the property while every database
+ * Optimize supports has a store implementation.
  */
 class CslWebSessionWiringTest {
 
@@ -65,7 +65,7 @@ class CslWebSessionWiringTest {
 
   @Test
   void shouldFailToStartWhenPersistenceIsEnabledWithoutAStore() {
-    // given the wiring of a database Optimize has no session store for, such as OpenSearch
+    // given a context where no store implementation contributed a SessionStorePort bean
     new ApplicationContextRunner()
         .withPropertyValues(
             "optimize.security.csl.enabled=true",
@@ -74,8 +74,8 @@ class CslWebSessionWiringTest {
         .withUserConfiguration(WebSessionConfiguration.class)
         .run(
             context ->
-                // then the context cannot be built, which is why the post processor only sets the
-                // property for a database that has a store
+                // then the context cannot be built, which is why every supported database needs a
+                // store before the post processor may enable persistence
                 assertThat(context)
                     .getFailure()
                     .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class));
