@@ -37,8 +37,7 @@ import {
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-// TODO: https://github.com/camunda/camunda/issues/59641
-describe.todo('FlowNodeInstancesTree - Modification placeholders', () => {
+describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
@@ -51,6 +50,12 @@ describe.todo('FlowNodeInstancesTree - Modification placeholders', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [],
     });
+  });
+
+  afterEach(() => {
+    modificationsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
   });
 
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
