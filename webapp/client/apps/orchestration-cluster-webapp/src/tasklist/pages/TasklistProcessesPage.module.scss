@@ -38,45 +38,50 @@
 	background: var(--cds-layer);
 }
 
-// DS-only (see TasklistProcessesPage.tsx). The page previously stacked three
-// different Carbon surfaces — --cds-layer on the page and the tile section,
-// --cds-background on the header — which read as banding once the tiles became
-// white. All three now share the DS base surface, so the page is one continuous
-// background and only the tiles sit above it.
+// DS-only (see TasklistProcessesPage.tsx). The page previously stacked two
+// different Carbon surfaces — --cds-layer on the page, --cds-background on the
+// header — which read as banding once the tiles became white. The DS path is one
+// continuous surface with only the tiles sitting above it.
 //
-// These must stay declared after their base classes: single-class selectors have
-// equal specificity, so source order decides.
-.pageDS,
-.headerDS,
-.processesDS {
+// Must stay declared after `.page`: single-class selectors have equal
+// specificity, so source order decides.
+.pageDS {
 	background: var(--background);
 }
 
-// DS-only. Values taken from the DS PageLayout/PageHeader
-// (src/components/ui/page-layout.tsx) and the ProjectDetailPage example, so this
-// page's header matches the reference:
-//   title        heading-lg  -> 28px / 36px, normal weight
-//   description  text-sm     -> 14px / 20px, muted foreground
-//   title -> description     gap-1  = 4px
-//   page padding             p-6    = 24px (was 24px block / 40px inline)
-.headerContentDS,
-.processesContentDS {
+// DS-only. The single padded, width-constrained container the DS PageLayout puts
+// around a page: `p-6` and `mx-auto max-w-[1584px]`. Carbon pads the header and
+// the tile section separately, which stacked two 24px paddings around the gap
+// between them.
+.contentDS {
+	display: flex;
+	flex-direction: column;
+	max-width: 99rem;
+	margin-inline: auto;
 	padding: 1.5rem;
 }
 
-// DS-only. The Stack holding the header and the tile sections carries Carbon
-// spacing step 2, which the compat adapter maps to gap-1 (4px). The DS spacing
-// scale wants gap-4 (16px) between the two sections, and the compat `gap` prop
-// takes Carbon steps rather than Tailwind ones, so the value is set here instead
-// of by changing the prop, which would also move the Carbon layout.
-.sectionsDS {
-	gap: 1rem;
-}
-
-.titleBlockDS {
+// DS-only. The DS PageHeader: `flex flex-col gap-0` with the title block on
+// `gap-1` (4px).
+.pageHeaderDS {
+	display: flex;
+	flex-direction: column;
 	gap: 0.25rem;
 }
 
+// DS-only. The content block below the header. The ProjectDetailPage example
+// offsets it by `mt-6` (24px) and spaces its children — the filter row and the
+// list — with `gap-4` (16px).
+.pageBodyDS {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	margin-top: 1.5rem;
+}
+
+// DS-only. The DS PageHeader type scale:
+//   title        heading-lg  -> 28px / 36px, normal weight
+//   description  text-sm     -> 14px / 20px, muted foreground
 .pageTitleDS {
 	font-size: 1.75rem;
 	line-height: 2.25rem;

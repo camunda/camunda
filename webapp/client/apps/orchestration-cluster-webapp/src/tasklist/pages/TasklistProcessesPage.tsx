@@ -58,152 +58,137 @@ const TasklistProcessesPage: React.FC<Props> = ({
 		[onOpenStartProcessForm, startProcess],
 	);
 
+	const emptyStateDescription = (
+		<span>
+			{t('tasklist.processesErrorBody')}
+			<Link
+				href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+				target="_blank"
+				rel="noopener noreferrer"
+				inline
+			>
+				{t('tasklist.processesErrorBodyLinkLabel')}
+			</Link>
+		</span>
+	);
+	const emptyStateHeading = isFiltered
+		? t('tasklist.processesProcessNotFoundError')
+		: t('tasklist.processesProcessNotPublishedError');
+	const loadMoreButton =
+		hasNextPage && processes.length > 0 ? (
+			<Button onClick={onLoadMore} disabled={isFetchingNextPage} kind="ghost" className={styles.loadMoreButton}>
+				{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}
+			</Button>
+		) : null;
+
+	// The DS path follows the DS PageLayout (src/components/ui/page-layout.tsx) and
+	// the ProjectDetailPage example rather than Carbon's two-section page: one
+	// padded, width-constrained container holds the header, then a single content
+	// block offset by 24px whose children — the filter row and the tile grid — are
+	// 16px apart. Carbon's version pads the header and the tile section separately,
+	// which stacked two 24px paddings around the gap between them.
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<>
+				<main id="main-content" className={cn('cds--content', styles.page, styles.pageDS)}>
+					<div className={styles.scrollContainer}>
+						<div className={styles.contentDS}>
+							<header className={styles.pageHeaderDS}>
+								<h1 id="processes-heading" className={styles.pageTitleDS}>
+									{t('tasklist.headerNavItemProcesses')}
+								</h1>
+								<p className={styles.pageDescriptionDS}>{t('tasklist.processesSubtitle')}</p>
+							</header>
+
+							<div className={styles.pageBodyDS}>
+								<ProcessesFilters initialFilterValues={initialFilterValues} tenants={tenants} />
+
+								{processes.length === 0 ? (
+									<Layer>
+										{/* The DS EmptyState, matching NoTasks.tsx and the variables panel.
+										    The illustration is dropped here — EmptyState takes a node `icon`,
+										    not C3's `{path, altText}` image descriptor. */}
+										<EmptyState heading={emptyStateHeading} description={emptyStateDescription} />
+									</Layer>
+								) : (
+									// A plain CSS grid replacing Carbon's Grid/Column, whose compat adapter is
+									// a passthrough. Carbon's sm=4/md=4/lg=5 spans out of 4/8/16 tracks worked
+									// out to 1 / 2 / 3 tiles per row, which `.processGridDS` reproduces at
+									// Carbon's own breakpoints.
+									<Layer className={styles.processGridDS}>
+										{processes.map((process) => (
+											<ProcessTile
+												key={process.processDefinitionKey}
+												process={process}
+												status={selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'}
+												isStartButtonDisabled={isBusy}
+												onStartProcess={() => handleStartProcess(process)}
+											/>
+										))}
+									</Layer>
+								)}
+
+								{loadMoreButton}
+							</div>
+						</div>
+					</div>
+				</main>
+				<FirstTimeProcessWarning>{children}</FirstTimeProcessWarning>
+			</>
+		);
+	}
+
 	return (
 		<>
-			<main
-				id="main-content"
-				className={cn('cds--content', styles.page, featureFlags.dsTasklistUI && styles.pageDS)}
-			>
+			<main id="main-content" className={cn('cds--content', styles.page)}>
 				<div className={styles.scrollContainer}>
-					<Stack gap={2} className={cn(featureFlags.dsTasklistUI && styles.sectionsDS)}>
-						<section
-							className={cn(styles.header, featureFlags.dsTasklistUI && styles.headerDS)}
-							aria-labelledby="processes-heading"
-						>
-							<Stack
-								className={cn(styles.headerContent, featureFlags.dsTasklistUI && styles.headerContentDS)}
-								gap={6}
-							>
-								{/* Carbon's Grid/Column only spanned the full width here, so the DS path
-								    drops the grid entirely rather than reproducing a single full-span cell.
-								    Type scale and the title/description gap follow the DS PageHeader. */}
-								{featureFlags.dsTasklistUI ? (
-									<Stack className={styles.titleBlockDS}>
-										<h1 id="processes-heading" className={styles.pageTitleDS}>
-											{t('tasklist.headerNavItemProcesses')}
-										</h1>
-										<p className={styles.pageDescriptionDS}>{t('tasklist.processesSubtitle')}</p>
-									</Stack>
-								) : (
-									<Grid narrow>
-										<Column sm={4} md={8} lg={16}>
-											<Stack gap={4}>
-												<h1 id="processes-heading">{t('tasklist.headerNavItemProcesses')}</h1>
-												<p>{t('tasklist.processesSubtitle')}</p>
-											</Stack>
-										</Column>
-									</Grid>
-								)}
+					<Stack gap={2}>
+						<section className={styles.header} aria-labelledby="processes-heading">
+							<Stack className={styles.headerContent} gap={6}>
+								<Grid narrow>
+									<Column sm={4} md={8} lg={16}>
+										<Stack gap={4}>
+											<h1 id="processes-heading">{t('tasklist.headerNavItemProcesses')}</h1>
+											<p>{t('tasklist.processesSubtitle')}</p>
+										</Stack>
+									</Column>
+								</Grid>
 
 								<ProcessesFilters initialFilterValues={initialFilterValues} tenants={tenants} />
 							</Stack>
 						</section>
 
-						<section className={cn(styles.processes, featureFlags.dsTasklistUI && styles.processesDS)}>
-							<div className={cn(styles.processesContent, featureFlags.dsTasklistUI && styles.processesContentDS)}>
+						<section className={styles.processes}>
+							<div className={styles.processesContent}>
 								{processes.length === 0 ? (
 									<Layer>
-										{/* DS-only: the DS EmptyState, matching NoTasks.tsx and the variables panel.
-										    C3EmptyState is a composite with no compat adapter, so it stays on the
-										    flag-off path. The illustration is dropped on the DS path — EmptyState
-										    takes a node `icon`, not C3's `{path, altText}` image descriptor. */}
-										{featureFlags.dsTasklistUI ? (
-											<EmptyState
-												heading={
-													isFiltered
-														? t('tasklist.processesProcessNotFoundError')
-														: t('tasklist.processesProcessNotPublishedError')
-												}
-												description={
-													<span>
-														{t('tasklist.processesErrorBody')}
-														<Link
-															href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-															target="_blank"
-															rel="noopener noreferrer"
-															inline
-														>
-															{t('tasklist.processesErrorBodyLinkLabel')}
-														</Link>
-													</span>
-												}
-											/>
-										) : (
-											<C3EmptyState
-												icon={isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}}
-												heading={
-													isFiltered
-														? t('tasklist.processesProcessNotFoundError')
-														: t('tasklist.processesProcessNotPublishedError')
-												}
-												description={
-													<span>
-														{t('tasklist.processesErrorBody')}
-														<Link
-															href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-															target="_blank"
-															rel="noopener noreferrer"
-															inline
-														>
-															{t('tasklist.processesErrorBodyLinkLabel')}
-														</Link>
-													</span>
-												}
-											/>
-										)}
+										<C3EmptyState
+											icon={isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}}
+											heading={emptyStateHeading}
+											description={emptyStateDescription}
+										/>
 									</Layer>
 								) : (
-									<>
-										{/* DS-only: a plain CSS grid replacing Carbon's Grid/Column, whose compat
-										    adapter is a passthrough. Carbon's sm=4/md=4/lg=5 spans out of 4/8/16
-										    tracks worked out to 1 / 2 / 3 tiles per row, which is what
-										    `.processGridDS` reproduces at Carbon's own breakpoints. */}
-										{featureFlags.dsTasklistUI ? (
-											<Layer className={styles.processGridDS}>
-												{processes.map((process) => (
-													<ProcessTile
-														key={process.processDefinitionKey}
-														process={process}
-														status={selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'}
-														isStartButtonDisabled={isBusy}
-														onStartProcess={() => handleStartProcess(process)}
-													/>
-												))}
-											</Layer>
-										) : (
-											<Grid narrow as={Layer}>
-												{processes.map((process) => (
-													<Column
-														className={styles.processTileWrapper}
-														sm={4}
-														md={4}
-														lg={5}
-														key={process.processDefinitionKey}
-													>
-														<ProcessTile
-															process={process}
-															status={
-																selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'
-															}
-															isStartButtonDisabled={isBusy}
-															onStartProcess={() => handleStartProcess(process)}
-														/>
-													</Column>
-												))}
-											</Grid>
-										)}
-									</>
+									<Grid narrow as={Layer}>
+										{processes.map((process) => (
+											<Column
+												className={styles.processTileWrapper}
+												sm={4}
+												md={4}
+												lg={5}
+												key={process.processDefinitionKey}
+											>
+												<ProcessTile
+													process={process}
+													status={selectedProcessDefinitionKey === process.processDefinitionKey ? status : 'inactive'}
+													isStartButtonDisabled={isBusy}
+													onStartProcess={() => handleStartProcess(process)}
+												/>
+											</Column>
+										))}
+									</Grid>
 								)}
-								{hasNextPage && processes.length > 0 ? (
-									<Button
-										onClick={onLoadMore}
-										disabled={isFetchingNextPage}
-										kind="ghost"
-										className={styles.loadMoreButton}
-									>
-										{isFetchingNextPage ? t('tasklist.processesLoadingMore') : t('tasklist.processesLoadMore')}
-									</Button>
-								) : null}
+								{loadMoreButton}
 							</div>
 						</section>
 					</Stack>
