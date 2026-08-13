@@ -16,10 +16,13 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 @ZeebeIntegration
 final class DynamicClusterConfigurationServiceTest {
@@ -95,6 +98,19 @@ final class DynamicClusterConfigurationServiceTest {
                   .hasLeaderForPartition(2, 1)
                   .hasLeaderForPartition(3, 2);
             });
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldStopTheRebalanceCoordinatorBrokerWithoutHanging() {
+    // given
+    final var coordinatorBroker = cluster.brokers().get(MemberId.from("0"));
+
+    // when
+    coordinatorBroker.stop();
+
+    // then
+    Assertions.assertThat(coordinatorBroker.isStarted()).isFalse();
   }
 
   private void configureDynamicClusterTopology(

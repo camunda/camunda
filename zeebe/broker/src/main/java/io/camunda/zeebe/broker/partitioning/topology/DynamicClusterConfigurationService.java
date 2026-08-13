@@ -30,6 +30,7 @@ import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
 import io.camunda.zeebe.rebalance.RebalanceRunner;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
@@ -56,6 +57,7 @@ public class DynamicClusterConfigurationService
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private RebalanceCoordinator rebalanceCoordinator;
+  private Actor rebalanceCoordinatorActor;
   private RebalanceRequestServer rebalanceRequestServer;
   private final ClusterChangeExecutor clusterChangeExecutor;
 
@@ -247,13 +249,18 @@ public class DynamicClusterConfigurationService
     if (rebalanceRequestServer != null) {
       rebalanceRequestServer.close();
     }
+    if (rebalanceCoordinator != null && clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.removeUpdateListener(rebalanceCoordinator);
+    }
+    final ActorFuture<Void> rebalanceCoordinatorClosed =
+        rebalanceCoordinatorActor != null
+            ? rebalanceCoordinatorActor.closeAsync()
+            : CompletableActorFuture.completed(null);
     if (clusterConfigurationManagerService != null) {
-      if (rebalanceCoordinator != null) {
-        clusterConfigurationManagerService.removeUpdateListener(rebalanceCoordinator);
-      }
-      return clusterConfigurationManagerService.closeAsync();
+      return rebalanceCoordinatorClosed.andThen(
+          clusterConfigurationManagerService::closeAsync, Runnable::run);
     } else {
-      return CompletableActorFuture.completed(null);
+      return rebalanceCoordinatorClosed;
     }
   }
 
@@ -353,26 +360,33 @@ public class DynamicClusterConfigurationService
         brokerStartupContext.getMeterRegistry());
   }
 
-  /**
-   * The rebalancing coordinator runs on the same lowest-id member that configuration requests are
-   * forwarded to, so it shares an actor.
-   */
   private void startRebalanceCoordinator(final BrokerStartupContext brokerStartupContext) {
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
-    rebalanceCoordinator =
-        new RebalanceCoordinator(
-            localMember,
-            clusterConfigurationManagerService.concurrencyControl(),
-            RebalanceRunner.none(),
-            () -> brokerStartupContext.getRequestIdGenerator().nextId());
-    rebalanceRequestServer =
-        new RebalanceRequestServer(
-            brokerStartupContext.getClusterServices().getCommunicationService(),
-            new ProtoBufRebalanceSerializer(),
-            rebalanceCoordinator);
-    rebalanceRequestServer.start();
-    clusterConfigurationManagerService.addUpdateListener(rebalanceCoordinator);
+    rebalanceCoordinatorActor = Actor.newActor().name("RebalanceCoordinator").build();
+    brokerStartupContext
+        .getActorSchedulingService()
+        .submitActor(rebalanceCoordinatorActor)
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                LOGGER.error("Failed to start the rebalance coordinator actor", error);
+                return;
+              }
+              rebalanceCoordinator =
+                  new RebalanceCoordinator(
+                      localMember,
+                      rebalanceCoordinatorActor,
+                      RebalanceRunner.none(),
+                      () -> brokerStartupContext.getRequestIdGenerator().nextId());
+              rebalanceRequestServer =
+                  new RebalanceRequestServer(
+                      brokerStartupContext.getClusterServices().getCommunicationService(),
+                      new ProtoBufRebalanceSerializer(),
+                      rebalanceCoordinator);
+              rebalanceRequestServer.start();
+              clusterConfigurationManagerService.addUpdateListener(rebalanceCoordinator);
+            });
   }
 
   @Override

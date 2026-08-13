@@ -47,7 +47,6 @@ import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.FileUtil;
@@ -490,10 +489,6 @@ public final class ClusterConfigurationManagerService
 
   public Optional<ConfigurationChangeCoordinator> getTopologyChangeCoordinator() {
     return Optional.ofNullable(configurationChangeCoordinator);
-  }
-
-  public ConcurrencyControl concurrencyControl() {
-    return managerActor;
   }
 
   @Override
