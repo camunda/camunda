@@ -42,16 +42,20 @@ import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -628,5 +632,70 @@ class VariableServiceTest {
       final int variableSizeThreshold) {
     return createVariableEntity(
         flowNodeInstanceId, name, value, variableSizeThreshold, DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  // Regression for SUPPORT-34050 / #60017: buildFlowNodeTrees iterated flowNodeTrees.keySet() while
+  // calling computeIfAbsent on the same map. When the number of process instances lands on a
+  // HashMap growth boundary (capacity * 0.75 + 1 = 13, 25, 49, 97, ...), the first computeIfAbsent
+  // resizes the map mid-iteration and silently truncates the loop after one element
+  @ParameterizedTest
+  @ValueSource(ints = {12, 13, 25, 48, 49, 50, 97})
+  void getVariablesPerTaskIdResolvesEveryTaskRegardlessOfProcessInstanceCount(final int numTasks) {
+    // given - numTasks running tasks, each in its own process instance, each with one
+    // process(root)-scope variable "taskStatus" (scopeKey == processInstanceKey)
+    final long base = 2251799813685000L;
+    final List<VariableStore.GetVariablesRequest> requests = new ArrayList<>();
+    final List<FlowNodeInstanceEntity> flowNodeInstances = new ArrayList<>();
+    final List<VariableEntity> variables = new ArrayList<>();
+    for (int i = 0; i < numTasks; i++) {
+      final long processInstanceKey = base + i * 10L;
+      final long userTaskKey = processInstanceKey + 5L; // element instance key != process instance
+      flowNodeInstances.add(
+          new FlowNodeInstanceEntity()
+              .setId(String.valueOf(userTaskKey))
+              .setProcessInstanceKey(processInstanceKey)
+              .setScopeKey(processInstanceKey));
+      variables.add(
+          new VariableEntity()
+              .setId(processInstanceKey + "-taskStatus")
+              .setName("taskStatus")
+              .setValue("\"TEST\"")
+              .setIsPreview(false)
+              .setScopeKey(processInstanceKey)
+              .setProcessInstanceKey(processInstanceKey));
+      requests.add(
+          VariableStore.GetVariablesRequest.createFrom(
+                  new TaskEntity()
+                      .setId(String.valueOf(userTaskKey))
+                      .setKey(userTaskKey)
+                      .setState(TaskState.CREATED)
+                      .setFlowNodeInstanceId(String.valueOf(userTaskKey))
+                      .setProcessInstanceId(String.valueOf(processInstanceKey)),
+                  emptySet())
+              .setVarNames(List.of("taskStatus")));
+    }
+
+    when(variableStore.getFlowNodeInstances(any())).thenReturn(flowNodeInstances);
+    // mimic the store: variables are matched by scopeKey against the ids the service passes in
+    when(variableStore.getVariablesByFlowNodeInstanceIds(any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              final List<String> scopeIds = invocation.getArgument(0);
+              final Set<String> scopeKeys = new HashSet<>(scopeIds);
+              return variables.stream()
+                  .filter(v -> scopeKeys.contains(String.valueOf(v.getScopeKey())))
+                  .toList();
+            });
+
+    // when
+    final Map<String, List<VariableDTO>> variablesPerTaskId =
+        instance.getVariablesPerTaskId(requests);
+
+    // then - every task resolves its process-scope variable
+    final long tasksWithVariable =
+        variablesPerTaskId.values().stream().filter(vars -> !vars.isEmpty()).count();
+    assertThat(tasksWithVariable)
+        .as("all %d tasks should resolve their process-scope variable", numTasks)
+        .isEqualTo(numTasks);
   }
 }
