@@ -58,11 +58,25 @@ const fillAndSubmit = ClientFunction((fieldName, value) => {
 
 // Auth0 renders rejections into the page. Reading it turns an opaque selector timeout into an
 // actionable message ("Wrong email or password", "your account has been blocked", ...).
-const readAuth0Error = ClientFunction(() => {
-  const element = document.querySelector(
-    '[role="alert"], .ulp-input-error-message, #error-element-username, #error-element-password'
+//
+// A message found here is treated as final, so it must not be something Optimize itself rendered:
+// mistaking an app toast for a rejection would suppress the retry for a merely transient failure.
+// Hence the Auth0-specific selectors first, and the generic `[role="alert"]` only while the browser
+// is still on Auth0's own origin.
+const readAuth0Error = ClientFunction((appOrigin) => {
+  const auth0Element = document.querySelector(
+    '.ulp-input-error-message, #error-element-username, #error-element-password'
   );
-  return element ? element.textContent.trim() : '';
+  if (auth0Element) {
+    return auth0Element.textContent.trim();
+  }
+
+  if (window.location.origin === appOrigin) {
+    return '';
+  }
+
+  const alert = document.querySelector('[role="alert"]');
+  return alert ? alert.textContent.trim() : '';
 });
 
 /**
@@ -76,7 +90,7 @@ export async function loginToCloud(t) {
   const email = requireEnv('AUTH0_USEREMAIL');
   const password = requireEnv('AUTH0_USERPASSWORD');
 
-  for (let attempt = 1; ; attempt++) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       await attemptLogin(t, email, password);
       return;
@@ -87,6 +101,8 @@ export async function loginToCloud(t) {
       await t.wait(RETRY_DELAY);
     }
   }
+
+  throw new Error('unreachable: the last attempt either returns or rethrows');
 }
 
 async function attemptLogin(t, email, password) {
@@ -120,7 +136,7 @@ async function submitField(selector, fieldName, value) {
 }
 
 async function loginError(reason) {
-  const auth0Message = await readAuth0Error();
+  const auth0Message = await readAuth0Error(new URL(config.endpoint).origin);
   const error = new Error(
     `Auth0 login failed: ${reason}${auth0Message ? ` - Auth0 said: "${auth0Message}"` : ''}`
   );
