@@ -31,11 +31,18 @@ import {getElement} from 'modules/utils/elements';
 
 const localStorageKey = 'hideMoveModificationHelperModal';
 
-const MoveAction: React.FC = observer(() => {
+type Props = {
+  isRunningSelection?: boolean;
+};
+
+const MoveAction: React.FC<Props> = observer(({isRunningSelection}) => {
   const location = useLocation();
   const {elementId} = getProcessInstanceFilters(location.search);
 
-  const {hasSelectedRunningInstances} = processInstancesSelectionStore;
+  const {hasSelectedRunningInstances: storeHasSelectedRunningInstances} =
+    processInstancesSelectionStore;
+  const hasSelectedRunningInstances =
+    isRunningSelection ?? storeHasSelectedRunningInstances;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data: processDefinitionData} = useListViewXml({

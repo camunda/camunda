@@ -190,7 +190,7 @@ describe('<InstancesTable />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not offer batch selection while suspended instances are filtered', () => {
+  it('should offer batch selection while suspended instances are filtered', () => {
     render(
       <InstancesTable
         state="content"
@@ -201,7 +201,7 @@ describe('<InstancesTable />', () => {
       {wrapper: getWrapper(`${Paths.processes()}?suspended=true`)},
     );
 
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
   });
 
   it('should render batch modification footer', async () => {

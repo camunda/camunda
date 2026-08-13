@@ -21,6 +21,7 @@ type BuildMutationRequestBodyParams = {
   excludeIds?: string[];
   conditions?: VariableCondition[];
   processDefinitionKey?: string;
+  includeSuspended?: boolean;
 };
 
 const buildMutationRequestBody = ({
@@ -29,8 +30,12 @@ const buildMutationRequestBody = ({
   excludeIds = [],
   conditions,
   processDefinitionKey,
+  includeSuspended = false,
 }: BuildMutationRequestBodyParams) => {
-  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
+  const baseFilter = parseProcessInstancesSearchFilter({
+    searchParams,
+    includeSuspended,
+  });
 
   const keyCriterion = buildInstanceKeyCriterion(includeIds, excludeIds);
 
