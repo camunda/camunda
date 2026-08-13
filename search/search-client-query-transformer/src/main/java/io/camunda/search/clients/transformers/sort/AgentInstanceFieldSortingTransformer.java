@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.ROOT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.CREATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
@@ -24,6 +25,7 @@ public class AgentInstanceFieldSortingTransformer implements FieldSortingTransfo
   public String apply(final String domainField) {
     return switch (domainField) {
       case "agentInstanceKey" -> KEY; // ES/OS stores the key as "key", not "agentInstanceKey"
+      case "agentDefinitionKey" -> AGENT_DEFINITION_KEY;
       case "status" -> STATUS;
       case "elementId" -> ELEMENT_ID;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;

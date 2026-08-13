@@ -31,6 +31,11 @@ public record AgentInstanceSort(List<FieldSorting> orderings) implements SortOpt
       return this;
     }
 
+    public Builder agentDefinitionKey() {
+      currentOrdering = new FieldSorting("agentDefinitionKey", null);
+      return this;
+    }
+
     public Builder status() {
       currentOrdering = new FieldSorting("status", null);
       return this;
