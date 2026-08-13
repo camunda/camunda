@@ -37,16 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Covers the embedded {@code history[]} batch processing on {@code AGENT_INSTANCE:CREATE}/{@code
- * UPDATE}: the job-context precondition (checked whenever a jobKey is provided, and required once a
- * history batch is present) that keeps the existing PENDING/COMMITTED/DISCARDED lifecycle safe;
- * whole-batch shape validation — every item needs a non-empty {@code historyItemId}, a declared
- * role, and a positive {@code loopIteration}, and a {@code CONFIGURATION} item's {@code
- * changedAttributes} may only name attributes this helper actually knows how to apply; and,
- * finally, the actual batch application once it's wired into CREATE/UPDATE — history events emitted
- * in order, metrics accumulated (including the ASSISTANT-derived model/tool call counts), instance
- * fields applied only from {@code CONFIGURATION} items and only for the attributes they name, and
- * batch atomicity (a rejection anywhere in the batch leaves no partial history behind).
+ * Covers job-context validation, batch validation, and batch application for the embedded {@code
+ * history[]} batch on {@code AGENT_INSTANCE:CREATE}/{@code UPDATE}.
  */
 public class AgentInstanceHistoryBatchProcessingTest {
 
