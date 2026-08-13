@@ -175,7 +175,7 @@ class AnalyticsExporterTest {
   @Test
   void shouldNotSerializeMetadataWhenHandlerNoOps() {
     // given — a record that passes the AnalyticsRecordFilter but the handler skips because the
-    // element isn't an ad-hoc sub-process. This is the realistic hot-path no-op case.
+    // element isn't a root process. This is the realistic hot-path no-op case.
     final var value =
         ImmutableProcessInstanceRecordValue.builder()
             .withBpmnElementType(BpmnElementType.SERVICE_TASK)

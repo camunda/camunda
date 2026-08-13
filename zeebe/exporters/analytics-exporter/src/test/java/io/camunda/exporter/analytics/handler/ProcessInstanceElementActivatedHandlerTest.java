@@ -131,33 +131,8 @@ class ProcessInstanceElementActivatedHandlerTest {
   }
 
   @Test
-  void shouldEmitEventForAdHocSubProcess() {
-    // given
-    final var record = elementActivated(BpmnElementType.AD_HOC_SUB_PROCESS, 77L);
-
-    // when
-    handler.handle(typed(record));
-
-    // then
-    assertThat(logExporter.getFinishedLogRecordItems())
-        .singleElement()
-        .satisfies(
-            logRecord ->
-                assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(
-                        AnalyticsAttributes.Event.NAME,
-                        AnalyticsAttributes.Event.ADHOC_SUBPROCESS_ACTIVATED)
-                    .containsEntry(BPMN_PROCESS_ID, "my-process")
-                    .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 42L)
-                    .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 100L)
-                    .containsEntry(AnalyticsAttributes.Element.ID, "adhoc-1")
-                    .containsEntry(ID, "tenant-a"));
-    assertThat(findProcessInstanceCounter(metricReader.collectAllMetrics())).isEmpty();
-  }
-
-  @Test
   void shouldSkipOtherElementTypes() {
-    // given — a root-scoped element that is neither a process nor an ad-hoc sub-process
+    // given — a root-scoped element that is not a process
     final var record = elementActivated(BpmnElementType.SERVICE_TASK, NO_PARENT_INSTANCE);
 
     // when
@@ -180,7 +155,6 @@ class ProcessInstanceElementActivatedHandlerTest {
             .withProcessDefinitionKey(42L)
             .withProcessInstanceKey(100L)
             .withRootProcessInstanceKey(100L)
-            .withElementId("adhoc-1")
             .withTenantId("tenant-a")
             .build();
     return FACTORY.generateRecord(

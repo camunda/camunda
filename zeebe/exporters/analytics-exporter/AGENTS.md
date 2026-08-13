@@ -68,7 +68,6 @@ Replicated log
 |      ValueType      |      Intent       |                Handler                 |              event.name               |                         Extra filter                         |
 |---------------------|-------------------|----------------------------------------|---------------------------------------|--------------------------------------------------------------|
 | PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `process_instance_created` + counter  | bpmnElementType == PROCESS && parentProcessInstanceKey == -1 |
-| PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `adhoc_subprocess_activated`          | bpmnElementType == AD_HOC_SUB_PROCESS                        |
 | USER_TASK           | CREATED           | UserTaskCreatedHandler                 | `user_task_created`                   | —                                                            |
 | USER_TASK           | ASSIGNED          | UserTaskAssignedHandler                | `camunda.user_task.assigned`          | skips empty assignee                                         |
 | TENANT              | CREATED           | TenantCreatedHandler                   | `camunda.tenant.created`              | —                                                            |

@@ -47,7 +47,6 @@ public final class AnalyticsAttributes {
      */
     public static final String PROCESS_INSTANCE_CREATED = "process_instance_created";
 
-    public static final String ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
     public static final String HEARTBEAT = "heartbeat";
     public static final String USER_TASK_CREATED = "user_task_created";
     public static final String TENANT_CREATED = "camunda.tenant.created";

@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.ADHOC_SUBPROCESS_ACTIVATED;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITION_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
@@ -27,10 +26,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED} for the two element types the exporter cares
- * about: an ad-hoc sub-process emits {@code adhoc_subprocess_activated}, and a root process element
- * emits {@code process_instance_created} plus the {@code camunda.process_instance.created} counter.
- * All other element types are skipped silently.
+ * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED}, emitting {@code process_instance_created} plus
+ * the {@code camunda.process_instance.created} counter for a root process element. All other element
+ * types are skipped silently.
  */
 public final class ProcessInstanceElementActivatedHandler
     implements AnalyticsHandler<ProcessInstanceRecordValue> {
@@ -54,10 +52,6 @@ public final class ProcessInstanceElementActivatedHandler
   @Override
   public void handle(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
-    if (value.getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
-      emitAdHocSubProcessActivated(record, value);
-      return;
-    }
     // Counts once per root process instance regardless of start trigger (client API, message,
     // timer, signal, conditional); the parent-key guard excludes call-activity children. This
     // population is assumed equal to the license RPI population, pending engine-team validation.
@@ -65,20 +59,6 @@ public final class ProcessInstanceElementActivatedHandler
         && value.getParentProcessInstanceKey() == NO_PARENT_INSTANCE) {
       emitProcessInstanceCreated(record, value);
     }
-  }
-
-  private void emitAdHocSubProcessActivated(
-      final Record<ProcessInstanceRecordValue> record, final ProcessInstanceRecordValue value) {
-    otelSdkManager.logEvent(
-        ADHOC_SUBPROCESS_ACTIVATED,
-        record.getPosition(),
-        log ->
-            log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
-                .setAttribute(AnalyticsAttributes.Element.ID, value.getElementId())
-                .setAttribute(ID, value.getTenantId())
-                .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
   private void emitProcessInstanceCreated(
