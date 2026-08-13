@@ -92,11 +92,10 @@ public class BackupStoreCfg implements ConfigurationEntry {
   public String toString() {
     final var timeouts = ", readTimeout=" + readTimeout + ", writeTimeout=" + writeTimeout;
     return switch (store) {
-      case NONE -> "BackupStoreCfg{" + "store=" + store + timeouts + '}';
+      case NONE, FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + timeouts + '}';
       case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + timeouts + '}';
       case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + timeouts + '}';
       case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + timeouts + '}';
-      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + timeouts + '}';
     };
   }
 
