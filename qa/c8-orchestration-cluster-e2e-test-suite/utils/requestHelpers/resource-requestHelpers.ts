@@ -484,8 +484,13 @@ export function deleteResource(
   resourceKey: string,
   options: DeleteResourceOptions = {},
 ): Promise<APIResponse> {
+  // A request carrying a body states its own Content-Type rather than leaving
+  // Playwright to infer one; a bodyless delete only declares what it accepts.
+  const headers =
+    options.headers ??
+    (options.data === undefined ? defaultHeaders() : jsonHeaders());
   return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
-    headers: options.headers ?? defaultHeaders(),
+    headers,
     ...(options.data === undefined ? {} : {data: options.data}),
   });
 }
