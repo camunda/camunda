@@ -139,6 +139,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <!-- operate/pom.xml hardcodes this to true; override here so test output streams
+               live instead of only landing in a per-test file that's never surfaced when a
+               run is killed by CI's job timeout before the test class finishes. -->
+          <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
