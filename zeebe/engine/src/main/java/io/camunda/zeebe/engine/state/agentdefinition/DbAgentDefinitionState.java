@@ -52,7 +52,7 @@ public final class DbAgentDefinitionState implements MutableAgentDefinitionState
     processDefinitionKey.wrapLong(record.getProcessDefinitionKey());
     elementId.wrapBuffer(BufferUtil.wrapString(record.getElementId()));
     this.agentDefinitionKey.wrapLong(agentDefinitionKey);
-    agentDefinitionKeyColumnFamily.insert(
+    agentDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndElementId, this.agentDefinitionKey);
   }
 }

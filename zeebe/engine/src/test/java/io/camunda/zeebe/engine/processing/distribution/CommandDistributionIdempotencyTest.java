@@ -382,6 +382,14 @@ public class CommandDistributionIdempotencyTest {
             DeploymentCreateProcessor.class
           },
           {
+            "Deployment.CREATE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.DEPLOYMENT,
+                DeploymentIntent.CREATE,
+                CommandDistributionIdempotencyTest::deployProcessWithAgentDefinition),
+            DeploymentCreateProcessor.class
+          },
+          {
             "Group.CREATE is idempotent",
             new Scenario(
                 ValueType.GROUP,
@@ -1013,6 +1021,22 @@ public class CommandDistributionIdempotencyTest {
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
+        .expectCreated()
+        .deploy();
+  }
+
+  private static Record<DeploymentRecordValue> deployProcessWithAgentDefinition() {
+    return ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess()
+                .startEvent()
+                .serviceTask(
+                    "agent-task",
+                    t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
         .expectCreated()
         .deploy();
   }
