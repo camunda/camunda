@@ -29,14 +29,12 @@ public final class AgentInstanceCreatedApplier
 
   @Override
   public void applyState(final long key, final AgentInstanceRecord value) {
-    // The secondary-storage exporters replace the whole entity with whatever the emitted event's
-    // record contains, so primary storage must retain every field the secondary entity needs — a
-    // new field should join it by default. `history`, `jobKey`, and `jobLease` are the deliberate
-    // exceptions: they're per-command payload, not durable entity attributes, and everything they
-    // carry is already persisted independently as its own AGENT_HISTORY record. Storing them here
-    // too would be duplicative, and since only the most recent command's values are ever echoed
-    // onto a given event, primary storage would end up reflecting "whatever the last command
-    // happened to carry" rather than anything meaningful about the instance.
+    // A new field should join primary storage by default, since secondary-storage exporters
+    // replace the whole entity with whatever the emitted event carries. `history`, `jobKey`, and
+    // `jobLease` are the exceptions: history is already durably captured as its own AGENT_HISTORY
+    // record and can grow large, so keeping a copy here would be wasteful; jobKey/jobLease are
+    // only meaningful while the command that carries them is being processed, so persisting them
+    // would just reflect whichever command happened to run last, not the instance's actual state.
     final var forStorage = new AgentInstanceRecord();
     forStorage.copyFrom(value);
     forStorage.setHistory(List.of()).setJobKey(-1L).setJobLease("");
