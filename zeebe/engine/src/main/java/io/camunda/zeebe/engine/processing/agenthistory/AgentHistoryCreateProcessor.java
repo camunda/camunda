@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,7 +41,6 @@ public final class AgentHistoryCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
-  private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
   private final AgentHistoryBatchBehavior historyHelper;
@@ -56,7 +54,6 @@ public final class AgentHistoryCreateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
-    jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
     historyHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
