@@ -7,175 +7,75 @@
  */
 package io.camunda.application.commons.search;
 
-import static java.util.stream.Collectors.toUnmodifiableMap;
-
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
-public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
+/**
+ * Binds the Elasticsearch/OpenSearch schema managers to {@link PerTenantSchemaInitialization},
+ * which owns the retry loop, the startup barrier and the per-tenant state. This class only supplies
+ * the storage-specific parts: what one attempt does, and which failures retrying cannot repair.
+ */
+public class SearchEngineSchemaInitializer
+    implements InitializingBean, DisposableBean, SchemaManagerContainer {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
-  private final MeterRegistry meterRegistry;
-  private final boolean awaitSchemaInitialization;
-  private final AtomicBoolean isShutdown = new AtomicBoolean(false);
+
   private final Map<String, SearchEngineConfiguration> configs;
   private final Map<String, IndexDescriptors> descriptors;
-  private final Map<String, AtomicBoolean> initialized;
+  private final MeterRegistry meterRegistry;
+  private final PerTenantSchemaInitialization initialization;
 
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
-      final MeterRegistry meterRegistry,
-      final boolean awaitSchemaInitialization) {
-    this.meterRegistry = meterRegistry;
-    this.awaitSchemaInitialization = awaitSchemaInitialization;
-
+      final MeterRegistry meterRegistry) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
-    initialized =
-        configs.keySet().stream()
-            .collect(toUnmodifiableMap(id -> id, id -> new AtomicBoolean(false)));
+    this.meterRegistry = meterRegistry;
+    initialization =
+        new PerTenantSchemaInitialization(
+            configs.keySet(),
+            this::initializeTenant,
+            SearchEngineSchemaInitializer::isTerminal,
+            tenantId -> configs.get(tenantId).schemaManager().getRetry());
   }
 
   @Override
-  public void afterPropertiesSet() throws Exception {
+  public void afterPropertiesSet() {
     LOGGER.info(
         "Initializing search engine schema for {} physical tenant(s): {}",
         configs.size(),
         configs.keySet());
 
-    final var executor = Executors.newSingleThreadExecutor();
-    if (!addShutdownHook(executor)) {
+    if (!addShutdownHook()) {
       // skipping schema initialization as JVM is shutting down
       return;
     }
 
-    final var future = CompletableFuture.runAsync(this::startupSchemaManagers, executor);
-    if (awaitSchemaInitialization) {
-      synchronousSchemaInitialization(future, executor);
-    } else {
-      asyncSchemaInitialization(future, executor);
-    }
+    initialization.startAndAwaitFirstOutcome();
   }
 
-  private void startupSchemaManagers() {
-    configs.keySet().forEach(this::startupSchemaManagerForTenant);
-  }
-
-  @VisibleForTesting
-  void synchronousSchemaInitialization(
-      final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
-    try {
-      future.get();
-      LOGGER.info("Search engine schema initialization complete.");
-    } catch (final InterruptedException ie) {
-      LOGGER.debug(
-          "Schema initialization task was interrupted. Shutdown signal is caught={}",
-          isShutdown.get(),
-          ie);
-      if (!isShutdown.get()) {
-        // Only re-interrupt if this is not a shutdown-triggered interrupt.
-        // During shutdown, we must let Spring finish context refresh so that
-        // Broker can perform a graceful shutdown.
-        Thread.currentThread().interrupt();
-      }
-    } catch (final Exception e) {
-      if (isShutdown.get()) {
-        LOGGER.debug("Schema initialization interrupted with shutdown.", e);
-        return;
-      }
-      throw e;
-    } finally {
-      executor.close();
-    }
-  }
-
-  @VisibleForTesting
-  void asyncSchemaInitialization(
-      final CompletableFuture<Void> future, final ExecutorService executor) {
-    future.whenCompleteAsync(
-        (result, error) -> {
-          if (error != null) {
-            LOGGER.warn("Failed to initialize search engine schema", error);
-          } else {
-            LOGGER.info("Search engine schema initialization complete.");
-          }
-          executor.close();
-        });
-  }
-
-  private void startupSchemaManagerForTenant(final String physicalTenantId) {
-    if (isShutdown.get()) {
-      return;
-    }
-
-    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
-    final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
-
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(configuration.connect());
-        final SchemaManager schemaManager =
-            new SchemaManager(
-                    clientAdapter.getSearchEngineClient(),
-                    indexDescriptors.indices(),
-                    indexDescriptors.templates(),
-                    configuration,
-                    clientAdapter.objectMapper())
-                .withMetrics(new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
-      schemaManager.startup();
-      initialized.get(physicalTenantId).set(true);
-    } catch (final IOException e) {
-      if (!isInitialized(physicalTenantId)) {
-        throw new UncheckedIOException(e);
-      }
-      LOGGER.debug("Failed to close the search client", e);
-    }
-  }
-
-  /**
-   * Adds a shutdown hook to the JVM that will be triggered when the application is shutting
-   *
-   * @return true if the shutdown hook was added successfully, false if the JVM is already shutting
-   *     down
-   */
-  private boolean addShutdownHook(final ExecutorService executor) {
-    try {
-      Runtime.getRuntime()
-          .addShutdownHook(
-              new Thread(
-                  () -> {
-                    LOGGER.trace("Shutdown hook triggered");
-                    if (isShutdown.compareAndSet(false, true)) {
-                      executor.shutdownNow();
-                    }
-                  }));
-      return true;
-    } catch (final IllegalStateException e) {
-      // This can happen if the shutdown hook is added after the JVM has started shutting down.
-      // In this case, we just ignore the exception.
-      LOGGER.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
-      return false;
-    }
+  @Override
+  public void destroy() {
+    initialization.close();
   }
 
   @Override
   public boolean isInitialized(final String physicalTenantId) {
-    final AtomicBoolean flag = initialized.get(physicalTenantId);
-    return flag != null && flag.get();
+    return initialization.isInitialized(physicalTenantId);
   }
 
   /**
@@ -187,6 +87,106 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
    */
   @Override
   public boolean isInitialized() {
-    return !initialized.isEmpty() && initialized.values().stream().allMatch(AtomicBoolean::get);
+    return !configs.isEmpty() && configs.keySet().stream().allMatch(this::isInitialized);
+  }
+
+  /** One attempt at applying a tenant's schema. Any failure propagates to the retry loop. */
+  @VisibleForTesting
+  void initializeTenant(final String physicalTenantId) {
+    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
+    if (indexDescriptors == null) {
+      // A wiring defect rather than a storage failure: no amount of retrying produces descriptors,
+      // and left unclassified it would log a stack trace every backoff interval forever.
+      throw new TerminalSchemaInitializationException(
+          "No index descriptors are configured for physical tenant '" + physicalTenantId + "'");
+    }
+
+    final ClientAdapter clientAdapter = newClientAdapter(configuration);
+    try (final SchemaManager schemaManager =
+        new SchemaManager(
+            clientAdapter.getSearchEngineClient(),
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            configuration,
+            clientAdapter.objectMapper(),
+            new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
+      schemaManager.startupOnce();
+    } finally {
+      closeQuietly(clientAdapter, physicalTenantId);
+    }
+  }
+
+  /**
+   * Building the client performs no I/O, so a failure here is a static misconfiguration — an
+   * unsupported database type, or connect settings that cannot be turned into a client. Retrying it
+   * would never succeed, hence the terminal marker.
+   */
+  private static ClientAdapter newClientAdapter(final SearchEngineConfiguration configuration) {
+    try {
+      return ClientAdapter.of(configuration.connect());
+    } catch (final Exception e) {
+      throw new TerminalSchemaInitializationException("Failed to build the search client", e);
+    }
+  }
+
+  @VisibleForTesting
+  static void closeQuietly(final ClientAdapter clientAdapter, final String physicalTenantId) {
+    try {
+      clientAdapter.close();
+    } catch (final Exception e) {
+      // A client that cannot be released does not invalidate a schema that was applied, and
+      // failing here would retry an initialization that already succeeded.
+      LOGGER.debug(
+          "Failed to close the search client of physical tenant '{}'", physicalTenantId, e);
+    }
+  }
+
+  /**
+   * A schema that the running version cannot migrate stays incompatible however often it is
+   * retried, so this is terminal too. Everything else — an unreachable cluster, a rejected request,
+   * a mapping the current attempt could not validate — is retried, because it may be repaired
+   * without restarting the node.
+   */
+  @VisibleForTesting
+  static boolean isTerminal(final Throwable failure) {
+    return failure instanceof IncompatibleVersionException
+        || failure instanceof TerminalSchemaInitializationException;
+  }
+
+  /**
+   * Adds a shutdown hook to the JVM that will be triggered when the application is shutting
+   *
+   * @return true if the shutdown hook was added successfully, false if the JVM is already shutting
+   *     down
+   */
+  private boolean addShutdownHook() {
+    try {
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    LOGGER.trace("Shutdown hook triggered");
+                    initialization.close();
+                  }));
+      return true;
+    } catch (final IllegalStateException e) {
+      // This can happen if the shutdown hook is added after the JVM has started shutting down.
+      // In this case, we just ignore the exception.
+      LOGGER.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
+      return false;
+    }
+  }
+
+  /** Marks a failure that no amount of retrying can repair. */
+  static final class TerminalSchemaInitializationException extends RuntimeException {
+
+    TerminalSchemaInitializationException(final String message) {
+      super(message);
+    }
+
+    TerminalSchemaInitializationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
   }
 }

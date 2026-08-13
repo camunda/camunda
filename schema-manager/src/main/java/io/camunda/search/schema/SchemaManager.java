@@ -28,7 +28,6 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
-import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,12 +54,10 @@ public class SchemaManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
-  private final Collection<IndexDescriptor> indexOnlyDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final SearchEngineConfiguration config;
   private final IndexSchemaValidator schemaValidator;
   private final ExecutorService virtualThreadExecutor;
-  private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final SchemaMetadataStore schemaMetadataStore;
   private final String currentVersion;
@@ -80,11 +77,6 @@ public class SchemaManager implements CloseableSilently {
         null);
   }
 
-  /**
-   * Preferred over {@link #withMetrics(SchemaManagerMetrics)} by callers that make a fresh manager
-   * per attempt: {@code withMetrics} copies the manager, and the copied-from instance holds an
-   * executor its caller then has to remember to close.
-   */
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexOnlyDescriptors,
@@ -113,15 +105,11 @@ public class SchemaManager implements CloseableSilently {
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
-    this.indexOnlyDescriptors = indexOnlyDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     allIndexDescriptors =
         Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
     this.config = config;
     this.schemaValidator = schemaValidator;
-    retryDecorator =
-        new RetryDecorator(config.schemaManager().getRetry())
-            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException));
     this.schemaManagerMetrics = schemaManagerMetrics;
     schemaMetadataStore =
         new SchemaMetadataStore(
@@ -133,41 +121,11 @@ public class SchemaManager implements CloseableSilently {
     this.currentVersion = currentVersion;
   }
 
-  public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
-    return new SchemaManager(
-        searchEngineClient,
-        indexOnlyDescriptors,
-        indexTemplateDescriptors,
-        config,
-        schemaValidator,
-        currentVersion,
-        schemaManagerMetrics);
-  }
-
-  /**
-   * This method will retry with exponential backoff until the schema is successfully initialized.
-   * By default, retries are effectively unlimited to prevent pods from crashing when Elasticsearch
-   * is temporarily unavailable during startup.
-   */
-  public void startup() {
-    if (skipSchemaCreation()) {
-      return;
-    }
-
-    startSchemaCleanup();
-
-    timed(
-        () ->
-            // even that initializeSchema does not declare throwing any exception, it may still do
-            // sneaky throws (see #joinOnFutures) which are retried only by
-            // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
-            retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema));
-  }
-
   /**
    * Applies the schema in a single attempt, propagating any failure to the caller. Retrying is the
    * caller's decision, so that a caller managing several independent schemas can retry, classify
-   * and report each of them on its own — see {@link #startup()} for the self-retrying variant.
+   * and report each of them on its own — see {@code PerTenantSchemaInitialization} in the
+   * distribution for the production caller that owns that loop.
    *
    * <p>Bounded retries that belong to one attempt stay inside it; only the unbounded outer loop
    * moves out.

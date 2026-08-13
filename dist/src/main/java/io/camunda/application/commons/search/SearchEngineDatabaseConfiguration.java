@@ -13,7 +13,6 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +44,9 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final MeterRegistry meterRegistry,
       @Autowired(required = false)
-          final Broker broker, // if present, then it will ensure that the broker is started first
-      @Autowired(required = false) final BrokerCfg brokerCfg) {
-    final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
+          final Broker broker // if present, then it will ensure that the broker is started first
+      ) {
     return new SearchEngineSchemaInitializer(
-        searchEngineConfigurationsByTenant,
-        physicalTenantScopedIndexDescriptors,
-        meterRegistry,
-        isGatewayEnabled);
+        searchEngineConfigurationsByTenant, physicalTenantScopedIndexDescriptors, meterRegistry);
   }
 }
