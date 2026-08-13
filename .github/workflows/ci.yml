@@ -79,6 +79,12 @@ jobs:
         timeout-minutes: 1
         with:
           persist-credentials: false
+      - name: Check GitHub API rate limit
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api rate_limit | jq 'walk(if type == "object" and has("reset") then .reset = (.reset | todate) else . end)'
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
