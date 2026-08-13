@@ -27,6 +27,7 @@ import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.collection.CollectionScopeService;
 import io.camunda.optimize.service.collection.CollectionService;
 import io.camunda.optimize.service.dashboard.DashboardService;
+import io.camunda.optimize.service.definition.ProcessDefinitionDeletionRequestService;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -41,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +52,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -68,6 +71,7 @@ public class PublicApiRestService {
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String LABELS_SUB_PATH = "/variables/labels";
+  public static final String PROCESS_DEFINITION_SUB_PATH = "/process-definition";
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
       EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
   private static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
@@ -78,6 +82,8 @@ public class PublicApiRestService {
   private static final String REPORT_EXPORT_DATA_SUB_PATH =
       REPORT_EXPORT_BY_ID_PATH + "/result/json";
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
+  private static final String PROCESS_DEFINITION_BY_KEY_PATH =
+      PROCESS_DEFINITION_SUB_PATH + "/{processDefinitionKey}";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
@@ -89,6 +95,7 @@ public class PublicApiRestService {
   private final SettingsService settingsService;
   private final CollectionService collectionService;
   private final CollectionScopeService collectionScopeService;
+  private final ProcessDefinitionDeletionRequestService processDefinitionDeletionRequestService;
 
   public PublicApiRestService(
       final JsonReportResultExportService jsonReportResultExportService,
@@ -99,7 +106,8 @@ public class PublicApiRestService {
       final ProcessVariableLabelService processVariableLabelService,
       final SettingsService settingsService,
       final CollectionService collectionService,
-      final CollectionScopeService collectionScopeService) {
+      final CollectionScopeService collectionScopeService,
+      final ProcessDefinitionDeletionRequestService processDefinitionDeletionRequestService) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -109,6 +117,7 @@ public class PublicApiRestService {
     this.settingsService = settingsService;
     this.collectionService = collectionService;
     this.collectionScopeService = collectionScopeService;
+    this.processDefinitionDeletionRequestService = processDefinitionDeletionRequestService;
   }
 
   @GetMapping(REPORT_SUB_PATH)
@@ -170,6 +179,13 @@ public class PublicApiRestService {
   @DeleteMapping(DASHBOARD_BY_ID_PATH)
   public void deleteDashboardDefinition(final @PathVariable("dashboardId") String dashboardId) {
     dashboardService.deleteDashboard(dashboardId);
+  }
+
+  @DeleteMapping(PROCESS_DEFINITION_BY_KEY_PATH)
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void deleteProcessDefinitionData(
+      final @PathVariable("processDefinitionKey") String processDefinitionKey) {
+    processDefinitionDeletionRequestService.queueProcessDefinitionDeletion(processDefinitionKey);
   }
 
   @PostMapping(LABELS_SUB_PATH)
