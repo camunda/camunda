@@ -53,7 +53,11 @@ final class RestoreRequestTransformerTest {
 
   private static ClusterConfiguration recoveringTopology() {
     return ClusterConfiguration.init()
-        .addMember(MEMBER, MemberState.initializeAsActive(Map.of()).toRecovering());
+        .addMember(
+            MEMBER,
+            MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+                .toRecovering());
   }
 
   private static RestoreResolvedRequest resolvedRequest() {
@@ -95,6 +99,62 @@ final class RestoreRequestTransformerTest {
     final var result = transformer.operations(ClusterConfiguration.init());
 
     // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(ConcurrentModificationException.class);
+  }
+
+  @Test
+  void shouldRestoreWhenABrokerOutsideThePartitionGroupIsStillActive() {
+    // given - memberTwo holds the partition to restore and is recovering, while memberOne holds
+    // none: the shape a physical tenant hosted on a subset of the cluster's brokers projects to,
+    // where entering recovery leaves the partition-less broker on its cluster-wide ACTIVE state
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(memberOne, MemberState.initializeAsActive(Map.of()))
+            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false);
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
+
+    // when
+    final var result = transformer.operations(topology);
+
+    // then - the restore is planned for the recovering broker alone
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new PartitionPreRestoreOperation(memberTwo, 1),
+            new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L))),
+            new ModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new UpdateIncarnationNumberOperation(memberTwo));
+  }
+
+  @Test
+  void shouldRejectWhenABrokerHoldingAPartitionToRestoreIsStillActive() {
+    // given - both brokers hold the partition to restore, but only one of them is recovering
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(memberOne, MemberState.initializeAsActive(partitionState))
+            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
+
+    // when
+    final var result = transformer.operations(topology);
+
+    // then - restoring a partition still being processed elsewhere is refused
     EitherAssert.assertThat(result)
         .isLeft()
         .left()

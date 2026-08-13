@@ -145,6 +145,26 @@ final class ClusterRestoreRequestTransformerTest {
   }
 
   @Test
+  void shouldRestoreATenantHostedOnASubsetOfTheClusterBrokers() {
+    // given — tenant-b lives on one broker only and is in recovery, while the other broker keeps
+    // processing the default tenant. The projection of tenant-b's group still carries that other
+    // broker on its cluster-wide ACTIVE state, since a broker holding no partition of the group
+    // never transitions into recovery
+    final var request = clusterRestoreRequest(Map.of(TENANT_B, args(55L)));
+    final var transformer = new ClusterRestoreRequestTransformer(request, registryOf(2));
+
+    // when
+    final var result = transformer.phases(tenantOnSubsetOfBrokersCluster());
+
+    // then — the restore is planned rather than refused as a cluster that is not recovering
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new PartitionGroupParallelPhase(
+                Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
+  }
+
+  @Test
   void shouldRejectAnUnknownPhysicalTenantOnTheMultiGroupModel() {
     // given — the request names a physical tenant the cluster does not have
     final var request = clusterRestoreRequest(Map.of("unknown-tenant", args(55L)));
@@ -222,13 +242,44 @@ final class ClusterRestoreRequestTransformerTest {
         PhasedChangeState.empty());
   }
 
+  /**
+   * A cluster of two brokers where only {@link #MEMBER} hosts tenant-b — the shape of a physical
+   * tenant placed on a subset of the cluster's brokers. Tenant-b is in recovery; the default
+   * tenant, hosted on the other broker alone, keeps processing.
+   */
+  private static CurrentClusterConfiguration tenantOnSubsetOfBrokersCluster() {
+    final var otherMember = MemberId.from("1");
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER,
+                new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE),
+                otherMember,
+                new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty()),
+        Map.of(
+            DEFAULT_GROUP, group(otherMember, 1, Mode.PROCESSING),
+            TENANT_B, group(MEMBER, 2, Mode.RECOVERING)),
+        PhasedChangeState.empty());
+  }
+
   private static PartitionGroupConfiguration group(final int partitionId, final Mode mode) {
+    return group(MEMBER, partitionId, mode);
+  }
+
+  private static PartitionGroupConfiguration group(
+      final MemberId member, final int partitionId, final Mode mode) {
     final var partitions =
         Map.of(partitionId, PartitionState.active(1, DynamicPartitionConfig.init()));
     return new PartitionGroupConfiguration(
         1,
         0,
-        Map.of(MEMBER, BrokerPartitionState.initialize(partitions).setMode(mode)),
+        Map.of(member, BrokerPartitionState.initialize(partitions).setMode(mode)),
         Optional.empty(),
         Optional.empty(),
         Optional.empty());

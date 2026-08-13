@@ -34,6 +34,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -95,8 +96,11 @@ final class ClusterAdminRestoreAcceptanceIT {
         final var tenantBClient = TENANTS.newClientBuilder(broker, TENANT_B).build()) {
       final var processId = "forced-restore-process";
       final var jobType = "forced-restore-job";
+      final var probeProcessId = "forced-restore-probe";
 
       // given — the default tenant keeps processing throughout; only tenant-b gets a backup
+      deployProbeProcess(defaultClient, probeProcessId);
+      deployProbeProcess(tenantBClient, probeProcessId);
       deployAndCreateInstance(defaultClient, processId, jobType);
       deployAndCreateInstance(tenantBClient, processId, jobType);
       takeSnapshot(TENANT_B);
@@ -104,10 +108,10 @@ final class ClusterAdminRestoreAcceptanceIT {
 
       // when — only tenant-b is put into RECOVERING, scoped by physicalTenantId
       InProcessRestoreTestUtil.changeClusterMode(defaultClient, TENANT_B, "RECOVERING", false);
-      awaitCommandsRejected(tenantBClient, processId);
+      awaitCommandsRejected(tenantBClient, probeProcessId);
 
       // and — the default tenant is left untouched by the scoped mode change
-      assertThat(createInstance(defaultClient, processId)).isPositive();
+      assertThat(createInstance(defaultClient, probeProcessId)).isPositive();
 
       // and — the restore is forced onto tenant-b alone. The mode change above may not have fully
       // settled yet even though tenant-b's commands are already rejected (rejection can start
@@ -118,11 +122,11 @@ final class ClusterAdminRestoreAcceptanceIT {
 
       // then — tenant-b processes commands again once its restore completes, and its baseline job
       // is still there to complete, proving partition data (not just topology/mode) was restored
-      awaitCommandsAccepted(tenantBClient, processId);
+      awaitCommandsAccepted(tenantBClient, probeProcessId);
       activateAndComplete(tenantBClient, jobType);
 
       // and — the default tenant was never affected by the other tenant's restore
-      assertThat(createInstance(defaultClient, processId)).isPositive();
+      assertThat(createInstance(defaultClient, probeProcessId)).isPositive();
     }
   }
 
@@ -133,9 +137,13 @@ final class ClusterAdminRestoreAcceptanceIT {
         final var tenantCClient = TENANTS.newClientBuilder(broker, TENANT_C).build()) {
       final var processId = "cluster-wide-restore-process";
       final var jobType = "cluster-wide-restore-job";
+      final var probeProcessId = "cluster-wide-restore-probe";
       final var backupId = 42;
 
       // given — every physical tenant has a pending job, backed up from the same selection
+      deployProbeProcess(defaultClient, probeProcessId);
+      deployProbeProcess(tenantBClient, probeProcessId);
+      deployProbeProcess(tenantCClient, probeProcessId);
       deployAndCreateInstance(defaultClient, processId, jobType);
       deployAndCreateInstance(tenantBClient, processId, jobType);
       deployAndCreateInstance(tenantCClient, processId, jobType);
@@ -148,18 +156,18 @@ final class ClusterAdminRestoreAcceptanceIT {
 
       // when — the whole cluster is put into RECOVERING, no physicalTenantId naming every tenant
       InProcessRestoreTestUtil.changeClusterMode(defaultClient, null, "RECOVERING", false);
-      awaitCommandsRejected(defaultClient, processId);
-      awaitCommandsRejected(tenantBClient, processId);
-      awaitCommandsRejected(tenantCClient, processId);
+      awaitCommandsRejected(defaultClient, probeProcessId);
+      awaitCommandsRejected(tenantBClient, probeProcessId);
+      awaitCommandsRejected(tenantCClient, probeProcessId);
 
       // and — a cluster-wide restore is triggered, no overrides: every tenant shares the selection
       awaitRestoreTriggered(
           () -> InProcessRestoreTestUtil.triggerClusterRestore(defaultClient, backupId, Map.of()));
 
       // then — every tenant processes commands again once its restore completes
-      awaitCommandsAccepted(defaultClient, processId);
-      awaitCommandsAccepted(tenantBClient, processId);
-      awaitCommandsAccepted(tenantCClient, processId);
+      awaitCommandsAccepted(defaultClient, probeProcessId);
+      awaitCommandsAccepted(tenantBClient, probeProcessId);
+      awaitCommandsAccepted(tenantCClient, probeProcessId);
 
       // and — every tenant's baseline job is still there to complete, proving partition data (not
       // just topology/mode) was restored on all three
@@ -178,10 +186,14 @@ final class ClusterAdminRestoreAcceptanceIT {
       final var baselineJobType = "override-it-baseline-job";
       final var overrideProcessId = "override-it-override-process";
       final var overrideJobType = "override-it-override-job";
+      final var probeProcessId = "override-it-probe";
       final long baselineBackupId = 100;
       final long overrideBackupId = 200;
 
       // given — every physical tenant has a pending job from the baseline process
+      deployProbeProcess(defaultClient, probeProcessId);
+      deployProbeProcess(tenantBClient, probeProcessId);
+      deployProbeProcess(tenantCClient, probeProcessId);
       deployAndCreateInstance(defaultClient, baselineProcessId, baselineJobType);
       deployAndCreateInstance(tenantBClient, baselineProcessId, baselineJobType);
       deployAndCreateInstance(tenantCClient, baselineProcessId, baselineJobType);
@@ -203,9 +215,9 @@ final class ClusterAdminRestoreAcceptanceIT {
 
       // when — the whole cluster is put into RECOVERING over the cluster-admin endpoint ...
       InProcessRestoreTestUtil.changeClusterMode(defaultClient, null, "RECOVERING", false);
-      awaitCommandsRejected(defaultClient, baselineProcessId);
-      awaitCommandsRejected(tenantBClient, baselineProcessId);
-      awaitCommandsRejected(tenantCClient, overrideProcessId);
+      awaitCommandsRejected(defaultClient, probeProcessId);
+      awaitCommandsRejected(tenantBClient, probeProcessId);
+      awaitCommandsRejected(tenantCClient, probeProcessId);
 
       // ... and a cluster-wide restore is triggered: tenant-c overridden to its own, additional
       // backup, default and tenant-b left on the top-level (baseline) selection
@@ -215,9 +227,9 @@ final class ClusterAdminRestoreAcceptanceIT {
                   defaultClient, baselineBackupId, Map.of(TENANT_C, overrideBackupId)));
 
       // then — every tenant processes commands again once its restore completes
-      awaitCommandsAccepted(defaultClient, baselineProcessId);
-      awaitCommandsAccepted(tenantBClient, baselineProcessId);
-      awaitCommandsAccepted(tenantCClient, overrideProcessId);
+      awaitCommandsAccepted(defaultClient, probeProcessId);
+      awaitCommandsAccepted(tenantBClient, probeProcessId);
+      awaitCommandsAccepted(tenantCClient, probeProcessId);
 
       // and — default and tenant-b restored from the baseline backup: the baseline job is still
       // there to complete
@@ -233,18 +245,42 @@ final class ClusterAdminRestoreAcceptanceIT {
   }
 
   /**
-   * Deploys a single-service-task process (idempotent under retry, so a transient rejection while
-   * the cluster settles is simply retried) and creates one instance, leaving one job of the given
+   * Deploys the process the readiness probes create instances of: it carries no service task, so a
+   * probe instance leaves no job behind. The processes whose pending jobs later prove that
+   * backed-up partition data was restored must not be the ones probed for readiness — a probe
+   * instance of such a process would mint a fresh job of the asserted type, letting the job
+   * assertions pass off work the probe itself created rather than work the backup captured.
+   *
+   * <p>Deploy it before the backup is taken, so the restored state still knows it.
+   */
+  private static void deployProbeProcess(final CamundaClient client, final String processId) {
+    deploy(
+        client, processId, Bpmn.createExecutableProcess(processId).startEvent().endEvent().done());
+  }
+
+  /**
+   * Deploys a single-service-task process and creates one instance, leaving one job of the given
    * type pending.
    */
   private static void deployAndCreateInstance(
       final CamundaClient client, final String processId, final String jobType) {
-    final BpmnModelInstance process =
+    deploy(
+        client,
+        processId,
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
-            .done();
+            .done());
+    Awaitility.await("instance of " + processId + " is created")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(() -> assertThat(createInstance(client, processId)).isPositive());
+  }
+
+  /** Deploys a process, idempotent under retry so a transient rejection is simply retried. */
+  private static void deploy(
+      final CamundaClient client, final String processId, final BpmnModelInstance process) {
     Awaitility.await("process " + processId + " is deployed")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
@@ -258,10 +294,6 @@ final class ClusterAdminRestoreAcceptanceIT {
                             .join()
                             .getProcesses())
                     .isNotEmpty());
-    Awaitility.await("instance of " + processId + " is created")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(() -> assertThat(createInstance(client, processId)).isPositive());
   }
 
   /** Activates at least one job of the given type and completes every job it finds. */
@@ -336,15 +368,30 @@ final class ClusterAdminRestoreAcceptanceIT {
         .untilAsserted(trigger);
   }
 
+  /**
+   * Takes a snapshot on every partition of the tenant and waits for it to be persisted.
+   * Snapshotting is asynchronous, and a tenant may already carry a snapshot from an earlier call
+   * here, so the wait is for each partition's snapshot ID to <em>change</em>: merely waiting for a
+   * non-null ID would return immediately on the second call and let the backup be taken before the
+   * work it is meant to capture is snapshotted.
+   */
   private void takeSnapshot(final String tenantId) {
     final var partitions = PartitionsActuator.of(broker);
+    final var previousSnapshotIds = new HashMap<Integer, String>();
+    partitions
+        .query(tenantId)
+        .forEach((id, status) -> previousSnapshotIds.put(id, status.snapshotId()));
     partitions.takeSnapshot(tenantId);
-    Awaitility.await("snapshot is taken for tenant " + tenantId)
+    Awaitility.await("a new snapshot is taken for tenant " + tenantId)
         .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () ->
-                assertThat(partitions.query(tenantId).values())
-                    .allSatisfy(status -> assertThat(status.snapshotId()).isNotNull()));
+                assertThat(partitions.query(tenantId))
+                    .allSatisfy(
+                        (partitionId, status) ->
+                            assertThat(status.snapshotId())
+                                .isNotNull()
+                                .isNotEqualTo(previousSnapshotIds.get(partitionId))));
   }
 
   private void takeBackup(final String tenantId, final long backupId) {

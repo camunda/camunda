@@ -129,12 +129,25 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     };
   }
 
+  /**
+   * Whether every broker holding a partition to restore is in recovery.
+   *
+   * <p>Only brokers that hold a partition are considered. On the multi-partition-group model this
+   * configuration is the projection of a single partition group, in which a broker that holds no
+   * partition of that group keeps its cluster-wide {@link State#ACTIVE} state: entering recovery
+   * never transitions it, because it has no partition to transition and awaiting a mode change from
+   * it would never complete (see {@code ModeChangeRequestTransformer#membersToTransition}).
+   * Counting such a broker would reject every restore of a physical tenant hosted on a subset of
+   * the cluster's brokers. Excluding it is equally correct on the legacy single-group model, where
+   * a partition-less broker has nothing to restore either.
+   */
   private static boolean isClusterRecovering(final ClusterConfiguration clusterConfiguration) {
-    final var initializedMembers =
+    final var membersHoldingPartitions =
         clusterConfiguration.members().values().stream()
             .filter(member -> member.state() != State.UNINITIALIZED && member.state() != State.LEFT)
+            .filter(member -> !member.partitions().isEmpty())
             .toList();
-    return !initializedMembers.isEmpty()
-        && initializedMembers.stream().allMatch(member -> member.state() == State.RECOVERING);
+    return !membersHoldingPartitions.isEmpty()
+        && membersHoldingPartitions.stream().allMatch(member -> member.state() == State.RECOVERING);
   }
 }
