@@ -21,6 +21,8 @@ public interface AgentInstanceSort extends SearchRequestSort<AgentInstanceSort> 
 
   AgentInstanceSort agentInstanceKey();
 
+  AgentInstanceSort agentDefinitionKey();
+
   AgentInstanceSort status();
 
   AgentInstanceSort elementId();

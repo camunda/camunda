@@ -165,7 +165,9 @@ class SearchAgentInstanceTest extends ClientRestTest {
                     .completionDate()
                     .asc()
                     .status()
-                    .asc())
+                    .asc()
+                    .agentDefinitionKey()
+                    .desc())
         .send()
         .join();
 
@@ -183,7 +185,10 @@ class SearchAgentInstanceTest extends ClientRestTest {
                 AgentInstanceSearchQuerySortRequest.FieldEnum.LAST_UPDATED_DATE,
                 SortOrderEnum.DESC),
             tuple(AgentInstanceSearchQuerySortRequest.FieldEnum.COMPLETION_DATE, SortOrderEnum.ASC),
-            tuple(AgentInstanceSearchQuerySortRequest.FieldEnum.STATUS, SortOrderEnum.ASC));
+            tuple(AgentInstanceSearchQuerySortRequest.FieldEnum.STATUS, SortOrderEnum.ASC),
+            tuple(
+                AgentInstanceSearchQuerySortRequest.FieldEnum.AGENT_DEFINITION_KEY,
+                SortOrderEnum.DESC));
   }
 
   @Test
