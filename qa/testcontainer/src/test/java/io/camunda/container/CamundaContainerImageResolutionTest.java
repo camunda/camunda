@@ -9,6 +9,7 @@ package io.camunda.container;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,18 +17,19 @@ import org.junit.jupiter.api.Test;
  * unprefixed env var value, so a CI-provided image override takes effect instead of silently
  * falling back to the Docker Hub nightly image.
  *
- * <p>The property argument uses a name with no matching {@code TESTCONTAINERS_}-prefixed env var or
- * {@code .testcontainers.properties} entry, so Testcontainers' lookup misses and the resolver's
- * unprefixed-env fallback is exercised.
+ * <p>Each test uses a per-run unique property name so no {@code TESTCONTAINERS_}-prefixed env var
+ * or {@code .testcontainers.properties} entry in a developer's local Testcontainers configuration
+ * can match it. Testcontainers' lookup therefore always misses and the resolver's unprefixed-env
+ * fallback is exercised deterministically.
  */
 class CamundaContainerImageResolutionTest {
 
-  private static final String UNSET_PROPERTY = "camunda.container.test.unset.image";
+  private final String unsetProperty = "camunda.container.test." + UUID.randomUUID();
 
   @Test
   void shouldUseFallbackWhenEnvValueMissing() {
     // when -- no Testcontainers source and no plain env value
-    final String resolved = CamundaContainer.resolve(UNSET_PROPERTY, null, "camunda/camunda");
+    final String resolved = CamundaContainer.resolve(unsetProperty, null, "camunda/camunda");
 
     // then -- the hardcoded fallback is used
     assertThat(resolved).isEqualTo("camunda/camunda");
@@ -36,7 +38,7 @@ class CamundaContainerImageResolutionTest {
   @Test
   void shouldUseFallbackWhenEnvValueBlank() {
     // when -- the plain env value is present but blank
-    final String resolved = CamundaContainer.resolve(UNSET_PROPERTY, "  ", "camunda/camunda");
+    final String resolved = CamundaContainer.resolve(unsetProperty, "  ", "camunda/camunda");
 
     // then -- the hardcoded fallback is used
     assertThat(resolved).isEqualTo("camunda/camunda");
@@ -47,7 +49,7 @@ class CamundaContainerImageResolutionTest {
     // when -- a plain (unprefixed) env value is provided and no Testcontainers source is set
     final String resolved =
         CamundaContainer.resolve(
-            UNSET_PROPERTY, "localhost:5000/camunda/camunda", "camunda/camunda");
+            unsetProperty, "localhost:5000/camunda/camunda", "camunda/camunda");
 
     // then -- the plain env value wins over the hardcoded fallback
     assertThat(resolved).isEqualTo("localhost:5000/camunda/camunda");
