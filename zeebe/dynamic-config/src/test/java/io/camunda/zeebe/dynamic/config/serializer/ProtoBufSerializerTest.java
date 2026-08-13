@@ -364,7 +364,20 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodePurgeRequest() {
     // given
-    final var purgeRequest = new PurgeRequest(true);
+    final var purgeRequest = new PurgeRequest(Optional.empty(), true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodePurgeRequest(purgeRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodePurgeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(purgeRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePurgeRequestWithPhysicalTenantId() {
+    // given
+    final var purgeRequest = new PurgeRequest(Optional.of("tenanta"), true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodePurgeRequest(purgeRequest);

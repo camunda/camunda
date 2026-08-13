@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
@@ -37,6 +39,7 @@ import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -168,6 +171,63 @@ final class ClusterEndpointTest {
       final var body = (GetTopologyResponse) response.getBody();
       assertThat(body).isNotNull();
       assertThat(body.getVersion()).isEqualTo(-1);
+    }
+  }
+
+  @Nested
+  class PurgeEndpoint {
+
+    @Test
+    void shouldPurgeEveryPhysicalTenantWhenParameterIsAbsent() {
+      // given
+      final var sender = senderAcceptingPurge();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.purge(false, null).join();
+
+      // then
+      verify(sender).purge(new PurgeRequest(Optional.empty(), false));
+    }
+
+    @Test
+    void shouldPurgeOnlyTheGivenPhysicalTenant() {
+      // given
+      final var sender = senderAcceptingPurge();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.purge(true, "tenant-a").join();
+
+      // then
+      verify(sender).purge(new PurgeRequest(Optional.of("tenant-a"), true));
+    }
+
+    @Test
+    void shouldTreatABlankPhysicalTenantAsAbsent() {
+      // given
+      final var sender = senderAcceptingPurge();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.purge(false, "  ").join();
+
+      // then
+      verify(sender).purge(new PurgeRequest(Optional.empty(), false));
+    }
+
+    private ClusterConfigurationManagementRequestSender senderAcceptingPurge() {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.purge(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
+      return sender;
     }
   }
 

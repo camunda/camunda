@@ -24,6 +24,9 @@ message JoinPartitionRequest {
 
 message PurgeRequest {
   bool dryRun = 1;
+  // When physicalTenantId is set, only that tenant is purged.
+  // If not set, all tenants are purged.
+  optional string physicalTenantId = 2;
 }
 
 message LeavePartitionRequest {

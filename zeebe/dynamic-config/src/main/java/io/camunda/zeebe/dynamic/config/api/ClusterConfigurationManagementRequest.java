@@ -47,7 +47,12 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record PurgeRequest(boolean dryRun) implements ClusterConfigurationManagementRequest {}
+  /**
+   * Purge the partitions and the exported history of the given physical tenant. If no
+   * physicalTenantId is provided, it applies to all tenants.
+   */
+  record PurgeRequest(Optional<String> physicalTenantId, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
 
   record BrokerScaleRequest(
       Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)

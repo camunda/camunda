@@ -97,8 +97,11 @@ paths:
         During this operation all brokers will leave their partitions, data will be deleted,
         and then the brokers will rejoin their partition with empty state, restoring the
         original topology.
+        Without the physicalTenant parameter every physical tenant is purged; with it, only
+        the given physical tenant is purged and the others are left untouched.
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '202':
           $ref: "#/components/responses/ClusterConfigPurgeResponse"
@@ -391,6 +394,14 @@ components:
       schema:
         type: boolean
         default: false
+    PhysicalTenantParameter:
+      name: physicalTenant
+      description: Id of the physical tenant to target. If not specified, the operation applies to all physical tenants.
+      in: query
+      style: form
+      required: false
+      schema:
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
     ForceParameter:
       name: force
       description: If true, the operation is a force operation. This is typically used to force remove a set of brokers when they are not available.
@@ -409,14 +420,6 @@ components:
       schema:
         type: integer
         format: int32
-    PhysicalTenantParameter:
-      name: physicalTenant
-      description: Scopes the response to one physical tenant.
-      in: query
-      style: form
-      required: false
-      schema:
-        $ref: 'components.yaml#/schemas/PhysicalTenantId'
   responses:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.
