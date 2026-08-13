@@ -12,6 +12,7 @@ on:
         required: true
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
