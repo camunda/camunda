@@ -11,12 +11,10 @@ import {
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
-  authHeaders,
-  buildUrl,
-  credentials,
 } from '../../../../utils/http';
 import {
   deployInlineResource,
+  getResourceContentBinary,
   rpaResourceContent,
   uniqueResourceName,
 } from '@requestHelpers';
@@ -30,18 +28,6 @@ const PNG_BYTES = Buffer.from(
   'base64',
 );
 
-function contentBinaryUrl(resourceKey: string): string {
-  return buildUrl('/resources/{resourceKey}/content/binary', {resourceKey});
-}
-
-// Workaround for bug #59831: https://github.com/camunda/camunda/issues/59831
-// The handler is mapped with the gateway's default JSON produces list, so an
-// explicit `Accept: application/octet-stream` — the media type the API spec
-// documents — is answered with 406. Send no Accept header until that is fixed.
-function binaryHeaders(): Record<string, string> {
-  return authHeaders(credentials.accessToken);
-}
-
 test.describe.parallel('Resource Get Content Binary API', () => {
   test('Get Resource Content Binary - Generic Resource Success 200', async ({
     request,
@@ -54,9 +40,7 @@ test.describe.parallel('Resource Get Content Binary API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(contentBinaryUrl(resource.resourceKey), {
-        headers: binaryHeaders(),
-      });
+      const res = await getResourceContentBinary(request, resource.resourceKey);
 
       await assertStatusCode(res, 200);
       expect(res.headers()['content-type']).toContain(
@@ -77,9 +61,7 @@ test.describe.parallel('Resource Get Content Binary API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(contentBinaryUrl(resource.resourceKey), {
-        headers: binaryHeaders(),
-      });
+      const res = await getResourceContentBinary(request, resource.resourceKey);
 
       await assertStatusCode(res, 200);
       expect(await res.text()).toBe(content);
@@ -96,9 +78,7 @@ test.describe.parallel('Resource Get Content Binary API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(contentBinaryUrl(resource.resourceKey), {
-        headers: binaryHeaders(),
-      });
+      const res = await getResourceContentBinary(request, resource.resourceKey);
 
       await assertStatusCode(res, 200);
       expect(await res.body()).toEqual(PNG_BYTES);
@@ -109,9 +89,7 @@ test.describe.parallel('Resource Get Content Binary API', () => {
   test('Get Resource Content Binary - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
-    const res = await request.get(contentBinaryUrl(nonExistentResourceKey), {
-      headers: binaryHeaders(),
-    });
+    const res = await getResourceContentBinary(request, nonExistentResourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -121,7 +99,7 @@ test.describe.parallel('Resource Get Content Binary API', () => {
 
   // eslint-disable-next-line playwright/expect-expect
   test('Get Resource Content Binary - Unauthorized 401', async ({request}) => {
-    const res = await request.get(contentBinaryUrl('someKey'), {
+    const res = await getResourceContentBinary(request, 'someKey', {
       headers: {},
     });
 
