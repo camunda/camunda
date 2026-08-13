@@ -14,9 +14,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -32,10 +30,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -391,79 +386,6 @@ public class ActivateAdHocSubProcessActivityTest {
             Assertions.tuple(
                 "b", "2", adHocSubProcessInstanceKey, VariableIntent.UPDATED), // updated
             Assertions.tuple("c", "2", processInstanceKey, VariableIntent.CREATED)); // created
-  }
-
-  @Test
-  public void shouldKeepAdHocSubProcessInnerInstanceVariablesLocal() {
-    // given
-    final var ahspJobType = UUID.randomUUID().toString();
-    final var taskJobType = UUID.randomUUID().toString();
-    final String processId = "process-inner-instance-local";
-
-    deployProcess(
-        processId,
-        adHocSubProcess -> {
-          adHocSubProcess.serviceTask("A", task -> task.zeebeJobType(taskJobType));
-          adHocSubProcess.zeebeJobType(ahspJobType);
-        });
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    completeAdHocSubProcessJob(
-        ahspJobType,
-        false,
-        new JobResultActivateElement()
-            .setElementId("A")
-            .setVariables(asMsgPack(Map.of("toolCallResult", Map.of("id", "call-1")))));
-
-    final long innerInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
-            .getFirst()
-            .getKey();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(taskJobType)
-        .withVariables(Map.of("toolCallResult", Map.of("id", "call-1", "value", "done")))
-        .complete();
-
-    // then: complete the ad-hoc sub-process to bound the records to assert on
-    completeAdHocSubProcessJob(ahspJobType, true);
-
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("toolCallResult"))
-        .extracting(r -> r.getValue().getScopeKey())
-        .containsOnly(innerInstanceKey);
-  }
-
-  /**
-   * Resolves the job key by activating the job, as the ad-hoc sub-process creates a new job after
-   * every activation round and {@code JobClient#ofInstance} always resolves the first created one.
-   */
-  private void completeAdHocSubProcessJob(
-      final String jobType,
-      final boolean completionConditionFulfilled,
-      final JobResultActivateElement... activateElements) {
-    final var jobKey =
-        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
-    final var jobResult =
-        new JobResult()
-            .setActivateElements(List.of(activateElements))
-            .setCompletionConditionFulfilled(completionConditionFulfilled);
-
-    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
-  }
-
-  private static DirectBuffer asMsgPack(final Object value) {
-    return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {

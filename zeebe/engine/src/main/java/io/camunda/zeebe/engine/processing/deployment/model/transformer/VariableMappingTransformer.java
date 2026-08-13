@@ -11,9 +11,6 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
-import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
-import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,73 +18,81 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * Transforms variable mappings.
+ * Transform variable mappings into an expression.
  *
- * <p>Neither input nor output mappings are combined into a single context expression. Each mapping
- * is kept as its own parsed source expression plus its split target path (e.g. target {@code a.b.c}
- * becomes {@code [a, b, c]}), so that mappings can be evaluated one by one in modeling order at
- * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
- * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
+ * <p>The resulting expression is a FEEL context that has a similar structure as a JSON document.
+ * Each target of a mapping is a key in the context and the source of this mapping is the context
+ * value. The source expression can be any FEEL expression. A nested target expression is
+ * transformed into a nested context.
  *
- * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
- * result must be merged with the existing scope variable if that variable is a JSON object, at
- * every nesting level. This merging is done by {@code MappingResultBuilder} while accumulating
- * results.
+ * <p>Variable mappings:
+ *
+ * <pre>
+ *   source | target
+ *   =======|=======
+ *    x     | a
+ *    y     | b.c
+ *    z     | b.d
+ * </pre>
+ *
+ * FEEL context expression:
+ *
+ * <pre>
+ *   {
+ *     a: x,
+ *     b: {
+ *       c: y,
+ *       d: z
+ *     }
+ *   }
+ * </pre>
+ *
+ * <p>Output variable mappings differ from input mappings that the result variables needs to be
+ * merged with the existing variables if the variable is a JSON object. The merging is done by
+ * calling the FEEL function 'context merge()' and referencing the variable.
+ *
+ * <pre>
+ *   {
+ *     a: x,
+ *     b: if (b = null)
+ *        then {
+ *          c: y,
+ *          d: z
+ *        }
+ *        else context merge(b, {
+ *          c: y,
+ *          d: z
+ *       })
+ *   }
+ * </pre>
  */
 public final class VariableMappingTransformer {
 
   private static final String EXPRESSION_MARKER = "=";
 
-  /**
-   * Transforms the input mappings, keeping each mapping as its own source expression plus target
-   * path so they can be evaluated one by one in modeling order at runtime.
-   */
-  public InputMappings transformInputMappings(
+  public Expression transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
       final ExpressionLanguage expressionLanguage) {
 
     final var mappings = toMappings(inputMappings, expressionLanguage);
-
-    final var transformedMappings =
-        mappings.stream()
-            .map(
-                mapping ->
-                    new InputMapping(
-                        toInputSourceExpression(mapping.source, expressionLanguage),
-                        splitPathExpression(mapping.target)))
-            .toList();
-    return new InputMappings(transformedMappings);
+    final var context = asContext(mappings);
+    final var contextExpression =
+        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
+    return parseExpression(contextExpression, expressionLanguage);
   }
 
-  private static Expression toInputSourceExpression(
-      final Expression source, final ExpressionLanguage expressionLanguage) {
-    if (source instanceof StaticExpression) {
-      // A static input source is treated as a string literal, byte-identical to the previous
-      // combined FEEL context expression (including the #16043 double-quote escaping): e.g. source
-      // "1" stays the string "1" instead of being type-inferred to the number 1. FEEL and null
-      // sources are left untouched.
-      final var escaped = source.getExpression().replaceAll("\"", "\\\\\"");
-      return expressionLanguage.parseExpression(EXPRESSION_MARKER + "\"" + escaped + "\"");
-    }
-    return source;
-  }
-
-  /**
-   * Transforms the output mappings, keeping each mapping as its own source expression plus target
-   * path so they can be evaluated one by one in modeling order at runtime. A nested target merges
-   * with the existing scope value at every path level at runtime (see {@code
-   * MappingResultBuilder}).
-   */
-  public List<OutputMapping> transformOutputMappings(
+  public Expression transformOutputMappings(
       final Collection<? extends ZeebeMapping> outputMappings,
       final ExpressionLanguage expressionLanguage) {
 
-    return toMappings(outputMappings, expressionLanguage).stream()
-        .map(mapping -> new OutputMapping(mapping.source, splitPathExpression(mapping.target)))
-        .toList();
+    final var mappings = toMappings(outputMappings, expressionLanguage);
+    final var context = asContext(mappings);
+    final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
+    return parseExpression(contextExpression, expressionLanguage);
   }
 
   private List<Mapping> toMappings(
@@ -137,6 +142,69 @@ public final class VariableMappingTransformer {
       final var nestedContext = context.getOrAddContext(target);
       createContextEntry(targetPathParts, sourceExpression, nestedContext);
     }
+  }
+
+  private String asFeelContextExpression(
+      final MappingContext context,
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return context.visit(feelContextBuilder(contextValueVisitor));
+  }
+
+  private MappingContextVisitor<String> feelContextBuilder(
+      final BiFunction<String, List<String>, Object> contextValueVisitor) {
+    return new MappingContextVisitor<>() {
+      @Override
+      public String onEntry(final String targetKey, final Expression sourceExpression) {
+        final String expression;
+
+        if (sourceExpression instanceof StaticExpression) {
+          // due to a regression (https://github.com/camunda/camunda/issues/16043) all the double
+          // quotes inside the static expression must be escaped
+          expression =
+              String.format("\"%s\"", sourceExpression.getExpression().replaceAll("\"", "\\\\\""));
+        } else {
+          expression = sourceExpression.getExpression();
+        }
+
+        return targetKey + ":" + expression;
+      }
+
+      @Override
+      public String onContext(final List<String> entries) {
+        return "{" + String.join(",", entries) + "}";
+      }
+
+      @Override
+      public String onContextEntry(
+          final String targetKey, final String contextValue, final List<String> contextPath) {
+        return targetKey + ":" + contextValueVisitor.apply(contextValue, contextPath);
+      }
+    };
+  }
+
+  private String mergeContextExpression(
+      final String nestedContext, final List<String> contextPath) {
+    // for a nested target mapping 'x -> a.b', append the nested property 'b' to
+    // the existing context variable 'a' (instead of overriding 'a')
+    // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
+    final var existingContext = String.join(".", contextPath);
+    return String.format(
+        "if (%s != null) then context merge(%s,%s) else %s",
+        existingContext, existingContext, nestedContext, nestedContext);
+  }
+
+  private Expression parseExpression(
+      final String contextExpression, final ExpressionLanguage expressionLanguage) {
+    final var expression =
+        expressionLanguage.parseExpression(EXPRESSION_MARKER + contextExpression);
+
+    if (!expression.isValid()) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to build variable mapping expression: %s", expression.getFailureMessage()));
+    }
+
+    return expression;
   }
 
   private static final class MappingContext {

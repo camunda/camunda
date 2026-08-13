@@ -23,7 +23,6 @@ class FeatureFlagsTest {
     assertThat(sut.enableActorMetrics()).isFalse();
     assertThat(sut.enableMessageTTLCheckerAsync()).isFalse();
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
-    assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
   }
 
   @Test
@@ -35,6 +34,5 @@ class FeatureFlagsTest {
     assertThat(sut.yieldingDueDateChecker()).isTrue();
     assertThat(sut.enableMessageTTLCheckerAsync()).isTrue();
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
-    assertThat(sut.evaluateDuplicateOutputMappingTargetsInOrder()).isTrue();
   }
 }
