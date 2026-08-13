@@ -14,6 +14,15 @@ public final class FilterBuilders {
 
   private FilterBuilders() {}
 
+  public static AgentDefinitionFilter.Builder agentDefinition() {
+    return new AgentDefinitionFilter.Builder();
+  }
+
+  public static AgentDefinitionFilter agentDefinition(
+      final Function<AgentDefinitionFilter.Builder, ObjectBuilder<AgentDefinitionFilter>> fn) {
+    return fn.apply(agentDefinition()).build();
+  }
+
   public static AgentInstanceFilter.Builder agentInstance() {
     return new AgentInstanceFilter.Builder();
   }

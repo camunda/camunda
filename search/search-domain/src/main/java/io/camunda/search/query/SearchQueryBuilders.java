@@ -14,6 +14,15 @@ public final class SearchQueryBuilders {
 
   private SearchQueryBuilders() {}
 
+  public static AgentDefinitionQuery.Builder agentDefinitionSearchQuery() {
+    return new AgentDefinitionQuery.Builder();
+  }
+
+  public static AgentDefinitionQuery agentDefinitionSearchQuery(
+      final Function<AgentDefinitionQuery.Builder, ObjectBuilder<AgentDefinitionQuery>> fn) {
+    return fn.apply(agentDefinitionSearchQuery()).build();
+  }
+
   public static AgentInstanceQuery.Builder agentInstanceSearchQuery() {
     return new AgentInstanceQuery.Builder();
   }
