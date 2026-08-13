@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
 import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto.ChangeCompletion;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import java.io.IOException;
 import java.net.URI;
@@ -34,6 +35,7 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
+import org.apache.hc.core5.net.URIBuilder;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
@@ -44,6 +46,7 @@ public final class CamundaManagementClient implements CamundaClockClient {
 
   private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
+  private static final String PHYSICAL_TENANT_PARAMETER = "physicalTenant";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -168,16 +171,50 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private boolean isPurgeComplete(final long changeId) {
     // Use the management cluster topology (no auth required) to check if the purge operation
     // identified by changeId has completed and the cluster is healthy.
-    try {
-      final HttpGet clusterStatusRequest =
-          new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
-      final ManagementClusterTopologyResponseDto topologyResponse =
-          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
-      return topologyResponse.isTopologyChangeCompleted(changeId);
-    } catch (final Exception e) {
-      // Ignore silently and wait for next status request; awaitility will abort after timeout
-      // expires
+    final ManagementClusterTopologyResponseDto topologyResponse = getClusterTopology(null);
+    if (topologyResponse == null) {
       return false;
+    }
+
+    final ChangeCompletion completion = topologyResponse.getChangeCompletion(changeId);
+    if (completion != ChangeCompletion.NOT_REPORTED) {
+      return completion == ChangeCompletion.COMPLETED;
+    }
+
+    // A topology covering more than one physical tenant reports no cluster-wide lastChange, so the
+    // purge cannot be observed from it. Scoping the request to a single physical tenant restores
+    // lastChange; which tenant is asked for does not matter, as lastChange reports the cluster-wide
+    // change history either way.
+    final String physicalTenantId = topologyResponse.getFirstPhysicalTenantId();
+    if (physicalTenantId == null) {
+      throw new IllegalStateException(
+          "Expected the cluster topology to name the physical tenants it covers, so the purge can be "
+              + "observed on one of them, but it named none.");
+    }
+
+    final ManagementClusterTopologyResponseDto scopedTopologyResponse =
+        getClusterTopology(physicalTenantId);
+    return scopedTopologyResponse != null
+        && scopedTopologyResponse.getChangeCompletion(changeId) == ChangeCompletion.COMPLETED;
+  }
+
+  /**
+   * Reads the cluster topology, scoped to {@code physicalTenantId} unless it is {@code null}.
+   * Returns {@code null} if the request failed, leaving it to the caller to try again; awaitility
+   * will abort after the timeout expires.
+   */
+  private ManagementClusterTopologyResponseDto getClusterTopology(final String physicalTenantId) {
+    try {
+      final URIBuilder uriBuilder =
+          new URIBuilder(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
+      if (physicalTenantId != null) {
+        uriBuilder.addParameter(PHYSICAL_TENANT_PARAMETER, physicalTenantId);
+      }
+
+      return sendRequest(
+          new HttpGet(uriBuilder.build()), ManagementClusterTopologyResponseDto.class);
+    } catch (final Exception e) {
+      return null;
     }
   }
 
