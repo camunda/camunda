@@ -86,6 +86,17 @@ class SearchAgentInstanceTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchAgentInstancesWithAgentDefinitionKeyFilter() {
+    // when
+    client.newAgentInstanceSearchRequest().filter(f -> f.agentDefinitionKey(4321L)).send().join();
+
+    // then
+    final AgentInstanceSearchQuery request =
+        gatewayService.getLastRequest(AgentInstanceSearchQuery.class);
+    assertThat(request.getFilter().getAgentDefinitionKey().get$Eq()).isEqualTo("4321");
+  }
+
+  @Test
   void shouldSearchAgentInstancesWithProcessInstanceKeyFilter() {
     // when
     client.newAgentInstanceSearchRequest().filter(f -> f.processInstanceKey(9000L)).send().join();

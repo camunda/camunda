@@ -43,6 +43,23 @@ public interface AgentInstanceFilter extends SearchRequestFilter {
   AgentInstanceFilter agentInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
+   * Filter agent instances by the key of the agent definition they are an instance of.
+   *
+   * @param value the agent definition key
+   * @return the updated filter
+   */
+  AgentInstanceFilter agentDefinitionKey(long value);
+
+  /**
+   * Filter agent instances by the key of the agent definition they are an instance of using a
+   * {@link BasicLongProperty} consumer.
+   *
+   * @param fn the agent definition key filter consumer
+   * @return the updated filter
+   */
+  AgentInstanceFilter agentDefinitionKey(Consumer<BasicLongProperty> fn);
+
+  /**
    * Filter agent instances by their current status.
    *
    * @param value the status to match
