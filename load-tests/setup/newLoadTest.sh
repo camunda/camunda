@@ -9,8 +9,7 @@ ROOT_DIR="$SCRIPT_DIR"
 
 AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89)
 
-# Internal plumbing hook for the golden-file test harness (like GIT_AUTHOR,
-# undocumented in usage()): lets callers enumerate versions without
+# Internal plumbing hook for the golden-file test harness: lets callers enumerate versions without
 # duplicating AVAILABLE_VERSIONS.
 if [[ " $* " == *" --list-versions "* ]]; then
   echo "${AVAILABLE_VERSIONS[*]}"
@@ -110,7 +109,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --warm-platform-chart-cache)
       # Internal plumbing hook for the golden-file test harness's chart
-      # pre-warm step (like GIT_AUTHOR, undocumented in usage()): pulls the
+      # pre-warm step: pulls the
       # camunda-platform version resolved above for -t/--target-version into
       # LOAD_TEST_CHART_CACHE_DIR (if not already there) and exits before the
       # namespace argument is required. Reuses the same version resolution
