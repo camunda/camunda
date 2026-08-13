@@ -8,8 +8,13 @@
 
 import {createFileRoute, Outlet, redirect, useRouterState, type RegisteredRouter} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
+import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
 import {SessionWatcher} from '#/shared/auth/components/SessionWatcher';
+import {authenticationStore} from '#/shared/auth/authentication.store';
+import {endpoints} from '#/shared/http/endpoints';
+import {getCsrfTokenFromStorage} from '#/shared/http/request';
 import {queries} from '#/shared/http/queries';
+import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {C3Provider} from '#/shared/c3/components/C3Provider';
 import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
@@ -86,6 +91,15 @@ function RouteComponent() {
 	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const pathname = useRouterState({select: ({location}) => location.pathname});
 	const currentApp = resolveCurrentApp(pathname);
+
+	useSessionHeartbeat({
+		url: endpoints.sessionHeartbeatUrl(),
+		csrfToken: getCsrfTokenFromStorage,
+		onUnauthorized: () => {
+			authenticationStore.disableSession();
+			reactQueryClient.clear();
+		},
+	});
 
 	return (
 		<>

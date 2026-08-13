@@ -107,6 +107,8 @@ security.multi-tenancy
 security.multi-tenancy.api-enabled
 security.multi-tenancy.checks-enabled
 security.session
+security.session.heartbeat.enabled
+security.session.max-inactive-interval
 security.session.persistent.enabled
 security.transport-layer-security.cluster.certificate-chain-path
 security.transport-layer-security.cluster.certificate-private-key-path

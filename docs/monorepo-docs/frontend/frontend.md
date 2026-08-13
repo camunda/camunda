@@ -13,6 +13,7 @@ Anyone working on the orchestration cluster frontend components.
 - **[Project outline](./project-outline.md)** — packages and apps inside `webapp/client` and what each owns.
 - **[Orchestration cluster webapp](./orchestration-cluster-webapp.md)** — deeper intro to the unified app: tech stack, layout, scripts, dev-server proxy, testing.
 - **[Camunda API Zod schemas](./camunda-api-zod-schemas.md)** — installation, usage, and publishing for the `@camunda/camunda-api-zod-schemas` package.
+- **[Session heartbeat](./session-heartbeat.md)** — activity-driven session keep-alive for the `@camunda/session-heartbeat` package.
 - **[Data loading](./data-loading.md)** — TanStack Query + Zod schema patterns.
 - **[Forms](./forms.md)** — form library choice and shared form-agnostic patterns.
 - **[Development process](./development-process/development-process.md)** — pre-flight checklist plus playbooks for new pages, extending pages, and large features.

@@ -117,6 +117,8 @@ const endpoints = {
 			method: 'POST',
 		}),
 
+	sessionHeartbeatUrl: () => getFullURL('/session/heartbeat').toString(),
+
 	getCurrentUser: () =>
 		new Request(getFullURL(unifiedAPIEndpoints.getCurrentUser.getUrl()), {
 			...BASE_REQUEST_OPTIONS,

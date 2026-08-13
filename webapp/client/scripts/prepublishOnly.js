@@ -75,7 +75,7 @@ try {
 	});
 
 	console.log('🔧 Running build...');
-	execSync('npm run build -w @camunda/camunda-api-zod-schemas', {
+	execSync('npm run build -w @camunda/camunda-api-zod-schemas -w @camunda/session-heartbeat', {
 		stdio: 'inherit',
 		cwd: repoRoot,
 	});

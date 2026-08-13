@@ -12,7 +12,8 @@ webapp/client/
 └── packages/
     ├── camunda-api-zod-schemas/
     ├── c8-mocks/
-    └── lint-config/
+    ├── lint-config/
+    └── session-heartbeat/
 ```
 
 ## Packages
@@ -42,6 +43,18 @@ the Camunda frontends — also consumed outside this workspace by
 `operate/client`, `tasklist/client`, and `identity/client`. Consumers
 compose only the eslint variants they need (`base`, `typescript`,
 `react`, `testing`, `license`, `tanstack-query`).
+
+### `@camunda/session-heartbeat`
+
+Published to npm. Tracks browser activity (pointer, keyboard, wheel,
+scroll, tab visibility) and calls the Camunda security library
+heartbeat endpoint at most once per interval, so a session expires from
+real user inactivity instead of from a lack of backend traffic.
+Consumed by `@camunda/orchestration-cluster-webapp` through the
+workspace, and by other Camunda frontends as a published version.
+
+See [Session heartbeat](./session-heartbeat.md) for the backend
+contract, adoption steps, and publishing.
 
 ## Apps
 
