@@ -200,6 +200,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.minRetryDelay = minRetryDelay;
     this.maxRetryDelay = maxRetryDelay;
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
+    PhasedChangeState.setHistoryLimit(completedChangeHistoryLimit);
     backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
     useNewConfig = true;
     coordinatorSupplier =

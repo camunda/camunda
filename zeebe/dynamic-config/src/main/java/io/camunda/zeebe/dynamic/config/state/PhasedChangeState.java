@@ -65,6 +65,8 @@ public record PhasedChangeState(
   /** Default number of completed changes retained in {@link #history}. See {@link #wasIssued}. */
   public static final int DEFAULT_HISTORY_LIMIT = 10;
 
+  public static int historyLimit = DEFAULT_HISTORY_LIMIT;
+
   /**
    * Total order over {@link CompletedPhasedChange}, most-recently-completed last. Ties on {@code
    * completedAt} (possible with coarse clock resolution, or across two different nodes' clocks) are
@@ -102,6 +104,13 @@ public record PhasedChangeState(
         });
     pending = Map.copyOf(pending);
     history = List.copyOf(history);
+  }
+
+  public static void setHistoryLimit(final int limit) {
+    if (limit < 0) {
+      throw new IllegalArgumentException("historyLimit must be non-negative, got " + limit);
+    }
+    historyLimit = limit;
   }
 
   public static PhasedChangeState empty() {
@@ -257,8 +266,7 @@ public record PhasedChangeState(
     other.history.forEach(c -> mergedHistoryById.merge(c.id(), c, (a, b) -> a));
     // Fixed limit, not derived from either side's size: top-k of a union only converges regardless
     // of merge order when k is constant. See the class javadoc.
-    final var mergedHistory =
-        trimHistory(List.copyOf(mergedHistoryById.values()), DEFAULT_HISTORY_LIMIT);
+    final var mergedHistory = trimHistory(List.copyOf(mergedHistoryById.values()), historyLimit);
 
     final Map<Long, PhasedChangePlan> mergedPending = new HashMap<>();
     pending.forEach(
