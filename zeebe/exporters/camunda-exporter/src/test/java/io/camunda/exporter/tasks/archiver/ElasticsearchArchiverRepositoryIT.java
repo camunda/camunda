@@ -1548,7 +1548,7 @@ final class ElasticsearchArchiverRepositoryIT {
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
             objectMapper)
-        .startup();
+        .startupOnce();
   }
 
   private void putLifecyclePolicies() throws IOException {

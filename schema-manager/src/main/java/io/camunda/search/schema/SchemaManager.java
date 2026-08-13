@@ -76,9 +76,30 @@ public class SchemaManager implements CloseableSilently {
         indexOnlyDescriptors,
         indexTemplateDescriptors,
         config,
+        objectMapper,
+        null);
+  }
+
+  /**
+   * Preferred over {@link #withMetrics(SchemaManagerMetrics)} by callers that make a fresh manager
+   * per attempt: {@code withMetrics} copies the manager, and the copied-from instance holds an
+   * executor its caller then has to remember to close.
+   */
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper,
+      final SchemaManagerMetrics schemaManagerMetrics) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
         new IndexSchemaValidator(objectMapper),
         VersionUtil.getVersion(),
-        null);
+        schemaManagerMetrics);
   }
 
   @VisibleForTesting
@@ -129,22 +150,54 @@ public class SchemaManager implements CloseableSilently {
    * is temporarily unavailable during startup.
    */
   public void startup() {
-    if (!config.schemaManager().isCreateSchema()) {
-      LOG.info(
-          "Will not make any changes to indices and index templates as [createSchema] is false");
+    if (skipSchemaCreation()) {
       return;
     }
 
     startSchemaCleanup();
 
+    timed(
+        () ->
+            // even that initializeSchema does not declare throwing any exception, it may still do
+            // sneaky throws (see #joinOnFutures) which are retried only by
+            // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
+            retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema));
+  }
+
+  /**
+   * Applies the schema in a single attempt, propagating any failure to the caller. Retrying is the
+   * caller's decision, so that a caller managing several independent schemas can retry, classify
+   * and report each of them on its own — see {@link #startup()} for the self-retrying variant.
+   *
+   * <p>Bounded retries that belong to one attempt stay inside it; only the unbounded outer loop
+   * moves out.
+   */
+  public void startupOnce() {
+    if (skipSchemaCreation()) {
+      return;
+    }
+
+    timed(this::initializeSchema);
+
+    // Cleaning up after the schema is in place rather than before keeps a caller that retries a
+    // failing attempt from re-running the cleanup on every one of them.
+    startSchemaCleanup();
+  }
+
+  private boolean skipSchemaCreation() {
+    if (config.schemaManager().isCreateSchema()) {
+      return false;
+    }
+    LOG.info("Will not make any changes to indices and index templates as [createSchema] is false");
+    return true;
+  }
+
+  private void timed(final Runnable initialization) {
     final var timer =
         ofNullable(schemaManagerMetrics)
             .map(SchemaManagerMetrics::startSchemaInitTimer)
             .orElse(() -> {});
-    // even that initializeSchema does not declare throwing any exception, it may still do sneaky
-    // throws (see #joinOnFutures) which are retried only by
-    // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
-    retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema);
+    initialization.run();
     // record the time taken to initialize schema only if it was successful
     timer.close();
   }

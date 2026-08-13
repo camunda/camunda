@@ -8,6 +8,7 @@
 package io.camunda.search.schema;
 
 import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
+import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,7 +111,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(previousVersion);
 
     // When & Then: Should throw exception for forbidden upgrades
-    assertThatThrownBy(() -> schemaManager.startup())
+    assertThatThrownBy(() -> startupWithRetry(schemaManager, config))
         .isInstanceOf(IncompatibleVersionException.class)
         .hasMessageContaining("Schema is not compatible with current version")
         .hasMessageContaining(expectedIncompatibleType);
@@ -141,7 +142,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(previousVersion);
 
     // When & Then: Should throw exception for forbidden upgrades
-    assertThatThrownBy(() -> schemaManager.startup())
+    assertThatThrownBy(() -> startupWithRetry(schemaManager, config))
         .isInstanceOf(IncompatibleVersionException.class)
         .hasMessageContaining("Cannot upgrade to or from a pre-release version")
         .hasMessageContaining(expectedIncompatibleType);
@@ -184,7 +185,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(previousVersion);
 
     // When
-    schemaManager.startup();
+    startupWithRetry(schemaManager, config);
 
     // Then: Should complete without throwing exceptions
     verifyInvokedOperations(currentVersion, expectSchemaUpgrade);
@@ -251,7 +252,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(previousVersion);
 
     // When
-    schemaManager.startup();
+    startupWithRetry(schemaManager, config);
 
     // Then: Should return early without performing any operations
     verifyNoOperationWereInvoked();
@@ -272,7 +273,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata("8.8.0");
 
     // When: Should not throw exception when version check is disabled
-    spySchemaManager.startup();
+    startupWithRetry(spySchemaManager, config);
 
     // Then: Should proceed with schema upgrade despite incompatibility
     verifyInvokedOperations("9.0.0", true);
@@ -285,7 +286,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(null);
 
     // When
-    spySchemaManager.startup();
+    startupWithRetry(spySchemaManager, config);
 
     // Then: Should proceed with full schema initialization
     verifyInvokedOperations("8.8.0", true);
@@ -298,7 +299,7 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata("8.8.0-SNAPSHOT");
 
     // When
-    spySchemaManager.startup();
+    startupWithRetry(spySchemaManager, config);
 
     // Then: Should trigger schema upgrade for SNAPSHOT versions even when same version
     verifyInvokedOperations("8.8.0-SNAPSHOT", true);
@@ -316,10 +317,44 @@ class SchemaManagerTest {
     mockSchemaVersionInMetadata(null);
 
     // When
-    schemaManager.startup();
+    startupWithRetry(schemaManager, config);
 
     // Then: Should proceed with full schema initialization including metadata index creation
     verifyInvokedOperations("8.8.0", true);
+  }
+
+  @Test
+  void shouldNotCleanUpLegacyIndicesWhenASingleAttemptFails() {
+    // given - a caller of startupOnce() retries the attempt itself, so a cleanup that ran before
+    // the schema was applied would be re-run on every one of those attempts
+    schemaManager = createSpySchemaManager("8.10.0");
+    when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX_TEMPLATE)))
+        .thenThrow(new IllegalStateException("storage unreachable"));
+
+    // when
+    assertThatThrownBy(() -> schemaManager.startupOnce())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("storage unreachable");
+
+    // then - close() first: the cleanup is dispatched to the manager's executor, and closing it is
+    // what makes "it never ran" an assertion rather than a race
+    schemaManager.close();
+    verify(searchEngineClient, never()).getIndexNames(anyString());
+  }
+
+  @Test
+  void shouldCleanUpLegacyIndicesAfterASingleAttemptSucceeds() {
+    // given
+    schemaManager = createSpySchemaManager("8.10.0");
+    when(searchEngineClient.getMappings(anyString(), any())).thenReturn(Map.of());
+
+    // when
+    schemaManager.startupOnce();
+
+    // then - the cleanup still runs, exactly once, after the schema is in place. close() awaits
+    // the executor it was dispatched to, so this does not race the async task.
+    schemaManager.close();
+    verify(searchEngineClient, times(1)).getIndexNames(anyString());
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
@@ -380,7 +415,7 @@ class SchemaManagerTest {
       final var mgr = buildManager(List.of(metaIndex, index), List.of());
 
       // when
-      mgr.startup();
+      startupWithRetry(mgr, cfg);
 
       // then
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
@@ -396,7 +431,7 @@ class SchemaManagerTest {
       final var mgr = buildManager(List.of(metaIndex), List.of(template));
 
       // when
-      mgr.startup();
+      startupWithRetry(mgr, cfg);
 
       // then
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
@@ -412,7 +447,7 @@ class SchemaManagerTest {
       final var mgr = buildManager(List.of(metaIndex), List.of(template));
 
       // when
-      mgr.startup();
+      startupWithRetry(mgr, cfg);
 
       // then
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
@@ -429,7 +464,7 @@ class SchemaManagerTest {
       final var mgr = buildManager(List.of(metaIndex, index), List.of());
 
       // when
-      mgr.startup();
+      startupWithRetry(mgr, cfg);
 
       // then
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
