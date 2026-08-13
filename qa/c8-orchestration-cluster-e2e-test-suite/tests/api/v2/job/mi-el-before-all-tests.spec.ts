@@ -193,7 +193,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         );
 
         const failRes = await request.post(
-          buildUrl(`/jobs/${jobKey}/failure`),
+          buildUrl('/jobs/{jobKey}/failure', {jobKey}),
           {
             headers: jsonHeaders(),
             data: {retries: 0, errorMessage: 'Simulated failure NEG-02'},
@@ -234,14 +234,19 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         );
 
         // ── Recovery: update retries + resolve incident ──────────────────────
-        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-          headers: jsonHeaders(),
-          data: {changeset: {retries: 1}},
-        });
+        const updateRes = await request.patch(
+          buildUrl('/jobs/{jobKey}', {jobKey}),
+          {
+            headers: jsonHeaders(),
+            data: {changeset: {retries: 1}},
+          },
+        );
         await assertStatusCode(updateRes, 204);
 
         const resolveRes = await request.post(
-          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
+          buildUrl('/incidents/{incidentKey}/resolution', {
+            incidentKey: incidents[0].incidentKey,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(resolveRes, 204);
@@ -652,7 +657,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
           // Fail one job with retries=1 (FAILED state, no incident, re-activatable immediately)
           const failRes = await request.post(
-            buildUrl(`/jobs/${startJobs[0].jobKey}/failure`),
+            buildUrl('/jobs/{jobKey}/failure', {jobKey: startJobs[0].jobKey}),
             {
               headers: jsonHeaders(),
               data: {retries: 1, errorMessage: 'Simulated start EL failure'},

@@ -43,9 +43,9 @@ test.describe.parallel('Business ID - GET Response', () => {
     await test.step('GET process instance and verify businessId is returned', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(
-            `${PROCESS_INSTANCE_ENDPOINT}/${localState['processInstanceKey']}`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['processInstanceKey'] as string,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);
@@ -84,9 +84,9 @@ test.describe.parallel('Business ID - GET Response', () => {
     await test.step('GET process instance and verify businessId is null', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(
-            `${PROCESS_INSTANCE_ENDPOINT}/${localState['processInstanceKey']}`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['processInstanceKey'] as string,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);
@@ -130,15 +130,12 @@ test.describe.parallel('Business ID - Search API', () => {
 
     await test.step('Search with businessId filter and verify exactly one result', async () => {
       await expect(async () => {
-        const res = await request.post(
-          buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {businessId},
-            },
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {businessId},
           },
-        );
+        });
         await assertStatusCode(res, 200);
         await validateResponse(
           {
@@ -178,17 +175,14 @@ test.describe.parallel('Business ID - Search API', () => {
 
     await test.step('Search and verify businessId field is present in search items', async () => {
       await expect(async () => {
-        const res = await request.post(
-          buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                processInstanceKey: localState['processInstanceKey'],
-              },
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState['processInstanceKey'],
             },
           },
-        );
+        });
         await assertStatusCode(res, 200);
         await validateResponse(
           {
@@ -215,15 +209,12 @@ test.describe.parallel('Business ID - Search API', () => {
   }) => {
     const nonExistentBusinessId = uniqueBusinessId('no-match');
 
-    const res = await request.post(
-      buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          filter: {businessId: nonExistentBusinessId},
-        },
+    const res = await request.post(buildUrl('/process-instances/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {businessId: nonExistentBusinessId},
       },
-    );
+    });
     await assertStatusCode(res, 200);
     await validateResponse(
       {
@@ -267,20 +258,17 @@ test.describe.parallel('Business ID - Search API', () => {
 
     await test.step('Search sorted by businessId ascending and verify order', async () => {
       await expect(async () => {
-        const res = await request.post(
-          buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                processInstanceKey: {
-                  $in: [localState['key1'], localState['key2']],
-                },
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: {
+                $in: [localState['key1'], localState['key2']],
               },
-              sort: [{field: 'businessId', order: 'asc'}],
             },
+            sort: [{field: 'businessId', order: 'asc'}],
           },
-        );
+        });
         await assertStatusCode(res, 200);
         await validateResponse(
           {
@@ -332,18 +320,14 @@ test.describe.parallel('Business ID - Call Activity Propagation', () => {
 
     await test.step('Search for child process instance by parent key', async () => {
       await expect(async () => {
-        const res = await request.post(
-          buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                parentProcessInstanceKey:
-                  localState['parentProcessInstanceKey'],
-              },
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              parentProcessInstanceKey: localState['parentProcessInstanceKey'],
             },
           },
-        );
+        });
         await assertStatusCode(res, 200);
         const json = await res.json();
         expect(json.page.totalItems).toBe(1);
@@ -355,9 +339,9 @@ test.describe.parallel('Business ID - Call Activity Propagation', () => {
     await test.step('GET child process instance and verify it inherits businessId', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(
-            `${PROCESS_INSTANCE_ENDPOINT}/${localState['childProcessInstanceKey']}`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['childProcessInstanceKey'] as string,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);
@@ -397,18 +381,14 @@ test.describe.parallel('Business ID - Call Activity Propagation', () => {
 
     await test.step('Search for child process instance by parent key', async () => {
       await expect(async () => {
-        const res = await request.post(
-          buildUrl(`${PROCESS_INSTANCE_ENDPOINT}/search`),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                parentProcessInstanceKey:
-                  localState['parentProcessInstanceKey'],
-              },
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              parentProcessInstanceKey: localState['parentProcessInstanceKey'],
             },
           },
-        );
+        });
         await assertStatusCode(res, 200);
         const json = await res.json();
         expect(json.page.totalItems).toBe(1);
@@ -420,9 +400,9 @@ test.describe.parallel('Business ID - Call Activity Propagation', () => {
     await test.step('GET child process instance and verify businessId is null', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(
-            `${PROCESS_INSTANCE_ENDPOINT}/${localState['childProcessInstanceKey']}`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['childProcessInstanceKey'] as string,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);

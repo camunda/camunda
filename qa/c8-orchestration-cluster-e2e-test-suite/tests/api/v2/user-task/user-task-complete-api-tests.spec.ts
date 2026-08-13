@@ -125,7 +125,7 @@ test.describe.parallel('Complete User Task Tests', () => {
       'CREATED',
     );
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/completion`),
+      buildUrl('/user-tasks/{userTaskKey}/completion', {userTaskKey}),
       {
         // No auth headers
         headers: {

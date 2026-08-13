@@ -654,7 +654,7 @@ test.describe('task details page', () => {
     );
 
     const userTaskRes = await request.get(
-      buildUrl(`/user-tasks/${userTaskKey}`),
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
       {headers: jsonHeaders()},
     );
     expect((await userTaskRes.json()).customHeaders).toEqual({

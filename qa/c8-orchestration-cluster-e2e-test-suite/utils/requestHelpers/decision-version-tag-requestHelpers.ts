@@ -190,7 +190,7 @@ export async function resolveIncident(
   incidentKey: string,
 ): Promise<void> {
   const res = await request.post(
-    buildUrl(`/incidents/${incidentKey}/resolution`),
+    buildUrl('/incidents/{incidentKey}/resolution', {incidentKey}),
     {headers: jsonHeaders()},
   );
   await assertStatusCode(res, 204);

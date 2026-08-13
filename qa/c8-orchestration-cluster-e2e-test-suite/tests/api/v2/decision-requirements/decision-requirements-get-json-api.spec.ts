@@ -39,7 +39,9 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
       decisionRequirementToGet.decisionRequirementsKey;
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${decisionRequirementsToGetKey}`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+          decisionRequirementsKey: decisionRequirementsToGetKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -67,7 +69,9 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
     const someRandomNotExistingKey = '9999999999999999';
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${someRandomNotExistingKey}`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+          decisionRequirementsKey: someRandomNotExistingKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -84,7 +88,9 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
     await expect(async () => {
       const someInvalidValue = 'meow';
       const res = await request.get(
-        buildUrl(`/decision-requirements/${someInvalidValue}`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+          decisionRequirementsKey: someInvalidValue,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -103,7 +109,9 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
       decisionRequirementToGet.decisionRequirementsKey;
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${decisionRequirementsToGetKey}`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+          decisionRequirementsKey: decisionRequirementsToGetKey,
+        }),
         {
           headers: {
             'Content-Type': 'application/json',

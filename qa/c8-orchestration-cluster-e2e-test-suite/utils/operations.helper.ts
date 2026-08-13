@@ -25,7 +25,8 @@ export async function createDemoOperations(
     [...new Array(count)].map(async (_, index) => {
       const response = await request.post(
         buildUrl(
-          `/process-instances/${processInstanceKey}/incident-resolution`,
+          '/process-instances/{processInstanceKey}/incident-resolution',
+          {processInstanceKey},
         ),
         {
           ...requestHeaders,

@@ -54,9 +54,12 @@ test.describe.parallel('Get Audit Logs API Tests', () => {
     await test.step('Get Audit Logs', async () => {
       const auditLogKey = expectedAuditLog.auditLogKey;
       await expect(async () => {
-        const res = await request.get(buildUrl(`/audit-logs/${auditLogKey}`), {
-          headers: jsonHeaders(),
-        });
+        const res = await request.get(
+          buildUrl('/audit-logs/{auditLogKey}', {auditLogKey}),
+          {
+            headers: jsonHeaders(),
+          },
+        );
 
         await assertStatusCode(res, 200);
         await validateResponse(
@@ -76,7 +79,7 @@ test.describe.parallel('Get Audit Logs API Tests', () => {
   test('Get Audit Logs - Not Found', async ({request}) => {
     const invalidAuditLogKey = 'meowmeowInvalidAuditLogKey';
     const res = await request.get(
-      buildUrl(`/audit-logs/${invalidAuditLogKey}`),
+      buildUrl('/audit-logs/{auditLogKey}', {auditLogKey: invalidAuditLogKey}),
       {
         headers: jsonHeaders(),
       },
@@ -146,10 +149,13 @@ test.describe.parallel('Get Audit Logs API Tests', () => {
     await test.step('Get Audit Logs with user having only Resource Authorization - Expect Forbidden', async () => {
       const auditLogKey = expectedAuditLog.auditLogKey;
       await expect(async () => {
-        const res = await request.get(buildUrl(`/audit-logs/${auditLogKey}`), {
-          headers: jsonHeaders(token), // overrides default demo:demo
-          data: {},
-        });
+        const res = await request.get(
+          buildUrl('/audit-logs/{auditLogKey}', {auditLogKey}),
+          {
+            headers: jsonHeaders(token), // overrides default demo:demo
+            data: {},
+          },
+        );
         await assertForbiddenRequest(res, 'Unauthorized to perform');
       }).toPass(defaultAssertionOptions);
     });

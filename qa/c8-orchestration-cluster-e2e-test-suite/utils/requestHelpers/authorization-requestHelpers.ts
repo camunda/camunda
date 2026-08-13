@@ -84,7 +84,9 @@ export async function grantUserResourceAuthorization(
 
   await expect(async () => {
     const statusRes = await request.get(
-      buildUrl(`/authorizations/${authBody.authorizationKey}`),
+      buildUrl('/authorizations/{authorizationKey}', {
+        authorizationKey: authBody.authorizationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -147,7 +149,7 @@ export async function expectAuthorizationCanBeFound(
 ) {
   await expect(async () => {
     const statusRes = await request.get(
-      buildUrl(`/authorizations/${authorizationKey}`),
+      buildUrl('/authorizations/{authorizationKey}', {authorizationKey}),
       {
         headers: jsonHeaders(),
       },
@@ -200,7 +202,7 @@ export async function expectAuthorizationCanNotBeFound(
 ) {
   await expect(async () => {
     const statusRes = await request.get(
-      buildUrl(`/authorizations/${authorizationKey}`),
+      buildUrl('/authorizations/{authorizationKey}', {authorizationKey}),
       {
         headers: jsonHeaders(),
       },

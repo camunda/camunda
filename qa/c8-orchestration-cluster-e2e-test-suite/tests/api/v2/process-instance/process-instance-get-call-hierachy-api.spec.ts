@@ -78,9 +78,9 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
     await test.step('Get Process Instance Call Hierarchy', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(
-            `/process-instances/${localState['childProcessInstanceKey']}/call-hierarchy`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}/call-hierarchy', {
+            processInstanceKey: localState['childProcessInstanceKey'] as string,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -118,7 +118,9 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-instances/2251799813685249/call-hierarchy`),
+      buildUrl('/process-instances/{processInstanceKey}/call-hierarchy', {
+        processInstanceKey: '2251799813685249',
+      }),
       {
         // No auth headers
         headers: {},
@@ -131,7 +133,9 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-instances/2251799813685249/call-hierarchy`),
+      buildUrl('/process-instances/{processInstanceKey}/call-hierarchy', {
+        processInstanceKey: '2251799813685249',
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -146,7 +150,9 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-instances/invalid-key/call-hierarchy`),
+      buildUrl('/process-instances/{processInstanceKey}/call-hierarchy', {
+        processInstanceKey: 'invalid-key',
+      }),
       {
         headers: jsonHeaders(),
       },

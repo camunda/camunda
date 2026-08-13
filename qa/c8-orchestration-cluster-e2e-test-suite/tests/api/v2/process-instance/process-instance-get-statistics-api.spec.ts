@@ -52,7 +52,8 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
       await expect(async () => {
         const res = await request.get(
           buildUrl(
-            `/process-instances/${localState['processInstanceKey']}/statistics/element-instances`,
+            '/process-instances/{processInstanceKey}/statistics/element-instances',
+            {processInstanceKey: localState['processInstanceKey'] as string},
           ),
           {
             headers: jsonHeaders(),
@@ -99,7 +100,8 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
   test('Get Process Instance Statistics - Unauthorized', async ({request}) => {
     const res = await request.get(
       buildUrl(
-        `/process-instances/2251799813685249/statistics/element-instances`,
+        '/process-instances/{processInstanceKey}/statistics/element-instances',
+        {processInstanceKey: '2251799813685249'},
       ),
       {
         // No auth headers
@@ -114,7 +116,8 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
   }) => {
     const res = await request.get(
       buildUrl(
-        `/process-instances/2251799813685249/statistics/element-instances`,
+        '/process-instances/{processInstanceKey}/statistics/element-instances',
+        {processInstanceKey: '2251799813685249'},
       ),
       {
         headers: jsonHeaders(),
@@ -135,7 +138,10 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
 
   test('Get Process Instance Statistics - Bad Request', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-instances/invalid-key/statistics/element-instances`),
+      buildUrl(
+        '/process-instances/{processInstanceKey}/statistics/element-instances',
+        {processInstanceKey: 'invalid-key'},
+      ),
       {
         headers: jsonHeaders(),
       },

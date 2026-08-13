@@ -39,7 +39,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
 
     await test.step('First assignment', async () => {
       const res1 = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+        buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -52,7 +52,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
 
     await test.step('Then unassignment', async () => {
       const res2 = await request.delete(
-        buildUrl(`/user-tasks/${userTaskKey}/assignee`),
+        buildUrl('/user-tasks/{userTaskKey}/assignee', {userTaskKey}),
         {
           headers: jsonHeaders(),
         },
@@ -68,7 +68,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
       'CREATED',
     );
     const res = await request.delete(
-      buildUrl(`/user-tasks/${userTaskKey}/assignee`),
+      buildUrl('/user-tasks/{userTaskKey}/assignee', {userTaskKey}),
       {
         // No auth headers
         headers: {
@@ -84,7 +84,9 @@ test.describe.parallel('Unassign User Task Tests', () => {
     // so the command reaches the engine and is rejected with NOT_FOUND (404).
     const unknownUserTaskKey = '4503599627370495';
     const res = await request.delete(
-      buildUrl(`/user-tasks/${unknownUserTaskKey}/assignee`),
+      buildUrl('/user-tasks/{userTaskKey}/assignee', {
+        userTaskKey: unknownUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -107,7 +109,9 @@ test.describe.parallel('Unassign User Task Tests', () => {
     // of a permanent 404.
     const outOfRangeUserTaskKey = '9999999999999999';
     const res = await request.delete(
-      buildUrl(`/user-tasks/${outOfRangeUserTaskKey}/assignee`),
+      buildUrl('/user-tasks/{userTaskKey}/assignee', {
+        userTaskKey: outOfRangeUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -122,7 +126,9 @@ test.describe.parallel('Unassign User Task Tests', () => {
   }) => {
     const invalidUserTaskKey = 'invalidKey';
     const res = await request.delete(
-      buildUrl(`/user-tasks/${invalidUserTaskKey}/assignee`),
+      buildUrl('/user-tasks/{userTaskKey}/assignee', {
+        userTaskKey: invalidUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -142,7 +148,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
 
     await test.step('First unassignment', async () => {
       const res1 = await request.delete(
-        buildUrl(`/user-tasks/${userTaskKey}/assignee`),
+        buildUrl('/user-tasks/{userTaskKey}/assignee', {userTaskKey}),
         {
           headers: jsonHeaders(),
         },
@@ -152,7 +158,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
 
     await test.step('Second unassignment', async () => {
       const res2 = await request.delete(
-        buildUrl(`/user-tasks/${userTaskKey}/assignee`),
+        buildUrl('/user-tasks/{userTaskKey}/assignee', {userTaskKey}),
         {
           headers: jsonHeaders(),
         },

@@ -107,7 +107,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify Process Instance Key to Delete has state COMPLETED', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -156,7 +158,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify process instance is deleted', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -179,7 +183,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
       for (const processInstanceKey of processInstancesToDelete) {
         await expect(async () => {
           const response = await request.get(
-            buildUrl(`/process-instances/${processInstanceKey}`),
+            buildUrl('/process-instances/{processInstanceKey}', {
+              processInstanceKey,
+            }),
             {
               headers: jsonHeaders(),
             },
@@ -230,7 +236,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
       for (const processInstanceKey of processInstancesToDelete) {
         await expect(async () => {
           const response = await request.get(
-            buildUrl(`/process-instances/${processInstanceKey}`),
+            buildUrl('/process-instances/{processInstanceKey}', {
+              processInstanceKey,
+            }),
             {
               headers: jsonHeaders(),
             },
@@ -253,7 +261,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify Process Instance Key to Delete has state ACTIVE', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -298,7 +308,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify the batch operation is completed', async () => {
       await expect(async () => {
         const statusRes = await request.get(
-          buildUrl(`/batch-operations/${batchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -324,7 +336,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify process instance is still active', async () => {
       await expect(async () => {
         const response = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: processInstanceKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -354,7 +368,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
       for (const processInstanceKey of processInstancesToDelete) {
         await expect(async () => {
           const response = await request.get(
-            buildUrl(`/process-instances/${processInstanceKey}`),
+            buildUrl('/process-instances/{processInstanceKey}', {
+              processInstanceKey,
+            }),
             {
               headers: jsonHeaders(),
             },
@@ -400,7 +416,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     await test.step('Verify the batch operation is completed', async () => {
       await expect(async () => {
         const statusRes = await request.get(
-          buildUrl(`/batch-operations/${batchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -427,7 +445,9 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
       for (const processInstanceKey of processInstancesToDelete) {
         await expect(async () => {
           const response = await request.get(
-            buildUrl(`/process-instances/${processInstanceKey}`),
+            buildUrl('/process-instances/{processInstanceKey}', {
+              processInstanceKey,
+            }),
             {
               headers: jsonHeaders(),
             },

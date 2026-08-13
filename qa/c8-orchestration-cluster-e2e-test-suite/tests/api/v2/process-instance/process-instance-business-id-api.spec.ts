@@ -271,7 +271,9 @@ test.describe.parallel('Business ID - Uniqueness Enforcement', () => {
     await test.step('Confirm the existing instance is ACTIVE', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/process-instances/${localState['processInstanceKey']}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['processInstanceKey'] as string,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);
@@ -329,9 +331,9 @@ test.describe.parallel('Business ID - Uniqueness Enforcement', () => {
 
     await test.step('Migrate process instance to v2', async () => {
       const res = await request.post(
-        buildUrl(
-          `/process-instances/${localState['processInstanceKey']}/migration`,
-        ),
+        buildUrl('/process-instances/{processInstanceKey}/migration', {
+          processInstanceKey: localState['processInstanceKey'],
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -352,7 +354,9 @@ test.describe.parallel('Business ID - Uniqueness Enforcement', () => {
     await test.step('GET migrated instance — businessId must be retained', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/process-instances/${localState['processInstanceKey']}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey: localState['processInstanceKey'],
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 200);

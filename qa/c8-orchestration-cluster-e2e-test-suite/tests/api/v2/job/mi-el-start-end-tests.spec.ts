@@ -159,7 +159,7 @@ test.describe
         );
 
         const failRes = await request.post(
-          buildUrl(`/jobs/${jobKey}/failure`),
+          buildUrl('/jobs/{jobKey}/failure', {jobKey}),
           {
             headers: jsonHeaders(),
             data: {retries: 0, errorMessage: 'Simulated start EL failure'},
@@ -220,10 +220,13 @@ test.describe
           extendedAssertionOptions,
         );
 
-        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-          headers: jsonHeaders(),
-          data: {changeset: {retries: 1}},
-        });
+        const updateRes = await request.patch(
+          buildUrl('/jobs/{jobKey}', {jobKey}),
+          {
+            headers: jsonHeaders(),
+            data: {changeset: {retries: 1}},
+          },
+        );
         await assertStatusCode(updateRes, 204);
 
         // Regression check #2 (#54238 fixed): /jobs/search must return HTTP 200
@@ -244,7 +247,9 @@ test.describe
         }).toPass(extendedAssertionOptions);
 
         const resolveRes = await request.post(
-          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
+          buildUrl('/incidents/{incidentKey}/resolution', {
+            incidentKey: incidents[0].incidentKey,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(resolveRes, 204);

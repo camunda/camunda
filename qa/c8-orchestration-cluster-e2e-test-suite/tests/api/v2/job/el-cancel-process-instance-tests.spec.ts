@@ -211,7 +211,7 @@ test.describe.parallel('Cancel Process Instance Execution Listener', () => {
           cancelListenerType,
         );
         const failRes = await request.post(
-          buildUrl(`/jobs/${jobKey}/failure`),
+          buildUrl('/jobs/{jobKey}/failure', {jobKey}),
           {
             headers: jsonHeaders(),
             data: {
@@ -249,14 +249,19 @@ test.describe.parallel('Cancel Process Instance Execution Listener', () => {
           extendedAssertionOptions,
         );
 
-        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-          headers: jsonHeaders(),
-          data: {changeset: {retries: 1}},
-        });
+        const updateRes = await request.patch(
+          buildUrl('/jobs/{jobKey}', {jobKey}),
+          {
+            headers: jsonHeaders(),
+            data: {changeset: {retries: 1}},
+          },
+        );
         await assertStatusCode(updateRes, 204);
 
         const resolveRes = await request.post(
-          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
+          buildUrl('/incidents/{incidentKey}/resolution', {
+            incidentKey: incidents[0].incidentKey,
+          }),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(resolveRes, 204);

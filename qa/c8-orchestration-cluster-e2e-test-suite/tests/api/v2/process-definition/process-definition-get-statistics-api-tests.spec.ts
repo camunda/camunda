@@ -36,7 +36,8 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
     await expect(async () => {
       const res = await request.post(
         buildUrl(
-          `/process-definitions/${state.processDefinitionKey}/statistics/element-instances`,
+          '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+          {processDefinitionKey: state.processDefinitionKey},
         ),
         {
           headers: jsonHeaders(),
@@ -76,7 +77,8 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
   }) => {
     const res = await request.post(
       buildUrl(
-        `/process-definitions/${state.processDefinitionKey}/statistics/element-instances`,
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: state.processDefinitionKey},
       ),
       {
         headers: {},
@@ -91,7 +93,10 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-definitions/invalidKey/statistics/element-instances`),
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'invalidKey'},
+      ),
       {
         headers: jsonHeaders(),
         data: {}, // empty body for basic search
@@ -109,7 +114,8 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
     await expect(async () => {
       const res = await request.post(
         buildUrl(
-          `/process-definitions/${state.processDefinitionKey}/statistics/element-instances`,
+          '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+          {processDefinitionKey: state.processDefinitionKey},
         ),
         {
           headers: jsonHeaders(),
@@ -140,7 +146,8 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
   }) => {
     const res = await request.post(
       buildUrl(
-        `/process-definitions/${state.processDefinitionKey}/statistics/element-instances`,
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: state.processDefinitionKey},
       ),
       {
         headers: jsonHeaders(),
@@ -168,7 +175,8 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
     await expect(async () => {
       const res = await request.post(
         buildUrl(
-          `/process-definitions/${state.processDefinitionKey}/statistics/element-instances`,
+          '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+          {processDefinitionKey: state.processDefinitionKey},
         ),
         {
           headers: jsonHeaders(),

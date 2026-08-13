@@ -91,9 +91,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
         incidentKeys = [];
         elementInstanceKey = '';
         const incidents = await request.post(
-          buildUrl(
-            `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
-          ),
+          buildUrl('/process-instances/{processInstanceKey}/incidents/search', {
+            processInstanceKey: processInstanceKeyWithIncidentToResolve,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -124,7 +124,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
 
     await test.step('Update element instance variables', async () => {
       const updateRes = await request.put(
-        buildUrl(`/element-instances/${elementInstanceKey}/variables`),
+        buildUrl('/element-instances/{elementInstanceKey}/variables', {
+          elementInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -140,7 +142,8 @@ test.describe.serial('Resolve related incidents API Tests', () => {
     await test.step('Resolve incidents', async () => {
       const resolveRes = await request.post(
         buildUrl(
-          `/process-instances/${processInstanceKeyWithIncidentToResolve}/incident-resolution`,
+          '/process-instances/{processInstanceKey}/incident-resolution',
+          {processInstanceKey: processInstanceKeyWithIncidentToResolve},
         ),
         {
           headers: jsonHeaders(),
@@ -163,7 +166,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
     await test.step('Poll batch operation until completion', async () => {
       await expect(async () => {
         const statusRes = await request.get(
-          buildUrl(`/batch-operations/${batchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -226,9 +231,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
   }) => {
     const invalidProcessInstanceKey = 'meow';
     const resolveRes = await request.post(
-      buildUrl(
-        `/process-instances/${invalidProcessInstanceKey}/incident-resolution`,
-      ),
+      buildUrl('/process-instances/{processInstanceKey}/incident-resolution', {
+        processInstanceKey: invalidProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -244,9 +249,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
   }) => {
     const someNotExistingProcessInstanceKey = '123456789';
     const resolveRes = await request.post(
-      buildUrl(
-        `/process-instances/${someNotExistingProcessInstanceKey}/incident-resolution`,
-      ),
+      buildUrl('/process-instances/{processInstanceKey}/incident-resolution', {
+        processInstanceKey: someNotExistingProcessInstanceKey,
+      }),
       {
         headers: {},
       },
@@ -259,9 +264,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
   }) => {
     const someNotExistingProcessInstanceKey = '123456789';
     const resolveRes = await request.post(
-      buildUrl(
-        `/process-instances/${someNotExistingProcessInstanceKey}/incident-resolution`,
-      ),
+      buildUrl('/process-instances/{processInstanceKey}/incident-resolution', {
+        processInstanceKey: someNotExistingProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -279,9 +284,9 @@ test.describe.serial('Resolve related incidents API Tests', () => {
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
     const resolveRes = await request.post(
-      buildUrl(
-        `/process-instances/${processInstanceKeyWithIncidentToResolve}/incident-resolution`,
-      ),
+      buildUrl('/process-instances/{processInstanceKey}/incident-resolution', {
+        processInstanceKey: processInstanceKeyWithIncidentToResolve,
+      }),
       {
         headers: jsonHeaders(token), // overrides default demo:demo
       },

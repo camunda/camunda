@@ -24,27 +24,28 @@ import {EXPECTED_ELEMENT_INSTANCE_GET_SUCCESS} from '../../../../utils/beans/ele
 test.describe.parallel('Get Element Instance API', () => {
   const state: Record<string, string> = {};
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({request}) => {
     await deploy(['./resources/element_instance_get_update_tests.bpmn']);
     await createInstances('element_instance_get_update_tests', 1, 1).then(
       (instances) => {
         state.processInstanceKey = instances[0].processInstanceKey;
       },
     );
+    // The tests in this describe run in parallel, so resolving the element
+    // instance key inside one of them leaves the others racing it.
+    state.elementInstanceKey = await searchActiveElementInstance(
+      request,
+      state.processInstanceKey,
+    );
   });
 
   test('Get Element Instance - Success', async ({request}) => {
-    await test.step('Find element instance key of active element', async () => {
-      state.elementInstanceKey = await searchActiveElementInstance(
-        request,
-        state.processInstanceKey,
-      );
-    });
-
     await test.step('Get element instance', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/element-instances/${state.elementInstanceKey}`),
+          buildUrl('/element-instances/{elementInstanceKey}', {
+            elementInstanceKey: state.elementInstanceKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -72,7 +73,9 @@ test.describe.parallel('Get Element Instance API', () => {
 
   test('Get Element Instance - Unauthorized', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/element-instances/${state.elementInstanceKey}`),
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: state.elementInstanceKey,
+      }),
       {
         // No auth headers
       },
@@ -81,9 +84,14 @@ test.describe.parallel('Get Element Instance API', () => {
   });
 
   test('Get Element Instance - Not Found', async ({request}) => {
-    const res = await request.get(buildUrl(`/element-instances/999999999999`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: '999999999999',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertNotFoundRequest(
       res,
       "Element Instance with key '999999999999' not found",
@@ -91,9 +99,14 @@ test.describe.parallel('Get Element Instance API', () => {
   });
 
   test('Get Element Instance - Invalid Key Format', async ({request}) => {
-    const res = await request.get(buildUrl(`/element-instances/invalidKey`), {
-      headers: jsonHeaders(),
-    });
+    const res = await request.get(
+      buildUrl('/element-instances/{elementInstanceKey}', {
+        elementInstanceKey: 'invalidKey',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
     await assertBadRequest(
       res,
       "Failed to convert 'elementInstanceKey' with value: 'invalidKey'",

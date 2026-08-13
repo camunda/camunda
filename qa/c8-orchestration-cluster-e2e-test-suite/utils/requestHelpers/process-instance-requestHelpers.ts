@@ -206,13 +206,16 @@ export async function failJob(
   retries = 0,
   errorMessage = 'Simulated failure',
 ) {
-  const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-    headers: jsonHeaders(),
-    data: {
-      retries: retries,
-      errorMessage: errorMessage,
+  const failRes = await request.post(
+    buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+    {
+      headers: jsonHeaders(),
+      data: {
+        retries: retries,
+        errorMessage: errorMessage,
+      },
     },
-  });
+  );
   await assertStatusCode(failRes, 204);
 }
 
@@ -222,13 +225,16 @@ export async function throwErrorForJob(
   errorCode: string,
   errorMessage = 'Simulated error',
 ) {
-  const throwRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
-    headers: jsonHeaders(),
-    data: {
-      errorCode: errorCode,
-      errorMessage: errorMessage,
+  const throwRes = await request.post(
+    buildUrl('/jobs/{jobKey}/error', {jobKey}),
+    {
+      headers: jsonHeaders(),
+      data: {
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      },
     },
-  });
+  );
   await assertStatusCode(throwRes, 204);
 }
 
@@ -239,7 +245,9 @@ export async function verifyIncidentsForProcessInstance(
 ) {
   return await expect(async () => {
     const res = await request.post(
-      buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
+      buildUrl('/process-instances/{processInstanceKey}/incidents/search', {
+        processInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -272,7 +280,7 @@ export async function expectProcessInstanceCanBeFound(
 ) {
   await expect(async () => {
     const statusRes = await request.get(
-      buildUrl(`/process-instances/${processInstanceKey}`),
+      buildUrl('/process-instances/{processInstanceKey}', {processInstanceKey}),
       {
         headers: jsonHeaders(),
       },

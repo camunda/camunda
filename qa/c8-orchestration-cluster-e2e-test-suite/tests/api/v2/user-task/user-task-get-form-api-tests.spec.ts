@@ -92,7 +92,7 @@ test.describe.parallel('Get User Task Form Tests', () => {
 
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/user-tasks/${userTaskKey}/form`),
+        buildUrl('/user-tasks/{userTaskKey}/form', {userTaskKey}),
         {
           headers: jsonHeaders(),
         },
@@ -129,7 +129,7 @@ test.describe.parallel('Get User Task Form Tests', () => {
 
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/user-tasks/${userTaskKey}/form`),
+        buildUrl('/user-tasks/{userTaskKey}/form', {userTaskKey}),
         {
           headers: jsonHeaders(),
         },
@@ -147,12 +147,15 @@ test.describe.parallel('Get User Task Form Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}/form`), {
-      // No auth headers
-      headers: {
-        'Content-Type': 'application/json',
+    const res = await request.get(
+      buildUrl('/user-tasks/{userTaskKey}/form', {userTaskKey}),
+      {
+        // No auth headers
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
     await assertUnauthorizedRequest(res);
   });
 
@@ -161,7 +164,9 @@ test.describe.parallel('Get User Task Form Tests', () => {
   }) => {
     const invalidUserTaskKey = 'invalidKey';
     const res = await request.get(
-      buildUrl(`/user-tasks/${invalidUserTaskKey}/form`),
+      buildUrl('/user-tasks/{userTaskKey}/form', {
+        userTaskKey: invalidUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -178,7 +183,9 @@ test.describe.parallel('Get User Task Form Tests', () => {
     const nonExistingUserTaskKey = '2251799813711183';
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/user-tasks/${nonExistingUserTaskKey}/form`),
+        buildUrl('/user-tasks/{userTaskKey}/form', {
+          userTaskKey: nonExistingUserTaskKey,
+        }),
         {
           headers: jsonHeaders(),
         },

@@ -119,7 +119,7 @@ export async function completeJob(
   variables?: Record<string, unknown>,
 ): Promise<void> {
   const completeRes = await request.post(
-    buildUrl(`/jobs/${jobKey}/completion`),
+    buildUrl('/jobs/{jobKey}/completion', {jobKey}),
     {
       headers: jsonHeaders(),
       ...(variables !== undefined && {data: {variables}}),

@@ -57,9 +57,10 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
   test('Get Process Definition Start Form - Success 200', async ({request}) => {
     await expect(async () => {
       const res = await request.get(
-        buildUrl(
-          `/process-definitions/${state.processDefinitionKey_withLinkedForm}/form`,
-        ),
+        buildUrl('/process-definitions/{processDefinitionKey}/form', {
+          processDefinitionKey:
+            state.processDefinitionKey_withLinkedForm as string,
+        }),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 200);
@@ -85,9 +86,10 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
   }) => {
     await expect(async () => {
       const res = await request.get(
-        buildUrl(
-          `/process-definitions/${state.processDefinitionKey_withEmbeddedForm}/form`,
-        ),
+        buildUrl('/process-definitions/{processDefinitionKey}/form', {
+          processDefinitionKey:
+            state.processDefinitionKey_withEmbeddedForm as string,
+        }),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 204);
@@ -96,7 +98,9 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
 
   test('Get Process Definition Start Form - Not Found', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/123456/form`),
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey: '123456',
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -111,14 +115,19 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
     request,
   }) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/${state.processDefinitionKey}/form`),
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey:
+          state.processDefinitionKey_withLinkedForm as string,
+      }),
     );
     await assertUnauthorizedRequest(res);
   });
 
   test('Get Process Definition Start Form - Invalid Key', async ({request}) => {
     const res = await request.get(
-      buildUrl(`/process-definitions/invalidKey/form`),
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey: 'invalidKey',
+      }),
       {
         headers: {...jsonHeaders()},
       },

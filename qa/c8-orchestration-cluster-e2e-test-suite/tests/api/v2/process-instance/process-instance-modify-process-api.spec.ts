@@ -81,9 +81,9 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
     await test.step('Modify process instance', async () => {
       const res = await request.post(
-        buildUrl(
-          `/process-instances/${localStorage['processInstanceKey']}/modification`,
-        ),
+        buildUrl('/process-instances/{processInstanceKey}/modification', {
+          processInstanceKey: localStorage['processInstanceKey'] as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -162,9 +162,9 @@ test.describe.parallel('Process Instance Modify Process API', () => {
     });
 
     const res = await request.post(
-      buildUrl(
-        `/process-instances/${localStorage['processInstanceKey']}/modification`,
-      ),
+      buildUrl('/process-instances/{processInstanceKey}/modification', {
+        processInstanceKey: localStorage['processInstanceKey'] as string,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -186,7 +186,9 @@ test.describe.parallel('Process Instance Modify Process API', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-instances/invalidKey/modification`),
+      buildUrl('/process-instances/{processInstanceKey}/modification', {
+        processInstanceKey: 'invalidKey',
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -207,7 +209,9 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
   test('Modify process instance - Unauthorized', async ({request}) => {
     const res = await request.post(
-      buildUrl(`/process-instances/2251799813704885/modification`),
+      buildUrl('/process-instances/{processInstanceKey}/modification', {
+        processInstanceKey: '2251799813704885',
+      }),
       {
         // No auth headers
         headers: {
@@ -228,7 +232,9 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
   test('Modify process instance - Not Found', async ({request}) => {
     const res = await request.post(
-      buildUrl(`/process-instances/2251799813704885/modification`),
+      buildUrl('/process-instances/{processInstanceKey}/modification', {
+        processInstanceKey: '2251799813704885',
+      }),
       {
         headers: jsonHeaders(),
         data: {

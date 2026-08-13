@@ -67,9 +67,12 @@ test.describe.serial('User Task Permission API - Forbidden', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
-        headers: jsonHeaders(userWithoutPermissionsToken),
-      });
+      const res = await request.get(
+        buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+        {
+          headers: jsonHeaders(userWithoutPermissionsToken),
+        },
+      );
       await assertForbiddenRequest(res, READ_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });
@@ -85,7 +88,7 @@ test.describe.serial('User Task Permission API - Forbidden', () => {
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/assignment`),
+        buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
         {
           headers: jsonHeaders(userWithoutPermissionsToken),
           data: {assignee: userWithoutPermissions.username},
@@ -106,7 +109,7 @@ test.describe.serial('User Task Permission API - Forbidden', () => {
 
     await expect(async () => {
       const res = await request.delete(
-        buildUrl(`/user-tasks/${userTaskKey}/assignee`),
+        buildUrl('/user-tasks/{userTaskKey}/assignee', {userTaskKey}),
         {
           headers: jsonHeaders(userWithoutPermissionsToken),
         },
@@ -125,13 +128,16 @@ test.describe.serial('User Task Permission API - Forbidden', () => {
     );
 
     await expect(async () => {
-      const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-        headers: jsonHeaders(userWithoutPermissionsToken),
-        data: {
-          changeset: {priority: 80},
-          action: 'customUpdate',
+      const res = await request.patch(
+        buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+        {
+          headers: jsonHeaders(userWithoutPermissionsToken),
+          data: {
+            changeset: {priority: 80},
+            action: 'customUpdate',
+          },
         },
-      });
+      );
       await assertForbiddenRequest(res, UPDATE_USER_TASK_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });
@@ -147,7 +153,7 @@ test.describe.serial('User Task Permission API - Forbidden', () => {
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/completion`),
+        buildUrl('/user-tasks/{userTaskKey}/completion', {userTaskKey}),
         {
           headers: jsonHeaders(userWithoutPermissionsToken),
           data: {},

@@ -36,7 +36,9 @@ test.describe.parallel('Get XML Decision Requirements API Tests', () => {
       decisionRequirementToGet.decisionRequirementsKey;
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${decisionRequirementsToGetKey}/xml`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}/xml', {
+          decisionRequirementsKey: decisionRequirementsToGetKey,
+        }),
         {
           headers: textXMLHeaders(),
         },
@@ -51,7 +53,9 @@ test.describe.parallel('Get XML Decision Requirements API Tests', () => {
     const someRandomNotExistingKey = '9999999999999999';
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${someRandomNotExistingKey}/xml`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}/xml', {
+          decisionRequirementsKey: someRandomNotExistingKey,
+        }),
         {
           headers: textXMLHeaders(),
         },
@@ -68,7 +72,9 @@ test.describe.parallel('Get XML Decision Requirements API Tests', () => {
     await expect(async () => {
       const someInvalidValue = 'meow';
       const res = await request.get(
-        buildUrl(`/decision-requirements/${someInvalidValue}/xml`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}/xml', {
+          decisionRequirementsKey: someInvalidValue,
+        }),
         {
           headers: textXMLHeaders(),
         },
@@ -87,7 +93,9 @@ test.describe.parallel('Get XML Decision Requirements API Tests', () => {
       decisionRequirementToGet.decisionRequirementsKey;
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/decision-requirements/${decisionRequirementsToGetKey}/xml`),
+        buildUrl('/decision-requirements/{decisionRequirementsKey}/xml', {
+          decisionRequirementsKey: decisionRequirementsToGetKey,
+        }),
         {
           headers: {
             'Content-Type': 'application/json',

@@ -51,9 +51,11 @@ test.describe.parallel('Get Process instance Tests', () => {
 
     await test.step('Get Process Instance', async () => {
       await expect(async () => {
-        const processInstanceKey = localState['processInstanceKey'];
+        const processInstanceKey = localState['processInstanceKey'] as string;
         const res = await request.get(
-          buildUrl(`/process-instances/${processInstanceKey}`),
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -87,7 +89,9 @@ test.describe.parallel('Get Process instance Tests', () => {
   test('Get Process Instance - Not Found', async ({request}) => {
     const unknownProcessInstanceKey = '9999999999999999';
     const res = await request.get(
-      buildUrl(`/process-instances/${unknownProcessInstanceKey}`),
+      buildUrl('/process-instances/{processInstanceKey}', {
+        processInstanceKey: unknownProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -101,7 +105,9 @@ test.describe.parallel('Get Process instance Tests', () => {
   test('Get Process Instance - Invalid Key', async ({request}) => {
     const invalidProcessInstanceKey = 'invalidKey123';
     const res = await request.get(
-      buildUrl(`/process-instances/${invalidProcessInstanceKey}`),
+      buildUrl('/process-instances/{processInstanceKey}', {
+        processInstanceKey: invalidProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -134,7 +140,9 @@ test.describe.parallel('Get Process instance Tests', () => {
 
     await test.step('Get Process Instance without auth', async () => {
       const authRes = await request.get(
-        buildUrl(`/process-instances/${localState['processInstanceKey']}`),
+        buildUrl('/process-instances/{processInstanceKey}', {
+          processInstanceKey: localState['processInstanceKey'] as string,
+        }),
         {
           // No auth headers
           headers: {

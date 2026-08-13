@@ -128,7 +128,9 @@ async function createCompletedProcessInstance(request: APIRequestContext) {
   let completedInstance: Record<string, unknown> | undefined;
   await expect(async () => {
     const getRes = await request.get(
-      buildUrl(`/process-instances/${createdInstance.processInstanceKey}`),
+      buildUrl('/process-instances/{processInstanceKey}', {
+        processInstanceKey: createdInstance.processInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
