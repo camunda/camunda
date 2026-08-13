@@ -260,7 +260,7 @@ public class BpmnJobActivationBehavior {
       parked = true;
     }
     if (parked) {
-      jobMetrics.countJobEvent(JobAction.SKIPPED, jobKind, jobType);
+      jobMetrics.countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, jobKind, jobType);
     } else {
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
     }
