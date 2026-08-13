@@ -66,12 +66,15 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
+  public CompletionStage<Collection<NotFinishedBatchOperation>> getNotFinishedBatchOperations() {
     final var request =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(request, BatchOperationEntity.class, Hit::id);
+    return fetchUnboundedDocumentCollection(
+        request,
+        BatchOperationEntity.class,
+        OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation);
   }
 
   @Override
@@ -183,6 +186,17 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
                     .lang(ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build())
                     .params(parameters))
         .build();
+  }
+
+  private static NotFinishedBatchOperation toNotFinishedBatchOperation(
+      final Hit<BatchOperationEntity> hit) {
+    final var source = hit.source();
+    if (source == null) {
+      return new NotFinishedBatchOperation(hit.id(), null, 0);
+    }
+    final var totalCount = source.getOperationsTotalCount();
+    return new NotFinishedBatchOperation(
+        hit.id(), source.getState(), totalCount == null ? 0 : totalCount);
   }
 
   private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {
