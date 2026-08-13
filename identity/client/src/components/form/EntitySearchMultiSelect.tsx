@@ -18,7 +18,9 @@ const SelectedEntities = styled.div`
   margin-top: 0;
 `;
 
-type EntitySearchMultiSelectProps<Entity extends Record<string, unknown>> = {
+type AbstractEntitySearchMultiSelectProps<
+  Entity extends Record<string, unknown>,
+> = {
   search: (search: string) => EntitySearchQuery<Entity>;
   itemSubTitle?: (entity: Entity) => string;
   getId: (entity: Entity) => string;
@@ -30,6 +32,18 @@ type EntitySearchMultiSelectProps<Entity extends Record<string, unknown>> = {
   autoFocus?: boolean;
 };
 
+/**
+ * Public props for a concrete per-entity multi-select (e.g. UserMultiSelect):
+ * everything technical (search, getId, itemSubTitle, placeholder, errorTitle)
+ * is bound by the concrete implementation, leaving only the business props.
+ */
+export type EntitySearchMultiSelectProps<
+  Entity extends Record<string, unknown>,
+> = Omit<
+  AbstractEntitySearchMultiSelectProps<Entity>,
+  "search" | "getId" | "itemSubTitle" | "placeholder" | "errorTitle"
+>;
+
 const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
   search,
   itemSubTitle,
@@ -40,7 +54,7 @@ const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
   placeholder,
   errorTitle,
   autoFocus = false,
-}: EntitySearchMultiSelectProps<Entity>) => {
+}: AbstractEntitySearchMultiSelectProps<Entity>) => {
   const { t } = useTranslate();
 
   const isAlreadyPicked = useCallback(
