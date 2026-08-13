@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -100,11 +101,22 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
    * Builds the purge plan of a single partition group: all members leave their partitions, the
    * history exported by this group is deleted, the group's incarnation number is bumped, and the
    * partitions are bootstrapped and joined again with their original priorities and configuration.
+   *
+   * <p>The history deletion and the incarnation bump are assigned to the lowest-id member that
+   * actually replicates a partition of this group. A member can be present with an empty partition
+   * map — transiently, while it is being removed from the group — and such a member is not active
+   * in the group at all (see {@link PartitionGroupConfiguration}), so it holds none of the group's
+   * exporter state and must not be the one to purge it. A group no member replicates has nothing to
+   * tear down or re-bootstrap and yields no operations.
    */
   private List<PartitionGroupOperation> purgeOperationsFor(
       final PartitionGroupConfiguration group) {
-    final var firstMember = group.members().keySet().stream().findFirst();
-    if (firstMember.isEmpty()) {
+    final var replicatingMember =
+        group.members().entrySet().stream()
+            .filter(member -> !member.getValue().partitions().isEmpty())
+            .map(Entry::getKey)
+            .findFirst();
+    if (replicatingMember.isEmpty()) {
       return List.of();
     }
 
@@ -133,8 +145,8 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
       }
     }
 
-    operations.add(new DeleteHistoryOperation(firstMember.get()));
-    operations.add(new UpdateIncarnationNumberOperation(firstMember.get()));
+    operations.add(new DeleteHistoryOperation(replicatingMember.get()));
+    operations.add(new UpdateIncarnationNumberOperation(replicatingMember.get()));
 
     operations.addAll(primaries.values());
     followers.values().forEach(operations::addAll);

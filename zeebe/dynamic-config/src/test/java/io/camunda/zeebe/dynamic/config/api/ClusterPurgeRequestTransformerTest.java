@@ -191,6 +191,48 @@ final class ClusterPurgeRequestTransformerTest {
   }
 
   @Test
+  void shouldDeleteHistoryOnAMemberThatReplicatesTheTenant() {
+    // given — the lowest-id member is present in the group but replicates nothing, which happens
+    // transiently while it is being removed from the group. It is not active in the group, so it
+    // holds none of the tenant's exporter state.
+    final var transformer = new PurgeRequestTransformer(Optional.of(TENANT_A));
+    final var clusterConfiguration =
+        withPartitionGroups(
+            Map.of(
+                TENANT_A,
+                group()
+                    .addMember(id0, member(Map.of()))
+                    .addMember(id1, member(Map.of(1, active(1))))));
+
+    // when
+    final var result = transformer.phases(clusterConfiguration);
+
+    // then — the member that actually replicates partition 1 deletes the history
+    assertThat(operationsOf(result, TENANT_A))
+        .containsExactly(
+            new PartitionLeaveOperation(id1, 1, 0),
+            new DeleteHistoryOperation(id1),
+            new UpdateIncarnationNumberOperation(id1),
+            new PartitionBootstrapOperation(id1, 1, 1, Optional.of(partitionConfig), false));
+  }
+
+  @Test
+  void shouldNotPlanAnythingWhenNoMemberReplicatesThePhysicalTenant() {
+    // given — a member is listed for the tenant but holds no partition of it: there is nothing to
+    // tear down or re-bootstrap, and no member is responsible for the tenant's storage
+    final var transformer = new PurgeRequestTransformer(Optional.of(TENANT_A));
+    final var clusterConfiguration =
+        withPartitionGroups(Map.of(TENANT_A, group().addMember(id0, member(Map.of()))));
+
+    // when
+    final var result = transformer.phases(clusterConfiguration);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isEmpty();
+  }
+
+  @Test
   void shouldBootstrapPartitionsWithTheirExporterConfig() {
     // given — the two partitions of the tenant have a different exporter configuration
     final var transformer = new PurgeRequestTransformer();
