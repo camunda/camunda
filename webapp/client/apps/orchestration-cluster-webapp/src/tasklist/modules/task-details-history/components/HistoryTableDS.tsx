@@ -13,7 +13,7 @@
 // rewrite onto the DS declarative API rather than an import swap — the FLAG-tier
 // case recorded in docs/migration/human-follow-up.md.
 import {useCallback, useMemo} from 'react';
-import {DataTable, type DataTableColumn} from '@camunda/design-system';
+import {Button, DataTable, type DataTableColumn} from '@camunda/design-system';
 import {InformationIcon} from '#/shared/design-system-compat';
 import {Link, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -122,16 +122,20 @@ const HistoryTableDS: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				id: 'actions',
 				header: '',
 				enableSorting: false,
+				// asChild so the row action keeps its <a> semantics — it navigates to the
+				// audit-log detail route, so it must stay a link rather than a button.
 				cell: ({row}) => (
-					<Link
-						to="/tasklist/$userTaskKey/history/$auditLogKey"
-						params={{userTaskKey, auditLogKey: row.original.id}}
-						search={search}
-						aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
-						title={t('tasklist.taskDetailsHistoryDetailsLabel')}
-					>
-						<InformationIcon />
-					</Link>
+					<Button asChild variant="ghost" size="icon-xs">
+						<Link
+							to="/tasklist/$userTaskKey/history/$auditLogKey"
+							params={{userTaskKey, auditLogKey: row.original.id}}
+							search={search}
+							aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
+							title={t('tasklist.taskDetailsHistoryDetailsLabel')}
+						>
+							<InformationIcon />
+						</Link>
+					</Button>
 				),
 			},
 		],
