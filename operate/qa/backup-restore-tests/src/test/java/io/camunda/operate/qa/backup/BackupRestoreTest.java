@@ -295,49 +295,69 @@ public class BackupRestoreTest {
           .getEsClient()
           .indices()
           .delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
-      RetryOperation.newBuilder()
-          .noOfRetry(10)
-          .delayInterval(2000, TimeUnit.MILLISECONDS)
-          .retryPredicate(result -> !(boolean) result)
-          .retryConsumer(
-              () ->
-                  !testContext
-                      .getEsClient()
-                      .indices()
-                      .exists(
-                          new GetIndexRequest("operate*", ZEEBE_INDEX_PREFIX + "*"),
-                          RequestOptions.DEFAULT))
-          .build()
-          .retry();
+      // indices().exists() on a wildcard always returns true, even with no matches - the
+      // client hardcodes allow_no_indices=true on that request regardless of IndicesOptions.
+      // Listing the indices and checking for emptiness is the only way to tell "gone" apart
+      // from "still there".
+      final boolean indicesGone =
+          RetryOperation.<Boolean>newBuilder()
+              .noOfRetry(10)
+              .delayInterval(2000, TimeUnit.MILLISECONDS)
+              .retryPredicate(result -> !result)
+              .retryConsumer(
+                  () ->
+                      testContext
+                              .getEsClient()
+                              .indices()
+                              .get(
+                                  new GetIndexRequest("operate*", ZEEBE_INDEX_PREFIX + "*"),
+                                  RequestOptions.DEFAULT)
+                              .getIndices()
+                              .length
+                          == 0)
+              .build()
+              .retry();
+      if (!indicesGone) {
+        throw new OperateRuntimeException(
+            "Operate/Zeebe indices matching 'operate*' or '"
+                + ZEEBE_INDEX_PREFIX
+                + "*' still exist after waiting for deletion");
+      }
       testContext
           .getEsClient()
           .indices()
           .deleteIndexTemplate(
               new DeleteComposableIndexTemplateRequest("operate*"), RequestOptions.DEFAULT);
-      RetryOperation.newBuilder()
-          .noOfRetry(10)
-          .delayInterval(2000, TimeUnit.MILLISECONDS)
-          .retryPredicate(result -> !(boolean) result)
-          .retryConsumer(
-              () -> {
-                try {
-                  return testContext
-                      .getEsClient()
-                      .indices()
-                      .getIndexTemplate(
-                          new GetComposableIndexTemplateRequest("operate*"), RequestOptions.DEFAULT)
-                      .getIndexTemplates()
-                      .isEmpty();
-                } catch (final ElasticsearchStatusException e) {
-                  if (e.status().getStatus() == 404) {
-                    return true;
-                  } else {
-                    throw e;
-                  }
-                }
-              })
-          .build()
-          .retry();
+      final boolean templatesGone =
+          RetryOperation.<Boolean>newBuilder()
+              .noOfRetry(10)
+              .delayInterval(2000, TimeUnit.MILLISECONDS)
+              .retryPredicate(result -> !result)
+              .retryConsumer(
+                  () -> {
+                    try {
+                      return testContext
+                          .getEsClient()
+                          .indices()
+                          .getIndexTemplate(
+                              new GetComposableIndexTemplateRequest("operate*"),
+                              RequestOptions.DEFAULT)
+                          .getIndexTemplates()
+                          .isEmpty();
+                    } catch (final ElasticsearchStatusException e) {
+                      if (e.status().getStatus() == 404) {
+                        return true;
+                      } else {
+                        throw e;
+                      }
+                    }
+                  })
+              .build()
+              .retry();
+      if (!templatesGone) {
+        throw new OperateRuntimeException(
+            "Operate index templates matching 'operate*' still exist after waiting for deletion");
+      }
       LOGGER.info("************ Operate indices deleted ************");
     } catch (final IOException e) {
       throw new OperateRuntimeException(
@@ -386,6 +406,7 @@ public class BackupRestoreTest {
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));
     operateContainer.withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
     operateContainer.withEnv("CAMUNDA_OPERATE_ARCHIVER_ILMENABLED", "true");
+    operateContainer.withEnv("CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING", "10s");
 
     startOperate();
   }
