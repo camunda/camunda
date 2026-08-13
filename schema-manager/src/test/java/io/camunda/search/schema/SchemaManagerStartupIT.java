@@ -15,15 +15,20 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -44,6 +49,10 @@ class SchemaManagerStartupIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManagerStartupIT.class);
   private static final String ELASTICSEARCH_URL = "http://test-elasticsearch:9200";
+
+  /** No container answers to this alias, so every schema-initialization attempt fails. */
+  private static final String UNREACHABLE_ELASTICSEARCH_URL = "http://absent-elasticsearch:9200";
+
   private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
 
   private static final String CAMUNDA_TEST_IMAGE_NAME =
@@ -82,8 +91,10 @@ class SchemaManagerStartupIT {
   //   false is to test the case when the shutdown is before the schema startup is started
   //   true is to test the case when the shutdown is when the schema startup is retrying
   // gatewayEnabled:
-  //   false is to test with embedded gateway disabled (async schema startup)
-  //   true is to test with embedded gateway enabled (sync schema startup)
+  //   both values now take the same schema-startup path — startup blocks until every physical
+  //   tenant has produced a first outcome either way — but they exercise different shutdown
+  //   sequences, since only the enabled gateway brings up the web server that has to shut down
+  //   gracefully alongside the broker
   void shouldGracefullyShutdownWhenSchemaStartupStillRunning(
       final boolean waitForSchemaStartupBeforeShutdown, final boolean gatewayEnabled)
       throws InterruptedException, IOException {
@@ -138,7 +149,7 @@ class SchemaManagerStartupIT {
 
     final var logToWaitFor =
         waitForSchemaStartupBeforeShutdown
-            ? "Retrying operation for 'init schema'"
+            ? "Schema initialization for physical tenant 'default' failed on attempt"
             : "io.camunda.zeebe.broker.system - Starting broker";
 
     // just wait until the container is running (but not ready)
@@ -168,32 +179,70 @@ class SchemaManagerStartupIT {
         .doesNotContain("Start operation executor");
   }
 
-  @Test
-  void shouldNotBlockStartupWhenCannotConnectToElasticAndEmbeddedGatewayIsDeactivated() {
-    // given
+  /**
+   * The regression test for the central promise of ADR 004: no storage failure aborts the context,
+   * not for one physical tenant and not when none of them can be initialized. It is parameterised
+   * over the embedded gateway because that used to select between a blocking and a non-blocking
+   * schema startup — both paths now block on the settle barrier and both must come up.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldStartAndServeManagementEndpointsWhenNoTenantCanInitializeItsSchema(
+      final boolean gatewayEnabled) throws Exception {
+    // given - an Elasticsearch that is not there, so no physical tenant can apply its schema
     camunda
-        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_DATABASE_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", UNREACHABLE_ELASTICSEARCH_URL)
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", String.valueOf(gatewayEnabled))
         .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
         .withExposedPorts(MONITORING_PORT)
-        .waitingFor(newDefaultWaitStrategy());
+        // the management endpoints answering is the startup signal here; readiness never comes,
+        // and the "Started Camunda using ..." banner is printed long before the context refreshes
+        .waitingFor(
+            new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+                .withStrategy(new HostPortWaitStrategy())
+                .withStrategy(
+                    new HttpWaitStrategy()
+                        .forPath("/actuator/prometheus")
+                        .forPort(MONITORING_PORT)
+                        .forStatusCode(200)
+                        .withReadTimeout(Duration.ofSeconds(10)))
+                .withStartupTimeout(Duration.ofMinutes(2)));
 
-    // when, should start with success, even if not able to connect to ES
+    // when
     camunda.start();
 
-    // then
-    assertThat(camunda.getLogs()).contains("Started Camunda");
+    // then - the node is up rather than crash-looping, and stays diagnosable
+    assertThat(camunda.getLogs())
+        .doesNotContain("Failed to start application")
+        .doesNotContain("BeanCreationException");
+    assertThat(bodyOf("/actuator/prometheus").body())
+        .as("the per-tenant readiness gauge reports the tenant as degraded")
+        .containsPattern(
+            "camunda_physical_tenant_secondary_storage_ready\\{[^}]*physicalTenant=\"default\"[^}]*}"
+                + "\\s+0");
+
+    // and - it withholds traffic through readiness instead. The schema indicator only joins the
+    // readiness group when an HTTP gateway is enabled, so with the gateway off there is nothing
+    // in that group yet that a degraded tenant can pull down (see #51861).
+    if (gatewayEnabled) {
+      assertThat(bodyOf("/actuator/health/readiness").statusCode()).isEqualTo(503);
+    }
   }
 
-  private WaitAllStrategy newDefaultWaitStrategy() {
-    return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
-        .withStrategy(new HostPortWaitStrategy())
-        .withStrategy(
-            new HttpWaitStrategy()
-                .forPath("/ready")
-                .forPort(MONITORING_PORT)
-                .forStatusCodeMatching(status -> status >= 200 && status < 300)
-                .withReadTimeout(Duration.ofSeconds(10)))
-        .withStartupTimeout(Duration.ofMinutes(1));
+  private HttpResponse<String> bodyOf(final String actuatorPath)
+      throws IOException, InterruptedException {
+    final var uri =
+        URI.create(
+            "http://"
+                + camunda.getHost()
+                + ":"
+                + camunda.getMappedPort(MONITORING_PORT)
+                + actuatorPath);
+    return HttpClient.newHttpClient()
+        .send(HttpRequest.newBuilder(uri).GET().build(), BodyHandlers.ofString());
   }
 
   private void shutDownContainerGracefully(final Duration timeout) {
