@@ -65,7 +65,7 @@ const TasklistProcessesPage: React.FC<Props> = ({
 				className={cn('cds--content', styles.page, featureFlags.dsTasklistUI && styles.pageDS)}
 			>
 				<div className={styles.scrollContainer}>
-					<Stack gap={2}>
+					<Stack gap={2} className={cn(featureFlags.dsTasklistUI && styles.sectionsDS)}>
 						<section
 							className={cn(styles.header, featureFlags.dsTasklistUI && styles.headerDS)}
 							aria-labelledby="processes-heading"

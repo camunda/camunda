@@ -64,6 +64,15 @@
 	padding: 1.5rem;
 }
 
+// DS-only. The Stack holding the header and the tile sections carries Carbon
+// spacing step 2, which the compat adapter maps to gap-1 (4px). The DS spacing
+// scale wants gap-4 (16px) between the two sections, and the compat `gap` prop
+// takes Carbon steps rather than Tailwind ones, so the value is set here instead
+// of by changing the prop, which would also move the Carbon layout.
+.sectionsDS {
+	gap: 1rem;
+}
+
 .titleBlockDS {
 	gap: 0.25rem;
 }
