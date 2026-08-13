@@ -8,9 +8,9 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,7 +22,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -158,7 +157,10 @@ final class ClusterRecoveryServicesTest {
   void shouldDropAnOverrideForAPhysicalTenantTheClusterDoesNotKnow() {
     // given — a cluster-wide restore whose override names a tenant this cluster has no environment
     // for; only the known tenants are ever restored, so the unknown override is simply not carried
-    // into the request rather than surfacing as an error
+    // into the request rather than surfacing as an error. Rejecting it belongs with the
+    // cluster-wide
+    // fan-out that ClusterRestoreRequestTransformer does not implement yet — it rejects every
+    // multi-tenant restore an override could apply to.
     givenRestoreAccepted();
     final var defaultParameters = new RestoreParameters(List.of(1L), null, null);
 
@@ -185,15 +187,21 @@ final class ClusterRecoveryServicesTest {
 
   @Test
   void shouldRejectASingleTenantRestoreOfAnUnknownPhysicalTenant() {
-    // when / then — the request never reaches the wire; there is no environment to build it with
-    assertThatThrownBy(
-            () ->
-                services.restore(
-                    Optional.of("unknown-tenant"),
-                    new RestoreParameters(List.of(1L), null, null),
-                    Map.of(),
-                    false))
-        .isInstanceOf(NotFound.class);
+    // when — the request never reaches the wire; there is no environment to build it with
+    final var result =
+        services
+            .restore(
+                Optional.of("unknown-tenant"),
+                new RestoreParameters(List.of(1L), null, null),
+                Map.of(),
+                false)
+            .join();
+
+    // then — reported as an error response so the REST layer can map it to 404
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().code()).isEqualTo(ErrorCode.NOT_FOUND);
+    assertThat(result.getLeft().message()).contains("unknown-tenant");
+    verify(sender, never()).clusterRestore(any());
   }
 
   private void givenRestoreAccepted() {

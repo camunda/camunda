@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.Map;
@@ -70,10 +71,15 @@ public final class ClusterRecoveryServices {
       final Map<String, RestoreParameters> overrides,
       final boolean dryRun) {
     final ClusterRestoreRequest restoreRequest;
-    restoreRequest =
-        physicalTenantId
-            .map(tenantId -> tenantRestoreRequest(tenantId, parameters, dryRun))
-            .orElseGet(() -> clusterWideRestoreRequest(parameters, overrides, dryRun));
+    try {
+      restoreRequest =
+          physicalTenantId
+              .map(tenantId -> tenantRestoreRequest(tenantId, parameters, dryRun))
+              .orElseGet(() -> clusterWideRestoreRequest(parameters, overrides, dryRun));
+    } catch (final NotFound e) {
+      return CompletableFuture.completedFuture(
+          Either.left(new ErrorResponse(ErrorCode.NOT_FOUND, e.getMessage())));
+    }
     return clusterConfigurationRequestSender.clusterRestore(restoreRequest);
   }
 
@@ -106,9 +112,10 @@ public final class ClusterRecoveryServices {
 
   private TenantRestoreEnvironment restoreEnvironmentFor(final String physicalTenantId) {
     final var environment = restoreEnvironmentByPhysicalTenant.get(physicalTenantId);
-    if (environment != null) {
-      return environment;
+    if (environment == null) {
+      throw new NotFound(
+          "No physical tenant '%s' is configured in this cluster.".formatted(physicalTenantId));
     }
-    throw new NotFound("No restore environment bound for physical tenant " + physicalTenantId);
+    return environment;
   }
 }
