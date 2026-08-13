@@ -76,4 +76,45 @@ public class JobRegistryReaderES extends JobRegistryReader {
     }
     return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
   }
+
+  @Override
+  protected Optional<JobRegistryEntryDto> performFindByJobTypeAndTargetEntityId(
+      final JobType jobType, final String targetEntityId) throws IOException {
+    final Query query =
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                                m ->
+                                    m.term(
+                                        t ->
+                                            t.field(JobRegistryIndex.JOB_TYPE)
+                                                .value(jobType.name())))
+                            .must(
+                                m ->
+                                    m.term(
+                                        t ->
+                                            t.field(JobRegistryIndex.TARGET_ENTITY_ID)
+                                                .value(targetEntityId)))));
+
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, JOB_REGISTRY_INDEX_NAME)
+                    .query(query)
+                    .sort(
+                        sort ->
+                            sort.field(
+                                f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Desc)))
+                    .size(1));
+
+    final SearchResponse<JobRegistryEntryDto> searchResponse =
+        esClient.search(searchRequest, JobRegistryEntryDto.class);
+
+    if (searchResponse.hits().total().value() == 0) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
+  }
 }

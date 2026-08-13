@@ -32,6 +32,28 @@ public abstract class JobRegistryReader {
     }
   }
 
+  /**
+   * Returns the most recent job registry entry for the given jobType and targetEntityId, if one
+   * exists (in any status).
+   */
+  public Optional<JobRegistryEntryDto> findByJobTypeAndTargetEntityId(
+      final JobType jobType, final String targetEntityId) {
+    LOG.debug("Fetching job registry entry for [{}] target [{}].", jobType, targetEntityId);
+    try {
+      return performFindByJobTypeAndTargetEntityId(jobType, targetEntityId);
+    } catch (final IOException e) {
+      final String message =
+          String.format(
+              "Was not able to fetch job registry entry for [%s] target [%s].",
+              jobType, targetEntityId);
+      LOG.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
   protected abstract Optional<JobRegistryEntryDto> performFindOldestQueuedJob(final JobType jobType)
       throws IOException;
+
+  protected abstract Optional<JobRegistryEntryDto> performFindByJobTypeAndTargetEntityId(
+      final JobType jobType, final String targetEntityId) throws IOException;
 }
