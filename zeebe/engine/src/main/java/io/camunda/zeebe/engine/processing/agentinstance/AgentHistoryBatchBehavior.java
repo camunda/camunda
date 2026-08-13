@@ -202,7 +202,7 @@ public final class AgentHistoryBatchBehavior {
    *
    * @return the {@code AgentInstanceRecord} attribute names that actually changed as a result
    */
-  Set<String> apply(
+  Set<String> applyInstanceChangesFromHistory(
       final AgentInstanceRecord target,
       final long jobKey,
       final String jobLease,

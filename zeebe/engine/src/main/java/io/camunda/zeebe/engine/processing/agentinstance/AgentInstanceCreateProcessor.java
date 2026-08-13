@@ -218,7 +218,7 @@ public final class AgentInstanceCreateProcessor
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
     if (!commandValue.getHistory().isEmpty()) {
-      historyBatchHelper.apply(
+      historyBatchHelper.applyInstanceChangesFromHistory(
           event,
           commandValue.getJobKey(),
           commandValue.getJobLease(),

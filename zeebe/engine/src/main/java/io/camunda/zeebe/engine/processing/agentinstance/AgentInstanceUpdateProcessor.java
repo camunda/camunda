@@ -231,7 +231,7 @@ public final class AgentInstanceUpdateProcessor
 
     if (!commandValue.getHistory().isEmpty()) {
       final var historyChanges =
-          historyBatchHelper.apply(
+          historyBatchHelper.applyInstanceChangesFromHistory(
               current,
               commandValue.getJobKey(),
               commandValue.getJobLease(),
