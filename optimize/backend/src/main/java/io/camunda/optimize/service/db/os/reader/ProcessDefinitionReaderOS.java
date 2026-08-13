@@ -49,13 +49,14 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   }
 
   @Override
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
+      final String definitionId, final boolean includeXml) {
     final BoolQuery query =
         new BoolQuery.Builder()
             .must(QueryDSL.matchAll())
             .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
             .build();
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, includeXml).stream()
         .findFirst()
         .map(ProcessDefinitionOptimizeDto.class::cast);
   }
