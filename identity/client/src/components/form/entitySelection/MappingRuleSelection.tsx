@@ -8,8 +8,12 @@
 
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
-import EntitySearchMultiSelect from "src/components/form/EntitySearchMultiSelect";
-import EntitySearchSingleSelect from "src/components/form/EntitySearchSingleSelect";
+import EntitySearchMultiSelect, {
+  type EntitySearchMultiSelectProps,
+} from "src/components/form/EntitySearchMultiSelect";
+import EntitySearchSingleSelect, {
+  type EntitySearchSingleSelectProps,
+} from "src/components/form/EntitySearchSingleSelect";
 import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -20,16 +24,9 @@ const itemSubTitle = (mappingRule: MappingRule) => mappingRule.name;
 const search = (search: string) =>
   mappingRuleQueries.search(search.trim() ? { filter: { name: search } } : {});
 
-type MappingRuleMultiSelectProps = {
-  value: MappingRule[];
-  onChange: (mappingRules: MappingRule[]) => void;
-  excluded?: MappingRule[];
-  autoFocus?: boolean;
-};
-
-export const MappingRuleMultiSelect: FC<MappingRuleMultiSelectProps> = (
-  props,
-) => {
+export const MappingRuleMultiSelect: FC<
+  EntitySearchMultiSelectProps<MappingRule>
+> = (props) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchMultiSelect
@@ -43,18 +40,9 @@ export const MappingRuleMultiSelect: FC<MappingRuleMultiSelectProps> = (
   );
 };
 
-type MappingRuleSingleSelectProps = {
-  label: string;
-  placeholder: string;
-  requiredText: string;
-  onChange: (mappingRuleId: string) => void;
-  value?: string;
-  isEmpty?: boolean;
-};
-
-export const MappingRuleSingleSelect: FC<MappingRuleSingleSelectProps> = (
-  props,
-) => {
+export const MappingRuleSingleSelect: FC<
+  EntitySearchSingleSelectProps<MappingRule>
+> = (props) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchSingleSelect
