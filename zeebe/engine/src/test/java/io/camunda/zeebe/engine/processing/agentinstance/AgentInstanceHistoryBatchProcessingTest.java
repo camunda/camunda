@@ -68,7 +68,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("jobKey");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected a job to be provided for the embedded history batch, but no jobKey was "
+                + "set. A history batch must be attributed to the active job that produced it.");
   }
 
   @Test
@@ -93,7 +96,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // (the command was rejected before any AGENT_HISTORY:CREATED event could be appended).
     assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("index 1", "historyItemId is missing");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to process history item at index 1, but historyItemId is missing (got "
+                + "empty string). Every history item must have a non-empty historyItemId.");
   }
 
   @Test
@@ -115,7 +121,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("item-1", "UNSPECIFIED");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to process history item with historyItemId 'item-1', but its role is "
+                + "UNSPECIFIED. Every history item must declare a role.");
   }
 
   @Test
@@ -139,7 +148,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("item-1", "loopIteration is missing");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to process history item with historyItemId 'item-1', but loopIteration is "
+                + "missing (got 0). Every history item must declare a positive loopIteration.");
   }
 
   @Test
@@ -167,7 +179,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("item-config", "elementInstanceKey");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance configuration with history item 'item-config', but "
+                + "changedAttributes contained unknown attribute(s) [elementInstanceKey]. Allowed "
+                + "attributes are: [maxModelCalls, maxTokens, maxToolCalls, model, provider, "
+                + "systemPrompt, tools].");
   }
 
   @Test
@@ -188,7 +205,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason()).contains("999999999");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo("Expected job with key '999999999' to be active, but it was not.");
   }
 
   @Test
@@ -209,7 +227,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("jobKey");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected a job to be provided for the embedded history batch, but no jobKey was "
+                + "set. A history batch must be attributed to the active job that produced it.");
   }
 
   @Test
@@ -240,7 +261,12 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason()).contains(String.valueOf(jobKey));
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected job with key '"
+                + jobKey
+                + "' to hold the supplied lease, but it did not match. The job may have been "
+                + "re-activated.");
   }
 
   @Test
@@ -532,7 +558,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("metrics");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance, but changedAttributes contained unknown "
+                + "attribute(s) [metrics]. Allowed attributes are: [status].");
   }
 
   @Test
@@ -554,7 +583,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("tools");
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to update agent instance, but changedAttributes contained unknown "
+                + "attribute(s) [tools]. Allowed attributes are: [status].");
   }
 
   @Test
