@@ -579,6 +579,120 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
+  void shouldReportADisabledPhysicalTenantWithoutRoutingOrPartitions() {
+    // given — same two-tenant setup as
+    // shouldPopulatePhysicalTenantsAndOmitLegacyFieldsForTwoTenants,
+    // except tenant-b is disabled: removed from local static configuration, but its partition
+    // assignment and data are still retained in the configuration.
+    final var member1 = member(1);
+    final var member2 = member(2);
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            5,
+            Optional.empty(),
+            Map.of(
+                member1,
+                new io.camunda.zeebe.dynamic.config.state.BrokerState(
+                    0,
+                    Instant.ofEpochSecond(1),
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE),
+                member2,
+                new io.camunda.zeebe.dynamic.config.state.BrokerState(
+                    0,
+                    Instant.ofEpochSecond(2),
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var tenantA =
+        new PartitionGroupConfiguration(
+            3,
+            0,
+            Map.of(
+                member1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))),
+            Optional.of(
+                new RoutingState(
+                    2,
+                    new RoutingState.RequestHandling.AllPartitions(1),
+                    new RoutingState.MessageCorrelation.HashMod(1))),
+            Optional.empty(),
+            Optional.empty());
+    final var tenantB =
+        new PartitionGroupConfiguration(
+                4,
+                0,
+                Map.of(
+                    member1,
+                    BrokerPartitionState.initialize(
+                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))),
+                    member2,
+                    BrokerPartitionState.initialize(
+                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))),
+                Optional.of(
+                    new RoutingState(
+                        3,
+                        new RoutingState.RequestHandling.AllPartitions(2),
+                        new RoutingState.MessageCorrelation.HashMod(2))),
+                Optional.empty(),
+                Optional.empty())
+            .disable();
+    final var config =
+        new CurrentClusterConfiguration(
+            0,
+            globalConfiguration,
+            Map.of("tenant-a", tenantA, "tenant-b", tenantB),
+            PhasedChangeState.empty());
+
+    // when
+    final var body = ClusterApiUtils.mapClusterTopology(config);
+
+    // then — tenant-b is reported as disabled with no routing state, tenant-a is unaffected and
+    // never explicitly marked enabled
+    assertThat(body.getPhysicalTenants())
+        .extracting(
+            io.camunda.zeebe.management.cluster.PhysicalTenantInfo::getId,
+            io.camunda.zeebe.management.cluster.PhysicalTenantInfo::getDisabled)
+        .containsExactly(tuple("tenant-a", null), tuple("tenant-b", true));
+    final var tenantAInfo =
+        body.getPhysicalTenants().stream()
+            .filter(info -> "tenant-a".equals(info.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(tenantAInfo.getRouting()).isNotNull();
+    assertThat(tenantAInfo.getRouting().getVersion()).isEqualTo(2);
+    final var tenantBInfo =
+        body.getPhysicalTenants().stream()
+            .filter(info -> "tenant-b".equals(info.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(tenantBInfo.getRouting()).isNull();
+
+    // and — tenant-b's partitions are excluded from every broker's partitions/physicalTenants,
+    // exactly as if it had never been configured; tenant-a is untouched
+    final var broker1 =
+        body.getBrokers().stream()
+            .filter(b -> "1".equals(String.valueOf(b.getId())))
+            .findFirst()
+            .orElseThrow();
+    assertThat(broker1.getPartitions())
+        .extracting(p -> p.getId(), p -> p.getPhysicalTenant())
+        .containsExactly(tuple(1, "tenant-a"));
+    assertThat(broker1.getPhysicalTenants())
+        .extracting(io.camunda.zeebe.management.cluster.PhysicalTenantState::getId)
+        .containsExactly("tenant-a");
+
+    final var broker2 =
+        body.getBrokers().stream()
+            .filter(b -> "2".equals(String.valueOf(b.getId())))
+            .findFirst()
+            .orElseThrow();
+    assertThat(broker2.getPartitions()).isEmpty();
+    assertThat(broker2.getPhysicalTenants()).isEmpty();
+  }
+
+  @Test
   void shouldKeepLegacyUninitializedVersionWhenNoPhysicalTenantsExist() {
     // given — an uninitialized configuration has zero partition groups; it must keep reporting
     // today's sentinel version rather than being (mis-)treated as a multi-tenant response.

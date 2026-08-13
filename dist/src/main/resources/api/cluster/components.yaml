@@ -197,11 +197,18 @@ schemas:
 
   PhysicalTenantInfo:
     title: PhysicalTenantInfo
-    description: A physical tenant's own routing state, as reported by `GetTopologyResponse`.
+    description: A physical tenant's own routing state, as reported by `GetTopologyResponse`. A
+      disabled tenant (removed from local static configuration, but retaining its data and
+      partition assignment) only sets `disabled`; `routing` is omitted since the tenant is not
+      running anywhere. An enabled tenant never sets `disabled` - its presence with a populated
+      `routing` already means it is enabled.
     type: object
     properties:
       id:
         $ref: "components.yaml#/schemas/PhysicalTenantId"
+      disabled:
+        type: boolean
+        description: Set only when the physical tenant is disabled.
       routing:
         $ref: "components.yaml#/schemas/RoutingState"
 
