@@ -50,8 +50,6 @@ public final class FeatureFlags {
   // Kill-switch for a bug fix; disabled by default on this stable branch since the behavioral
   // change was not backported deliberately (see the change's PR description).
   private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = false;
-  // Kill-switch for a bug fix; intentionally enabled by default.
-  private static final boolean EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -60,7 +58,6 @@ public final class FeatureFlags {
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enableMessageBodyOnExpired;
   private boolean evaluateBoundaryEventCorrelationKeyInActivityScope;
-  private boolean evaluateDuplicateOutputMappingTargetsInOrder;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -69,8 +66,7 @@ public final class FeatureFlags {
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
       final boolean enableMessageBodyOnExpired,
-      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -80,8 +76,6 @@ public final class FeatureFlags {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
     this.evaluateBoundaryEventCorrelationKeyInActivityScope =
         evaluateBoundaryEventCorrelationKeyInActivityScope;
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   public static FeatureFlags createDefault() {
@@ -92,8 +86,7 @@ public final class FeatureFlags {
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_MESSAGE_BODY_ON_EXPIRED,
-        EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
-        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER
+        EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE
         /*, FOO_DEFAULT*/ );
   }
 
@@ -110,8 +103,7 @@ public final class FeatureFlags {
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
-        false, /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
-        true /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
+        false /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -143,10 +135,6 @@ public final class FeatureFlags {
     return evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
-  public boolean evaluateDuplicateOutputMappingTargetsInOrder() {
-    return evaluateDuplicateOutputMappingTargetsInOrder;
-  }
-
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
   }
@@ -176,12 +164,6 @@ public final class FeatureFlags {
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
     this.evaluateBoundaryEventCorrelationKeyInActivityScope =
         evaluateBoundaryEventCorrelationKeyInActivityScope;
-  }
-
-  public void setEvaluateDuplicateOutputMappingTargetsInOrder(
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
-    this.evaluateDuplicateOutputMappingTargetsInOrder =
-        evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
   @Override

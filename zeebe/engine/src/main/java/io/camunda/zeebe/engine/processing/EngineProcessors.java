@@ -165,8 +165,7 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics,
-            featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
-            featureFlags.evaluateDuplicateOutputMappingTargetsInOrder());
+            featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope());
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -449,8 +448,7 @@ public final class EngineProcessors {
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
-      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -466,8 +464,7 @@ public final class EngineProcessors {
         expressionLanguageMetrics,
         config,
         incidentMetrics,
-        evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder);
+        evaluateBoundaryEventCorrelationKeyInActivityScope);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

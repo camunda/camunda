@@ -10,32 +10,43 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-final class VariableInputMappingTransformerTest {
+@RunWith(Parameterized.class)
+public final class VariableInputMappingTransformerTest {
+
+  @Parameter(0)
+  public List<ZeebeMapping> mappings;
+
+  @Parameter(1)
+  public Map<String, DirectBuffer> variables;
+
+  @Parameter(2)
+  public String expectedOutput;
 
   private final VariableMappingTransformer transformer = new VariableMappingTransformer();
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
 
-  static Object[][] parameters() {
+  @Parameters(name = "with {0} to {2}")
+  public static Object[][] parameters() {
     return new Object[][] {
       // no mappings
       {List.of(), Map.of(), "{}"},
@@ -56,14 +67,7 @@ final class VariableInputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':{'b':1, 'c':2}}"
       },
-      {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
-      // a mapping reads the PARTIAL object an earlier a.* mapping built so far, not the outer
-      // scope's "a"
-      {
-        List.of(mapping("x", "a.b"), mapping("a", "c")),
-        Map.of("x", asMsgPack("1"), "a", asMsgPack("{'z':99}")),
-        "{'a':{'b':1}, 'c':{'b':1}}"
-      },
+      {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}}"},
       // nested source
       {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
       {
@@ -75,31 +79,6 @@ final class VariableInputMappingTransformerTest {
         List.of(mapping("x.y", "a.b"), mapping("x.z", "a.c")),
         Map.of("x", asMsgPack("{'y':1, 'z':2}")),
         "{'a': {'b':1, 'c':2}}"
-      },
-      {List.of(mapping("a.b.c", "x")), Map.of("a", asMsgPack("{'b':{'c':42}}")), "{'x':42}"},
-      // source path through a type mismatch: "a" is a scalar, ".b" cannot be resolved
-      // on it - the mapping still evaluates to null instead of failing
-      {List.of(mapping("a.b", "x")), Map.of("a", asMsgPack("5")), "{'x':null}"},
-      // explicit null source value is merged as-is, not treated as absent
-      {List.of(mapping("x", "y")), Map.of("x", asMsgPack("null")), "{'y':null}"},
-      // an accumulated null still shadows the outer scope, unlike a never-mapped name
-      {
-        List.of(mapping("null", "x"), mapping("x", "y")),
-        Map.of("x", asMsgPack("5")),
-        "{'x':null, 'y':null}"
-      },
-      // missing source in a multi-mapping only nulls that one target
-      {
-        List.of(mapping("x", "a"), mapping("missing", "b")),
-        Map.of("x", asMsgPack("1")),
-        "{'a':1, 'b':null}"
-      },
-      // back-references between input mappings resolve to the earlier context entry, shadowing
-      // a same-named outer-scope variable
-      {
-        List.of(mapping("1", "y"), mapping("y", "z")),
-        Map.of("y", asMsgPack("10")),
-        "{'y':1, 'z':1}"
       },
       // source FEEL expression
       {List.of(mapping("1", "a")), Map.of(), "{'a':1}"},
@@ -116,49 +95,11 @@ final class VariableInputMappingTransformerTest {
         Map.of("x", asMsgPack("[1,2]"), "y", asMsgPack("3")),
         "{'a':[1,2,3]}"
       },
-      // list projection: source path over a list of contexts returns a list
-      {
-        List.of(mapping("orders.id", "ids")),
-        Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
-        "{'ids':[1,2]}"
-      },
-      // FEEL list indices are 1-based; negative indices count from the end
-      {
-        List.of(mapping("orders[1].id", "first"), mapping("orders[-1].id", "last")),
-        Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
-        "{'first':1, 'last':2}"
-      },
-      {
-        List.of(mapping("orders[0].id", "first"), mapping("orders[-1].id", "last")),
-        Map.of("orders", asMsgPack("[{'id':1}, {'id':2}]")),
-        "{'first':null, 'last':2}"
-      },
-      // malformed targets are deploy-time rejected in practice; shows what the naive
-      // split("\\.") would do if one ever reached the transformer
-      {List.of(mapping("x", "a..b")), Map.of("x", asMsgPack("1")), "{'a':{'':{'b':1}}}"},
-      {List.of(mapping("x", "a.")), Map.of("x", asMsgPack("1")), "{'a':1}"},
-      {List.of(mapping("x", "`a.b`")), Map.of("x", asMsgPack("1")), "{'`a':{'b`':1}}"},
-      // reserved-word/space targets are also deploy-time rejected, but would work fine here since
-      // input targets are plain path segments, never FEEL identifiers
-      {List.of(mapping("x", "for")), Map.of("x", asMsgPack("1")), "{'for':1}"},
-      {List.of(mapping("x", "my var")), Map.of("x", asMsgPack("1")), "{'my var':1}"},
       // evaluate mappings in order
       {
         List.of(mapping("x", "a"), mapping("a + 1", "b")),
         Map.of("x", asMsgPack("1")),
         "{'a':1, 'b':2}"
-      },
-      // a later entry's source cannot see an as-yet-undeclared later target - it falls back to
-      // whatever that name resolves to in the outer scope instead
-      {
-        List.of(mapping("z", "a"), mapping("1", "z")), Map.of("z", asMsgPack("9")), "{'a':9, 'z':1}"
-      },
-      // circular references between two entries: the second resolves the first's fresh context
-      // entry, so both end up holding the pre-mapping value of the entry declared second
-      {
-        List.of(mapping("b", "a"), mapping("a", "b")),
-        Map.of("a", asMsgPack("1"), "b", asMsgPack("2")),
-        "{'a':2, 'b':2}"
       },
       // override previous mapping
       {
@@ -171,121 +112,26 @@ final class VariableInputMappingTransformerTest {
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
         "{'a':{'b':2}}"
       },
-      // same overlap, opposite declaration order: now "a.b" is the one silently dropped instead
-      {
-        List.of(mapping("y", "a.b"), mapping("x", "a")),
-        Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),
-        "{'a':1}"
-      },
     };
   }
 
-  @ParameterizedTest(name = "with {0} to {2}")
-  @MethodSource("parameters")
-  void shouldApplyMappings(
-      final List<ZeebeMapping> mappings,
-      final Map<String, DirectBuffer> variables,
-      final String expectedOutput) {
+  @Test
+  public void shouldApplyMappings() {
     // given
-    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
-    inputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
+    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
-    // when: evaluate the mappings one by one in modeling order, same as
-    // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
-    // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new MappingResultBuilder();
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-
-    // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), expectedOutput);
-  }
-
-  @Test
-  void shouldPreserveDeclarationOrderAcrossRegroupedTargets() {
-    // given: c is declared BETWEEN the two "a.*" entries, so the user reasonably expects a.d to
-    // see c's just-assigned value
-    final var mappings = List.of(mapping("1", "a.b"), mapping("x", "c"), mapping("c", "a.d"));
-    final Map<String, DirectBuffer> variables = Map.of("x", asMsgPack("1"));
-
-    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
-    inputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
 
     // when
-    final var resultBuilder = new MappingResultBuilder();
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
 
     // then
-    MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1, 'd':1}, 'c':1}");
-  }
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
 
-  @Test
-  void shouldEvaluateNowDeterministicallyPerClock() {
-    // given: now() is deterministic per clock instant, not a fixed/static value
-    final var mappings = List.of(mapping("now()", "a"));
-    final var firstClockLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage(
-            new ZeebeFeelEngineClock(InstantSource.fixed(Instant.parse("2024-01-01T00:00:00Z"))));
-    final var secondClockLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage(
-            new ZeebeFeelEngineClock(InstantSource.fixed(Instant.parse("2025-06-15T12:30:00Z"))));
-
-    // when
-    final var firstResult = evaluate(mappings, Map.of(), firstClockLanguage);
-    final var firstResultRepeated = evaluate(mappings, Map.of(), firstClockLanguage);
-    final var secondResult = evaluate(mappings, Map.of(), secondClockLanguage);
-
-    // then: the same fixed clock instant always evaluates to the same value ...
-    assertThat(firstResult).isEqualTo(firstResultRepeated);
-    // ... but a different clock instant evaluates to a different value
-    assertThat(firstResult).isNotEqualTo(secondResult);
-  }
-
-  private DirectBuffer evaluate(
-      final List<ZeebeMapping> mappings,
-      final Map<String, DirectBuffer> variables,
-      final ExpressionLanguage language) {
-    final var inputMappings = transformer.transformInputMappings(mappings, language);
-    final var resultBuilder = new MappingResultBuilder();
-    for (final var mapping : inputMappings.mappings()) {
-      final EvaluationContext context =
-          name -> {
-            final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
-          };
-      final var result = language.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
-    }
-    return resultBuilder.toDocument();
+    MsgPackUtil.assertEquality(result.toBuffer(), expectedOutput);
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {

@@ -82,8 +82,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
-      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -181,11 +180,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionProcessor,
-            processingState,
-            variableBehavior,
-            eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            expressionProcessor, processingState, variableBehavior, eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(

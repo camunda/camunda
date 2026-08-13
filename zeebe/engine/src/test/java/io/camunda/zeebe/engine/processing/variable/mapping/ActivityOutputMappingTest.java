@@ -141,75 +141,7 @@ public final class ActivityOutputMappingTest {
         "{'x': %s}".formatted(A_YEAR_MONTH_DURATION_VALUE),
         mapping(b -> b.zeebeOutputExpression("duration(x)", "y")),
         scopeVariables(variable("y", A_YEAR_MONTH_DURATION_VALUE))
-      },
-      {
-        // nested target merges with the existing variable at EVERY path level: siblings of both
-        // 'b' and 'c' survive
-        "{'x': 1, 'a': {'b': {'d': 2}, 'e': 3}}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b.c")),
-        scopeVariables(variable("a", "{\"b\":{\"c\":1,\"d\":2},\"e\":3}"))
-      },
-      {
-        // a nested target whose existing value at that path is not a context poisons the whole
-        // level to null: context merge(5, {...}) yields null in FEEL (pinned FEEL artifact)
-        "{'x': 1, 'a': 5}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b")),
-        scopeVariables(variable("a", "null"))
-      },
-      {
-        // ...same at a deeper level: only the non-context level is poisoned, siblings survive
-        "{'x': 1, 'a': {'b': 5, 'e': 3}}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b.c")),
-        scopeVariables(variable("a", "{\"b\":null,\"e\":3}"))
-      },
-      {
-        // the merge seed is read from the element-local scope walking up: a local variable
-        // created by an input mapping contributes its properties to the propagated result
-        // (#35251 behavior — intentionally preserved in this PR, fix tracked separately)
-        "{'x': {'l': 1}, 'y': 2}",
-        mapping(b -> b.zeebeInputExpression("x", "a").zeebeOutputExpression("y", "a.m")),
-        scopeVariables(variable("a", "{\"l\":1,\"m\":2}"))
-      },
-      {
-        // mappings are evaluated in modeling order, so a later mapping can reference the target
-        // of an earlier one even when nested targets are interleaved with plain ones
-        // regression test for https://github.com/camunda/camunda/issues/11789
-        "{}",
-        mapping(
-            b ->
-                b.zeebeOutputExpression("1", "obj.first")
-                    .zeebeOutputExpression("2", "flat")
-                    .zeebeOutputExpression("flat", "obj.second")
-                    .zeebeOutputExpression("flat", "flatCopy")),
-        scopeVariables(
-            variable("flat", "2"),
-            variable("obj", "{\"first\":1,\"second\":2}"),
-            variable("flatCopy", "2"))
-      },
-      {
-        // a mapping referencing a target produced by a LATER mapping sees it as not-yet-defined
-        // and resolves to null; the later mapping still produces its own value normally
-        "{}",
-        mapping(b -> b.zeebeOutputExpression("late", "early").zeebeOutputExpression("1", "late")),
-        scopeVariables(variable("early", "null"), variable("late", "1"))
-      },
-      {
-        // a mapping can reference the (merged) nested target of an earlier mapping
-        "{'x': 1}",
-        mapping(b -> b.zeebeOutputExpression("x", "a.b").zeebeOutputExpression("a.b + 1", "c")),
-        scopeVariables(variable("a", "{\"b\":1}"), variable("c", "2"))
-      },
-      {
-        // duplicate targets: every mapping is evaluated in order, the last value wins;
-        // an intermediate mapping sees the value that was current at its position
-        "{}",
-        mapping(
-            b ->
-                b.zeebeOutputExpression("1", "x")
-                    .zeebeOutputExpression("x", "y")
-                    .zeebeOutputExpression("2", "x")),
-        scopeVariables(variable("x", "2"), variable("y", "1"))
-      },
+      }
     };
   }
 

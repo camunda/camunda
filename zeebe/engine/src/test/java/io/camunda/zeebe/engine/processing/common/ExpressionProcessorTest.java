@@ -19,13 +19,10 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -232,6 +229,21 @@ class ExpressionProcessorTest {
               """
               Failed to extract the correlation key for 'x': \
               The value must be either a string or a number, but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void testVariableMappingExpression() {
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      assertThat(processor.evaluateVariableMappingExpression(parsedExpression, -1L, "tenant_1"))
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
@@ -563,86 +575,6 @@ class ExpressionProcessorTest {
     @FunctionalInterface
     private interface ProcessorMethod {
       Either<Failure, ?> evaluate(ExpressionProcessor processor, Expression expression);
-    }
-  }
-
-  @Nested
-  class EvaluateVariableMappingSourceExpressionTest {
-
-    private final ExpressionProcessor processor =
-        new ExpressionProcessor(
-            EXPRESSION_LANGUAGE,
-            new InMemoryVariableEvaluationContext(Map.of("x", 1)),
-            DEFAULT_TIMEOUT);
-
-    @Test
-    void shouldEvaluateNonObjectResult() {
-      // given: a single mapping source may produce any result type, not just a context
-      final var expression = EXPRESSION_LANGUAGE.parseExpression("=\"abc\"");
-
-      // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
-
-      // then
-      assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "'abc'");
-    }
-
-    @Test
-    void shouldEvaluateObjectResult() {
-      // given
-      final var expression = EXPRESSION_LANGUAGE.parseExpression("={y: x}");
-
-      // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
-
-      // then
-      assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "{'y': 1}");
-    }
-
-    @Test
-    void shouldEvaluateNullResult() {
-      // given: an input mapping without a source is transformed to a null expression
-      final var expression = EXPRESSION_LANGUAGE.parseExpression("=null");
-
-      // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
-
-      // then
-      assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "null");
-    }
-
-    @Test
-    void shouldEvaluateUnresolvedVariableAsNull() {
-      // given: an unresolved variable reference is lenient, matching plain FEEL evaluation
-      // elsewhere in this class (see EvaluationWarningsTest) — it is not a failure on its own,
-      // only a subsequent type-check (which this method deliberately doesn't have) can turn it
-      // into one
-      final var expression = EXPRESSION_LANGUAGE.parseExpression("=unknown_var");
-
-      // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
-
-      // then
-      assertThat(result).isRight();
-      MsgPackUtil.assertEquality(result.get(), "null");
-    }
-
-    @Test
-    void shouldReturnIoMappingFailureForGenuineEvaluationFailure() {
-      // given: a real FEEL evaluation failure (not merely an unresolved variable) must still fail
-      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
-
-      // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
-
-      // then
-      assertThat(result).isLeft();
-      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
-      Assertions.assertThat(result.getLeft().getMessage())
-          .contains("Assertion failure on evaluate the expression");
     }
   }
 }
