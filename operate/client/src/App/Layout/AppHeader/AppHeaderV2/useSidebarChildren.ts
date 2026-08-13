@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {
   Activity,
   Dashboard,
@@ -15,25 +15,49 @@ import {
   Flow,
   ListChecked,
 } from '@carbon/react/icons';
-import type {SidebarNodeDescriptor} from '@camunda/camunda-composite-components';
+import type {SidebarNode} from '@camunda/design-system';
 import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
 
-function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
+function locationToString(location: ReturnType<typeof Locations.processes>) {
+  if (typeof location === 'string') {
+    return location;
+  }
+
+  const search =
+    location.search === undefined || location.search === ''
+      ? ''
+      : location.search.startsWith('?')
+        ? location.search
+        : `?${location.search}`;
+
+  return `${location.pathname ?? ''}${search}${location.hash ?? ''}`;
+}
+
+function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
   const {data: currentUser} = useCurrentUser();
   const {currentPage} = useCurrentPage();
   const forbidden = isForbidden(currentUser);
+  const isOperationsPage =
+    currentPage === 'batch-operations' || currentPage === 'operations-log';
+  const [operationsExpansion, setOperationsExpansion] = useState({
+    page: currentPage,
+    expanded: isOperationsPage,
+  });
+  const operationsExpanded =
+    operationsExpansion.page === currentPage
+      ? operationsExpansion.expanded
+      : isOperationsPage;
 
-  // @ts-expect-error - we need to fix it from the C3 side
-  return useMemo(() => {
+  return useMemo((): SidebarNode[] => {
     if (forbidden || hideNavLinks) {
       return [];
     }
 
-    const children = [
+    return [
       {
         type: 'item',
         key: 'dashboard',
@@ -53,10 +77,10 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
         key: 'processes',
         label: 'Processes',
         icon: Flow,
-        isActive: (active: string) =>
+        isActive: (active) =>
           active === 'processes' || active.startsWith('process-details'),
         linkProps: {
-          to: Locations.processes(),
+          to: locationToString(Locations.processes()),
           state: {refreshContent: true, hideOptionalFilters: true},
         },
         onClick: () => {
@@ -72,10 +96,10 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
         key: 'decisions',
         label: 'Decisions',
         icon: DecisionTree,
-        isActive: (active: string) =>
+        isActive: (active) =>
           active === 'decisions' || active === 'decision-details',
         linkProps: {
-          to: Locations.decisions(),
+          to: locationToString(Locations.decisions()),
           state: {refreshContent: true, hideOptionalFilters: true},
         },
         onClick: () => {
@@ -91,12 +115,11 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
         key: 'operations',
         label: 'Operations',
         icon: Activity,
-        isActive:
-          currentPage === 'batch-operations' ||
-          currentPage === 'operations-log',
-        defaultExpanded:
-          currentPage === 'batch-operations' ||
-          currentPage === 'operations-log',
+        isActive: isOperationsPage,
+        isExpanded: operationsExpanded,
+        onToggleExpand: (expanded) => {
+          setOperationsExpansion({page: currentPage, expanded});
+        },
         linkProps: {to: Paths.batchOperations()},
         children: [
           {
@@ -111,7 +134,6 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
                 link: 'header-batch-operations',
                 currentPage,
               });
-              (document.activeElement as HTMLElement)?.blur();
             },
           },
           {
@@ -126,15 +148,18 @@ function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
                 link: 'header-operations-log',
                 currentPage,
               });
-              (document.activeElement as HTMLElement)?.blur();
             },
           },
         ],
       },
     ];
-
-    return children;
-  }, [forbidden, hideNavLinks, currentPage]);
+  }, [
+    forbidden,
+    hideNavLinks,
+    currentPage,
+    isOperationsPage,
+    operationsExpanded,
+  ]);
 }
 
 export {useSidebarChildren};

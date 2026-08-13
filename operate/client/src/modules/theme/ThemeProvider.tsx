@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {currentTheme} from 'modules/stores/currentTheme';
@@ -16,11 +17,22 @@ type Props = {
 };
 
 const ThemeProvider = observer<React.FC<Props>>(({children}) => {
+  const carbonTheme = currentTheme.theme === 'light' ? 'g10' : 'g100';
+
+  // Carbon's <Theme> only sets data-carbon-theme on its own local wrapper,
+  // not on <html>. @camunda/design-system's C4Provider reads it from
+  // document.documentElement specifically (its own documented Carbon-
+  // coexistence mechanism), so the host has to mirror it there for DS
+  // components to track Carbon's theme without a separate toggle.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-carbon-theme', carbonTheme);
+    return () => {
+      document.documentElement.removeAttribute('data-carbon-theme');
+    };
+  }, [carbonTheme]);
+
   return (
-    <Theme
-      theme={`${currentTheme.theme === 'light' ? 'g10' : 'g100'}`}
-      className="carbonThemeProvider"
-    >
+    <Theme theme={carbonTheme} className="carbonThemeProvider">
       {children}
     </Theme>
   );

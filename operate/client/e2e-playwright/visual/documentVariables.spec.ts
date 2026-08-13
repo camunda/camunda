@@ -69,6 +69,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(imageVariable).toBeVisible();
     await expect(page).toHaveScreenshot();
@@ -92,6 +94,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
     await expect(listVariable).toBeVisible();
     await listVariable.getByRole('button', {name: 'View documents'}).click();
 
@@ -126,6 +130,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(jsonVariable).toBeVisible();
     await jsonVariable.getByRole('button', {name: 'Preview'}).click();
@@ -156,6 +162,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(jsonVariable).toBeVisible();
     await jsonVariable.getByRole('button', {name: 'Preview'}).click();
@@ -189,6 +197,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(imageVariable).toBeVisible();
 
@@ -219,6 +229,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(imageVariable).toBeVisible();
 
@@ -253,6 +265,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(pdfVariable).toBeVisible();
     await pdfVariable.getByRole('button', {name: 'Preview'}).click();
@@ -291,6 +305,8 @@ test.describe('document variable visualization', () => {
     await processInstancePage.gotoProcessInstancePage({
       key: documentReferenceProcessInstance.detail.processInstanceKey,
     });
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await processInstancePage.resetZoomButton.click();
 
     await expect(pdfVariable).toBeVisible();
 

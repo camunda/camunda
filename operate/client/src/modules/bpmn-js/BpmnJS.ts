@@ -88,7 +88,7 @@ class BpmnJS {
     await this.#navigatedViewer!.importXML(xml);
 
     // Initialize after importing
-    this.zoomReset();
+    this.fitToViewport();
     this.#navigatedViewer!.on('element.click', this.#handleElementClick);
     this.#navigatedViewer!.on(
       'element.dblclick',
@@ -495,15 +495,18 @@ class BpmnJS {
     this.zoom(-0.1);
   };
 
-  zoomReset = () => {
+  fitToViewport = () => {
     const canvas = this.#navigatedViewer?.get('canvas');
-
-    tracking.track({eventName: 'diagram-zoom-reset'});
 
     if (canvas !== undefined) {
       canvas.resized();
       canvas.zoom('fit-viewport', 'auto');
     }
+  };
+
+  zoomReset = () => {
+    tracking.track({eventName: 'diagram-zoom-reset'});
+    this.fitToViewport();
   };
 
   findRootId = (selectedElementId: string) => {

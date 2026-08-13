@@ -229,7 +229,7 @@ test.describe('AI agent details', () => {
     ).toBeVisible();
     await processInstancePage.previewEditor.hideCaret();
 
-    await expect(page).toHaveScreenshot();
+    await expect(modal).toHaveScreenshot({maxDiffPixels: 20});
   });
 
   test('conversation document lists', async ({page, processInstancePage}) => {

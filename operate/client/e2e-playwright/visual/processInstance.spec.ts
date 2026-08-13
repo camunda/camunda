@@ -237,8 +237,7 @@ test.describe('process instance page', () => {
     });
 
     await processInstancePage.resetZoomButton.click();
-    await page.waitForTimeout(500);
-    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await expect(page.getByTestId('state-overlay-incidents')).toHaveText('1');
 
     await page.getByRole('link', {name: 'Incidents'}).click();
 
@@ -268,8 +267,7 @@ test.describe('process instance page', () => {
     });
 
     await processInstancePage.resetZoomButton.click();
-    await page.waitForTimeout(500);
-    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await expect(page.getByTestId('state-overlay-incidents')).toHaveText('1');
 
     await page.getByRole('link', {name: 'Incidents'}).click();
 

@@ -7,6 +7,7 @@
  */
 
 const diObject = {set: vi.fn()};
+const mockCanvasZoom = vi.fn();
 const BPMN_NODES = [
   'bpmn\\:startEvent',
   'bpmn\\:endEvent',
@@ -51,7 +52,7 @@ const createMockFlowNode = (id: string) => ({
 
 const createMockedModules = (container: HTMLElement) => ({
   canvas: {
-    zoom: vi.fn(),
+    zoom: mockCanvasZoom,
     addMarker: vi.fn(),
     removeMarker: vi.fn(),
     resized: vi.fn(),
@@ -150,3 +151,4 @@ class Viewer {
 }
 
 export default Viewer;
+export {mockCanvasZoom};

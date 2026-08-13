@@ -200,8 +200,12 @@ test.describe('process instance migration', () => {
 
     await migrationView.nextButton.click();
 
-    await commonPage.addUpArrow(page.getByTestId('state-overlay-active'));
-    await commonPage.addUpArrow(page.getByTestId('modifications-overlay'));
+    const activeStateOverlay = page.getByTestId('state-overlay-active');
+    const modificationsOverlay = page.getByTestId('modifications-overlay');
+    await expect(activeStateOverlay).toBeVisible();
+    await expect(modificationsOverlay).toBeVisible();
+    await commonPage.addUpArrow(activeStateOverlay);
+    await commonPage.addUpArrow(modificationsOverlay);
 
     await page.screenshot({
       path: path.join(baseDirectory, 'summary.png'),

@@ -1,0 +1,175 @@
+/* Camunda Design System — consumer setup file.
+ *
+ * DS tokens + utilities are loaded via JS import in your entry file
+ * (`import "@camunda/design-system/styles.css"`). PostCSS does NOT
+ * honor `exports`, so do NOT `@import` it from here.
+ *
+ *
+ * Carbon-coexistence opt-out.
+ *
+ * The shadcn primitives this package ships are authored to render
+ * correctly under any host reset (they write explicit utility classes
+ * rather than relying on preflight defaults). The rule below patches
+ * the one known cascade conflict: Carbon's global `border: 0px`
+ * reset sets `border-color: currentColor` on the listed elements,
+ * which resolves to the c4 `--foreground` token (near-black) inside
+ * `.c4-ui` subtrees and overrides the `--border` design token for any
+ * element using a colorless border utility (e.g. `<tr>` with
+ * `border-b`, or `<div className="border">`).
+ *
+ * Adapted from camunda-hub/frontend/apps/hub/src/styles/_carbon.scss
+ * lines 25–66. Specificity is (0,0,1) via `:where(.c4-ui)` + `:is(...)`
+ * — same as Carbon's reset — so DS component utility classes
+ * (0,1,0) still win.
+ *
+ * If additional cascade conflicts surface (see audit in
+ * docs/dev-specs/HOST_CARBON_INTEGRATION.md), add targeted rules
+ * here. Prefer in-component fixes (explicit utilities on the
+ * adapter) when possible.
+ */
+:where(.c4-ui)
+  :is(
+    html,
+    body,
+    div,
+    span,
+    applet,
+    object,
+    iframe,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    blockquote,
+    pre,
+    a,
+    abbr,
+    acronym,
+    address,
+    big,
+    cite,
+    code,
+    del,
+    dfn,
+    em,
+    img,
+    ins,
+    kbd,
+    q,
+    s,
+    samp,
+    small,
+    strike,
+    strong,
+    sub,
+    sup,
+    tt,
+    var,
+    b,
+    u,
+    i,
+    center,
+    dl,
+    dt,
+    dd,
+    ol,
+    ul,
+    li,
+    fieldset,
+    form,
+    label,
+    legend,
+    table,
+    caption,
+    tbody,
+    tfoot,
+    thead,
+    tr,
+    th,
+    td,
+    article,
+    aside,
+    canvas,
+    details,
+    embed,
+    figure,
+    figcaption,
+    footer,
+    header,
+    hgroup,
+    menu,
+    nav,
+    output,
+    ruby,
+    section,
+    summary,
+    time,
+    mark,
+    audio,
+    video
+  ) {
+  border-color: var(--border);
+}
+
+/* Carbon SVG-icon coexistence.
+ *
+ * Carbon's global reboot CSS sets a completely unscoped `svg { fill: buttontext; }`.
+ * lucide-react icons rely on `fill="none"` + `stroke` for their outline style — this
+ * rule overrides that presentation attribute (CSS always wins over presentation
+ * attributes), so every lucide icon inside `.c4-ui` renders solid-filled instead of
+ * outlined. For icons built from thin/zero-area `<path>` shapes (e.g. AppSidebar's
+ * collapse-toggle icon, a line + a chevron) filling has no visible area to paint,
+ * so those paths disappear entirely — only an enclosing filled `<rect>` remains,
+ * reading as a plain empty square.
+ *
+ * Scoped to `svg.lucide` specifically, not a bare `svg` selector — Operate reuses
+ * Carbon icons (`@carbon/react/icons`) directly inside AppSidebar's own nav items
+ * (NavIcon's type accepts them structurally), and Carbon icons are fill-based with
+ * no stroke at all. An earlier version of this rule targeted every `svg` and made
+ * every Carbon-sourced nav icon disappear the same way the lucide icon did —
+ * `fill: none` on a fill-only icon leaves nothing to paint. lucide-react's own
+ * `Icon` component always adds the literal class `lucide` (`createLucideIcon` via
+ * `mergeClasses("lucide", ...)`), which is what makes this scoping possible.
+ * Filled Lucide indicators opt in with `fill-current` and must retain that fill.
+ *
+ * Discovered via AppSidebar's collapse-toggle icon rendering as an empty square in
+ * Operate, 2026-08-11; the Carbon-icon regression from the first fix attempt found
+ * the same day.
+ */
+:where(.c4-ui) svg.lucide:not(.fill-current) {
+  fill: none;
+}
+
+/* Show a ring for every theme choice while retaining the DS selection dot. */
+:where(.c4-ui) [data-slot='dropdown-menu-radio-item'] > span:first-child {
+  border: 1px solid var(--neutral-foreground-subtle);
+  border-radius: 50%;
+}
+
+/* Consumer overrides go below. */
+
+/* Operate background alignment.
+ *
+ * DS and Carbon deliberately use independent token systems — the DS's own docs
+ * state they "never collide," which also means they never automatically match.
+ * DS's base surface (`--background`, driving `bg-background` on AppSidebar and
+ * AppHeader) is Tailwind's zinc-50/zinc-950; Operate's Carbon theme (`g10`/`g100`)
+ * uses `#f4f4f4`/`#161616`. Both are legitimate dark/light neutrals, just not the
+ * same ones, so the nav shell reads as a visibly different surface from the rest
+ * of the page it sits on top of.
+ *
+ * This is a temporary, product-local alignment, not a DS-level fix — matching
+ * Operate's current Carbon background exactly. Equal specificity to the DS's own
+ * `.c4-ui` / `.c4-ui.dark` token rules; wins on source order since this file loads
+ * last. Revisit if Carbon's theme values change or Operate drops Carbon.
+ */
+.c4-ui {
+  --background: #f4f4f4;
+}
+
+.c4-ui.dark {
+  --background: #161616;
+}

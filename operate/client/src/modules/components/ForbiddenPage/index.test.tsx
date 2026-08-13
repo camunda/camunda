@@ -32,6 +32,7 @@ describe('Forbidden', () => {
     render(<ForbiddenPage />, {wrapper: Wrapper});
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1');
     expect(
       screen.getByText('You don’t have access to this component'),
     ).toBeInTheDocument();

@@ -21,6 +21,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
+import {mockCanvasZoom} from '__mocks__/bpmn-js/lib/NavigatedViewer';
 
 const OVERLAY_TYPE = 'myType';
 
@@ -70,6 +71,26 @@ describe('<Diagram />', () => {
     expect(
       screen.getByRole('button', {name: 'Zoom out diagram'}),
     ).toBeInTheDocument();
+  });
+
+  it('should preserve the viewport when diagram properties change', async () => {
+    const {rerender} = render(
+      <Diagram xml={'<bpmn:definitions/>'} selectedElementIds={[]} />,
+      {wrapper: Wrapper},
+    );
+
+    await screen.findByRole('button', {name: 'Reset diagram zoom'});
+    expect(mockCanvasZoom).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <Diagram
+        xml={'<bpmn:definitions/>'}
+        selectedElementIds={['element-1']}
+      />,
+    );
+
+    await screen.findByRole('button', {name: 'Reset diagram zoom'});
+    expect(mockCanvasZoom).toHaveBeenCalledTimes(1);
   });
 
   it('should render overlays', async () => {
