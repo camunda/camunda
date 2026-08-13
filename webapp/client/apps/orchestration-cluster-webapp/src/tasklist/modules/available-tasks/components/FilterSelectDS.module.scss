@@ -85,19 +85,29 @@
 	width: 1rem;
 	height: 1rem;
 	color: var(--primary-action-default);
+	transition: right 0.15s ease;
 }
 
-// Custom filters carry edit/delete actions, so they need room for two buttons
-// alongside the checkmark.
+// Custom filters carry an actions trigger, so they need room for it alongside
+// the checkmark.
 .customOption {
-	// Room for the actions trigger alongside the checkmark.
 	padding-right: 3.5rem;
+
+	// The actions trigger owns the right end, so the checkmark steps left to make
+	// room whenever the trigger is showing. Unhovered and unselected rows keep the
+	// checkmark at the right end, matching the built-in filters above.
+	&:hover .optionCheck,
+	&[data-highlighted] .optionCheck,
+	&:focus-within .optionCheck,
+	&:has(.rowAction[data-state='open']) .optionCheck {
+		right: 2rem;
+	}
 }
 
 .rowActions {
 	position: absolute;
-	// Clear of the checkmark's 0.5rem strip.
-	right: 2rem;
+	// Always the right end of the row, whether or not the filter is selected.
+	right: 0.5rem;
 	display: flex;
 	align-items: center;
 	gap: 0.125rem;
