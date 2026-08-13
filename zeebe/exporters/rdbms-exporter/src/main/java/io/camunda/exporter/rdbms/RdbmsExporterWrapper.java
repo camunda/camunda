@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsCacheRegistry;
+import io.camunda.exporter.rdbms.handlers.AgentDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.AgentHistoryExportHandler;
 import io.camunda.exporter.rdbms.handlers.AgentInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
@@ -257,6 +258,9 @@ public class RdbmsExporterWrapper implements Exporter {
           new GlobalListenerExportHandler(rdbmsWriters.getGlobalListenerWriter()));
       builder.withHandler(
           ValueType.RESOURCE, new ResourceExportHandler(rdbmsWriters.getResourceWriter()));
+      builder.withHandler(
+          ValueType.AGENT_DEFINITION,
+          new AgentDefinitionExportHandler(rdbmsWriters.getAgentDefinitionWriter()));
     }
 
     builder.withHandler(
