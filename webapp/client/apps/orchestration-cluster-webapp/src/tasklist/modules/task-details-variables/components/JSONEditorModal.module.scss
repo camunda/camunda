@@ -9,3 +9,16 @@
 .editor {
 	height: 60vh;
 }
+
+// DS-only (see JSONEditorModal.tsx). The compat Modal drops Carbon's `size`
+// prop, so the DS Dialog would fall back to its narrow default — unusable for a
+// code editor. Restores the width `size="lg"` used to give, and caps the height
+// so a 60vh editor plus header and footer cannot push the dialog past the
+// viewport (the same body-scroll gap already reported for the DS Modal).
+.modal {
+	max-width: 60rem !important;
+	width: calc(100vw - 4rem);
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+}

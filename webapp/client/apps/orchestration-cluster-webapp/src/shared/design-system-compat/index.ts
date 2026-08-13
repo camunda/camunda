@@ -49,8 +49,10 @@ import {
 	SelectSkeleton as CarbonSelectSkeleton,
 	SkeletonText as CarbonSkeletonText,
 	Stack as CarbonStack,
+	Heading as CarbonHeading,
 	StructuredListBody as CarbonStructuredListBody,
 	StructuredListCell as CarbonStructuredListCell,
+	StructuredListHead as CarbonStructuredListHead,
 	StructuredListRow as CarbonStructuredListRow,
 	StructuredListWrapper as CarbonStructuredListWrapper,
 	Tag as CarbonTag,
@@ -94,8 +96,10 @@ import {
 	SelectSkeleton as CompatSelectSkeleton,
 	SkeletonText as CompatSkeletonText,
 	Stack as CompatStack,
+	Heading as CompatHeading,
 	StructuredListBody as CompatStructuredListBody,
 	StructuredListCell as CompatStructuredListCell,
+	StructuredListHead as CompatStructuredListHead,
 	StructuredListRow as CompatStructuredListRow,
 	StructuredListWrapper as CompatStructuredListWrapper,
 	Tag as CompatTag,
@@ -119,6 +123,7 @@ import {
 	EventSchedule as CarbonEventSchedule,
 	Filter as CarbonFilter,
 	Information as CarbonInformation,
+	Maximize as CarbonMaximize,
 	Launch as CarbonLaunch,
 	Notification as CarbonNotification,
 	Search as CarbonSearchIcon,
@@ -149,6 +154,7 @@ import {
 	ExternalLink as LucideExternalLink,
 	Filter as LucideFilter,
 	Info as LucideInfo,
+	Maximize2 as LucideMaximize2,
 	PanelLeftClose as LucidePanelLeftClose,
 	PanelLeftOpen as LucidePanelLeftOpen,
 	Plus as LucidePlus,
@@ -273,8 +279,14 @@ export const StructuredListWrapper = featureFlags.dsTasklistUI
 	? CompatStructuredListWrapper
 	: CarbonStructuredListWrapper;
 export const StructuredListBody = featureFlags.dsTasklistUI ? CompatStructuredListBody : CarbonStructuredListBody;
+export const StructuredListHead = featureFlags.dsTasklistUI ? CompatStructuredListHead : CarbonStructuredListHead;
 export const StructuredListRow = featureFlags.dsTasklistUI ? CompatStructuredListRow : CarbonStructuredListRow;
 export const StructuredListCell = featureFlags.dsTasklistUI ? CompatStructuredListCell : CarbonStructuredListCell;
+
+// Heading: carbon-compat re-exports Carbon's semantic heading-level component
+// unchanged (paper-move SHIM, same family as Section above). The `level`
+// context Carbon derives from an enclosing Section is preserved either way.
+export const Heading = featureFlags.dsTasklistUI ? CompatHeading : CarbonHeading;
 
 // Section: carbon-compat currently re-exports this unchanged from `@carbon/react`
 // (semantic heading-level wrapper — paper-move SHIM, no shadcn equivalent yet;
@@ -467,6 +479,14 @@ export const LaunchIcon = featureFlags.dsTasklistUI ? LucideExternalLink : Carbo
 // match. Lucide's `Info` is the direct visual/semantic equivalent (a circle
 // enclosing a lowercase "i") — same-glyph mapping, no approximation needed.
 export const InformationIcon = featureFlags.dsTasklistUI ? LucideInfo : CarbonInformation;
+
+// Maximize: genuine icon gap — Carbon's `Maximize` has no row in
+// docs/kb/carbon-icons-to-lucide.md at all. Lucide's `Maximize2` (opposing
+// diagonal arrows) is the same glyph Carbon renders here, and reads as
+// "expand this value into the editor" at the variables-table call site.
+// Lucide also ships `Maximize` (four corner brackets), which is a different
+// glyph — not the match. Logged as an icon gap in human-follow-up.md.
+export const MaximizeIcon = featureFlags.dsTasklistUI ? LucideMaximize2 : CarbonMaximize;
 
 // CircleDash: used here as a generic "unassigned" indicator, not a Camunda
 // domain entity — no registry match. Lucide's `CircleDashed` is the direct

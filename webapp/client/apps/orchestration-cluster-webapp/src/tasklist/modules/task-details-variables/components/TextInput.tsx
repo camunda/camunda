@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TextInput as BaseTextInput} from '@carbon/react';
+import {TextInput as BaseTextInput} from '#/shared/design-system-compat';
 import {useEffect, useRef, forwardRef, useImperativeHandle} from 'react';
 import type {FieldInputProps} from 'react-final-form';
 

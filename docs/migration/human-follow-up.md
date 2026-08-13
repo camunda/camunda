@@ -1429,6 +1429,52 @@ append-only scan log.
     already accept `trailingElement`. Related to the `AppSidebar` nested-button
     item below: both come from items having no place to put a second control.
 
+- **2026-08-13 — `carbon-compat/structured-list.tsx` is a bare passthrough, but the
+  analyzer scores it as a clean SWAP.** The adapter is
+  `// MIGRATION TODO: no shadcn equivalent yet` re-exporting all six
+  StructuredList symbols straight from `@carbon/react`. `analyze.sh` nonetheless
+  buckets them SWAP and scored Tasklist's `VariableEditor.tsx` at **0.956 —
+  "haiku, drop-in adapter, import path only"**. Following that score would have
+  produced a migration that changes nothing: the table stays Carbon-rendered with
+  the flag on, while reporting as migrated.
+  - **Impact**: the score actively misleads. SHIM is weighted 0.5 in the formula
+    precisely because a paper move isn't a real migration, but these passthroughs
+    are classified SWAP (weight 1.0), so a file made entirely of them looks like
+    the easiest possible migration.
+  - **Done instead**: full rewrite onto the DS `Table` primitives in a DS-only
+    `VariableEditorDS.tsx`, flag-dispatched from `VariableEditor.tsx`.
+  - **Ask**: bucket passthrough adapters as SHIM (or a distinct PASSTHROUGH tier)
+    rather than SWAP, so the score reflects that no surface actually moves. Same
+    root issue as the `actionable-notification` entry below — that one at least
+    carries a TODO marker the agent can read; the scoring layer ignores it.
+
+- **2026-08-13 — `Modal` silently drops `preventCloseOnClickOutside`, which is a
+  data-loss risk, not just a styling gap.** Tasklist's JSON variable editor opens a
+  Monaco editor in a `<ComposedModal preventCloseOnClickOutside size="lg">`. The
+  compat adapter drops the prop (`warnDroppedProps`), so with the flag on a stray
+  backdrop click closes the dialog and **discards unsaved JSON edits**. Nothing
+  warns the user; the edit is simply gone.
+  - **App-side workaround**: pass Radix's `onInteractOutside` through the adapter's
+    rest-props spread and `preventDefault()` it. Works because the adapter forwards
+    unknown props to `DialogContent`, but it is a Radix-level escape hatch reaching
+    around the Carbon-shaped API, and it only type-checks behind a cast.
+  - **Ask**: honour `preventCloseOnClickOutside`. Dropping a prop that changes
+    styling is survivable; dropping one that guards unsaved work is not. If it
+    cannot be honoured, it should warn loudly rather than through a dev-only console
+    message.
+  - Related, same call site: `size="lg"` is also dropped (already logged below), so
+    the dialog fell back to the narrow default — unusable for a code editor. Worked
+    around with an explicit `max-width` override.
+
+- **2026-08-13 — icon gap: Carbon `Maximize` has no row in
+  `carbon-icons-to-lucide.md`.** Used in Tasklist's variables table for "expand this
+  value into the JSON editor". Mapped to lucide `Maximize2` (opposing diagonal
+  arrows), which is the glyph Carbon actually renders here. Note lucide also ships
+  `Maximize` (four corner brackets) — a different glyph, and the wrong match despite
+  the identical name, which is exactly the sort of trap the table exists to prevent.
+  - **Ask**: add `Maximize` → `Maximize2` to the Common remaps table, and consider
+    flagging same-name-different-glyph pairs explicitly.
+
 - **2026-08-12 — deleting a custom filter leaves the whole page unclickable
   (`pointer-events: none` stuck on `<body>`).** Highest-severity DS issue found
   so far: the app looks fine but accepts no input at all, with zero dialogs on

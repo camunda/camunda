@@ -7,7 +7,9 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import {ComposedModal, ModalBody, ModalFooter, ModalHeader} from '@carbon/react';
+import {ComposedModal, ModalBody, ModalFooter, ModalHeader} from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import Editor from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
 import {useTranslation} from 'react-i18next';
@@ -54,8 +56,38 @@ const JSONEditorModal: React.FC<Props> = ({isOpen, value, isReadOnly, onClose, o
 		[isReadOnly],
 	);
 
+	// The compat Modal drops both `preventCloseOnClickOutside` and `size` (confirmed
+	// via its own warnDroppedProps). Both matter here and are compensated DS-side:
+	//
+	//  - Without the outside-click guard, clicking the backdrop closes the dialog and
+	//    silently discards unsaved JSON. The compat adapter spreads unknown props onto
+	//    the DS DialogContent, so Radix's `onInteractOutside` reaches it and can veto
+	//    the dismissal. The header's X and Esc still close, because those go through
+	//    onOpenChange rather than an outside interaction.
+	//  - Without `size="lg"` the dialog falls back to the DS default width, which is
+	//    far too narrow for a code editor; `styles.modal` restores it.
+	//
+	// Applied only on the DS path so the Carbon path keeps its own props untouched and
+	// never receives a Radix-only handler. Both gaps are logged for the DS team in
+	// docs/migration/human-follow-up.md.
+	const dsModalProps = featureFlags.dsTasklistUI
+		? ({
+				onInteractOutside: (event: Event) => {
+					event.preventDefault();
+				},
+				className: styles.modal,
+			} as Partial<React.ComponentProps<typeof ComposedModal>>)
+		: {};
+
 	return (
-		<ComposedModal open={isOpen} preventCloseOnClickOutside size="lg" onClose={onClose} aria-label={title}>
+		<ComposedModal
+			open={isOpen}
+			preventCloseOnClickOutside
+			size="lg"
+			onClose={onClose}
+			aria-label={title}
+			{...dsModalProps}
+		>
 			<ModalHeader title={title} iconDescription={t('tasklist.jsonEditorCloseButtonLabel')} />
 			<ModalBody>
 				{isOpen ? (

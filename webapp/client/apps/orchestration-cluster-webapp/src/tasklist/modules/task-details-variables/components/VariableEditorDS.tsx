@@ -6,19 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+// DS-only variables table (see VariableEditor.tsx for the flag dispatch).
+//
+// A full rewrite rather than an import swap: carbon-compat's StructuredList is a
+// bare passthrough re-export of @carbon/react ("MIGRATION TODO: no shadcn
+// equivalent yet"), so swapping the imports would leave this table visually
+// Carbon with the flag on. Same class of gap as carbon-compat's
+// actionable-notification, and logged for the DS team alongside it.
+//
+// Behaviour is carried over unchanged from VariableEditor.tsx: the read-only
+// branch stays virtualized, and every react-final-form binding (Field,
+// DelayedErrorField, the validators, and the dirtyFields-driven error delay)
+// keeps its exact field names — those come from createVariableFieldName /
+// createNewVariableFieldName and the form state is keyed on them.
 import {type RefObject, useEffect} from 'react';
-import {
-	Button,
-	IconButton,
-	InlineNotification,
-	SkeletonText,
-	StructuredListBody,
-	StructuredListCell,
-	StructuredListHead,
-	StructuredListRow,
-	StructuredListWrapper,
-} from '@carbon/react';
-import {Close, Maximize} from '@carbon/react/icons';
+import {Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@camunda/design-system';
+import {CloseIcon, InlineNotification, MaximizeIcon, SkeletonText} from '#/shared/design-system-compat';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Field, useFormState} from 'react-final-form';
@@ -38,16 +41,17 @@ import {
 	validateValueComplete,
 	validateValueJSON,
 } from '#/tasklist/modules/task-details-variables/validators';
-import {featureFlags} from '#/shared/feature-flags';
 import {DelayedErrorField} from './DelayedErrorField';
 import {LoadingTextarea} from './LoadingTextarea';
 import {TextInput} from './TextInput';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
-import {VariableEditorDS} from './VariableEditorDS';
 import styles from './VariableEditor.module.scss';
 
+// Must stay in step with the row height the DS table actually renders, or the
+// virtualizer's scroll math drifts. Same value the Carbon table used.
 const ESTIMATED_ROW_HEIGHT = 48;
 const OVERSCAN = 5;
+const COLUMN_COUNT = 3;
 
 type Props = {
 	containerRef: RefObject<HTMLElement | null>;
@@ -65,7 +69,7 @@ type Props = {
 	scrollContainerRef: RefObject<HTMLElement | null>;
 };
 
-const VariableEditorLegacy: React.FC<Props> = ({
+const VariableEditorDS: React.FC<Props> = ({
 	containerRef,
 	variables,
 	totalVariables,
@@ -113,78 +117,83 @@ const VariableEditorLegacy: React.FC<Props> = ({
 	const paddingBottom = isNextPageError ? 0 : virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0);
 
 	return (
-		<StructuredListWrapper className={styles.list} isCondensed>
-			<StructuredListHead>
-				<StructuredListRow head>
-					<StructuredListCell className={styles.cell} head>
-						{t('tasklist.variableEditorVariableNameHeader')}
-					</StructuredListCell>
-					<StructuredListCell className={styles.cell} head>
-						{t('tasklist.variableEditorVariableValueHeader')}
-					</StructuredListCell>
-					<StructuredListCell className={styles.cell} head>
-						<span className="cds--visually-hidden">{t('tasklist.variableEditorOpenJsonLabel')}</span>
-					</StructuredListCell>
-				</StructuredListRow>
-			</StructuredListHead>
-			<StructuredListBody>
+		<Table size="md" className={styles.list}>
+			<TableHeader>
+				<TableRow>
+					<TableHead className={styles.nameCell}>{t('tasklist.variableEditorVariableNameHeader')}</TableHead>
+					<TableHead className={styles.valueCell}>{t('tasklist.variableEditorVariableValueHeader')}</TableHead>
+					<TableHead className={styles.controlsCell}>
+						<span className="sr-only">{t('tasklist.variableEditorOpenJsonLabel')}</span>
+					</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
 				{readOnly ? (
 					<>
-						{paddingTop > 0 ? <div style={{height: paddingTop}} aria-hidden /> : null}
+						{/* Virtualizer spacers. Carbon's StructuredList tolerated bare <div>s here;
+						    a real <tbody> does not, so they are empty rows with a colSpan cell. */}
+						{paddingTop > 0 ? (
+							<TableRow aria-hidden>
+								<TableCell colSpan={COLUMN_COUNT} style={{height: paddingTop, padding: 0}} />
+							</TableRow>
+						) : null}
 						{virtualItems.map((virtualRow) => {
 							const variable = variables[virtualRow.index];
 							if (variable === undefined) {
 								return (
-									<StructuredListRow key={virtualRow.index}>
-										<StructuredListCell className={cn(styles.cell, styles.nameCell)}>
+									<TableRow key={virtualRow.index}>
+										<TableCell className={styles.nameCell}>
 											<SkeletonText />
-										</StructuredListCell>
-										<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+										</TableCell>
+										<TableCell className={styles.valueCell}>
 											<SkeletonText />
-										</StructuredListCell>
-										<StructuredListCell className={cn(styles.cell, styles.controlsCell)} />
-									</StructuredListRow>
+										</TableCell>
+										<TableCell className={styles.controlsCell} />
+									</TableRow>
 								);
 							}
 
 							return (
-								<StructuredListRow key={variable.variableKey}>
-									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>{variable.name}</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+								<TableRow key={variable.variableKey}>
+									<TableCell className={styles.nameCell}>{variable.name}</TableCell>
+									<TableCell className={styles.valueCell}>
 										<div className={styles.singleLineValue}>{variable.value}</div>
-									</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
+									</TableCell>
+									<TableCell className={styles.controlsCell}>
 										<div className={styles.controls}>
-											<IconButton
-												label={t('tasklist.variableEditorOpenJsonLabel')}
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+												title={t('tasklist.variableEditorOpenJsonLabel')}
 												onClick={() => {
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
 													onMaximizeClick(createVariableFieldName(variable.name), variable.value);
 												}}
-												size="sm"
-												kind="ghost"
-												align="top-end"
-												leaveDelayMs={100}
 											>
-												<Maximize />
-											</IconButton>
+												<MaximizeIcon aria-hidden />
+											</Button>
 										</div>
-									</StructuredListCell>
-								</StructuredListRow>
+									</TableCell>
+								</TableRow>
 							);
 						})}
-						{paddingBottom > 0 ? <div style={{height: paddingBottom}} aria-hidden /> : null}
+						{paddingBottom > 0 ? (
+							<TableRow aria-hidden>
+								<TableCell colSpan={COLUMN_COUNT} style={{height: paddingBottom, padding: 0}} />
+							</TableRow>
+						) : null}
 					</>
 				) : (
 					<>
 						{variables.map((variable) => {
 							const fieldName = createVariableFieldName(variable.name);
 							return (
-								<StructuredListRow key={variable.name}>
-									<StructuredListCell className={cn(styles.cell, styles.nameCell)}>{variable.name}</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+								<TableRow key={variable.name}>
+									<TableCell className={styles.nameCell}>{variable.name}</TableCell>
+									<TableCell className={styles.valueCell}>
 										<Field<string>
 											name={fieldName}
 											validate={variable.isTruncated ? () => undefined : validateValueJSON}
@@ -209,28 +218,27 @@ const VariableEditorLegacy: React.FC<Props> = ({
 												/>
 											)}
 										</Field>
-									</StructuredListCell>
-									<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
+									</TableCell>
+									<TableCell className={styles.controlsCell}>
 										<div className={styles.controls}>
-											<IconButton
-												label={t('tasklist.variableEditorOpenJsonLabel')}
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+												title={t('tasklist.variableEditorOpenJsonLabel')}
+												disabled={isDisabled}
 												onClick={() => {
 													if (variable.isTruncated) {
 														void fetchFullVariable(variable.variableKey);
 													}
 													onMaximizeClick(fieldName, variable.value);
 												}}
-												disabled={isDisabled}
-												size="sm"
-												kind="ghost"
-												align="top-end"
-												leaveDelayMs={100}
 											>
-												<Maximize />
-											</IconButton>
+												<MaximizeIcon aria-hidden />
+											</Button>
 										</div>
-									</StructuredListCell>
-								</StructuredListRow>
+									</TableCell>
+								</TableRow>
 							);
 						})}
 						<OnNewVariableAdded
@@ -248,8 +256,8 @@ const VariableEditorLegacy: React.FC<Props> = ({
 									const nameFieldName = createNewVariableFieldName(variable, 'name');
 									const valueFieldName = createNewVariableFieldName(variable, 'value');
 									return (
-										<StructuredListRow key={variable}>
-											<StructuredListCell className={cn(styles.cell, styles.nameCell)}>
+										<TableRow key={variable}>
+											<TableCell className={styles.nameCell}>
 												<DelayedErrorField
 													name={nameFieldName}
 													validate={mergeValidators(
@@ -274,8 +282,8 @@ const VariableEditorLegacy: React.FC<Props> = ({
 														/>
 													)}
 												</DelayedErrorField>
-											</StructuredListCell>
-											<StructuredListCell className={cn(styles.cell, styles.valueCell)}>
+											</TableCell>
+											<TableCell className={styles.valueCell}>
 												<DelayedErrorField
 													name={valueFieldName}
 													validate={validateValueComplete}
@@ -295,34 +303,42 @@ const VariableEditorLegacy: React.FC<Props> = ({
 														/>
 													)}
 												</DelayedErrorField>
-											</StructuredListCell>
-											<StructuredListCell className={cn(styles.cell, styles.controlsCell)}>
+											</TableCell>
+											<TableCell className={styles.controlsCell}>
 												<div className={styles.controls}>
-													<IconButton
-														label={t('tasklist.variableEditorOpenJsonLabel')}
-														onClick={() => onMaximizeClick(valueFieldName, '')}
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														aria-label={t('tasklist.variableEditorOpenJsonLabel')}
+														title={t('tasklist.variableEditorOpenJsonLabel')}
 														disabled={isDisabled}
-														size="sm"
-														kind="ghost"
-														align="top-end"
-														leaveDelayMs={100}
+														onClick={() => {
+															onMaximizeClick(valueFieldName, '');
+														}}
 													>
-														<Maximize />
-													</IconButton>
-													<IconButton
-														label={t('tasklist.taskVariablesRemoveVariable', {count: index + 1, ordinal: true})}
-														onClick={() => fields.remove(index)}
+														<MaximizeIcon aria-hidden />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														aria-label={t('tasklist.taskVariablesRemoveVariable', {
+															count: index + 1,
+															ordinal: true,
+														})}
+														title={t('tasklist.taskVariablesRemoveVariable', {
+															count: index + 1,
+															ordinal: true,
+														})}
 														disabled={isDisabled}
-														size="sm"
-														kind="ghost"
-														align="top-end"
-														leaveDelayMs={100}
+														onClick={() => {
+															fields.remove(index);
+														}}
 													>
-														<Close />
-													</IconButton>
+														<CloseIcon aria-hidden />
+													</Button>
 												</div>
-											</StructuredListCell>
-										</StructuredListRow>
+											</TableCell>
+										</TableRow>
 									);
 								})
 							}
@@ -330,8 +346,8 @@ const VariableEditorLegacy: React.FC<Props> = ({
 					</>
 				)}
 				{isNextPageError ? (
-					<StructuredListRow>
-						<StructuredListCell>
+					<TableRow>
+						<TableCell colSpan={COLUMN_COUNT}>
 							<div className={styles.paginationError}>
 								<InlineNotification
 									kind="error"
@@ -341,30 +357,17 @@ const VariableEditorLegacy: React.FC<Props> = ({
 									title={t('tasklist.taskDetailsFailedToFetchVariablesErrorTitle')}
 									subtitle={t('tasklist.taskDetailsFailedToFetchVariablesErrorSubtitle')}
 								/>
-								<Button kind="tertiary" size="sm" type="button" onClick={fetchNextPage}>
+								{/* Carbon `kind="tertiary"` maps to the DS secondary button. */}
+								<Button variant="secondary" size="sm" type="button" onClick={fetchNextPage}>
 									{t('tasklist.taskDetailsProcessRetryButtonLabel')}
 								</Button>
 							</div>
-						</StructuredListCell>
-						<StructuredListCell />
-						<StructuredListCell />
-					</StructuredListRow>
+						</TableCell>
+					</TableRow>
 				) : null}
-			</StructuredListBody>
-		</StructuredListWrapper>
+			</TableBody>
+		</Table>
 	);
 };
 
-// The DS path is a separate rewrite rather than an import swap: carbon-compat's
-// StructuredList is a bare passthrough to @carbon/react, so swapping the imports
-// above would leave this table Carbon-rendered with the flag on. Same split
-// pattern as HistoryTable.tsx / HistoryTableDS.tsx.
-const VariableEditor: React.FC<Props> = (props) => {
-	if (featureFlags.dsTasklistUI) {
-		return <VariableEditorDS {...props} />;
-	}
-
-	return <VariableEditorLegacy {...props} />;
-};
-
-export {VariableEditor};
+export {VariableEditorDS};

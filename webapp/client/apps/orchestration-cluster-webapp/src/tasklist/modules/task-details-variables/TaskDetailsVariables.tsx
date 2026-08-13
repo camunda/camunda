@@ -7,9 +7,10 @@
  */
 
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
-import {Button, Heading, IconButton, Layer} from '@carbon/react';
-import {Add, Information} from '@carbon/react/icons';
+import {AddIcon, Button, Heading, IconButton, InformationIcon, Layer} from '#/shared/design-system-compat';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
+import {EmptyState} from '@camunda/design-system';
+import {featureFlags} from '#/shared/feature-flags';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 import {useQueryClient, type InfiniteData} from '@tanstack/react-query';
@@ -156,7 +157,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 									type="button"
 									size="sm"
 									onClick={() => form.mutators.push?.('newVariables')}
-									renderIcon={Add}
+									renderIcon={AddIcon}
 									disabled={!isEditingAllowed || isCompletionBusy}
 									title={isEditingAllowed ? undefined : t('tasklist.variablesAddVariableTooltip')}
 								>
@@ -181,10 +182,21 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								<div className={styles.content} tabIndex={-1} data-testid="task-tab-content">
 									{variables.length === 0 && (values.newVariables?.length ?? 0) === 0 ? (
 										<Layer className={cn(styles.layerContainer, styles.gutter)}>
-											<C3EmptyState
-												heading={t('tasklist.variablesNoVariablesHeading')}
-												description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
-											/>
+											{/* DS-only: the DS's own EmptyState, matching NoTasks.tsx. C3EmptyState is a
+											    composite from @camunda/camunda-composite-components with no compat
+											    adapter, so it stays on the flag-off path rather than being swapped. */}
+											{featureFlags.dsTasklistUI ? (
+												<EmptyState
+													size="sm"
+													heading={t('tasklist.variablesNoVariablesHeading')}
+													description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+												/>
+											) : (
+												<C3EmptyState
+													heading={t('tasklist.variablesNoVariablesHeading')}
+													description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+												/>
+											)}
 										</Layer>
 									) : (
 										<Layer className={styles.layerContainer} data-testid="variables-form-table">
@@ -213,7 +225,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 												label={t('tasklist.variablesFillAllFieldsWarning')}
 												align="top"
 											>
-												<Information size={20} />
+												<InformationIcon size={20} />
 											</IconButton>
 										) : null}
 										<CompleteTaskButton

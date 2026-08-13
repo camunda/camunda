@@ -7,7 +7,7 @@
  */
 
 import {useLayoutEffect, useRef} from 'react';
-import {Loading} from '@carbon/react';
+import {Loading} from '#/shared/design-system-compat';
 import {TextInput} from './TextInput';
 import styles from './LoadingTextarea.module.scss';
 
