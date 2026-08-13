@@ -155,7 +155,7 @@ variables, or any other end-user data.
 
 |   Source record    |       Intent        |              Event name               |                                               Notes                                                |
 |--------------------|---------------------|---------------------------------------|----------------------------------------------------------------------------------------------------|
-| `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `process_instance_created`            | Emitted when a root process element is activated, so it covers every start type.                   |
+| `PROCESS_INSTANCE` | `ELEMENT_ACTIVATED` | `camunda.process.instance.activated`  | Emitted when a root process element is activated, so it covers every start type.                   |
 | `USER_TASK`        | `CREATED`           | `user_task_created`                   | Emitted for every new user task.                                                                   |
 | `USER_TASK`        | `ASSIGNED`          | `camunda.user_task.assigned`          | Emitted for every user task assignment with a non-empty assignee.                                  |
 | `TENANT`           | `CREATED`           | `camunda.tenant.created`              | Emitted for every new tenant.                                                                      |
@@ -172,10 +172,8 @@ variables, or any other end-user data.
 | `AGENT_INSTANCE`   | `COMPLETED`         | `camunda.agent.instance.completed`    | Emitted for every completed agent instance.                                                        |
 | —                  | —                   | `heartbeat`                           | Emitted periodically by the partition leader (see `heartbeat-interval`).                           |
 
-The three signals that predate the analytics data contract — `process_instance_created`,
-`user_task_created`, and `heartbeat` — keep their flat snake_case names, which are frozen for
-compatibility with already-ingested data; every signal added since uses the canonical dotted
-contract name.
+`user_task_created` and `heartbeat` predate the analytics data contract and still carry flat
+snake_case names. Every other signal uses the canonical dotted contract name.
 
 ### Common log record attributes
 
@@ -191,7 +189,7 @@ These attributes are set on every log record:
 
 Beyond the common attributes above, each event type carries its own additional fields:
 
-**`process_instance_created`**
+**`camunda.process.instance.activated`**
 
 |              Attribute              |  Type  |                  Description                   |
 |-------------------------------------|--------|------------------------------------------------|
@@ -217,7 +215,8 @@ counts root instances only.
 | `camunda.element.id`             | string | BPMN element ID of the user task. |
 | `camunda.tenant.id`              | string | Tenant ID.                        |
 
-Note: unlike `process_instance_created`, this event does not carry `camunda.process.version`.
+Note: unlike `camunda.process.instance.activated`, this event does not carry
+`camunda.process.version`.
 
 **`camunda.user_task.assigned`**
 

@@ -8,7 +8,7 @@
 package io.camunda.exporter.analytics;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -100,7 +100,7 @@ class AnalyticsExporterOtelIT {
 
     // then
     awaitCollectorLogs(
-        PROCESS_INSTANCE_CREATED,
+        PROCESS_INSTANCE_ACTIVATED,
         AnalyticsAttributes.CLUSTER_ID.getKey(),
         "test-cluster",
         AnalyticsAttributes.Process.BPMN_PROCESS_ID.getKey());
@@ -137,7 +137,7 @@ class AnalyticsExporterOtelIT {
               // Count the PI-created records specifically to avoid coupling to other event types.
               final var piCreatedCount =
                   COLLECTOR_LOGS.stream()
-                      .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_CREATED + ")"))
+                      .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_ACTIVATED + ")"))
                       .count();
               assertThat(piCreatedCount).isEqualTo(500);
 

@@ -58,7 +58,7 @@ class ProcessInstanceElementActivatedHandlerTest {
               assertThat(logRecord.getAttributes().asMap())
                   .containsEntry(
                       AnalyticsAttributes.Event.NAME,
-                      AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED)
+                      AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED)
                   .containsEntry(BPMN_PROCESS_ID, "my-process")
                   .containsEntry(VERSION, 3L)
                   .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 42L)

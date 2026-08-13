@@ -92,7 +92,7 @@ class AnalyticsExporterTest {
               assertThat(logRecord.getAttributes().asMap())
                   .containsEntry(
                       AnalyticsAttributes.Event.NAME,
-                      AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED)
+                      AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED)
                   .containsEntry(
                       AnalyticsAttributes.Process.BPMN_PROCESS_ID, value.getBpmnProcessId())
                   .containsEntry(AnalyticsAttributes.Process.VERSION, (long) value.getVersion())

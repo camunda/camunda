@@ -25,8 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED}, emitting {@code process_instance_created} for
- * a root process element. All other element types are skipped silently.
+ * Handles {@code PROCESS_INSTANCE/ELEMENT_ACTIVATED}, emitting {@code
+ * camunda.process.instance.activated} for a root process element. All other element types are
+ * skipped silently.
  */
 public final class ProcessInstanceElementActivatedHandler
     implements AnalyticsHandler<ProcessInstanceRecordValue> {
@@ -55,14 +56,14 @@ public final class ProcessInstanceElementActivatedHandler
     // population is assumed equal to the license RPI population, pending engine-team validation.
     if (value.getBpmnElementType() == BpmnElementType.PROCESS
         && value.getParentProcessInstanceKey() == NO_PARENT_INSTANCE) {
-      emitProcessInstanceCreated(record, value);
+      emitProcessInstanceActivated(record, value);
     }
   }
 
-  private void emitProcessInstanceCreated(
+  private void emitProcessInstanceActivated(
       final Record<ProcessInstanceRecordValue> record, final ProcessInstanceRecordValue value) {
     otelSdkManager.logEvent(
-        AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
+        AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED,
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
