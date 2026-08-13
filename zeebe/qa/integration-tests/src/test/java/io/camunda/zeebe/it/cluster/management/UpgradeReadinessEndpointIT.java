@@ -27,12 +27,13 @@ import org.junit.jupiter.api.Test;
  * settle on {@code MIGRATED} for the default physical tenant, and the endpoint must report the
  * cluster as upgradeable.
  *
- * <p>Covers both providers wired for a single-node RDBMS broker today: {@code
- * RdbmsSchemaMigrationStatusProvider} (schema-version check against the shared RDBMS store) and
- * {@code ClusterRocksDbMigrationStatusProvider} (per-partition-replica broadcast over the admin
- * API). Three partitions are configured because the RocksDB condition folds over every partition's
- * replicas — with a single partition, an aggregation that dropped every partition but the first
- * would still pass.
+ * <p>Covers every provider wired for a single-node RDBMS broker today: {@code
+ * RdbmsSchemaMigrationStatusProvider} (schema-version check against the shared RDBMS store), {@code
+ * ClusterRocksDbMigrationStatusProvider} (per-partition-replica broadcast over the admin API), and
+ * {@code ClusterExporterMigrationStatusProvider} (per-partition leader-preferred broadcast,
+ * exercised here against the real rdbms-exporter this broker runs). Three partitions are configured
+ * because the RocksDB condition folds over every partition's replicas — with a single partition, an
+ * aggregation that dropped every partition but the first would still pass.
  */
 @ZeebeIntegration
 final class UpgradeReadinessEndpointIT {
@@ -65,7 +66,7 @@ final class UpgradeReadinessEndpointIT {
               });
 
   @Test
-  void shouldReportBothProvidersMigratedForTheDefaultPhysicalTenant() {
+  void shouldReportEveryProviderMigratedForTheDefaultPhysicalTenant() {
     Awaitility.await("until every registered condition settles on MIGRATED for the default tenant")
         .atMost(TIMEOUT)
         .untilAsserted(
@@ -74,9 +75,11 @@ final class UpgradeReadinessEndpointIT {
 
               assertThat(response.physicalTenants()).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID);
               final var defaultTenant = response.physicalTenants().get(DEFAULT_PHYSICAL_TENANT_ID);
-              assertThat(defaultTenant).containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated");
+              assertThat(defaultTenant)
+                  .containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated", "exporterMigrated");
               assertThat(defaultTenant.get("rdbmsSchemaMigrated").state()).isEqualTo("MIGRATED");
               assertThat(defaultTenant.get("rocksDbMigrated").state()).isEqualTo("MIGRATED");
+              assertThat(defaultTenant.get("exporterMigrated").state()).isEqualTo("MIGRATED");
               assertThat(response.upgradeable()).isTrue();
             });
   }
