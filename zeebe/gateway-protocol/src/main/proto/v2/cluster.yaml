@@ -480,6 +480,9 @@ components:
       required:
         - operation
         - brokerId
+        - partitionId
+        - backupIds
+        - mode
       properties:
         operation:
           description: The type of the operation.
@@ -497,10 +500,9 @@ components:
           example: 1
         backupIds:
           description: >-
-            The IDs of the backups the partition is restored from; null for every operation other
+            The IDs of the backups the partition is restored from; empty for every operation other
             than the one that restores a partition.
           type: array
-          nullable: true
           items:
             type: integer
             format: int64

@@ -341,7 +341,7 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                       "operation": "PartitionPreRestoreOperation",
                       "brokerId": "1",
                       "partitionId": 1,
-                      "backupIds": null,
+                      "backupIds": [ ],
                       "mode": null
                     },
                     {
@@ -355,7 +355,7 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                       "operation": "ModeChangeOperation",
                       "brokerId": "1",
                       "partitionId": null,
-                      "backupIds": null,
+                      "backupIds": [ ],
                       "mode": "PROCESSING"
                     }
                   ]

@@ -157,10 +157,10 @@ final class ClusterModeChangeMapper {
         operation instanceof final PartitionChangeOperation partitionChange
             ? partitionChange.partitionId()
             : null;
-    final @Nullable List<Long> backupIds =
+    final List<Long> backupIds =
         operation instanceof final PartitionRestoreOperation restore
             ? List.copyOf(restore.backupIds())
-            : null;
+            : List.of();
     return ClusterRestoreOperation.Builder.create()
         .operation(operation.getClass().getSimpleName())
         .brokerId(operation.brokerId())
