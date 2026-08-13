@@ -698,7 +698,7 @@ describe('<ConversationHistory />', () => {
     );
   });
 
-  it('should insert loop iteration markers after messages in most-recent sorting order', async () => {
+  it('should insert iteration markers after messages in most-recent sorting order', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -738,7 +738,7 @@ describe('<ConversationHistory />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    const firstMarker = screen.getByText('1. loop iteration');
+    const firstMarker = screen.getByText('1. iteration');
     expect(firstMarker).toBeVisible();
     const firstMessage = screen.getByTestId('conversation-message-1');
     expect(
@@ -746,7 +746,7 @@ describe('<ConversationHistory />', () => {
         Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
 
-    const secondMarker = screen.getByText('2. loop iteration');
+    const secondMarker = screen.getByText('2. iteration');
     expect(secondMarker).toBeVisible();
     const secondMessage = screen.getByTestId('conversation-message-2');
     const thirdMessage = screen.getByTestId('conversation-message-3');
@@ -760,7 +760,7 @@ describe('<ConversationHistory />', () => {
     ).toBeTruthy();
   });
 
-  it('should insert loop iteration markers before messages in oldest first sorting order', async () => {
+  it('should insert iteration markers before messages in oldest first sorting order', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -805,7 +805,7 @@ describe('<ConversationHistory />', () => {
     await user.click(screen.getByRole('button', {name: 'Most recent first'}));
     expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
 
-    const firstMarker = await screen.findByText('1. loop iteration');
+    const firstMarker = await screen.findByText('1. iteration');
     expect(firstMarker).toBeVisible();
     const firstMessage = screen.getByTestId('conversation-message-1');
     expect(
@@ -813,7 +813,7 @@ describe('<ConversationHistory />', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    const secondMarker = screen.getByText('2. loop iteration');
+    const secondMarker = screen.getByText('2. iteration');
     expect(secondMarker).toBeVisible();
     const secondMessage = screen.getByTestId('conversation-message-2');
     const thirdMessage = screen.getByTestId('conversation-message-3');
