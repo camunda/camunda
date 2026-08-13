@@ -43,7 +43,7 @@ export default class HeatmapOverlay extends React.Component {
   indicateClickableNodes = () => {
     if (this.props.data) {
       Object.keys(this.props.data).forEach((id) => {
-        const node = document.body.querySelector(`[data-element-id=${id}]`);
+        const node = document.body.querySelector(`[data-element-id=${CSS.escape(id)}]`);
         node?.classList.add('clickable');
       });
     }

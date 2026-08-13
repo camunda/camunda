@@ -20,7 +20,7 @@ jest.mock('./service', () => {
 
 jest.mock('./Tooltip', () => 'foo');
 
-jest.spyOn(document.body, 'querySelector').mockReturnValue({
+const selectorSpy = jest.spyOn(document.body, 'querySelector').mockReturnValue({
   classList: {
     add: jest.fn(),
   },
@@ -38,7 +38,18 @@ const viewer = {
     };
   },
 };
+
+const MOCKED_ESCAPE_RESULT = 'MockedEscapeResult';
+const escapeMock = jest.fn(() => MOCKED_ESCAPE_RESULT);
+global.CSS = {
+  escape: escapeMock,
+};
 const data = 'some heatmap data';
+
+beforeEach(() => {
+  escapeMock.mockClear();
+  selectorSpy.mockClear();
+});
 
 it('create get a heatmap', () => {
   shallow(<HeatmapOverlay viewer={viewer} data={data} />);
@@ -70,8 +81,14 @@ it('should update heatmap if data changes', () => {
   expect(appendSpy).toHaveBeenLastCalledWith(anotherHeatmap);
 });
 
-it('should attach onClick if passed', () => {
+it('should attach onClick with sanitized ids if passed', () => {
+  const dottedId = 'flow.with.dot';
+  const heatmapData = {[dottedId]: 1};
   const spy = jest.fn();
-  shallow(<HeatmapOverlay viewer={viewer} data={data} onNodeClick={spy} />);
+
+  shallow(<HeatmapOverlay viewer={viewer} data={heatmapData} onNodeClick={spy} />);
+
+  expect(escapeMock).toHaveBeenCalledWith(dottedId);
   expect(eventSpy).toHaveBeenCalledWith('element.click', spy);
+  expect(selectorSpy).toHaveBeenCalledWith(`[data-element-id=${MOCKED_ESCAPE_RESULT}]`);
 });
