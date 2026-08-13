@@ -246,7 +246,8 @@ final class JobBatchCollectorTest {
     assertThat(secretInjector.hasSecretsToInject()).isTrue();
     final var response = new JobBatchRecord();
     response.copyFrom(record.getValue());
-    secretInjector.injectSecretValues(response, record.getValue());
+    secretInjector.injectSecretValues(
+        response, record.getValue(), record.getValue().getLength(), length -> true);
     assertThat(response.jobs().iterator().next().getVariables()).containsEntry("auth", "resolved");
   }
 
