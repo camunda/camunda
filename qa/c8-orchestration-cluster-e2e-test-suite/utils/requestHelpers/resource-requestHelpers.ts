@@ -262,12 +262,9 @@ export function uniqueResourceName(prefix: string, extension: string): string {
   return `${prefix}-${generateUniqueId()}.${extension}`;
 }
 
-export async function deployInlineResources(
-  request: APIRequestContext,
-  resources: InlineResource[],
-): Promise<{deploymentKey: string; resources: DeployedResource[]}> {
+export function createInlineFormData(files: InlineResource[]): FormData {
   const formData = new FormData();
-  for (const {fileName, content} of resources) {
+  for (const {fileName, content} of files) {
     const bytes = Uint8Array.from(
       typeof content === 'string' ? Buffer.from(content, 'utf-8') : content,
     );
@@ -277,14 +274,33 @@ export async function deployInlineResources(
       fileName,
     );
   }
+  return formData;
+}
 
-  const res = await request.post(buildUrl('/deployments'), {
+export function deployInlineFilesRaw(
+  request: APIRequestContext,
+  files: InlineResource[],
+): Promise<APIResponse> {
+  return request.post(buildUrl('/deployments'), {
     headers: defaultHeaders(),
-    multipart: formData,
+    multipart: createInlineFormData(files),
   });
+}
 
+export async function deployInlineFiles(
+  request: APIRequestContext,
+  files: InlineResource[],
+): Promise<Record<string, unknown>> {
+  const res = await deployInlineFilesRaw(request, files);
   await assertStatusCode(res, 200);
-  const body = await res.json();
+  return res.json();
+}
+
+export async function deployInlineResources(
+  request: APIRequestContext,
+  resources: InlineResource[],
+): Promise<{deploymentKey: string; resources: DeployedResource[]}> {
+  const body = await deployInlineFiles(request, resources);
   const deployed = (body.deployments as DeploymentItem[])
     .filter((deployment) => deployment.resource != null)
     .map((deployment) => {
@@ -303,7 +319,78 @@ export async function deployInlineResources(
     `Expected every deployed file to be a resource, got ${JSON.stringify(body.deployments)}`,
   ).toBe(resources.length);
 
-  return {deploymentKey: body.deploymentKey, resources: deployed};
+  return {deploymentKey: body.deploymentKey as string, resources: deployed};
+}
+
+export interface LinkedResourceBinding {
+  resourceId: string;
+  resourceType: string;
+  bindingType: 'latest' | 'deployment' | 'versionTag';
+  linkName: string;
+  versionTag?: string;
+}
+
+// Generated per test rather than kept as a fixture: the job type has to be
+// unique, because /jobs/activation has no process-instance filter and would
+// otherwise hand a parallel test's job to this one.
+export function serviceTaskWithLinkedResourcesBpmn(
+  processDefinitionId: string,
+  jobType: string,
+  linkedResources: LinkedResourceBinding[],
+): string {
+  const links = linkedResources
+    .map(
+      (link) =>
+        `<zeebe:linkedResource resourceId="${link.resourceId}" resourceType="${link.resourceType}" bindingType="${link.bindingType}" linkName="${link.linkName}"${
+          link.versionTag ? ` versionTag="${link.versionTag}"` : ''
+        } />`,
+    )
+    .join('\n            ');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_${processDefinitionId}"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${processDefinitionId}" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_to_task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow_to_task" sourceRef="start" targetRef="linked_task" />
+    <bpmn:serviceTask id="linked_task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="${jobType}" />
+        <zeebe:linkedResources>
+            ${links}
+        </zeebe:linkedResources>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_to_task</bpmn:incoming>
+      <bpmn:outgoing>flow_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow_to_end" sourceRef="linked_task" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>`;
+}
+
+export interface LinkedResourceHeader {
+  resourceType: string;
+  linkName: string;
+  resourceKey: string;
+}
+
+export function parseLinkedResourcesHeader(
+  customHeaders: unknown,
+): LinkedResourceHeader[] {
+  const linkedResources = (customHeaders as Record<string, string>)
+    ?.linkedResources;
+  expect(
+    linkedResources,
+    `Job has no linkedResources header: ${JSON.stringify(customHeaders)}`,
+  ).toBeDefined();
+  return JSON.parse(linkedResources);
 }
 
 export async function deployInlineResource(
