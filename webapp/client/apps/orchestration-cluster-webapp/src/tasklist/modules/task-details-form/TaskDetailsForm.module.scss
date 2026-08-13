@@ -27,6 +27,16 @@
 	padding: var(--cds-spacing-05);
 }
 
+// DS-only (see TaskDetailsForm.tsx). form-js renders its own `cds--layer-two`
+// wrapper with a Carbon surface colour, which would sit as a second, differently
+// coloured panel inside the DS Card. Neutralise it so the Card provides the only
+// surface. Scoped under .formDS so the flag-off path keeps Carbon's own layering.
+.formDS {
+	:global(.cds--layer-two) {
+		background: transparent;
+	}
+}
+
 .footer {
 	width: 100%;
 	margin-top: auto;

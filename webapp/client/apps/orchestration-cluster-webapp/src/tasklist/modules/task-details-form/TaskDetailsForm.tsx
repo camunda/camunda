@@ -8,6 +8,9 @@
 
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Card, CardContent} from '@camunda/design-system';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form-js/CamundaFormRenderer';
@@ -52,43 +55,58 @@ const TaskDetailsForm: React.FC<Props> = ({
 	const submissionStatus = localSubmissionStatus ?? completionStatus;
 	const canCompleteTask = isCompletionAllowed && !isImportError;
 
+	const formRenderer = (
+		<CamundaFormRenderer
+			schema={formSchema}
+			data={formattedData}
+			readOnly={!canCompleteTask}
+			onMount={(formManager) => {
+				formManagerRef.current = formManager;
+			}}
+			handleSubmit={(variables) => {
+				onSubmit(getVariablesFromSubmitPayload(variables));
+				return Promise.resolve();
+			}}
+			handleFileUpload={(files) => uploadDocuments(files)}
+			onImportError={() => {
+				setIsImportError(true);
+				notificationsStore.displayNotification({
+					kind: 'error',
+					title: t('tasklist.formJSInvalidSchemaErrorNotificationTitle'),
+					isDismissable: true,
+				});
+			}}
+			onSubmitStart={() => {
+				setLocalSubmissionStatus('active');
+			}}
+			onSubmitSuccess={() => {
+				setLocalSubmissionStatus(null);
+			}}
+			onSubmitError={() => {
+				setLocalSubmissionStatus('error');
+			}}
+			onValidationError={() => {
+				setLocalSubmissionStatus(null);
+			}}
+		/>
+	);
+
 	return (
 		<div className={styles.container} data-testid="task-tab-content">
 			<div className={styles.content} data-testid="embedded-form" tabIndex={-1}>
-				<div className={styles.form}>
-					<CamundaFormRenderer
-						schema={formSchema}
-						data={formattedData}
-						readOnly={!canCompleteTask}
-						onMount={(formManager) => {
-							formManagerRef.current = formManager;
-						}}
-						handleSubmit={(variables) => {
-							onSubmit(getVariablesFromSubmitPayload(variables));
-							return Promise.resolve();
-						}}
-						handleFileUpload={(files) => uploadDocuments(files)}
-						onImportError={() => {
-							setIsImportError(true);
-							notificationsStore.displayNotification({
-								kind: 'error',
-								title: t('tasklist.formJSInvalidSchemaErrorNotificationTitle'),
-								isDismissable: true,
-							});
-						}}
-						onSubmitStart={() => {
-							setLocalSubmissionStatus('active');
-						}}
-						onSubmitSuccess={() => {
-							setLocalSubmissionStatus(null);
-						}}
-						onSubmitError={() => {
-							setLocalSubmissionStatus('error');
-						}}
-						onValidationError={() => {
-							setLocalSubmissionStatus(null);
-						}}
-					/>
+				{/* DS-only: the form-js output sits on the panel background with nothing
+				    separating it. Wrapping it in the DS Card gives it the same raised
+				    surface the task cards and the history table already have. The .form
+				    wrapper keeps its max-width and padding either way, so the card is
+				    inset from the panel edge rather than flush. */}
+				<div className={cn(styles.form, featureFlags.dsTasklistUI && styles.formDS)}>
+					{featureFlags.dsTasklistUI ? (
+						<Card>
+							<CardContent>{formRenderer}</CardContent>
+						</Card>
+					) : (
+						formRenderer
+					)}
 				</div>
 				<div className={styles.footer}>
 					<div className={styles.footerContent}>
