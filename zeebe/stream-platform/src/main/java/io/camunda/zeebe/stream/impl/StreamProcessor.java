@@ -104,6 +104,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   // processing
   private final StreamProcessorContext streamProcessorContext;
   private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
   private @Nullable ProcessingStateMachine processingStateMachine;
   private @Nullable ReplayStateMachine replayStateMachine;
 
@@ -145,8 +146,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
-    final var processingReader = logStream.newUncommittedLogStreamReader();
-    streamProcessorContext.processingLogStreamReader(processingReader);
+    if (!isInReplayOnlyMode()) {
+      // Only the processing state machine reads uncommitted records, and it is never created in
+      // replay-only mode. Since an open reader defers deletion of the segment it sits on, opening
+      // one here would hold on to a segment that nothing ever reads.
+      final var processingReader = logStream.newUncommittedLogStreamReader();
+      processingLogStreamReader = processingReader;
+      streamProcessorContext.processingLogStreamReader(processingReader);
+    }
   }
 
   @Override
@@ -288,7 +295,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void tearDown() {
     closeReplayReader();
-    streamProcessorContext.getProcessingLogStreamReader().close();
+    CloseHelper.close(processingLogStreamReader);
     logStream.removeRecordAvailableListener(this);
     CloseHelper.close(processingStateMachine);
     CloseHelper.close(replayStateMachine);
