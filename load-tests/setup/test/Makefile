@@ -39,20 +39,28 @@ ifneq ($(PATTERN),)
 run_filter := -run '.*$(PATTERN).*'
 endif
 
-# Ephemeral, single-`make`-invocation chart cache consumed by newLoadTest.sh
-# (via LOAD_TEST_CHART_CACHE_DIR, see warm-chart-cache below). `:=` evaluates
-# `mktemp -d` once at parse time so every recipe in this invocation shares the
-# same path. A fresh temp dir every invocation means it can never survive
-# across runs, so a Renovate version bump can never see a stale cache.
+# Ephemeral chart cache consumed by newLoadTest.sh (via LOAD_TEST_CHART_CACHE_DIR,
+# see warm-chart-cache below). Gated on $(MAKECMDGOALS) rather than a plain
+# top-level `:=` so `make help`/`build`/`clean` never call `mktemp -d` at all
+# — and gated as a global variable, not a target-specific one, so warm-chart-cache
+# and test/update-golden's own `go test` share the exact same path (a
+# target-specific `:=` on multiple targets evaluates $(shell mktemp -d)
+# separately per target, silently handing each its own temp dir). A fresh
+# temp dir every invocation means it can never survive across runs, so a
+# Renovate version bump can never see a stale cache; test/update-golden
+# remove it once go test finishes (see below).
+ifneq ($(filter test update-golden warm-chart-cache,$(MAKECMDGOALS)),)
 export LOAD_TEST_CHART_CACHE_DIR := $(shell mktemp -d)
 # helm-repos (below) already primes the repo index once for the whole run;
 # scenarios don't each need to repeat it themselves.
 export LOAD_TEST_SKIP_REPO_UPDATE := true
+endif
 
 build:
 	go build ./...
 
 helm-repos:
+	set -e; \
 	source ../utils.sh; \
 	retry_with_backoff helm repo add camunda https://helm.camunda.io/ --force-update; \
 	retry_with_backoff helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update; \
@@ -60,27 +68,37 @@ helm-repos:
 	retry_with_backoff helm repo update
 
 # Resolves load-test-setup's Chart.lock deps ONCE (instead of once per
-# scenario) by running against the shared source chart, which newLoadTest.sh
-# copies wholesale into every scenario's namespace dir. Pre-pulls each unique
-# camunda-platform chart version ONCE into LOAD_TEST_CHART_CACHE_DIR via
-# newLoadTest.sh's own --warm-platform-chart-cache (so the version-to-chart
-# mapping and cache path convention live in one place, not duplicated here).
+# scenario) against a scratch copy under LOAD_TEST_CHART_CACHE_DIR, never the
+# git-tracked source chart, so this never leaves Chart.lock modified in
+# `git status`. Pre-pulls each unique camunda-platform chart version ONCE
+# into LOAD_TEST_CHART_CACHE_DIR via newLoadTest.sh's own
+# --warm-platform-chart-cache (so the version-to-chart mapping and cache path
+# convention live in one place, not duplicated here). Both honor PATTERN so
+# `make test PATTERN=stable-89` only warms what it's actually going to use.
 # Runs entirely sequentially, before the parallel go test phase, so there is
 # no read/write race: every scenario only ever reads this tree afterwards.
 warm-chart-cache: helm-repos
 	set -e; \
 	source ../utils.sh; \
 	echo "Pre-resolving load-test-setup chart dependencies..."; \
-	retry_with_backoff helm dependency update ../charts/load-test-setup; \
+	rm -rf "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-scratch" "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-deps"; \
+	cp -r ../charts/load-test-setup "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-scratch"; \
+	retry_with_backoff helm dependency update "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-scratch"; \
+	mv "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-scratch/charts" "$(LOAD_TEST_CHART_CACHE_DIR)/load-test-setup-deps"; \
 	for v in $$(../newLoadTest.sh --list-versions); do \
-	  ../newLoadTest.sh -t $$v --warm-platform-chart-cache; \
+	  case "$$v" in \
+	    *$(PATTERN)*) ../newLoadTest.sh -t $$v --warm-platform-chart-cache ;; \
+	    *) echo "Skipping $$v pre-pull (doesn't match PATTERN=$(PATTERN))" ;; \
+	  esac; \
 	done
 
 test: warm-chart-cache
-	go test -v -count=1 -timeout 50m -parallel $(PARALLEL) $(run_filter) ./...
+	go test -v -count=1 -timeout 50m -parallel $(PARALLEL) $(run_filter) ./...; \
+	status=$$?; rm -rf "$(LOAD_TEST_CHART_CACHE_DIR)"; exit $$status
 
 update-golden: warm-chart-cache
-	go test -v -count=1 -timeout 50m -parallel $(PARALLEL) $(run_filter) -update-golden ./...
+	go test -v -count=1 -timeout 50m -parallel $(PARALLEL) $(run_filter) -update-golden ./...; \
+	status=$$?; rm -rf "$(LOAD_TEST_CHART_CACHE_DIR)"; exit $$status
 
 clean:
 	rm -rf ../c8-golden-*

@@ -80,7 +80,10 @@ function hashmod_zone() {
 # against transient network blips (e.g. a "Get ...: EOF" on a Helm chart
 # download) without masking real failures.
 # Tuning: set RETRY_MAX_ATTEMPTS/RETRY_BASE_DELAY_SECONDS in the environment;
-# defaults below apply when unset.
+# defaults below apply when unset. Set RETRY_CLEANUP_CMD to a shell command
+# that undoes a failed attempt's partial state before the next one starts
+# (e.g. `helm pull --untar` refuses to run again if its target directory is
+# already there from a killed-mid-extraction previous attempt).
 # Usage: retry_with_backoff <command...>
 retry_with_backoff() {
   local max_attempts="${RETRY_MAX_ATTEMPTS:-4}"
@@ -93,6 +96,7 @@ retry_with_backoff() {
       return "$status"
     fi
     echo "Attempt ${attempt}/${max_attempts} failed (exit ${status}); retrying in ${delay}s: $*" >&2
+    [[ -n "${RETRY_CLEANUP_CMD:-}" ]] && eval "$RETRY_CLEANUP_CMD"
     sleep "$delay"
     delay=$(( delay * 2 ))
     ((attempt++))

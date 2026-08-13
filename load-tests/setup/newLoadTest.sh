@@ -123,7 +123,7 @@ while [[ $# -gt 0 ]]; do
       dest="$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version/camunda-platform"
       if [[ ! -d "$dest" ]]; then
         echo "Pre-pulling camunda-platform $camunda_platform_helm_chart_version for $target_version..."
-        retry_with_backoff helm pull camunda/camunda-platform \
+        RETRY_CLEANUP_CMD="rm -rf \"$dest\"" retry_with_backoff helm pull camunda/camunda-platform \
             --untar --untardir "$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version" \
             --version "$camunda_platform_helm_chart_version"
       fi
@@ -368,8 +368,6 @@ if [[ "${LOAD_TEST_SKIP_REPO_UPDATE:-false}" != "true" ]]; then
   retry_with_backoff helm repo update
 fi
 
-# The directory where local Helm Charts will be stored in. Already exists:
-# the always-copied charts/ tree scaffolded earlier in this script creates it.
 CHARTS_DIR="charts"
 
 # If LOAD_TEST_CHART_CACHE_DIR points at a pre-warmed cache (populated once,
@@ -378,29 +376,24 @@ CHARTS_DIR="charts"
 platform_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/${camunda_platform_helm_chart_version}/camunda-platform"
 if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
   echo "Using pre-warmed camunda-platform $camunda_platform_helm_chart_version chart from cache..."
+  rm -rf "$CHARTS_DIR/camunda-platform"
   cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"
 else
   echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
-  retry_with_backoff helm pull camunda/camunda-platform \
+  RETRY_CLEANUP_CMD="rm -rf \"$CHARTS_DIR/camunda-platform\"" retry_with_backoff helm pull camunda/camunda-platform \
       --untar --untardir "$CHARTS_DIR" \
       --version "$camunda_platform_helm_chart_version"
 fi
 
-# Skip re-resolving load-test-setup's dependencies when the charts/ copy
-# already carries them, freshly resolved (not just present: a stale leftover
-# from an unrelated manual session must not be mistaken for a valid resolve
-# after a Chart.lock bump). In CI this is true because the harness resolves
-# the shared source tree once before copying it into every scenario; on a
-# manual run it's naturally false, so this falls through to today's behavior.
-subchart_deps_dir="$CHARTS_DIR/load-test-setup/charts"
-lockfile="$CHARTS_DIR/load-test-setup/Chart.lock"
-deps_already_resolved=false
-if [[ -d "$subchart_deps_dir" ]] && [[ -n "$(ls -A "$subchart_deps_dir" 2>/dev/null)" ]] \
-   && [[ -z "$(find "$subchart_deps_dir" -type f ! -newer "$lockfile" -print -quit)" ]]; then
-  deps_already_resolved=true
-fi
-if [[ "$deps_already_resolved" == "true" ]]; then
-  echo "load-test-setup subchart dependencies already resolved; skipping helm dependency update."
+# If LOAD_TEST_CHART_CACHE_DIR points at pre-resolved load-test-setup
+# dependencies (warmed once against a scratch copy, before this script runs
+# many times in parallel), reuse them instead of resolving over the network
+# again. Unset by default, so a manual invocation always resolves fresh.
+deps_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/load-test-setup-deps"
+if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$deps_cache_src" ]]; then
+  echo "Using pre-warmed load-test-setup subchart dependencies from cache..."
+  rm -rf "$CHARTS_DIR/load-test-setup/charts"
+  cp -r "$deps_cache_src" "$CHARTS_DIR/load-test-setup/charts"
 else
   echo "Resolving load-test-setup subchart dependencies..."
   retry_with_backoff helm dependency update "$CHARTS_DIR/load-test-setup"
