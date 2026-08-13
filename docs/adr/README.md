@@ -40,6 +40,11 @@ ADR for that domain is written.
   than failure, an all-or-nothing fan-out, and why the `backupHistory`
   actuator's backwards-compatible shape is not inherited
   (camunda/camunda#57738).
+- `management/005-per-physical-tenant-schema-initialization.md` — per-tenant
+  secondary-storage schema initialization: concurrent per-tenant init with
+  background retry, a startup barrier that waits for every tenant's first
+  outcome, readiness as a one-way "schema applied" latch, and no context abort
+  (camunda/camunda#57025).
 - `clients/0001-unify-spring-starter-on-multi-client-config-path.md` — collapse
   the `camunda-spring-boot-starter` onto a single (multi-client) auto-config
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
