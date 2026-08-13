@@ -125,7 +125,7 @@ const HistoryTableDS: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				// asChild so the row action keeps its <a> semantics — it navigates to the
 				// audit-log detail route, so it must stay a link rather than a button.
 				cell: ({row}) => (
-					<Button asChild variant="ghost" size="icon-xs">
+					<Button asChild variant="ghost" size="icon-sm">
 						<Link
 							to="/tasklist/$userTaskKey/history/$auditLogKey"
 							params={{userTaskKey, auditLogKey: row.original.id}}
