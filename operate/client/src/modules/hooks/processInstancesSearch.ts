@@ -7,7 +7,7 @@
  */
 
 import {
-  parseProcessInstancesListSearchFilter,
+  parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
 } from 'modules/utils/filter/processInstancesSearch';
 import {useMemo} from 'react';
@@ -28,7 +28,10 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
-    const filter = parseProcessInstancesListSearchFilter(searchParams);
+    const filter = parseProcessInstancesSearchFilter({
+      searchParams,
+      includeSuspended: true,
+    });
 
     if (filter && conditions && conditions.length > 0) {
       const entries = conditions

@@ -118,7 +118,6 @@ const mockBatchOperationItemsWithFailure = {
 
 describe('Instances', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);

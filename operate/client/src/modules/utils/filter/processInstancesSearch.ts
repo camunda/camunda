@@ -56,17 +56,23 @@ type ProcessInstancesSearchFilter = NonNullable<
   QueryProcessInstancesRequestBody['filter']
 >;
 
+type ParseProcessInstancesSearchFilterOptions = {
+  searchParams: URLSearchParams;
+  includeSuspended?: boolean;
+};
+
 const parseProcessInstancesFilter = (
   search: URLSearchParams,
 ): ProcessInstancesFilter => {
   return ProcessInstancesFilterSchema.parse(Object.fromEntries(search));
 };
 
-const parseProcessInstancesSearchFilterInternal = (
-  search: URLSearchParams,
-  includeSuspended: boolean,
-): ProcessInstancesSearchFilter | undefined => {
-  const filter = parseProcessInstancesFilter(search);
+const parseProcessInstancesSearchFilter = ({
+  searchParams,
+  includeSuspended = false,
+}: ParseProcessInstancesSearchFilterOptions):
+  ProcessInstancesSearchFilter | undefined => {
+  const filter = parseProcessInstancesFilter(searchParams);
   const hasSuspendedFilter = includeSuspended && filter.suspended;
 
   const hasStateFilters =
@@ -208,12 +214,6 @@ const parseProcessInstancesSearchFilterInternal = (
   return apiFilter;
 };
 
-const parseProcessInstancesSearchFilter = (search: URLSearchParams) =>
-  parseProcessInstancesSearchFilterInternal(search, false);
-
-const parseProcessInstancesListSearchFilter = (search: URLSearchParams) =>
-  parseProcessInstancesSearchFilterInternal(search, true);
-
 type ProcessInstancesSearchSort = NonNullable<
   QueryProcessInstancesRequestBody['sort']
 >;
@@ -265,7 +265,6 @@ function updateProcessInstancesFilterSearchString(
 
 export {
   parseProcessInstancesFilter,
-  parseProcessInstancesListSearchFilter,
   parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
   updateProcessInstancesFilterSearchString,
