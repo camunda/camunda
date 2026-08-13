@@ -865,6 +865,47 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldLogAndContinueWhenSendingResponseThrows() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var mockPostCommitTask = mock(PostCommitTask.class);
+    doThrow(new RuntimeException("expected"))
+        .when(streamPlatform.getMockCommandResponseWriter())
+        .tryWriteResponse(anyInt(), anyLong());
+
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .withResponse(
+            RecordType.EVENT,
+            3,
+            ELEMENT_ACTIVATING,
+            Records.processInstance(1),
+            ValueType.PROCESS_INSTANCE,
+            RejectionType.NULL_VAL,
+            "",
+            1,
+            12)
+        .appendPostCommitTask(mockPostCommitTask);
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenReturn(resultBuilder.build())
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then a failed response neither skips the remaining side effects of the same result nor stops
+    // the stream processor
+    verify(mockPostCommitTask, TIMEOUT.times(1)).flush();
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(anyLong());
+  }
+
+  @Test
   public void shouldUpdateStateOnSuccessfulProcessing() {
     // given
     final var testProcessor = spy(new TestProcessor());
