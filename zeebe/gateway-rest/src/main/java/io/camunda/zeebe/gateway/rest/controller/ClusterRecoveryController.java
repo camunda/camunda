@@ -56,11 +56,7 @@ public final class ClusterRecoveryController {
       @RequestParam final Mode mode,
       @RequestParam(required = false) final @Nullable String physicalTenantId,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
-    if (physicalTenantId != null && physicalTenantId.isBlank()) {
-      throw new ServiceException(
-          "Expected physicalTenantId to identify a physical tenant, but it was empty.",
-          Status.INVALID_ARGUMENT);
-    }
+    rejectBlankPhysicalTenantId(physicalTenantId);
     LOG.debug(
         "Requested cluster mode change to {} for {}",
         mode,
@@ -80,6 +76,7 @@ public final class ClusterRecoveryController {
       @RequestParam(required = false) final @Nullable String physicalTenantId,
       @RequestBody final io.camunda.gateway.protocol.model.ClusterRestoreRequest restoreRequest,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
+    rejectBlankPhysicalTenantId(physicalTenantId);
     LOG.info(
         "Requested restore for {}: {}",
         physicalTenantId == null ? "all tenants" : physicalTenantId,
@@ -87,7 +84,7 @@ public final class ClusterRecoveryController {
     final var overrides = restoreRequest.getOverrides();
     if (physicalTenantId != null && overrides != null && !overrides.isEmpty()) {
       throw new ServiceException(
-          "Expected to restore physical tenant '%s', but the request also carries tenantArguments for "
+          "Expected to restore physical tenant '%s', but the request also carries overrides for "
                   .formatted(physicalTenantId)
               + "other physical tenants. Overrides are only allowed for a cluster-wide restore.",
           Status.INVALID_ARGUMENT);
@@ -110,5 +107,13 @@ public final class ClusterRecoveryController {
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
         ClusterModeChangeMapper::toClusterRestoreResponse,
         HttpStatus.ACCEPTED);
+  }
+
+  private static void rejectBlankPhysicalTenantId(final @Nullable String physicalTenantId) {
+    if (physicalTenantId != null && physicalTenantId.isBlank()) {
+      throw new ServiceException(
+          "Expected physicalTenantId to identify a physical tenant, but it was empty.",
+          Status.INVALID_ARGUMENT);
+    }
   }
 }

@@ -194,6 +194,23 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectABlankPhysicalTenantOnARestoreAsAMalformedRequest() {
+    // when / then — the parameter both operations share is rejected the same way, rather than a
+    // restore being scoped to an empty physical tenant id
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?physicalTenantId=")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [ 55 ]}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    Mockito.verify(clusterRecoveryServices, Mockito.never())
+        .restore(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+  }
+
+  @Test
   void shouldRestoreEveryPhysicalTenantWithTheSameParametersWhenNoOverridesAreGiven() {
     // given
     givenRestoreAccepted(9L);
@@ -364,6 +381,28 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
             }
             """,
             JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapARestoreOfAnUnknownPhysicalTenantToNotFound() {
+    // given
+    when(clusterRecoveryServices.restore(
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(
+                    new ErrorResponse(
+                        ErrorCode.NOT_FOUND, "no physical tenant is configured for: tenant-x"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri(RESTORE_URL + "?physicalTenantId=tenant-x")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [ 55 ]}")
+        .exchange()
+        .expectStatus()
+        .isNotFound();
   }
 
   @Test
