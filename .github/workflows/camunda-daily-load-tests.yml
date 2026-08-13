@@ -84,6 +84,9 @@ jobs:
       ttl: 1
       scenario: max
       build-frontend: true
+      # Daily runs are short-lived (soak for ~3h then delete), so they don't need
+      # the default disk size sized for longer-running/manual load tests.
+      load-test-setup-helm-values: --set elasticsearch.storage.requests=64Gi
 
   setup-max-rest-load-test:
     name: Setup max REST load test
@@ -97,6 +100,7 @@ jobs:
       scenario: max
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
+      load-test-setup-helm-values: --set elasticsearch.storage.requests=64Gi
 
   # Wait 15 minutes after setup succeeds before profiling starts, mirroring the
   # warmup convention the rest of the load-test flow already uses (see
