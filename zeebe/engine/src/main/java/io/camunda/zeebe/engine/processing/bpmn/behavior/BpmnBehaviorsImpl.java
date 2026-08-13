@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
@@ -92,7 +93,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final SecretStoreRegistry secretStoreRegistry) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -242,7 +244,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             jobMetrics,
             clock,
             cslCheck,
-            tenantCheck);
+            tenantCheck,
+            secretStoreRegistry,
+            incidentBehavior);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

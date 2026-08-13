@@ -11,6 +11,7 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.SecretResolutionMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -33,7 +34,8 @@ public final class SecretReferenceProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SecretStoreRegistry secretStoreRegistry,
       final EngineConfiguration config,
-      final SecretResolutionMetrics secretResolutionMetrics) {
+      final SecretResolutionMetrics secretResolutionMetrics,
+      final BpmnJobActivationBehavior jobActivationBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
@@ -48,7 +50,7 @@ public final class SecretReferenceProcessors {
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_REACTIVATE_JOBS,
         new SecretReferenceBatchReactivateJobsProcessor(
-            writers, keyGenerator, processingState.getSecretReferenceState()));
+            writers, keyGenerator, processingState, jobActivationBehavior));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,

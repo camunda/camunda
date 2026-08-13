@@ -135,7 +135,7 @@ public final class JobEventProcessors {
                 cslCheck,
                 tenantCheck,
                 clock,
-                incidentMetrics,
+                bpmnBehaviors.incidentBehavior(),
                 secretStoreRegistry))
         .withListener(
             new JobTimeoutCheckScheduler(

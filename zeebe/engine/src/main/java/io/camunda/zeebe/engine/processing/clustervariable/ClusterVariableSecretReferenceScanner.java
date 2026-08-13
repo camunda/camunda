@@ -34,8 +34,6 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
  */
 public final class ClusterVariableSecretReferenceScanner {
 
-  private static final String PREFIX = "camunda.secrets.";
-
   /** Reads the msgpack encoding of a cluster variable value as a Jackson tree. */
   private final ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
 
@@ -92,7 +90,7 @@ public final class ClusterVariableSecretReferenceScanner {
     final Matcher matcher = SecretReference.REFERENCE_PATTERN.matcher(text);
     final Set<String> namesInLeaf = new LinkedHashSet<>();
     while (matcher.find()) {
-      namesInLeaf.add(matcher.group().substring(PREFIX.length()));
+      namesInLeaf.add(matcher.group().substring(SecretReference.PREFIX.length()));
     }
     namesInLeaf.forEach(name -> out.add(new DetectedReference(name, pointer)));
   }
