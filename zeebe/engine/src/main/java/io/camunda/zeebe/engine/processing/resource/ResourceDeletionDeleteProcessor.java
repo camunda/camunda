@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -83,6 +85,7 @@ public class ResourceDeletionDeleteProcessor
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
+  private final AgentDefinitionState agentDefinitionState;
   private final ElementInstanceState elementInstanceState;
   private final TimerInstanceState timerInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -116,6 +119,7 @@ public class ResourceDeletionDeleteProcessor
     decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
+    agentDefinitionState = processingState.getAgentDefinitionState();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
     bannedInstanceState = processingState.getBannedInstanceState();
@@ -417,8 +421,24 @@ public class ResourceDeletionDeleteProcessor
   private void finalizeDeletion(final ProcessRecord processRecord) {
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
+    deleteAgentDefinitions(processRecord.getKey());
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
     commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
+  }
+
+  /**
+   * Emits {@code AgentDefinition:DELETED} for each agent definition owned by {@code
+   * processDefinitionKey}, so that none is left referencing an already-deleted process, even
+   * momentarily on the record stream.
+   */
+  private void deleteAgentDefinitions(final long processDefinitionKey) {
+    agentDefinitionState.forEachAgentDefinitionKey(
+        processDefinitionKey,
+        agentDefinitionKey ->
+            stateWriter.appendFollowUpEvent(
+                agentDefinitionKey,
+                AgentDefinitionIntent.DELETED,
+                agentDefinitionState.getAgentDefinition(agentDefinitionKey)));
   }
 
   private ProcessRecord toProcessRecord(final DeployedProcess process) {

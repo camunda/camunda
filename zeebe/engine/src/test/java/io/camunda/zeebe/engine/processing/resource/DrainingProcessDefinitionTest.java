@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
@@ -698,6 +699,32 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
+  public void shouldDeleteAgentDefinitionWhenDrainingCompletes() {
+    // given - a draining definition whose only task is agent-marked, with a running instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithAgentDefinitionAndJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(processDefinitionKey);
+
+    // when - the last active instance completes, finalizing the draining definition locally via
+    // BpmnProcessDeletionBehavior#finalizeDeletionIfDraining
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the owning process' agent definition is deleted as part of this deferred
+    // finalization too, not just for an immediate (non-draining) deletion
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .describedAs(
+            "Should emit AgentDefinition:DELETED once the draining definition is finalized,"
+                + " mirroring the immediate-deletion cascade")
+        .isTrue();
+  }
+
+  @Test
   public void shouldMintNewVersionWhenRedeployingIdenticalResourceWhileDraining() {
     // given - a definition kept draining by a still-running instance.
     final var processId = helper.getBpmnProcessId();
@@ -1118,6 +1145,22 @@ public class DrainingProcessDefinitionTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .getFirst();
+  }
+
+  private ProcessMetadataValue deployWithAgentDefinitionAndJob(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "agent-task", t -> t.zeebeJobType(JOB_TYPE).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy()

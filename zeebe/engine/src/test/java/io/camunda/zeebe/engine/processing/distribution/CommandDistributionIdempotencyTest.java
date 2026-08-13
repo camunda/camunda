@@ -526,6 +526,25 @@ public class CommandDistributionIdempotencyTest {
             ResourceDeletionDeleteProcessor.class
           },
           {
+            "ResourceDeletion.DELETE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.RESOURCE_DELETION,
+                ResourceDeletionIntent.DELETE,
+                () -> {
+                  final var process = deployProcessWithAgentDefinition();
+                  return ENGINE
+                      .resourceDeletion()
+                      .withResourceKey(
+                          process
+                              .getValue()
+                              .getProcessesMetadata()
+                              .getFirst()
+                              .getProcessDefinitionKey())
+                      .delete();
+                }),
+            ResourceDeletionDeleteProcessor.class
+          },
+          {
             "Process.DELETE_COMPLETE is idempotent",
             new Scenario(
                 ValueType.PROCESS,
