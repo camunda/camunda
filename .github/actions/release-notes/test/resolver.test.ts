@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import { afterEach, test } from 'node:test';
+import { GithubResolver } from '../src/resolver';
+import type { ParsedRef } from '../src/types';
+
+function ref(number: number, repo: string | null = null): ParsedRef {
+  return { raw: `#${number}`, number, repo, keyword: null, kind: 'contributor', index: 0 };
+}
+
+const originalFetch = globalThis.fetch;
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
+
+test('resolve() dedupes repeated refs to a single API call', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response(JSON.stringify({}), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  const refs = [ref(1), ref(1), ref(1)];
+  const resolved = await resolver.resolve(refs);
+
+  assert.equal(calls, 1, 'three refs to the same number must cost one API call');
+  assert.equal(resolved.length, 3, 'one ResolvedRef per input ref is still returned');
+  assert.ok(resolved.every((r) => r.target === 'issue'));
+});
+
+test('resolve() caps the number of refs it will resolve', async () => {
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response(JSON.stringify({}), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  const refs = Array.from({ length: 500 }, (_, i) => ref(i + 1));
+  const resolved = await resolver.resolve(refs);
+
+  assert.ok(calls <= 20, `a body stuffed with 500 distinct refs must not fire 500 API calls (fired ${calls})`);
+  assert.ok(resolved.length <= 20, 'refs beyond the cap are not resolved');
+});
+
+test('resolve() bounds how many requests are ever in flight at once', async () => {
+  let inFlight = 0;
+  let maxInFlight = 0;
+  globalThis.fetch = (async () => {
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    inFlight--;
+    return new Response(JSON.stringify({}), { status: 200 });
+  }) as typeof fetch;
+
+  const resolver = new GithubResolver('token', 'camunda', 'camunda');
+  const refs = Array.from({ length: 20 }, (_, i) => ref(i + 1));
+  await resolver.resolve(refs);
+
+  assert.ok(maxInFlight <= 5, `concurrency must be bounded, saw ${maxInFlight} in flight at once`);
+});
