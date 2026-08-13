@@ -38,6 +38,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   PROM_URL: https://ci-monitor.benchmark.camunda.cloud
 
 jobs:
