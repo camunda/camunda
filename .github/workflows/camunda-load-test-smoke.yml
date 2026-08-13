@@ -29,6 +29,9 @@ concurrency:
   group: smoke-load-test-${{ github.event.pull_request.id || github.event.inputs.ref }}
   cancel-in-progress: true
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
