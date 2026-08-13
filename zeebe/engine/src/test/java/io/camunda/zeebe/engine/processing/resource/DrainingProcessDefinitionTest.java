@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -52,6 +51,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -656,15 +656,16 @@ public class DrainingProcessDefinitionTest {
   @Test
   public void shouldFullyDeleteWhenLastInstanceDrains() {
     // given - a draining definition on the deployment partition. On this single-partition harness
-    // ProcessDrainingApplier auto-seeds only the local partition (1) at delete time; partitions 2
-    // and 3 are injected to simulate the rest of a three-partition cluster.
+    // the real deletion auto-seeds only the local partition (1); a second injected DRAINING event
+    // carries partitions 2 and 3 so ProcessDrainingApplier seeds them too, simulating the rest of a
+    // three-partition cluster.
     final var processId = helper.getBpmnProcessId();
     final var metadata = deployWithJob(processId);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
     awaitJobCreated(processInstanceKey);
     drainViaDeletion(processDefinitionKey);
-    seedPendingDeletions(processDefinitionKey, 2, 3);
+    injectDraining(metadata, false, 2, 3);
 
     // when - the last active instance completes, finalizing locally and reporting drained
     engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
@@ -860,9 +861,8 @@ public class DrainingProcessDefinitionTest {
     // given - a draining definition whose deletion also requested its history to be deleted
     final var processId = helper.getBpmnProcessId();
     final var metadata = deploy(processId);
-    injectDraining(metadata, true);
+    injectDraining(metadata, true, 1, 2, 3);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
-    seedPendingDeletions(processDefinitionKey, 1, 2, 3);
 
     // when - the last partition reports it has finished draining
     engine.writeRecords(
@@ -901,9 +901,8 @@ public class DrainingProcessDefinitionTest {
     // given - a draining definition whose deletion did not request history deletion
     final var processId = helper.getBpmnProcessId();
     final var metadata = deploy(processId);
-    injectDraining(metadata);
+    injectDraining(metadata, false, 1, 2, 3);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
-    seedPendingDeletions(processDefinitionKey, 1, 2, 3);
 
     // when - all partitions report they have finished draining
     engine.writeRecords(
@@ -929,9 +928,8 @@ public class DrainingProcessDefinitionTest {
     // given - a draining definition that has already drained cluster-wide
     final var processId = helper.getBpmnProcessId();
     final var metadata = deploy(processId);
-    injectDraining(metadata, true);
+    injectDraining(metadata, true, 1, 2);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
-    seedPendingDeletions(processDefinitionKey, 1, 2);
 
     // when - the last partition's report is delivered twice
     engine.writeRecords(
@@ -1085,18 +1083,6 @@ public class DrainingProcessDefinitionTest {
                 .setDeleteHistory(deleteHistory));
   }
 
-  private void seedPendingDeletions(final long processDefinitionKey, final int... partitionIds) {
-    // seeding the aggregation set happens at delete time (#56978), so it is injected here directly
-    // to drive the deployment-partition aggregation
-    engine.pauseProcessing(Protocol.DEPLOYMENT_PARTITION);
-    final var processState =
-        ((MutableProcessingState) engine.getProcessingState()).getProcessState();
-    for (final int partitionId : partitionIds) {
-      processState.addPendingDeletion(processDefinitionKey, partitionId);
-    }
-    engine.resumeProcessing(Protocol.DEPLOYMENT_PARTITION);
-  }
-
   private void assertDeletedLocally(final long processDefinitionKey) {
     assertThat(
             RecordingExporter.processRecords()
@@ -1188,15 +1174,23 @@ public class DrainingProcessDefinitionTest {
    *       definition — real deletion unsubscribes start events as it drains;
    *   <li>tests with no active instance to keep the definition draining (e.g. the defensive {@code
    *       ACTIVATE_ELEMENT} guard), where a real deletion would finalize immediately;
-   *   <li>deployment-partition aggregation tests that pair injection with {@link
-   *       #seedPendingDeletions} to simulate a multi-partition cluster on this single partition.
+   *   <li>deployment-partition aggregation tests that pass {@code drainPartitions} to simulate a
+   *       multi-partition cluster on this single partition.
    * </ul>
+   *
+   * <p>{@code drainPartitions} are the frozen partitions to wait for: {@code
+   * ProcessDrainingApplier} seeds one pending deletion per partition on the deployment partition as
+   * it applies the event, so this drives the aggregation the same way a real cluster-wide deletion
+   * would — no direct state writes needed.
    */
   private void injectDraining(final ProcessMetadataValue metadata) {
     injectDraining(metadata, false);
   }
 
-  private void injectDraining(final ProcessMetadataValue metadata, final boolean deleteHistory) {
+  private void injectDraining(
+      final ProcessMetadataValue metadata,
+      final boolean deleteHistory,
+      final int... drainPartitions) {
     engine.stop();
     engine.writeRecords(
         RecordToWrite.event()
@@ -1209,7 +1203,8 @@ public class DrainingProcessDefinitionTest {
                     .setVersion(metadata.getVersion())
                     .setResourceName(metadata.getResourceName())
                     .setTenantId(metadata.getTenantId())
-                    .setDeleteHistory(deleteHistory)));
+                    .setDeleteHistory(deleteHistory)
+                    .setDrainPartitions(Arrays.stream(drainPartitions).boxed().toList())));
     engine.start();
 
     RecordingExporter.processRecords()
