@@ -252,16 +252,25 @@ public class DynamicClusterConfigurationService
     if (rebalanceCoordinator != null && clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeUpdateListener(rebalanceCoordinator);
     }
-    final ActorFuture<Void> rebalanceCoordinatorClosed =
-        rebalanceCoordinatorActor != null
-            ? rebalanceCoordinatorActor.closeAsync()
-            : CompletableActorFuture.completed(null);
+    final ActorFuture<Void> rebalanceCoordinatorClosed = closeRebalanceCoordinator();
     if (clusterConfigurationManagerService != null) {
       return rebalanceCoordinatorClosed.andThen(
           clusterConfigurationManagerService::closeAsync, Runnable::run);
     } else {
       return rebalanceCoordinatorClosed;
     }
+  }
+
+  private ActorFuture<Void> closeRebalanceCoordinator() {
+    if (rebalanceCoordinatorActor == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    if (rebalanceCoordinator == null) {
+      return rebalanceCoordinatorActor.closeAsync();
+    }
+    return rebalanceCoordinator
+        .shutdown()
+        .andThen(rebalanceCoordinatorActor::closeAsync, Runnable::run);
   }
 
   /**

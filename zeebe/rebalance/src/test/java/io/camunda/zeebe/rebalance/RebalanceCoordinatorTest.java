@@ -231,6 +231,36 @@ final class RebalanceCoordinatorTest {
   }
 
   @Test
+  void shouldAbandonAnInFlightRebalanceOnShutdownWithoutRequestingCancellation() {
+    // given
+    final var runner = new BlockedRunner();
+    final var coordinator = coordinatingWith(runner);
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // when
+    final var shutdown = coordinator.shutdown();
+
+    // then
+    assertThat(runner.rebalance.isAbandoned()).isTrue();
+    assertThat(runner.rebalance.isCancelRequested()).isFalse();
+    assertThat(shutdown.isDone()).isTrue();
+  }
+
+  @Test
+  void shouldRejectFurtherWorkAfterShutdown() {
+    // given
+    final var coordinator = coordinatingWith(RebalanceRunner.none());
+
+    // when
+    coordinator.shutdown();
+    final var triggered =
+        coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+
+    // then
+    assertThatThrownBy(triggered::join).hasCauseInstanceOf(NotCoordinatorException.class);
+  }
+
+  @Test
   void shouldReportNothingWasRunningWhenCancellingWhileIdle() {
     // given
     final var coordinator = coordinatingWith(RebalanceRunner.none());

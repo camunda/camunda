@@ -17,6 +17,7 @@ import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinator
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.Nulls;
 import java.util.function.LongSupplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -71,6 +72,21 @@ public final class RebalanceCoordinator
   @Override
   public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
     executor.run(() -> updateCoordinatorRole(clusterConfiguration));
+  }
+
+  /**
+   * Shutdown is a loss of coordinator ownership, not an operator cancellation, so it reuses {@link
+   * #discardState} rather than reporting the in-flight run as {@link RebalanceOutcome#CANCELLED}.
+   */
+  public ActorFuture<Void> shutdown() {
+    final ActorFuture<Void> result = executor.createFuture();
+    executor.run(
+        () -> {
+          coordinating = false;
+          discardState();
+          result.complete(Nulls.uncheckedCastToNonNull(null));
+        });
+    return result;
   }
 
   @Override
