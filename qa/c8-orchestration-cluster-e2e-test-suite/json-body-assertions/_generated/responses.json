@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "ff024b72a7e26291f4282198eb480b4e904a3a78",
-    "generatedAt": "2026-08-12T12:18:41.143Z",
+    "commit": "1d9b3914965a18af5f5c34d473bb84d0f6a52afe",
+    "generatedAt": "2026-08-13T12:18:21.523Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "24b7c1aa28e85f50f3cb00f51896287dcbb78bf652dda4856910cbc19173490e"
+    "specSha256": "5fe09a0a6c0b5620e639c931feec09d3ec7975a30ef054c27be5410878675ae0"
   },
   "responses": [
     {
@@ -167,6 +167,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "agentDefinitionKey",
+            "type": "string"
+          },
           {
             "name": "agentInstanceKey",
             "type": "string"
@@ -370,6 +374,10 @@
             "type": "array<schema>",
             "children": {
               "required": [
+                {
+                  "name": "agentDefinitionKey",
+                  "type": "string"
+                },
                 {
                   "name": "agentInstanceKey",
                   "type": "string"
@@ -2076,6 +2084,90 @@
               "FAILED",
               "INCOMPLETE",
               "DELETED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "scheduledSnapshots",
+            "type": "array<string>"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "details",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "failures",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "snapshotName",
+                  "type": "string"
+                },
+                {
+                  "name": "startTime",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "failureReason",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED",
+              "INCOMPLETE",
+              "INCOMPATIBLE"
             ]
           }
         ],
