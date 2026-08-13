@@ -67,6 +67,10 @@ final class SideEffectRunner implements CommittedPositionListener {
   /**
    * Registers new side effects to run when it's {@link SideEffects#position} is committed. Must be
    * called sequentially and ordered by {@link SideEffects#position}.
+   *
+   * <p>Unlike {@link #onCommittedPosition(long)} this must be called on {@link #actor}'s thread.
+   * The only caller is the processing state machine, which already runs there, so it touches the
+   * queue directly instead of paying for another actor job per processed record.
    */
   void addSideEffects(
       final long position,
