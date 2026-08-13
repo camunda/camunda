@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * New-model counterpart of {@link ExporterStateInitializer}, applying the same exporter-state
@@ -60,7 +61,7 @@ public class PartitionGroupExporterStateInitializer
   private CurrentClusterConfiguration updateLocalMemberExporterState(
       final CurrentClusterConfiguration configuration) {
     var updated = configuration;
-    for (final var groupId : configuration.partitionGroups().keySet()) {
+    for (final var groupId : enabledGroupIds(configuration)) {
       if (updated.partitionGroup(groupId).hasMember(localMemberId)) {
         updated =
             updated.updatePartitionGroupConfig(
@@ -78,7 +79,7 @@ public class PartitionGroupExporterStateInitializer
   private CurrentClusterConfiguration updateExporterStateForAllMembers(
       final CurrentClusterConfiguration configuration) {
     var updated = configuration;
-    for (final var groupId : configuration.partitionGroups().keySet()) {
+    for (final var groupId : enabledGroupIds(configuration)) {
       for (final var memberId : updated.partitionGroup(groupId).members().keySet()) {
         updated =
             updated.updatePartitionGroupConfig(
@@ -93,12 +94,26 @@ public class PartitionGroupExporterStateInitializer
     return updated;
   }
 
+  /**
+   * Every partition group to reconcile, excluding a disabled one (removed from local static
+   * configuration after being provisioned, see {@link PhysicalTenantAvailabilityInitializer}) - it
+   * has nothing to reconcile, since it is not running anywhere.
+   */
+  private static Set<String> enabledGroupIds(final CurrentClusterConfiguration configuration) {
+    return configuration.partitionGroups().entrySet().stream()
+        .filter(entry -> !entry.getValue().isDisabled())
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
+  }
+
   private BrokerPartitionState updateExporterState(
       final String groupId, final BrokerPartitionState brokerPartitionState) {
     BrokerPartitionState updated = brokerPartitionState;
     if (!configuredExporters.containsKey(groupId)) {
-      // All partition groups should have a configuration. When we support disabling physical
-      // tenants, those groups must be filtered out before this call.
+      // An enabled group must always have a local exporter configuration - this initializer only
+      // reaches enabled groups (see enabledGroupIds), so a missing entry here means the local
+      // configuration is inconsistent with the cluster configuration, not that the tenant is
+      // disabled.
       throw new IllegalStateException(
           "No configuration found for partition group '%s'".formatted(groupId));
     }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
@@ -240,6 +241,101 @@ final class PartitionGroupExporterStateInitializerTest {
                 .get("expA")
                 .state())
         .isEqualTo(State.CONFIG_NOT_FOUND);
+  }
+
+  @Test
+  void shouldSkipADisabledGroup() {
+    // given — tenant-b was removed from local static configuration (see
+    // PhysicalTenantAvailabilityInitializer) after being provisioned, so it is now disabled and has
+    // no entry in the locally-configured exporters map, even though its group still exists
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a", groupWithMember(LOCAL_MEMBER_ID, config),
+                "tenant-b", groupWithMember(LOCAL_MEMBER_ID, config).disable()),
+            PhasedChangeState.empty());
+
+    // when — only tenant-a has a local exporter configuration
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — tenant-a is reconciled normally, tenant-b is left untouched rather than throwing
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(result.partitionGroup("tenant-b"))
+        .isEqualTo(configuration.partitionGroup("tenant-b"));
+  }
+
+  @Test
+  void shouldSkipADisabledGroupWhenCoordinatorAndPostRestore() {
+    // given — same as above, but on the coordinator's post-restore, all-members reconciliation path
+    final var config = DynamicPartitionConfig.init();
+    final var otherMember = MemberId.from("1");
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a",
+                groupWithMember(LOCAL_MEMBER_ID, config)
+                    .addMember(otherMember, initialPartitionState(config)),
+                "tenant-b",
+                groupWithMember(LOCAL_MEMBER_ID, config).disable()),
+            postRestorePendingState());
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, true)
+            .modify(configuration)
+            .join();
+
+    // then
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(result.partitionGroup("tenant-b"))
+        .isEqualTo(configuration.partitionGroup("tenant-b"));
+  }
+
+  @Test
+  void shouldThrowWhenAnEnabledGroupHasNoLocalExporterConfiguration() {
+    // given — tenant-b is enabled (not removed from local static configuration), but is missing
+    // from the locally-configured exporters map - an inconsistency that should never happen and
+    // must not be silently treated the same way as a disabled tenant
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-b", groupWithMember(LOCAL_MEMBER_ID, config)),
+            PhasedChangeState.empty());
+
+    // when / then
+    final var initializer =
+        new PartitionGroupExporterStateInitializer(Map.of(), LOCAL_MEMBER_ID, false);
+    assertThatThrownBy(() -> initializer.modify(configuration))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("tenant-b");
   }
 
   @Test
