@@ -360,6 +360,10 @@ components:
           description: The unique key of the agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentInstanceKeyFilterProperty'
+        agentDefinitionKey:
+          description: The key of the agent definition this agent instance is an instance of.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKeyFilterProperty'
         status:
           description: The current status of the agent instance.
           allOf:
@@ -462,7 +466,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
         agentDefinitionKey:
-          description: The key of the agent definition this agent instance runs on.
+          description: The key of the agent definition this agent instance is an instance of.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentDefinitionKey'
         status:
