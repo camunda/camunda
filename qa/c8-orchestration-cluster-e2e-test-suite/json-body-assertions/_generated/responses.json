@@ -1,12 +1,152 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "e000bbd466eb1bba365352aa339267d770f2a6cf",
-    "generatedAt": "2026-08-11T12:18:01.381Z",
+    "commit": "ff024b72a7e26291f4282198eb480b4e904a3a78",
+    "generatedAt": "2026-08-12T12:18:41.143Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "7c97dd7e3ac757a69a21c9cd8d14513f46eb2b0f113b232d58364c70e1caee49"
+    "specSha256": "24b7c1aa28e85f50f3cb00f51896287dcbb78bf652dda4856910cbc19173490e"
   },
   "responses": [
+    {
+      "path": "/agent-definitions/{agentDefinitionKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "agentDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "agentType",
+            "type": "string",
+            "enumValues": [
+              "AI_AGENT_SUB_PROCESS",
+              "AI_AGENT_TASK",
+              "EXTERNAL_AGENT"
+            ]
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processDefinitionVersionTag",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-definitions/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [
+                {
+                  "name": "agentDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "agentType",
+                  "type": "string",
+                  "enumValues": [
+                    "AI_AGENT_SUB_PROCESS",
+                    "AI_AGENT_TASK",
+                    "EXTERNAL_AGENT"
+                  ]
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "processDefinitionVersionTag",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
     {
       "path": "/agent-instances",
       "method": "POST",
@@ -8616,44 +8756,6 @@
       }
     },
     {
-      "path": "/cluster/v2/status",
-      "method": "GET",
-      "status": "200",
-      "schema": {
-        "required": [
-          {
-            "name": "status",
-            "type": "string",
-            "enumValues": [
-              "HEALTHY",
-              "DEGRADED",
-              "DOWN"
-            ]
-          }
-        ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/cluster/v2/status",
-      "method": "GET",
-      "status": "503",
-      "schema": {
-        "required": [
-          {
-            "name": "status",
-            "type": "string",
-            "enumValues": [
-              "HEALTHY",
-              "DEGRADED",
-              "DOWN"
-            ]
-          }
-        ],
-        "optional": []
-      }
-    },
-    {
       "path": "/system/usage-metrics",
       "method": "GET",
       "status": "200",
@@ -9316,13 +9418,27 @@
             "children": {
               "required": [
                 {
-                  "name": "mode",
-                  "type": "string",
-                  "nullable": true
+                  "name": "operations",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "mode",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "operation",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
                 },
                 {
-                  "name": "operation",
-                  "type": "string"
+                  "name": "physicalTenantId",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -9429,17 +9545,115 @@
             "children": {
               "required": [
                 {
-                  "name": "mode",
-                  "type": "string",
-                  "nullable": true
+                  "name": "operations",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "mode",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "operation",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
                 },
                 {
-                  "name": "operation",
-                  "type": "string"
+                  "name": "physicalTenantId",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/mode",
+      "method": "PATCH",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "changeId",
+            "type": "string"
+          },
+          {
+            "name": "plannedChanges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "operations",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "mode",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "operation",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "HEALTHY",
+              "DEGRADED",
+              "DOWN"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/status",
+      "method": "GET",
+      "status": "503",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "HEALTHY",
+              "DEGRADED",
+              "DOWN"
+            ]
           }
         ],
         "optional": []
