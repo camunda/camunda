@@ -10,6 +10,7 @@ package io.camunda.search.clients.impl;
 import static java.util.Collections.emptyList;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
@@ -58,6 +59,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
@@ -109,6 +111,17 @@ import java.util.List;
 import java.util.Map;
 
 public class NoopSearchClientsProxy implements SearchClientsProxy {
+
+  @Override
+  public AgentDefinitionEntity getAgentDefinition(final long key) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<AgentDefinitionEntity> searchAgentDefinitions(
+      final AgentDefinitionQuery query) {
+    return SearchQueryResult.empty();
+  }
 
   @Override
   public AgentInstanceEntity getAgentInstance(final long key) {
