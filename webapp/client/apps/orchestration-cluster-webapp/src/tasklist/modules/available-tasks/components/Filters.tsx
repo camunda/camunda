@@ -60,7 +60,7 @@ function getFilterLabel(filter: string): string {
 
 const Filters: React.FC = () => {
 	const {t} = useTranslation();
-	const {sortBy, filter} = useSearch({from: '/_auth/tasklist/_tasks'});
+	const {sortBy, filter} = useSearch({from: '/_carbon/_auth/tasklist/_tasks'});
 	const navigate = useNavigate();
 
 	const completionEligible = filter === 'completed' || filter === 'custom';

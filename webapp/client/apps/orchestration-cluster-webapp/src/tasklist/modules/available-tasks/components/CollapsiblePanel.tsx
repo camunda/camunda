@@ -40,7 +40,7 @@ const CollapsiblePanel: React.FC = () => {
 	const [customFilterToDelete, setCustomFilterToDelete] = useState<string | undefined>();
 	const wasCollapsed = usePrevious(isCollapsed);
 	const {t} = useTranslation();
-	const search = useSearch({from: '/_auth/tasklist/_tasks'});
+	const search = useSearch({from: '/_carbon/_auth/tasklist/_tasks'});
 	const {filter} = search;
 	const navigate = useNavigate();
 	const {data: username} = useSuspenseQuery({

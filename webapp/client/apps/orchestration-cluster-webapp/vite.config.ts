@@ -96,7 +96,6 @@ const config = defineConfig(({mode}) => ({
 		proxy: {},
 	},
 	test: {
-		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
 		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
 		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		browser: {
@@ -111,7 +110,34 @@ const config = defineConfig(({mode}) => ({
 			instances: [
 				{
 					browser: 'chromium',
-					setupFiles: ['./src/vitest-modules/vitest.setup.ts'],
+					name: 'carbon',
+					include: [
+						'src/admin/**/*.test.ts',
+						'src/admin/**/*.test.tsx',
+						'src/operate/**/*.test.ts',
+						'src/operate/**/*.test.tsx',
+						'src/routes/_carbon/**/*.test.ts',
+						'src/routes/_carbon/**/*.test.tsx',
+						'src/shared/**/*.test.ts',
+						'src/shared/**/*.test.tsx',
+						'src/tasklist/**/*.test.ts',
+						'src/tasklist/**/*.test.tsx',
+						'src/vitest-modules/**/*.test.ts',
+						'src/vitest-modules/**/*.test.tsx',
+					],
+					exclude: ['src/**/shadcn.components/**/*.test.ts', 'src/**/shadcn.components/**/*.test.tsx'],
+					setupFiles: ['./src/vitest-modules/vitest-carbon.setup.ts'],
+				},
+				{
+					browser: 'chromium',
+					name: 'shadcn',
+					include: [
+						'src/**/shadcn.components/**/*.test.ts',
+						'src/**/shadcn.components/**/*.test.tsx',
+						'src/routes/shadcn/**/*.test.ts',
+						'src/routes/shadcn/**/*.test.tsx',
+					],
+					setupFiles: ['./src/vitest-modules/vitest-shadcn.setup.ts'],
 				},
 			],
 		},

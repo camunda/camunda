@@ -10,8 +10,6 @@ import ReactDOM from 'react-dom/client';
 import {RouterProvider, createRouter, parseSearchWith, stringifySearchWith} from '@tanstack/react-router';
 import {routeTree} from './routeTree.gen';
 import {QueryClientProvider} from '@tanstack/react-query';
-import './index.scss';
-import {ThemeProvider} from '#/shared/theme/ThemeProvider';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {initI18next} from '#/shared/i18n/i18next';
 import {getBootConfig} from '#/shared/config/getBootConfig';
@@ -46,11 +44,9 @@ if (!rootElement.innerHTML) {
 
 	loadOsano().finally(() => {
 		root.render(
-			<ThemeProvider>
-				<QueryClientProvider client={reactQueryClient}>
-					<RouterProvider router={router} />
-				</QueryClientProvider>
-			</ThemeProvider>,
+			<QueryClientProvider client={reactQueryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>,
 		);
 	});
 }

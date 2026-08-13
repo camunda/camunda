@@ -9,7 +9,7 @@
 import type {KnipConfig} from 'knip';
 
 const config: KnipConfig = {
-	entry: ['src/vitest-modules/vitest.setup.ts'],
+	entry: ['src/vitest-modules/vitest-carbon.setup.ts', 'src/vitest-modules/vitest-shadcn.setup.ts'],
 	ignore: [
 		'src/operate/shared/DecisionViewer/dmn-js.d.ts',
 		'src/shared/feature-flags.ts',

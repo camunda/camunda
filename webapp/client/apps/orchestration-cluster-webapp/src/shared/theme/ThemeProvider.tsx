@@ -26,6 +26,10 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
 
 	useLayoutEffect(() => {
 		document.documentElement.dataset['carbonTheme'] = THEME_TOKENS[actualTheme];
+
+		return () => {
+			delete document.documentElement.dataset['carbonTheme'];
+		};
 	}, [actualTheme, prefix]);
 
 	return <GlobalTheme>{children}</GlobalTheme>;
