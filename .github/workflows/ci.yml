@@ -1179,16 +1179,24 @@ jobs:
     name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
     needs: [detect-changes]
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 10
+    # The 4.1 entry runs Camunda Process Test integration tests, which start a broker container.
+    timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     strategy:
       fail-fast: false
       matrix:
-        group: [ spring-boot-3.5 ]
+        group: [ spring-boot-3.5, spring-boot-4.1 ]
         include:
           - group: spring-boot-3.5
             name: "3.5.x"
             profile: "spring-boot-3.5"
+            modules: "clients/spring-boot-starter-camunda-sdk,testing/camunda-process-test-spring"
+          # The Spring Boot 4 line lives in dedicated modules that pin their own 4.x version, so it
+          # needs a separate module list from the 3.x one above.
+          - group: spring-boot-4.1
+            name: "4.1.x"
+            profile: "spring-boot-4.1"
+            modules: "clients/camunda-spring-boot-4-starter,testing/camunda-process-test-spring-4"
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -1211,7 +1219,7 @@ jobs:
           -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=8
           -P parallel-tests,extract-flaky-tests,${{ matrix.profile }}
-          -pl 'clients/spring-boot-starter-camunda-sdk,testing/camunda-process-test-spring'
+          -pl '${{ matrix.modules }}'
           clean verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
