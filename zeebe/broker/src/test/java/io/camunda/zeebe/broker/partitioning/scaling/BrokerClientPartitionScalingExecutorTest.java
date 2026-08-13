@@ -42,13 +42,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BrokerClientPartitionScalingExecutorTest {
 
-  private static final String PARTITION_GROUP = "tenant-a";
-
   static final List<Set<Integer>> INCOMPLETE_PARTITION_LIST =
       List.of(Set.of(1, 2, 3, 4), Set.of(4));
 
   static final List<Set<Integer>> COMPLETE_PARTITION_LIST =
       List.of(Set.of(1, 2, 3, 4, 5), Set.of(4, 5));
+
+  private static final String PARTITION_GROUP = "tenant-a";
 
   TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
   BrokerClientPartitionScalingExecutor executor;
