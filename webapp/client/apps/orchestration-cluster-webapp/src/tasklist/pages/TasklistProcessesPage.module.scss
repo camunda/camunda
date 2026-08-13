@@ -38,6 +38,14 @@
 	background: var(--cds-layer);
 }
 
+// DS-only (see TasklistProcessesPage.tsx). --cds-layer is white, which is now the
+// tiles' own colour, so the tiles disappeared into the page. Drops the section to
+// the DS base surface, matching the task-list and task-details panels, so the
+// white tiles read as raised against it.
+.processesDS {
+	background: var(--background);
+}
+
 .processTileWrapper {
 	min-width: 0;
 	padding-top: var(--cds-spacing-03);

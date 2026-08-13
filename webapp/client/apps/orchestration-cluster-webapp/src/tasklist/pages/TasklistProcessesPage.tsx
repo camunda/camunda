@@ -87,7 +87,7 @@ const TasklistProcessesPage: React.FC<Props> = ({
 							</Stack>
 						</section>
 
-						<section className={styles.processes}>
+						<section className={cn(styles.processes, featureFlags.dsTasklistUI && styles.processesDS)}>
 							<div className={styles.processesContent}>
 								{processes.length === 0 ? (
 									<Layer>

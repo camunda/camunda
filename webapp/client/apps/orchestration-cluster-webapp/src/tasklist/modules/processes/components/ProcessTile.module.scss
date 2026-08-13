@@ -16,19 +16,23 @@
 	white-space: nowrap;
 }
 
-// DS-only (see ProcessTile.tsx). The Card supplies the surface, ring and radius,
-// so the Carbon layer background and the Card's own vertical padding are dropped
-// in favour of the tile's existing uniform padding.
-.containerDS {
-	background: none;
-	padding: var(--cds-spacing-05);
-}
-
 .container {
 	width: 100%;
 	height: 100%;
 	padding: var(--cds-spacing-05);
 	background: var(--cds-layer);
+}
+
+// DS-only (see ProcessTile.tsx). The Card supplies the ring and radius, but its
+// own `bg-neutral-background-subtle` is the same greyish tone as the page behind
+// it, so the tiles would not read as raised. Uses --popover — the same white the
+// task cards use to sit above the page's --background.
+//
+// Must stay declared after `.container`: both are single-class selectors, so
+// equal specificity means source order decides, and `.container`'s --cds-layer
+// would otherwise win.
+.containerDS {
+	background: var(--popover);
 }
 
 .content {
