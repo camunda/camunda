@@ -400,6 +400,7 @@ In practice, most ad-hoc runs only need a test `name`, a Git `ref`, a built-in `
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
 * Specification of platform chart overrides via `platform-helm-values` — for example orchestration sizing, env vars, and image-related settings.
 * Specification of load test chart overrides via `load-test-load` — for example starter rate, worker replicas, and BPMN/payload paths.
+* Specification of load-test-setup chart overrides via `load-test-setup-helm-values` — for example secondary storage disk size.
 
 ![load-test-gha](docs/assets/load-test-gha.png)
 
@@ -410,6 +411,7 @@ Use the workflow inputs as follows:
 - `scenario`: picks the base workload profile to run.
 - `platform-helm-values`: passes extra flags to the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm).
 - `load-test-load`: passes extra flags to the [Camunda load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm).
+- `load-test-setup-helm-values`: passes extra flags to the local [`load-test-setup` chart](setup/charts/load-test-setup) that provisions secondary storage and supporting infra (e.g. Elasticsearch/OpenSearch/PostgreSQL, chaos-killer, metrics-exporter).
 
 If you need custom tuning, start with the closest `scenario` and then add targeted overrides in the Helm inputs.
 
@@ -474,6 +476,12 @@ Use the following values directly in the workflow form:
 
      ```text
      --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set 'starter.rate=50'
+     ```
+6. **Reduce the Elasticsearch disk size for a short-lived run**
+   - `load-test-setup-helm-values`:
+
+     ```text
+     --set elasticsearch.storage.requests=64Gi
      ```
 
 ##### Creating load test for old versions

@@ -66,6 +66,11 @@ on:
         type: string
         default: ""
         required: false
+      load-test-setup-helm-values:
+        description: 'Additional Helm values for the load-test-setup chart (e.g. --set elasticsearch.storage.requests=64Gi)'
+        type: string
+        default: ""
+        required: false
       stable-vms:
         description: 'Deploy to non-spot VMs (more stable, higher cost)'
         type: boolean
@@ -166,6 +171,11 @@ on:
         type: string
         default: ""
         required: false
+      load-test-setup-helm-values:
+        description: 'Allows to specify additional values/configurations for the load-test-setup Helm chart, which deploys the secondary storage and supporting infra. For example, the Elasticsearch disk size can be reduced. Allows arbitrary helm arguments, like --set elasticsearch.storage.requests=64Gi'
+        type: string
+        default: ""
+        required: false
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
@@ -256,6 +266,7 @@ env:
   IDENTITY_TAG: ${{ inputs.identity-tag }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
   LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
+  LOAD_TEST_SETUP_HELM_VALUES: ${{ inputs.load-test-setup-helm-values }}
   NAME: ${{ inputs.name }}
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
@@ -300,6 +311,7 @@ jobs:
           | Orchestration tag | \`${ORCHESTRATION_TAG:-—}\` |
           | Load test load | \`${LOAD_TEST_LOAD:-—}\` |
           | Platform Helm values | \`${PLATFORM_HELM_VALUES:-—}\` |
+          | Load test setup Helm values | \`${LOAD_TEST_SETUP_HELM_VALUES:-—}\` |
           | TTL (days) | \`${TTL}\` |
           | Stable VMs | \`${STABLE_VMS}\` |
           | Enable Optimize | \`${ENABLE_OPTIMIZE}\` |
@@ -604,6 +616,7 @@ jobs:
             --connectors-tag "${CONNECTORS_TAG}" \
             --load-test-load "${LOAD_TEST_LOAD}" \
             --platform-helm-values "${PLATFORM_HELM_VALUES}" \
+            --load-test-setup-helm-values "${LOAD_TEST_SETUP_HELM_VALUES}" \
             --scenario "${SCENARIO}"
 
       - name: Annotate namespace with workflow run URL

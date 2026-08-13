@@ -34,6 +34,7 @@
 #   --connectors-tag TAG          Explicit Connectors image tag
 #   --load-test-load VALUE        Extra --set args for the load-tester Helm chart
 #   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
+#   --load-test-setup-helm-values VALUE  Extra --set args for the load-test-setup Helm chart
 #   --scenario SCENARIO           Workload scenario to run
 
 set -euo pipefail
@@ -59,6 +60,7 @@ identity_tag=""
 connectors_tag=""
 load_test_load=""
 platform_helm_values=""
+load_test_setup_helm_values=""
 scenario=""
 
 while [[ $# -gt 0 ]]; do
@@ -69,6 +71,7 @@ while [[ $# -gt 0 ]]; do
     --connectors-tag) connectors_tag="$2"; shift 2 ;;
     --load-test-load) load_test_load="$2"; shift 2 ;;
     --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
+    --load-test-setup-helm-values) load_test_setup_helm_values="$2"; shift 2 ;;
     --scenario) scenario="$2"; shift 2 ;;
     *) echo "::error::Unknown argument: $1" >&2; exit 1 ;;
   esac
@@ -99,7 +102,7 @@ additional_platform_config="--set orchestration.image.registry=${image_registry}
   --set orchestration.image.repository=${camunda_repo} \
   --set orchestration.image.tag=${image_tag}"
 
-additional_load_test_setup_configuration=""
+additional_load_test_setup_configuration="${load_test_setup_helm_values}"
 
 # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
 if [[ "${enable_optimize}" == "true" ]]; then
@@ -135,7 +138,7 @@ fi
 # is assuming to be always published by the dedicated CI running on
 # the main branch.
 if [[ "${metrics_exporter_built}" == "true" ]]; then
-  additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${image_tag}"
+  additional_load_test_setup_configuration+=" --set metricsExporter.image.tag=${image_tag}"
 fi
 
 make "${install_target}" \
