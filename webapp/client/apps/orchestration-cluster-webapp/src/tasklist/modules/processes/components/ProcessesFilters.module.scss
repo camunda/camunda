@@ -10,6 +10,38 @@
 	padding-block: var(--cds-spacing-03);
 }
 
+// DS-only (see ProcessesFilters.tsx). Replaces Carbon's CSS Grid, whose compat
+// adapter is a passthrough ("MIGRATION TODO: replace with Tailwind grid
+// utilities"). Reproduces the same 4/8/16-column track counts at Carbon's own sm
+// / md / lg breakpoints, with each cell's span passed in as --span-sm/-md/-lg so
+// the existing responsive proportions carry over exactly.
+.gridDS {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	column-gap: 1rem;
+
+	@media (min-width: 672px) {
+		grid-template-columns: repeat(8, 1fr);
+	}
+
+	@media (min-width: 1056px) {
+		grid-template-columns: repeat(16, 1fr);
+	}
+}
+
+.cellDS {
+	min-width: 0;
+	grid-column: span var(--span-sm);
+
+	@media (min-width: 672px) {
+		grid-column: span var(--span-md);
+	}
+
+	@media (min-width: 1056px) {
+		grid-column: span var(--span-lg);
+	}
+}
+
 .dropdown {
 	width: 100%;
 }

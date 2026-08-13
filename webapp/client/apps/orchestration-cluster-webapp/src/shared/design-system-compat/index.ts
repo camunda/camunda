@@ -26,6 +26,7 @@ import {
 	DatePicker as CarbonDatePicker,
 	DatePickerInput as CarbonDatePickerInput,
 	Dropdown as CarbonDropdown,
+	Search as CarbonSearch,
 	FormGroup as CarbonFormGroup,
 	Grid as CarbonGrid,
 	InlineLoading as CarbonInlineLoading,
@@ -73,6 +74,7 @@ import {
 	DatePicker as CompatDatePicker,
 	DatePickerInput as CompatDatePickerInput,
 	Dropdown as CompatDropdown,
+	Search as CompatSearch,
 	FormGroup as CompatFormGroup,
 	Grid as CompatGrid,
 	InlineLoading as CompatInlineLoading,
@@ -123,6 +125,8 @@ import {
 	EventSchedule as CarbonEventSchedule,
 	Filter as CarbonFilter,
 	Information as CarbonInformation,
+	ArrowRight as CarbonArrowRight,
+	List as CarbonList,
 	Maximize as CarbonMaximize,
 	Launch as CarbonLaunch,
 	Notification as CarbonNotification,
@@ -154,6 +158,8 @@ import {
 	ExternalLink as LucideExternalLink,
 	Filter as LucideFilter,
 	Info as LucideInfo,
+	ArrowRight as LucideArrowRight,
+	List as LucideList,
 	Maximize2 as LucideMaximize2,
 	PanelLeftClose as LucidePanelLeftClose,
 	PanelLeftOpen as LucidePanelLeftOpen,
@@ -390,6 +396,12 @@ export const DatePickerInput = featureFlags.dsTasklistUI ? CompatDatePickerInput
 // and verify visually.
 export const Dropdown = featureFlags.dsTasklistUI ? CompatDropdown : CarbonDropdown;
 
+// Search: carbon-compat ships a real adapter (DS Input plus a leading search
+// icon) rather than a passthrough, and it keeps Carbon's prop shape, so call
+// sites need no JSX changes. Note the name clash with `SearchIcon` above —
+// that one is the Carbon *icon*, this is the input component.
+export const Search = featureFlags.dsTasklistUI ? CompatSearch : CarbonSearch;
+
 // carbon-compat ships an OverflowMenu/OverflowMenuItem adapter with the same
 // prop shape as Carbon's (backed by DS DropdownMenu under the hood), so no
 // local wrapper is needed — the Carbon and compat versions are interchangeable
@@ -487,6 +499,15 @@ export const InformationIcon = featureFlags.dsTasklistUI ? LucideInfo : CarbonIn
 // Lucide also ships `Maximize` (four corner brackets), which is a different
 // glyph — not the match. Logged as an icon gap in human-follow-up.md.
 export const MaximizeIcon = featureFlags.dsTasklistUI ? LucideMaximize2 : CarbonMaximize;
+
+// ArrowRight: documented as an identical-name remap in carbon-icons-to-lucide.md.
+export const ArrowRightIcon = featureFlags.dsTasklistUI ? LucideArrowRight : CarbonArrowRight;
+
+// List: not in carbon-icons-to-lucide.md. Used on the process tile's "requires
+// form input" tag, where it reads as "this has fields to fill in". Lucide's
+// `List` is the same bulleted-list glyph — direct match, not an approximation.
+// Logged as an icon gap in human-follow-up.md.
+export const ListIcon = featureFlags.dsTasklistUI ? LucideList : CarbonList;
 
 // CircleDash: used here as a generic "unassigned" indicator, not a Camunda
 // domain entity — no registry match. Lucide's `CircleDashed` is the direct

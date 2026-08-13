@@ -1445,6 +1445,32 @@ append-only scan log.
     already accept `trailingElement`. Related to the `AppSidebar` nested-button
     item below: both come from items having no place to put a second control.
 
+- **2026-08-13 — `carbon-compat/grid.tsx` is a passthrough too, and the analyzer
+  buckets Grid/Column as SHIM.** Second confirmed instance of the scoring problem
+  logged below. The adapter is
+  `// MIGRATION TODO: replace with Tailwind grid utilities` re-exporting `Grid`
+  from `@carbon/react`. `analyze.sh` bucketed `Grid`/`Column` as SHIM on
+  Tasklist's Processes page, which at least weights them 0.5 rather than
+  StructuredList's misleading 1.0 — but the practical outcome is the same: swapping
+  the imports leaves the entire page layout Carbon-driven.
+  - **Done instead**: hand-written CSS grid on the DS path, reproducing Carbon's
+    4/8/16 track counts and the resulting 1/2/3 tiles per row at Carbon's own md
+    (672px) and lg (1056px) breakpoints. Verified at all three widths.
+  - **Also removed**: the page SCSS imported `@carbon/grid/scss/config` purely to
+    read `map.get($grid-breakpoints, max).width`. Inlined as `99rem`; confirmed
+    against the running app that the computed max-width is still exactly 1584px on
+    both paths.
+  - **Ask**: ship the Tailwind grid utilities this TODO refers to, or document the
+    breakpoint/track mapping so consumers do not each re-derive it. Every consumer
+    migrating a Carbon grid currently has to reverse-engineer the same numbers.
+
+- **2026-08-13 — icon gap: Carbon `List` has no row in
+  `carbon-icons-to-lucide.md`.** Used on the Processes page's "requires form input"
+  tag. Mapped to lucide `List` — same bulleted-list glyph, identical name, direct
+  match rather than an approximation.
+  - **Ask**: add `List` → `List` to the Common remaps table alongside the other
+    identical-name rows such as `ArrowRight`.
+
 - **2026-08-13 — `carbon-compat/structured-list.tsx` is a bare passthrough, but the
   analyzer scores it as a clean SWAP.** The adapter is
   `// MIGRATION TODO: no shadcn equivalent yet` re-exporting all six

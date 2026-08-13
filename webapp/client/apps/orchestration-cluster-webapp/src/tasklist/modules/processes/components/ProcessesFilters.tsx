@@ -6,7 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Column, Dropdown, Grid, Search} from '@carbon/react';
+import {Column, Dropdown, Grid, Search} from '#/shared/design-system-compat';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {useNavigate} from '@tanstack/react-router';
 import {useEffect, useEffectEvent, useReducer} from 'react';
 import {Field, Form, type FormRenderProps} from 'react-final-form';
@@ -70,14 +72,49 @@ function useDebounce(callback: () => void, delay: number) {
 	return invoke;
 }
 
+// Carbon's Grid/Column have no real DS adapter — carbon-compat passes them
+// straight through with "MIGRATION TODO: replace with Tailwind grid utilities".
+// On the DS path these render a plain CSS grid (see the module SCSS) carrying the
+// same sm/md/lg spans; on the Carbon path they stay Carbon's own Grid/Column so
+// the flag-off layout is untouched.
+type GridCellProps = {
+	sm: number;
+	md: number;
+	lg: number;
+	className?: string;
+	children: React.ReactNode;
+};
+
+const FilterGrid: React.FC<{children: React.ReactNode}> = ({children}) =>
+	featureFlags.dsTasklistUI ? <div className={styles.gridDS}>{children}</div> : <Grid narrow>{children}</Grid>;
+
+const GridCell: React.FC<GridCellProps> = ({sm, md, lg, className, children}) => {
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<div
+				className={cn(styles.cellDS, className)}
+				style={{'--span-sm': sm, '--span-md': md, '--span-lg': lg} as React.CSSProperties}
+			>
+				{children}
+			</div>
+		);
+	}
+
+	return (
+		<Column className={className} sm={sm} md={md} lg={lg}>
+			{children}
+		</Column>
+	);
+};
+
 const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 	const {t} = useTranslation();
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled && tenants.length > 1;
 	const debouncedHandleSubmit = useDebounce(handleSubmit, SUBMIT_DEBOUNCE);
 
 	return (
-		<Grid narrow>
-			<Column className={styles.filter} sm={4} md={isMultiTenancyEnabled ? 8 : 5} lg={10}>
+		<FilterGrid>
+			<GridCell className={styles.filter} sm={4} md={isMultiTenancyEnabled ? 8 : 5} lg={10}>
 				<Field<string> name="search">
 					{({input}) => (
 						<Search
@@ -94,8 +131,8 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 						/>
 					)}
 				</Field>
-			</Column>
-			<Column
+			</GridCell>
+			<GridCell
 				className={styles.filter}
 				sm={isMultiTenancyEnabled ? 2 : 4}
 				md={isMultiTenancyEnabled ? 4 : 3}
@@ -121,9 +158,9 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 						/>
 					)}
 				</Field>
-			</Column>
+			</GridCell>
 			{isMultiTenancyEnabled ? (
-				<Column className={styles.filter} sm={2} md={4} lg={2}>
+				<GridCell className={styles.filter} sm={2} md={4} lg={2}>
 					<Field<FilterValues['tenantId']> name="tenantId" initialValue={tenants[0]?.tenantId}>
 						{({input}) => (
 							<Dropdown
@@ -142,9 +179,9 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 							/>
 						)}
 					</Field>
-				</Column>
+				</GridCell>
 			) : null}
-		</Grid>
+		</FilterGrid>
 	);
 };
 

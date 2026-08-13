@@ -7,8 +7,10 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
-import {Stack, Tag} from '@carbon/react';
-import {ArrowRight, List} from '@carbon/react/icons';
+import {ArrowRightIcon, ListIcon, Stack, Tag} from '#/shared/design-system-compat';
+import {Card} from '@camunda/design-system';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton/AsyncActionButton';
@@ -57,7 +59,7 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 				type: 'button',
 				kind: 'tertiary',
 				size: 'sm',
-				renderIcon: process.hasStartForm ? ArrowRight : undefined,
+				renderIcon: process.hasStartForm ? ArrowRightIcon : undefined,
 				disabled: isStartButtonDisabled,
 				onClick: onStartProcess,
 			}) as const,
@@ -72,8 +74,14 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 		[status, statusDescription],
 	);
 
+	// DS-only: the tile was a plain div painted with --cds-layer. The DS Card gives
+	// it the same raised surface as the task cards, the embedded form and the
+	// process diagram. Rendered as the same element either way so the grid cell's
+	// sizing is unaffected.
+	const Container = featureFlags.dsTasklistUI ? Card : 'div';
+
 	return (
-		<div className={styles.container}>
+		<Container className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}>
 			<Stack className={styles.content}>
 				<Stack className={styles.titleWrapper}>
 					<div className={styles.titleRow}>
@@ -93,7 +101,7 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 					>
 						{process.hasStartForm ? (
 							<li>
-								<Tag renderIcon={List}>{t('tasklist.processesProcessTileAttributeRequiresForm')}</Tag>
+								<Tag renderIcon={ListIcon}>{t('tasklist.processesProcessTileAttributeRequiresForm')}</Tag>
 							</li>
 						) : null}
 					</ul>
@@ -106,7 +114,7 @@ const ProcessTile: React.FC<Props> = ({process, status, isStartButtonDisabled, o
 					</AsyncActionButton>
 				</div>
 			</Stack>
-		</div>
+		</Container>
 	);
 };
 

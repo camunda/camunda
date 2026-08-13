@@ -16,6 +16,14 @@
 	white-space: nowrap;
 }
 
+// DS-only (see ProcessTile.tsx). The Card supplies the surface, ring and radius,
+// so the Carbon layer background and the Card's own vertical padding are dropped
+// in favour of the tile's existing uniform padding.
+.containerDS {
+	background: none;
+	padding: var(--cds-spacing-05);
+}
+
 .container {
 	width: 100%;
 	height: 100%;
