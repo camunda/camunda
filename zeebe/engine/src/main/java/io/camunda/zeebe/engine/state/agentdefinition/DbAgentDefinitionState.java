@@ -86,4 +86,14 @@ public final class DbAgentDefinitionState implements MutableAgentDefinitionState
     dbAgentDefinition.setRecord(record);
     agentDefinitionColumnFamily.upsert(this.agentDefinitionKey, dbAgentDefinition);
   }
+
+  @Override
+  public void delete(final AgentDefinitionRecord record) {
+    processDefinitionKey.wrapLong(record.getProcessDefinitionKey());
+    elementId.wrapBuffer(BufferUtil.wrapString(record.getElementId()));
+    agentDefinitionKeyColumnFamily.deleteIfExists(processDefinitionKeyAndElementId);
+
+    agentDefinitionKey.wrapLong(record.getAgentDefinitionKey());
+    agentDefinitionColumnFamily.deleteIfExists(agentDefinitionKey);
+  }
 }
