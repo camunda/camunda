@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.AGENT_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.COMPLETION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_ID;
@@ -114,6 +115,7 @@ final class AgentInstanceHandlerTest {
     final long rootProcessInstanceKey = 250L;
     final String bpmnProcessId = "myProcess";
     final long processDefinitionKey = 400L;
+    final long agentDefinitionKey = 401L;
     final int processDefinitionVersion = 2;
     final String versionTag = "v2";
     final String tenantId = "<default>";
@@ -144,6 +146,7 @@ final class AgentInstanceHandlerTest {
             .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withBpmnProcessId(bpmnProcessId)
             .withProcessDefinitionKey(processDefinitionKey)
+            .withAgentDefinitionKey(agentDefinitionKey)
             .withProcessDefinitionVersion(processDefinitionVersion)
             .withVersionTag(versionTag)
             .withTenantId(tenantId)
@@ -196,6 +199,7 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(entity.getAgentDefinitionKey()).isEqualTo(agentDefinitionKey);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processDefinitionVersion);
     assertThat(entity.getVersionTag()).isEqualTo(versionTag);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
@@ -217,6 +221,40 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getCreationDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getLastUpdatedDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getCompletionDate()).isNull();
+  }
+
+  @Test
+  void shouldReResolveAgentDefinitionKeyOnMigrated() {
+    // given — an entity created with an initial agent definition key
+    final var entity = new AgentInstanceEntity().setId("1");
+    final Record<AgentInstanceRecordValue> createdRecord =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.CREATED)
+                    .withValue(
+                        ImmutableAgentInstanceRecordValue.builder()
+                            .from(buildMinimalRecordValue(1L))
+                            .withAgentDefinitionKey(700L)
+                            .build()));
+    underTest.updateEntity(createdRecord, entity);
+    assertThat(entity.getAgentDefinitionKey()).isEqualTo(700L);
+
+    // when — a MIGRATED record carries a re-resolved agent definition key
+    final Record<AgentInstanceRecordValue> migratedRecord =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.MIGRATED)
+                    .withValue(
+                        ImmutableAgentInstanceRecordValue.builder()
+                            .from(buildMinimalRecordValue(1L))
+                            .withAgentDefinitionKey(800L)
+                            .build()));
+    underTest.updateEntity(migratedRecord, entity);
+
+    // then — the entity reflects the re-resolved key
+    assertThat(entity.getAgentDefinitionKey()).isEqualTo(800L);
   }
 
   @Test
@@ -404,6 +442,7 @@ final class AgentInstanceHandlerTest {
     // intent since flush() has no access to the record intent (see AgentInstanceHandler#flush).
     expectedUpdateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    expectedUpdateFields.put(AGENT_DEFINITION_KEY, entity.getAgentDefinitionKey());
     expectedUpdateFields.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     expectedUpdateFields.put(VERSION_TAG, entity.getVersionTag());
     expectedUpdateFields.put(ELEMENT_ID, entity.getElementId());
@@ -448,6 +487,7 @@ final class AgentInstanceHandlerTest {
   private AgentInstanceRecordValue buildMinimalRecordValue(final long agentInstanceKey) {
     return ImmutableAgentInstanceRecordValue.builder()
         .withAgentInstanceKey(agentInstanceKey)
+        .withAgentDefinitionKey(700L)
         .withRootProcessInstanceKey(50L)
         .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.IDLE)
         .withDefinition(

@@ -8,6 +8,9 @@
       "key": {
         "type": "long"
       },
+      "agentDefinitionKey": {
+        "type": "long"
+      },
       "elementId": {
         "type": "keyword"
       },

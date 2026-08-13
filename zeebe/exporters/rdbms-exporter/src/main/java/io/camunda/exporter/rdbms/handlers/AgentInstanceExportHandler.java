@@ -66,6 +66,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
     final Builder builder =
         new Builder()
             .agentInstanceKey(record.getKey())
+            .agentDefinitionKey(value.getAgentDefinitionKey())
             .elementId(value.getElementId())
             .processInstanceKey(value.getProcessInstanceKey())
             .rootProcessInstanceKey(value.getRootProcessInstanceKey())

@@ -63,6 +63,7 @@ public class AgentInstanceIT {
                     .processDefinitionKey(model.processDefinitionKey() + 1)
                     .processDefinitionVersion(model.processDefinitionVersion() + 1)
                     .versionTag("v2")
+                    .agentDefinitionKey(model.agentDefinitionKey() + 1)
                     .elementId("migrated-element"));
     final RdbmsWriters rdbmsWriters = testApplication.getRdbmsService().createWriter(0);
     rdbmsWriters.getAgentInstanceWriter().update(migrated);
@@ -78,6 +79,7 @@ public class AgentInstanceIT {
     assertThat(entity.processDefinitionKey()).isEqualTo(migrated.processDefinitionKey());
     assertThat(entity.processDefinitionVersion()).isEqualTo(migrated.processDefinitionVersion());
     assertThat(entity.versionTag()).isEqualTo("v2");
+    assertThat(entity.agentDefinitionKey()).isEqualTo(migrated.agentDefinitionKey());
     assertThat(entity.elementId()).isEqualTo("migrated-element");
   }
 
@@ -104,7 +106,8 @@ public class AgentInstanceIT {
 
     // when — a second write to the same row is queued before the first is flushed, so it must
     // coalesce into the still-pending INSERT via UpsertMerger/Copyable.copy() instead of issuing
-    // a separate UPDATE
+    // a separate UPDATE. The update also re-resolves agentDefinitionKey (as a migration would), so
+    // the merge must carry the new key rather than leaving the create-time one on the pending row.
     final var updatedTools =
         List.of(new AgentInstanceToolDbValue("calculator", "does math", "el-2"));
     final var updated =
@@ -112,6 +115,7 @@ public class AgentInstanceIT {
             b ->
                 ((AgentInstanceDbModel.Builder) b)
                     .status(AgentInstanceStatus.THINKING)
+                    .agentDefinitionKey(created.agentDefinitionKey() + 1)
                     .toolValues(updatedTools));
     rdbmsWriters.getAgentInstanceWriter().update(updated);
     rdbmsWriters.flush();
@@ -126,6 +130,7 @@ public class AgentInstanceIT {
 
     assertThat(entity).isNotNull();
     assertThat(entity.status()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(entity.agentDefinitionKey()).isEqualTo(updated.agentDefinitionKey());
     assertThat(entity.tools()).hasSize(1);
     assertThat(entity.tools().getFirst().name()).isEqualTo("calculator");
     assertThat(entity.definition().model()).isEqualTo(created.model());
@@ -189,6 +194,7 @@ public class AgentInstanceIT {
   private void assertFieldsMatch(
       final AgentInstanceDbModel dbModel, final AgentInstanceEntity entity) {
     assertThat(entity.agentInstanceKey()).isEqualTo(dbModel.agentInstanceKey());
+    assertThat(entity.agentDefinitionKey()).isEqualTo(dbModel.agentDefinitionKey());
     assertThat(entity.elementId()).isEqualTo(dbModel.elementId());
     assertThat(entity.processInstanceKey()).isEqualTo(dbModel.processInstanceKey());
     assertThat(entity.processDefinitionKey()).isEqualTo(dbModel.processDefinitionKey());

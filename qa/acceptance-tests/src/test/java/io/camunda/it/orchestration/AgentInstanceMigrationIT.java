@@ -70,6 +70,8 @@ public class AgentInstanceMigrationIT {
     final var processInstanceKey =
         startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
     final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId);
+    final long sourceAgentDefinitionKey =
+        client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
     activateAndCompleteJobs(client, agentJobType, "test-worker", 1);
     waitForElementInstances(
@@ -88,7 +90,8 @@ public class AgentInstanceMigrationIT {
 
     // then — the agent instance is migrated even though its owning element instance already
     // completed and is not part of the migrated element tree
-    assertAgentInstanceMigratedTo(agentInstanceKey, targetProcess, targetElementId);
+    assertAgentInstanceMigratedTo(
+        agentInstanceKey, targetProcess, targetElementId, sourceAgentDefinitionKey);
   }
 
   @Test
@@ -123,6 +126,8 @@ public class AgentInstanceMigrationIT {
     final var processInstanceKey =
         startProcessInstance(client, sourceProcess.getBpmnProcessId()).getProcessInstanceKey();
     final var agentInstanceKey = createAgentInstance(processInstanceKey, sourceElementId);
+    final long sourceAgentDefinitionKey =
+        client.newAgentInstanceGetRequest(agentInstanceKey).execute().getAgentDefinitionKey();
 
     // when
     client
@@ -135,7 +140,8 @@ public class AgentInstanceMigrationIT {
         .execute();
 
     // then
-    assertAgentInstanceMigratedTo(agentInstanceKey, targetProcess, targetElementId);
+    assertAgentInstanceMigratedTo(
+        agentInstanceKey, targetProcess, targetElementId, sourceAgentDefinitionKey);
   }
 
   private long createAgentInstance(final long processInstanceKey, final String elementId) {
@@ -164,7 +170,10 @@ public class AgentInstanceMigrationIT {
   }
 
   private void assertAgentInstanceMigratedTo(
-      final long agentInstanceKey, final Process targetProcess, final String targetElementId) {
+      final long agentInstanceKey,
+      final Process targetProcess,
+      final String targetElementId,
+      final long sourceAgentDefinitionKey) {
     await("agent instance reflects the target process definition after migration")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
@@ -189,6 +198,12 @@ public class AgentInstanceMigrationIT {
                         .assertThat(response.getElementId())
                         .as("elementId")
                         .isEqualTo(targetElementId);
+                    softly
+                        .assertThat(response.getAgentDefinitionKey())
+                        .as("agentDefinitionKey")
+                        .isNotNull()
+                        .isPositive()
+                        .isNotEqualTo(sourceAgentDefinitionKey);
                   });
             });
   }

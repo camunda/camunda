@@ -45,6 +45,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
 
   private static final long ELEMENT_INSTANCE_KEY = 2251799813685248L;
   private static final long AGENT_INSTANCE_KEY = 9007199254741017L;
+  private static final long AGENT_DEFINITION_KEY = 9007199254741018L;
   private static final long PROCESS_INSTANCE_KEY = 9007199254741001L;
   private static final long ROOT_PROCESS_INSTANCE_KEY = 9007199254741000L;
   private static final long PROCESS_DEFINITION_KEY = 9007199254740992L;
@@ -58,6 +59,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
   private static final AgentInstanceEntity AGENT_INSTANCE_ENTITY =
       new AgentInstanceEntity(
           AGENT_INSTANCE_KEY,
+          AGENT_DEFINITION_KEY,
           List.of(ELEMENT_INSTANCE_KEY),
           AgentInstanceStatus.COMPLETED,
           new AgentInstanceDefinition("gpt-4o", "openai", "You are a helpful assistant."),
@@ -82,6 +84,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
         "items": [
           {
             "agentInstanceKey": "%d",
+            "agentDefinitionKey": "%d",
             "status": "COMPLETED",
             "definition": {
               "model": "gpt-4o",
@@ -130,6 +133,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
       """
           .formatted(
               AGENT_INSTANCE_KEY,
+              AGENT_DEFINITION_KEY,
               PROCESS_INSTANCE_KEY,
               ROOT_PROCESS_INSTANCE_KEY,
               PROCESS_DEFINITION_KEY,
@@ -167,6 +171,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             """
             {
               "agentInstanceKey": "%d",
+              "agentDefinitionKey": "%d",
               "status": "COMPLETED",
               "definition": {
                 "model": "gpt-4o",
@@ -207,6 +212,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             """
                 .formatted(
                     AGENT_INSTANCE_KEY,
+                    AGENT_DEFINITION_KEY,
                     PROCESS_INSTANCE_KEY,
                     ROOT_PROCESS_INSTANCE_KEY,
                     PROCESS_DEFINITION_KEY,

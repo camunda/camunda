@@ -31,6 +31,10 @@ public final class AgentInstanceEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private long key;
 
+  /** Key of the agent definition this instance runs on, or {@code -1} when unset. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long agentDefinitionKey = -1L;
+
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String elementId;
 
@@ -133,6 +137,15 @@ public final class AgentInstanceEntity
 
   public AgentInstanceEntity setKey(final long key) {
     this.key = key;
+    return this;
+  }
+
+  public long getAgentDefinitionKey() {
+    return agentDefinitionKey;
+  }
+
+  public AgentInstanceEntity setAgentDefinitionKey(final long agentDefinitionKey) {
+    this.agentDefinitionKey = agentDefinitionKey;
     return this;
   }
 
@@ -369,6 +382,7 @@ public final class AgentInstanceEntity
     return Objects.hash(
         id,
         key,
+        agentDefinitionKey,
         elementId,
         processInstanceKey,
         bpmnProcessId,
@@ -407,6 +421,7 @@ public final class AgentInstanceEntity
     final var that = (AgentInstanceEntity) obj;
     return Objects.equals(id, that.id)
         && key == that.key
+        && agentDefinitionKey == that.agentDefinitionKey
         && Objects.equals(elementId, that.elementId)
         && processInstanceKey == that.processInstanceKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
@@ -442,6 +457,8 @@ public final class AgentInstanceEntity
         + '\''
         + ", key="
         + key
+        + ", agentDefinitionKey="
+        + agentDefinitionKey
         + ", elementId='"
         + elementId
         + '\''

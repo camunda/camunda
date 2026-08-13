@@ -182,6 +182,8 @@ public class AgentInstanceSearchIT {
     assertThat(response.items())
         .extracting(AgentInstance::getAgentInstanceKey)
         .containsExactlyInAnyOrder(agentInstanceKey1, agentInstanceKey2, agentInstanceKey3);
+    assertThat(response.items())
+        .allSatisfy(ai -> assertThat(ai.getAgentDefinitionKey()).isNotNull().isPositive());
   }
 
   @Test

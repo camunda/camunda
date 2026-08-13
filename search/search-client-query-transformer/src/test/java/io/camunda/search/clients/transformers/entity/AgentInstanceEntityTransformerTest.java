@@ -24,6 +24,7 @@ class AgentInstanceEntityTransformerTest {
   private io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity buildSource() {
     final var source = new io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity();
     source.setKey(100L);
+    source.setAgentDefinitionKey(500L);
     source.setElementInstanceKeys(List.of(1L, 2L));
     source.setStatus(
         io.camunda.webapps.schema.entities.agentinstance.AgentInstanceStatus.COMPLETED);
@@ -60,6 +61,7 @@ class AgentInstanceEntityTransformerTest {
     final var result = transformer.apply(buildSource());
 
     assertThat(result.agentInstanceKey()).isEqualTo(100L);
+    assertThat(result.agentDefinitionKey()).isEqualTo(500L);
     assertThat(result.elementInstanceKeys()).containsExactly(1L, 2L);
     assertThat(result.status()).isEqualTo(AgentInstanceStatus.COMPLETED);
     assertThat(result.definition().model()).isEqualTo("gpt-4o");

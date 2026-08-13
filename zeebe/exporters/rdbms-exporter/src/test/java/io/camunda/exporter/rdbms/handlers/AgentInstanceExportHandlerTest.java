@@ -113,6 +113,7 @@ class AgentInstanceExportHandlerTest {
     final AgentInstanceDbModel model = modelCaptor.getValue();
     // identity
     assertThat(model.agentInstanceKey()).isEqualTo(agentKey);
+    assertThat(model.agentDefinitionKey()).isEqualTo(700L);
     assertThat(model.elementId()).isEqualTo("myElement");
     assertThat(model.processInstanceKey()).isEqualTo(100L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(50L);
@@ -184,6 +185,7 @@ class AgentInstanceExportHandlerTest {
             .withProcessDefinitionVersion(4)
             .withVersionTag("v2.0")
             .withElementId("targetElement")
+            .withAgentDefinitionKey(888L)
             .build();
     final Record<AgentInstanceRecordValue> record =
         factory.generateRecord(
@@ -205,6 +207,7 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.processDefinitionVersion()).isEqualTo(4);
     assertThat(model.versionTag()).isEqualTo("v2.0");
     assertThat(model.elementId()).isEqualTo("targetElement");
+    assertThat(model.agentDefinitionKey()).isEqualTo(888L);
     assertThat(model.completionDate()).isNull();
   }
 
@@ -335,6 +338,7 @@ class AgentInstanceExportHandlerTest {
             .build();
     return ImmutableAgentInstanceRecordValue.builder()
         .withAgentInstanceKey(agentInstanceKey)
+        .withAgentDefinitionKey(700L)
         .withElementInstanceKey(300L)
         .withElementInstanceKeys(List.of(200L, 300L))
         .withElementId("myElement")
