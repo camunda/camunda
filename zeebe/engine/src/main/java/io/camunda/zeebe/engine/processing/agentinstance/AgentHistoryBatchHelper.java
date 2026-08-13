@@ -80,11 +80,11 @@ public final class AgentHistoryBatchHelper {
   }
 
   /**
-   * Validates the job context a command carries. If a history batch is present, {@code jobKey}
-   * becomes required — a batch must always be attributed to the job that produced it — otherwise no
-   * job at all remains valid. When a job is supplied (with or without a batch), it must refer to a
-   * currently-active job, that job's lease token (if any) must match {@code jobLease}, and the job
-   * must belong to {@code elementInstanceKey}.
+   * Validates the job context a command carries. {@code jobKey} may be omitted only when no history
+   * batch is present; once a batch is attached to the command, {@code jobKey} becomes required — a
+   * batch must always be attributed to the active job that produced it. When a job is supplied
+   * (with or without a batch), it must refer to a currently-active job, that job's lease token (if
+   * any) must match {@code jobLease}, and the job must belong to {@code elementInstanceKey}.
    *
    * @return the active {@link JobRecord} if a job was supplied and is valid, {@code null} wrapped
    *     in {@link Either#right} if no job was supplied and none was required, otherwise the {@link
