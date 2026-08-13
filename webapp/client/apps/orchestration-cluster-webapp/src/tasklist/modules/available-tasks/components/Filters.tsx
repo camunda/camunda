@@ -22,11 +22,7 @@ import {CustomFiltersModal} from './custom-filters/CustomFiltersModal';
 import {DeleteFilterModal} from './custom-filters/DeleteFilterModal';
 import {getCustomFilterSearch} from '../getCustomFilterSearch';
 import styles from './Filters.module.scss';
-import {
-	isBuiltInFilter,
-	type BuiltInFilter,
-	type TasklistIndexSearch,
-} from '#/tasklist/modules/available-tasks/searchSchema';
+import {type BuiltInFilter, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 
 const SORTING_OPTIONS_ORDER = [
 	'creation',
@@ -50,23 +46,6 @@ const SORTING_OPTION_LABEL_KEYS = {
 	completion: 'tasklist.taskFiltersSortCompletionDate',
 	priority: 'tasklist.taskFiltersSortPriority',
 } as const;
-
-const FILTER_HEADER_LABEL_KEYS: Record<BuiltInFilter, string> = {
-	'all-open': 'tasklist.taskFiltersAllOpenTasks',
-	'assigned-to-me': 'tasklist.taskFiltersAssignedToMe',
-	unassigned: 'tasklist.taskFiltersUnassigned',
-	completed: 'tasklist.taskFiltersCompleted',
-};
-
-function getFilterLabel(filter: string): string {
-	if (isBuiltInFilter(filter)) {
-		return FILTER_HEADER_LABEL_KEYS[filter];
-	}
-
-	const stored = getStateLocally('tasklist.customFilters')?.[filter];
-
-	return stored?.name ?? 'tasklist.taskFilterPanelCustom';
-}
 
 const Filters: React.FC = () => {
 	const {t} = useTranslation();
@@ -164,7 +143,10 @@ const Filters: React.FC = () => {
 
 	if (featureFlags.dsTasklistUI) {
 		return (
-			<section className={cn(styles.panelHeader, styles.panelHeaderDS)} aria-label={t('tasklist.taskFiltersHeaderAria')}>
+			<section
+				className={cn(styles.panelHeader, styles.panelHeaderDS)}
+				aria-label={t('tasklist.taskFiltersHeaderAria')}
+			>
 				<FilterSelectDS
 					filter={filter}
 					onFilterChange={applyFilter}
@@ -238,7 +220,10 @@ const Filters: React.FC = () => {
 					if (newFilter === 'create-filter') {
 						setIsCustomFiltersModalOpen(true);
 					} else {
-						navigate({to: '.', search: newFilter === 'completed' ? {filter: newFilter, sortBy: 'completion'} : {filter: newFilter}});
+						navigate({
+							to: '.',
+							search: newFilter === 'completed' ? {filter: newFilter, sortBy: 'completion'} : {filter: newFilter},
+						});
 					}
 				}}
 			>

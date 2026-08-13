@@ -23,40 +23,45 @@
 // `min-w-48 max-w-sm`, so it stays a compact field rather than a full-width bar.
 // Height already matches the DS Input (h-9 = 36px) and is untouched.
 .searchCellDS {
+	// Basis rather than a plain width: in the flex row the cell would otherwise
+	// collapse to its content, and the input inside is `w-full`.
+	flex: 0 1 24rem;
 	min-width: 12rem;
 	max-width: 24rem;
 }
 
 // DS-only (see ProcessesFilters.tsx). Replaces Carbon's CSS Grid, whose compat
 // adapter is a passthrough ("MIGRATION TODO: replace with Tailwind grid
-// utilities"). Reproduces the same 4/8/16-column track counts at Carbon's own sm
-// / md / lg breakpoints, with each cell's span passed in as --span-sm/-md/-lg so
-// the existing responsive proportions carry over exactly.
+// utilities"). The DS ProjectDetailPage reference puts its search and its filter
+// controls in one flex row rather than on a wide column grid, so the filters sit
+// together on the left instead of being pushed to opposite ends of the page.
 .gridDS {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	column-gap: 1rem;
-
-	@media (min-width: 672px) {
-		grid-template-columns: repeat(8, 1fr);
-	}
-
-	@media (min-width: 1056px) {
-		grid-template-columns: repeat(16, 1fr);
-	}
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
 }
 
 .cellDS {
 	min-width: 0;
-	grid-column: span var(--span-sm);
+}
 
-	@media (min-width: 672px) {
-		grid-column: span var(--span-md);
-	}
-
-	@media (min-width: 1056px) {
-		grid-column: span var(--span-lg);
-	}
+// The compat Dropdown accepts `hideLabel` but does not honour it — it renders the
+// titleText as a visible <label> regardless (a known carbon-compat gap, logged in
+// human-follow-up.md alongside the same bug on Select). Hiding it visually is what
+// keeps the control the same height as the search field beside it. Uses the
+// sr-only pattern rather than `display: none` so the label still names the
+// control for assistive tech.
+.dropdownLabelHiddenDS > label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border-width: 0;
 }
 
 .dropdown {

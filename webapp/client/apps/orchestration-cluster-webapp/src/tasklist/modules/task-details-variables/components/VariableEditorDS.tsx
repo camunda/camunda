@@ -27,7 +27,6 @@ import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {cn} from '#/shared/cn';
 import type {VariablesFormValues} from '#/tasklist/modules/task-details-variables/types';
 import {
 	createNewVariableFieldName,

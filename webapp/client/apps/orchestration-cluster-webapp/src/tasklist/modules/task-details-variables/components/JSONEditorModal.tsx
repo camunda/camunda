@@ -9,7 +9,6 @@
 import {useMemo, useRef, useState} from 'react';
 import {ComposedModal, ModalBody, ModalFooter, ModalHeader} from '#/shared/design-system-compat';
 import {featureFlags} from '#/shared/feature-flags';
-import {cn} from '#/shared/cn';
 import Editor from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
 import {useTranslation} from 'react-i18next';

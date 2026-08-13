@@ -90,14 +90,9 @@ const FilterGrid: React.FC<{children: React.ReactNode}> = ({children}) =>
 
 const GridCell: React.FC<GridCellProps> = ({sm, md, lg, className, children}) => {
 	if (featureFlags.dsTasklistUI) {
-		return (
-			<div
-				className={cn(styles.cellDS, className)}
-				style={{'--span-sm': sm, '--span-md': md, '--span-lg': lg} as React.CSSProperties}
-			>
-				{children}
-			</div>
-		);
+		// The sm/md/lg spans are Carbon-grid concepts and are deliberately unused
+		// here — the DS path lays the filters out as a flex row instead.
+		return <div className={cn(styles.cellDS, className)}>{children}</div>;
 	}
 
 	return (
@@ -151,7 +146,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 					{({input}) => (
 						<Dropdown
 							id="process-filters"
-							className={styles.dropdown}
+							className={cn(styles.dropdown, featureFlags.dsTasklistUI && styles.dropdownLabelHiddenDS)}
 							hideLabel
 							selectedItem={
 								PROCESS_FILTERS.find(({hasStartForm}) => hasStartForm === input.value) ?? DEFAULT_PROCESS_FILTER
@@ -174,7 +169,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 						{({input}) => (
 							<Dropdown
 								id="tenant-filter"
-								className={styles.dropdown}
+								className={cn(styles.dropdown, featureFlags.dsTasklistUI && styles.dropdownLabelHiddenDS)}
 								hideLabel
 								selectedItem={tenants.find(({tenantId}) => tenantId === input.value) ?? tenants[0]}
 								titleText={t('tasklist.multiTenancyDropdownLabel')}
