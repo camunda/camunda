@@ -29,7 +29,8 @@ public interface ProcessDefinitionReader {
     return getDefinitionReader().getLatestVersionToKey(DefinitionType.PROCESS, key);
   }
 
-  Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId);
+  Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
+      final String definitionId, final boolean includeXml);
 
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
 

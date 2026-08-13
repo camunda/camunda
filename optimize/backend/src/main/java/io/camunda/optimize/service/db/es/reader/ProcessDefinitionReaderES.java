@@ -53,7 +53,8 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   }
 
   @Override
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
+      final String definitionId, final boolean includeXml) {
     final BoolQuery.Builder query = new BoolQuery.Builder();
     query.must(m -> m.matchAll(l -> l));
     query.must(
@@ -63,7 +64,7 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
                     l.field(PROCESS_DEFINITION_ID)
                         .terms(tt -> tt.value(List.of(FieldValue.of(definitionId))))));
 
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, includeXml).stream()
         .findFirst()
         .map(ProcessDefinitionOptimizeDto.class::cast);
   }
