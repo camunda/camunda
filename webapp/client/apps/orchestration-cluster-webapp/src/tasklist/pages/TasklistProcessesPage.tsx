@@ -60,10 +60,16 @@ const TasklistProcessesPage: React.FC<Props> = ({
 
 	return (
 		<>
-			<main id="main-content" className={`cds--content ${styles.page}`}>
+			<main
+				id="main-content"
+				className={cn('cds--content', styles.page, featureFlags.dsTasklistUI && styles.pageDS)}
+			>
 				<div className={styles.scrollContainer}>
 					<Stack gap={2}>
-						<section className={styles.header} aria-labelledby="processes-heading">
+						<section
+							className={cn(styles.header, featureFlags.dsTasklistUI && styles.headerDS)}
+							aria-labelledby="processes-heading"
+						>
 							<Stack className={styles.headerContent} gap={6}>
 								{/* Carbon's Grid/Column only spanned the full width here, so the DS path
 								    drops the grid entirely rather than reproducing a single full-span cell. */}

@@ -38,10 +38,16 @@
 	background: var(--cds-layer);
 }
 
-// DS-only (see TasklistProcessesPage.tsx). --cds-layer is white, which is now the
-// tiles' own colour, so the tiles disappeared into the page. Drops the section to
-// the DS base surface, matching the task-list and task-details panels, so the
-// white tiles read as raised against it.
+// DS-only (see TasklistProcessesPage.tsx). The page previously stacked three
+// different Carbon surfaces — --cds-layer on the page and the tile section,
+// --cds-background on the header — which read as banding once the tiles became
+// white. All three now share the DS base surface, so the page is one continuous
+// background and only the tiles sit above it.
+//
+// These must stay declared after their base classes: single-class selectors have
+// equal specificity, so source order decides.
+.pageDS,
+.headerDS,
 .processesDS {
 	background: var(--background);
 }
