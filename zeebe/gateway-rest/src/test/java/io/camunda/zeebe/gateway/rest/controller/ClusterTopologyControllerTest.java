@@ -65,7 +65,7 @@ class ClusterTopologyControllerTest extends RestControllerTest {
                     5L,
                     List.of(new PhysicalTenantBroker(brokerZero, List.of(partition)))),
                 new PhysicalTenantTopology(
-                    "tenant-b",
+                    "tenantb",
                     1,
                     1,
                     7L,
@@ -108,7 +108,7 @@ class ClusterTopologyControllerTest extends RestControllerTest {
                   ]
                 },
                 {
-                  "physicalTenantId": "tenant-b",
+                  "physicalTenantId": "tenantb",
                   "partitionsCount": 1,
                   "replicationFactor": 1,
                   "lastCompletedChangeId": "7",
