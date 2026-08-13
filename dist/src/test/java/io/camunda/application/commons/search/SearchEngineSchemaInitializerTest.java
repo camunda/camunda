@@ -326,8 +326,8 @@ class SearchEngineSchemaInitializerTest {
                       "elasticsearch",
                       "camunda.physical-tenants.tenantb.data.secondary-storage.type",
                       "elasticsearch",
-                      "camunda.physical-tenants.tenantb.security.authorization.enabled",
-                      "false",
+                      "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                      "tenantb-admin",
                       "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                       "tenantb")));
       final Camunda camunda = new Camunda();
