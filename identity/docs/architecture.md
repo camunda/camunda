@@ -277,7 +277,11 @@ Everything else on CSL's side is referred to by role ("Basic Auth Converter (CSL
 name, so a refactor behind the boundary does not oblige a change here.
 
 Note that "does the name appear in an OC `.java` file" is *not* the test, and would give the wrong
-answer. `AuthorizationChecker` is the case to check a proposed name against: it is referenced by 14
+answer. The test for category 2 is narrower than "OC holds a reference to it": does OC's own code
+populate the value's fields, or does OC only receive an already-built instance and pass it on
+unread? Only the former qualifies.
+
+`AuthorizationChecker` is the case to check a proposed name against: it is referenced by 14
 non-test OC files, yet it is used nowhere in these docs to describe the engine or REST check paths —
 those say "the CSL check" instead. OC obtains one from `AuthorizationCheckerFactory.forPhysicalTenant`
 and hands it straight to `DefaultResourceAccessProvider` without ever reading it, so it is an opaque
@@ -289,7 +293,7 @@ the same package as `ResourceAccessProvider` and `TenantAccess`, which are both 
 
 |    CSL package     |                  Type                   |                                                                                                       OC implementation                                                                                                        |
 |--------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `core.port.in`     | `AuthorizationCheckPort`                | Primarily consumed. `TenantAwareAuthorizationCheckPort` (`dist`) routes each request to the per-physical-tenant port CSL assembles. `OidcProviderConfigurationPort` is likewise consumed, not implemented                      |
+| `core.port.in`     | `AuthorizationCheckPort`                | Primarily consumed. `TenantAwareAuthorizationCheckPort` (`dist`) routes each request to the per-physical-tenant port CSL assembles                                                                                             |
 | `core.port.in`     | `CamundaUserPort`                       | `BasicCamundaUserService` (`authentication`)                                                                                                                                                                                   |
 | `core.port.out`    | `AuthorizationScopeRepositoryPort`      | `SearchAuthorizationScopeRepository` (`security-services`, secondary storage) · `AuthorizationScopeStateAdapter` (`zeebe/engine`, RocksDB)                                                                                     |
 | `core.port.out`    | `MembershipPort`                        | `DefaultMembershipService` / `NoDBMembershipService` (`authentication`) · `MembershipStateAdapter` (`zeebe/engine`)                                                                                                            |
