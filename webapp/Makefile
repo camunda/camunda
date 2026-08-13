@@ -3,7 +3,7 @@ skip-fe-build ?= true
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \
-	&& mvn install -DskipTests=true -Dskip.fe.build=${skip-fe-build} -DskipChecks -DskipQaBuild \
+	&& mvn install -DskipTests=true -Dskip.fe.build=${skip-fe-build}  -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
@@ -25,7 +25,7 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 		-Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
-		-Dspring-boot.run.profiles=tmp-webapp,broker,dev,dev-data,consolidated-auth
+		-Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,consolidated-auth
 
 .PHONY: env-down
 env-down:

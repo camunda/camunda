@@ -76,8 +76,7 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/tasklist/tasks/{id}", EXPECTED_PREFIX + "/tasklist/tasks/{id}"),
         Arguments.of("/admin", EXPECTED_PREFIX + "/admin"),
         Arguments.of("/admin/users", EXPECTED_PREFIX + "/admin/users"),
-        Arguments.of("/webapp", EXPECTED_PREFIX + "/webapp"),
-        Arguments.of("/webapp/some-route", EXPECTED_PREFIX + "/webapp/some-route"),
+        Arguments.of("/custom.css", EXPECTED_PREFIX + "/custom.css"),
         // post-logout landing gets a per-tenant sibling so scoped OIDC logout can return to it
         Arguments.of("/post-logout", EXPECTED_PREFIX + "/post-logout"),
         // non-matching: different prefix
@@ -86,6 +85,7 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/v2foo", null),
         Arguments.of("/operatepath", null),
         Arguments.of("/tasklistfoo", null),
+        Arguments.of("/webapp", null),
         Arguments.of("/", null));
   }
 

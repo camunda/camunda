@@ -22,7 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 /** Integration test for {@link CustomCssController}. */
 @SpringBootTest(classes = TestWebappApplication.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@ActiveProfiles("tmp-webapp")
+@ActiveProfiles("tasklist")
 class CustomCssControllerIT {
 
   @Autowired private TestRestTemplate restTemplate;
@@ -68,5 +68,19 @@ class CustomCssControllerIT {
 
     // then — no custom.css on test classpath → body is empty/null, never a 404 error payload
     assertThat(response.getBody()).isNullOrEmpty();
+  }
+
+  @Test
+  void shouldReturnCssUnderPhysicalTenantPrefix() {
+    // when
+    final ResponseEntity<String> response =
+        restTemplate.getForEntity("/physical-tenants/test-tenant/custom.css", String.class);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    assertThat(response.getHeaders().getContentType()).isNotNull();
+    assertThat(response.getHeaders().getContentType().getType()).isEqualTo("text");
+    assertThat(response.getHeaders().getContentType().getSubtype()).isEqualTo("css");
+    assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-cache");
   }
 }

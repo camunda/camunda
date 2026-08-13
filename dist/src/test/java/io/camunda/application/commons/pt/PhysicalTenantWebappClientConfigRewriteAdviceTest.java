@@ -26,8 +26,6 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
 
   private static final String OPERATE_BODY =
       "window.clientConfig = {\"isEnterprise\":true,\"contextPath\":\"\",\"baseName\":\"/operate\"};";
-  private static final String TASKLIST_BODY =
-      "window.clientConfig = {\"contextPath\":\"\",\"baseName\":\"/tasklist\",\"clientMode\":\"v2\"};";
   private static final String OPERATE_BODY_WITH_CONTEXT_PATH =
       "window.clientConfig = {\"contextPath\":\"/core\",\"baseName\":\"/core/operate\"};";
 
@@ -38,18 +36,6 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
   void shouldSupportOperateClientConfigRestServiceGetClientConfig() throws NoSuchMethodException {
     // given
     final Method method = ClientConfigRestService.class.getDeclaredMethod("getClientConfig");
-    final MethodParameter returnType = new MethodParameter(method, -1);
-
-    // when / then
-    assertThat(advice.supports(returnType, stringConverter())).isTrue();
-  }
-
-  @Test
-  void shouldSupportTasklistClientConfigRestServiceGetClientConfig() throws NoSuchMethodException {
-    // given
-    final Method method =
-        io.camunda.tasklist.webapp.rest.ClientConfigRestService.class.getDeclaredMethod(
-            "getClientConfig");
     final MethodParameter returnType = new MethodParameter(method, -1);
 
     // when / then
@@ -89,22 +75,6 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
     assertThat(result)
         .contains("\"contextPath\":\"/physical-tenants/tenanta\"")
         .contains("\"baseName\":\"/physical-tenants/tenanta/operate\"");
-  }
-
-  @Test
-  void shouldPrefixTasklistBaseNameForPhysicalTenantRequest() throws NoSuchMethodException {
-    // given
-    final MockHttpServletRequest httpRequest = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(httpRequest, "default");
-
-    // when
-    final String result = rewrite(TASKLIST_BODY, httpRequest);
-
-    // then
-    assertThat(result)
-        .contains("\"contextPath\":\"/physical-tenants/default\"")
-        .contains("\"baseName\":\"/physical-tenants/default/tasklist\"")
-        .contains("\"clientMode\":\"v2\"");
   }
 
   @Test

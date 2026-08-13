@@ -10,8 +10,10 @@ package io.camunda.application.initializers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.MapPropertySource;
 
 class WebappsConfigurationInitializerTest {
 
@@ -19,7 +21,6 @@ class WebappsConfigurationInitializerTest {
   private static final String STATIC_LOCATIONS = "spring.web.resources.static-locations";
   private static final String DEFAULT_APP = "camunda.webapps.default-app";
   private static final String WEBAPP_LOCATION = "classpath:/META-INF/resources/webapp/";
-  private static final String TASKLIST_LOCATION = "classpath:/META-INF/resources/tasklist/";
 
   @Test
   void shouldNotActivateWebappsWhenNoWebappsProfileIsActive() {
@@ -37,10 +38,10 @@ class WebappsConfigurationInitializerTest {
   }
 
   @Test
-  void shouldAddWebappStaticLocationWhenTmpWebappProfileIsActive() {
-    // given a context with only the tmp-webapp profile
+  void shouldAddWebappStaticLocationWhenTasklistProfileIsActive() {
+    // given a context with the tasklist profile
     final GenericApplicationContext context = new GenericApplicationContext();
-    context.getEnvironment().setActiveProfiles(Profile.TMP_WEBAPP.getId());
+    context.getEnvironment().setActiveProfiles(Profile.TASKLIST.getId());
 
     // when the initializer runs
     new WebappsConfigurationInitializer().initialize(context);
@@ -50,26 +51,39 @@ class WebappsConfigurationInitializerTest {
         .isTrue();
     assertThat(context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class))
         .contains(WEBAPP_LOCATION);
-    // and tmp-webapp is deliberately NOT set as the default app (no / redirect fallback)
-    assertThat(context.getEnvironment().getProperty(DEFAULT_APP)).isNull();
+    // and tasklist remains the default app
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP))
+        .isEqualTo(Profile.TASKLIST.getId());
   }
 
   @Test
-  void shouldNotMakeTmpWebappTheDefaultWhenLegacyProfileIsAlsoActive() {
-    // given a context with both tasklist and tmp-webapp profiles active
+  void shouldUseOperateAsDefaultAppWhenOperateAndTasklistProfilesAreActive() {
+    // given
     final GenericApplicationContext context = new GenericApplicationContext();
-    context
-        .getEnvironment()
-        .setActiveProfiles(Profile.TASKLIST.getId(), Profile.TMP_WEBAPP.getId());
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
 
-    // when the initializer runs
+    // when
     new WebappsConfigurationInitializer().initialize(context);
 
-    // then both static locations are present
-    final String locations = context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class);
-    assertThat(locations).contains(TASKLIST_LOCATION).contains(WEBAPP_LOCATION);
-    // and tasklist wins the default-app contest, not tmp-webapp
+    // then
     assertThat(context.getEnvironment().getProperty(DEFAULT_APP))
-        .isEqualTo(Profile.TASKLIST.getId());
+        .isEqualTo(Profile.OPERATE.getId());
+  }
+
+  @Test
+  void shouldNotAddWebappStaticLocationWhenTasklistUiIsDisabled() {
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.TASKLIST.getId());
+    context
+        .getEnvironment()
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource("test", Map.of("camunda.webapps.tasklist.ui-enabled", false)));
+
+    new WebappsConfigurationInitializer().initialize(context);
+
+    assertThat(context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class))
+        .doesNotContain(WEBAPP_LOCATION);
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP)).isNull();
   }
 }

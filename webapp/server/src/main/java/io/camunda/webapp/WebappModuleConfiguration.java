@@ -16,17 +16,15 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the unified BFF webapp module. Active only when the {@code tmp-webapp} Spring
- * profile is enabled (i.e., dormant in all default deployments). The {@code tmp-webapp} profile is
- * temporary; it will be removed at the end of the <a
- * href="https://github.com/camunda/product-hub/issues/3456">epic</a> when the webapp module becomes
- * the default BFF for the legacy apps (Tasklist/Operate/Admin).
+ * Entry point for the unified BFF webapp module. It is currently gated on the legacy {@code
+ * tasklist} profile because the unified webapp now serves as the Tasklist UI; its activation will
+ * widen as Operate and Admin migrate.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = "io.camunda.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Profile("tmp-webapp")
+@Profile("tasklist")
 public class WebappModuleConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);

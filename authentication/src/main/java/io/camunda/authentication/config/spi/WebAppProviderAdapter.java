@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config.spi;
 
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+
 import io.camunda.security.spring.spi.WebAppProviderPort;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
@@ -15,7 +17,8 @@ import java.util.Set;
 /**
  * Host-supplied {@link WebAppProviderPort} that derives the web app id from the request URL prefix
  * — {@code /admin/...} → {@code admin}, {@code /operate/...} → {@code operate}, {@code
- * /tasklist/...} → {@code tasklist}. Other paths return empty (no web app context).
+ * /tasklist/...} → {@code tasklist}. Physical-tenant and servlet-context prefixes are ignored.
+ * Other paths return empty (no web app context).
  */
 public class WebAppProviderAdapter implements WebAppProviderPort {
 
@@ -23,7 +26,7 @@ public class WebAppProviderAdapter implements WebAppProviderPort {
 
   @Override
   public Optional<String> webAppFor(final HttpServletRequest request) {
-    final String pathWithinApp = stripContextPath(request);
+    final String pathWithinApp = stripPhysicalTenantPrefix(stripContextPath(request));
     if (pathWithinApp.isEmpty() || "/".equals(pathWithinApp)) {
       // Path is empty or just the root "/" — no web app to resolve.
       return Optional.empty();
@@ -36,6 +39,14 @@ public class WebAppProviderAdapter implements WebAppProviderPort {
     final String uri = request.getRequestURI() == null ? "" : request.getRequestURI();
     final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
     return uri.startsWith(contextPath) ? uri.substring(contextPath.length()) : uri;
+  }
+
+  private static String stripPhysicalTenantPrefix(final String path) {
+    if (!path.startsWith(PHYSICAL_TENANTS_PATH_SEGMENT)) {
+      return path;
+    }
+    final int tenantEnd = path.indexOf('/', PHYSICAL_TENANTS_PATH_SEGMENT.length());
+    return tenantEnd > PHYSICAL_TENANTS_PATH_SEGMENT.length() ? path.substring(tenantEnd) : path;
   }
 
   /**

@@ -28,8 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <p>{@link WebMvcRegistrations#getRequestMappingHandlerMapping()} is the supported extension point
  * for replacing the auto-configured {@link RequestMappingHandlerMapping}, so every controller whose
  * routes start with a PT-addressable root ({@code /v2}, {@code /operate}, {@code /tasklist}, {@code
- * /admin}, {@code /webapp}) automatically gets a {@code /physical-tenants/{physicalTenantId}/...}
- * sibling registration.
+ * /admin}) automatically gets a {@code /physical-tenants/{physicalTenantId}/...} sibling
+ * registration.
  *
  * <p>The physical tenant id is extracted from the request by {@code PhysicalTenantFilter} (which
  * runs before the security chain so the id is available to in-chain components), and unknown

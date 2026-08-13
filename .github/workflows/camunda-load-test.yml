@@ -383,11 +383,11 @@ jobs:
           directory: ./operate/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
+        name: Build Unified Webapp Frontend
+        id: build-webapp-fe
         if: ${{ inputs.build-frontend }}
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Identity Frontend
