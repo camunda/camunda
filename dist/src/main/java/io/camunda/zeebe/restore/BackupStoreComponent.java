@@ -51,17 +51,29 @@ final class BackupStoreComponent {
   }
 
   private static BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupStoreCfg.getS3());
+    final var storeConfig =
+        S3BackupStoreConfig.toStoreConfig(
+            backupStoreCfg.getS3(),
+            backupStoreCfg.getReadTimeout(),
+            backupStoreCfg.getWriteTimeout());
     return S3BackupStore.of(storeConfig);
   }
 
   private static BackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupStoreCfg.getGcs());
+    final var storeConfig =
+        GcsBackupStoreConfig.toStoreConfig(
+            backupStoreCfg.getGcs(),
+            backupStoreCfg.getReadTimeout(),
+            backupStoreCfg.getWriteTimeout());
     return GcsBackupStore.of(storeConfig);
   }
 
   private static BackupStore buildAzureBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupStoreCfg.getAzure());
+    final var storeConfig =
+        AzureBackupStoreConfig.toStoreConfig(
+            backupStoreCfg.getAzure(),
+            backupStoreCfg.getReadTimeout(),
+            backupStoreCfg.getWriteTimeout());
     return AzureBackupStore.of(storeConfig);
   }
 

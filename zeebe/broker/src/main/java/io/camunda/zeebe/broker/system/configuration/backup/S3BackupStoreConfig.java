@@ -133,9 +133,12 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.supportLegacyMd5 = supportLegacyMd5;
   }
 
-  public static S3BackupConfig toStoreConfig(final S3BackupStoreConfig config) {
+  public static S3BackupConfig toStoreConfig(
+      final S3BackupStoreConfig config, final Duration readTimeout, final Duration writeTimeout) {
     final var builder =
         new Builder()
+            .withReadTimeout(readTimeout)
+            .withWriteTimeout(writeTimeout)
             .withBucketName(config.getBucketName())
             .withEndpoint(config.getEndpoint())
             .withRegion(config.getRegion())

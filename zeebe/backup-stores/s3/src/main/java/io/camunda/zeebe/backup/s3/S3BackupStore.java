@@ -398,13 +398,15 @@ public final class S3BackupStore implements BackupStore {
       builder.addPlugin(LegacyMd5Plugin.create());
     }
 
-    builder.httpClient(
+    final var httpClientBuilder =
         NettyNioAsyncHttpClient.builder()
             .maxConcurrency(config.maxConcurrentConnections())
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
-            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
-            .build());
+            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout());
+    config.readTimeout().ifPresent(httpClientBuilder::readTimeout);
+    config.writeTimeout().ifPresent(httpClientBuilder::writeTimeout);
+    builder.httpClient(httpClientBuilder.build());
 
     builder.overrideConfiguration(cfg -> cfg.retryStrategy(RetryMode.ADAPTIVE_V2));
     builder.forcePathStyle(config.forcePathStyleAccess());

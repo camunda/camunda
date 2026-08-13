@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 
 public class BackupStoreCfg implements ConfigurationEntry {
 
@@ -19,6 +20,9 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   private AzureBackupStoreConfig azure = new AzureBackupStoreConfig();
   private FilesystemBackupStoreConfig filesystem = new FilesystemBackupStoreConfig();
+
+  private Duration readTimeout;
+  private Duration writeTimeout;
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -60,6 +64,22 @@ public class BackupStoreCfg implements ConfigurationEntry {
     this.store = store;
   }
 
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public Duration getWriteTimeout() {
+    return writeTimeout;
+  }
+
+  public void setWriteTimeout(final Duration writeTimeout) {
+    this.writeTimeout = writeTimeout;
+  }
+
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     s3.init(globalConfig, brokerBase);
@@ -70,12 +90,12 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
+    final var timeouts = ", readTimeout=" + readTimeout + ", writeTimeout=" + writeTimeout;
     return switch (store) {
-      case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
-      case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
-      case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
-      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
+      case NONE, FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + timeouts + '}';
+      case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + timeouts + '}';
+      case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + timeouts + '}';
+      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + timeouts + '}';
     };
   }
 
