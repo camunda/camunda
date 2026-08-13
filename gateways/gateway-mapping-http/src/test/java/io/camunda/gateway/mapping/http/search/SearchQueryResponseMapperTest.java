@@ -50,6 +50,7 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -82,6 +83,28 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
+
+  @Test
+  void shouldMapEmptyResourceVersionTagToNull() {
+    // given
+    final var entity =
+        new DeployedResourceEntity.Builder()
+            .resourceKey(123L)
+            .resourceId("resource-id")
+            .resourceName("resource.txt")
+            .resourceType("txt")
+            .version(1)
+            .versionTag("")
+            .deploymentKey(456L)
+            .tenantId("tenant")
+            .build();
+
+    // when
+    final var response = SearchQueryResponseMapper.toResource(entity);
+
+    // then
+    assertThat(response.getVersionTag()).isNull();
+  }
 
   @Test
   void shouldConvertBatchOperationItemEntity() {

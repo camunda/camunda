@@ -2099,7 +2099,7 @@ public final class SearchQueryResponseMapper {
     return ResourceResult.Builder.create()
         .resourceName(entity.resourceName())
         .version(entity.version())
-        .versionTag(entity.versionTag())
+        .versionTag(emptyToNull(entity.versionTag()))
         .resourceId(entity.resourceId())
         .tenantId(entity.tenantId())
         .resourceKey(keyToString(entity.resourceKey()))

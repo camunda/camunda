@@ -108,6 +108,26 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+  <sql id="versionTagOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EXISTS')">
+        (VERSION_TAG IS NOT NULL AND VERSION_TAG != '')
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        (VERSION_TAG IS NULL OR VERSION_TAG = '')
+      </when>
+      <otherwise>
+        VERSION_TAG
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </otherwise>
+    </choose>
+  </sql>
+
+  <sql id="versionTagOperationCondition" databaseId="oracle">
+    VERSION_TAG
+    <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+  </sql>
+
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
@@ -157,8 +177,9 @@
       </if>
       <if test="filter.versionTagOperations != null and !filter.versionTagOperations.isEmpty()">
         <foreach collection="filter.versionTagOperations" item="operation">
-          AND VERSION_TAG
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+          AND
+          <include
+            refid="io.camunda.db.rdbms.sql.DeployedResourceMapper.versionTagOperationCondition"/>
         </foreach>
       </if>
       <if test="filter.deploymentKeyOperations != null and !filter.deploymentKeyOperations.isEmpty()">

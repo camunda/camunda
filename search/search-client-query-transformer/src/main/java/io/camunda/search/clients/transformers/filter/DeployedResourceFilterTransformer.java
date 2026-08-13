@@ -8,10 +8,14 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.DEPLOYMENT_KEY;
 import static io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex.RESOURCE_ID;
@@ -69,7 +73,15 @@ public class DeployedResourceFilterTransformer
   }
 
   private List<SearchQuery> getVersionTagsQuery(final List<Operation<String>> versionTags) {
-    return stringOperations(VERSION_TAG, versionTags);
+    final var queries = new ArrayList<SearchQuery>();
+    for (final var operation : versionTags) {
+      switch (operation.operator()) {
+        case EXISTS -> queries.add(and(exists(VERSION_TAG), not(term(VERSION_TAG, ""))));
+        case NOT_EXISTS -> queries.add(or(not(exists(VERSION_TAG)), term(VERSION_TAG, "")));
+        default -> queries.addAll(stringOperations(VERSION_TAG, List.of(operation)));
+      }
+    }
+    return queries;
   }
 
   @Override
