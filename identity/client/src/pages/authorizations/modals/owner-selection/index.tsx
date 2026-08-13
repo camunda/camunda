@@ -41,6 +41,12 @@ const Selection: FC<SelectionProps> = ({
 }) => {
   const { t, Translate } = useTranslate("authorizations");
 
+  const labels = {
+    label: t("owner"),
+    placeholder: t("searchByOwnerId"),
+    requiredText: t("ownerRequired"),
+  };
+
   switch (type) {
     case "USER":
       if (isOIDC) {
@@ -81,9 +87,7 @@ const Selection: FC<SelectionProps> = ({
       return (
         <div onBlur={onBlur}>
           <UserSingleSelect
-            label={t("owner")}
-            placeholder={t("searchByOwnerId")}
-            requiredText={t("ownerRequired")}
+            {...labels}
             onChange={onChange}
             value={ownerId}
             isEmpty={isEmpty}
@@ -95,9 +99,7 @@ const Selection: FC<SelectionProps> = ({
         return (
           <div onBlur={onBlur}>
             <GroupSingleSelect
-              label={t("owner")}
-              placeholder={t("searchByOwnerId")}
-              requiredText={t("ownerRequired")}
+              {...labels}
               onChange={onChange}
               value={ownerId}
               isEmpty={isEmpty}
@@ -128,9 +130,7 @@ const Selection: FC<SelectionProps> = ({
       return (
         <div onBlur={onBlur}>
           <MappingRuleSingleSelect
-            label={t("owner")}
-            placeholder={t("searchByOwnerId")}
-            requiredText={t("ownerRequired")}
+            {...labels}
             onChange={onChange}
             value={ownerId}
             isEmpty={isEmpty}
@@ -141,9 +141,7 @@ const Selection: FC<SelectionProps> = ({
       return (
         <div onBlur={onBlur}>
           <RoleSingleSelect
-            label={t("owner")}
-            placeholder={t("searchByOwnerId")}
-            requiredText={t("ownerRequired")}
+            {...labels}
             onChange={onChange}
             value={ownerId}
             isEmpty={isEmpty}
