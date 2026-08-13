@@ -13,24 +13,23 @@ import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
+import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Interceptor that validates secondary storage availability for endpoints requiring it. When
- * secondary storage is not configured (camunda.database.type=none), requests to endpoints marked
- * with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
+ * secondary storage is not configured (camunda.data.secondary-storage.type=none), requests to
+ * endpoints marked with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
-  private final boolean secondaryStorageDisabled;
+  private final Supplier<String> databaseTypeSupplier;
 
-  public SecondaryStorageInterceptor(
-      @Value("${camunda.database.type:elasticsearch}") final String databaseType) {
-    secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
+  public SecondaryStorageInterceptor(final Supplier<String> databaseTypeSupplier) {
+    this.databaseTypeSupplier = databaseTypeSupplier;
   }
 
   @Override
@@ -42,7 +41,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
           handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)
               || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
 
-      if (requiresSecondaryStorage && secondaryStorageDisabled) {
+      if (requiresSecondaryStorage
+          && CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseTypeSupplier.get())) {
         throw new SecondaryStorageUnavailableException();
       }
     }
