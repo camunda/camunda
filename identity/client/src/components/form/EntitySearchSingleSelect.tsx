@@ -9,10 +9,13 @@
 import { useEffect, useState } from "react";
 import { FormLabel, Tag } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import type { EntitySearchDropdown } from "src/components/form/EntitySearchDropdown";
+import EntitySearchDropdown, {
+  type EntitySearchQuery,
+} from "src/components/form/EntitySearchDropdown";
 
-type EntitySearchSingleSelectProps<Entity> = {
-  searchDropdown: EntitySearchDropdown<Entity>;
+type EntitySearchSingleSelectProps<Entity extends Record<string, unknown>> = {
+  search: (search: string) => EntitySearchQuery<Entity>;
+  itemSubTitle?: (entity: Entity) => string;
   getId: (entity: Entity) => string;
   itemToString: (entity: Entity) => string;
   label: string;
@@ -24,8 +27,9 @@ type EntitySearchSingleSelectProps<Entity> = {
   isEmpty?: boolean;
 };
 
-const EntitySearchSingleSelect = <Entity,>({
-  searchDropdown: SearchDropdown,
+const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
+  search,
+  itemSubTitle,
   getId,
   itemToString,
   label,
@@ -65,7 +69,10 @@ const EntitySearchSingleSelect = <Entity,>({
           </Tag>
         </div>
       ) : (
-        <SearchDropdown
+        <EntitySearchDropdown
+          search={search}
+          itemTitle={getId}
+          itemSubTitle={itemSubTitle}
           placeholder={placeholder}
           onSelect={handleSelect}
           errorTitle={errorTitle}

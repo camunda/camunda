@@ -10,11 +10,16 @@ import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import EntitySearchMultiSelect from "src/components/form/EntitySearchMultiSelect";
 import EntitySearchSingleSelect from "src/components/form/EntitySearchSingleSelect";
-import UserSearchDropdown from "src/components/form/UserSearchDropdown";
+import { userQueries } from "src/utility/api/users/queries";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const getId = (user: User) => user.username;
 const itemToString = (user: User) => user.name || user.username;
+const itemSubTitle = (user: User) => user.email;
+const search = (search: string) =>
+  userQueries.search(
+    search === "" ? {} : { filter: { username: { $like: `*${search}*` } } },
+  );
 
 type UserMultiSelectProps = {
   value: User[];
@@ -27,8 +32,9 @@ export const UserMultiSelect: FC<UserMultiSelectProps> = (props) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchMultiSelect
-      searchDropdown={UserSearchDropdown}
+      search={search}
       getId={getId}
+      itemSubTitle={itemSubTitle}
       placeholder={t("searchByUsernameOrEmail")}
       errorTitle={t("usersCouldNotLoad")}
       {...props}
@@ -49,9 +55,10 @@ export const UserSingleSelect: FC<UserSingleSelectProps> = (props) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchSingleSelect
-      searchDropdown={UserSearchDropdown}
+      search={search}
       getId={getId}
       itemToString={itemToString}
+      itemSubTitle={itemSubTitle}
       errorTitle={t("usersCouldNotLoad")}
       {...props}
     />
