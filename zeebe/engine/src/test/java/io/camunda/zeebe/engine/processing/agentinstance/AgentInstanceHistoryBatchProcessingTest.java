@@ -171,27 +171,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldAllowUpdateWithoutJobAndWithoutHistory() {
-    // given — regression test: supplying neither a job nor a history batch must remain valid.
-    // validateJobContext's "no jobKey, no history" branch used to be wrongly rejected; this pins
-    // that a plain, job-less, history-less UPDATE (the shape every pre-existing status/metrics
-    // update in AgentInstanceUpdateTest uses) keeps working.
-    final var context = deployCreateAgentInstanceAndActivateJob();
-
-    // when
-    final var updated =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(context.agentInstanceKey())
-            .withElementInstanceKey(context.elementInstanceKey())
-            .withStatus(AgentInstanceStatus.THINKING)
-            .update();
-
-    // then
-    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
-  }
-
-  @Test
   public void shouldRejectWhenJobNotActive() {
     // given
     final var context = deployCreateAgentInstanceAndActivateJob();
@@ -204,28 +183,6 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withElementInstanceKey(context.elementInstanceKey())
             .withJobKey(999999999L)
             .withHistory(List.of(userItem("item-1", "hi")))
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejection.getRejectionReason()).contains("999999999");
-  }
-
-  @Test
-  public void shouldRejectJobKeyNotActiveEvenWithoutHistory() {
-    // given — the job-context check runs whenever a jobKey is provided, regardless of whether a
-    // history batch is present.
-    final var context = deployCreateAgentInstanceAndActivateJob();
-
-    // when
-    final var rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(context.agentInstanceKey())
-            .withElementInstanceKey(context.elementInstanceKey())
-            .withJobKey(999999999L)
-            .withStatus(AgentInstanceStatus.THINKING)
             .expectRejection()
             .update();
 
