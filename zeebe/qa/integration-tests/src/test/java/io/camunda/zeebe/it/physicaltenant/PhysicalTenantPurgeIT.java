@@ -29,22 +29,25 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Verifies that the {@code cluster/purge} actuator's {@code physicalTenant} query parameter tears
- * down and re-bootstraps only the named tenant's partitions: after purging one tenant, its
- * processes are gone and it serves commands again on empty state, while another tenant keeps
- * everything it had.
+ * down and re-bootstraps only the named tenant's partitions and deletes only that tenant's exported
+ * history: after purging one tenant, its processes are gone from both the engine and its secondary
+ * storage and it serves commands again on empty state, while another tenant keeps everything it
+ * had.
  */
 @ZeebeIntegration
 final class PhysicalTenantPurgeIT {
 
+  private static final String DEFAULT = PhysicalTenantsITHelper.DEFAULT_TENANT_ID;
   private static final String TENANT_A = "tenanta";
   private static final String PROCESS_ID = "purge-process";
 
-  // both tenants run broker-only (no secondary storage); declaring tenant A starts a second,
-  // fully isolated partition group for it
+  // Each tenant gets its own isolated in-memory RDBMS. Purging deletes the history a tenant
+  // exported, so without a secondary storage per tenant the deletion would run against an empty
+  // exporter repository and only the partition teardown would be covered.
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
-          .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
-          .withTenant(TENANT_A, Storage.none())
+          .withTenant(DEFAULT, Storage.rdbmsH2("purge-default"))
+          .withTenant(TENANT_A, Storage.rdbmsH2("purge-tenanta"))
           .build();
 
   @TestZeebe
@@ -56,18 +59,19 @@ final class PhysicalTenantPurgeIT {
 
   @BeforeEach
   void beforeEach() {
-    defaultClient =
-        TENANTS.newClientBuilder(broker, PhysicalTenantsITHelper.DEFAULT_TENANT_ID).build();
+    defaultClient = TENANTS.newClientBuilder(broker, DEFAULT).build();
     tenantAClient = TENANTS.newClientBuilder(broker, TENANT_A).build();
   }
 
   @Test
   void shouldPurgeOnlyTheTargetedPhysicalTenant() {
-    // given - the same process deployed to, and runnable in, both physical tenants
+    // given - the same process deployed to, runnable in, and exported by both physical tenants
     deploy(defaultClient);
     deploy(tenantAClient);
     assertThat(createInstance(defaultClient)).isPositive();
     assertThat(createInstance(tenantAClient)).isPositive();
+    assertExportedHistory(defaultClient, DEFAULT, 1);
+    assertExportedHistory(tenantAClient, TENANT_A, 1);
 
     // when - purging tenant A only
     ClusterActuator.of(broker).purge(false, TENANT_A);
@@ -76,6 +80,10 @@ final class PhysicalTenantPurgeIT {
     await("tenant A no longer knows its process")
         .atMost(Duration.ofMinutes(2))
         .untilAsserted(() -> assertProcessNotFound(tenantAClient));
+
+    // and - the history tenant A exported is deleted, while the default tenant keeps its own
+    assertExportedHistory(tenantAClient, TENANT_A, 0);
+    assertExportedHistory(defaultClient, DEFAULT, 1);
 
     // and - tenant A serves commands again on empty state
     deploy(tenantAClient);
@@ -87,11 +95,13 @@ final class PhysicalTenantPurgeIT {
 
   @Test
   void shouldPurgeEveryPhysicalTenantWhenNoneIsGiven() {
-    // given - the same process deployed to, and runnable in, both physical tenants
+    // given - the same process deployed to, runnable in, and exported by both physical tenants
     deploy(defaultClient);
     deploy(tenantAClient);
     assertThat(createInstance(defaultClient)).isPositive();
     assertThat(createInstance(tenantAClient)).isPositive();
+    assertExportedHistory(defaultClient, DEFAULT, 1);
+    assertExportedHistory(tenantAClient, TENANT_A, 1);
 
     // when - purging without naming a physical tenant
     ClusterActuator.of(broker).purge(false);
@@ -103,6 +113,34 @@ final class PhysicalTenantPurgeIT {
             () -> {
               assertProcessNotFound(tenantAClient);
               assertProcessNotFound(defaultClient);
+            });
+
+    // and - every tenant's exported history is deleted from its own secondary storage
+    assertExportedHistory(tenantAClient, TENANT_A, 0);
+    assertExportedHistory(defaultClient, DEFAULT, 0);
+  }
+
+  /**
+   * Asserts that the tenant's secondary storage holds exactly the given number of exported process
+   * definitions and instances. Both exporting and purging are asynchronous, so the arrival and the
+   * disappearance of the data are awaited rather than sampled once.
+   */
+  private void assertExportedHistory(
+      final CamundaClient client, final String tenantId, final int expected) {
+    await(
+            "physical tenant '%s' has %d exported process definition(s) and instance(s)"
+                .formatted(tenantId, expected))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+                  .describedAs("exported process definitions of '%s'", tenantId)
+                  .hasSize(expected);
+              assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+                  .describedAs("exported process instances of '%s'", tenantId)
+                  .hasSize(expected);
             });
   }
 
