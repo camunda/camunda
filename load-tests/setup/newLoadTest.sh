@@ -9,6 +9,13 @@ ROOT_DIR="$SCRIPT_DIR"
 
 AVAILABLE_VERSIONS=(main stable-87 stable-88 stable-89)
 
+# Internal plumbing hook for the golden-file test harness: lets callers enumerate versions without
+# duplicating AVAILABLE_VERSIONS.
+if [[ " $* " == *" --list-versions "* ]]; then
+  echo "${AVAILABLE_VERSIONS[*]}"
+  exit 0
+fi
+
 # Pre-scan argv for --target-version/-t so the version config (and its
 # allowed storage list) is known before any usage/help text needs printing.
 target_version="main"
@@ -98,6 +105,27 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h|--help)
       usage
+      exit 0
+      ;;
+    --warm-platform-chart-cache)
+      # Internal plumbing hook for the golden-file test harness's chart
+      # pre-warm step: pulls the
+      # camunda-platform version resolved above for -t/--target-version into
+      # LOAD_TEST_CHART_CACHE_DIR (if not already there) and exits before the
+      # namespace argument is required. Reuses the same version resolution
+      # and cache path convention as the per-scenario pull below, so the two
+      # can never drift apart.
+      if [[ -z "${LOAD_TEST_CHART_CACHE_DIR:-}" ]]; then
+        echo "Error: --warm-platform-chart-cache requires LOAD_TEST_CHART_CACHE_DIR to be set." >&2
+        exit 1
+      fi
+      dest="$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version/camunda-platform"
+      if [[ ! -d "$dest" ]]; then
+        echo "Pre-pulling camunda-platform $camunda_platform_helm_chart_version for $target_version..."
+        RETRY_CLEANUP_CMD="rm -rf \"$dest\"" retry_with_backoff helm pull camunda/camunda-platform \
+            --untar --untardir "$LOAD_TEST_CHART_CACHE_DIR/$camunda_platform_helm_chart_version" \
+            --version "$camunda_platform_helm_chart_version"
+      fi
       exit 0
       ;;
     *)
@@ -327,23 +355,48 @@ postgresql:
 EOF
 } > load-test-setup-values.yaml
 
-# Add/update helm repositories
-helm repo add camunda https://helm.camunda.io/ --force-update
-if [[ "$secondary_storage" == "opensearch" ]]; then
-  helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
+# Add/update helm repositories. Skippable via LOAD_TEST_SKIP_REPO_UPDATE for
+# callers (the golden-file test harness) that already primed the repo index
+# once before spawning many scenarios; unset by default, so a manual
+# invocation behaves exactly as before, just retried on transient failures.
+if [[ "${LOAD_TEST_SKIP_REPO_UPDATE:-false}" != "true" ]]; then
+  retry_with_backoff helm repo add camunda https://helm.camunda.io/ --force-update
+  if [[ "$secondary_storage" == "opensearch" ]]; then
+    retry_with_backoff helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
+  fi
+  retry_with_backoff helm repo update
 fi
-helm repo update
 
-# The directory where local Helm Charts will be stored in.
 CHARTS_DIR="charts"
 
-echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
-helm pull camunda/camunda-platform \
-    --untar --untardir "$CHARTS_DIR" \
-    --version "$camunda_platform_helm_chart_version"
+# If LOAD_TEST_CHART_CACHE_DIR points at a pre-warmed cache (populated once,
+# per version, before this script runs), reuse it instead of pulling over the
+# network again. Unset by default, so a manual invocation always pulls fresh.
+platform_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/${camunda_platform_helm_chart_version}/camunda-platform"
+if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
+  echo "Using pre-warmed camunda-platform $camunda_platform_helm_chart_version chart from cache..."
+  rm -rf "$CHARTS_DIR/camunda-platform"
+  cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"
+else
+  echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
+  RETRY_CLEANUP_CMD="rm -rf \"$CHARTS_DIR/camunda-platform\"" retry_with_backoff helm pull camunda/camunda-platform \
+      --untar --untardir "$CHARTS_DIR" \
+      --version "$camunda_platform_helm_chart_version"
+fi
 
-echo "Resolving load-test-setup subchart dependencies..."
-helm dependency update "$CHARTS_DIR/load-test-setup"
+# If LOAD_TEST_CHART_CACHE_DIR points at pre-resolved load-test-setup
+# dependencies (warmed once against a scratch copy, before this script runs
+# many times in parallel), reuse them instead of resolving over the network
+# again. Unset by default, so a manual invocation always resolves fresh.
+deps_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/load-test-setup-deps"
+if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$deps_cache_src" ]]; then
+  echo "Using pre-warmed load-test-setup subchart dependencies from cache..."
+  rm -rf "$CHARTS_DIR/load-test-setup/charts"
+  cp -r "$deps_cache_src" "$CHARTS_DIR/load-test-setup/charts"
+else
+  echo "Resolving load-test-setup subchart dependencies..."
+  retry_with_backoff helm dependency update "$CHARTS_DIR/load-test-setup"
+fi
 
 echo
 echo "Scaffolding complete. Next steps:"

@@ -72,6 +72,37 @@ function hashmod_zone() {
     echo "$zone"
 }
 
+# Retry a command with exponential backoff. Only the invoked command's own
+# exit status is inspected (stdout/stderr of every attempt are shown live),
+# and on final failure the real exit code from the last attempt is returned
+# unchanged, so a permanent/logical error (bad chart name, malformed values)
+# still fails clearly, it's just tried max_attempts times first. Guards
+# against transient network blips (e.g. a "Get ...: EOF" on a Helm chart
+# download) without masking real failures.
+# Tuning: set RETRY_MAX_ATTEMPTS/RETRY_BASE_DELAY_SECONDS in the environment;
+# defaults below apply when unset. Set RETRY_CLEANUP_CMD to a shell command
+# that undoes a failed attempt's partial state before the next one starts
+# (e.g. `helm pull --untar` refuses to run again if its target directory is
+# already there from a killed-mid-extraction previous attempt).
+# Usage: retry_with_backoff <command...>
+retry_with_backoff() {
+  local max_attempts="${RETRY_MAX_ATTEMPTS:-4}"
+  local delay="${RETRY_BASE_DELAY_SECONDS:-5}"
+  local attempt=1
+  until "$@"; do
+    local status=$?
+    if (( attempt >= max_attempts )); then
+      echo "Command failed after ${attempt} attempt(s), giving up: $*" >&2
+      return "$status"
+    fi
+    echo "Attempt ${attempt}/${max_attempts} failed (exit ${status}); retrying in ${delay}s: $*" >&2
+    [[ -n "${RETRY_CLEANUP_CMD:-}" ]] && eval "$RETRY_CLEANUP_CMD"
+    sleep "$delay"
+    delay=$(( delay * 2 ))
+    ((attempt++))
+  done
+}
+
 # Check whether a value is present in a list (pass the list as trailing args).
 # Usage: if contains "$value" "${some_array[@]}"; then ...
 contains() {
