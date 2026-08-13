@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect} from '@playwright/test';
+import {APIResponse, expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 import {APIRequestContext} from 'playwright-core';
-import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
+import {assertStatusCode, buildUrl, defaultHeaders, jsonHeaders} from '../http';
+import {generateUniqueId} from '../constants';
 
 type DeploymentItem = Record<string, Record<string, unknown> | undefined>;
 
@@ -232,4 +233,126 @@ export async function deployResourceAndGetMetadata(
   }
 
   throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
+}
+
+export interface DeployedResource extends ResourceMetadata {
+  deploymentKey: string;
+}
+
+export interface InlineResource {
+  fileName: string;
+  content: string | Buffer;
+}
+
+// A minimal valid RPA document. `id` and `versionTag` are the only fields the
+// deployment transformer reads, and versionTag is the sole way any resource
+// type can carry one.
+export function rpaResourceContent(rpaId: string, versionTag?: string): string {
+  return JSON.stringify({
+    id: rpaId,
+    name: rpaId,
+    executionPlatform: 'Camunda Cloud',
+    executionPlatformVersion: '8.8.0',
+    ...(versionTag ? {versionTag} : {}),
+    script: '*** Tasks ***\nDo nothing\n    Log    hello',
+  });
+}
+
+export function uniqueResourceName(prefix: string, extension: string): string {
+  return `${prefix}-${generateUniqueId()}.${extension}`;
+}
+
+export async function deployInlineResources(
+  request: APIRequestContext,
+  resources: InlineResource[],
+): Promise<{deploymentKey: string; resources: DeployedResource[]}> {
+  const formData = new FormData();
+  for (const {fileName, content} of resources) {
+    const bytes = Uint8Array.from(
+      typeof content === 'string' ? Buffer.from(content, 'utf-8') : content,
+    );
+    formData.append(
+      'resources',
+      new Blob([bytes], {type: 'application/octet-stream'}),
+      fileName,
+    );
+  }
+
+  const res = await request.post(buildUrl('/deployments'), {
+    headers: defaultHeaders(),
+    multipart: formData,
+  });
+
+  await assertStatusCode(res, 200);
+  const body = await res.json();
+  const deployed = (body.deployments as DeploymentItem[])
+    .filter((deployment) => deployment.resource != null)
+    .map((deployment) => {
+      const resource = deployment.resource!;
+      return {
+        deploymentKey: body.deploymentKey as string,
+        resourceKey: resource.resourceKey as string,
+        resourceName: resource.resourceName as string,
+        resourceId: resource.resourceId as string,
+        version: resource.version as number,
+      };
+    });
+
+  expect(
+    deployed.length,
+    `Expected every deployed file to be a resource, got ${JSON.stringify(body.deployments)}`,
+  ).toBe(resources.length);
+
+  return {deploymentKey: body.deploymentKey, resources: deployed};
+}
+
+export async function deployInlineResource(
+  request: APIRequestContext,
+  fileName: string,
+  content: string | Buffer,
+): Promise<DeployedResource> {
+  const {resources} = await deployInlineResources(request, [
+    {fileName, content},
+  ]);
+  return resources[0];
+}
+
+export async function searchResources(
+  request: APIRequestContext,
+  body: Record<string, unknown> = {},
+): Promise<APIResponse> {
+  return request.post(buildUrl('/resources/search'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+}
+
+export function resourceKeysOf(json: {items: {resourceKey: string}[]}) {
+  return json.items.map((item) => item.resourceKey);
+}
+
+export function assertResourceInSearchResult(
+  json: {items: Record<string, unknown>[]},
+  expected: DeployedResource,
+  expectedVersionTag?: string,
+): void {
+  const match = json.items.find(
+    (item) => item.resourceKey === expected.resourceKey,
+  );
+  expect(
+    match,
+    `Resource ${expected.resourceName} (${expected.resourceKey}) missing from ${JSON.stringify(
+      json.items,
+    )}`,
+  ).toBeDefined();
+  expect(match).toMatchObject({
+    resourceKey: expected.resourceKey,
+    resourceName: expected.resourceName,
+    resourceId: expected.resourceId,
+    version: expected.version,
+    tenantId: '<default>',
+    ...(expectedVersionTag === undefined
+      ? {}
+      : {versionTag: expectedVersionTag}),
+  });
 }

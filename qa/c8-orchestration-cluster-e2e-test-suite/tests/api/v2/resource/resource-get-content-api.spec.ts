@@ -12,10 +12,15 @@ import {
   buildUrl,
   defaultHeaders,
   assertUnauthorizedRequest,
+  assertNotAcceptableRequest,
   assertNotFoundRequest,
 } from '../../../../utils/http';
 import {getExpectedContent} from '../../../../utils/beans/requestBeans';
-import {deployResourceAndGetMetadata} from '@requestHelpers';
+import {
+  deployInlineResource,
+  deployResourceAndGetMetadata,
+  uniqueResourceName,
+} from '@requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe.parallel('Resource Get Content API', () => {
@@ -40,6 +45,34 @@ test.describe.parallel('Resource Get Content API', () => {
 
       await assertStatusCode(res, 200);
       expect(await res.text()).toBe(expectedContent);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Resource Content - Not Acceptable 406 for a non-RPA resource', async ({
+    request,
+  }) => {
+    const resource = await deployInlineResource(
+      request,
+      uniqueResourceName('system-prompt', 'md'),
+      '# System prompt',
+    );
+
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/resources/{resourceKey}/content', {
+          resourceKey: resource.resourceKey,
+        }),
+        {
+          headers: defaultHeaders(),
+        },
+      );
+
+      await assertNotAcceptableRequest(
+        res,
+        new RegExp(
+          `Resource with key '${resource.resourceKey}' is of type '.*', expected 'rpa'`,
+        ),
+      );
     }).toPass(defaultAssertionOptions);
   });
 

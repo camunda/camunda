@@ -149,6 +149,17 @@ export async function assertInvalidState(
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('INVALID_STATE');
 }
+export async function assertNotAcceptableRequest(
+  response: APIResponse,
+  detail: string | RegExp,
+) {
+  await assertStatusCode(response, 406);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('NOT_ACCEPTABLE');
+  expect(json.detail).toMatch(detail);
+}
+
 export async function assertNotFoundRequest(
   response: APIResponse,
   detail: string,
