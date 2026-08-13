@@ -189,7 +189,7 @@ final class RebalanceCoordinatorTest {
   }
 
   @Test
-  void shouldNotCancelARunThatFinishedBeforeTheRequestArrivesEvenIfNotYetReported() {
+  void shouldCancelARunThatCompletedButHasNotYetBeenReportedByFinish() {
     // given
     final var runner = new DeferredRunner();
     final var coordinator = coordinatingWith(runner);
@@ -200,12 +200,12 @@ final class RebalanceCoordinatorTest {
     final var cancelled = coordinator.cancelRebalance();
 
     // then
-    assertThat(cancelled.join().wasRunning()).isFalse();
+    assertThat(cancelled.join().wasRunning()).isTrue();
 
     runner.deliver();
     final var status = coordinator.getRebalanceStatus();
     assertThat(status.join().lastCompleted())
-        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.COMPLETED));
+        .isEqualTo(new RebalanceStatus.Completed(100, RebalanceOutcome.CANCELLED));
   }
 
   @Test

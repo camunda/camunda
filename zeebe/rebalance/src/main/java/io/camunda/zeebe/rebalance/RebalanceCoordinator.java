@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.rebalance;
 
-import static java.util.Objects.requireNonNull;
-
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
@@ -47,14 +45,6 @@ public final class RebalanceCoordinator
 
   private boolean coordinating;
   private @Nullable RebalanceRun running;
-
-  /**
-   * The in-flight run's own completion future, kept alongside {@link #running} so a race between a
-   * cancellation request and the runner's completion can be resolved by checking whether the run
-   * has already finished, rather than by inferring it from {@link RebalanceRun#isCancelRequested()}
-   * having been set before {@link #finish} happened to be scheduled.
-   */
-  private @Nullable ActorFuture<Void> runningRun;
 
   private RebalanceStatus.@Nullable Completed lastCompleted;
 
@@ -139,9 +129,7 @@ public final class RebalanceCoordinator
             return;
           }
           final var inFlight = running;
-          if (inFlight == null || requireNonNull(runningRun).isDone()) {
-            // Either nothing is running, or it already finished and just hasn't been reported by
-            // finish() yet: either way, there is nothing left to cancel.
+          if (inFlight == null) {
             result.complete(new CancelRebalanceResponse(false));
             return;
           }
@@ -162,7 +150,6 @@ public final class RebalanceCoordinator
       finish(rebalance, e);
       return;
     }
-    runningRun = run;
     executor.runOnCompletion(run, (ignored, error) -> finish(rebalance, error));
   }
 
@@ -172,7 +159,6 @@ public final class RebalanceCoordinator
       return;
     }
     running = null;
-    runningRun = null;
     final RebalanceOutcome outcome;
     if (error != null) {
       LOG.warn("Rebalance {} failed", rebalance.id(), error);
@@ -213,7 +199,6 @@ public final class RebalanceCoordinator
       LOG.warn("Abandoning rebalance {}; partitions already transferred", inFlight.id());
     }
     running = null;
-    runningRun = null;
     lastCompleted = null;
   }
 
