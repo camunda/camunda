@@ -65,7 +65,7 @@ public class ProcessDefinitionDeletionRequestServiceTest {
   @Test
   public void shouldQueueBothJobsWhenConcurrentRequestsRaceThePreCreationCheck() {
     // given: two requests both check for a blocking entry before either has written its own,
-    // modelling the race window between the read and the write (no locking in between)
+    // modeling the race window between the read and the write
     when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
         .thenReturn(Optional.of(new ProcessDefinitionOptimizeDto()));
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
@@ -77,7 +77,7 @@ public class ProcessDefinitionDeletionRequestServiceTest {
     underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY);
 
     // then: both requests are allowed to queue their own job; concurrent duplicate deletion
-    // requests are accepted by design rather than deduplicated
+    // requests are accepted
     verify(jobRegistryWriter, times(2))
         .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
   }
