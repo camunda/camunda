@@ -78,7 +78,7 @@ final class AnalyticsExporterIT {
   @AutoClose private CamundaClient client;
 
   @Test
-  void shouldExportProcessInstanceCreatedToOtelCollector() {
+  void shouldExportProcessInstanceActivatedToOtelCollector() {
     COLLECTOR_LOGS.clear();
 
     // given — broker with analytics exporter pointing at the collector

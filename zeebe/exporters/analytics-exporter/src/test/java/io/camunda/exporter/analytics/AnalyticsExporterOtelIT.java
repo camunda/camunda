@@ -95,7 +95,7 @@ class AnalyticsExporterOtelIT {
     final var exporter = createExporter();
 
     // when
-    exporter.export(piCreatedEvent());
+    exporter.export(piActivatedEvent());
     exporter.close();
 
     // then
@@ -125,7 +125,7 @@ class AnalyticsExporterOtelIT {
 
     // when — send 500 events (should produce ~5 batches of 100)
     for (int i = 0; i < 500; i++) {
-      exporter.export(piCreatedEvent());
+      exporter.export(piActivatedEvent());
     }
     exporter.close();
 
@@ -134,12 +134,12 @@ class AnalyticsExporterOtelIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              // Count the PI-created records specifically to avoid coupling to other event types.
-              final var piCreatedCount =
+              // Count the PI-activated records specifically to avoid coupling to other event types.
+              final var piActivatedCount =
                   COLLECTOR_LOGS.stream()
                       .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_ACTIVATED + ")"))
                       .count();
-              assertThat(piCreatedCount).isEqualTo(500);
+              assertThat(piActivatedCount).isEqualTo(500);
 
               // Count export calls (each starts a "ScopeLogs" block)
               final var exportCount =
@@ -188,7 +188,7 @@ class AnalyticsExporterOtelIT {
   }
 
   /** Activation of a root process element — the record the process-instance count is taken from. */
-  private io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
+  private io.camunda.zeebe.protocol.record.Record<?> piActivatedEvent() {
     final var value =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
