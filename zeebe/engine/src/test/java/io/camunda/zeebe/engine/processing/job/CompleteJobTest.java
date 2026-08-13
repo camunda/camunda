@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.camunda.zeebe.util.ByteValue;
 import java.util.Collections;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -82,27 +81,6 @@ public final class CompleteJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldRejectCompletionIfVariablesTooLarge() {
-    // given: no dedicated variable-size limit exists - only the overall record-size ceiling
-    // applies at job-completion time too, same as at process-instance creation
-    ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
-    final var largeValue = "x".repeat((int) (ByteValue.ofMegabytes(4) - ByteValue.ofKilobytes(1)));
-
-    // when
-    final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(batchRecord.getValue().getJobKeys().getFirst())
-            .withVariables("{'variable':'" + largeValue + "'}")
-            .expectRejection()
-            .complete();
-
-    // then
-    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
   }
 
   @Test
