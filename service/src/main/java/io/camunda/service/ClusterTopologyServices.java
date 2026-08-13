@@ -162,11 +162,7 @@ public final class ClusterTopologyServices {
       @Nullable String gatewayVersion,
       List<PhysicalTenantTopology> physicalTenants) {}
 
-  public record ClusterBroker(
-      BrokerMemberId brokerId,
-      @Nullable String host,
-      @Nullable Integer port,
-      @Nullable String version) {}
+  public record ClusterBroker(BrokerMemberId brokerId, String host, Integer port, String version) {}
 
   public record PhysicalTenantTopology(
       String physicalTenantId,

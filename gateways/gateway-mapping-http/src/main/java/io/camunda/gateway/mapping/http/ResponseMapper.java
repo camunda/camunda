@@ -982,7 +982,6 @@ public final class ResponseMapper {
         .build();
   }
 
-  @SuppressWarnings("NullAway") // host/port/version are null for a broker with unknown address
   private static ClusterBrokerInfo toClusterBrokerInfo(final ClusterBroker broker) {
     return ClusterBrokerInfo.Builder.create()
         .brokerId(broker.brokerId().id())
