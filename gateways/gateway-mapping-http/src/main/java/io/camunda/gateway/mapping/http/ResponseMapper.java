@@ -975,10 +975,10 @@ public final class ResponseMapper {
         topology.physicalTenants().stream().map(ResponseMapper::toPhysicalTenantTopology).toList();
     return ClusterTopologyResponse.Builder.create()
         .brokers(brokers)
-        .clusterSize(topology.clusterSize())
-        .physicalTenants(physicalTenants)
         .clusterId(topology.clusterId())
+        .clusterSize(topology.clusterSize())
         .gatewayVersion(topology.gatewayVersion())
+        .physicalTenants(physicalTenants)
         .build();
   }
 
