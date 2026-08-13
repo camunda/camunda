@@ -114,7 +114,12 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 
 	return (
 		<FilterGrid>
-			<GridCell className={styles.filter} sm={4} md={isMultiTenancyEnabled ? 8 : 5} lg={10}>
+			<GridCell
+				className={cn(styles.filter, featureFlags.dsTasklistUI && styles.filterDS)}
+				sm={4}
+				md={isMultiTenancyEnabled ? 8 : 5}
+				lg={10}
+			>
 				<Field<string> name="search">
 					{({input}) => (
 						<Search
@@ -133,7 +138,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 				</Field>
 			</GridCell>
 			<GridCell
-				className={styles.filter}
+				className={cn(styles.filter, featureFlags.dsTasklistUI && styles.filterDS)}
 				sm={isMultiTenancyEnabled ? 2 : 4}
 				md={isMultiTenancyEnabled ? 4 : 3}
 				lg={isMultiTenancyEnabled ? 3 : 5}
@@ -160,7 +165,7 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 				</Field>
 			</GridCell>
 			{isMultiTenancyEnabled ? (
-				<GridCell className={styles.filter} sm={2} md={4} lg={2}>
+				<GridCell className={cn(styles.filter, featureFlags.dsTasklistUI && styles.filterDS)} sm={2} md={4} lg={2}>
 					<Field<FilterValues['tenantId']> name="tenantId" initialValue={tenants[0]?.tenantId}>
 						{({input}) => (
 							<Dropdown

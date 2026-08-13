@@ -10,6 +10,14 @@
 	padding-block: var(--cds-spacing-03);
 }
 
+// DS-only. The 8px block padding here stacked on top of the header Stack's 24px
+// gap, putting the search 32px below the description where the DS PageLayout
+// reference uses 24px (mt-6). Declared after `.filter` — equal specificity, so
+// source order decides.
+.filterDS {
+	padding-block: 0;
+}
+
 // DS-only (see ProcessesFilters.tsx). Replaces Carbon's CSS Grid, whose compat
 // adapter is a passthrough ("MIGRATION TODO: replace with Tailwind grid
 // utilities"). Reproduces the same 4/8/16-column track counts at Carbon's own sm

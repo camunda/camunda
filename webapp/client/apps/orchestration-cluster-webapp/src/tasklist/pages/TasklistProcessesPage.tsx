@@ -70,13 +70,19 @@ const TasklistProcessesPage: React.FC<Props> = ({
 							className={cn(styles.header, featureFlags.dsTasklistUI && styles.headerDS)}
 							aria-labelledby="processes-heading"
 						>
-							<Stack className={styles.headerContent} gap={6}>
+							<Stack
+								className={cn(styles.headerContent, featureFlags.dsTasklistUI && styles.headerContentDS)}
+								gap={6}
+							>
 								{/* Carbon's Grid/Column only spanned the full width here, so the DS path
-								    drops the grid entirely rather than reproducing a single full-span cell. */}
+								    drops the grid entirely rather than reproducing a single full-span cell.
+								    Type scale and the title/description gap follow the DS PageHeader. */}
 								{featureFlags.dsTasklistUI ? (
-									<Stack gap={4}>
-										<h1 id="processes-heading">{t('tasklist.headerNavItemProcesses')}</h1>
-										<p>{t('tasklist.processesSubtitle')}</p>
+									<Stack className={styles.titleBlockDS}>
+										<h1 id="processes-heading" className={styles.pageTitleDS}>
+											{t('tasklist.headerNavItemProcesses')}
+										</h1>
+										<p className={styles.pageDescriptionDS}>{t('tasklist.processesSubtitle')}</p>
 									</Stack>
 								) : (
 									<Grid narrow>
@@ -94,7 +100,7 @@ const TasklistProcessesPage: React.FC<Props> = ({
 						</section>
 
 						<section className={cn(styles.processes, featureFlags.dsTasklistUI && styles.processesDS)}>
-							<div className={styles.processesContent}>
+							<div className={cn(styles.processesContent, featureFlags.dsTasklistUI && styles.processesContentDS)}>
 								{processes.length === 0 ? (
 									<Layer>
 										{/* DS-only: the DS EmptyState, matching NoTasks.tsx and the variables panel.

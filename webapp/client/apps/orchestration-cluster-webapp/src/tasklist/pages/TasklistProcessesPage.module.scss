@@ -52,6 +52,35 @@
 	background: var(--background);
 }
 
+// DS-only. Values taken from the DS PageLayout/PageHeader
+// (src/components/ui/page-layout.tsx) and the ProjectDetailPage example, so this
+// page's header matches the reference:
+//   title        heading-lg  -> 28px / 36px, normal weight
+//   description  text-sm     -> 14px / 20px, muted foreground
+//   title -> description     gap-1  = 4px
+//   page padding             p-6    = 24px (was 24px block / 40px inline)
+.headerContentDS,
+.processesContentDS {
+	padding: 1.5rem;
+}
+
+.titleBlockDS {
+	gap: 0.25rem;
+}
+
+.pageTitleDS {
+	font-size: 1.75rem;
+	line-height: 2.25rem;
+	font-weight: 400;
+	color: var(--foreground);
+}
+
+.pageDescriptionDS {
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	color: var(--muted-foreground);
+}
+
 .processTileWrapper {
 	min-width: 0;
 	padding-top: var(--cds-spacing-03);
