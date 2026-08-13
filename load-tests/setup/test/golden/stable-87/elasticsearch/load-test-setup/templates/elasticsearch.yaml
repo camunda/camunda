@@ -69,7 +69,7 @@ spec:
         accessModes: [ReadWriteOnce]
         resources:
           requests:
-            storage: 512Gi
+            storage: 160Gi
 
   http:
     tls:
