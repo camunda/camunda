@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -160,6 +161,8 @@ public class DataBackupBrokerPropertiesTest {
               UnifiedConfigurationHelper.class);
       app.setAdditionalProfiles("broker");
       app.setDefaultProperties(properties);
+      // the test classpath contains spring-boot-starter-web but no web server factory
+      app.setWebApplicationType(WebApplicationType.NONE);
 
       return assertThatThrownBy(app::run).hasRootCauseInstanceOf(IllegalArgumentException.class);
     }
