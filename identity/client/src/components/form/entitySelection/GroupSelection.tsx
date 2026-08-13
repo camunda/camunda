@@ -8,8 +8,12 @@
 
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
-import EntitySearchMultiSelect from "src/components/form/EntitySearchMultiSelect";
-import EntitySearchSingleSelect from "src/components/form/EntitySearchSingleSelect";
+import EntitySearchMultiSelect, {
+  type EntitySearchMultiSelectProps,
+} from "src/components/form/EntitySearchMultiSelect";
+import EntitySearchSingleSelect, {
+  type EntitySearchSingleSelectProps,
+} from "src/components/form/EntitySearchSingleSelect";
 import { groupQueries } from "src/utility/api/groups/queries";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -21,14 +25,9 @@ const search = (search: string) =>
     search === "" ? {} : { filter: { groupId: { $like: `*${search}*` } } },
   );
 
-type GroupMultiSelectProps = {
-  value: Group[];
-  onChange: (groups: Group[]) => void;
-  excluded?: Group[];
-  autoFocus?: boolean;
-};
-
-export const GroupMultiSelect: FC<GroupMultiSelectProps> = (props) => {
+export const GroupMultiSelect: FC<EntitySearchMultiSelectProps<Group>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchMultiSelect
@@ -42,16 +41,9 @@ export const GroupMultiSelect: FC<GroupMultiSelectProps> = (props) => {
   );
 };
 
-type GroupSingleSelectProps = {
-  label: string;
-  placeholder: string;
-  requiredText: string;
-  onChange: (groupId: string) => void;
-  value?: string;
-  isEmpty?: boolean;
-};
-
-export const GroupSingleSelect: FC<GroupSingleSelectProps> = (props) => {
+export const GroupSingleSelect: FC<EntitySearchSingleSelectProps<Group>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchSingleSelect

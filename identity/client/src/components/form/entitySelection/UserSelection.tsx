@@ -8,8 +8,12 @@
 
 import { FC } from "react";
 import useTranslate from "src/utility/localization";
-import EntitySearchMultiSelect from "src/components/form/EntitySearchMultiSelect";
-import EntitySearchSingleSelect from "src/components/form/EntitySearchSingleSelect";
+import EntitySearchMultiSelect, {
+  type EntitySearchMultiSelectProps,
+} from "src/components/form/EntitySearchMultiSelect";
+import EntitySearchSingleSelect, {
+  type EntitySearchSingleSelectProps,
+} from "src/components/form/EntitySearchSingleSelect";
 import { userQueries } from "src/utility/api/users/queries";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -21,14 +25,9 @@ const search = (search: string) =>
     search === "" ? {} : { filter: { username: { $like: `*${search}*` } } },
   );
 
-type UserMultiSelectProps = {
-  value: User[];
-  onChange: (users: User[]) => void;
-  excluded?: User[];
-  autoFocus?: boolean;
-};
-
-export const UserMultiSelect: FC<UserMultiSelectProps> = (props) => {
+export const UserMultiSelect: FC<EntitySearchMultiSelectProps<User>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchMultiSelect
@@ -42,16 +41,9 @@ export const UserMultiSelect: FC<UserMultiSelectProps> = (props) => {
   );
 };
 
-type UserSingleSelectProps = {
-  label: string;
-  placeholder: string;
-  requiredText: string;
-  onChange: (username: string) => void;
-  value?: string;
-  isEmpty?: boolean;
-};
-
-export const UserSingleSelect: FC<UserSingleSelectProps> = (props) => {
+export const UserSingleSelect: FC<EntitySearchSingleSelectProps<User>> = (
+  props,
+) => {
   const { t } = useTranslate("entitySelection");
   return (
     <EntitySearchSingleSelect
