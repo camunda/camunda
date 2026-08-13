@@ -401,7 +401,7 @@ components:
       style: form
       required: false
       schema:
-        type: string
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
     ForceParameter:
       name: force
       description: If true, the operation is a force operation. This is typically used to force remove a set of brokers when they are not available.
@@ -420,14 +420,6 @@ components:
       schema:
         type: integer
         format: int32
-    PhysicalTenantParameter:
-      name: physicalTenant
-      description: Scopes the response to one physical tenant.
-      in: query
-      style: form
-      required: false
-      schema:
-        $ref: 'components.yaml#/schemas/PhysicalTenantId'
   responses:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.
