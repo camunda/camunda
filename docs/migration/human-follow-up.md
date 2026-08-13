@@ -1318,6 +1318,22 @@ HOT hold lifted (investigation confirmed the legacy-to-unified-webapp migration 
 
 ## FLAG symbols
 
+### webapp/client/apps/orchestration-cluster-webapp/src/tasklist/modules/processes/components/FirstTimeProcessWarning.tsx — FeatureFlags
+
+- **Tier:** FLAG
+- **Reason:** `FeatureFlags` is a Carbon-only provider with no `carbon-compat`
+  entry and no DS equivalent. It is used here for exactly one thing —
+  `enableFocusWrapWithoutSentinels`, which opts Carbon's modal out of its own
+  focus-sentinel markup. The DS Dialog is Radix-based and uses no sentinels, so
+  there is nothing to opt out of on the DS path.
+- **Resolution:** not migrated, and deliberately so. The provider now wraps the
+  flag-off branch only; the DS branch renders the modal without it. Confirmed
+  against the running app: 3001 still reports zero `.cds--visually-hidden`
+  sentinels inside the dialog, so the Carbon behaviour is unchanged.
+- **Shim applied:** No — none needed. This is a FLAG that resolves to "correctly
+  dropped on the DS path" rather than one awaiting a DS component.
+
+
 ### webapp/client/apps/orchestration-cluster-webapp/src/tasklist/modules/task-details/components/DetailsSkeleton.tsx:29 — ButtonSkeleton
 
 - **Tier:** FLAG

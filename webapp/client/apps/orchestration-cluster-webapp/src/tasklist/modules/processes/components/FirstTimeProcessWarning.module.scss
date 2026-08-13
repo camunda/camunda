@@ -18,3 +18,11 @@
 	height: auto;
 	margin-bottom: var(--cds-spacing-08);
 }
+
+// DS-only (see FirstTimeProcessWarning.tsx). The compat Modal drops Carbon's
+// `size` prop, so the DS Dialog falls back to its narrow default — too tight for
+// the 404px illustration. Restores roughly what `size="md"` gave.
+.modal {
+	max-width: 40rem !important;
+	width: calc(100vw - 4rem);
+}
