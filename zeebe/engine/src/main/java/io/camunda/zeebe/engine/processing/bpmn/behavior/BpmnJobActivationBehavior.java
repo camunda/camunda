@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -330,6 +331,9 @@ public class BpmnJobActivationBehavior {
     final var deadline = clock.millis() + properties.timeout();
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
+    if (properties.withLease()) {
+      jobRecord.setLeaseToken(LeaseTokens.generate());
+    }
   }
 
   private JobBatchRecord createJobBatchRecord(

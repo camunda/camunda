@@ -81,4 +81,13 @@ public interface JobActivationProperties extends BufferWriter {
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
   Map<String, Object> claims();
+
+  /**
+   * Returns whether jobs pushed on this stream are leased. When {@code true}, each job pushed on
+   * this stream is assigned a distinct, opaque lease token, observable as {@link
+   * JobRecordValue#getLeaseToken()}. The token lets the engine distinguish items produced by this
+   * activation from those of a superseded one. Defaults to {@code false}, i.e. jobs are pushed
+   * without a lease.
+   */
+  boolean withLease();
 }

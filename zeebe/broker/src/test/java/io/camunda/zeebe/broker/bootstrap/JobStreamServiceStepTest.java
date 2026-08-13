@@ -218,6 +218,9 @@ final class JobStreamServiceStepTest {
           .containsExactlyInAnyOrder(BufferUtil.wrapString("foo"), BufferUtil.wrapString("bar"));
       assertThat(immutable.tenantIds()).containsExactlyInAnyOrder("tenant1", "tenant2");
       assertThat(immutable.tenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+      assertThat(immutable.withLease())
+          .describedAs("decodes an omitted withLease key as false")
+          .isFalse();
     }
   }
 }

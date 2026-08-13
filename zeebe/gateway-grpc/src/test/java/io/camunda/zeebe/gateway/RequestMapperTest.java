@@ -646,6 +646,41 @@ public class RequestMapperTest {
           .hasMessageContaining("Unrecognized tenantFilter option")
           .hasMessageContaining("expected one of ASSIGNED or PROVIDED");
     }
+
+    @Test
+    public void shouldMapStreamActivatedJobsRequestWithLease() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .setWithLease(true)
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(properties.withLease()).isTrue();
+    }
+
+    @Test
+    public void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(properties.withLease()).isFalse();
+    }
   }
 
   @Nested

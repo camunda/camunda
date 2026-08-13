@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -36,15 +37,17 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final DocumentProperty claimsProp = new DocumentProperty("claims");
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
+  private final BooleanProperty withLeaseProp = new BooleanProperty("withLease", false);
 
   public JobActivationPropertiesImpl() {
-    super(6);
+    super(7);
     declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(claimsProp)
-        .declareProperty(tenantFilterProp);
+        .declareProperty(tenantFilterProp)
+        .declareProperty(withLeaseProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
@@ -67,6 +70,11 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   public JobActivationPropertiesImpl setTenantIds(final Collection<String> tenantIds) {
     tenantIdsProp.reset();
     tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    return this;
+  }
+
+  public JobActivationPropertiesImpl setWithLease(final boolean withLease) {
+    withLeaseProp.setValue(withLease);
     return this;
   }
 
@@ -98,6 +106,11 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   @Override
   public Map<String, Object> claims() {
     return MsgPackConverter.convertToMap(claimsProp.getValue());
+  }
+
+  @Override
+  public boolean withLease() {
+    return withLeaseProp.getValue();
   }
 
   public JobActivationPropertiesImpl setTenantFilter(final TenantFilter tenantFilter) {

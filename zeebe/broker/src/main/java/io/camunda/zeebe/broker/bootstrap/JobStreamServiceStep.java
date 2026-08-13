@@ -203,7 +203,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         mutable.fetchVariables(),
         mutable.tenantIds(),
         mutable.tenantFilter(),
-        mutable.claims());
+        mutable.claims(),
+        mutable.withLease());
   }
 
   @Override
@@ -217,7 +218,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       Collection<DirectBuffer> fetchVariables,
       Collection<String> tenantIds,
       TenantFilter tenantFilter,
-      Map<String, Object> claims)
+      Map<String, Object> claims,
+      boolean withLease)
       implements JobActivationProperties {
 
     @Override

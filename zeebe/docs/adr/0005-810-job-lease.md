@@ -108,6 +108,14 @@ condition. Two thinner layers align with standard practice: older log records de
 empty lease, and exporters strip the token from previous-version job records so the previous
 minor's strict indices keep accepting documents.
 
+The same absence of mechanism holds at a second boundary: broker-to-broker stream registration.
+Registration properties (worker, timeout, tenant IDs, and now `withLease`) travel between brokers
+as a self-describing msgpack map inside an SBE envelope; SBE governs only the envelope, so adding a
+field is absorbed by msgpack rather than by the envelope schema. `withLease` declares an explicit
+default, so a payload omitting the key decodes as non-leasing, and a decoder predating the field
+ignores it. Either direction of skew degrades the opt-in to `false` rather than failing the
+registration, converging on the same worker-side null check.
+
 **D8. The token is exported to secondary storage; surfacing it in the Get/Search job APIs is the
 intended end state.**
 The token is not a secret (per the threat model in Context), so exporting it costs nothing
