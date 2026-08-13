@@ -37,7 +37,8 @@ public class OptimizeExceptionMapperTest {
   @Test
   void shouldRejectRatherThanReportAnInternalErrorForAValidationFailure() {
     // given
-    when(localizationService.getDefaultLocaleMessageForApiErrorCode("badRequestError"))
+    when(localizationService.getDefaultLocaleMessageForApiErrorCode(
+            OptimizeValidationException.ERROR_CODE))
         .thenReturn("The server was unable to process the request.");
 
     // when
@@ -48,6 +49,7 @@ public class OptimizeExceptionMapperTest {
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    // literal on purpose: the code is API contract, keyed on by apiErrors.badRequestError in the UI
     assertThat(response.getBody().getErrorCode()).isEqualTo("badRequestError");
     assertThat(response.getBody().getDetailedMessage())
         .isEqualTo("Collection names cannot be greater than 3 characters");
