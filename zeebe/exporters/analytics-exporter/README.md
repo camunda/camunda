@@ -317,9 +317,9 @@ attribute names, and the version tag are all deliberately not exported.
 Alongside the events above, the exporter ships delta counters over OTLP metrics. Each counter
 is incremented once per source record and carries the dimensions listed below.
 
-|                Counter                |              Source record               |                              Dimensions                              |
-|---------------------------------------|------------------------------------------|----------------------------------------------------------------------|
-| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED`      | `camunda.tenant.id`                                                  |
+|                Counter                |            Source record            |     Dimensions      |
+|---------------------------------------|-------------------------------------|---------------------|
+| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED` | `camunda.tenant.id` |
 
 `camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
 a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
