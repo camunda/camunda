@@ -119,9 +119,13 @@ DISPATCHABLE_SURFACES = frozenset(
 IGNORED_JOB_PREFIXES = ("Observe Helm chart Integration Tests status",)
 
 #: Literal prefixes, deliberately stopping before the first `${{`, matched
-#: against the trailing segment of a (possibly nested) job name.
-_SURFACE_PREFIXES: tuple[tuple[str, str], ...] = (
-    ("Playwright e2e after install", SURFACE_SM_E2E),
+#: against the trailing segment of a (possibly nested) job name. An entry may
+#: be a compiled regex instead of a literal string when the interpolated job
+#: name has a rendered value (not just an unrendered `${{ }}`) in the middle
+#: of the fragment being matched, e.g. `${{ matrix.suite }}` in the SM e2e job
+#: name (camunda-platform-helm#6841) — a plain prefix can't skip over that.
+_SURFACE_PREFIXES: tuple[tuple[str | re.Pattern[str], str], ...] = (
+    (re.compile(r"^Playwright e2e .*after install\b"), SURFACE_SM_E2E),
     ("Trigger SaaS E2E tests", SURFACE_SAAS_E2E),
     ("install for install on", SURFACE_HELM_INSTALL),
     ("Cleanup - install on", SURFACE_HELM_CLEANUP),
@@ -153,7 +157,10 @@ def surface_for_job(job_name: str) -> str | None:
             return None
 
     for prefix, surface in _SURFACE_PREFIXES:
-        if leaf.startswith(prefix):
+        if isinstance(prefix, re.Pattern):
+            if prefix.match(leaf):
+                return surface
+        elif leaf.startswith(prefix):
             return surface
 
     if _FRONTEND_BUILD_RE.match(leaf):

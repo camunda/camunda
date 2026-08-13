@@ -86,6 +86,34 @@ def test_unrendered_template_job_name_still_matches_prefix():
     assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
 
 
+def test_sm_e2e_job_name_with_matrix_suite_maps_to_sm_surface():
+    # camunda-platform-helm#6841 inserted `${{ matrix.suite }}` between "e2e"
+    # and "after install" to run a named suite (e.g. the alwaysgreen scenario's
+    # "full" suite), rendering e.g. run 31684711833's failing job. A plain
+    # `startswith("Playwright e2e after install")` stops matching this and the
+    # job silently drops out of triage with no evidence and no fix agent run.
+    name = (
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e full after install - install on gke - agrn (1 of 1)"
+    )
+    assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
+
+    smoke_name = name.replace("full after install", "smoke after install")
+    assert classify.surface_for_job(smoke_name) == classify.SURFACE_SM_E2E
+
+
+def test_unrendered_matrix_suite_job_name_still_matches_prefix():
+    # The unrendered form of `${{ matrix.suite }}` itself contains spaces, so
+    # a `\S+`-based fix for the case above would regress this one.
+    name = (
+        "Helm chart Integration Tests / agrn - install - gke / "
+        "Playwright e2e ${{ matrix.suite }} after install - "
+        "${{ inputs.flow }} on ${{ inputs.distro-platform }} - "
+        "${{ inputs.shortname }}"
+    )
+    assert classify.surface_for_job(name) == classify.SURFACE_SM_E2E
+
+
 def test_observe_status_job_is_ignored():
     assert classify.surface_for_job("Observe Helm chart Integration Tests status") is None
 
