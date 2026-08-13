@@ -18,6 +18,15 @@
 	padding-block: 0;
 }
 
+// DS-only. The search stretched the full width of its 10-of-16 grid track (767px
+// at desktop). The DS ProjectDetailPage example constrains its search with
+// `min-w-48 max-w-sm`, so it stays a compact field rather than a full-width bar.
+// Height already matches the DS Input (h-9 = 36px) and is untouched.
+.searchCellDS {
+	min-width: 12rem;
+	max-width: 24rem;
+}
+
 // DS-only (see ProcessesFilters.tsx). Replaces Carbon's CSS Grid, whose compat
 // adapter is a passthrough ("MIGRATION TODO: replace with Tailwind grid
 // utilities"). Reproduces the same 4/8/16-column track counts at Carbon's own sm

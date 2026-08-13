@@ -115,7 +115,11 @@ const Fields: React.FC<FieldsProps> = ({handleSubmit, tenants}) => {
 	return (
 		<FilterGrid>
 			<GridCell
-				className={cn(styles.filter, featureFlags.dsTasklistUI && styles.filterDS)}
+				className={cn(
+					styles.filter,
+					featureFlags.dsTasklistUI && styles.filterDS,
+					featureFlags.dsTasklistUI && styles.searchCellDS,
+				)}
 				sm={4}
 				md={isMultiTenancyEnabled ? 8 : 5}
 				lg={10}
