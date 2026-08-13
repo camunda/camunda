@@ -17,6 +17,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NotFinishedBatchOperation;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
@@ -169,17 +170,34 @@ abstract class BatchOperationUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
           .isEmpty();
     }
 
     @Test
-    void shouldReturnBatchOperationIds() throws PersistenceException {
+    void shouldReturnBatchOperationsWithStateAndTotalCount() throws PersistenceException {
       // given
       final var repository = createRepository();
-      createBatchOperationEntity("1", OffsetDateTime.now());
-      createBatchOperationEntity("2", OffsetDateTime.now());
-      final var expected = createBatchOperationEntity("3", null);
+      createBatchOperationEntity("1", OffsetDateTime.now(), BatchOperationState.COMPLETED, 2);
+      createBatchOperationEntity("2", OffsetDateTime.now(), BatchOperationState.COMPLETED, 2);
+      createBatchOperationEntity("3", null, BatchOperationState.ACTIVE, 5);
+
+      // when
+      final var documents = repository.getNotFinishedBatchOperations();
+
+      // then the update task can tell how many items the batch operation has, and whether it is
+      // finished, without a second request
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .containsExactly(new NotFinishedBatchOperation("3", BatchOperationState.ACTIVE, 5));
+    }
+
+    @Test
+    void shouldReturnBatchOperationWithoutItems() throws PersistenceException {
+      // given a completed batch operation whose item query matched nothing
+      final var repository = createRepository();
+      createBatchOperationEntity("1", null, BatchOperationState.COMPLETED, 0);
 
       // when
       final var documents = repository.getNotFinishedBatchOperations();
@@ -187,16 +205,22 @@ abstract class BatchOperationUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-          .hasSize(1)
-          .contains(expected.getId());
+          .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
+          .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
     }
 
-    private BatchOperationEntity createBatchOperationEntity(
-        final String id, final OffsetDateTime endTime) throws PersistenceException {
-      final var batchOperationEntity = new BatchOperationEntity().setId(id).setEndDate(endTime);
-      indexBatchOperation(batchOperationEntity);
-      return batchOperationEntity;
+    private void createBatchOperationEntity(
+        final String id,
+        final OffsetDateTime endTime,
+        final BatchOperationState state,
+        final int operationsTotalCount)
+        throws PersistenceException {
+      indexBatchOperation(
+          new BatchOperationEntity()
+              .setId(id)
+              .setEndDate(endTime)
+              .setState(state)
+              .setOperationsTotalCount(operationsTotalCount));
     }
   }
 
@@ -318,6 +342,27 @@ abstract class BatchOperationUpdateRepositoryIT {
       final BatchOperationEntity batchOperationEntity4 = getBatchOperationEntity("4");
       assertThat(batchOperationEntity4.getEndDate()).isNull();
       assertThat(batchOperationEntity4.getOperationsFinishedCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldSetEndDateOfCompletedBatchOperationWithoutOperations()
+        throws PersistenceException {
+      // given a completed batch operation whose item query matched nothing, so it has no items
+      final var repository = createRepository();
+      createBatchOperationEntity("1", 0, BatchOperationState.COMPLETED);
+
+      // when
+      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 0, 0, 0, 0)));
+
+      // then
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(1);
+
+      final BatchOperationEntity batchOperationEntity = getBatchOperationEntity("1");
+      assertThat(batchOperationEntity.getEndDate()).isNotNull();
+      assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
     }
 
     private BatchOperationEntity createBatchOperationEntity(

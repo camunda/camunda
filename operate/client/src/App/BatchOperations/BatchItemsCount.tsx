@@ -37,8 +37,10 @@ const BatchItemsCount: React.FC<{
   const pendingCount = operationsTotalCount - successCount - failedCount;
   const hasAnyProgress = successCount > 0 || failedCount > 0;
 
-  if (!hasAnyProgress && pendingCount > 0) {
-    const description = 'not started';
+  if (!hasAnyProgress) {
+    // An item query that matched nothing leaves the batch operation with no
+    // items at all, which is a different state from items not started yet.
+    const description = pendingCount > 0 ? 'not started' : 'no items';
     return (
       <Tooltip description={description} align="bottom">
         <Item color="var(--cds-status-gray)" aria-label={description}>
