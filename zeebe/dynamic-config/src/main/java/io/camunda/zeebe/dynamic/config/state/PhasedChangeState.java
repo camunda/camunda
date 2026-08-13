@@ -41,11 +41,21 @@ import org.jspecify.annotations.NullMarked;
  * <ul>
  *   <li>{@code nextId}: the higher value wins (it only ever increases).
  *   <li>{@code pending}: union of both sides' entries by id; an id present on both sides is
- *       resolved via {@link PhasedChangePlan#merge}; an id resolved (present in the merged {@link
- *       #history}) on either side is dropped from the merged pending map.
+ *       resolved via {@link PhasedChangePlan#merge}. An id present on only one side is dropped
+ *       (treated as already resolved on the <em>other</em> side) if either: (a) the other side's
+ *       own {@code nextId}/{@code pending} shows it as resolved (see {@link
+ *       #isResolvedAccordingToItself}) — this is the primary, effectively permanent signal, since a
+ *       single writer (the coordinator) never re-admits an id, so its absence, once witnessed, is
+ *       never "forgotten" the way a bounded window would be; or (b) it is present in the merged
+ *       {@link #history} — a weaker, bounded fallback that only matters for the one id the counter
+ *       doesn't cover, {@link PhasedChangePlan#RESTORED_PLAN_ID}.
  *   <li>{@code history}: union of both sides' entries by id (a given id completes at most once, so
- *       this is a simple union, not a per-id merge), trimmed back to (at most) the larger side's
- *       size, oldest {@code completedAt} first, so a plain union does not grow unboundedly.
+ *       this is a simple union, not a per-id merge), trimmed to a <em>fixed</em> {@link
+ *       #DEFAULT_HISTORY_LIMIT} — not a value derived from either side's current size. Top-k
+ *       selection over a union is commutative/associative/idempotent only when k is fixed; deriving
+ *       it from input sizes (as this used to) makes the result depend on which nodes happen to
+ *       merge in which order, so two brokers that have each seen every completion can permanently
+ *       disagree about which ones they remember.
  * </ul>
  */
 @NullMarked
@@ -54,6 +64,16 @@ public record PhasedChangeState(
 
   /** Default number of completed changes retained in {@link #history}. See {@link #wasIssued}. */
   public static final int DEFAULT_HISTORY_LIMIT = 10;
+
+  /**
+   * Total order over {@link CompletedPhasedChange}, most-recently-completed last. Ties on {@code
+   * completedAt} (possible with coarse clock resolution, or across two different nodes' clocks) are
+   * broken by id, so ordering/trimming is fully deterministic regardless of which node computes it
+   * — required for {@link #merge} to converge.
+   */
+  private static final Comparator<CompletedPhasedChange> COMPLETION_ORDER =
+      Comparator.comparing(CompletedPhasedChange::completedAt)
+          .thenComparingLong(CompletedPhasedChange::id);
 
   public PhasedChangeState {
     requireNonNull(pending, "pending must not be null");
@@ -99,6 +119,27 @@ public record PhasedChangeState(
   }
 
   /**
+   * Returns {@code true} if this state's own bookkeeping shows {@code id} as resolved: it was
+   * issued by the counter ({@code id < nextId}) and is not currently in {@link #pending}.
+   *
+   * <p>Deliberately excludes {@link PhasedChangePlan#RESTORED_PLAN_ID}: that sentinel bypasses the
+   * counter entirely (it is assigned directly during legacy migration, not via {@link #initPlan}),
+   * so {@code nextId} advancing past it proves nothing about its history — every state's {@code
+   * nextId} is at least {@link PhasedChangePlan#INITIAL_PLAN_ID}, so this signal would otherwise
+   * unconditionally (and wrongly) call it resolved even for a state that has never witnessed it.
+   * {@link #merge} falls back to the (bounded, but adequate for a once-per-cluster-lifetime event)
+   * {@link #history}-based check for that one id.
+   *
+   * <p>For every other id, this is a permanent signal, unlike {@link #history}: a single writer
+   * (the coordinator) only ever removes a counter-issued id from {@link #pending} by explicitly
+   * resolving it, so once some state has witnessed {@code id < nextId} without it being pending,
+   * that fact never becomes false again, no matter how many unrelated ids are later issued.
+   */
+  private boolean isResolvedAccordingToItself(final long id) {
+    return id >= PhasedChangePlan.INITIAL_PLAN_ID && id < nextId && !pending.containsKey(id);
+  }
+
+  /**
    * Returns the single pending plan, assuming exactly one is pending. Convenience for call sites
    * (tests, and legacy single-plan flows such as {@link CurrentClusterConfiguration#fromLegacy})
    * that know only one plan can be in flight.
@@ -126,7 +167,7 @@ public record PhasedChangeState(
    * longer tracks completion order.
    */
   public Optional<CompletedPhasedChange> lastChange() {
-    return history.stream().max(Comparator.comparing(CompletedPhasedChange::completedAt));
+    return history.stream().max(COMPLETION_ORDER);
   }
 
   /**
@@ -193,7 +234,7 @@ public record PhasedChangeState(
   private static List<CompletedPhasedChange> trimHistory(
       final List<CompletedPhasedChange> entries, final int limit) {
     final var sorted = new ArrayList<>(entries);
-    sorted.sort(Comparator.comparing(CompletedPhasedChange::completedAt));
+    sorted.sort(COMPLETION_ORDER);
     final int from = Math.max(0, sorted.size() - Math.max(limit, 0));
     return List.copyOf(sorted.subList(from, sorted.size()));
   }
@@ -214,18 +255,24 @@ public record PhasedChangeState(
     final Map<Long, CompletedPhasedChange> mergedHistoryById = new HashMap<>();
     history.forEach(c -> mergedHistoryById.put(c.id(), c));
     other.history.forEach(c -> mergedHistoryById.merge(c.id(), c, (a, b) -> a));
-    // Bounded to the larger side's current size (not an explicit limit, which merge has no access
-    // to): each side was already trimmed to its own configured limit by completePlan, so this keeps
-    // a plain gossip union from growing history without bound across repeated merges.
+    // Fixed limit, not derived from either side's size: top-k of a union only converges regardless
+    // of merge order when k is constant. See the class javadoc.
     final var mergedHistory =
-        trimHistory(
-            List.copyOf(mergedHistoryById.values()),
-            Math.max(history.size(), other.history.size()));
+        trimHistory(List.copyOf(mergedHistoryById.values()), DEFAULT_HISTORY_LIMIT);
 
     final Map<Long, PhasedChangePlan> mergedPending = new HashMap<>();
-    pending.forEach((id, plan) -> mergedPending.merge(id, plan, (a, b) -> a.merge(b)));
-    other.pending.forEach((id, plan) -> mergedPending.merge(id, plan, (a, b) -> a.merge(b)));
-    mergedHistoryById.keySet().forEach(mergedPending::remove);
+    pending.forEach(
+        (id, plan) -> {
+          if (!other.isResolvedAccordingToItself(id) && !mergedHistoryById.containsKey(id)) {
+            mergedPending.merge(id, plan, (a, b) -> a.merge(b));
+          }
+        });
+    other.pending.forEach(
+        (id, plan) -> {
+          if (!isResolvedAccordingToItself(id) && !mergedHistoryById.containsKey(id)) {
+            mergedPending.merge(id, plan, (a, b) -> a.merge(b));
+          }
+        });
 
     return new PhasedChangeState(mergedNextId, mergedPending, mergedHistory);
   }
