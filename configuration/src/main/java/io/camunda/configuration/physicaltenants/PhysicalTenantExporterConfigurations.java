@@ -50,25 +50,6 @@ import org.springframework.core.env.Environment;
  * BrokerBasedPropertiesOverride#RDBMS_EXPORTER_NAME}) sit outside the catalog: their configuration
  * is derived downstream from the tenant's secondary-storage properties, and args-tuning declared
  * for them is taken as-is.
- *
- * <p><b>The {@code data.exporters-assigned} manifest (ADR-0008 D1/D2/D5) is implemented but not yet
- * wired into {@link PhysicalTenantResolver}, gated on <a
- * href="https://github.com/camunda/camunda/issues/56652">#56652</a>:</b> its mandatory-explicit
- * validation, the exempt/unknown/configured-but-unassigned boot errors, and the root-level
- * placement check live in {@link PhysicalTenantExporterAssignedValidation}; the narrowing of
- * unassigned catalog entries out of the tenant's resolved map lives in {@link #narrowToAssigned}.
- * Both are dormant on purpose: as long as the initial dynamic cluster configuration derives the
- * per-partition exporter <em>enable</em> state from the root {@code BrokerCfg} only, a
- * narrowed-away id would remain enabled on the tenant's partitions and be instantiated as a {@code
- * BlockingExporter}, stalling exporting and log compaction — so the interim inherit-all behavior
- * stands until #56652 flips the wire-in. To activate (from {@link PhysicalTenantResolver#of}): call
- * {@link PhysicalTenantExporterAssignedValidation#validateRootAssignedAbsent} before the tenant
- * loop, then — after the loop and once every tenant's {@link #apply} has run — {@link
- * PhysicalTenantExporterAssignedValidation#validate} for the whole resolved-by-tenant map, and only
- * then {@link #narrowToAssigned} for each tenant. Validation must precede narrowing: narrowing
- * removes ids, and validation checks assigned ids against the full pre-narrow universe. {@link
- * #apply} itself therefore changes only entry <em>contents</em>, never which ids exist for a
- * tenant.
  */
 @NullMarked
 final class PhysicalTenantExporterConfigurations {
@@ -204,9 +185,6 @@ final class PhysicalTenantExporterConfigurations {
    * here ({@link PhysicalTenantExporterAssignedValidation} already rejects it at boot whenever a
    * generic exporter could apply); an explicit empty manifest keeps only the autoconfigured
    * entries.
-   *
-   * <p><b>Dormant:</b> not yet called from {@link PhysicalTenantResolver} — wiring it in is gated
-   * on <a href="https://github.com/camunda/camunda/issues/56652">#56652</a>; see the class javadoc.
    */
   static void narrowToAssigned(
       final Camunda physicalTenant, final String tenantId, final Environment environment) {

@@ -103,6 +103,26 @@ public final class PhysicalTenantsITHelper {
                             .getInitialization()
                             .setDefaultRoles(
                                 Map.of("admin", Map.of("users", List.of(adminUsername(tenant))))));
+                // A non-default physical tenant must explicitly declare which generic exporters
+                // run for it (PhysicalTenantExporterAssignedValidation, ADR-0008 D1/D2/D5) once any
+                // generic exporter exists in the root catalog — but leaving the manifest unbound is
+                // valid too as long as the tenant's resolved catalog stays empty.
+                // TestClusterBuilder
+                // registers recordingExporter by default (and physical-tenant ITs built on it
+                // assert on records exported from the tenant's own partitions), so it is assigned
+                // here when present; callers that configure their own generic exporters and
+                // exporters-assigned afterwards (e.g. PhysicalTenantExporterConfigIT) are left
+                // untouched, since setting an empty manifest here would collide with their later
+                // indexed exporters-assigned[n] properties.
+                if (broker
+                    .unifiedConfig()
+                    .getData()
+                    .getExporters()
+                    .containsKey(TestStandaloneBroker.RECORDING_EXPORTER_ID)) {
+                  broker.withProperty(
+                      "camunda.physical-tenants." + tenant + ".data.exporters-assigned[0]",
+                      TestStandaloneBroker.RECORDING_EXPORTER_ID);
+                }
               }
             });
     return broker;

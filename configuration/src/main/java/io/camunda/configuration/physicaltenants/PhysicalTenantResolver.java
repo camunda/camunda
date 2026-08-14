@@ -102,6 +102,14 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
+
+    PhysicalTenantExporterAssignedValidation.validate(
+        environment, resolvedPhysicalTenants, physicalTenantIds);
+    resolvedPhysicalTenants.forEach(
+        (physicalTenantId, physicalTenantCfg) ->
+            PhysicalTenantExporterConfigurations.narrowToAssigned(
+                physicalTenantCfg, physicalTenantId, environment));
+
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
