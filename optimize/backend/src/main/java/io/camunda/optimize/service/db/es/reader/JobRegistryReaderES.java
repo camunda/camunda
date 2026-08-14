@@ -123,7 +123,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
       final SearchResponse<JobRegistryEntryDto> searchResponse =
           esClient.search(searchRequest, JobRegistryEntryDto.class);
 
-      if (searchResponse.hits().total().value() == 0) {
+      if (searchResponse.hits().hits().isEmpty()) {
         return Optional.empty();
       }
       return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
