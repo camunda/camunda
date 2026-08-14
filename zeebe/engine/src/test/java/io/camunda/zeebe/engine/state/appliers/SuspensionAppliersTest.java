@@ -69,9 +69,7 @@ public class SuspensionAppliersTest {
     suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.SUSPENDED);
     bufferedApplier.applyState(
         bufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .setCommandKey(51L));
+        new BufferedCommandRecord().setProcessInstanceKey(processInstanceKey).setCommandKey(51L));
 
     // when
     resumingApplier.applyState(processInstanceKey, new ProcessInstanceRecord());

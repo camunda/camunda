@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public final class ProcessInstanceBufferedCommandDrainProcessorTest {
+public final class BufferedCommandDrainProcessorTest {
 
   private static final long PROCESS_INSTANCE_KEY = 100L;
   private static final long BUFFERED_COMMAND_KEY = 200L;
@@ -42,7 +42,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
 
   private StateWriter stateWriter;
   private TypedCommandWriter commandWriter;
-  private ProcessInstanceBufferedCommandDrainProcessor processor;
+  private BufferedCommandDrainProcessor processor;
 
   @BeforeEach
   void setUp() {
@@ -53,7 +53,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
     when(writers.state()).thenReturn(stateWriter);
     when(writers.command()).thenReturn(commandWriter);
 
-    processor = new ProcessInstanceBufferedCommandDrainProcessor(processingState, writers);
+    processor = new BufferedCommandDrainProcessor(processingState, writers);
   }
 
   @Test
@@ -103,7 +103,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
 
   private void bufferCompleteElementCommand() {
     final var command =
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
             .setCommandKey(BUFFERED_COMMAND_KEY)
             .setValueType(ValueType.PROCESS_INSTANCE)
@@ -113,10 +113,10 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
     processingState.getSuspensionState().bufferCommand(BUFFERED_COMMAND_KEY, command);
   }
 
-  private MockTypedRecord<ProcessInstanceBufferedCommandRecord> drainCommand() {
+  private MockTypedRecord<BufferedCommandRecord> drainCommand() {
     return new MockTypedRecord<>(
         PROCESS_INSTANCE_KEY,
         new RecordMetadata(),
-        new ProcessInstanceBufferedCommandRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+        new BufferedCommandRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
   }
 }
