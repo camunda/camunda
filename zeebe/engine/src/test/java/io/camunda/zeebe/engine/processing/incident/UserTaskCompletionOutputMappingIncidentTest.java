@@ -45,7 +45,8 @@ public final class UserTaskCompletionOutputMappingIncidentTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).complete("completing-user");
+    final long userTaskKey =
+        ENGINE.userTask().ofInstance(processInstanceKey).complete("completing-user").getKey();
     final long incidentKey =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -55,12 +56,13 @@ public final class UserTaskCompletionOutputMappingIncidentTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve("resolver-user");
 
     // then
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("bar")
-                .getFirst()
-                .getAuthorizations())
+    final var variableRecord =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("bar")
+            .getFirst();
+    assertThat(variableRecord.getAuthorizations())
         .containsEntry(AUTHORIZED_USERNAME, "completing-user");
+    assertThat(variableRecord.getValue().getSource().getUserTaskKey()).isEqualTo(userTaskKey);
   }
 }

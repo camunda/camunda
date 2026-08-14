@@ -29,6 +29,10 @@ public class VariableAddUpdateAuditLogTransformer
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
     final VariableRecordValue value = record.getValue();
     log.setEntityDescription(value.getName());
+    if (VariableOperationType.USER_TASK_COMPLETION.equals(value.getSource().getType())
+        && value.getSource().getUserTaskKey() > 0) {
+      log.setUserTaskKey(value.getSource().getUserTaskKey());
+    }
   }
 
   @Override

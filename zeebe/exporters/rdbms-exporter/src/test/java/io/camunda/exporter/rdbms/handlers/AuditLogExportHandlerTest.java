@@ -76,7 +76,7 @@ class AuditLogExportHandlerTest {
   @Test
   void shouldNotHandleRecordWhenAuditLogIsNotEnabled() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(false);
+    when(config.isEnabled(any(Record.class))).thenReturn(false);
 
     assertThat(handler.canExport(record)).isFalse();
   }
@@ -84,7 +84,7 @@ class AuditLogExportHandlerTest {
   @Test
   void shouldHandleRecord() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
 
     assertThat(handler.canExport(record)).isTrue();
   }

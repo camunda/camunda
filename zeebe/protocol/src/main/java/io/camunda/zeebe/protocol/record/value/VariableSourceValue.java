@@ -33,4 +33,13 @@ public interface VariableSourceValue extends RecordValue {
    *     (e.g., internal operations).
    */
   VariableOperationType getType();
+
+  /**
+   * @return the key of the user task that caused the variable operation, or {@code -1} if the
+   *     operation was not caused by user task completion.
+   */
+  @Value.Default
+  default long getUserTaskKey() {
+    return -1L;
+  }
 }

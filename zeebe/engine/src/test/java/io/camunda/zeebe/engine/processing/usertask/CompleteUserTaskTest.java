@@ -133,15 +133,15 @@ public final class CompleteUserTaskTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.COMPLETING);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withName("foo")
-                .getFirst()
-                .getValue()
-                .getSource()
-                .getType())
-        .isEqualTo(VariableOperationType.USER_TASK_COMPLETION);
+    final var source =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("foo")
+            .getFirst()
+            .getValue()
+            .getSource();
+    assertThat(source.getType()).isEqualTo(VariableOperationType.USER_TASK_COMPLETION);
+    assertThat(source.getUserTaskKey()).isEqualTo(completedRecord.getKey());
   }
 
   @Test

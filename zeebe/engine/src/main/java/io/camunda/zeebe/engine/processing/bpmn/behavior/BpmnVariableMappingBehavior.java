@@ -46,11 +46,11 @@ public final class BpmnVariableMappingBehavior {
   private final VariableState variablesState;
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
-  private final VariableBehavior userTaskCompletionVariableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
+  private final boolean enableUserTaskCompletionVariableAudit;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
@@ -64,14 +64,11 @@ public final class BpmnVariableMappingBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
-    userTaskCompletionVariableBehavior =
-        enableUserTaskCompletionVariableAudit
-            ? variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion())
-            : variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+    this.enableUserTaskCompletionVariableAudit = enableUserTaskCompletionVariableAudit;
   }
 
   /**
@@ -134,7 +131,16 @@ public final class BpmnVariableMappingBehavior {
 
   public Either<Failure, Void> applyUserTaskOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, userTaskCompletionVariableBehavior);
+    if (!enableUserTaskCompletionVariableAudit) {
+      return applyOutputMappings(context, element, variableBehavior);
+    }
+
+    final long userTaskKey =
+        elementInstanceState.getInstance(context.getElementInstanceKey()).getCompletedUserTaskKey();
+    return applyOutputMappings(
+        context,
+        element,
+        variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion(userTaskKey)));
   }
 
   private Either<Failure, Void> applyOutputMappings(

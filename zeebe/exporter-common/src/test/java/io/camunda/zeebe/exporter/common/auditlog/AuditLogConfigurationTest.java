@@ -88,7 +88,7 @@ class AuditLogConfigurationTest {
     final VariableRecordValue value =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
-            .withSource(VariableSourceRecord.userTaskCompletion())
+            .withSource(VariableSourceRecord.userTaskCompletion(123L))
             .build();
     return factory.generateRecord(
         ValueType.VARIABLE,

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
@@ -21,14 +22,16 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
   //      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
 
   private static final StringValue TYPE_KEY = new StringValue("type");
+  private static final StringValue USER_TASK_KEY = new StringValue("userTaskKey");
 
   // possible enhancements documented in https://github.com/camunda/camunda/issues/46970
   private final EnumProperty<VariableOperationType> typeProp =
       new EnumProperty<>(TYPE_KEY, VariableOperationType.class, VariableOperationType.UNKNOWN);
+  private final LongProperty userTaskKeyProp = new LongProperty(USER_TASK_KEY, -1L);
 
   public VariableSourceRecord() {
-    super(1);
-    declareProperty(typeProp);
+    super(2);
+    declareProperty(typeProp).declareProperty(userTaskKeyProp);
   }
 
   @Override
@@ -41,16 +44,29 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
+  @Override
+  public long getUserTaskKey() {
+    return userTaskKeyProp.getValue();
+  }
+
+  public VariableSourceRecord setUserTaskKey(final long userTaskKey) {
+    userTaskKeyProp.setValue(userTaskKey);
+    return this;
+  }
+
   public void wrap(final VariableSourceRecord variableSourceRecord) {
     setType(variableSourceRecord.getType());
+    setUserTaskKey(variableSourceRecord.getUserTaskKey());
   }
 
   public static VariableSourceRecord api() {
     return new VariableSourceRecord().setType(VariableOperationType.API);
   }
 
-  public static VariableSourceRecord userTaskCompletion() {
-    return new VariableSourceRecord().setType(VariableOperationType.USER_TASK_COMPLETION);
+  public static VariableSourceRecord userTaskCompletion(final long userTaskKey) {
+    return new VariableSourceRecord()
+        .setType(VariableOperationType.USER_TASK_COMPLETION)
+        .setUserTaskKey(userTaskKey);
   }
 
   public static VariableSourceRecord none() {

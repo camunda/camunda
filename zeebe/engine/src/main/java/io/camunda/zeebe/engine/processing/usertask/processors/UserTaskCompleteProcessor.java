@@ -103,7 +103,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
 
     final long userTaskKey = command.getKey();
     if (asyncRequest.isEmpty()) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+      writeCompletedEvent(userTaskKey, userTaskRecord);
       completeElementInstance(userTaskRecord);
 
       responseWriter.writeAcceptedResponseOnCommand(
@@ -112,7 +112,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     }
 
     final var request = asyncRequest.get();
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+    writeCompletedEvent(userTaskKey, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeAcceptedResponse(
         userTaskKey,
@@ -122,6 +122,11 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         request.requestId(),
         request.requestStreamId());
     stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
+  }
+
+  private void writeCompletedEvent(final long userTaskKey, final UserTaskRecord userTaskRecord) {
+    stateWriter.appendFollowUpEvent(
+        userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, enableVariableAudit ? 4 : 3);
   }
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(

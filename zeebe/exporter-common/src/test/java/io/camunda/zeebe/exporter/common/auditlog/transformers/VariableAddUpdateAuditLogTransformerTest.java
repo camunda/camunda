@@ -53,10 +53,24 @@ class VariableAddUpdateAuditLogTransformerTest {
   void shouldSupportVariableRecordWithUserTaskCompletionSource() {
     // given
     final var record =
-        variableRecord(VariableIntent.CREATED, VariableSourceRecord.userTaskCompletion());
+        variableRecord(VariableIntent.CREATED, VariableSourceRecord.userTaskCompletion(456L));
 
     // then
     assertThat(transformer.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldTransformUserTaskCompletionSource() {
+    // given
+    final var record =
+        variableRecord(VariableIntent.UPDATED, VariableSourceRecord.userTaskCompletion(456L));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getUserTaskKey()).isEqualTo(456L);
   }
 
   @Test
