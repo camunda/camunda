@@ -48,6 +48,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPara
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -65,8 +66,12 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Verifies the new multi-partition-group apply loop in {@link ClusterConfigurationManagerImpl}. */
-final class ClusterConfigurationManagerImplNewConfigTest {
+/**
+ * Verifies {@link ClusterConfigurationManagerImpl}'s multi-partition-group apply loop: local
+ * operation application, phase/plan advancement, gossip merge and re-publish, inconsistency
+ * detection, retry-on-failure, and start-up (including resuming a change plan across a restart).
+ */
+final class ClusterConfigurationManagerImplTest {
 
   private static final MemberId MEMBER_0 = MemberId.from("0");
   private static final MemberId MEMBER_1 = MemberId.from("1");
@@ -826,6 +831,163 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     assertThat(config.globalConfiguration().clusterId()).contains("cluster-x");
     assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members().keySet())
         .containsExactlyInAnyOrder(MEMBER_0, MEMBER_1);
+  }
+
+  @Test
+  void shouldGossipInitialConfigurationAfterStart() {
+    // given — a manager whose gossiper is captured instead of the shared no-op one
+    final var manager = newManager(MEMBER_0);
+    final var gossiped = new AtomicReference<CurrentClusterConfiguration>();
+    manager.setCurrentConfigurationGossiper(gossiped::set);
+    final var initialConfiguration =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                g -> g.addMember(MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE)));
+
+    // when
+    manager.start(() -> CompletableActorFuture.completed(initialConfiguration)).join();
+
+    // then — the initialized configuration was gossiped out
+    assertThat(gossiped.get()).isNotNull();
+    assertThat(gossiped.get().globalConfiguration().getMember(MEMBER_0).state())
+        .isEqualTo(State.ACTIVE);
+  }
+
+  @Test
+  void shouldFailToStartIfInitializationThrowsError() {
+    // given
+    final var manager = newManager(MEMBER_0);
+    final ClusterConfigurationInitializer<CurrentClusterConfiguration> failingInitializer =
+        () -> CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
+
+    // when
+    final var startFuture = manager.start(failingInitializer);
+
+    // then
+    assertThat(startFuture).failsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldFailToStartIfConfigurationIsNotInitialized() {
+    // given
+    final var manager = newManager(MEMBER_0);
+    final ClusterConfigurationInitializer<CurrentClusterConfiguration> uninitializedInitializer =
+        () -> CompletableActorFuture.completed(CurrentClusterConfiguration.uninitialized());
+
+    // when
+    final var startFuture = manager.start(uninitializedInitializer);
+
+    // then
+    assertThat(startFuture).failsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldGossipAndPersistMergedConfigurationOnGossipReceived() {
+    // given — the local member starts with an initialized, empty configuration
+    final var manager = newManager(MEMBER_0);
+    final var gossiped = new AtomicReference<CurrentClusterConfiguration>();
+    manager.setCurrentConfigurationGossiper(gossiped::set);
+    manager.updateMultiConfiguration(ignored -> CurrentClusterConfiguration.init()).join();
+    gossiped.set(null); // only interested in the gossip triggered by the gossip receipt below
+
+    // when — a configuration received via gossip introduces a member the local manager doesn't
+    // know about yet
+    final var received =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                g -> g.addMember(MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)));
+    manager.onGossipReceivedCurrent(received);
+
+    // then — the merged configuration is persisted locally and re-gossiped onward
+    Awaitility.await("Configuration is merged and re-gossiped")
+        .untilAsserted(
+            () ->
+                assertThat(configuration(manager).globalConfiguration().hasMember(MEMBER_1))
+                    .isTrue());
+    assertThat(gossiped.get()).isNotNull();
+    assertThat(gossiped.get().globalConfiguration().hasMember(MEMBER_1)).isTrue();
+  }
+
+  @Test
+  void shouldContinueTopologyChangeOnRestart() {
+    // given — the initializer returns a configuration that already has a pending plan targeting
+    // the local member, as if the manager had restarted mid-change; partition 1 has two replicas
+    // (members 0 and 1) and the plan removes member 0's replica (min allowed replicas = 1).
+    // Partition-group appliers are deliberately NOT registered yet: in production they only
+    // become available once local partitions are bootstrapped, which happens after start()
+    // completes (see ClusterConfigurationManagerService#registerPartitionGroupChangeAppliers).
+    final var persisted =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config-restart.meta"), new ProtoBufSerializer());
+    final var manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            MEMBER_0,
+            persisted,
+            new TopologyManagerMetrics(new SimpleMeterRegistry()),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(2, partitionConfig))),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var withPendingPlan =
+        new CurrentClusterConfiguration(
+                CurrentClusterConfiguration.INITIAL_VERSION,
+                new GlobalConfiguration(
+                    1,
+                    Optional.empty(),
+                    Map.of(
+                        MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                        MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()),
+                Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+                PhasedChangeState.empty())
+            .initPlan(
+                List.of(
+                    new PartitionGroupParallelPhase(
+                        Map.of(
+                            CurrentClusterConfiguration.DEFAULT_GROUP,
+                            List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))))));
+
+    // when — the manager starts from that pre-planned configuration, then the partition-group
+    // appliers are registered afterward (as production does once local partitions are up); that
+    // registration is what triggers the continuation, with no external gossip involved
+    manager.start(() -> CompletableActorFuture.completed(withPendingPlan)).join();
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // then — the pending plan is applied and drained
+    Awaitility.await("Configuration change is continued after restart")
+        .untilAsserted(
+            () -> {
+              final var defaultGroup =
+                  configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+              assertThat(defaultGroup.hasPendingChanges()).isFalse();
+              assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
+              assertThat(defaultGroup.hasMember(MEMBER_1)).isTrue();
+            });
   }
 
   private static final class FailingExecutor
