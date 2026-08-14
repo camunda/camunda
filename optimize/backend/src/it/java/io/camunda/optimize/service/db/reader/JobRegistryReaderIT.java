@@ -173,19 +173,30 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldFindLastJobByJobTypeAndTargetEntityId() {
+    final String targetEntityId = "2251799813685251";
     // given
-    final JobRegistryEntryDto created =
+    LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:00.000+00:00"));
+    jobRegistryWriter.createJobEntry(
+        JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, targetEntityId);
+
+    LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:02.000+00:00"));
+    final JobRegistryEntryDto lastEntry =
         jobRegistryWriter.createJobEntry(
-            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
+            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, targetEntityId);
+
+    // not the last but persisted after the last one
+    LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:01.000+00:00"));
+    jobRegistryWriter.createJobEntry(
+        JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, targetEntityId);
 
     // when
     final Optional<JobRegistryEntryDto> found =
         jobRegistryReader.findLastByJobTypeAndTargetEntityId(
-            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
+            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, targetEntityId);
 
     // then
     assertThat(found).isPresent();
-    assertThat(found.get().getId()).isEqualTo(created.getId());
+    assertThat(found.get().getId()).isEqualTo(lastEntry.getId());
   }
 
   @Test
