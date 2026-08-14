@@ -89,13 +89,6 @@ import org.slf4j.LoggerFactory;
 final class LeadershipTransferAttempt {
   private static final Logger LOG = LoggerFactory.getLogger(LeadershipTransferAttempt.class);
 
-  /**
-   * Headroom on top of the steps' own budgets. The watchdog is a backstop against the attempt
-   * getting stuck, not a timeout anyone should hit, so this is sized to be unreachable on a healthy
-   * transfer rather than tight.
-   */
-  private static final Duration PAUSE_BUDGET_SLACK = Duration.ofSeconds(5);
-
   private final RaftContext raft;
   private final LeaderRole leader;
   private final MemberId desiredLeader;
@@ -247,12 +240,7 @@ final class LeadershipTransferAttempt {
 
   /** How long the partition may stay frozen before the watchdog treats the transfer as stuck. */
   private Duration pauseBudget() {
-    return configuration.replicationTimeout().plus(promotionBudget()).plus(PAUSE_BUDGET_SLACK);
-  }
-
-  /** The wall time {@link TimeoutNowPromotion} can spend spacing out its attempts. */
-  private Duration promotionBudget() {
-    return raft.getHeartbeatInterval().multipliedBy(configuration.maxTransferAttempts());
+    return configuration.pauseBudget(raft.getHeartbeatInterval());
   }
 
   private void reportResult(final LeadershipTransferResult result) {

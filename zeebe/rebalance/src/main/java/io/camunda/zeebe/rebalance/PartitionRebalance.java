@@ -108,4 +108,15 @@ public record PartitionRebalance(
         PartitionRebalanceProgress.COMPLETED,
         PartitionRebalanceOutcome.TRANSFERRED);
   }
+
+  /** Records that leadership moved to a member other than the current or desired leader. */
+  public PartitionRebalance leaderChanged(final MemberId newLeader) {
+    return new PartitionRebalance(
+        physicalTenantId,
+        partitionId,
+        newLeader,
+        desiredLeader,
+        PartitionRebalanceProgress.COMPLETED,
+        PartitionRebalanceOutcome.LEADER_CHANGED);
+  }
 }

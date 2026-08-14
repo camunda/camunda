@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Nulls;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.function.LongSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public final class RebalanceCoordinator
   private final RebalanceRunner runner;
   private final LongSupplier rebalanceIdGenerator;
   private final Clock clock;
+  private final ClusterRebalanceMetrics metrics;
 
   /**
    * The configuration this member coordinates under, or {@code null} while it does not coordinate.
@@ -59,12 +61,14 @@ public final class RebalanceCoordinator
       final ConcurrencyControl executor,
       final RebalanceRunner runner,
       final LongSupplier rebalanceIdGenerator,
-      final Clock clock) {
+      final Clock clock,
+      final ClusterRebalanceMetrics metrics) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.runner = runner;
     this.rebalanceIdGenerator = rebalanceIdGenerator;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   @Override
@@ -199,10 +203,8 @@ public final class RebalanceCoordinator
     if (error != null) {
       LOG.warn("Rebalance {} failed", rebalance.id(), error);
       outcome = RebalanceOutcome.FAILED;
-    } else if (rebalance.isCancelRequested()) {
-      outcome = RebalanceOutcome.CANCELLED;
     } else {
-      outcome = RebalanceOutcome.COMPLETED;
+      outcome = aggregateOutcome(rebalance);
     }
     final var finishedAt = clock.instant();
     rebalance.finish(finishedAt);
@@ -214,7 +216,24 @@ public final class RebalanceCoordinator
             rebalance.partitions(),
             rebalance.startedAt(),
             finishedAt);
+    metrics.observeElapsed(outcome, Duration.between(rebalance.startedAt(), finishedAt));
     LOG.info("Rebalance {} finished as {}", rebalance.id(), outcome);
+  }
+
+  private static RebalanceOutcome aggregateOutcome(final RebalanceRun rebalance) {
+    final var anyUnsuccessful =
+        rebalance.partitions().stream()
+            .filter(partition -> partition.progress() == PartitionRebalanceProgress.COMPLETED)
+            .map(PartitionRebalance::outcome)
+            .anyMatch(
+                outcome ->
+                    outcome != PartitionRebalanceOutcome.TRANSFERRED
+                        && outcome != PartitionRebalanceOutcome.ALREADY_LEADER
+                        && outcome != PartitionRebalanceOutcome.CANCELLED);
+    if (anyUnsuccessful) {
+      return RebalanceOutcome.FAILED;
+    }
+    return rebalance.isCancelRequested() ? RebalanceOutcome.CANCELLED : RebalanceOutcome.COMPLETED;
   }
 
   private void updateCoordinatorRole(final CurrentClusterConfiguration clusterConfiguration) {
@@ -228,6 +247,7 @@ public final class RebalanceCoordinator
     if (nowCoordinating != (configuration != null)) {
       if (nowCoordinating) {
         LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
+        metrics.startCoordinating();
       } else {
         LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
         discardState();
@@ -244,6 +264,7 @@ public final class RebalanceCoordinator
     }
     running = null;
     lastCompleted = null;
+    metrics.stopCoordinating();
   }
 
   /**
