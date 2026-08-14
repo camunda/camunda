@@ -117,7 +117,8 @@ final class JobBatchCollector {
 
           if (!value.isWithLease() && !jobRecord.getLeaseToken().isEmpty()) {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
-            jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
+            jobMetrics.countJobEvent(
+                JobAction.SKIPPED_LEASED, jobRecord.getJobKind(), value.getType());
             return true;
           }
 
@@ -127,7 +128,8 @@ final class JobBatchCollector {
             // jobs behind them can still be activated, and register them so the processor can
             // request the background resolution of their non-cached references and park them
             jobSecretInjector.registerForResolution(secretCheckResult, key);
-            jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
+            jobMetrics.countJobEvent(
+                JobAction.SKIPPED_UNCACHED_SECRET, jobRecord.getJobKind(), value.getType());
             skippedUncachedSecretJobs.increment();
             if (skippedUncachedSecretJobs.value
                 >= EngineConfiguration.MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION) {

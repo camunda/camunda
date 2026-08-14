@@ -552,7 +552,15 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
   public enum JobAction {
     CREATED("created"),
     ACTIVATED("activated"),
-    SKIPPED("skipped"),
+    /**
+     * A leased job skipped by an activation requested without a lease. Operators watch this as the
+     * lease-collision signal, so the label stays {@code "skipped"} even though the constant is not:
+     * panel 13 of {@code monitor/grafana/zeebe.json} keys its orange row highlight on {@code
+     * action="skipped"}. Renaming the label means changing that dashboard in the same PR.
+     */
+    SKIPPED_LEASED("skipped"),
+    /** A job skipped because one of its secret references is not cached yet. */
+    SKIPPED_UNCACHED_SECRET("skipped uncached secret"),
     TIMED_OUT("timed out"),
     COMPLETED("completed"),
     FAILED("failed"),

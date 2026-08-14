@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeThat;
 
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -76,14 +77,12 @@ public class JobProcessingMetricsTest {
 
   @Test
   public void allCountsStartAtNull() {
-    assertThat(findJobCounter("created", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("activated", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("skipped", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("timed out", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("completed", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("failed", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("canceled", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("error thrown", JOB_TYPE, scenario.jobKind)).isEmpty();
+    // derived from the enum rather than listed, so an action added later is covered without an
+    // edit here — the hand-maintained list had already gone stale on "workers notified" and
+    // "pushed". EngineMetricsDocTest pins which label each action emits
+    for (final var action : JobAction.values()) {
+      assertThat(findJobCounter(action.getLabel(), JOB_TYPE, scenario.jobKind)).isEmpty();
+    }
   }
 
   @Test

@@ -34,12 +34,14 @@ import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,6 +174,13 @@ public final class JobSecretPushInjectionTest {
     assertThat(jobStream.getActivatedJobs()).isEmpty();
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.getIntent() == JobBatchIntent.ACTIVATED);
+
+    // and - the skip is reported on its own action. Panel 13 of monitor/grafana/zeebe.json
+    // highlights action="skipped" orange to warn operators about unleased workers colliding with
+    // leased jobs, so an ordinary secret-cache miss must not land there
+    assertThat(findJobCounter("skipped uncached secret"))
+        .hasValueSatisfying(counter -> assertThat(counter.count()).isOne());
+    assertThat(findJobCounter("skipped")).isEmpty();
   }
 
   @Test
@@ -575,6 +584,18 @@ public final class JobSecretPushInjectionTest {
 
   private State jobState(final long jobKey) {
     return engine.getProcessingState().getJobState().getState(jobKey);
+  }
+
+  private Optional<Counter> findJobCounter(final String action) {
+    return Optional.ofNullable(
+        engine
+            .getMeterRegistry()
+            .find("zeebe.job.events.total")
+            .tag("action", action)
+            .tag("partition", "1")
+            .tag("type", JOB_TYPE)
+            .tag("job_kind", JobKind.BPMN_ELEMENT.name())
+            .counter());
   }
 
   private void deploy(final Consumer<ServiceTaskBuilder> modifier) {

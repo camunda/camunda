@@ -9,7 +9,10 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.InMemorySecretCache;
@@ -24,6 +27,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
@@ -74,6 +78,7 @@ final class JobBatchCollectorTest {
   private final RecordLengthEvaluator lengthEvaluator = new RecordLengthEvaluator();
   private final ControllableStreamClock clock =
       new ControllableStreamClockImpl(InstantSource.system());
+  private final JobProcessingMetrics jobMetrics = mock(JobProcessingMetrics.class);
   private final InMemorySecretCache secretCache = new InMemorySecretCache();
   private final JobSecretInjector secretInjector =
       new JobSecretInjector(
@@ -93,13 +98,7 @@ final class JobBatchCollectorTest {
     // are never invoked by the collector — pass nulls to satisfy the CslAuthorizationCheck ctor.
     final var cslCheck = new CslAuthorizationCheck(null, null, securityConfig);
     collector =
-        new JobBatchCollector(
-            state,
-            lengthEvaluator,
-            cslCheck,
-            clock,
-            mock(JobProcessingMetrics.class),
-            secretInjector);
+        new JobBatchCollector(state, lengthEvaluator, cslCheck, clock, jobMetrics, secretInjector);
   }
 
   @Test
@@ -149,7 +148,7 @@ final class JobBatchCollectorTest {
     final var securityConfig = EngineSecurityConfigurations.defaultConfig();
     final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
     return new JobBatchCollector(
-        state, lengthEvaluator, cslCheck, clock, mock(JobProcessingMetrics.class), secretInjector);
+        state, lengthEvaluator, cslCheck, clock, jobMetrics, secretInjector);
   }
 
   @Test
@@ -171,6 +170,37 @@ final class JobBatchCollectorTest {
     JobBatchRecordValueAssert.assertThat(record.getValue())
         .hasOnlyJobKeys(plainJob.key)
         .isNotTruncated();
+  }
+
+  @Test
+  void shouldCountUncachedSecretSkipOnItsOwnAction() {
+    // given - a job with an uncached secret reference
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    createJobWithSecretReference(state.getKeyGenerator().nextKey(), "uncached");
+
+    // when
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - the skip is reported on its own action, not on the lease-skip signal operators watch
+    verify(jobMetrics)
+        .countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, JobKind.BPMN_ELEMENT, JOB_TYPE);
+    verify(jobMetrics, never()).countJobEvent(eq(JobAction.SKIPPED_LEASED), any(), any());
+  }
+
+  @Test
+  void shouldCountLeaseSkipOnTheActionOperatorsWatch() {
+    // given - a leased job, and an activation that did not ask for a lease
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    createLeasedJob(state.getKeyGenerator().nextKey());
+
+    // when
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - panel 13 of monitor/grafana/zeebe.json highlights this emission orange to warn about
+    // unleased workers colliding with leased jobs, so it has to stay on the lease-skip action
+    JobBatchRecordValueAssert.assertThat(record.getValue()).hasNoJobKeys();
+    verify(jobMetrics).countJobEvent(JobAction.SKIPPED_LEASED, JobKind.BPMN_ELEMENT, JOB_TYPE);
+    verify(jobMetrics, never()).countJobEvent(eq(JobAction.SKIPPED_UNCACHED_SECRET), any(), any());
   }
 
   @Test
@@ -748,6 +778,23 @@ final class JobBatchCollectorTest {
       final long variableScopeKey, final Map<String, String> variables) {
     setVariables(variableScopeKey, variables);
     createJob(variableScopeKey);
+  }
+
+  private Job createLeasedJob(final long variableScopeKey) {
+    final var jobRecord =
+        new JobRecord()
+            .setBpmnProcessId("process")
+            .setElementId("element")
+            .setElementInstanceKey(variableScopeKey)
+            .setType(JOB_TYPE)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            // the job stays activatable while holding a token, which is the state an unleased
+            // activation has to skip over
+            .setLeaseToken("lease-token");
+    final long jobKey = state.getKeyGenerator().nextKey();
+
+    state.getJobState().create(jobKey, jobRecord);
+    return new Job(jobKey, jobRecord);
   }
 
   private Job createJobWithSecretReference(final long variableScopeKey, final String secretName) {
