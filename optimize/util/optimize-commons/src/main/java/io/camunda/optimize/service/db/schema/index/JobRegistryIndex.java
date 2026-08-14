@@ -25,7 +25,7 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
   public static final String STATUS = "status";
   public static final String ERROR_MESSAGE = "errorMessage";
   public static final String CREATED_AT = "createdAt";
-  public static final String COMPLETED_AT = "completedAt";
+  public static final String UPDATED_AT = "updatedAt";
 
   @Override
   public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
@@ -37,7 +37,7 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
         .properties(STATUS, p -> p.keyword(k -> k))
         .properties(ERROR_MESSAGE, p -> p.keyword(k -> k.ignoreAbove(IGNORE_ABOVE_CHAR_LIMIT)))
         .properties(CREATED_AT, p -> p.date(d -> d.format(OPTIMIZE_DATE_FORMAT)))
-        .properties(COMPLETED_AT, p -> p.date(d -> d.format(OPTIMIZE_DATE_FORMAT)));
+        .properties(UPDATED_AT, p -> p.date(d -> d.format(OPTIMIZE_DATE_FORMAT)));
   }
 
   @Override
