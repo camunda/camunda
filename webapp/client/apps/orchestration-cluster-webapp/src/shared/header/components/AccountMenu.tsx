@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {LogOut} from 'lucide-react';
+import {Check, LogOut} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {
@@ -23,6 +23,7 @@ import {
 } from '@camunda/design-system';
 import {themeStore} from '#/shared/theme/theme';
 import {languageItems} from '#/shared/i18n';
+import styles from './AccountMenu.module.scss';
 
 type Props = {
 	displayName: string;
@@ -63,9 +64,18 @@ const AccountMenu: React.FC<Props> = observer(({displayName, canLogout, onLogout
 						}
 					}}
 				>
-					<DropdownMenuRadioItem value="system">{t('tasklist.headerThemeSystem')}</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="light">{t('tasklist.headerThemeLight')}</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="dark">{t('tasklist.headerThemeDark')}</DropdownMenuRadioItem>
+					{(
+						[
+							['system', t('tasklist.headerThemeSystem')],
+							['light', t('tasklist.headerThemeLight')],
+							['dark', t('tasklist.headerThemeDark')],
+						] as const
+					).map(([value, label]) => (
+						<DropdownMenuRadioItem key={value} value={value} className={styles.option}>
+							{label}
+							{selectedTheme === value ? <Check className={styles.optionCheck} aria-hidden /> : null}
+						</DropdownMenuRadioItem>
+					))}
 				</DropdownMenuRadioGroup>
 
 				<DropdownMenuSeparator />
@@ -78,8 +88,9 @@ const AccountMenu: React.FC<Props> = observer(({displayName, canLogout, onLogout
 					}}
 				>
 					{languageItems.map((item) => (
-						<DropdownMenuRadioItem key={item.id} value={item.id}>
+						<DropdownMenuRadioItem key={item.id} value={item.id} className={styles.option}>
 							{item.label}
+							{selectedLanguage === item.id ? <Check className={styles.optionCheck} aria-hidden /> : null}
 						</DropdownMenuRadioItem>
 					))}
 				</DropdownMenuRadioGroup>
