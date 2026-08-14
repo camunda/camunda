@@ -52,8 +52,15 @@ public final class ReconfigurationHelper {
     this.raftContext = raftContext;
   }
 
-  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
+  public CompletableFuture<Void> join(final Type type, final Collection<MemberId> clusterMembers) {
     final var result = new CompletableFuture<Void>();
+    if (type == Type.INACTIVE) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Cannot join cluster as %s, must join as %s, %s or %s"
+                  .formatted(type, Type.PASSIVE, Type.PROMOTABLE, Type.ACTIVE)));
+      return result;
+    }
     threadContext.execute(
         () -> {
           // If the previous join was partially or fully completed, i.e. committed the first
@@ -89,7 +96,7 @@ public final class ReconfigurationHelper {
           // retry join any way.
           final var joining =
               new DefaultRaftMember(
-                  raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
+                  raftContext.getCluster().getLocalMember().memberId(), type, Instant.now());
           final var knownAssistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))
