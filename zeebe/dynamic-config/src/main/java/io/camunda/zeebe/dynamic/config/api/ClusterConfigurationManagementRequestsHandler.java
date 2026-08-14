@@ -155,7 +155,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterScaleRequest.brokerCount(),
             clusterScaleRequest.newPartitionCount(),
             clusterScaleRequest.newReplicationFactor(),
-            clusterScaleRequest.zone()));
+            clusterScaleRequest.zone(),
+            clusterScaleRequest.physicalTenantId()));
   }
 
   @Override
@@ -167,7 +168,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor(),
+            clusterPatchRequest.physicalTenantId()));
   }
 
   @Override

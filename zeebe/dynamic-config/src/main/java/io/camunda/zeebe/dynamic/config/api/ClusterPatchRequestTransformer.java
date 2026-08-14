@@ -9,9 +9,12 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
 import java.util.List;
@@ -24,16 +27,66 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
   private final Set<MemberId> membersToRemove;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
+  private final Optional<String> physicalTenantId;
 
   public ClusterPatchRequestTransformer(
       final Set<MemberId> membersToAdd,
       final Set<MemberId> membersToRemove,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
+    this(membersToAdd, membersToRemove, newPartitionCount, newReplicationFactor, Optional.empty());
+  }
+
+  public ClusterPatchRequestTransformer(
+      final Set<MemberId> membersToAdd,
+      final Set<MemberId> membersToRemove,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<String> physicalTenantId) {
     this.membersToAdd = membersToAdd;
     this.membersToRemove = membersToRemove;
     this.newPartitionCount = newPartitionCount;
     this.newReplicationFactor = newReplicationFactor;
+    this.physicalTenantId = physicalTenantId;
+  }
+
+  @Override
+  public Either<Exception, List<Phase>> phases(
+      final CurrentClusterConfiguration clusterConfiguration) {
+    final var changesMembership = !membersToAdd.isEmpty() || !membersToRemove.isEmpty();
+    if (physicalTenantId.isPresent()) {
+      if (changesMembership) {
+        return Either.left(
+            new InvalidRequest(
+                "membersToAdd/membersToRemove cannot be combined with physicalTenant: they change "
+                    + "cluster membership, which has no tenant dimension"));
+      }
+      if (newReplicationFactor.isPresent()) {
+        return Either.left(
+            new InvalidRequest(
+                "newReplicationFactor cannot be combined with physicalTenant: the replication "
+                    + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
+      }
+    }
+    if (changesMembership || newReplicationFactor.isPresent() || newPartitionCount.isEmpty()) {
+      // Cluster membership and the replication factor have no tenant dimension, so a request
+      // carrying either is planned exactly the way it always was, against the default group. So is
+      // a request that changes neither those nor the partition count, which has nothing to plan.
+      // That such a change redistributes only the default tenant's partitions, rather than every
+      // tenant's, is a gap that predates physical tenants being scalable at all; closing it needs
+      // global and partition-group phases planned together, tracked in #60192 and #60193.
+      return ConfigurationChangeRequest.super.phases(clusterConfiguration);
+    }
+
+    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+    if (!clusterConfiguration.hasPartitionGroup(groupId)) {
+      return Either.left(
+          new NotFound(
+              "Expected to patch physical tenant '%s', but there's no such tenant"
+                  .formatted(groupId)));
+    }
+    return PartitionGroupScalingPhases.phases(
+        groupId, clusterConfiguration, newPartitionCount.get());
   }
 
   @Override

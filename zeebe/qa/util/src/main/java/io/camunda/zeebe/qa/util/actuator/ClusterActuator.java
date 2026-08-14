@@ -355,6 +355,22 @@ public interface ClusterActuator {
       @Param boolean dryRun,
       @Param boolean force);
 
+  /**
+   * Scopes the partition count change carried by {@code request} to a single physical tenant's
+   * partition group instead of the default one; every other physical tenant is left untouched.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown, and 400 if {@code request} also changes cluster membership
+   *     or the replication factor, neither of which has a tenant dimension
+   */
+  @RequestLine("PATCH ?dryRun={dryRun}&force={force}&physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  PlannedOperationsResponse patchCluster(
+      @RequestBody final ClusterConfigPatchRequest request,
+      @Param boolean dryRun,
+      @Param boolean force,
+      @Param final String physicalTenant);
+
   @RequestLine("POST /purge?dryRun={dryRun}")
   @Headers({"Content-Type: application/json"})
   PlannedOperationsResponse purge(@Param boolean dryRun);

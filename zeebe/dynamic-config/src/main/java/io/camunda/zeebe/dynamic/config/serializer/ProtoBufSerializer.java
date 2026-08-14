@@ -1119,6 +1119,7 @@ public class ProtoBufSerializer
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
     clusterScaleRequest.zone().ifPresent(builder::setZone);
+    clusterScaleRequest.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
 
     return builder.build().toByteArray();
   }
@@ -1134,6 +1135,7 @@ public class ProtoBufSerializer
         .forEach(memberId -> builder.addMembersToAdd(memberId.id()));
     clusterPatchRequest.membersToRemove().stream()
         .forEach(memberId -> builder.addMembersToRemove(memberId.id()));
+    clusterPatchRequest.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
 
     return builder.build().toByteArray();
   }
@@ -1386,11 +1388,16 @@ public class ProtoBufSerializer
           clusterScaleRequest.hasZone()
               ? Optional.of(clusterScaleRequest.getZone())
               : Optional.empty();
+      final Optional<String> physicalTenantId =
+          clusterScaleRequest.hasPhysicalTenantId()
+              ? Optional.of(clusterScaleRequest.getPhysicalTenantId())
+              : Optional.empty();
       return new ClusterScaleRequest(
           newClusterSize,
           newPartitionCount,
           newReplicationFactor,
           zone,
+          physicalTenantId,
           clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
@@ -1411,6 +1418,10 @@ public class ProtoBufSerializer
           clusterPatchRequest.hasNewReplicationFactor()
               ? Optional.of(clusterPatchRequest.getNewReplicationFactor())
               : Optional.empty();
+      final Optional<String> physicalTenantId =
+          clusterPatchRequest.hasPhysicalTenantId()
+              ? Optional.of(clusterPatchRequest.getPhysicalTenantId())
+              : Optional.empty();
       return new ClusterPatchRequest(
           clusterPatchRequest.getMembersToAddList().stream()
               .map(MemberId::from)
@@ -1420,6 +1431,7 @@ public class ProtoBufSerializer
               .collect(Collectors.toSet()),
           newPartitionCount,
           newReplicationFactor,
+          physicalTenantId,
           clusterPatchRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

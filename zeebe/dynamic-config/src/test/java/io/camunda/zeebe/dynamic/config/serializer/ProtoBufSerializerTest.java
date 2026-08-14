@@ -412,6 +412,26 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldEncodeAndDecodeClusterScaleRequestWithPhysicalTenantId() {
+    // given
+    final var clusterScaleRequest =
+        new ClusterScaleRequest(
+            Optional.empty(),
+            Optional.of(15),
+            Optional.of(4),
+            Optional.empty(),
+            Optional.of("tenant-b"),
+            true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterScaleRequest(clusterScaleRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterScaleRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(clusterScaleRequest);
+  }
+
+  @Test
   void shouldEncodeAndDecodeClusterPatchRequest() {
     // given
     final var clusterPatchRequest =
@@ -421,6 +441,21 @@ final class ProtoBufSerializerTest {
             Optional.of(10),
             Optional.of(4),
             true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterPatchRequest(clusterPatchRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterPatchRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(clusterPatchRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterPatchRequestWithPhysicalTenantId() {
+    // given
+    final var clusterPatchRequest =
+        new ClusterPatchRequest(
+            Set.of(), Set.of(), Optional.of(10), Optional.of(4), Optional.of("tenant-b"), true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeClusterPatchRequest(clusterPatchRequest);
