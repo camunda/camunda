@@ -221,13 +221,31 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // the leader, fail the request to ensure servers can't reconfigure an old configuration.
     final var configuration = raft.getCluster().getConfiguration();
     final var configurationTerm = raft.getCluster().getConfigurationTerm();
-    if (request.index() > 0 && request.index() < configuration.index()
-        || request.term() != configurationTerm) {
+    // Report which half is stale. Both mean "you are not amending the configuration I have", but
+    // they need different reactions: a stale index means the requester has to be configured up to
+    // the current one first, while a matching index with a different term means the two disagree
+    // about which configuration sits at that index, which no amount of retrying resolves on its
+    // own.
+    if (request.index() > 0 && request.index() < configuration.index()) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.CONFIGURATION_ERROR, "Stale configuration")
+                  .withError(
+                      RaftError.Type.CONFIGURATION_ERROR,
+                      "Stale configuration index %d, expected at least %d"
+                          .formatted(request.index(), configuration.index()))
+                  .build()));
+    }
+    if (request.term() != configurationTerm) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      RaftError.Type.CONFIGURATION_ERROR,
+                      "Stale configuration term %d at index %d, expected %d"
+                          .formatted(request.term(), request.index(), configurationTerm))
                   .build()));
     }
 
