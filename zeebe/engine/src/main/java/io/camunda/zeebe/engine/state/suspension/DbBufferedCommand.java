@@ -10,24 +10,23 @@ package io.camunda.zeebe.engine.state.suspension;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 
-public final class DbProcessInstanceBufferedCommand extends UnpackedObject implements DbValue {
+public final class DbBufferedCommand extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<ProcessInstanceBufferedCommandRecord> recordProp =
-      new ObjectProperty<>(
-          "processInstanceBufferedCommand", new ProcessInstanceBufferedCommandRecord());
+  private final ObjectProperty<BufferedCommandRecord> recordProp =
+      new ObjectProperty<>("bufferedCommand", new BufferedCommandRecord());
 
-  public DbProcessInstanceBufferedCommand() {
+  public DbBufferedCommand() {
     super(1);
     declareProperty(recordProp);
   }
 
-  public ProcessInstanceBufferedCommandRecord getRecord() {
+  public BufferedCommandRecord getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecord(final ProcessInstanceBufferedCommandRecord record) {
+  public void setRecord(final BufferedCommandRecord record) {
     recordProp.getValue().copyFrom(record);
   }
 }

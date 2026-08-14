@@ -26,8 +26,8 @@ import org.immutables.value.Value;
  * suspended process instance), so it can be written back to the log later via {@code DRAIN}.
  */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableProcessInstanceBufferedCommandRecordValue.Builder.class)
-public interface ProcessInstanceBufferedCommandRecordValue
+@ImmutableProtocol(builder = ImmutableBufferedCommandRecordValue.Builder.class)
+public interface BufferedCommandRecordValue
     extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**

@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -21,11 +21,11 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  * {@link TypedRecordProcessor}, whenever the command is classified {@code BUFFER} (see {@code
  * SuspensionAware}) and its target process instance is currently {@code SUSPENDED}.
  *
- * <p>Buffers the command, in FIFO order, as a {@link ProcessInstanceBufferedCommandRecord}; it is
- * written back to the log verbatim once the process instance is drained during resume. No client
- * response is written here: buffered commands are (or become, via distribution) internal commands
- * and are re-issued once the process instance resumes, at which point the normal command lifecycle
- * produces the response.
+ * <p>Buffers the command, in FIFO order, as a {@link BufferedCommandRecord}; it is written back to
+ * the log verbatim once the process instance is drained during resume. No client response is
+ * written here: buffered commands are (or become, via distribution) internal commands and are
+ * re-issued once the process instance resumes, at which point the normal command lifecycle produces
+ * the response.
  */
 public final class ProcessInstanceBufferingBehavior {
 
@@ -55,7 +55,7 @@ public final class ProcessInstanceBufferingBehavior {
             : -1;
 
     final var bufferedCommandRecord =
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setTenantId(tenantId)
@@ -68,8 +68,6 @@ public final class ProcessInstanceBufferingBehavior {
     writers
         .state()
         .appendFollowUpEvent(
-            bufferedCommandKey,
-            ProcessInstanceBufferedCommandIntent.BUFFERED,
-            bufferedCommandRecord);
+            bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
   }
 }

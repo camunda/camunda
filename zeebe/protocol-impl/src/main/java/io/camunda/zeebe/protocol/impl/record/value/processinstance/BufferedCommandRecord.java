@@ -20,12 +20,12 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordValue
-    implements ProcessInstanceBufferedCommandRecordValue {
+public final class BufferedCommandRecord extends UnifiedRecordValue
+    implements BufferedCommandRecordValue {
 
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
@@ -55,7 +55,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
-  public ProcessInstanceBufferedCommandRecord() {
+  public BufferedCommandRecord() {
     super(8);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -72,7 +72,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return processInstanceKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setProcessInstanceKey(final long processInstanceKey) {
+  public BufferedCommandRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
     return this;
   }
@@ -82,8 +82,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return processDefinitionKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setProcessDefinitionKey(
-      final long processDefinitionKey) {
+  public BufferedCommandRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
@@ -93,7 +92,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return bufferAsString(tenantIdProperty.getValue());
   }
 
-  public ProcessInstanceBufferedCommandRecord setTenantId(final String tenantId) {
+  public BufferedCommandRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
     return this;
   }
@@ -103,7 +102,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return commandKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setCommandKey(final long commandKey) {
+  public BufferedCommandRecord setCommandKey(final long commandKey) {
     commandKeyProperty.setValue(commandKey);
     return this;
   }
@@ -113,7 +112,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return valueTypeProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setValueType(final ValueType valueType) {
+  public BufferedCommandRecord setValueType(final ValueType valueType) {
     valueTypeProperty.setValue(valueType);
     return this;
   }
@@ -130,7 +129,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return Intent.fromProtocolValue(getValueType(), (short) intentValue);
   }
 
-  public ProcessInstanceBufferedCommandRecord setIntent(final Intent intent) {
+  public BufferedCommandRecord setIntent(final Intent intent) {
     intentProperty.setValue(intent.value());
     return this;
   }
@@ -164,8 +163,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return concreteCommandValue;
   }
 
-  public ProcessInstanceBufferedCommandRecord setCommandValue(
-      final UnifiedRecordValue commandValue) {
+  public BufferedCommandRecord setCommandValue(final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
       return this;
@@ -185,7 +183,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return storageOrdinalKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+  public BufferedCommandRecord setStorageOrdinalKey(final int storageOrdinalKey) {
     storageOrdinalKeyProperty.setValue(storageOrdinalKey);
     return this;
   }

@@ -9,22 +9,22 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 
-/** Applier for {@link ProcessInstanceBufferedCommandIntent#BUFFERED}. */
-final class ProcessInstanceBufferedCommandBufferedApplier
+/** Applier for {@link BufferedCommandIntent#BUFFERED}. */
+final class BufferedCommandBufferedApplier
     implements TypedEventApplier<
-        ProcessInstanceBufferedCommandIntent, ProcessInstanceBufferedCommandRecord> {
+        BufferedCommandIntent, BufferedCommandRecord> {
 
   private final MutableSuspensionState suspensionState;
 
-  ProcessInstanceBufferedCommandBufferedApplier(final MutableSuspensionState suspensionState) {
+  BufferedCommandBufferedApplier(final MutableSuspensionState suspensionState) {
     this.suspensionState = suspensionState;
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceBufferedCommandRecord value) {
+  public void applyState(final long key, final BufferedCommandRecord value) {
     suspensionState.bufferCommand(key, value);
   }
 }
