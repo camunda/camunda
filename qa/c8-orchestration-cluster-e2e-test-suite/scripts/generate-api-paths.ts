@@ -21,13 +21,24 @@
  * keeps the suite free of a YAML-parser dependency.
  */
 
-import {readFileSync, mkdirSync, writeFileSync} from 'node:fs';
+import {readFileSync, existsSync, mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 
-const SPEC_PATH = join(
-  process.cwd(),
+// The spec moved under `v2/` after 8.8, and each branch carries its own copy of
+// this suite, so the location has to be resolved rather than assumed. Order is
+// load-bearing: on the post-move branches the old path still exists as a
+// relocation stub with no `paths:` block, so the `v2/` location must win.
+const SPEC_CANDIDATES = [
   '../../zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml',
-);
+  '../../zeebe/gateway-protocol/src/main/proto/rest-api.yaml',
+].map((relative) => join(process.cwd(), relative));
+
+const SPEC_PATH = SPEC_CANDIDATES.find((candidate) => existsSync(candidate));
+if (!SPEC_PATH) {
+  throw new Error(
+    `No REST API spec found. Looked in:\n  ${SPEC_CANDIDATES.join('\n  ')}`,
+  );
+}
 const OUTPUT_PATH = join(process.cwd(), 'utils/_generated/apiPaths.ts');
 
 const LICENSE_HEADER = `/*

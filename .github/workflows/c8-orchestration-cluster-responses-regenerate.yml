@@ -323,6 +323,22 @@ jobs:
             echo "No stale PRs found."
           else
             while IFS=" " read -r number branch; do
+              # A path PR for a rename is EXPECTED to be red: tsc fails on the
+              # call sites still using the removed path, and the natural fix is
+              # to push those call-site updates onto this branch. Until that
+              # lands on the base ref every later run still sees the same diff,
+              # so closing with --delete-branch would destroy the reviewer's
+              # follow-up work — the fix for the very rot this job exists to
+              # surface. The bot pushes exactly one commit, so anything above
+              # that is human work: leave those PRs alone.
+              commits=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" \
+                --json commits --jq '.commits | length')
+              if [ "$commits" -gt 1 ]; then
+                echo "PR #${number} has ${commits} commits — follow-up work on top of the bot's commit, leaving open."
+                gh pr comment "$number" --repo "$GITHUB_REPOSITORY" \
+                  --body "A newer regeneration run produced a different path set, but this PR carries follow-up commits — not closing it automatically. Please rebase or close it by hand."
+                continue
+              fi
               echo "Closing stale PR #${number} (branch: ${branch})"
               gh pr close "$number" \
                 --repo "$GITHUB_REPOSITORY" \
