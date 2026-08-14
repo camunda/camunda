@@ -96,7 +96,19 @@ public final class DbSuspensionState implements MutableSuspensionState {
         processInstanceKey,
         (compositeKey, nil) -> {
           final long bufferedKey = compositeKey.second().getValue();
-          visitor.visit(bufferedKey, requireBufferedCommand(bufferedKey, key).getRecord());
+          bufferedCommandKey.wrapLong(bufferedKey);
+          final var stored =
+              bufferedCommandColumnFamily.get(
+                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+          if (stored == null) {
+            LOG.error(
+                "Expected to find buffered command with key '{}' for process instance '{}', but "
+                    + "none was stored; the buffered-command index is inconsistent. Skipping this entry.",
+                bufferedKey,
+                key);
+            return;
+          }
+          visitor.visit(bufferedKey, stored.getRecord());
         });
   }
 
@@ -113,9 +125,8 @@ public final class DbSuspensionState implements MutableSuspensionState {
               bufferedCommandColumnFamily.get(
                   bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
           if (stored == null) {
-            // broken invariant (see #requireBufferedCommand), but this sits on the resume hot
-            // path: log instead of throwing so a single corrupted entry halts the drain for this
-            // instance rather than failing the whole partition
+            // broken invariant: secondary index and primary CF are always written/deleted together,
+            // so a secondary entry with no matching primary record signals index corruption
             LOG.error(
                 "Expected to find buffered command with key '{}' for process instance '{}', but "
                     + "none was stored; the buffered-command index is inconsistent. Treating the "
@@ -129,28 +140,6 @@ public final class DbSuspensionState implements MutableSuspensionState {
           return false;
         });
     return Optional.ofNullable(oldest[0]);
-  }
-
-  /**
-   * Loads the primary buffered-command record behind a secondary-index entry. The secondary index
-   * and the primary CF are written and deleted together in a single transaction (see {@link
-   * #bufferCommand} / {@link #removeBufferedCommand}), so a secondary-index entry with no matching
-   * primary record is a broken invariant. Fail loud rather than silently dropping a buffered
-   * command, which would lose forward progress on resume.
-   */
-  private DbProcessInstanceBufferedCommand requireBufferedCommand(
-      final long bufferedKey, final long forProcessInstanceKey) {
-    bufferedCommandKey.wrapLong(bufferedKey);
-    final var stored =
-        bufferedCommandColumnFamily.get(bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
-    if (stored == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected to find buffered command with key '%d' for process instance '%d', but none "
-                  + "was stored; the buffered-command index is inconsistent",
-              bufferedKey, forProcessInstanceKey));
-    }
-    return stored;
   }
 
   @Override

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
@@ -24,7 +23,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandInt
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
-import org.slf4j.Logger;
 
 /**
  * Drains buffered commands one per {@code DRAIN} cycle, then re-checks the buffer (already up to
@@ -37,11 +35,10 @@ import org.slf4j.Logger;
  * {@code RESUMING} forever.
  *
  * <p>If a cycle fails to write (e.g. the re-emitted command plus its bookkeeping records exceed the
- * batch size limit), draining halts rather than dropping the command: {@link #tryHandleError} makes
- * no further state changes and reports {@link ProcessingError#UNEXPECTED_ERROR}, which the engine
- * turns into a logged error and a rejection of the {@code DRAIN} command — without banning the
- * instance ({@code DRAIN.shouldBanInstance == false}). The buffered command is preserved and the
- * instance stays in {@code RESUMING} until a fresh {@code RESUME} restarts the drain (see {@link
+ * batch size limit), draining halts rather than dropping the command: the engine's default error
+ * handling logs the failure and rejects the {@code DRAIN} command — without banning the instance
+ * ({@code DRAIN.shouldBanInstance == false}). The buffered command is preserved and the instance
+ * stays in {@code RESUMING} until a fresh {@code RESUME} restarts the drain (see {@link
  * ProcessInstanceResumeProcessor}).
  */
 @ExcludeAuthorizationCheck
@@ -49,13 +46,6 @@ import org.slf4j.Logger;
 public final class ProcessInstanceBufferedCommandDrainProcessor
     implements TypedRecordProcessor<ProcessInstanceBufferedCommandRecord>,
         SuspensionAware<ProcessInstanceBufferedCommandRecord> {
-
-  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-
-  private static final String DRAIN_FAILED_MESSAGE =
-      "Expected to resume process instance '{}' by draining a buffered command, but writing it "
-          + "back to the log failed. The buffered command is preserved; draining halts here and "
-          + "the instance stays in RESUMING until a RESUME command restarts the drain.";
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -89,17 +79,6 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
     } else {
       appendNextDrainCommand(drainValue);
     }
-  }
-
-  @Override
-  public ProcessingError tryHandleError(
-      final TypedRecord<ProcessInstanceBufferedCommandRecord> command, final Throwable error) {
-    // State-free on purpose: re-reading the buffer here (as a dropped-command path once did) risks
-    // throwing again on the same corrupted state and taking the whole partition down with it. Just
-    // log and hand off to the engine's default handling, which rejects the DRAIN command without
-    // banning the instance (see class javadoc) and halts the chain without touching state.
-    LOG.error(DRAIN_FAILED_MESSAGE, command.getValue().getProcessInstanceKey(), error);
-    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   @Override
