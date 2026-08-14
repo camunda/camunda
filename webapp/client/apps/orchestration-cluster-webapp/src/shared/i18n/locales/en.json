@@ -24,7 +24,6 @@
 		"loginErrorUsernameRequired": "Username is required",
 		"loginErrorPasswordRequired": "Password is required",
 		"loginLogoLabel": "Camunda logo",
-		"loginDSHeading": "Log in to {{product}}",
 		"loginUsernameFieldLabel": "Username",
 		"loginUsernameFieldPlaceholder": "Username",
 		"loginHidePasswordButtonLabel": "Hide password",

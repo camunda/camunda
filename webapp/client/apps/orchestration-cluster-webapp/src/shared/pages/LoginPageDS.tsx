@@ -178,7 +178,7 @@ const LoginPageDS: React.FC<Props> = ({title}) => {
 										    separate label. */}
 										<CamundaLogo className={styles.logoMarkDS} />
 									</div>
-									<h1 className={styles.titleDS}>{t('loginDSHeading', {product: title})}</h1>
+									<h1 className={styles.titleDS}>{title}</h1>
 									{submitError !== undefined ? <Alert variant="destructive" title={submitError} /> : null}
 									<div className={styles.fieldDS}>
 										<Field<FormValues['username']> name="username" type="text">
@@ -222,6 +222,7 @@ const LoginPageDS: React.FC<Props> = ({title}) => {
 									    loading treatment instead. */}
 									<Button
 										type="submit"
+										size="lg"
 										disabled={submitting}
 										aria-busy={submitting || undefined}
 										className={styles.buttonDS}

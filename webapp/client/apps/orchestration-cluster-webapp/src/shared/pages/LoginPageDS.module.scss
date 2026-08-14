@@ -64,6 +64,10 @@
 // text-[28px] / leading-9 / font-normal. `font-heading` is skipped — it
 // resolves to `var(--font-sans)`, already inherited from `.c4-ui`.
 .titleDS {
+	// .cardContentDS's flex `gap` already puts 1rem (16px) below this box;
+	// this adds the remaining 0.5rem so the fields sit 24px below the title,
+	// same approach as .buttonDS's margin-top below.
+	margin-bottom: 0.5rem;
 	padding-bottom: 0.5rem;
 	text-align: center;
 	font-size: 1.75rem;
