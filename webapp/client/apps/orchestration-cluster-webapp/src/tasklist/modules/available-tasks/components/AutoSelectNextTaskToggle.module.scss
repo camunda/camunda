@@ -15,6 +15,10 @@
 	// DS-only (see AutoSelectNextTaskToggle.tsx). Same divider token as the
 	// other task-list/task-details container borders.
 	&.containerDS {
+		// 11px, one pixel under Carbon's --cds-spacing-04 (12px), which has no DS
+		// token. Expressed in rem so it scales with the root font size like the
+		// rest of the DS spacing.
+		padding-block: 0.6875rem;
 		border-top-color: var(--border);
 		border-bottom-color: var(--border);
 	}
