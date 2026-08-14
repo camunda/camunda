@@ -97,6 +97,18 @@ test.describe('Decision Filters', () => {
 
     await test.step('Filter by decision name to scope to test instances', async () => {
       await operateDecisionsPage.selectDecisionName('Invoice Classification');
+      // Wait for the name filter to actually apply before reading the count or
+      // toggling a state checkbox. selectDecisionName resolves once the option is
+      // clicked, but the results reload asynchronously; interacting during that
+      // in-flight navigation swallows the checkbox toggle, so no evaluated-only
+      // query is issued and failed instances remain. The Assign Approver Group
+      // rows are only present in the unfiltered list, so their absence confirms
+      // the Invoice Classification filter has settled.
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByText(
+          'Assign Approver Group',
+        ),
+      ).toHaveCount(0);
     });
 
     await test.step('Get total row count with both filters active', async () => {
