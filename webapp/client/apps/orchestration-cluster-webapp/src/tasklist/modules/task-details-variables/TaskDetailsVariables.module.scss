@@ -36,15 +36,13 @@
 
 // DS-only. .layerContainer's padding-bottom (below, shared with Carbon's own
 // Layer usage — long-standing, unrelated to this migration) has no
-// padding-top counterpart. That was never visible for Carbon's C3EmptyState,
-// but for the DS Card here it means the card sits flush against the top of
-// its wrapper with zero breathing room while the bottom gets a full
-// var(--cds-spacing-05) of clear space — that asymmetry is what makes the
-// Card's own border (identical CSS on all four sides) read as present at the
-// bottom and missing at the top. Matching padding on top restores the
-// symmetry the border needs to be visible.
+// padding-top counterpart, which left the card flush against its wrapper's
+// top edge with no room for its own border to render. The header row above
+// already contributes 8px of its own flex gap, so 8px here — not a full
+// var(--cds-spacing-05) — brings the header-to-card gap to 16px (gap-4)
+// total without doubling up.
 .emptyStateWrapperDS {
-	padding-top: var(--cds-spacing-05);
+	padding-top: var(--cds-spacing-03);
 }
 
 .separator {
