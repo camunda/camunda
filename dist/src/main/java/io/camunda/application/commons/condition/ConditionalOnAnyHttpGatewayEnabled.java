@@ -38,10 +38,11 @@ public @interface ConditionalOnAnyHttpGatewayEnabled {
      * either way and only behaves differently — and lives here so that there is one definition of
      * "an HTTP gateway is enabled" rather than several that can drift apart.
      *
-     * <p>The nested conditions additionally require a web application context. Every context that
-     * asks this question is one ({@code MainSupport.createDefaultApplicationBuilder} fixes {@code
-     * WebApplicationType.SERVLET}), so the two agree; a caller that could run outside a web context
-     * has to account for that itself.
+     * <p>The nested conditions additionally require a web application context, which this does not
+     * model, so the two do not agree everywhere. {@code StandaloneSchemaManager} and {@code
+     * StandaloneBackupManager} both run with {@code WebApplicationType.NONE}, and this returns
+     * {@code true} in those processes because the properties it reads are simply unset. A caller
+     * that can run in one of them has to account for that itself.
      */
     public static boolean isAnyHttpGatewayEnabled(final Environment env) {
       return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)

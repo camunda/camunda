@@ -188,6 +188,29 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
+  void shouldStillMakeOneAttemptWhenRetriesAreConfiguredAway() {
+    // given - a max-retries an operator can set but that means nothing sensible
+    final var none = fastRetry();
+    none.setMaxRetries(0);
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> attempts.incrementAndGet(),
+            TerminalFailure.class::isInstance,
+            tenantId -> none)) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - the tenant is initialized rather than degraded before it ever tried
+      assertThat(attempts).hasValue(1);
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+    }
+  }
+
+  @Test
   void shouldOpenTheGateWhenTheRetryConfigurationIsUnusable() {
     // given - a max delay resilience4j rejects, which throws while the task is being set up rather
     // than from an attempt, so only the outer handler can stop the tenant counting as still trying

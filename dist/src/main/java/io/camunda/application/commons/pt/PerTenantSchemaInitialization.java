@@ -194,7 +194,10 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
       // read inside the try: everything that can throw — an unusable retry configuration included
       // — has to be covered by the finally below, or this tenant would keep the gate shut forever
       final RetryConfiguration retry = retryConfig.apply(physicalTenantId);
-      final int maxAttempts = retry.getMaxRetries();
+      // Floored at one attempt. resilience4j's RetryConfig used to reject a non-positive value
+      // outright; without the floor, max-retries: 0 would mean "give up before trying", quietly
+      // degrading the tenant for the lifetime of the node.
+      final int maxAttempts = Math.max(1, retry.getMaxRetries());
       final var backoff =
           IntervalFunction.ofExponentialRandomBackoff(
               retry.getMinRetryDelay(), retry.getRetryDelayMultiplier(), retry.getMaxRetryDelay());
