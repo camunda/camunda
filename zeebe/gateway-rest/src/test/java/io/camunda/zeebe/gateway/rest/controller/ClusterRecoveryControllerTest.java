@@ -22,9 +22,11 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
@@ -316,9 +318,9 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReportTheBackupsEveryPlannedPartitionRestoreRestoresFrom() {
+  void shouldReportEachPlannedRestoreOperationWithOnlyThePropertiesItCarries() {
     // given — the plan a restore produces: a partition is pre-restored, restored from its backups,
-    // and the broker is returned to processing
+    // the broker is returned to processing, and its incarnation number is updated
     final var broker = MemberId.from("1");
     when(clusterRecoveryServices.restore(
             Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean()))
@@ -334,9 +336,13 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                                     new PartitionPreRestoreOperation(broker, 1),
                                     new PartitionRestoreOperation(
                                         broker, 1, new TreeSet<>(List.of(100L, 101L))),
-                                    new ModeChangeOperation(broker, Mode.PROCESSING))))))));
+                                    new ModeChangeOperation(broker, Mode.PROCESSING),
+                                    new AwaitModeChangeOperation(broker, Mode.PROCESSING),
+                                    new UpdateIncarnationNumberOperation(broker))))))));
 
-    // when / then — an operator reviewing the plan can see which backups land on which partition
+    // when / then — an operator reviewing the plan sees which backups land on which partition, and
+    // each operation reports only what it carries: no null partition on a mode change, no empty
+    // backups on an operation that restores nothing
     webClient
         .post()
         .uri(RESTORE_URL + "?dryRun=true")
@@ -357,23 +363,27 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                     {
                       "operation": "PartitionPreRestoreOperation",
                       "brokerId": "1",
-                      "partitionId": 1,
-                      "backupIds": [ ],
-                      "mode": null
+                      "partitionId": 1
                     },
                     {
                       "operation": "PartitionRestoreOperation",
                       "brokerId": "1",
                       "partitionId": 1,
-                      "backupIds": [ 100, 101 ],
-                      "mode": null
+                      "backupIds": [ 100, 101 ]
                     },
                     {
                       "operation": "ModeChangeOperation",
                       "brokerId": "1",
-                      "partitionId": null,
-                      "backupIds": [ ],
                       "mode": "PROCESSING"
+                    },
+                    {
+                      "operation": "AwaitModeChangeOperation",
+                      "brokerId": "1",
+                      "mode": "PROCESSING"
+                    },
+                    {
+                      "operation": "UpdateIncarnationNumberOperation",
+                      "brokerId": "1"
                     }
                   ]
                 }

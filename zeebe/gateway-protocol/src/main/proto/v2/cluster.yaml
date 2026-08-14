@@ -472,17 +472,75 @@ components:
 
     ClusterRestoreOperation:
       description: >-
-        A single operation that is part of a restore. Which of the optional properties are reported
-        depends on the operation: partition operations carry `partitionId`, the operation that
-        restores a partition also carries the `backupIds` it restores from, and the operations that
-        return the broker to processing carry `mode`.
+        A single operation that is part of a restore. Every operation names the broker that applies
+        it; the rest of its properties depend on what the operation does, so it is reported as one
+        of the variants below, distinguished by `operation`. A property a variant does not declare
+        is absent from the response rather than reported as null.
+      discriminator:
+        propertyName: operation
+        mapping:
+          PartitionPreRestoreOperation: '#/components/schemas/ClusterRestorePartitionOperation'
+          PartitionRestoreOperation: '#/components/schemas/ClusterRestorePartitionRestoreOperation'
+          ModeChangeOperation: '#/components/schemas/ClusterRestoreModeChangeOperation'
+          AwaitModeChangeOperation: '#/components/schemas/ClusterRestoreAwaitModeChangeOperation'
+          UpdateIncarnationNumberOperation: '#/components/schemas/ClusterRestoreBrokerOperation'
+      oneOf:
+        - $ref: '#/components/schemas/ClusterRestoreBrokerOperation'
+        - $ref: '#/components/schemas/ClusterRestorePartitionOperation'
+        - $ref: '#/components/schemas/ClusterRestorePartitionRestoreOperation'
+        - $ref: '#/components/schemas/ClusterRestoreModeChangeOperation'
+        - $ref: '#/components/schemas/ClusterRestoreAwaitModeChangeOperation'
+
+    ClusterRestoreBrokerOperation:
+      description: >-
+        A restore operation that applies to a broker as a whole, such as the one that updates its
+        incarnation number.
+      type: object
+      required:
+        - operation
+        - brokerId
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: UpdateIncarnationNumberOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+
+    ClusterRestorePartitionOperation:
+      description: >-
+        A restore operation that targets a single partition without restoring it, such as the one
+        that prepares the partition for its restore.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - partitionId
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: PartitionPreRestoreOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionId:
+          description: The partition the operation applies to.
+          type: integer
+          format: int32
+          example: 1
+
+    ClusterRestorePartitionRestoreOperation:
+      description: The operation that restores a single partition from the backups resolved for it.
       type: object
       required:
         - operation
         - brokerId
         - partitionId
         - backupIds
-        - mode
       properties:
         operation:
           description: The type of the operation.
@@ -493,24 +551,58 @@ components:
           type: string
           example: "1"
         partitionId:
-          description: The partition the operation applies to; null for operations that are not partition scoped.
+          description: The partition the operation restores.
           type: integer
           format: int32
-          nullable: true
           example: 1
         backupIds:
-          description: >-
-            The IDs of the backups the partition is restored from; empty for every operation other
-            than the one that restores a partition.
+          description: The IDs of the backups the partition is restored from.
           type: array
           items:
             type: integer
             format: int64
           example: [ 100, 101 ]
-        mode:
-          description: The target mode of the operation, if applicable.
+
+    ClusterRestoreModeChangeOperation:
+      description: The operation that transitions a broker to a mode once its partitions are restored.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
           type: string
-          nullable: true
+          example: ModeChangeOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        mode:
+          description: The mode the broker is transitioned to.
+          type: string
+          example: PROCESSING
+
+    ClusterRestoreAwaitModeChangeOperation:
+      description: The operation that awaits the transition of a broker to a mode.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: AwaitModeChangeOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        mode:
+          description: The mode the broker is awaited to have transitioned to.
+          type: string
           example: PROCESSING
 
     RestoreRequest:
