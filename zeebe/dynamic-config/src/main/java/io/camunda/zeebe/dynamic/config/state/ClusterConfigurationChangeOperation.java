@@ -14,4 +14,13 @@ public sealed interface ClusterConfigurationChangeOperation
     permits PartitionGroupOperation, GlobalChangeOperation {
 
   MemberId memberId();
+
+  /**
+   * The id of the broker that applies this operation, including its zone if it belongs to one.
+   * Offered so that callers which report operations outside this module — the REST layer, which
+   * does not depend on {@link MemberId} — do not have to derive the id themselves.
+   */
+  default String brokerId() {
+    return memberId().id();
+  }
 }

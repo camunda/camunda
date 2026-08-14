@@ -28,6 +28,7 @@ public enum ClusterConfigurationRequestTopics {
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
   MODE_CHANGE("topology-mode-change"),
   RESTORE("cluster-restore"),
+  CLUSTER_ADMIN_RESTORE("cluster-admin-restore"),
   ZONE_MIGRATION("topology-cluster-zone-migration"),
   ADD_ZONE("topology-add-zone"),
   FORCE_REMOVE_ZONE("topology-force-remove-zone"),

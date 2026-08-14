@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
@@ -152,4 +153,8 @@ public interface ClusterConfigurationRequestsSerializer {
   byte[] encodeRestoreRequest(RestoreRequest request);
 
   RestoreRequest decodeRestoreRequest(byte[] encodedRequest);
+
+  byte[] encodeClusterRestoreRequest(ClusterRestoreRequest request);
+
+  ClusterRestoreRequest decodeClusterRestoreRequest(byte[] encodedRequest);
 }

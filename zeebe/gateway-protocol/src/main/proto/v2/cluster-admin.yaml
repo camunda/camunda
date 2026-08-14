@@ -6,12 +6,14 @@
 # `/v2` suffix.
 #
 # Do not "align" the override by moving the base into it: `{host}:{port}/cluster/v2` plus the path
-# key resolves to `/cluster/v2/cluster/v2/status`. Shortening the keys to `/status` and `/mode`
-# instead is not an option either — both are already taken by `cluster.yaml` in the `rest-api.yaml`
-# path map, and `OpenApiYamlLoader.KNOWN_ROOTS` matches on the literal `/cluster/v2/` prefix to skip
-# the runtime `/v2` prefixing that every other path gets.
+# key resolves to `/cluster/v2/cluster/v2/status`. Shortening the keys to `/status`, `/mode` and
+# `/restore` instead is not an option either — all three are already taken by `cluster.yaml` in the
+# `rest-api.yaml` path map, and `OpenApiYamlLoader.KNOWN_ROOTS` matches on the literal `/cluster/v2/`
+# prefix to skip the runtime `/v2` prefixing that every other path gets.
 #
-# Cluster endpoints that are scoped to a single physical tenant live in `cluster.yaml`.
+# Cluster endpoints that are scoped to a single physical tenant live in `cluster.yaml`, which also
+# owns the parameters and schemas the three operations below share (`DryRunParameter`,
+# `ModeParameter`, `RestoreRequest`, `ClusterModeChangeResponse`, `ClusterRestoreResponse`).
 #
 # The identical `servers` block below is duplicated per path item on purpose, not YAML-anchored.
 # Two independent, concrete failures came out of trying to share it via a YAML anchor/alias:
@@ -191,6 +193,87 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+  /cluster/v2/restore:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: restoreAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Restore one or every physical tenant from a backup
+      description: >-
+        Restores physical tenants from backups. The restore is described either by a list of backup
+        IDs or by a time range (`from`/`to`) that selects the backups to restore. Restores are only
+        accepted while the targeted physical tenants are in recovery mode; requests are rejected
+        otherwise. The request is validated and acknowledged, but the restore itself is performed
+        asynchronously.
+
+
+        If the `physicalTenantId` parameter is provided, only that physical tenant is restored and
+        `overrides` must be omitted.
+
+
+        If it is not provided, every physical tenant of the cluster is restored: those named in
+        `overrides` with their own backup selection, all others with the selection at the top level
+        of the request body.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - $ref: 'cluster.yaml#/components/parameters/DryRunParameter'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterRestoreRequest'
+        required: true
+      responses:
+        "202":
+          description: >-
+            The restore request was accepted; returns the planned cluster change covering every
+            requested physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: 'cluster.yaml#/components/schemas/ClusterRestoreResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: >-
+            The requested `physicalTenantId`, or a physical tenant named in `overrides`, does not
+            exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >-
+            A targeted physical tenant is not in recovery mode, so the restore cannot be accepted.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -223,6 +306,26 @@ components:
             - HEALTHY
             - DEGRADED
             - DOWN
+    ClusterRestoreRequest:
+      description: >-
+        Describes a restore request issued by a cluster admin. The backup selection at the top level
+        applies to every targeted physical tenant, except for the ones listed in `overrides`.
+      type: object
+      allOf:
+        - $ref: 'cluster.yaml#/components/schemas/RestoreRequest'
+      properties:
+        overrides:
+          description: >-
+            The backup selection to apply to individual physical tenants, keyed by physical tenant
+            id. Only allowed for a cluster-wide restore, that is when no `physicalTenantId`
+            parameter is given.
+          type: object
+          nullable: true
+          additionalProperties:
+            $ref: 'cluster.yaml#/components/schemas/RestoreRequest'
+          example:
+            tenant-a:
+              backupIds: [ 55 ]
 
     ClusterTopologyResponse:
       description: The topology of the whole cluster, aggregated over all physical tenants.

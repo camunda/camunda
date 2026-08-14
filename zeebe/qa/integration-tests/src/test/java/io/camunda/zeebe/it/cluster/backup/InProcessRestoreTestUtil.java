@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.ClusterModeChangeResponse;
+import io.camunda.client.protocol.rest.ClusterRestoreResponse;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -89,7 +90,7 @@ public final class InProcessRestoreTestUtil {
         .isEqualTo(202);
     try {
       return Long.parseLong(
-          OBJECT_MAPPER.readValue(response.body(), ClusterModeChangeResponse.class).getChangeId());
+          OBJECT_MAPPER.readValue(response.body(), ClusterRestoreResponse.class).getChangeId());
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to parse restore REST response", e);
     }

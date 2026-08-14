@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
@@ -103,6 +104,7 @@ import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1669,6 +1671,34 @@ public class ProtoBufSerializer
           request.getPhysicalTenantId(),
           decodeRestoreArguments(request.getArguments()),
           request.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encodeClusterRestoreRequest(final ClusterRestoreRequest request) {
+    final var builder = Requests.ClusterRestoreRequest.newBuilder().setDryRun(request.dryRun());
+    request
+        .tenantArguments()
+        .forEach(
+            (physicalTenantId, arguments) ->
+                builder.putTenantArguments(physicalTenantId, encodeRestoreArguments(arguments)));
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
+  public ClusterRestoreRequest decodeClusterRestoreRequest(final byte[] encodedRequest) {
+    try {
+      final var request = Requests.ClusterRestoreRequest.parseFrom(encodedRequest);
+      final var tenantArguments = new LinkedHashMap<String, TenantRestoreArguments>();
+      request
+          .getTenantArgumentsMap()
+          .forEach(
+              (physicalTenantId, arguments) ->
+                  tenantArguments.put(physicalTenantId, decodeRestoreArguments(arguments)));
+      return new ClusterRestoreRequest(tenantArguments, request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
