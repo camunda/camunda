@@ -20,6 +20,7 @@ import io.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import io.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import io.camunda.optimize.service.exceptions.OptimizeImportNameNotValidException;
 import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
+import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,23 @@ public class OptimizeExceptionMapper {
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeExceptionMapper.class);
 
   @Autowired private LocalizationService localizationService;
+
+  @ExceptionHandler(OptimizeValidationException.class)
+  public ResponseEntity<ErrorResponseDto> handleValidationException(
+      final OptimizeValidationException exception) {
+    LOG.info("Mapping OptimizeValidationException: {}", exception.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .body(getValidationResponseDto(exception));
+  }
+
+  private ErrorResponseDto getValidationResponseDto(final OptimizeValidationException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String detailedErrorMessage = exception.getMessage();
+    return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
+  }
 
   @ExceptionHandler(OptimizeImportDescriptionNotValidException.class)
   public ResponseEntity<ErrorResponseDto> handleReportEvaluationException(
