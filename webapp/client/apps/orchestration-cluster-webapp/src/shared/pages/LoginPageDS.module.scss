@@ -66,12 +66,15 @@
 	height: 2.5rem;
 }
 
+// DS type scale token `heading-md` (Heading component, typography.tsx):
+// text-xl / leading-7 / font-semibold. `font-heading` is skipped — it
+// resolves to `var(--font-sans)`, already inherited from `.c4-ui`.
 .titleDS {
 	padding-bottom: 0.5rem;
 	text-align: center;
-	font-size: 1.75rem;
-	line-height: 2.25rem;
-	font-weight: 400;
+	font-size: 1.25rem;
+	line-height: 1.75rem;
+	font-weight: 600;
 	color: var(--foreground);
 }
 
