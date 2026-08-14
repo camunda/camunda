@@ -15,11 +15,9 @@
  */
 package io.camunda.process.test.impl.client;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.absent;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -34,40 +32,33 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Verifies that the purge completion check observes the purge on both shapes of the {@code GET
- * /actuator/cluster} response: a response covering a single physical tenant, which carries the
- * cluster-wide {@code lastChange}, and one covering more than one physical tenant, which omits it
- * and therefore has to be re-read scoped to a physical tenant.
+ * Verifies that the purge completion check observes the purge through the status of the change it
+ * planned, so that it also works against a cluster with more than one physical tenant - whose
+ * {@code GET /actuator/cluster} response reports no cluster-wide change state.
  */
 public class CamundaManagementClientPurgeTest {
 
   private static final String TOPOLOGY_PATH = "/actuator/cluster";
   private static final String PURGE_PATH = "/actuator/cluster/purge";
-  private static final String PHYSICAL_TENANT_PARAMETER = "physicalTenant";
 
   private static final long CHANGE_ID = 7;
+  private static final String CHANGE_PATH = "/actuator/cluster/changes/" + CHANGE_ID;
 
-  private static final String HEALTHY_BROKERS =
-      "\"brokers\": ["
-          + "  {"
-          + "    \"id\": 0,"
-          + "    \"state\": \"ACTIVE\","
-          + "    \"partitions\": [{\"id\": 1, \"role\": \"leader\", \"state\": \"ACTIVE\"}]"
-          + "  }"
-          + "]";
-
-  /** A response covering more than one physical tenant, which reports no {@code lastChange}. */
+  /**
+   * A topology of a cluster with more than one physical tenant: it reports the brokers, but neither
+   * {@code lastChange} nor {@code pendingChange}, as that state is cluster-wide and has no single
+   * physical tenant to be scoped to.
+   */
   private static final String MULTI_PHYSICAL_TENANT_TOPOLOGY =
       "{"
-          + HEALTHY_BROKERS
+          + brokers("{\"id\": 1, \"role\": \"leader\", \"state\": \"ACTIVE\"}")
           + ", \"physicalTenants\": ["
           + "  {\"id\": \"tenanta\", \"routing\": {\"version\": 1}},"
           + "  {\"id\": \"tenantb\", \"routing\": {\"version\": 1}}"
           + "]}";
 
-  /** The same response, but naming no physical tenant to scope a follow-up request to. */
-  private static final String UNNAMED_PHYSICAL_TENANTS_TOPOLOGY =
-      "{" + HEALTHY_BROKERS + ", \"physicalTenants\": [{}, {}]}";
+  private static final String PURGING_TOPOLOGY =
+      "{" + brokers("{\"id\": 1, \"role\": \"leader\", \"state\": \"BOOTSTRAPPING\"}") + "}";
 
   @RegisterExtension
   private static final WireMockExtension MANAGEMENT_API =
@@ -79,65 +70,51 @@ public class CamundaManagementClientPurgeTest {
   void shouldPurgeClusterWithMultiplePhysicalTenants() {
     // given
     stubPurge();
-    stubUnscopedTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
-    stubScopedTopology("tenanta", scopedTopology(CHANGE_ID));
+    stubChange(change("COMPLETED"));
+    stubTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
 
     // when
     assertThatCode(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
         .doesNotThrowAnyException();
 
     // then
-    MANAGEMENT_API.verify(
-        getRequestedFor(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenanta")));
+    MANAGEMENT_API.verify(getRequestedFor(urlPathEqualTo(CHANGE_PATH)));
   }
 
   @Test
-  void shouldNotPurgeClusterWhileThePhysicalTenantReportsAnEarlierChange() {
+  void shouldNotPurgeClusterWhileTheChangeIsInProgress() {
     // given
     stubPurge();
-    stubUnscopedTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
-    stubScopedTopology("tenanta", scopedTopology(CHANGE_ID - 1));
+    stubChange(change("IN_PROGRESS"));
+    stubTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
 
-    // when
+    // when / then
     assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(1)))
         .hasMessage("Failed to purge the cluster, timeout expired.");
-
-    // then the check kept polling the physical tenant instead of reporting a purge that never
-    // completed
-    MANAGEMENT_API.verify(
-        getRequestedFor(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo("tenanta")));
   }
 
   @Test
-  void shouldFailPurgeWhenTheTopologyNamesNoPhysicalTenant() {
+  void shouldNotPurgeClusterWhileAPartitionIsNotActiveYet() {
     // given
     stubPurge();
-    stubUnscopedTopology(UNNAMED_PHYSICAL_TENANTS_TOPOLOGY);
+    stubChange(change("COMPLETED"));
+    stubTopology(PURGING_TOPOLOGY);
 
-    // when / then the purge fails with the reason instead of waiting for the timeout to expire
-    assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
-        .hasMessage("Failed to purge the cluster.")
-        .hasRootCauseInstanceOf(IllegalStateException.class)
-        .hasStackTraceContaining("but it named none");
+    // when / then
+    assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(1)))
+        .hasMessage("Failed to purge the cluster, timeout expired.");
   }
 
   @Test
-  void shouldPurgeClusterWithASinglePhysicalTenantWithoutScoping() {
-    // given
+  void shouldNotPurgeClusterWhileTheChangeIsUnknownToTheCluster() {
+    // given a broker that has not learned about the change yet
     stubPurge();
-    stubUnscopedTopology(singlePhysicalTenantTopology(CHANGE_ID));
+    MANAGEMENT_API.stubFor(get(urlPathEqualTo(CHANGE_PATH)).willReturn(notFound()));
+    stubTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
 
-    // when
-    assertThatCode(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
-        .doesNotThrowAnyException();
-
-    // then a cluster that predates physical tenants is not asked about any of them
-    MANAGEMENT_API.verify(
-        0,
-        getRequestedFor(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, matching(".*")));
+    // when / then
+    assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(1)))
+        .hasMessage("Failed to purge the cluster, timeout expired.");
   }
 
   private static CamundaManagementClient createClient() {
@@ -149,35 +126,23 @@ public class CamundaManagementClientPurgeTest {
         post(urlPathEqualTo(PURGE_PATH)).willReturn(okJson("{\"changeId\": " + CHANGE_ID + "}")));
   }
 
-  private static void stubUnscopedTopology(final String topology) {
-    MANAGEMENT_API.stubFor(
-        get(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, absent())
-            .willReturn(okJson(topology)));
+  private static void stubChange(final String change) {
+    MANAGEMENT_API.stubFor(get(urlPathEqualTo(CHANGE_PATH)).willReturn(okJson(change)));
   }
 
-  private static void stubScopedTopology(final String physicalTenantId, final String topology) {
-    MANAGEMENT_API.stubFor(
-        get(urlPathEqualTo(TOPOLOGY_PATH))
-            .withQueryParam(PHYSICAL_TENANT_PARAMETER, equalTo(physicalTenantId))
-            .willReturn(okJson(topology)));
+  private static void stubTopology(final String topology) {
+    MANAGEMENT_API.stubFor(get(urlPathEqualTo(TOPOLOGY_PATH)).willReturn(okJson(topology)));
   }
 
-  /** A response scoped to one physical tenant, which does carry the cluster-wide lastChange. */
-  private static String scopedTopology(final long lastChangeId) {
-    return "{"
-        + HEALTHY_BROKERS
-        + ", "
-        + lastChange(lastChangeId)
-        + ", \"physicalTenants\": [{\"id\": \"tenanta\", \"routing\": {\"version\": 1}}]}";
+  private static String change(final String status) {
+    return "{\"id\": "
+        + CHANGE_ID
+        + ", \"status\": \""
+        + status
+        + "\", \"startedAt\": \"2026-01-01T00:00:00Z\", \"completed\": [], \"pending\": []}";
   }
 
-  /** A response of a cluster that has a single physical tenant, which predates physical tenants. */
-  private static String singlePhysicalTenantTopology(final long lastChangeId) {
-    return "{" + HEALTHY_BROKERS + ", " + lastChange(lastChangeId) + "}";
-  }
-
-  private static String lastChange(final long changeId) {
-    return "\"lastChange\": {\"id\": " + changeId + ", \"status\": \"COMPLETED\"}";
+  private static String brokers(final String partition) {
+    return "\"brokers\": [{\"id\": 0, \"state\": \"ACTIVE\", \"partitions\": [" + partition + "]}]";
   }
 }

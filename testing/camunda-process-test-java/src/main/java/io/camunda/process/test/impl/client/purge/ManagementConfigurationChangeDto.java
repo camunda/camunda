@@ -15,8 +15,13 @@
  */
 package io.camunda.process.test.impl.client.purge;
 
-/** Minimal representation of the last completed topology change. */
-public class ManagementCompletedChangeDto {
+/**
+ * Minimal representation of one configuration change, as returned by {@code GET
+ * /actuator/cluster/changes/{changeId}}.
+ */
+public class ManagementConfigurationChangeDto {
+
+  private static final String COMPLETED = "COMPLETED";
 
   private long id;
   private String status;
@@ -35,5 +40,9 @@ public class ManagementCompletedChangeDto {
 
   public void setStatus(final String status) {
     this.status = status;
+  }
+
+  public boolean isCompleted() {
+    return COMPLETED.equalsIgnoreCase(status);
   }
 }
