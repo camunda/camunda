@@ -9,7 +9,7 @@
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
 import {Button, Heading, IconButton, InformationIcon, Layer, PlusIcon} from '#/shared/design-system-compat';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {EmptyState} from '@camunda/design-system';
+import {Card, CardContent, EmptyState} from '@camunda/design-system';
 import {featureFlags} from '#/shared/feature-flags';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
@@ -31,6 +31,7 @@ import {
 	getVariableFieldName,
 } from '#/tasklist/modules/task-details-variables/variableFieldNames';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
+import layoutStyles from '#/tasklist/modules/task-details/components/taskDetailsLayoutCommon.module.scss';
 import styles from './TaskDetailsVariables.module.scss';
 
 const JSONEditorModal = lazy(async () => {
@@ -149,7 +150,14 @@ const TaskDetailsVariables: React.FC<Props> = ({
 
 				return (
 					<>
-						<div className={styles.header}>
+						<div
+							className={
+								// Reuse the same header row used across the task-details page
+								// (TaskDetailsHeader.tsx) rather than duplicating a near-identical
+								// class — one source of truth for the padding/layout instead of two.
+								featureFlags.dsTasklistUI ? cn(layoutStyles.header, styles.headerDS) : styles.header
+							}
+						>
 							<Heading>{t('tasklist.variablesTitle')}</Heading>
 							{isCompleted ? null : (
 								// PlusIcon, not AddIcon: AddIcon deliberately maps to the
@@ -157,8 +165,12 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								// this is the generic add-a-row button, which is what PlusIcon
 								// is for (see design-system-compat/index.ts). Both fall back to
 								// the same CarbonAdd icon, so this has no effect on Carbon.
+								// kind branches too: "secondary" on DS (per explicit request),
+								// "ghost" unchanged on Carbon — the compat Button maps kind
+								// straight to Carbon's own kind names, so changing it
+								// unconditionally would also restyle the Carbon button.
 								<Button
-									kind="ghost"
+									kind={featureFlags.dsTasklistUI ? 'secondary' : 'ghost'}
 									type="button"
 									size="sm"
 									onClick={() => form.mutators.push?.('newVariables')}
@@ -172,7 +184,8 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								</Button>
 							)}
 						</div>
-						<hr className={styles.separator} />
+						{/* DS-only: no divider below the header, per explicit request. */}
+						{featureFlags.dsTasklistUI ? null : <hr className={styles.separator} />}
 						<div
 							className={styles.scrollContainer}
 							ref={scrollContainerRef}
@@ -188,25 +201,40 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								<ResetForm isAssigned={isEditingAllowed} />
 								<div className={styles.content} tabIndex={-1} data-testid="task-tab-content">
 									{variables.length === 0 && (values.newVariables?.length ?? 0) === 0 ? (
-										<Layer className={cn(styles.layerContainer, styles.gutter)}>
-											{/* DS-only: the DS's own EmptyState, matching NoTasks.tsx. C3EmptyState is a
-											    composite from @camunda/camunda-composite-components with no compat
-											    adapter, so it stays on the flag-off path rather than being swapped. */}
-											{featureFlags.dsTasklistUI ? (
-												<EmptyState
-													size="sm"
-													heading={t('tasklist.variablesNoVariablesHeading')}
-													description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
-												/>
-											) : (
+										featureFlags.dsTasklistUI ? (
+											// DS-only: the empty state as a raised tile (DS Card), matching
+											// TaskDetailsForm.tsx's Card wrapping, instead of sitting flat on
+											// the panel background via Carbon's Layer (no real DS equivalent —
+											// see the Layer compat comment below).
+											<div className={cn(styles.layerContainer, styles.gutter)}>
+												<Card>
+													<CardContent>
+														<EmptyState
+															size="sm"
+															heading={t('tasklist.variablesNoVariablesHeading')}
+															description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+														/>
+													</CardContent>
+												</Card>
+											</div>
+										) : (
+											<Layer className={cn(styles.layerContainer, styles.gutter)}>
 												<C3EmptyState
 													heading={t('tasklist.variablesNoVariablesHeading')}
 													description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
 												/>
-											)}
-										</Layer>
+											</Layer>
+										)
 									) : (
-										<Layer className={styles.layerContainer} data-testid="variables-form-table">
+										// Layer has no real DS equivalent (carbon-compat/layer.tsx is a bare
+										// re-export of Carbon's own Layer — logged in
+										// docs/migration/human-follow-up.md), so it still renders Carbon's
+										// surface here on both paths; `.gutter` adds the side padding
+										// requested for the DS path only, matching the empty state above.
+										<Layer
+											className={cn(styles.layerContainer, featureFlags.dsTasklistUI && styles.gutter)}
+											data-testid="variables-form-table"
+										>
 											<VariableEditor
 												containerRef={formRef}
 												variables={variables}
