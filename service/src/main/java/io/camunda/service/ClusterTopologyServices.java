@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Topology;
 import java.util.Collection;
@@ -124,7 +125,9 @@ public final class ClusterTopologyServices {
       final String physicalTenantId, final Topology topology) {
     final var brokers =
         topology.brokers().stream()
-            .sorted(Comparator.comparing(broker -> broker.brokerId().id()))
+            .sorted(
+                Comparator.comparing(
+                    broker -> broker.brokerId().memberId(), MemberId.ID_COMPARATOR))
             .map(broker -> new PhysicalTenantBroker(broker.brokerId(), broker.partitions()))
             .toList();
     return new PhysicalTenantTopology(
@@ -151,7 +154,8 @@ public final class ClusterTopologyServices {
                                 broker.port(),
                                 broker.version()))));
     return byBrokerId.values().stream()
-        .sorted(Comparator.comparing(broker -> broker.brokerId().id()))
+        .sorted(
+            Comparator.comparing(broker -> broker.brokerId().memberId(), MemberId.ID_COMPARATOR))
         .toList();
   }
 
