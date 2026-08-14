@@ -697,4 +697,42 @@ public class RetentionTest {
       verifyNoDeleteCommandSent(backup5.id().checkpointId());
     }
   }
+
+  @Nested
+  class RecoveringTenant {
+
+    @Test
+    void shouldNotTouchBackupsWhileTenantIsRecovering() {
+      // given — no retention round runs, so neither the topology nor the store is consulted
+      reset(topologyManager, clusterState);
+      when(topologyManager.isRecovering(DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(true);
+
+      // when
+      runRetentionCycle();
+
+      // then — the store is not even listed, so a recovering tenant sees no retention activity
+      verify(backupStore, never()).list(any());
+      verifyNoDeleteCommands();
+    }
+
+    @Test
+    void shouldKeepTickingWhileTenantIsRecovering() {
+      // given — recovery ends after the first tick was skipped
+      final var now = actorScheduler.getClock().instant();
+      when(topologyManager.isRecovering(DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(true, false);
+      when(backupStore.list(any()))
+          .thenReturn(CompletableFuture.completedFuture(createDefaultBackups(1, 1, now)));
+
+      // when — the first tick finds the tenant recovering
+      runRetentionCycle();
+      verify(backupStore, never()).list(any());
+
+      // when — the tick after that finds it back in processing mode
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then — the loop was still ticking on its own schedule, so it resumes without a restart
+      verify(backupStore, times(1)).list(any());
+    }
+  }
 }

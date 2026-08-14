@@ -138,11 +138,7 @@ public class BackupRetention extends Actor {
     LOG.info("Backup retention initialized with cleanup schedule {}", retentionSchedule);
     backupStore = backupStoreFactory.get();
     metrics.register();
-    final var next =
-        retentionSchedule.nextExecution(Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-    LOG.debug("Scheduling next retention task in {} ", next);
-    metrics.recordNextExecution(next.get());
-    actor.runAt(next.get().toEpochMilli(), this::reschedulingTask);
+    scheduleNextRetention();
   }
 
   @Override
@@ -157,6 +153,13 @@ public class BackupRetention extends Actor {
   }
 
   private void reschedulingTask() {
+    if (topologyManager.isRecovering(physicalTenantId)) {
+      LOG.debug(
+          "Skipping backup retention, physical tenant {} is in recovery mode", physicalTenantId);
+      scheduleNextRetention();
+      return;
+    }
+
     performRetention()
         .onComplete(
             (v, err) -> {
@@ -166,13 +169,15 @@ public class BackupRetention extends Actor {
               } else {
                 LOG.debug("Backup retention task completed successfully");
               }
-              final var next =
-                  retentionSchedule.nextExecution(
-                      Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-              LOG.debug("Scheduling next retention task in {} ", next);
-              metrics.recordNextExecution(next.get());
-              actor.runAt(next.get().toEpochMilli(), this::reschedulingTask);
+              scheduleNextRetention();
             });
+  }
+
+  private void scheduleNextRetention() {
+    final var next = retentionSchedule.nextExecution(ActorClock.currentInstant());
+    LOG.debug("Scheduling next retention task in {} ", next);
+    metrics.recordNextExecution(next.get());
+    actor.runAt(next.get().toEpochMilli(), this::reschedulingTask);
   }
 
   private ActorFuture<Void> performRetention() {
