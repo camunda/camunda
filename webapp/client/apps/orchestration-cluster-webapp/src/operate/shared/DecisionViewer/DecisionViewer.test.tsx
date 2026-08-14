@@ -7,21 +7,8 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {afterAll, beforeAll, describe, it, expect, vi} from 'vitest';
-
-let DecisionViewer: typeof import('./index').DecisionViewer;
-
-beforeAll(async () => {
-	vi.doMock('inferno', () => {
-		// @ts-expect-error Inferno does not publish declarations for its development entry point
-		return import('inferno/dist/index.dev.esm.js');
-	});
-	({DecisionViewer} = await import('./index'));
-});
-
-afterAll(() => {
-	vi.doUnmock('inferno');
-});
+import {describe, it, expect, vi} from 'vitest';
+import {DecisionViewer} from './index';
 
 const DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn">
