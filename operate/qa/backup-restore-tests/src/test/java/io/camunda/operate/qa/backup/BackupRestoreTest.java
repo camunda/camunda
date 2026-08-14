@@ -92,18 +92,32 @@ public class BackupRestoreTest {
           .getEsClient()
           .indices()
           .delete(new DeleteIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
-      RetryOperation.newBuilder()
-          .noOfRetry(10)
-          .delayInterval(2000, TimeUnit.MILLISECONDS)
-          .retryPredicate(result -> !(boolean) result)
-          .retryConsumer(
-              () ->
-                  !testContext
-                      .getEsClient()
-                      .indices()
-                      .exists(new GetIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT))
-          .build()
-          .retry();
+      // indices().exists() on a wildcard always returns true, even with no matches - the
+      // client hardcodes allow_no_indices=true on that request regardless of IndicesOptions.
+      // Listing the indices and checking for emptiness is the only way to tell "gone" apart
+      // from "still there".
+      final boolean indicesGone =
+          RetryOperation.<Boolean>newBuilder()
+              .noOfRetry(10)
+              .delayInterval(2000, TimeUnit.MILLISECONDS)
+              .retryPredicate(result -> !result)
+              .retryConsumer(
+                  () ->
+                      testContext
+                              .getEsClient()
+                              .indices()
+                              .get(new GetIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT)
+                              .getIndices()
+                              .length
+                          == 0)
+              .build()
+              .retry();
+      if (!indicesGone) {
+        throw new OperateRuntimeException(
+            "Operate indices matching '"
+                + INDEX_PREFIX
+                + "*' still exist after waiting for deletion");
+      }
       LOGGER.info("************ Operate indices deleted ************");
     } catch (final IOException e) {
       throw new OperateRuntimeException(
@@ -151,6 +165,7 @@ public class BackupRestoreTest {
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_IMPORTERENABLED", "false")
             .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
+    operateContainer.withEnv("CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING", "10s");
 
     startOperate();
   }
