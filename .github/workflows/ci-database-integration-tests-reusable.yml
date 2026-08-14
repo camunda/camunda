@@ -118,6 +118,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    # Temporary increase (PT tests create schemas for multiple tenants sequentially); revert after #60105 lands.
     timeout-minutes: 25
     runs-on: ${{ inputs.runs-on }}
     env:
