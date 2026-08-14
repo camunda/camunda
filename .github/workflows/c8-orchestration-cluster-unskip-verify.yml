@@ -1,0 +1,710 @@
+# description: Live-environment verification agent for auto-unskip PRs in the C8 Orchestration
+#              Cluster E2E/API suite. Dispatched per PR by camunda/qa-metrics-exporter's
+#              unskip workflow (or manually). For every environment dimension the target
+#              version runs, it stands up that environment, runs the un-skipped specs, and —
+#              when they are red — lets Claude Code fix them and push onto the same PR branch.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Unskip Verify Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Unskip PR branch (e.g. auto/unskip-closed-bugs-camunda-stable-8.9-e2e)'
+        required: false
+        default: ''
+      pr_number:
+        description: 'Unskip PR number (alternative to branch)'
+        required: false
+        default: ''
+      trigger_on_demand:
+        description: 'Dispatch the full-matrix on-demand run on the final branch state'
+        type: boolean
+        required: false
+        default: true
+      slack_thread_ts:
+        description: 'Slack thread ts to reply to (posted by the unskip workflow)'
+        required: false
+        default: ''
+      slack_channel:
+        description: 'Slack channel ID for the thread reply'
+        required: false
+        default: ''
+      send_slack_notification:
+        description: 'Post a Slack reply when done'
+        type: boolean
+        required: false
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  actions: write
+  pull-requests: write
+
+# Cells push to the same PR branch, and a second dispatch for the same PR would
+# race them. Queue instead of cancelling — a cancelled run leaves a live Docker
+# environment and a half-verified PR.
+concurrency:
+  group: unskip-verify-${{ github.event.inputs.pr_number || github.event.inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve unskip PR scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      pr_number: ${{ steps.scope.outputs.pr_number }}
+      branch: ${{ steps.scope.outputs.branch }}
+      base_ref: ${{ steps.scope.outputs.base_ref }}
+      version: ${{ steps.scope.outputs.version }}
+      safe_version: ${{ steps.scope.outputs.safe_version }}
+      spec_count: ${{ steps.scope.outputs.spec_count }}
+      manual_marker_count: ${{ steps.scope.outputs.manual_marker_count }}
+      matrix: ${{ steps.scope.outputs.matrix }}
+      cell_count: ${{ steps.cells.outputs.count }}
+
+    steps:
+      - name: Checkout main for workflow tooling
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Resolve scope from the unskip PR
+        id: scope
+        env:
+          # Read workflow_dispatch inputs through env to avoid template injection
+          # (zizmor: template-injection — github.event.inputs.* is attacker-controllable)
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_PR: ${{ github.event.inputs.pr_number }}
+          INPUT_BRANCH: ${{ github.event.inputs.branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${INPUT_PR}" ] && [ -z "${INPUT_BRANCH}" ]; then
+            echo "::error::one of pr_number or branch must be provided"
+            exit 1
+          fi
+          python3 .github/scripts/unskip-scope.py \
+            --repo "$REPO" \
+            --pr "${INPUT_PR:-0}" \
+            --branch "${INPUT_BRANCH}" \
+            --out /tmp/unskip-scope.json
+
+      - name: Count matrix cells
+        id: cells
+        env:
+          MATRIX: ${{ steps.scope.outputs.matrix }}
+        run: |
+          set -euo pipefail
+          count=$(printf '%s' "$MATRIX" | jq '.include | length')
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ]; then
+            echo "::warning::No spec files changed by this unskip PR — nothing to verify."
+          fi
+
+      - name: Upload scope
+        uses: actions/upload-artifact@v7
+        with:
+          name: unskip-scope
+          path: /tmp/unskip-scope.json
+          retention-days: 14
+
+  verify:
+    name: Verify ${{ matrix.cell }}
+    needs: prepare
+    if: ${{ needs.prepare.outputs.cell_count != '0' }}
+    runs-on: ubuntu-latest
+    # 120 (not 90): the api-h2 cell builds a full Camunda distribution from
+    # source, exactly as c8-orchestration-cluster-e2e-tests-on-demand.yml's own
+    # H2/RDBMS job does, before a single test can run.
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      # Cells commit to the same PR branch — serialize so a later cell always
+      # starts from the previous cell's pushed state.
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Checkout main for workflow tooling
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          # The agent works inside the workspace-cli checkout, which is
+          # re-authenticated with the bot token below; keep the short-lived
+          # GITHUB_TOKEN out of .git/config (zizmor: artipacked).
+          persist-credentials: false
+
+      - name: Download scope
+        uses: actions/download-artifact@v6
+        with:
+          name: unskip-scope
+          path: /tmp/scope
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common GH_TOKEN | GH_PAT ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Configure git with GitHub App token
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name  "qa-processes[bot]"
+          git config --global user.email "qa-processes[bot]@users.noreply.github.com"
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Install workspace-cli
+        env:
+          GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+        run: |
+          # workspace-cli is a private repo; the qa-processes app token doesn't have access.
+          # Git selects the longest-matching insteadOf, so this wins over the global
+          # qa-processes rewrite set in "Configure git with GitHub App token".
+          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
+          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      - name: Create workspace on the unskip PR branch
+        id: ws
+        env:
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          CELL: ${{ matrix.cell }}
+        run: |
+          set -euo pipefail
+          name="unskip-${CELL}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$HOME/.workspace-templates"
+          cp qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-unskip.yaml \
+             qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-unskip.guidance.md \
+             "$HOME/.workspace-templates/"
+          workspace create "${name}" --manifest camunda-orchestration-cluster-unskip
+
+          ws_dir="$HOME/workspaces/${name}/camunda"
+          git -C "$ws_dir" fetch --depth 1 origin "${BRANCH}"
+          git -C "$ws_dir" checkout "${BRANCH}"
+          git -C "$ws_dir" log --oneline -1
+
+          {
+            echo "name=${name}"
+            echo "dir=${ws_dir}"
+            echo "suite=${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite"
+          } >> "$GITHUB_OUTPUT"
+
+      # The agent's operating manual and the verify-environment scripts live on
+      # `main` only — stable/8.7…8.9 carry neither. Stage main's copies into the
+      # PR-branch checkout and mark them untracked-and-ignored so they can never
+      # end up in a commit. start-verify-env.sh still reads the *checked-out*
+      # branch's own docker-compose.yml, so it stays correct per branch.
+      - name: Stage agent manual and verify-env scripts from main
+        env:
+          SUITE: ${{ steps.ws.outputs.suite }}
+          WS_DIR: ${{ steps.ws.outputs.dir }}
+        run: |
+          set -euo pipefail
+          src=qa/c8-orchestration-cluster-e2e-test-suite
+          cp "$src/AGENTS.md" /tmp/unskip-agent-manual.md
+          mkdir -p "$SUITE/scripts"
+          cp "$src/scripts/start-verify-env.sh" "$src/scripts/stop-verify-env.sh" "$SUITE/scripts/"
+          chmod +x "$SUITE/scripts/start-verify-env.sh" "$SUITE/scripts/stop-verify-env.sh"
+          {
+            echo "qa/c8-orchestration-cluster-e2e-test-suite/scripts/start-verify-env.sh"
+            echo "qa/c8-orchestration-cluster-e2e-test-suite/scripts/stop-verify-env.sh"
+            echo "qa/c8-orchestration-cluster-e2e-test-suite/.env"
+          } >> "$WS_DIR/.git/info/exclude"
+
+      - name: Read suite Node version
+        id: node
+        env:
+          SUITE: ${{ steps.ws.outputs.suite }}
+        run: echo "version=$(cat "$SUITE/.nvmrc")" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+
+      - name: Install suite dependencies
+        working-directory: ${{ steps.ws.outputs.suite }}
+        run: npm ci
+
+      # Ask Playwright which of the scope's specs actually run in this
+      # dimension — `playwright.config.ts` selects tests/tasklist/v1/** in v1
+      # mode and everything else in v2 mode, and routes task-panel.spec.ts to
+      # its own teardown project. Listing needs no server, so a cell with
+      # nothing to run exits before paying for an environment.
+      - name: Plan cell
+        id: plan
+        working-directory: ${{ steps.ws.outputs.suite }}
+        env:
+          CATEGORY: ${{ matrix.category }}
+          CELL: ${{ matrix.cell }}
+          DATABASE: ${{ matrix.database }}
+          TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v1' && 'false' || 'true' }}
+        run: |
+          set -euo pipefail
+          scripts="$GITHUB_WORKSPACE/.github/scripts"
+          candidates=$(python3 "$scripts/unskip-plan-cell.py" candidates \
+            --scope /tmp/scope/unskip-scope.json --category "$CATEGORY")
+          echo "Candidate specs: ${candidates:-<none>}"
+
+          if [ -n "$candidates" ]; then
+            read -ra paths <<< "$candidates"
+            # `--list` exits 1 when the filters match nothing, but still writes a
+            # valid report with empty suites — that is the prune signal, not an
+            # error. Only an UNPARSEABLE report means "cannot prune", and the
+            # planner then falls back to running every candidate.
+            npx playwright test --list --reporter=json "${paths[@]}" \
+              > /tmp/pw-list.json 2>/tmp/pw-list.err || true
+            if ! python3 -c "import sys,json; json.load(open('/tmp/pw-list.json'))" 2>/dev/null \
+               && ! grep -q '^{' /tmp/pw-list.json 2>/dev/null; then
+              echo "::warning::playwright --list produced no usable report; skipping the prune step"
+              tail -20 /tmp/pw-list.err || true
+              rm -f /tmp/pw-list.json
+            fi
+          fi
+
+          python3 "$scripts/unskip-plan-cell.py" plan \
+            --scope /tmp/scope/unskip-scope.json \
+            --list /tmp/pw-list.json \
+            --category "$CATEGORY" --cell "$CELL" \
+            --database "$DATABASE" --tasklist-mode "$TASKLIST_MODE" \
+            --out /tmp/cell-plan.json
+
+      - name: Install Playwright browsers
+        if: ${{ steps.plan.outputs.run == 'true' }}
+        working-directory: ${{ steps.ws.outputs.suite }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Start verify environment
+        if: ${{ steps.plan.outputs.run == 'true' }}
+        working-directory: ${{ steps.ws.outputs.suite }}
+        env:
+          DATABASE: ${{ matrix.database }}
+          TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+        run: ./scripts/start-verify-env.sh "$DATABASE" "$TASKLIST_MODE"
+
+      # Reproduce gate: run the un-skipped specs untouched. Green here means the
+      # closed bug really is fixed and the PR needs no code change at all.
+      - name: Baseline run
+        id: baseline
+        if: ${{ steps.plan.outputs.run == 'true' }}
+        working-directory: ${{ steps.ws.outputs.suite }}
+        env:
+          SPEC_PATHS: ${{ steps.plan.outputs.spec_paths }}
+          PROJECT_ARGS: ${{ steps.plan.outputs.project_args }}
+        run: |
+          set -uo pipefail
+          read -ra args <<< "$PROJECT_ARGS $SPEC_PATHS"
+          npx playwright test "${args[@]}"
+          status=$?
+          mkdir -p /tmp/baseline
+          cp json-report/results.json /tmp/baseline/results.json 2>/dev/null || true
+          if [ "$status" -eq 0 ]; then
+            echo "result=green" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=red" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Baseline exit status: ${status}"
+          exit 0
+
+      - name: Run Claude Code unskip-verify agent
+        id: agent
+        if: ${{ steps.plan.outputs.run == 'true' && (steps.baseline.outputs.result == 'red' || steps.plan.outputs.marker_count != '0') }}
+        working-directory: ${{ steps.ws.outputs.suite }}
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          # Fallback ONLY, for a repo the camunda-scoped App token cannot reach.
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+          SUITE_DIR: ${{ steps.ws.outputs.suite }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          BASE_REF: ${{ needs.prepare.outputs.base_ref }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CELL: ${{ matrix.cell }}
+          CATEGORY: ${{ matrix.category }}
+          DATABASE: ${{ matrix.database }}
+          TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+          SPEC_PATHS: ${{ steps.plan.outputs.spec_paths }}
+          PROJECT_ARGS: ${{ steps.plan.outputs.project_args }}
+          BASELINE: ${{ steps.baseline.outputs.result }}
+          MARKER_COUNT: ${{ steps.plan.outputs.marker_count }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v1' && 'false' || 'true' }}
+        run: |
+          set -euo pipefail
+
+          # The prompt stays terse on purpose: every diagnosis step, constraint,
+          # and the result-manifest schema live in the agent manual, so the team
+          # can change agent behaviour without editing CI.
+          prompt=$(cat <<EOF
+          You are the Camunda orchestration-cluster unskip-verify agent.
+          Workspace: ${SUITE_DIR} (already on the unskip PR branch ${BRANCH}).
+
+          STEP 0 — read /tmp/unskip-agent-manual.md, the "## Unskip Verify Agent"
+          section. That file is your full operating manual: the loop, the
+          constraints, and the /tmp/unskip-meta.json schema. It is main's copy of
+          the suite AGENTS.md — authoritative even when the branch you are on
+          carries an older AGENTS.md.
+
+          /tmp/cell-plan.json describes this environment cell: the spec files that
+          run here, the Playwright projects to pass, the un-skipped tests with the
+          closed bug each one references, and any manual-review markers to handle
+          in the second pass.
+
+          The environment is ALREADY RUNNING (database=${DATABASE},
+          tasklist=${TASKLIST_MODE}) and dependencies are installed. Never restart,
+          rebuild, or tear it down. Re-run tests with exactly:
+            npx playwright test ${PROJECT_ARGS} ${SPEC_PATHS}
+          The baseline run of those specs was: ${BASELINE}
+          (report: /tmp/baseline/results.json). Manual-review markers: ${MARKER_COUNT}.
+
+          Context (env vars already exported):
+            PR_NUMBER=${PR_NUMBER}  BRANCH=${BRANCH}  BASE_REF=${BASE_REF}
+            VERSION=${VERSION}  CELL=${CELL}  CATEGORY=${CATEGORY}  REPO=${REPO}
+
+          Commit onto THIS branch and push it — never open a new PR, never create
+          another branch. Commit titles use the 'test:' type (commitlint rejects
+          'fix:' for test-only changes).
+
+          When done, write /tmp/unskip-meta.json and stop.
+          EOF
+          )
+
+          claude -p "$prompt" --dangerously-skip-permissions || echo "::warning::agent exited non-zero"
+
+      - name: Stop verify environment
+        if: ${{ always() && steps.plan.outputs.run == 'true' }}
+        working-directory: ${{ steps.ws.outputs.suite }}
+        run: ./scripts/stop-verify-env.sh || true
+
+      - name: Collect cell result
+        if: always()
+        env:
+          CELL: ${{ matrix.cell }}
+          CATEGORY: ${{ matrix.category }}
+          DATABASE: ${{ matrix.database }}
+          TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+          RUN: ${{ steps.plan.outputs.run }}
+          BASELINE: ${{ steps.baseline.outputs.result }}
+          AGENT_RAN: ${{ steps.agent.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cell
+          meta='{}'
+          [ -f /tmp/unskip-meta.json ] && meta=$(cat /tmp/unskip-meta.json)
+          plan='{}'
+          [ -f /tmp/cell-plan.json ] && plan=$(cat /tmp/cell-plan.json)
+
+          # verdict precedence: what the agent reported, else what the run showed.
+          jq -n \
+            --arg cell "$CELL" --arg category "$CATEGORY" \
+            --arg database "$DATABASE" --arg tasklist_mode "$TASKLIST_MODE" \
+            --arg run "$RUN" --arg baseline "${BASELINE:-}" \
+            --arg agent "${AGENT_RAN:-skipped}" --arg run_url "$RUN_URL" \
+            --argjson meta "$meta" --argjson plan "$plan" \
+            '{
+              cell: $cell, category: $category, database: $database,
+              tasklist_mode: $tasklist_mode, run_url: $run_url,
+              applicable: ($run == "true"),
+              baseline: (if $baseline == "" then null else $baseline end),
+              agent_step: $agent,
+              verdict: ($meta.verdict //
+                        (if $run != "true" then "not-applicable"
+                         elif $baseline == "green" then "green"
+                         else "blocked" end)),
+              meta: $meta,
+              plan: {spec_paths: ($plan.spec_paths // []),
+                     unskipped_tests: ($plan.unskipped_tests // []),
+                     manual_markers: ($plan.manual_markers // []),
+                     unsupported: ($plan.unsupported // [])}
+            }' > "/tmp/cell/cell-result-${CELL}.json"
+          cat "/tmp/cell/cell-result-${CELL}.json"
+
+      - name: Upload cell artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unskip-cell-${{ matrix.cell }}
+          path: |
+            /tmp/cell/
+            /tmp/cell-plan.json
+            /tmp/unskip-meta.json
+            /tmp/baseline/results.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload Playwright report
+        if: ${{ always() && steps.plan.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: unskip-report-${{ matrix.cell }}
+          path: |
+            ${{ steps.ws.outputs.suite }}/html-report/
+            ${{ steps.ws.outputs.suite }}/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  finalize:
+    name: Report verification outcome
+    needs: [prepare, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Download cell results
+        continue-on-error: true
+        uses: actions/download-artifact@v6
+        with:
+          pattern: unskip-cell-*
+          path: /tmp/cells
+
+      - name: Aggregate
+        id: agg
+        run: |
+          set -euo pipefail
+          # cell-result-<cell>.json is uniquely named so its depth inside the
+          # artifact (which varies with what else got uploaded) never matters.
+          find /tmp/cells -name 'cell-result-*.json' -print0 2>/dev/null \
+            | xargs -0 -r jq -s '.' > /tmp/cells.json || true
+          [ -s /tmp/cells.json ] || echo '[]' > /tmp/cells.json
+          jq -c '.' /tmp/cells.json
+
+          total=$(jq '[.[] | select(.applicable)] | length' /tmp/cells.json)
+          bad=$(jq '[.[] | select(.applicable and (.verdict | IN("green","fixed") | not))] | length' /tmp/cells.json)
+          changed=$(jq '[.[] | select(.meta.pushed == true)] | length' /tmp/cells.json)
+          # A spec that could not run anywhere (e.g. it needs a project this
+          # environment cannot provide) must not read as "verified".
+          unsupported=$(jq '[.[] | .plan.unsupported[]?] | unique_by(.file) | length' /tmp/cells.json)
+          if [ "$total" -eq 0 ] && [ "$unsupported" -eq 0 ]; then
+            status=not-applicable
+          elif [ "$bad" -eq 0 ] && [ "$unsupported" -eq 0 ]; then
+            status=verified
+          else
+            status=unverified
+          fi
+          {
+            echo "status=${status}"
+            echo "total=${total}"
+            echo "bad=${bad}"
+            echo "changed=${changed}"
+            echo "unsupported=${unsupported}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Render verification section
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STATUS: ${{ steps.agg.outputs.status }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Unskip verification"
+            echo ""
+            case "$STATUS" in
+              verified)       echo "✅ Every un-skipped test passes against a live environment." ;;
+              unverified)     echo "⚠️ Not fully verified — see the table below." ;;
+              not-applicable) echo "ℹ️ No spec in this PR runs in any verified environment dimension." ;;
+            esac
+            echo ""
+            echo "| Environment | Baseline | Outcome | Notes |"
+            echo "|---|---|---|---|"
+            jq -r '.[] |
+              [ "`\(.cell)` (db=\(.database), tasklist=\(.tasklist_mode))",
+                (.baseline // "—"),
+                (if .verdict == "green" then "✅ green (no change needed)"
+                 elif .verdict == "fixed" then "✅ fixed"
+                 elif .verdict == "partial" then "⚠️ partially fixed"
+                 elif .verdict == "not-applicable" then "— not run here"
+                 else "❌ \(.verdict)" end),
+                ((.meta.root_cause // .meta.note // "") | gsub("\n"; " "))
+              ] | "| " + join(" | ") + " |"' /tmp/cells.json
+            echo ""
+            jq -r '.[] | .meta.tests[]? |
+              "- `\(.file)` › \(.test_name) — **\(.outcome)**" +
+              (if .note then " — \(.note)" else "" end)' /tmp/cells.json
+            jq -r '.[] | .meta.manual_markers[]? |
+              "- manual marker `\(.path)`:\(.line) — **\(.outcome)**" +
+              (if .note then " — \(.note)" else "" end)' /tmp/cells.json
+            jq -r '[.[] | .plan.unsupported[]?] | unique_by(.file)[] |
+              "- ⚠️ `\(.file)` was NOT verified — it only runs under \(.projects | join(", ")), " +
+              "which this environment does not provide."' /tmp/cells.json
+            echo ""
+            echo "<sub>[Verification run ↗](${RUN_URL})</sub>"
+          } > /tmp/verify-section.md
+          cat /tmp/verify-section.md
+
+      - name: Patch PR body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          [ -n "$PR_NUMBER" ] || exit 0
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body' > /tmp/pr-body.md
+          # Idempotent: drop any previous section before appending this run's.
+          sed -i '/^## Unskip verification/,$d' /tmp/pr-body.md
+          sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' /tmp/pr-body.md
+          printf '\n\n' >> /tmp/pr-body.md
+          cat /tmp/verify-section.md >> /tmp/pr-body.md
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-body.md
+
+      - name: Label PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          STATUS: ${{ steps.agg.outputs.status }}
+        run: |
+          set -euo pipefail
+          [ -n "$PR_NUMBER" ] || exit 0
+          gh label create "verified" --repo "$REPO" --color "0E8A16" \
+            --description "Verified green in a live environment" 2>/dev/null || true
+          gh label create "unverified" --repo "$REPO" --color "FBCA04" \
+            --description "Could not be verified green in a live environment" 2>/dev/null || true
+          case "$STATUS" in
+            verified)
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "verified" --remove-label "unverified" || true
+              ;;
+            unverified)
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "unverified" --remove-label "verified" || true
+              ;;
+            *)
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "verified" --remove-label "unverified" || true
+              ;;
+          esac
+
+      # Full-matrix regression net, dispatched on the FINAL branch state so it
+      # covers the agent's commits (and the dimensions this run did not verify:
+      # camunda_mode, cross-browser projects).
+      - name: Trigger on-demand run
+        if: ${{ github.event.inputs.trigger_on_demand != 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          [ -n "$BRANCH" ] || exit 0
+          output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+            --repo "$REPO" -f branch="$BRANCH" 2>&1) || {
+              echo "::warning::on-demand dispatch failed: ${output}"
+              exit 0
+            }
+          echo "$output"
+          url=$(echo "$output" | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || true)
+          if [ -n "$url" ] && [ -n "$PR_NUMBER" ]; then
+            gh pr comment "$PR_NUMBER" --repo "$REPO" \
+              --body "🔬 Full-matrix on-demand run on the verified branch: ${url}"
+          fi
+
+      - name: Write job summary
+        if: always()
+        env:
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          BASE_REF: ${{ needs.prepare.outputs.base_ref }}
+          REPO: ${{ github.repository }}
+          STATUS: ${{ steps.agg.outputs.status }}
+          CHANGED: ${{ steps.agg.outputs.changed }}
+        run: |
+          {
+            echo "## Unskip Verify — PR #${PR_NUMBER} (\`${BASE_REF}\`)"
+            echo ""
+            echo "**Outcome:** \`${STATUS}\` · **cells that pushed a fix:** ${CHANGED}"
+            echo ""
+            echo "[PR ↗](https://github.com/${REPO}/pull/${PR_NUMBER})"
+            echo ""
+            cat /tmp/verify-section.md 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Import Slack token
+        id: slack-secrets
+        if: ${{ always() && github.event.inputs.send_slack_notification == 'true' }}
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Slack thread reply
+        if: ${{ always() && github.event.inputs.send_slack_notification == 'true' }}
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_THREAD_TS: ${{ github.event.inputs.slack_thread_ts }}
+          SLACK_CHANNEL: ${{ github.event.inputs.slack_channel }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          BASE_REF: ${{ needs.prepare.outputs.base_ref }}
+          REPO: ${{ github.repository }}
+          STATUS: ${{ steps.agg.outputs.status }}
+          CHANGED: ${{ steps.agg.outputs.changed }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          case "$STATUS" in
+            verified)   icon=":white_check_mark:"; summary="all un-skipped tests green" ;;
+            unverified) icon=":warning:";          summary="still failing — needs a look" ;;
+            *)          icon=":grey_question:";    summary="nothing to verify" ;;
+          esac
+          [ "${CHANGED:-0}" != "0" ] && summary="${summary} (agent pushed fixes)"
+          text="${icon} Unskip verify — <https://github.com/${REPO}/pull/${PR_NUMBER}|PR #${PR_NUMBER}> (\`${BASE_REF}\`): ${summary}"$'\n'"<${RUN_URL}|Verification run ↗>"
+          payload=$(jq -nc \
+            --arg channel "$SLACK_CHANNEL" \
+            --arg thread_ts "$SLACK_THREAD_TS" \
+            --arg text "$text" \
+            '{channel: $channel, thread_ts: $thread_ts, text: $text, mrkdwn: true}')
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" | jq '.' || true
