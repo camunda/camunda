@@ -1,0 +1,430 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.it.engine.secret;
+
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.AWAIT_TIMEOUT;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.INPUT_TARGET;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.JOB_TIMEOUT;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.LONG_POLL_TIMEOUT;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.applyRecordWaitTime;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.assertNoRecordCarriesValue;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitActivationExported;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitJobKeyOf;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitNoStreamRegistered;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitResolutionRequested;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitStreamRegistered;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.createProcessInstance;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.deployProcessWithInput;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.incidentsOf;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.newBrokerWithEmptySecretStore;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.onlyJob;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.pollJobs;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.primingPoll;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionFailureStates;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionWasRequestedFor;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.secretReference;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.uniqueSecretName;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.writeSecret;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.StreamJobsResponse;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResolutionState;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Covers what a worker actually receives for a job whose input mapping references a secret, on both
+ * activation paths, against a real gateway, a real client and a real file-based secret store.
+ *
+ * <p>The engine suites ({@code JobSecretActivationInjectionTest}, {@code
+ * JobSecretPushInjectionTest} and {@code SecretResolutionLifecycleTest}) already cover the
+ * processing of one command with a stubbed cache. What only this level can show is the part outside
+ * the stream processor: that a long poll blocked on an empty result is woken by the reactivation's
+ * workers-notified broadcast, that a reactivated job reaches a real remote job stream (which that
+ * broadcast never reaches), and that no exported record carries a value a worker was handed.
+ *
+ * <p>All of it shares one broker, since none of these tests need a broker of their own and starting
+ * one per group of tests is the expensive part. Every test uses its own secret name: the cache is
+ * per broker and shared with the gateway's secret endpoints, so a name reused across tests would be
+ * warm from the first test on and the cache-miss path would never run.
+ */
+@ZeebeIntegration
+final class SecretResolutionJobActivationIT {
+
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker broker;
+
+  @AutoClose private final CamundaClient client = broker.newClientBuilder().build();
+
+  private final String secretName = uniqueSecretName();
+  private final String secretValue = "value-of-" + secretName;
+  private final String processId = Strings.newRandomValidBpmnId();
+  private final String jobType = Strings.newRandomValidBpmnId();
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    broker = newBrokerWithEmptySecretStore();
+  }
+
+  @BeforeEach
+  void setUp() {
+    applyRecordWaitTime();
+  }
+
+  @Test
+  void shouldCompleteBlockedLongPollOnceTheSecretResolves() {
+    // given - a job whose secret the store holds but the cache does not
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+
+    // when - the request parks the job on its first attempt and stays open, so it is the
+    // reactivation that completes it
+    final ActivatedJob job = onlyJob(poll().join());
+
+    // then
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+
+    // and - the job took the park and background resolution route, rather than a warm cache
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isTrue();
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldPushJobToStreamOnceTheSecretResolves() {
+    // given - a stream registered before the job exists, so the job is pushed rather than polled
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    final List<ActivatedJob> streamed = new CopyOnWriteArrayList<>();
+    final var stream = openJobStream(streamed::add);
+    final long processInstanceKey;
+
+    try {
+      awaitStreamRegistered(broker, jobType);
+
+      // when
+      processInstanceKey = createProcessInstance(client, processId);
+
+      // then - the only push carries the value, so the job was never pushed while it was uncached
+      Awaitility.await("until the job is pushed")
+          .atMost(AWAIT_TIMEOUT)
+          .untilAsserted(() -> assertThat(streamed).hasSize(1));
+    } finally {
+      stream.cancel(true);
+    }
+
+    assertThat(streamed)
+        .singleElement()
+        .satisfies(
+            job -> assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue));
+    final long jobKey = streamed.get(0).getKey();
+    awaitActivationExported(jobType, jobKey);
+    assertThat(resolutionWasRequestedFor(secretName, jobKey)).isTrue();
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldActivateWithoutParkingWhenTheSecretIsAlreadyCached() {
+    // given - a first instance whose resolution left the value in the cache
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    createProcessInstance(client, processId);
+    onlyJob(poll().join());
+
+    // when - a second instance runs against the warm cache
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+    final ActivatedJob job = onlyJob(poll().join());
+
+    // then - it is activated with the value, and was never parked on the way there. A park would
+    // have been requested before the activation this awaits, so it cannot be in flight still
+    assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isFalse();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldParkJobEvenWhenTheWorkerDoesNotFetchTheSecretVariable() {
+    // given - a worker that asks for another variable than the one the secret is mapped into
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    final long processInstanceKey =
+        createProcessInstance(client, processId, Map.of("other", "plain"));
+    awaitJobKeyOf(processInstanceKey);
+
+    // when
+    final ActivatedJob job =
+        onlyJob(
+            client
+                .newActivateJobsCommand()
+                .jobType(jobType)
+                .maxJobsToActivate(1)
+                .timeout(JOB_TIMEOUT)
+                .fetchVariables("other")
+                .requestTimeout(LONG_POLL_TIMEOUT)
+                .send()
+                .join());
+
+    // then - the job was still held back until its reference resolved, since the check is on the
+    // job's references and not on the variables the worker asked for
+    assertThat(job.getVariablesAsMap())
+        .containsEntry("other", "plain")
+        .doesNotContainKey(INPUT_TARGET);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isTrue();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldNotHandTheSecretValueToAListenerJobOfTheSameElement() {
+    // given - a task whose input mapping references a secret, plus an end execution listener on it
+    writeSecret(broker, secretName, secretValue);
+    final String listenerType = Strings.newRandomValidBpmnId();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType(jobType)
+                            .zeebeInputExpression(secretReference(secretName), INPUT_TARGET)
+                            .zeebeEndExecutionListener(listenerType))
+                .endEvent()
+                .done(),
+            processId + ".bpmn")
+        .send()
+        .join();
+    final long processInstanceKey = createProcessInstance(client, processId);
+
+    // when - the task's worker receives the value and completes the job
+    final ActivatedJob taskJob = onlyJob(poll().join());
+    assertThat(taskJob.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    client.newCompleteCommand(taskJob.getKey()).send().join();
+
+    // then - the listener job of the same element sees the placeholder, since a listener job is
+    // created without secret references and only the referencing job's variables are injected
+    final ActivatedJob listenerJob = onlyJob(poll(listenerType).join());
+    assertThat(listenerJob.getVariablesAsMap())
+        .containsEntry(INPUT_TARGET, secretReference(secretName));
+    awaitActivationExported(listenerType, listenerJob.getKey());
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldRaiseIncidentForAnUnknownSecretAndDeliverAfterTheOperatorFixesIt() {
+    // given - a job referencing a secret the store does not hold
+    deployProcessWithSecretInput();
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+    // with no stream registered the job is announced unchecked, so it is this poll that checks its
+    // references, parks it and requests the resolution that then fails
+    assertThat(primingPoll(client, jobType)).isEmpty();
+    final Record<IncidentRecordValue> incident = awaitSecretIncident(processInstanceKey);
+
+    // then - one incident naming the secret, and nothing activatable behind it
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
+    assertThat(incident.getValue().getErrorMessage()).contains(secretName);
+    assertThat(incident.getValue().getJobKey()).isPositive();
+
+    // and - the secret was missing rather than its store, the other way round from
+    // SecretStoreUnavailableIT. Both raise this same incident, so without reading the state off the
+    // RESOLUTION_FAILED record neither test can tell which of the two it got
+    assertThat(resolutionFailureStates(secretName))
+        .as("the secret was missing, not its store")
+        .containsOnly(ResolutionState.NOT_FOUND);
+
+    // when - the operator adds the missing secret and resolves the incident
+    writeSecret(broker, secretName, secretValue);
+    client.newResolveIncidentCommand(incident.getKey()).send().join();
+
+    // then - the job is handed out again with the value, and no second incident was raised
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(incidentsOf(processInstanceKey)).hasSize(1);
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldPushJobToStreamAfterTheOperatorResolvesTheIncident() {
+    // given - a stream registered for a job whose secret the store does not hold
+    deployProcessWithSecretInput();
+    final List<ActivatedJob> streamed = new CopyOnWriteArrayList<>();
+    final var stream = openJobStream(streamed::add);
+    final long processInstanceKey;
+
+    try {
+      awaitStreamRegistered(broker, jobType);
+      processInstanceKey = createProcessInstance(client, processId);
+      final Record<IncidentRecordValue> incident = awaitSecretIncident(processInstanceKey);
+      assertThat(streamed).as("a job with an unresolved secret is never pushed").isEmpty();
+
+      // when - the operator adds the missing secret and resolves the incident
+      writeSecret(broker, secretName, secretValue);
+      client.newResolveIncidentCommand(incident.getKey()).send().join();
+
+      // then - resolving the incident hands the job back to the push path, which pushes it with the
+      // value once the reference resolves again
+      Awaitility.await("until the job is pushed")
+          .atMost(AWAIT_TIMEOUT)
+          .untilAsserted(() -> assertThat(streamed).hasSize(1));
+    } finally {
+      stream.cancel(true);
+    }
+
+    assertThat(streamed)
+        .singleElement()
+        .satisfies(
+            job -> assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue));
+    awaitActivationExported(jobType, streamed.get(0).getKey());
+    assertThat(incidentsOf(processInstanceKey)).hasSize(1);
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldAnnounceJobToPollingWorkersWhenTheStreamIsGone() {
+    // given - a job parked on a secret the store does not hold, with a stream registered
+    deployProcessWithSecretInput();
+    final List<ActivatedJob> streamed = new CopyOnWriteArrayList<>();
+    final var stream = openJobStream(streamed::add);
+    final Record<IncidentRecordValue> incident;
+
+    try {
+      awaitStreamRegistered(broker, jobType);
+      final long processInstanceKey = createProcessInstance(client, processId);
+      incident = awaitSecretIncident(processInstanceKey);
+    } finally {
+      // the stream is gone before the job becomes available again, so nothing can push it
+      stream.cancel(true);
+    }
+    awaitNoStreamRegistered(broker, jobType);
+
+    // when - the operator adds the secret and resolves the incident
+    writeSecret(broker, secretName, secretValue);
+    client.newResolveIncidentCommand(incident.getKey()).send().join();
+
+    // then - the reactivation announces the job type instead of pushing, so a poll receives it
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    assertThat(streamed).isEmpty();
+    awaitActivationExported(jobType, job.getKey());
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldInjectTheSecretAgainWhenAFailedJobIsRetried() {
+    // given - a job that was activated with its secret value and then failed with a retry left
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    createProcessInstance(client, processId);
+    final ActivatedJob firstActivation = onlyJob(poll().join());
+    assertThat(firstActivation.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+
+    // when
+    client.newFailCommand(firstActivation.getKey()).retries(1).send().join();
+
+    // then - the retry carries the value again, never the placeholder it is stored with
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getKey()).isEqualTo(firstActivation.getKey());
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldTerminateInstanceWhoseJobIsParkedOnAnUnresolvableSecret() {
+    // given - a job parked on a secret the store does not hold, so it stays parked
+    deployProcessWithSecretInput();
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+    assertThat(primingPoll(client, jobType)).isEmpty();
+    awaitResolutionRequested(secretName);
+
+    // when - the instance is cancelled while its job waits on that reference
+    client.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    // then - the instance terminates, and the reference's drain skipping a job that is gone leaves
+    // the broker serving the next instance of the same reference once the secret is there
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(1)
+                .exists())
+        .as("the cancelled instance terminated")
+        .isTrue();
+
+    writeSecret(broker, secretName, secretValue);
+    final long nextInstanceKey = createProcessInstance(client, processId);
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(nextInstanceKey);
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  private Record<IncidentRecordValue> awaitSecretIncident(final long processInstanceKey) {
+    return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+        .getFirst();
+  }
+
+  private void deployProcessWithSecretInput() {
+    deployProcessWithInput(client, processId, jobType, secretReference(secretName));
+  }
+
+  private CamundaFuture<ActivateJobsResponse> poll() {
+    return poll(jobType);
+  }
+
+  private CamundaFuture<ActivateJobsResponse> poll(final String type) {
+    return pollJobs(client, type, 1, LONG_POLL_TIMEOUT);
+  }
+
+  private CamundaFuture<StreamJobsResponse> openJobStream(final Consumer<ActivatedJob> consumer) {
+    return client
+        .newStreamJobsCommand()
+        .jobType(jobType)
+        .consumer(consumer)
+        .workerName("streamer")
+        .timeout(JOB_TIMEOUT)
+        .send();
+  }
+}
