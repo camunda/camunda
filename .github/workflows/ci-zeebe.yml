@@ -190,7 +190,7 @@ jobs:
   performance-tests:
     name: "Performance"
     # This job runs a JMH microbenchmark on a shared, noisy runner pool and has a long
-    # flake history (see INC-7154, camunda/camunda#14971, #39868). Restrict it to
+    # flake history (see INC-7154, camunda/camunda#14971, camunda/camunda#39868). Restrict it to
     # pull_request/merge_group so a flaky assertion doesn't page on every push to
     # protected branches (main/stable/*); PR and merge-queue coverage is unaffected.
     if: contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)
