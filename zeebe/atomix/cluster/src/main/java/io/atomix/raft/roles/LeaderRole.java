@@ -223,6 +223,64 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
+    // Gate promotions of existing members to ACTIVE on the member being caught up: it joins the
+    // commit quorum as soon as the joint configuration is appended, so a promoted member lagging
+    // far behind would stall commits until it caught up. The gate bounds that stall window with
+    // the byte-exact replication lag rather than an entry count: the stall is bytes divided by
+    // replication bandwidth (entries range from tens of bytes to full batches, and entry counts
+    // are blind to a pending snapshot install, which the byte lag includes - a member
+    // mid-install is rejected by construction). Only in-configuration non-ACTIVE -> ACTIVE type
+    // changes are gated; members that are not part of the current configuration at all -
+    // brand-new one-shot ACTIVE joiners, the current production join path - are unaffected.
+    // CONFIGURATION_ERROR makes the requester fail fast and retry the whole promotion (see
+    // DefaultRaftMember#configure), unlike the internally retried NO_LEADER/UNAVAILABLE/
+    // PROTOCOL_ERROR responses.
+    for (final var updatedMember : updatedMembers) {
+      if (updatedMember.getType() != RaftMember.Type.ACTIVE) {
+        continue;
+      }
+      final var currentMember =
+          configuration.newMembers().stream()
+              .filter(member -> member.memberId().equals(updatedMember.memberId()))
+              .findAny();
+      if (currentMember.isEmpty() || currentMember.get().getType() == RaftMember.Type.ACTIVE) {
+        continue;
+      }
+      final var memberContext = raft.getCluster().getMemberContext(updatedMember.memberId());
+      // Requiring a positive match index closes an optimism window right after a leadership
+      // change: the match index is per-leadership and only ever set by a real acknowledgement, so
+      // a member the leader has not heard from yet is never mistaken for a caught-up one.
+      //
+      // A member that acknowledged everything committed is caught up regardless of how far it is
+      // from the end of the log: what is left to ship is the leader's uncommitted tail, which flow
+      // control keeps small. Otherwise it may lag behind the end of the log by at most the
+      // promotion lag threshold, counted in entries.
+      final var lastIndex = raft.getLog().getLastIndex();
+      final var caughtUp =
+          memberContext != null
+              && memberContext.getMatchIndex() > 0
+              && (memberContext.getMatchIndex() >= raft.getCommitIndex()
+                  || lastIndex - memberContext.getMatchIndex() <= raft.getPromotionLagThreshold());
+      if (!caughtUp) {
+        return CompletableFuture.completedFuture(
+            logResponse(
+                ReconfigureResponse.builder()
+                    .withStatus(RaftResponse.Status.ERROR)
+                    .withError(
+                        Type.CONFIGURATION_ERROR,
+                        "Cannot promote %s to ACTIVE because it is not caught up (match index %s, commit index %d, last index %d, threshold %d entries)"
+                            .formatted(
+                                updatedMember.memberId(),
+                                memberContext == null
+                                    ? "unknown"
+                                    : String.valueOf(memberContext.getMatchIndex()),
+                                raft.getCommitIndex(),
+                                lastIndex,
+                                raft.getPromotionLagThreshold()))
+                    .build()));
+      }
+    }
+
     ongoingReconfigurationRequestFuture = new CompletableFuture<>();
     configure(updatedMembers, currentMembers)
         .whenComplete(
@@ -255,6 +313,34 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
     raft.checkThread();
     final var currentConfiguration = raft.getCluster().getConfiguration();
+
+    // Joining must never demote a member that is already part of the configuration: for example,
+    // a crash-recovery retry of join(PROMOTABLE) must not downgrade a member that was promoted to
+    // ACTIVE in the meantime. Strictly greater is deliberate: an equal-type duplicate must keep
+    // falling through to onReconfigure's duplicate handling, which returns the ongoing
+    // reconfiguration future and completes the join only when the configuration commits -
+    // acknowledging it here would weaken the join's completion semantics while the member's own
+    // first join is still an in-flight joint configuration.
+    //
+    // Only a stable, committed configuration may be acknowledged from here: configurations take
+    // effect as soon as they are appended, so this view also reflects entries a later leader can
+    // still truncate, and this response - unlike a rejection - is final for the joiner. While a
+    // configuration change is in flight, or while this leader has not committed its initial entry
+    // yet, fall through to onReconfigure, which returns the ongoing reconfiguration future for a
+    // duplicate and otherwise rejects with a retriable CONFIGURATION_ERROR.
+    final var existingMember =
+        currentConfiguration.newMembers().stream()
+            .filter(member -> member.memberId().equals(request.joiningMember().memberId()))
+            .findAny();
+    if (existingMember.isPresent()
+        && existingMember.get().getType().ordinal() > request.joiningMember().getType().ordinal()
+        && !initializing()
+        && !configuring()
+        && !jointConsensus()) {
+      return CompletableFuture.completedFuture(
+          logResponse(JoinResponse.builder().withStatus(Status.OK).build()));
+    }
+
     return onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())

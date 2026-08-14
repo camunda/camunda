@@ -32,6 +32,12 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   // Keep in sync with the default in ExperimentalRaftCfg, which usually overrides this.
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  // 1000 entries: log entries are record batches of a few KiB to a few hundred KiB, so this bounds
+  // the data a promotion may still have to ship - and with it the commit-stall window once the
+  // member joins the commit quorum - to the low tens of MiB in the common case, while the in-flight
+  // lag of a healthy, caught-up member stays orders of magnitude below it even under sustained
+  // load.
+  private static final long DEFAULT_PROMOTION_LAG_THRESHOLD = 1000;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -47,6 +53,7 @@ public class RaftPartitionConfig {
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
   private int snapshotChunkSize;
+  private long promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
 
   /**
    * Returns the Raft leader election timeout.
@@ -211,6 +218,23 @@ public class RaftPartitionConfig {
     this.entryValidator = entryValidator;
   }
 
+  public long getPromotionLagThreshold() {
+    return promotionLagThreshold;
+  }
+
+  /**
+   * Sets the maximum replication lag, in log entries, up to which a member may be promoted to
+   * ACTIVE. The lag is the number of entries between the member's match index and the end of the
+   * leader's log, i.e. what the leader still has to replicate to the member, and bounds how long
+   * commits can stall once the promoted member joins the commit quorum. Internal for now; not
+   * exposed via broker configuration.
+   *
+   * @param promotionLagThreshold the maximum replication lag in entries for promotions
+   */
+  public void setPromotionLagThreshold(final long promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -238,6 +262,8 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
+        + ", promotionLagThreshold="
+        + promotionLagThreshold
         + '}';
   }
 }
