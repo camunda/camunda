@@ -12,7 +12,12 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterModeChangePlannedChange;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
+import io.camunda.gateway.protocol.model.ClusterRestoreAwaitModeChangeOperation;
+import io.camunda.gateway.protocol.model.ClusterRestoreBrokerOperation;
+import io.camunda.gateway.protocol.model.ClusterRestoreModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterRestoreOperation;
+import io.camunda.gateway.protocol.model.ClusterRestorePartitionOperation;
+import io.camunda.gateway.protocol.model.ClusterRestorePartitionRestoreOperation;
 import io.camunda.gateway.protocol.model.ClusterRestorePlannedChange;
 import io.camunda.gateway.protocol.model.ClusterRestoreResponse;
 import io.camunda.service.exception.ServiceException;
@@ -22,7 +27,7 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -148,26 +153,45 @@ final class ClusterModeChangeMapper {
 
   /**
    * Reports the operation with the detail a restore plan is reviewed by: which broker applies it,
-   * which partition it targets, and which backups that partition is restored from. Properties that
-   * the operation does not carry are left null.
+   * plus what the operation itself carries — the partition it targets, the backups that partition
+   * is restored from, or the mode the broker is transitioned to. Each kind is reported as its own
+   * variant, so a property the operation does not carry is absent rather than null.
    */
   private static ClusterRestoreOperation toClusterRestoreOperation(
       final ClusterConfigurationChangeOperation operation) {
-    final @Nullable Integer partitionId =
-        operation instanceof final PartitionChangeOperation partitionChange
-            ? partitionChange.partitionId()
-            : null;
-    final List<Long> backupIds =
-        operation instanceof final PartitionRestoreOperation restore
-            ? List.copyOf(restore.backupIds())
-            : List.of();
-    return ClusterRestoreOperation.Builder.create()
-        .operation(operation.getClass().getSimpleName())
-        .brokerId(operation.brokerId())
-        .partitionId(partitionId)
-        .backupIds(backupIds)
-        .mode(modeOf(operation))
-        .build();
+    final var type = operation.getClass().getSimpleName();
+    return switch (operation) {
+      case final PartitionRestoreOperation restore ->
+          ClusterRestorePartitionRestoreOperation.Builder.create()
+              .operation(type)
+              .brokerId(restore.brokerId())
+              .partitionId(restore.partitionId())
+              .backupIds(List.copyOf(restore.backupIds()))
+              .build();
+      case final PartitionPreRestoreOperation preRestore ->
+          ClusterRestorePartitionOperation.Builder.create()
+              .operation(type)
+              .brokerId(preRestore.brokerId())
+              .partitionId(preRestore.partitionId())
+              .build();
+      case final ModeChangeOperation modeChange ->
+          ClusterRestoreModeChangeOperation.Builder.create()
+              .operation(type)
+              .brokerId(modeChange.brokerId())
+              .mode(modeChange.mode().name())
+              .build();
+      case final AwaitModeChangeOperation awaitModeChange ->
+          ClusterRestoreAwaitModeChangeOperation.Builder.create()
+              .operation(type)
+              .brokerId(awaitModeChange.brokerId())
+              .mode(awaitModeChange.mode().name())
+              .build();
+      default ->
+          ClusterRestoreBrokerOperation.Builder.create()
+              .operation(type)
+              .brokerId(operation.brokerId())
+              .build();
+    };
   }
 
   private static @Nullable String modeOf(final ClusterConfigurationChangeOperation operation) {
