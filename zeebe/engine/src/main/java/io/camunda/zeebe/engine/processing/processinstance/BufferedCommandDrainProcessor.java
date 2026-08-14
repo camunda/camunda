@@ -17,9 +17,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.BufferedCommand;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
@@ -39,15 +39,14 @@ import org.jspecify.annotations.NullMarked;
  */
 @ExcludeAuthorizationCheck
 @NullMarked
-public final class ProcessInstanceBufferedCommandDrainProcessor
-    implements TypedRecordProcessor<ProcessInstanceBufferedCommandRecord>,
-        SuspensionAware<ProcessInstanceBufferedCommandRecord> {
+public final class BufferedCommandDrainProcessor
+    implements TypedRecordProcessor<BufferedCommandRecord>, SuspensionAware<BufferedCommandRecord> {
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final SuspensionState suspensionState;
 
-  public ProcessInstanceBufferedCommandDrainProcessor(
+  public BufferedCommandDrainProcessor(
       final ProcessingState processingState, final Writers writers) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -55,7 +54,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessInstanceBufferedCommandRecord> command) {
+  public void processRecord(final TypedRecord<BufferedCommandRecord> command) {
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
 
@@ -78,8 +77,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
   }
 
   @Override
-  public SuspensionBehavior suspensionBehavior(
-      final TypedRecord<ProcessInstanceBufferedCommandRecord> record) {
+  public SuspensionBehavior suspensionBehavior(final TypedRecord<BufferedCommandRecord> record) {
     // DRAIN is what ends the suspension: gating it would strand the instance in RESUMING
     return SuspensionBehavior.PROCESS;
   }
@@ -96,8 +94,8 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
     final var value = buffered.command();
     stateWriter.appendFollowUpEvent(
         buffered.key(),
-        ProcessInstanceBufferedCommandIntent.DRAINED,
-        new ProcessInstanceBufferedCommandRecord()
+        BufferedCommandIntent.DRAINED,
+        new BufferedCommandRecord()
             .setProcessInstanceKey(value.getProcessInstanceKey())
             .setProcessDefinitionKey(value.getProcessDefinitionKey())
             .setTenantId(value.getTenantId())
@@ -106,17 +104,17 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
             .setIntent(value.getIntent()));
   }
 
-  private void appendNextDrainCommand(final ProcessInstanceBufferedCommandRecord drainValue) {
+  private void appendNextDrainCommand(final BufferedCommandRecord drainValue) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
-        ProcessInstanceBufferedCommandIntent.DRAIN,
-        new ProcessInstanceBufferedCommandRecord()
+        BufferedCommandIntent.DRAIN,
+        new BufferedCommandRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
             .setTenantId(drainValue.getTenantId()));
   }
 
-  private void appendResumeJobs(final ProcessInstanceBufferedCommandRecord drainValue) {
+  private void appendResumeJobs(final BufferedCommandRecord drainValue) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
         ProcessInstanceIntent.RESUME_JOBS,

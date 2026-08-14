@@ -120,8 +120,7 @@ public final class DbSuspensionState implements MutableSuspensionState {
           final long bufferedKey = compositeKey.second().getValue();
           bufferedCommandKey.wrapLong(bufferedKey);
           final var stored =
-              bufferedCommandColumnFamily.get(
-                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+              bufferedCommandColumnFamily.get(bufferedCommandKey, DbBufferedCommand::new);
           if (stored == null) {
             // broken invariant: secondary index and primary CF are always written/deleted together,
             // so a secondary entry with no matching primary record signals index corruption

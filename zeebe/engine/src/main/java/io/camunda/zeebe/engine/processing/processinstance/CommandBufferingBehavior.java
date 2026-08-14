@@ -27,12 +27,12 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  * re-issued once the process instance resumes, at which point the normal command lifecycle produces
  * the response.
  */
-public final class ProcessInstanceBufferingBehavior {
+public final class CommandBufferingBehavior {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
 
-  public ProcessInstanceBufferingBehavior(final KeyGenerator keyGenerator, final Writers writers) {
+  public CommandBufferingBehavior(final KeyGenerator keyGenerator, final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
   }

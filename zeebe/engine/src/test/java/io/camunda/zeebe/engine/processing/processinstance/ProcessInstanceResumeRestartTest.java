@@ -19,10 +19,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -121,8 +121,8 @@ public final class ProcessInstanceResumeRestartTest {
     final var drained =
         RecordingExporter.records()
             .limit(r -> r.getPosition() >= resumed.getPosition())
-            .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-            .withIntent(ProcessInstanceBufferedCommandIntent.DRAINED)
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.DRAINED)
             .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
             .asList();
     assertThat(commandKeys(drained)).doesNotHaveDuplicates().hasSize(BUFFERED_COMMAND_COUNT);
@@ -153,8 +153,8 @@ public final class ProcessInstanceResumeRestartTest {
       final long processInstanceKey, final int occurrence) {
     return RecordingExporter.records()
         .onlyCommandRejections()
-        .withValueType(ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND)
-        .withIntent(ProcessInstanceBufferedCommandIntent.DRAIN)
+        .withValueType(ValueType.BUFFERED_COMMAND)
+        .withIntent(BufferedCommandIntent.DRAIN)
         .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
         .limit(occurrence)
         .asList()
@@ -217,12 +217,12 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static long processInstanceKeyOf(final Record<RecordValue> record) {
-    return ((ProcessInstanceBufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
+    return ((BufferedCommandRecordValue) record.getValue()).getProcessInstanceKey();
   }
 
   private static List<Long> commandKeys(final List<Record<RecordValue>> records) {
     return records.stream()
-        .map(r -> ((ProcessInstanceBufferedCommandRecordValue) r.getValue()).getCommandKey())
+        .map(r -> ((BufferedCommandRecordValue) r.getValue()).getCommandKey())
         .toList();
   }
 }
