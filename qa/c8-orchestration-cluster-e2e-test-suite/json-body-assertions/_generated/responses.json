@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "ff024b72a7e26291f4282198eb480b4e904a3a78",
-    "generatedAt": "2026-08-12T12:18:41.143Z",
+    "commit": "6859c3ccb4e1dab2cbb28ce635ca7cc73d4c9508",
+    "generatedAt": "2026-08-14T12:18:03.766Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "24b7c1aa28e85f50f3cb00f51896287dcbb78bf652dda4856910cbc19173490e"
+    "specSha256": "7ee3ea48c9588b5c51c80b831b1db330ef179c8c30cd91a5286d6b017924b839"
   },
   "responses": [
     {
@@ -167,6 +167,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "agentDefinitionKey",
+            "type": "string"
+          },
           {
             "name": "agentInstanceKey",
             "type": "string"
@@ -370,6 +374,10 @@
             "type": "array<schema>",
             "children": {
               "required": [
+                {
+                  "name": "agentDefinitionKey",
+                  "type": "string"
+                },
                 {
                   "name": "agentInstanceKey",
                   "type": "string"
@@ -2076,6 +2084,90 @@
               "FAILED",
               "INCOMPLETE",
               "DELETED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "scheduledSnapshots",
+            "type": "array<string>"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/backups/history/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "details",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "failures",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "snapshotName",
+                  "type": "string"
+                },
+                {
+                  "name": "startTime",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "failureReason",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED",
+              "INCOMPLETE",
+              "INCOMPATIBLE"
             ]
           }
         ],
@@ -9550,6 +9642,14 @@
                   "children": {
                     "required": [
                       {
+                        "name": "backupIds",
+                        "type": "array<number>"
+                      },
+                      {
+                        "name": "brokerId",
+                        "type": "string"
+                      },
+                      {
                         "name": "mode",
                         "type": "string",
                         "nullable": true
@@ -9557,6 +9657,11 @@
                       {
                         "name": "operation",
                         "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -9622,6 +9727,65 @@
       }
     },
     {
+      "path": "/cluster/v2/restore",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "changeId",
+            "type": "string"
+          },
+          {
+            "name": "plannedChanges",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "operations",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupIds",
+                        "type": "array<number>"
+                      },
+                      {
+                        "name": "brokerId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "mode",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "operation",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/cluster/v2/status",
       "method": "GET",
       "status": "200",
@@ -9654,6 +9818,135 @@
               "DEGRADED",
               "DOWN"
             ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/topology",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "brokers",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "brokerId",
+                  "type": "string"
+                },
+                {
+                  "name": "host",
+                  "type": "string"
+                },
+                {
+                  "name": "port",
+                  "type": "number"
+                },
+                {
+                  "name": "version",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "clusterId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "clusterSize",
+            "type": "number"
+          },
+          {
+            "name": "gatewayVersion",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "brokers",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "brokerId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitions",
+                        "type": "array<items>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "health",
+                              "type": "string",
+                              "enumValues": [
+                                "healthy",
+                                "unhealthy",
+                                "dead"
+                              ]
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "role",
+                              "type": "string",
+                              "enumValues": [
+                                "leader",
+                                "follower",
+                                "inactive"
+                              ]
+                            },
+                            {
+                              "name": "state",
+                              "type": "string",
+                              "enumValues": [
+                                "unknown",
+                                "joining",
+                                "active",
+                                "leaving",
+                                "recovering"
+                              ]
+                            }
+                          ],
+                          "optional": []
+                        }
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "lastCompletedChangeId",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionsCount",
+                  "type": "number"
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "replicationFactor",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []
