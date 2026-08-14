@@ -41,12 +41,15 @@ describe('<DecisionInstance />', () => {
 	});
 
 	afterEach(async () => {
-		await waitForRequests?.();
-		await unmountPage?.();
-		waitForRequests = undefined;
-		unmountPage = undefined;
-		sessionStorage.clear();
-		notificationsStore.reset();
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+			notificationsStore.reset();
+		}
 	});
 
 	it('should render the header', async ({worker}) => {

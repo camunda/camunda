@@ -65,11 +65,14 @@ describe('Optional Filters', () => {
 	});
 
 	afterEach(async () => {
-		await waitForRequests?.();
-		await unmountPage?.();
-		waitForRequests = undefined;
-		unmountPage = undefined;
-		sessionStorage.clear();
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should initially hide optional filters', async ({worker}) => {
