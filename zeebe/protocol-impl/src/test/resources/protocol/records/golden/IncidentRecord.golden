@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -45,6 +46,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
   private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue AUTHORIZED_USERNAME_KEY = new StringValue("authorizedUsername");
+  private static final StringValue AUTHORIZED_CLIENT_ID_KEY = new StringValue("authorizedClientId");
+  private static final StringValue AUTHORIZED_ANONYMOUS_USER_KEY =
+      new StringValue("authorizedAnonymousUser");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -69,9 +74,15 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
+  private final StringProperty authorizedUsernameProp =
+      new StringProperty(AUTHORIZED_USERNAME_KEY, "");
+  private final StringProperty authorizedClientIdProp =
+      new StringProperty(AUTHORIZED_CLIENT_ID_KEY, "");
+  private final BooleanProperty authorizedAnonymousUserProp =
+      new BooleanProperty(AUTHORIZED_ANONYMOUS_USER_KEY, false);
 
   public IncidentRecord() {
-    super(14);
+    super(17);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -85,7 +96,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(authorizedUsernameProp)
+        .declareProperty(authorizedClientIdProp)
+        .declareProperty(authorizedAnonymousUserProp);
   }
 
   public void wrap(final IncidentRecord record) {

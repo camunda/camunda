@@ -172,6 +172,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @JsonIgnore
   public Map<String, Object> getActorClaims() {
     if (!getAuthorizedClientId().isEmpty()) {
       return Map.of(Authorization.AUTHORIZED_CLIENT_ID, getAuthorizedClientId());

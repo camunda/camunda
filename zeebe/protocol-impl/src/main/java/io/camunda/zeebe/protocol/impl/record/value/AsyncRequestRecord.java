@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -176,6 +177,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public Map<String, Object> getActorClaims() {
     if (!getAuthorizedClientId().isEmpty()) {
       return Map.of(Authorization.AUTHORIZED_CLIENT_ID, getAuthorizedClientId());
