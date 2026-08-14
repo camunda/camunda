@@ -158,7 +158,9 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								featureFlags.dsTasklistUI ? cn(layoutStyles.header, styles.headerDS) : styles.header
 							}
 						>
-							<Heading>{t('tasklist.variablesTitle')}</Heading>
+							<Heading className={featureFlags.dsTasklistUI ? styles.headingDS : undefined}>
+								{t('tasklist.variablesTitle')}
+							</Heading>
 							{isCompleted ? null : (
 								// PlusIcon, not AddIcon: AddIcon deliberately maps to the
 								// process-diagram zoom-control glyph (ZoomIn) on the DS path —
