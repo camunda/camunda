@@ -1197,6 +1197,9 @@ jobs:
             name: "4.1.x"
             profile: "spring-boot-4.1"
             modules: "clients/camunda-spring-boot-4-starter,testing/camunda-process-test-spring-4"
+            # Modules re-run against the starter jar that build-zeebe installed under the default
+            # Spring Boot pin, rather than against a starter recompiled under the profile.
+            consumer-modules: "testing/camunda-process-test-spring-4"
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -1222,6 +1225,22 @@ jobs:
           -pl '${{ matrix.modules }}'
           clean verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Maven Test Build (prebuilt starter)
+        # The step above recompiles the starter under the profile, which proves source
+        # compatibility. A customer instead runs the published jar, compiled against the default
+        # Spring Boot pin, on the newer Spring Boot. Leaving the starter out of -pl resolves it
+        # from the local repository, where build-zeebe installed it under that default pin, so
+        # this run covers binary compatibility too. It only runs 'verify', never 'install', so the
+        # installed jar stays the default-pinned one.
+        if: matrix.consumer-modules != ''
+        run: >
+          ./mvnw -T2 -B --no-snapshot-updates
+          -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -D junitThreadCount=8
+          -P parallel-tests,extract-flaky-tests,${{ matrix.profile }}
+          -pl '${{ matrix.consumer-modules }}'
+          clean verify
+          | tee -a "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
