@@ -32,9 +32,22 @@ final class HandlerRegistry {
 
   private final EnumMap<ValueType, Map<Intent, AnalyticsHandler<?>>> handlers =
       new EnumMap<>(ValueType.class);
+  private final Set<AnalyticsCategory> activeCategories;
+
+  @VisibleForTesting
+  HandlerRegistry() {
+    this(AnalyticsCategory.all());
+  }
+
+  HandlerRegistry(final Set<AnalyticsCategory> activeCategories) {
+    this.activeCategories = activeCategories == null ? Set.of() : Set.copyOf(activeCategories);
+  }
 
   <T extends RecordValue> HandlerRegistry register(
       final ValueType valueType, final Intent intent, final AnalyticsHandler<T> handler) {
+    if (!activeCategories.contains(handler.category())) {
+      return this;
+    }
     final var intentMap = handlers.computeIfAbsent(valueType, k -> new HashMap<>());
     if (intentMap.containsKey(intent)) {
       throw new IllegalStateException("Duplicate handler for (" + valueType + ", " + intent + ")");

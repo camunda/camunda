@@ -66,6 +66,9 @@ camunda:
           max-queue-size: 2048
           max-batch-size: 512
           sampling-rate: 1.0
+          categories:
+            - contractual
+            - optional
 ```
 
 **Legacy configuration (Camunda 8.8 and earlier):**
@@ -83,6 +86,9 @@ zeebe:
           maxQueueSize: 2048
           maxBatchSize: 512
           samplingRate: 1.0
+          categories:
+            - contractual
+            - optional
 ```
 
 ### Environment variables
@@ -97,6 +103,8 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.i
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
 **Legacy (8.8 and earlier):** `ZEEBE_BROKER_EXPORTERS_ANALYTICS_*`
@@ -107,6 +115,8 @@ ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.i
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_0=contractual
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_CATEGORIES_1=optional
 ```
 
 ### Verify the exporter is running
@@ -123,14 +133,15 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                                           Description                                                                           |               Default                |
-|----------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                   | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                 | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                    | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                        | `512`                                |
-| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two. | `1.0`                                |
+|        Option        |   Type   |                                                                                                  Description                                                                                                  |               Default                |
+|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                                 | `https://analytics.cloud.camunda.io` |
+| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                               | `PT5M`                               |
+| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                                  | `PT10M`                              |
+| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                              | `2048`                               |
+| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                                      | `512`                                |
+| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two.                                               | `1.0`                                |
+| `categories`         | list     | List of analytics event categories to export. Valid values: `contractual` (commercial/licence metrics), `optional` (non-commercial product usage metrics). When omitted or empty, all categories are enabled. | `[contractual, optional]`            |
 
 ## What data is exported
 
@@ -254,8 +265,9 @@ of these attributes as a composite key.
   or any workflow that requires complete data.
 - **No PII.** Only process metadata is exported. Process variables, message payloads, and
   other potentially sensitive fields are never sent.
-- **Fixed event set.** The exporter emits a small, hardcoded set of event types. There is
-  no runtime configuration to add, remove, or filter event types.
+- **Fixed event set per category.** The exporter emits a small, hardcoded set of event
+  types. The `categories` option controls which categories of events are exported, but
+  individual event types within a category cannot be toggled independently.
 
 ## How it works
 

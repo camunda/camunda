@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class AnalyticsExporterDigestTest {
@@ -125,16 +126,25 @@ class AnalyticsExporterDigestTest {
   }
 
   @Test
-  void shouldRejectLambdaHandler() {
-    // given — lambda handlers are synthetic and have no stable .class resource
+  void shouldRejectAnonymousHandler() {
+    // given — anonymous classes have no stable .class resource on the classpath
     final var config = new AnalyticsExporterConfig();
-    final AnalyticsHandler<RecordValue> lambdaHandler = record -> {};
+    final AnalyticsHandler<RecordValue> anonHandler =
+        new AnalyticsHandler<>() {
+          @Override
+          public AnalyticsCategory category() {
+            return AnalyticsCategory.CONTRACTUAL;
+          }
+
+          @Override
+          public void handle(final Record<RecordValue> record) {}
+        };
     final var registry =
         new HandlerRegistry()
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                lambdaHandler);
+                anonHandler);
 
     // when / then
     assertThatThrownBy(() -> AnalyticsExporterDigest.compute(registry, config))
@@ -142,14 +152,48 @@ class AnalyticsExporterDigestTest {
         .hasMessageContaining("lambdas");
   }
 
+  @Test
+  void shouldProduceDifferentHashWhenActiveCategoriesChange() {
+    // given — same handlers registered but different active categories yield different registries
+    final var config = new AnalyticsExporterConfig();
+    final var registryAll =
+        new HandlerRegistry()
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                new StubHandlerAlpha())
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, new StubHandlerBeta());
+    final var registryContractualOnly =
+        new HandlerRegistry(Set.of(AnalyticsCategory.CONTRACTUAL))
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                new StubHandlerAlpha())
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, new StubHandlerBeta());
+
+    // when / then — Beta is OPTIONAL so it's excluded from the second registry
+    assertThat(AnalyticsExporterDigest.compute(registryAll, config))
+        .isNotEqualTo(AnalyticsExporterDigest.compute(registryContractualOnly, config));
+  }
+
   // Two concrete handler classes with different bytecodes to test implementation-change detection.
   // They differ in their handle() body so the compiler produces distinct .class files.
   private static final class StubHandlerAlpha implements AnalyticsHandler<RecordValue> {
+    @Override
+    public AnalyticsCategory category() {
+      return AnalyticsCategory.CONTRACTUAL;
+    }
+
     @Override
     public void handle(final Record<RecordValue> record) {}
   }
 
   private static final class StubHandlerBeta implements AnalyticsHandler<RecordValue> {
+    @Override
+    public AnalyticsCategory category() {
+      return AnalyticsCategory.OPTIONAL;
+    }
+
     @Override
     public void handle(final Record<RecordValue> record) {
       // intentionally different body so javac produces different bytecode
