@@ -951,7 +951,7 @@ public final class ResponseMapper {
         .partitionsCount(topology.partitionsCount())
         .replicationFactor(topology.replicationFactor())
         .gatewayVersion(topology.gatewayVersion())
-        .lastCompletedChangeId(keyToString(topology.lastCompletedChangeId()))
+        .lastCompletedChangeId(String.valueOf(topology.lastCompletedChangeId()))
         .clusterId(topology.clusterId())
         .build();
   }
@@ -999,7 +999,7 @@ public final class ResponseMapper {
         .physicalTenantId(topology.physicalTenantId())
         .partitionsCount(topology.partitionsCount())
         .replicationFactor(topology.replicationFactor())
-        .lastCompletedChangeId(keyToString(topology.lastCompletedChangeId()))
+        .lastCompletedChangeId(String.valueOf(topology.lastCompletedChangeId()))
         .brokers(brokers)
         .build();
   }
