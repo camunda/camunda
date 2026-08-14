@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.AgentDefinitionMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentDefinitionDbModel">
+    INSERT INTO ${prefix}AGENT_DEFINITION (
+      AGENT_DEFINITION_KEY,
+      AGENT_TYPE,
+      NAME,
+      ELEMENT_ID,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_DEFINITION_VERSION,
+      PROCESS_DEFINITION_VERSION_TAG,
+      TENANT_ID
+    )
+    VALUES (
+      #{agentDefinitionKey},
+      #{agentType},
+      #{name},
+      #{elementId},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processDefinitionVersion},
+      #{processDefinitionVersionTag},
+      #{tenantId}
+    )
+  </insert>
+
+</mapper>

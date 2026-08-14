@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AgentDefinitionWriter;
 import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
@@ -190,6 +191,7 @@ public class RdbmsWriters implements AutoCloseable {
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
     writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
+    writers.put(AgentDefinitionWriter.class, new AgentDefinitionWriter(executionQueue));
     writers.put(
         AgentHistoryWriter.class,
         new AgentHistoryWriter(executionQueue, agentHistoryMapper, vendorDatabaseProperties));
@@ -317,6 +319,10 @@ public class RdbmsWriters implements AutoCloseable {
 
   public DeployedResourceWriter getResourceWriter() {
     return getWriter(DeployedResourceWriter.class);
+  }
+
+  public AgentDefinitionWriter getAgentDefinitionWriter() {
+    return getWriter(AgentDefinitionWriter.class);
   }
 
   public AgentHistoryWriter getAgentHistoryWriter() {

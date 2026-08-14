@@ -281,6 +281,9 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register GLOBAL_LISTENER handler on partition 1")
         .containsKey(ValueType.GLOBAL_LISTENER);
+    assertThat(registeredHandlers)
+        .as("Should register AGENT_DEFINITION handler on partition 1")
+        .containsKey(ValueType.AGENT_DEFINITION);
   }
 
   @Test
@@ -349,6 +352,9 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should not register GLOBAL_LISTENER handler on partition 1")
         .doesNotContainKey(ValueType.GLOBAL_LISTENER);
+    assertThat(registeredHandlers)
+        .as("Should not register AGENT_DEFINITION handler on partition 2")
+        .doesNotContainKey(ValueType.AGENT_DEFINITION);
   }
 
   @Test

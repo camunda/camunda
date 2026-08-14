@@ -15,6 +15,7 @@ public enum ContextType {
   // INSERT-before-UPDATE ordering within a batch is guaranteed by optimizeQueueOrder's
   // WriteStatementType sort, so no explicit preservation is needed here
   AGENT_HISTORY(false),
+  AGENT_DEFINITION(false),
   AUDIT_LOG(false),
   AUTHORIZATION(true),
   BATCH_OPERATION(false),

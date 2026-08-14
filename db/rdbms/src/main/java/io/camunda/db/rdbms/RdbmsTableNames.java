@@ -27,6 +27,7 @@ public final class RdbmsTableNames {
           "AGENT_INSTANCE_ELEMENT_INSTANCE",
           "AGENT_INSTANCE",
           "AGENT_HISTORY",
+          "AGENT_DEFINITION",
           "AUDIT_LOG",
           "AUTHORIZATIONS",
           "BATCH_OPERATION_ITEM",
