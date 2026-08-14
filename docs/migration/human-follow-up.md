@@ -1663,3 +1663,20 @@ append-only scan log.
     until the real adapter ships — this is a hard blocker, not a deferral.
   - **Ask**: either ship the adapter or correct the tier docs so consumers
     don't plan around a component that isn't there.
+
+- **2026-08-14 — `AppSidebar` only treats a row as a link when `linkProps.href`
+  is set, but the published type says `to` is enough.** `SidebarLinkProps`
+  (= `NavLinkProps`) documents `to` as React Router's destination and the
+  source's `NavItemRow` decides via `linkDestination(node.linkProps)`, which
+  reads `href ?? to`. The shipped build in `@camunda/design-system/dist`
+  instead checks `node.linkProps?.href !== undefined`, so a row given only
+  `to` silently renders a `<button>` — no anchor, no middle-click, no
+  open-in-new-tab, and no visible error to explain why.
+  - **Impact**: navigation rows look and behave like buttons unless the
+    consumer duplicates the destination.
+  - **App-side workaround applied**: `CollapsiblePanel.tsx` passes
+    `linkProps={{href: to, to}}` — `href` to satisfy the link check, `to` for
+    TanStack's `Link` to route on. Can drop back to `{to}` once the shipped
+    build matches the documented behaviour.
+  - **Ask**: ship the `href ?? to` check, or correct the type so `href` reads
+    as required.

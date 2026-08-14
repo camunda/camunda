@@ -302,6 +302,7 @@
 			"customFiltersModalProcessDefinitionsLoadError": "Error al cargar las definiciones de proceso",
 			"taskFilterPanelCompleted": "Completada",
 			"taskFilterPanelControlsAria": "Controles de filtro",
+			"taskPanelNavAria": "Navegación de Tasklist",
 			"taskFilterPanelExpandButton": "Expandir para mostrar filtros",
 			"taskFilterPanelFilterButton": "Filtrar tareas",
 			"taskFilterPanelAssignedToMe": "Asignada a mí",

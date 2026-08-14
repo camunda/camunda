@@ -301,6 +301,7 @@
 			"customFiltersModalAllTenants": "Alle Mandanten",
 			"customFiltersModalProcessDefinitionsLoadError": "Prozessdefinitionen konnten nicht geladen werden",
 			"taskFilterPanelControlsAria": "Filtersteuerungen",
+			"taskPanelNavAria": "Tasklist-Navigation",
 			"taskFilterPanelExpandButton": "Erweitern, um Filter anzuzeigen",
 			"taskFilterPanelFilterButton": "Aufgaben filtern",
 			"taskFilterPanelAssignedToMe": "Mir zugewiesen",

@@ -305,6 +305,7 @@
 			"customFiltersModalAllTenants": "All tenants",
 			"customFiltersModalProcessDefinitionsLoadError": "Failed to load process definitions",
 			"taskFilterPanelControlsAria": "Filter controls",
+			"taskPanelNavAria": "Tasklist navigation",
 			"taskFilterPanelExpandButton": "Expand to show filters",
 			"taskFilterPanelFilterButton": "Filter tasks",
 			"taskFilterPanelAssignedToMe": "Assigned to me",

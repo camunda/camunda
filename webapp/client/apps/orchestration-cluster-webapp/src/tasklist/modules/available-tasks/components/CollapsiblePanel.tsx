@@ -24,13 +24,14 @@ import {
 	SidePanelOpenIcon,
 } from '#/shared/design-system-compat';
 import {AppSidebar, TooltipProvider, type SidebarNode} from '@camunda/design-system';
-import {CircleCheck, CircleDashed, CircleUser, Filter, ListTodo, Plus} from 'lucide-react';
+import {ListTodo, Workflow} from 'lucide-react';
 import {Link, useNavigate, useSearch} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {usePrevious} from '@uidotdev/usehooks';
 import {cn} from '#/shared/cn';
 import {queries} from '#/shared/http/queries';
+import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {featureFlags} from '#/shared/feature-flags';
 import {FILTER_VALUES} from '#/tasklist/modules/available-tasks/searchSchema';
@@ -48,20 +49,15 @@ const BUILT_IN_FILTERS: {id: BuiltInFilter; labelKey: string}[] = [
 	{id: 'completed', labelKey: 'tasklist.taskFilterPanelCompleted'},
 ];
 
-// AppSidebar's SidebarItem requires an icon (there's no icon-less variant) — this
-// UI previously had none, so these are new. Chosen to match existing semantic
-// icon choices already used elsewhere in this migration (docs/kb/carbon-icons-to-lucide.md
-// precedent + this file's own compat exports): CircleDashed for unassigned
-// (matches CircleDashIcon/AssigneeTag), CircleCheck for completed (matches
-// CheckmarkFilledIcon), CircleUser for assignee (matches UserAvatarIcon). No
-// existing precedent for "all open tasks" or a generic custom-filter icon —
-// ListTodo and Filter (matches this file's own FilterIcon) are new choices.
-const BUILT_IN_FILTER_ICONS: Record<BuiltInFilter, typeof ListTodo> = {
-	'all-open': ListTodo,
-	'assigned-to-me': CircleUser,
-	unassigned: CircleDashed,
-	completed: CircleCheck,
-};
+// DS-only. The sidebar carries Tasklist's top-level navigation rather than the
+// task filters, which now live in the filter picker above the task list (see
+// FilterSelectDS.tsx). Labels, routes and active-state rules are the ones the
+// header navigation already uses (shared/header/useNavbar.ts), so the two
+// surfaces cannot drift apart.
+const NAV_ITEMS = [
+	{key: 'tasks', labelKey: 'tasklist.headerNavItemTasks', to: '/tasklist', icon: ListTodo},
+	{key: 'processes', labelKey: 'tasklist.headerNavItemProcesses', to: '/tasklist/processes', icon: Workflow},
+] as const;
 
 const ELLIPSIS_CUTOFF_LENGTH = 17;
 
@@ -72,6 +68,7 @@ const CollapsiblePanel: React.FC = () => {
 	const [customFilterToDelete, setCustomFilterToDelete] = useState<string | undefined>();
 	const wasCollapsed = usePrevious(isCollapsed);
 	const {t} = useTranslation();
+	const hasRouteMatch = useHasRouteMatch();
 	const search = useSearch({from: '/_auth/tasklist/_tasks'});
 	const {filter} = search;
 	const navigate = useNavigate();
@@ -194,95 +191,57 @@ const CollapsiblePanel: React.FC = () => {
 	);
 
 	if (featureFlags.dsTasklistUI) {
-		const items: SidebarNode[] = [
-			...BUILT_IN_FILTERS.map(
-				({id, labelKey}): SidebarNode => ({
-					type: 'item',
-					key: id,
-					label: t(labelKey),
-					icon: BUILT_IN_FILTER_ICONS[id],
-					isActive: id === filter,
-					onClick: () => {
-						navigate({to: '.', search: id === 'completed' ? {filter: id, sortBy: 'completion'} : {filter: id}});
-					},
-				}),
-			),
-			{
-				type: 'item',
-				key: 'new-filter',
-				label: t('tasklist.taskFilterPanelNewFilter'),
-				icon: Plus,
-				onClick: openModal,
-			},
-			...customFilters.map(([filterId, {name}]): SidebarNode => {
-				const label = filterId === 'custom' || name === undefined ? t('tasklist.taskFilterPanelCustom') : name;
-				return {
-					type: 'item',
-					key: filterId,
-					label,
-					icon: Filter,
-					isActive: filter === filterId,
-					onClick: () => {
-						navigate({
-							to: '.',
-							search: getCustomFilterSearch({currentSearch: search, filter: filterId, username}),
-						});
-					},
-					trailingElement: (
-						<OverflowMenu
-							iconDescription={t('tasklist.taskFilterPanelCustomFilterActions')}
-							size="md"
-							direction="top"
-							flipped
-							align="top-end"
-						>
-							<OverflowMenuItem
-								itemText={t('tasklist.taskFilterPanelEdit')}
-								onClick={() => {
-									setCustomFilterToEdit(filterId);
-								}}
-							/>
-							<OverflowMenuItem
-								hasDivider
-								isDelete
-								itemText={t('tasklist.taskFilterPanelDelete')}
-								onClick={() => {
-									setCustomFilterToDelete(filterId);
-								}}
-							/>
-						</OverflowMenu>
-					),
-				};
-			}),
-		];
+		const items: SidebarNode[] = NAV_ITEMS.map(({key, labelKey, to, icon}): SidebarNode => ({
+			type: 'item',
+			key,
+			label: t(labelKey),
+			icon,
+			// Same rule as the header navigation: the tasks entry covers the task
+			// list and every task detail route, but yields to processes.
+			isActive:
+				key === 'processes'
+					? hasRouteMatch('/tasklist/processes')
+					: !hasRouteMatch('/tasklist/processes') &&
+						hasRouteMatch(
+							'/tasklist',
+							'/tasklist/$userTaskKey',
+							'/tasklist/$userTaskKey/process',
+							'/tasklist/$userTaskKey/history',
+						),
+			// Rendered through TanStack's Link so these stay real anchors —
+			// middle-click and open-in-new-tab keep working. Both keys are needed:
+			// the installed AppSidebar decides a row is a link on `href` alone
+			// (`node.linkProps?.href !== undefined`) while Link routes on `to`.
+			// The published type documents `to` as sufficient, so this can drop to
+			// `{to}` once the package catches up — logged in
+			// docs/migration/human-follow-up.md.
+			linkProps: {href: to, to},
+		}));
 
 		return (
-			<>
-				{/* AppSidebar's collapsed rail wraps every item (and its own collapse
-				    toggle) in a <Tooltip>, which throws without an ancestor
-				    TooltipProvider — this repo has no app-root one yet (same gap noted
-				    in design-system-compat/IconButton.tsx). Self-contained per-instance
-				    provider as a stopgap, same precedent as IconButton.tsx. */}
-				<TooltipProvider>
-					<AppSidebar
-						ariaLabel={t('tasklist.taskFilterPanelControlsAria')}
-						items={items}
-						expanded={!isCollapsed}
-						onExpandedChange={(expanded) => setIsCollapsed(!expanded)}
-						resizable={false}
-						expandedWidth="12.25rem"
-						// 3.5rem, not 2.5rem: AppSidebar's inner content div has its own
-						// px-2 (16px) padding, and its collapsed nav buttons are
-						// min-h-10 (40px). At 2.5rem (40px) rail width, the buttons only
-						// get 24px of width after that padding — squashed, not square.
-						// 3.5rem gives them the full 40px back, matching height.
-						collapsedWidth="3.5rem"
-						className={styles.dsSidebar}
-					/>
-				</TooltipProvider>
-				{filtersModal}
-				{deleteFilterModal}
-			</>
+			// AppSidebar's collapsed rail wraps every item (and its own collapse
+			// toggle) in a <Tooltip>, which throws without an ancestor
+			// TooltipProvider — this repo has no app-root one yet (same gap noted
+			// in design-system-compat/IconButton.tsx). Self-contained per-instance
+			// provider as a stopgap, same precedent as IconButton.tsx.
+			<TooltipProvider>
+				<AppSidebar
+					ariaLabel={t('tasklist.taskPanelNavAria')}
+					items={items}
+					linkComponent={Link}
+					expanded={!isCollapsed}
+					onExpandedChange={(expanded) => setIsCollapsed(!expanded)}
+					resizable={false}
+					expandedWidth="12.25rem"
+					// 3.5rem, not 2.5rem: AppSidebar's inner content div has its own
+					// px-2 (16px) padding, and its collapsed nav buttons are
+					// min-h-10 (40px). At 2.5rem (40px) rail width, the buttons only
+					// get 24px of width after that padding — squashed, not square.
+					// 3.5rem gives them the full 40px back, matching height.
+					collapsedWidth="3.5rem"
+					className={styles.dsSidebar}
+				/>
+			</TooltipProvider>
 		);
 	}
 
