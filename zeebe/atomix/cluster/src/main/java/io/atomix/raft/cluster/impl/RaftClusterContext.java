@@ -265,6 +265,44 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return configuration;
   }
 
+  /**
+   * Returns the term that identifies the current configuration in a {@code ReconfigureRequest},
+   * which {@code LeaderRole#onReconfigure} validates against the leader's own view of it.
+   *
+   * <p>{@link Configuration#term()} alone is ambiguous: a member that appended or recovered the
+   * configuration entry stores the term the entry was appended in, while a member that learned the
+   * configuration from a {@code ConfigureRequest} stores the leadership term it was disseminated
+   * under - {@code ConfigureRequest} carries the leader's then-current term, which is also what
+   * tracks the leader. Whenever an election happened between appending and disseminating a
+   * configuration, the two differ, and a requester and a leader that learned the same configuration
+   * in different ways would never agree on its term, so every reconfiguration would be rejected as
+   * stale forever. Both sides therefore derive the term from the configuration entry in their own
+   * log, which is unambiguous, and only fall back to the stored term when that entry is not
+   * available - for the initial configuration, which has no entry, or before the entry arrived.
+   * Such a mismatch is still possible, but it is transient and the rejected request is safe to
+   * retry.
+   */
+  public long getConfigurationTerm() {
+    final var currentConfiguration = configuration;
+    try (final var reader = raft.getLog().openUncommittedReader()) {
+      reader.seek(currentConfiguration.index());
+      if (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.index() == currentConfiguration.index()
+            && entry.entry() instanceof ConfigurationEntry) {
+          return entry.term();
+        }
+      }
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Failed to read the term of the configuration entry at index {}, falling back to the stored term {}",
+          currentConfiguration.index(),
+          currentConfiguration.term(),
+          e);
+    }
+    return currentConfiguration.term();
+  }
+
   public RaftContext getContext() {
     return raft;
   }
