@@ -174,9 +174,14 @@ abstract class ClusterConfigurationManagementApiTestBase {
             return RestoreRequest.class;
           }
 
+          /** Resolves the requested backups on partition 1, the only partition these tests use. */
           @Override
           public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
-            return Either.right(new RestoreResolvedRequest(Map.of(), false));
+            final var backupIds =
+                request.arguments().parameters().backupIds().stream()
+                    .mapToLong(Long::longValue)
+                    .toArray();
+            return Either.right(new RestoreResolvedRequest(Map.of(1, backupIds), false));
           }
         });
 
@@ -837,7 +842,10 @@ abstract class ClusterConfigurationManagementApiTestBase {
     recordingCoordinator.setCurrentTopology(
         ClusterConfiguration.init()
             .addMember(
-                memberFactory.apply(0), MemberState.initializeAsActive(Map.of()).toRecovering()));
+                memberFactory.apply(0),
+                MemberState.initializeAsActive(
+                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+                    .toRecovering()));
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,

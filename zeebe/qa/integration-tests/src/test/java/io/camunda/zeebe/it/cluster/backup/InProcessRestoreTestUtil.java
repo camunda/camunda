@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.ClusterModeChangeResponse;
+import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.client.protocol.rest.ClusterRestoreResponse;
+import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -39,10 +41,12 @@ import org.awaitility.Awaitility;
 
 /**
  * Shared helpers for the in-process restore tests ({@link InProcessRestoreAcceptance}, {@link
- * InProcessRestoreRetryOnCorruptionIT}, {@link InProcessRdbmsRangeRestoreIT} and {@link
- * InProcessRestoreStatusIT}), which all trigger a restore over the cluster's REST endpoint while a
- * broker is in {@code RECOVERING} mode. Also exposes {@link #changeMode} for triggering a cluster
- * mode change over {@code v2/mode}, reused by {@code ModeChangeAcceptanceIT} outside this package.
+ * InProcessRestoreRetryOnCorruptionIT}, {@link InProcessRdbmsRangeRestoreIT}, {@link
+ * InProcessRestoreStatusIT} and {@link ClusterAdminRestoreAcceptanceIT}), which all trigger a
+ * restore over the cluster's REST endpoint while a broker is in {@code RECOVERING} mode. Also
+ * exposes {@link #changeMode} for triggering a mode change over {@code v2/mode}, reused by {@code
+ * ModeChangeAcceptanceIT} outside this package, and {@link #changeClusterMode} for the
+ * cluster-admin equivalent over {@code cluster/v2/mode}.
  */
 public final class InProcessRestoreTestUtil {
 
@@ -96,6 +100,84 @@ public final class InProcessRestoreTestUtil {
     }
   }
 
+  /**
+   * POSTs a cluster-admin restore request with the given body to {@code cluster/v2/restore}, scoped
+   * to the given physical tenant, or to every physical tenant of the cluster when {@code
+   * physicalTenantId} is {@code null}. Returns the raw response.
+   */
+  static HttpResponse<String> sendClusterRestoreRequest(
+      final CamundaClient client, final String physicalTenantId, final ClusterRestoreRequest body) {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var tenantQueryParam =
+          physicalTenantId == null ? "" : "&physicalTenantId=" + physicalTenantId;
+      final var uri =
+          URI.create(
+              "%scluster/v2/restore?dryRun=false%s"
+                  .formatted(client.getConfiguration().getRestAddress(), tenantQueryParam));
+      final var request =
+          HttpRequest.newBuilder(uri)
+              .header("Content-Type", "application/json")
+              .POST(HttpRequest.BodyPublishers.ofString(OBJECT_MAPPER.writeValueAsString(body)))
+              .build();
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to trigger cluster restore via REST endpoint", e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(
+          "Interrupted while triggering cluster restore via REST endpoint", e);
+    }
+  }
+
+  /**
+   * Triggers a cluster-admin restore of the given physical tenant (or every physical tenant of the
+   * cluster, when {@code physicalTenantId} is {@code null}) for the given backup id over {@code
+   * cluster/v2/restore}, asserting the request is accepted (202), and returns the id of the cluster
+   * configuration change it started.
+   */
+  static long triggerClusterRestore(
+      final CamundaClient client, final String physicalTenantId, final long backupId) {
+    final var body = new ClusterRestoreRequest().backupIds(List.of(backupId));
+    final var response = sendClusterRestoreRequest(client, physicalTenantId, body);
+    assertThat(response.statusCode())
+        .describedAs("cluster restore REST response: %s".formatted(response.body()))
+        .isEqualTo(202);
+    try {
+      return Long.parseLong(
+          OBJECT_MAPPER.readValue(response.body(), ClusterRestoreResponse.class).getChangeId());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to parse cluster restore REST response", e);
+    }
+  }
+
+  /**
+   * Triggers a cluster-wide restore for the given top-level backup id, overriding it with its own
+   * backup id for every physical tenant named in {@code overrideBackupIdByTenant}, over {@code
+   * cluster/v2/restore}. {@code overrides} is only accepted on a cluster-wide restore, so this
+   * always omits {@code physicalTenantId}. Asserts the request is accepted (202) and returns the id
+   * of the cluster configuration change it started.
+   */
+  static long triggerClusterRestore(
+      final CamundaClient client,
+      final long backupId,
+      final Map<String, Long> overrideBackupIdByTenant) {
+    final var body = new ClusterRestoreRequest().backupIds(List.of(backupId));
+    overrideBackupIdByTenant.forEach(
+        (tenantId, overrideBackupId) ->
+            body.putOverridesItem(
+                tenantId, new RestoreRequest().backupIds(List.of(overrideBackupId))));
+    final var response = sendClusterRestoreRequest(client, null, body);
+    assertThat(response.statusCode())
+        .describedAs("cluster restore REST response: %s".formatted(response.body()))
+        .isEqualTo(202);
+    try {
+      return Long.parseLong(
+          OBJECT_MAPPER.readValue(response.body(), ClusterRestoreResponse.class).getChangeId());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to parse cluster restore REST response", e);
+    }
+  }
+
   /** GETs the current restore status from {@code v2/restore} and returns the parsed response. */
   static RestoreStatusResponse getRestoreStatus(final CamundaClient client) {
     try (final var httpClient = HttpClient.newHttpClient()) {
@@ -139,6 +221,45 @@ public final class InProcessRestoreTestUtil {
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException("Interrupted while triggering mode change via REST endpoint", e);
+    }
+  }
+
+  /**
+   * Triggers a cluster-admin mode change to the given mode over {@code cluster/v2/mode}, scoped to
+   * the given physical tenant, or to every physical tenant of the cluster when {@code
+   * physicalTenantId} is {@code null}. Unlike {@link #changeMode}, which is derived from the
+   * client's own configured REST address and so only ever reaches the tenant that address is
+   * already scoped to, this always targets the bare cluster-admin path — the only way to move more
+   * than one physical tenant at once. Asserts the request is accepted (200) and returns the id of
+   * the cluster configuration change it started.
+   */
+  static long changeClusterMode(
+      final CamundaClient client,
+      final String physicalTenantId,
+      final String mode,
+      final boolean dryRun) {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var tenantQueryParam =
+          physicalTenantId == null ? "" : "&physicalTenantId=" + physicalTenantId;
+      final var uri =
+          URI.create(
+              "%scluster/v2/mode?mode=%s&dryRun=%s%s"
+                  .formatted(
+                      client.getConfiguration().getRestAddress(), mode, dryRun, tenantQueryParam));
+      final var request =
+          HttpRequest.newBuilder(uri).method("PATCH", HttpRequest.BodyPublishers.noBody()).build();
+      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      assertThat(response.statusCode())
+          .describedAs("cluster mode change REST response: %s".formatted(response.body()))
+          .isEqualTo(200);
+      return Long.parseLong(
+          OBJECT_MAPPER.readValue(response.body(), ClusterModeChangeResponse.class).getChangeId());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to trigger cluster mode change via REST endpoint", e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(
+          "Interrupted while triggering cluster mode change via REST endpoint", e);
     }
   }
 

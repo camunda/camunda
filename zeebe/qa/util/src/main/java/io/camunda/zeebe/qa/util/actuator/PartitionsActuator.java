@@ -133,6 +133,10 @@ public interface PartitionsActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> takeSnapshot();
 
+  @RequestLine("POST /takeSnapshot?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> takeSnapshot(@feign.Param final String physicalTenant);
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   record PartitionStatus(
       String role,

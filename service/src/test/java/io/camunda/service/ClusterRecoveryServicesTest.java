@@ -36,16 +36,23 @@ final class ClusterRecoveryServicesTest {
 
   private static final String DEFAULT_TENANT = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   private static final String TENANT_B = "tenant-b";
+  private static final String TENANT_C = "tenant-c";
   private static final TenantRestoreEnvironment DEFAULT_ENVIRONMENT =
       new TenantRestoreEnvironment("elasticsearch", false);
   private static final TenantRestoreEnvironment TENANT_B_ENVIRONMENT =
       new TenantRestoreEnvironment("rdbms", true);
+  private static final TenantRestoreEnvironment TENANT_C_ENVIRONMENT =
+      new TenantRestoreEnvironment("opensearch", false);
 
   private final ClusterConfigurationManagementRequestSender sender =
       mock(ClusterConfigurationManagementRequestSender.class);
   private final ClusterRecoveryServices services =
       new ClusterRecoveryServices(
-          sender, Map.of(DEFAULT_TENANT, DEFAULT_ENVIRONMENT, TENANT_B, TENANT_B_ENVIRONMENT));
+          sender,
+          Map.of(
+              DEFAULT_TENANT, DEFAULT_ENVIRONMENT,
+              TENANT_B, TENANT_B_ENVIRONMENT,
+              TENANT_C, TENANT_C_ENVIRONMENT));
 
   @Test
   void shouldRequestEveryPhysicalTenantWhenNoneIsGiven() {
@@ -130,7 +137,9 @@ final class ClusterRecoveryServicesTest {
 
   @Test
   void shouldRestoreEveryKnownPhysicalTenantWithItsOwnEnvironment() {
-    // given — a cluster-wide restore whose override spans a tenant on different secondary storage
+    // given — a cluster-wide restore whose override applies to only one tenant: the default tenant
+    // and tenant-c share the top-level backup selection, tenant-b restores from an additional,
+    // distinct backup given as its own override
     givenRestoreAccepted();
     final var defaultParameters = new RestoreParameters(List.of(100L), null, null);
     final var tenantBParameters = new RestoreParameters(List.of(55L), null, null);
@@ -141,7 +150,7 @@ final class ClusterRecoveryServicesTest {
         .join();
 
     // then — every physical tenant of the cluster is named, each with its own environment; the
-    // overridden tenant keeps its own selection, the other tenant gets the default selection
+    // overridden tenant keeps its own backup selection, the other two share the top-level one
     verify(sender)
         .clusterRestore(
             new ClusterRestoreRequest(
@@ -149,7 +158,9 @@ final class ClusterRecoveryServicesTest {
                     DEFAULT_TENANT,
                     new TenantRestoreArguments(defaultParameters, "elasticsearch", false),
                     TENANT_B,
-                    new TenantRestoreArguments(tenantBParameters, "rdbms", true)),
+                    new TenantRestoreArguments(tenantBParameters, "rdbms", true),
+                    TENANT_C,
+                    new TenantRestoreArguments(defaultParameters, "opensearch", false)),
                 true));
   }
 
@@ -181,7 +192,9 @@ final class ClusterRecoveryServicesTest {
                     DEFAULT_TENANT,
                     new TenantRestoreArguments(defaultParameters, "elasticsearch", false),
                     TENANT_B,
-                    new TenantRestoreArguments(defaultParameters, "rdbms", true)),
+                    new TenantRestoreArguments(defaultParameters, "rdbms", true),
+                    TENANT_C,
+                    new TenantRestoreArguments(defaultParameters, "opensearch", false)),
                 false));
   }
 
