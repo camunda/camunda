@@ -38,9 +38,7 @@ public final class UserTaskCompletionOutputMappingIncidentTest {
                 .startEvent()
                 .userTask(
                     "task",
-                    task ->
-                        task.zeebeUserTask()
-                            .zeebeOutput("=assert(foo, foo != null)", "bar"))
+                    task -> task.zeebeUserTask().zeebeOutput("=assert(foo, foo != null)", "bar"))
                 .endEvent()
                 .done())
         .deploy();
