@@ -51,6 +51,7 @@ export type ApiPath =
   | '/cluster-variables/tenants/{tenantId}/{name}'
   | '/cluster/v2/mode'
   | '/cluster/v2/status'
+  | '/cluster/v2/topology'
   | '/conditionals/evaluation'
   | '/correlated-message-subscriptions/search'
   | '/decision-definitions/evaluation'
