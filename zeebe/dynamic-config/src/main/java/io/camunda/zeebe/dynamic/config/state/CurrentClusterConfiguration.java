@@ -578,6 +578,20 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * The subset of {@link #partitionGroups()} that are not disabled, keyed by physical tenant id. A
+   * disabled group (removed from local static configuration after being provisioned, see {@code
+   * PhysicalTenantAvailabilityInitializer}) is retained in {@link #partitionGroups()} — its data
+   * and partition assignment are not deleted — but excluded here, since it is not running on any
+   * broker: it must not be counted as load when placing a new tenant's partitions, nor shown in
+   * gateway routing topology, nor targeted by cluster-wide operations.
+   */
+  public Map<String, PartitionGroupConfiguration> activePartitionGroups() {
+    return partitionGroups.entrySet().stream()
+        .filter(entry -> !entry.getValue().isDisabled())
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
+
+  /**
    * Returns the desired leader of every partition in the cluster, grouped by partition group id.
    * Partition ids are unique only within a group, so the outer group-id key is required to
    * disambiguate them. See {@link PartitionGroupConfiguration#desiredLeaders()} for how the

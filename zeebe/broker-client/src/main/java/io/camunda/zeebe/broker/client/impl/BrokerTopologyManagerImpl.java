@@ -265,18 +265,10 @@ public final class BrokerTopologyManagerImpl extends Actor
     // present in clusterConfiguration.partitionGroups() — its partitions aren't running on any
     // broker, so it should not appear in gateway routing topology or the /cluster topology
     // response.
-    final Set<String> disabledGroupIds =
-        clusterConfiguration.partitionGroups().entrySet().stream()
-            .filter(entry -> entry.getValue().isDisabled())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toSet());
-    final Set<String> groupIds =
-        clusterConfiguration.partitionGroups().keySet().stream()
-            .filter(groupId -> !disabledGroupIds.contains(groupId))
-            .collect(Collectors.toSet());
+    final Set<String> activeGroupIds = clusterConfiguration.activePartitionGroups().keySet();
 
     final var allGroups =
-        groupIds.stream()
+        activeGroupIds.stream()
             .collect(
                 Collectors.toMap(
                     physicalTenantId -> physicalTenantId,
@@ -295,7 +287,10 @@ public final class BrokerTopologyManagerImpl extends Actor
     // drop a previously-visible group that just became disabled; leave alone any group not yet
     // reflected in clusterConfiguration.partitionGroups() at all (e.g. mid-bootstrap, membership-
     // driven entries from rebuildGroupTopology)
-    updatedTopologyPerGroup.keySet().removeIf(disabledGroupIds::contains);
+    final Set<String> knownGroupIds = clusterConfiguration.partitionGroups().keySet();
+    updatedTopologyPerGroup
+        .keySet()
+        .removeIf(groupId -> knownGroupIds.contains(groupId) && !activeGroupIds.contains(groupId));
     updatedTopologyPerGroup.putAll(allGroups);
     topologyPerGroup = Map.copyOf(updatedTopologyPerGroup);
   }

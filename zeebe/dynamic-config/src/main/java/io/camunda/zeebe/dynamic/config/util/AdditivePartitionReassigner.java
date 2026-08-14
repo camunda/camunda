@@ -89,11 +89,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     final List<PartitionId> sortedPartitionIds =
         targetPartitionIds.stream().distinct().sorted().toList();
 
-    final Set<String> disabledGroups =
-        currentConfiguration.partitionGroups().entrySet().stream()
-            .filter(entry -> entry.getValue().isDisabled())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toSet());
+    final Set<String> activeGroupIds = currentConfiguration.activePartitionGroups().keySet();
 
     final Map<MemberId, Integer> replicaCountByMember = new HashMap<>();
     final Map<MemberId, Integer> leaderCountByMember = new HashMap<>();
@@ -101,7 +97,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
         generateAssignmentForNewPartitions(
             sortedPartitionIds,
             distributionByGroup,
-            disabledGroups,
+            activeGroupIds,
             replicaCountByMember,
             leaderCountByMember,
             currentById,
@@ -121,7 +117,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
   private static Assignment generateAssignmentForNewPartitions(
       final List<PartitionId> sortedPartitionIds,
       final Map<String, Set<PartitionMetadata>> distributionByGroup,
-      final Set<String> disabledGroups,
+      final Set<String> activeGroupIds,
       final Map<MemberId, Integer> replicaCountByMember,
       final Map<MemberId, Integer> leaderCountByMember,
       final Map<PartitionId, PartitionMetadata> currentById,
@@ -132,7 +128,7 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     // to appear in distributionByGroup/currentById (above) and validateNoRemoval (below) so they
     // are correctly left untouched rather than treated as removed.
     distributionByGroup.entrySet().stream()
-        .filter(entry -> !disabledGroups.contains(entry.getKey()))
+        .filter(entry -> activeGroupIds.contains(entry.getKey()))
         .forEach(
             entry -> accumulateLoad(entry.getValue(), replicaCountByMember, leaderCountByMember));
 

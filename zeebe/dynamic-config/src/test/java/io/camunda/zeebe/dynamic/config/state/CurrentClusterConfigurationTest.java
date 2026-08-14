@@ -760,6 +760,49 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class ActivePartitionGroups {
+
+    @Test
+    void shouldExcludeADisabledGroup() {
+      // given — "a" is enabled, "b" is disabled
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()), "b", group(1, Map.of()).disable()),
+              PhasedChangeState.empty());
+
+      // when / then
+      assertThat(config.activePartitionGroups()).containsOnlyKeys("a");
+    }
+
+    @Test
+    void shouldReturnEveryGroupWhenNoneIsDisabled() {
+      // given
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+              PhasedChangeState.empty());
+
+      // when / then
+      assertThat(config.activePartitionGroups()).containsOnlyKeys("a", "b");
+    }
+
+    @Test
+    void shouldReturnEmptyWhenEveryGroupIsDisabled() {
+      // given
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()).disable()),
+              PhasedChangeState.empty());
+
+      // when / then
+      assertThat(config.activePartitionGroups()).isEmpty();
+    }
+  }
+
+  @Nested
   class PlanTransitions {
 
     private static GlobalPhase globalPhase() {
