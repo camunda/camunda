@@ -318,6 +318,67 @@ public class PassiveRoleTest {
     assertThat(getPendingSnapshot()).as("pending snapshot should be cleared").isNull();
   }
 
+  @Test
+  public void shouldCheckForDataLossWithTheIndexTheLeaderAgreesOn() throws CheckedJournalException {
+    // given - a promotable member whose log ends far beyond what this append covers
+    final var promotableRole = new PromotableRole(ctx);
+    when(log.getLastIndex()).thenReturn(120L);
+    final var entries =
+        List.of(
+            new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(2)
+            .build();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    promotableRole.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the data-loss check gets the index up to which this node and the leader agree on
+    // persisted data. The local log end must not be used here: it can never lie below this node's
+    // own commit index, which would make the majority-data-loss check unsatisfiable.
+    verify(ctx).setFirstCommitIndex(2, 2);
+  }
+
+  @Test
+  public void shouldCheckForDataLossWithTheLocalLogEndWhenPassive() throws CheckedJournalException {
+    // given - a passive member whose log ends far beyond what this append covers
+    when(log.getLastIndex()).thenReturn(120L);
+    final var entries =
+        List.of(
+            new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(2)
+            .build();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the leader replicates to a PASSIVE member from a committed reader, so the request
+    // understates the leader's log and cannot be used to detect data loss. The local log end never
+    // trips the check, which is the point: an ex-leader demoted to PASSIVE tripped it spuriously.
+    verify(ctx).setFirstCommitIndex(2, 120);
+  }
+
   private void setPendingSnapshot(final ReceivedSnapshot snapshot) throws Exception {
     final var field = PassiveRole.class.getDeclaredField("pendingSnapshot");
     field.setAccessible(true);
