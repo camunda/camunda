@@ -361,6 +361,79 @@ class OperateProcessesPage {
     }
   }
 
+  private batchOperationDialogButton(name: 'Apply' | 'Delete'): Locator {
+    // Scope to the dialog: the toolbar carries buttons with the same accessible
+    // names, so an unscoped lookup can resolve to the wrong one.
+    return this.page
+      .getByRole('dialog')
+      .getByRole('button', {name, exact: true});
+  }
+
+  private async applyBatchOperationToAllInstances(options: {
+    toolbarButton: Locator;
+    confirmButton: Locator;
+    startedMessage: Locator;
+  }): Promise<void> {
+    // The batch toolbar only renders while rows are selected, and the
+    // confirmation modal lives inside it. A row selection made while the
+    // instances query is still in flight is dropped when the result lands,
+    // which unmounts the toolbar together with the open modal — the click is
+    // silently lost and no operation is ever submitted. So drive selection,
+    // dialog and confirmation as one retried unit, and treat only the
+    // "operation started" notification as success: a closed dialog on its own
+    // can just as easily mean the modal was unmounted.
+    const {toolbarButton, confirmButton, startedMessage} = options;
+    const selectAll = this.selectAllRowsCheckbox.locator('label');
+
+    await expect(async () => {
+      if (!(await confirmButton.isVisible())) {
+        if (!(await toolbarButton.isVisible())) {
+          // Clear a stale checked header before re-selecting: the checkbox can
+          // still read as checked after the selection behind it was reset, and
+          // clicking it again would then deselect instead of select.
+          if (await selectAll.isChecked()) {
+            await selectAll.click();
+          }
+          await selectAll.click();
+        }
+        await expect(toolbarButton).toBeEnabled({timeout: 5000});
+        await toolbarButton.click({timeout: 5000});
+      }
+      await confirmButton.click({timeout: 5000});
+      await expect(startedMessage).toBeVisible({timeout: 30000});
+    }).toPass({timeout: 120000});
+  }
+
+  async retryAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.retryButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage('Resolve Incident'),
+    });
+  }
+
+  async cancelAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      // The toolbar's Cancel shares its accessible name with the dialog's own
+      // Cancel, so address it by test id.
+      toolbarButton: this.cancelBatchOperationButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Cancel Process Instance',
+      ),
+    });
+  }
+
+  async deleteSelectedInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.deleteButton,
+      confirmButton: this.batchOperationDialogButton('Delete'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Delete Process Instance',
+      ),
+    });
+  }
+
   async clickCancelBatchOperationButton(): Promise<void> {
     // The toolbar click can be lost under load and leave the confirmation
     // dialog unopened; retry until the dialog is present, but do not re-click
@@ -385,12 +458,17 @@ class OperateProcessesPage {
   async selectAllProcessInstances(): Promise<void> {
     // A single header-checkbox click can be lost under load, leaving no rows
     // selected so the batch-operation toolbar (and its cancel button) never
-    // appears. Retry until the toolbar is shown, but gate the click on the
-    // checkbox's own checked state (not the toolbar) so a retry never toggles
-    // an already-selected header back off.
+    // appears. Retry until the toolbar is shown.
     const selectAll = this.selectAllRowsCheckbox.locator('label');
     await expect(async () => {
-      if (!(await selectAll.isChecked())) {
+      if (!(await this.cancelBatchOperationButton.isVisible())) {
+        // Gate on the toolbar, not on the header checkbox: the header can still
+        // read as checked after the selection behind it was reset by an
+        // in-flight re-query, and clicking it again would then deselect. Clear
+        // that stale state first, then select afresh.
+        if (await selectAll.isChecked()) {
+          await selectAll.click();
+        }
         await selectAll.click();
       }
       await expect(this.cancelBatchOperationButton).toBeVisible({

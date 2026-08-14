@@ -124,7 +124,7 @@ class TaskDetailsPage {
       name: 'Show task history',
     });
     this.historyTable = page
-      .getByTestId('task-details-history-view')
+      .getByTestId('history-tab-content')
       .getByRole('table');
     this.historyTableRow = this.historyTable.getByRole('row');
     this.historyTableOperationTypeHeader = this.historyTable.getByRole(
@@ -286,10 +286,25 @@ class TaskDetailsPage {
   }
 
   async checkCheckbox(): Promise<void> {
-    await this.checkbox.check();
+    // Wait for form-js to clear the post-assignment readonly state first.
+    await expect(this.checkbox).not.toHaveAttribute('readonly', {
+      timeout: 60000,
+    });
+    // Toggle via the visible label, not a direct input .check(): a raw input
+    // click sets the DOM checked state (so toBeChecked passes) but form-js can
+    // fail to serialize it into the completion payload, dropping the value on
+    // completion. The label click is the interaction form-js reliably commits
+    // (mirrors the radio path, which persists).
+    await this.form.getByText('Checkbox', {exact: true}).click();
+    await expect(this.checkbox).toBeChecked();
   }
 
   async selectDropdownValue(value: string): Promise<void> {
+    // Wait for form-js to make the select editable (readonly cleared); a
+    // readonly select accepts a visual selection but never commits it, so
+    // completion drops the value.
+    const selectInput = this.form.getByRole('textbox', {name: 'Select'});
+    await expect(selectInput).not.toHaveAttribute('readonly', {timeout: 60000});
     await this.selectDropdown.click();
     // Prefer the explicit option role so the click doesn't land on a
     // substring match elsewhere on the page (e.g. the dropdown's own
@@ -300,6 +315,12 @@ class TaskDetailsPage {
     } catch {
       await this.page.getByText(value).click();
     }
+    // The form-js select is a text-input combobox and, like the text fields,
+    // commits its value on blur — without it the selection renders but is
+    // dropped from the completion payload. Blur, then confirm the committed
+    // value before the caller completes the task.
+    await selectInput.blur();
+    await expect(selectInput).toHaveValue(value);
   }
 
   async selectDropdownOption(label: string, value: string) {
@@ -308,11 +329,24 @@ class TaskDetailsPage {
   }
 
   async clickRadioButton(label: string): Promise<void> {
-    await this.page.getByText(label).click();
+    // form-js hides the real radio <input> (custom-styled), so .check() on it
+    // fails as "not visible" — click the visible label instead. Gate on the
+    // input's readonly clearing so form-js actually records the selection.
+    const radio = this.form.getByRole('radio', {name: label});
+    await expect(radio).not.toHaveAttribute('readonly', {timeout: 60000});
+    await this.form.getByText(label, {exact: true}).click();
+    await expect(radio).toBeChecked();
   }
 
   async checkChecklistBox(label: string): Promise<void> {
-    await this.page.getByLabel(label).check();
+    // Scope to the embedded form: an unscoped getByLabel(label) also matches
+    // the task nav list, whose accessible name embeds the task title (e.g. a
+    // "Confirm ..." task collides with a "Confirm" checkbox). Wait for form-js
+    // to clear readonly so the toggle is recorded, then confirm it took.
+    const box = this.form.getByRole('checkbox', {name: label});
+    await expect(box).not.toHaveAttribute('readonly', {timeout: 60000});
+    await box.check();
+    await expect(box).toBeChecked();
   }
 
   async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {

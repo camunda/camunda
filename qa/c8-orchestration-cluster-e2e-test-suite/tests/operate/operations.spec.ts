@@ -17,7 +17,6 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
 import {jsonHeaders} from 'utils/http';
 
 type ProcessInstance = {
@@ -169,29 +168,17 @@ test.describe('Operations', () => {
       // checkboxes render.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
 
-      await operateProcessesPage.retryButton.click();
-
-      await operateProcessesPage.applyButton.click();
-      await sleep(1000);
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage('Resolve Incident'),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.retryAllProcessInstancesInBatch();
     });
 
     await test.step('Cancel all instances', async () => {
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-
-      await operateProcessesPage.cancelButton.click();
-      await operateProcessesPage.applyButton.click();
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage(
-          'Cancel Process Instance',
-        ),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.cancelAllProcessInstancesInBatch();
 
       // Apply filters to show canceled instances with retries
       await waitForAssertion({
@@ -325,30 +312,19 @@ test.describe('Delete Operations', () => {
       );
     });
 
-    await test.step('Select all completed instances', async () => {
+    await test.step('Delete all completed instances in batch', async () => {
       // Batch selection is disabled while the "Suspended" state filter is
       // active (the default processes view). Turn it off so the row-selection
       // checkboxes render.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-    });
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
 
-    await test.step('Click Delete batch operation button', async () => {
-      await expect(operateProcessesPage.deleteButton).toBeEnabled();
-      await operateProcessesPage.deleteButton.click();
-    });
-
-    await test.step('Confirm deletion in modal', async () => {
-      await operateProcessesPage.deleteBatchOperationConfirmButton.click();
-    });
-
-    await test.step('Verify batch delete operation started', async () => {
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage(
-          'Delete Process Instance',
-        ),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.deleteSelectedInstancesInBatch();
     });
 
     await test.step('Verify instances are removed from the list after deletion', async () => {

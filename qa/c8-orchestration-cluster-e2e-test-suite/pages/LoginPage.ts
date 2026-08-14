@@ -51,14 +51,33 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(this.usernameInput).toBeVisible({timeout: 30000});
-      },
-      onFailure: async () => {
-        await this.page.reload();
-      },
-    });
+    // The orchestration-cluster session cookie is shared across Operate,
+    // Tasklist and Identity, so navigating to a "/<app>/login" URL while a
+    // valid session already exists redirects to the app home and renders no
+    // login form. Treat login() as idempotent in exactly that case.
+    // First-login and invalid-credentials tests always render the form (they
+    // start from a fresh, unauthenticated context), so they are unaffected.
+    try {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(this.usernameInput).toBeVisible({timeout: 15000});
+        },
+        onFailure: async () => {
+          await this.page.reload();
+        },
+        maxRetries: 2,
+      });
+    } catch (error) {
+      // A missing form only means "already signed in" if the app has actually
+      // navigated off the login route. Still being on /login means the form
+      // genuinely failed to render — a slow shell, an app that is not up, a
+      // wrong URL — and swallowing that would resurface as a confusing failure
+      // somewhere later in the test, so let the original error through.
+      if (new URL(this.page.url()).pathname.endsWith('/login')) {
+        throw error;
+      }
+      return;
+    }
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);

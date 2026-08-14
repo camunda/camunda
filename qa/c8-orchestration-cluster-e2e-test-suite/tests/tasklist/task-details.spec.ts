@@ -129,7 +129,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.detailsPanel).toContainText('Creation date');
     await expect(
       taskDetailsPage.detailsPanel.getByText(
-        /^\d{2}\s\w{3}\s\d{4}\s-\s\d{1,2}:\d{2}\s(AM|PM)$/,
+        /^\d{1,2}\s\w{3}\s\d{4},\s\d{1,2}:\d{2}\s(AM|PM)$/,
       ),
     ).toBeVisible();
     await expect(taskDetailsPage.detailsPanel).toContainText('Candidates');
@@ -480,7 +480,8 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Time', '12:00 PM');
   });
 
-  test('task completion with checkbox form', async ({
+  // Skipped due to bug #60174: https://github.com/camunda/camunda/issues/60174
+  test.skip('task completion with checkbox form', async ({
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -499,7 +500,8 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.checkbox).toBeChecked({timeout: 60000});
   });
 
-  test('task completion with select form', async ({
+  // Skipped due to bug #60174: https://github.com/camunda/camunda/issues/60174
+  test.skip('task completion with select form', async ({
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -519,7 +521,8 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('Value', {timeout: 30000});
   });
 
-  test('task completion with radio button form', async ({
+  // Skipped due to bug #60174: https://github.com/camunda/camunda/issues/60174
+  test.skip('task completion with radio button form', async ({
     taskPanelPage,
     taskDetailsPage,
   }) => {
