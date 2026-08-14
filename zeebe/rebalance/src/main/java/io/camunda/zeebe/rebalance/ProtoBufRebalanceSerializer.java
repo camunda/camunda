@@ -171,14 +171,13 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
     if (!partition.hasDesiredLeader()) {
       throw new DecodingFailed("A partition rebalance is missing its desired leader: " + partition);
     }
-    final var progress = decodePartitionProgress(partition.getProgress());
     return new PartitionRebalance(
         partition.getPhysicalTenantId(),
         partition.getPartitionId(),
         partition.hasCurrentLeader() ? MemberId.from(partition.getCurrentLeader()) : null,
         MemberId.from(partition.getDesiredLeader()),
-        progress,
-        decodePartitionOutcome(progress, partition));
+        decodePartitionProgress(partition.getProgress()),
+        decodePartitionOutcome(partition));
   }
 
   private Rebalance.PartitionRebalance.Progress encodePartitionProgress(
@@ -202,25 +201,9 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
     };
   }
 
-  /**
-   * An outcome is required once {@code progress} is {@link PartitionRebalanceProgress#COMPLETED}
-   * and must not otherwise be present, matching {@link PartitionRebalance}'s own invariant.
-   */
   private @Nullable PartitionRebalanceOutcome decodePartitionOutcome(
-      final PartitionRebalanceProgress progress, final Rebalance.PartitionRebalance partition) {
-    if (progress != PartitionRebalanceProgress.COMPLETED) {
-      if (partition.hasOutcome()) {
-        throw new DecodingFailed(
-            "A partition rebalance with progress %s must not have an outcome: %s"
-                .formatted(progress, partition));
-      }
-      return null;
-    }
-    if (!partition.hasOutcome()) {
-      throw new DecodingFailed(
-          "A completed partition rebalance is missing its outcome: " + partition);
-    }
-    return decodePartitionOutcomeValue(partition.getOutcome());
+      final Rebalance.PartitionRebalance partition) {
+    return partition.hasOutcome() ? decodePartitionOutcomeValue(partition.getOutcome()) : null;
   }
 
   private Rebalance.PartitionRebalance.Outcome encodePartitionOutcome(

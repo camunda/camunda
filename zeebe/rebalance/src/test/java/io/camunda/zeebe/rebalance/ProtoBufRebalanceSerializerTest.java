@@ -298,13 +298,14 @@ final class ProtoBufRebalanceSerializerTest {
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
                                     .setPartitionId(3)
+                                    .setDesiredLeader("1")
                                     .setProgress(Rebalance.PartitionRebalance.Progress.COMPLETED))))
             .build()
             .toByteArray();
 
     // when/then
     assertThatThrownBy(() -> serializer.decodeRebalanceStatusResponse(encoded))
-        .isInstanceOf(DecodingFailed.class);
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
