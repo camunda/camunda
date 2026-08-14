@@ -43,7 +43,7 @@
 		"bpmn-js": "18.19.0",
 		"bpmn-moddle": "10.0.0",
 		"date-fns": "4.4.0",
-		"diagram-js-minimap": "5.4.0",
+		"diagram-js-minimap": "5.4.1",
 		"dmn-js-decision-table": "17.10.1",
 		"dmn-js-literal-expression": "17.10.1",
 		"dmn-js-shared": "17.10.1",
