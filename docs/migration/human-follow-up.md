@@ -1680,3 +1680,17 @@ append-only scan log.
     build matches the documented behaviour.
   - **Ask**: ship the `href ?? to` check, or correct the type so `href` reads
     as required.
+
+- **2026-08-14 — `UserMenu` always renders its own "Log out" item, with no way
+  to omit it.** `UserMenuProps.onLogout` is required and the component's own
+  markup always appends a separator + logout `DropdownMenuItem` after `items`
+  — there's no `showLogout`/optional-`onLogout` escape hatch. This app has a
+  `canLogout` flag (some auth setups can't log out client-side) and the
+  previous Carbon header hid the logout control entirely when it's false.
+  - **Impact**: consumers whose auth can't support client-side logout either
+    can't use `UserMenu` at all, or ship a logout button that does nothing.
+  - **App-side workaround applied**: `AccountMenu.tsx` composes the menu by
+    hand from the underlying `DropdownMenu`/`Avatar` primitives instead of
+    using `UserMenu`, so the logout item can stay conditional.
+  - **Ask**: make `onLogout` optional, or add a `showLogout` prop, so the
+    logout item can be omitted rather than only ever unconditionally shown.

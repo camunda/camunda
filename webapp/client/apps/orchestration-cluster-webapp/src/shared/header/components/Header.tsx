@@ -18,8 +18,10 @@ import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getBootConfig} from '#/shared/config/getBootConfig';
+import {featureFlags} from '#/shared/feature-flags';
 import {LanguageSelector} from './LanguageSelector';
-import {Link} from '@tanstack/react-router';
+import {TasklistDSHeader} from './TasklistDSHeader';
+import {Link, useRouterState} from '@tanstack/react-router';
 import {useNavbar} from '../useNavbar';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
@@ -74,6 +76,11 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 	const {displayName, salesPlanType} = currentUser;
 	const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 	const {app, elements} = useNavbar(currentUser);
+	// DS path, Tasklist only: Operate and Admin keep the Carbon header below
+	// even with the flag on — lifting the DS header to them is a separate
+	// follow-up. Read from router state rather than useNavbar's `app`/`elements`
+	// (Carbon-shaped, unaffected by this change) so the two headers can't drift.
+	const isTasklistRoute = useRouterState({select: ({location}) => location.pathname.startsWith('/tasklist')});
 
 	const logoutWithNotification = () => {
 		notificationsStore.displayNotification({
@@ -84,6 +91,10 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 		});
 		setTimeout(authenticationStore.handleLogout, 1000);
 	};
+
+	if (featureFlags.dsTasklistUI && isTasklistRoute) {
+		return <TasklistDSHeader currentUser={currentUser} license={license} />;
+	}
 
 	return (
 		<C3Navigation
