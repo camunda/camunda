@@ -43,7 +43,7 @@ public class OptimizeExceptionMapper {
   @ExceptionHandler(OptimizeValidationException.class)
   public ResponseEntity<ErrorResponseDto> handleValidationException(
       final OptimizeValidationException exception) {
-    LOG.info("Mapping OptimizeValidationException");
+    LOG.info("Mapping OptimizeValidationException: {}", exception.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
         .body(getValidationResponseDto(exception));
