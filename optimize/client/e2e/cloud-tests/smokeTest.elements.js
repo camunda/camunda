@@ -9,6 +9,3 @@
 import {Selector} from 'testcafe';
 
 export const emptyTemplate = Selector('.templateContainer .name').withText('Blank report');
-export const usernameInput = Selector('input[name="username"]');
-export const passwordInput = Selector('input[name="password"]');
-export const submitButton = Selector(':not([aria-hidden]) > button[type="submit"]');

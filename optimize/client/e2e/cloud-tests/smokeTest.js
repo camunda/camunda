@@ -12,21 +12,19 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as Common from '../sm-tests/Common.elements.js';
+import {loginToCloud} from './login.js';
 import * as e from './smokeTest.elements.js';
+
+if (!process.env.CI) {
+  dotenv.config();
+}
 
 fixture('Smoke test').page(config.collectionsEndpoint);
 
 test('create a report from a template', async (t) => {
-  if (!process.argv.includes('ci')) {
-    dotenv.config();
-  }
   await t.maximizeWindow();
 
-  await t
-    .typeText(e.usernameInput, process.env.AUTH0_USEREMAIL)
-    .click(e.submitButton)
-    .typeText(e.passwordInput, process.env.AUTH0_USERPASSWORD)
-    .click(e.submitButton);
+  await loginToCloud(t);
 
   await t.click(Common.collectionsPage);
   await t.click(Common.createNewButton);
