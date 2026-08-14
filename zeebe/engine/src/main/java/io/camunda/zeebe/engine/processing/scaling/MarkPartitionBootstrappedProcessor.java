@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.scaling;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
@@ -43,6 +44,7 @@ public class MarkPartitionBootstrappedProcessor
   private final CommandDistributionBehavior distributionBehavior;
   private final ProcessState processState;
   private final StartEventSubscriptions startEventSubscriptions;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
 
   public MarkPartitionBootstrappedProcessor(
       final KeyGenerator keyGenerator,
@@ -64,6 +66,7 @@ public class MarkPartitionBootstrappedProcessor
             bpmnBehaviors.expressionBehavior(),
             bpmnBehaviors.catchEventBehavior(),
             startEventSubscriptionManager);
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
   }
 
   @Override
@@ -99,7 +102,16 @@ public class MarkPartitionBootstrappedProcessor
     final var scaleUp = command.getValue();
     final var scalingKey = command.getKey();
     final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
+    final var isNewlyBootstrappedPartition =
+        scaleUp.getRedistributedPartitions().contains(command.getPartitionId())
+            && !routingState.currentPartitions().contains(command.getPartitionId());
+
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+
+    if (isNewlyBootstrappedPartition) {
+      // inherited draining definitions have no local instances here, so finalize their drain now
+      processDeletionBehavior.finalizeDrainingDefinitionsWithoutLocalInstances();
+    }
     // if the partition that has completed bootstrapping is the current one and the command was
     // not already processed, resubscribe to all message start events and signals
     if (scaleUp.getRedistributedPartitions().contains(command.getPartitionId())

@@ -21,9 +21,18 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
- * Finalizes local deletion of a {@link PersistedProcessState#DRAINING} definition once its last
- * active instance completes or terminates. Banned instances are excluded from the active-instance
- * check, as they never complete or terminate.
+ * Finalizes local deletion of {@link PersistedProcessState#DRAINING} definitions. A definition is
+ * finalized either when
+ *
+ * <ul>
+ *   <li>its last active instance completes or terminates ({@link #finalizeDeletionIfDraining})
+ *   <li>for a definition inherited by a freshly bootstrapped partition that holds none of its
+ *       instances, when that partition finishes bootstrapping ({@link
+ *       #finalizeDrainingDefinitionsWithoutLocalInstances})
+ * </ul>
+ *
+ * <p>Banned instances are excluded from the active-instance check, as they never complete or
+ * terminate.
  */
 public final class BpmnProcessDeletionBehavior {
 
@@ -78,12 +87,31 @@ public final class BpmnProcessDeletionBehavior {
   }
 
   /**
+   * Reconciles every {@code DRAINING} definition on this partition that has no local active
+   * instances, finalizing its drain. A freshly bootstrapped partition inherits {@code DRAINING}
+   * definitions through the snapshot but holds none of their instances.
+   */
+  public void finalizeDrainingDefinitionsWithoutLocalInstances() {
+    final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
+    processState.forEachProcess(
+        null,
+        process -> {
+          if (process.getState() == PersistedProcessState.DRAINING
+              && !elementInstanceState.hasActiveProcessInstances(
+                  process.getKey(), bannedInstances)) {
+            finalizeDrain(process);
+          }
+          return true;
+        });
+  }
+
+  /**
    * Removes the definition from local state ({@link ProcessIntent#DELETING} / {@link
    * ProcessIntent#DELETED}) and reports the drain to the deployment partition ({@link
    * ProcessIntent#DELETE_COMPLETE}). Callers must ensure the definition is {@code DRAINING} and has
    * no remaining active instances on this partition.
    */
-  public void finalizeDrain(final PersistedProcess process) {
+  private void finalizeDrain(final PersistedProcess process) {
     final var processRecord =
         new ProcessRecord()
             .setBpmnProcessId(process.getBpmnProcessId())
