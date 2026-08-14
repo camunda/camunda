@@ -1174,8 +1174,16 @@ final class ReconfigurationTest {
       assertThat(appendEntry(newLeader).commit()).succeedsWithin(Duration.ofSeconds(5));
     }
 
+    /**
+     * A member that never acknowledged an append has a match index of 0, so the promotion catch-up
+     * gate rejects promoting it before anything is appended: the leader's view of its replication
+     * lag cannot be trusted yet. The append-time protection - an appended promotion must not commit
+     * without the promoted member's acknowledgement - is pinned separately by {@link
+     * TwoPhaseReconfiguration#shouldNotCommitPromotionWhilePromotedMemberUnreachable}, where the
+     * member catches up before it becomes unreachable.
+     */
     @Test
-    void doesNotCommitConfigurationWhileVotingMemberIsUnreachable(@TempDir final Path tmp) {
+    void shouldRejectPromotingUnreachableMember(@TempDir final Path tmp) {
       // given - a single member cluster [1A] with an unreachable PASSIVE member 2
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
@@ -1206,8 +1214,8 @@ final class ReconfigurationTest {
           .satisfies(
               reconfigureResponse -> assertThat(reconfigureResponse.status()).isEqualTo(Status.OK));
 
-      // when - promoting the unreachable member to ACTIVE, making it a voting member of the new
-      // configuration
+      // when - promoting the unreachable member to ACTIVE, which would make it a voting member
+      // of the new configuration
       final var commitIndexBeforePromotion = m1.getContext().getCommitIndex();
       final var committedConfiguration = m1.getContext().getCluster().getConfiguration();
       final var promoted =
@@ -1224,18 +1232,20 @@ final class ReconfigurationTest {
                   .from(id1.id())
                   .build());
 
-      // then - the configuration does not commit without the new voting member's ack: the leader
-      // eventually steps down instead of committing governed solely by the old configuration
-      Awaitility.await("Leader steps down because the new configuration cannot commit")
-          .atMost(Duration.ofSeconds(30))
-          .until(() -> !m1.isLeader());
+      // then - the promotion is rejected outright because the member never acknowledged anything,
+      // nothing is appended, and the leader keeps leading and committing
+      assertThat(response)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .satisfies(
+              reconfigureResponse -> {
+                assertThat(reconfigureResponse.status()).isEqualTo(Status.ERROR);
+                assertThat(reconfigureResponse.error().type())
+                    .isEqualTo(RaftError.Type.CONFIGURATION_ERROR);
+                assertThat(reconfigureResponse.error().message()).contains("not caught up");
+              });
       assertThat(m1.getContext().getCommitIndex()).isEqualTo(commitIndexBeforePromotion);
-      Awaitility.await("Reconfigure request completes")
-          .atMost(Duration.ofSeconds(30))
-          .until(response::isDone);
-      assertThat(response.isCompletedExceptionally() || response.join().status() == Status.ERROR)
-          .describedAs("Reconfigure request must not succeed")
-          .isTrue();
+      assertThat(m1.isLeader()).isTrue();
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
     }
   }
 
@@ -1301,6 +1311,248 @@ final class ReconfigurationTest {
           .isEqualTo(commitIndexBefore);
     }
 
+    @Test
+    void shouldJoinAsPromotableAndBecomeActiveAfterPromotion(@TempDir final Path tmp) {
+      // given - a single-member cluster
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      // commit an entry to ensure that the leader is ready to accept new configurations
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      // when - m2 joins as PROMOTABLE
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(m2.join(Type.PROMOTABLE, List.of(id1, id2)))
+          .succeedsWithin(Duration.ofSeconds(30));
+
+      // then - the leader's configuration has m2 as a PROMOTABLE, non-voting member
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.PROMOTABLE);
+
+      // when - m2 caught up to the leader and is promoted to ACTIVE
+      awaitCaughtUp(m1, m2);
+      awaitSameConfiguration(m1, m2);
+      assertThat(m2.cluster().getLocalMember().promote(Type.ACTIVE))
+          .succeedsWithin(Duration.ofSeconds(30));
+
+      // then - the leader's committed configuration has m2 as ACTIVE and the cluster still
+      // commits entries
+      Awaitility.await("the promotion is committed")
+          .untilAsserted(
+              () -> {
+                final var configuration = m1.getContext().getCluster().getConfiguration();
+                assertThat(configuration.requiresJointConsensus()).isFalse();
+                assertThat(memberTypes(m1)).containsEntry(id2, Type.ACTIVE);
+                assertThat(m1.getContext().getCommitIndex())
+                    .isGreaterThanOrEqualTo(configuration.index());
+              });
+      assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void shouldRejectPromotionUntilCaughtUp(@TempDir final Path tmp) {
+      // given - a single-member cluster with a caught-up PROMOTABLE member 2, a promotion lag
+      // threshold that any unreplicated entry exceeds, and generous timeouts so that blocking
+      // replication to m2 doesn't make the leader step down within this test's observation window
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final Consumer<RaftPartitionConfig> testConfig =
+          config -> {
+            config.setMaxQuorumResponseTimeout(Duration.ofSeconds(60));
+            config.setElectionTimeout(Duration.ofSeconds(3));
+            config.setPromotionLagThreshold(1);
+          };
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2), testConfig);
+      m1.bootstrap(id1).join();
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1), testConfig);
+      assertThat(m2.join(Type.PROMOTABLE, List.of(id1, id2)))
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitCaughtUp(m1, m2);
+      awaitSameConfiguration(m1, m2);
+
+      // when - m2 stops receiving entries while the leader commits a few more, so m2's
+      // replication lag exceeds the promotion lag threshold (the ACTIVE quorum is the leader
+      // alone, so commits don't need m2)
+      final var blockAppends = new AtomicBoolean(true);
+      interceptEntryAppends(m1, id2, blockAppends);
+      final var leaderRole = getLeader(m1).orElseThrow();
+      for (int i = 0; i < 3; i++) {
+        assertThat(appendEntry(leaderRole).commit()).succeedsWithin(Duration.ofSeconds(5));
+      }
+
+      // then - the promotion is rejected because m2 is not caught up
+      assertThat(m2.cluster().getLocalMember().promote(Type.ACTIVE))
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining("not caught up");
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.PROMOTABLE);
+
+      // when - replication to m2 resumes and it catches up
+      blockAppends.set(false);
+      awaitCaughtUp(m1, m2);
+
+      // then - retrying the promotion succeeds. The first retries may still be rejected while
+      // the acknowledgement that clears m2's replication lag on the leader is in flight.
+      Awaitility.await("the promotion succeeds after catching up")
+          .untilAsserted(
+              () ->
+                  assertThat(m2.cluster().getLocalMember().promote(Type.ACTIVE))
+                      .succeedsWithin(Duration.ofSeconds(10)));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.ACTIVE);
+    }
+
+    /**
+     * Pins the quorum arithmetic protecting promotion durability: as soon as the joint
+     * configuration for a promotion is appended, the promoted member counts towards the new side's
+     * ACTIVE commit quorum, so the promotion cannot commit while the promoted member is
+     * unreachable.
+     */
+    @Test
+    void shouldNotCommitPromotionWhilePromotedMemberUnreachable(@TempDir final Path tmp) {
+      // given - a single-member cluster with a caught-up PROMOTABLE member 2, and generous
+      // timeouts so that blocking replication to m2 doesn't make the leader step down within
+      // this test's observation window
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final Consumer<RaftPartitionConfig> testTimeouts =
+          config -> {
+            config.setMaxQuorumResponseTimeout(Duration.ofSeconds(60));
+            config.setElectionTimeout(Duration.ofSeconds(3));
+          };
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2), testTimeouts);
+      m1.bootstrap(id1).join();
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1), testTimeouts);
+      assertThat(m2.join(Type.PROMOTABLE, List.of(id1, id2)))
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitCaughtUp(m1, m2);
+      awaitSameConfiguration(m1, m2);
+
+      // when - m2 stops receiving entries (its own requests still reach the leader, so the
+      // promotion request itself is forwarded and accepted) and m2 requests its promotion
+      final var blockAppends = new AtomicBoolean(true);
+      interceptEntryAppends(m1, id2, blockAppends);
+      final var promoteFuture = m2.cluster().getLocalMember().promote(Type.ACTIVE);
+
+      // then - the joint configuration is appended but does not commit: its new side [1A, 2A]
+      // needs m2's acknowledgement, which never arrives
+      Awaitility.await("the joint configuration is appended")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          m1.getContext().getCluster().getConfiguration().requiresJointConsensus())
+                      .isTrue());
+      final var jointIndex = m1.getContext().getCluster().getConfiguration().index();
+      Awaitility.await("the promotion does not commit while the promoted member is unreachable")
+          .during(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                assertThat(promoteFuture).isNotDone();
+                assertThat(m1.getContext().getCommitIndex()).isLessThan(jointIndex);
+              });
+
+      // when - replication to m2 resumes
+      blockAppends.set(false);
+
+      // then - the promotion completes
+      assertThat(promoteFuture).succeedsWithin(Duration.ofSeconds(30));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.ACTIVE);
+    }
+
+    /**
+     * A crash-recovery retry of join(PROMOTABLE) can arrive after the member was already promoted
+     * to ACTIVE. Joining must never demote: the retry is acknowledged without a configuration
+     * change.
+     */
+    @Test
+    void shouldNotDemoteActiveMemberWhenJoiningAsPromotable(@TempDir final Path tmp) {
+      // given - a two-member cluster where m2 joined as PROMOTABLE and was promoted to ACTIVE
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(m2.join(Type.PROMOTABLE, List.of(id1, id2)))
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitCaughtUp(m1, m2);
+      awaitSameConfiguration(m1, m2);
+      assertThat(m2.cluster().getLocalMember().promote(Type.ACTIVE))
+          .succeedsWithin(Duration.ofSeconds(30));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.ACTIVE);
+
+      // when - a crash-recovery retry re-issues the join as PROMOTABLE
+      final var retriedJoin = m2.cluster().join(Type.PROMOTABLE, List.of(id1, id2));
+
+      // then - the join is acknowledged without demoting m2
+      assertThat(retriedJoin).succeedsWithin(Duration.ofSeconds(30));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.ACTIVE);
+      assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    /**
+     * The two-phase leave: a member that demoted itself to PASSIVE before leaving is in no quorum
+     * anymore, so its removal commits without any participation from the leaving member - both
+     * joint sides' ACTIVE quorums consist of the remaining members only.
+     */
+    @Test
+    void shouldRemoveDemotedMemberWithoutItsParticipation(@TempDir final Path tmp) {
+      // given - a cluster with 3 ACTIVE members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+      final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      // commit an entry to ensure that the leader is ready to accept new configurations
+      assertThat(appendEntry(awaitLeader(m1, m2, m3)).commit())
+          .succeedsWithin(Duration.ofSeconds(5));
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      final var demoting = Stream.of(m1, m2, m3).filter(s -> s != leader).findAny().orElseThrow();
+      final var demotingId = MemberId.from(demoting.name());
+
+      // when - a follower demotes itself to PASSIVE, then all messages to it are blocked (its
+      // own requests still reach the leader), and it leaves
+      assertThat(demoting.cluster().getLocalMember().demote(Type.PASSIVE))
+          .succeedsWithin(Duration.ofSeconds(10));
+      assertThat(memberTypes(leader)).containsEntry(demotingId, Type.PASSIVE);
+      protocolFactory.blockMessagesTo(demotingId);
+      final var leaveFuture = demoting.leave();
+
+      // then - the leader commits the configuration without the demoted member even though it
+      // never acknowledged anything after the demotion
+      final var remaining = Stream.of(m1, m2, m3).filter(s -> s != demoting).toList();
+      final var expected =
+          remaining.stream().map(server -> server.cluster().getLocalMember()).toList();
+      Awaitility.await("the leader commits the configuration without the demoted member")
+          .untilAsserted(
+              () -> {
+                final var configuration = leader.getContext().getCluster().getConfiguration();
+                assertThat(configuration.requiresJointConsensus()).isFalse();
+                assertThat(configuration.allMembers())
+                    .containsExactlyInAnyOrderElementsOf(expected);
+                assertThat(leader.getContext().getCommitIndex())
+                    .isGreaterThanOrEqualTo(configuration.index());
+              });
+
+      // and - the leave completes once connectivity is restored
+      protocolFactory.heal(demotingId);
+      assertThat(leaveFuture).succeedsWithin(Duration.ofSeconds(30));
+    }
+
     /**
      * Blocks entry-carrying appends from {@code sender} to {@code receiver} while {@code blocked}
      * is true. Empty appends (heartbeats) keep flowing so the receiver is not falsely suspected
@@ -1328,6 +1580,17 @@ final class ReconfigurationTest {
           });
     }
 
+    private static Map<MemberId, Type> memberTypes(final RaftServer server) {
+      return server.cluster().getMembers().stream()
+          .collect(Collectors.toMap(RaftMember::memberId, RaftMember::getType));
+    }
+
+    private static void awaitCaughtUp(final RaftServer leader, final RaftServer member) {
+      Awaitility.await(
+              "%s caught up to the last index of %s".formatted(member.name(), leader.name()))
+          .untilAsserted(() -> assertThat(lastIndex(member)).isEqualTo(lastIndex(leader)));
+    }
+
     /**
      * Reads the server's last log index on its own raft thread. The journal is thread-confined:
      * reading it from the test thread races with the appending raft thread over the current segment
@@ -1339,6 +1602,19 @@ final class ReconfigurationTest {
       final var lastIndex = new CompletableFuture<Long>();
       context.getThreadContext().execute(() -> lastIndex.complete(context.getLog().getLastIndex()));
       return lastIndex.orTimeout(5, TimeUnit.SECONDS).join();
+    }
+
+    /**
+     * Waits until both servers hold the same configuration. Configuration changes are requested
+     * with the requester's local view of index and term; a request from a member that has not
+     * received the latest configuration yet is rejected as stale.
+     */
+    private static void awaitSameConfiguration(final RaftServer a, final RaftServer b) {
+      Awaitility.await("%s and %s hold the same configuration".formatted(a.name(), b.name()))
+          .untilAsserted(
+              () ->
+                  assertThat(a.getContext().getCluster().getConfiguration().index())
+                      .isEqualTo(b.getContext().getCluster().getConfiguration().index()));
     }
   }
 
