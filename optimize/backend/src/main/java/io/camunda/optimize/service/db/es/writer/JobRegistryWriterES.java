@@ -26,7 +26,6 @@ import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -65,7 +64,7 @@ public class JobRegistryWriterES implements JobRegistryWriter {
       if (!indexResponse.result().equals(Created)) {
         throw createJobEntryFailure(entry.getId(), null);
       }
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw createJobEntryFailure(entry.getId(), e);
     }
     return entry;
@@ -99,7 +98,7 @@ public class JobRegistryWriterES implements JobRegistryWriter {
     }
   }
 
-  private OptimizeRuntimeException createJobEntryFailure(final String id, final IOException cause) {
+  private OptimizeRuntimeException createJobEntryFailure(final String id, final Exception cause) {
     final String message =
         String.format("Could not write job registry entry with id [%s] to database.", id);
     if (cause == null) {
