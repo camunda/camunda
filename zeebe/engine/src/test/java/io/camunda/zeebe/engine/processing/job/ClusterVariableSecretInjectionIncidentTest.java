@@ -165,7 +165,10 @@ public final class ClusterVariableSecretInjectionIncidentTest {
             .getFirst();
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(incident.getValue().getErrorMessage())
-        .contains("Correct the mismatched variable and resolve the incident");
+        .contains("camunda.secrets.tokenB")
+        .contains("/authToken")
+        .contains("could not be resolved at")
+        .contains("Fix the variable's value or the input mapping that sets it");
 
     // and - the job is excluded from activation: a later poll does not hand it out either
     final Record<JobBatchRecordValue> secondAttempt =

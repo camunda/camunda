@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReferen
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.CachedSecret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
+import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretPointerMismatchException;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -42,9 +43,10 @@ import org.slf4j.LoggerFactory;
  *       registered via {@link #registerForInjection}.
  *   <li>{@link #injectSecretValues} replaces the placeholder text {@code camunda.secrets.<name>} of
  *       the registered jobs with the cached value on a response-only copy of the batch, at the JSON
- *       pointer recorded for each reference. Jobs whose values would grow the response beyond the
+ *       pointer recorded for each reference (see {@link JobSecretLookup} for how a reference that
+ *       finds no placeholder is tolerated). Jobs whose values would grow the response beyond the
  *       max message size are dropped from the activation instead, and a job whose injection fails
- *       is dropped and reported for an incident.
+ *       is dropped and reported for an incident, naming the mismatched pointer when it is known.
  * </ol>
  *
  * <p>The cached values are read once at check time and reused for the injection, so a value evicted
@@ -53,7 +55,9 @@ import org.slf4j.LoggerFactory;
  * on the response only: state, records, and logs keep the placeholders.
  *
  * <p>The job-push path injects the same values into the job it streams, see {@code
- * BpmnJobActivationBehavior#publishWork}.
+ * BpmnJobActivationBehavior#publishWork}; it shares {@link JobSecretLookup}, so it tolerates the
+ * same shapes, but reports a failed injection with a generic incident message rather than naming
+ * the mismatched pointer (tracked separately).
  */
 public final class JobSecretInjector {
 
@@ -158,10 +162,11 @@ public final class JobSecretInjector {
    * first job whose values would push the response past that is dropped together with every job
    * after it, from the response batch and the to-be-activated batch alike (both must still contain
    * the same jobs), so the dropped jobs stay activatable and the next activation, with a fresh
-   * batch, picks them up right away. A job whose injection fails is dropped the same way; its
-   * failure details are only logged, so no secret-related data can end up in persisted records.
-   * Must run before the ACTIVATED event is appended. Returns the dropped job the caller must raise
-   * an incident for: a job whose injection failed, or a job whose values can never fit any batch.
+   * batch, picks them up right away. A job whose injection fails is dropped the same way; the
+   * exception's own message is only logged, but its placeholder and JSON pointer (never its value)
+   * are carried out for the incident message. Must run before the ACTIVATED event is appended.
+   * Returns the dropped job the caller must raise an incident for: a job whose injection failed, or
+   * a job whose values can never fit any batch.
    *
    * @param baseLength the length the batch already occupies before any value is injected, i.e. the
    *     length of the collected activation command; the injected growth is measured on top of it
@@ -212,7 +217,8 @@ public final class JobSecretInjector {
   /**
    * Drops the job whose injection failed and every job after it from both batches, and returns it
    * for an incident, so the job cannot loop through activation with a failing injection. The
-   * failure details are only logged, so no secret-related data can end up in persisted records.
+   * exception's own message is only logged; only its placeholder and JSON pointer are carried out
+   * for the incident message (see JobBatchActivateProcessor#raiseIncidentJobSecretInjectionFailed).
    */
   private static FailedInjectionJob dropJobsWhoseInjectionFailed(
       final JobBatchRecord responseBatch,
@@ -228,7 +234,11 @@ public final class JobSecretInjector {
         removed.jobKey(),
         removed.job().getType(),
         failure);
-    return new FailedInjectionJob(removed.jobKey(), removed.job());
+    if (failure instanceof final SecretPointerMismatchException mismatch) {
+      return new FailedInjectionJob(
+          removed.jobKey(), removed.job(), mismatch.path(), mismatch.placeholder());
+    }
+    return new FailedInjectionJob(removed.jobKey(), removed.job(), null, null);
   }
 
   /**
@@ -287,8 +297,13 @@ public final class JobSecretInjector {
    */
   public record OversizedJob(long jobKey, JobRecord job, int growth) implements DroppedJob {}
 
-  /** A job dropped from the batch because injecting its secret values failed. */
-  public record FailedInjectionJob(long jobKey, JobRecord job) implements DroppedJob {}
+  /**
+   * A job dropped from the batch because injecting its secret values failed. {@code path} and
+   * {@code placeholder} identify the secret whose pointer didn't match, or are both {@code null}
+   * for an unrelated failure (e.g. the job's variables are not valid msgpack).
+   */
+  public record FailedInjectionJob(long jobKey, JobRecord job, String path, String placeholder)
+      implements DroppedJob {}
 
   /** A registered job: its index in the batch, the job, and its cached secrets. */
   record JobWithCachedSecrets(int index, JobRecord job, List<CachedSecret> cachedSecrets) {}
