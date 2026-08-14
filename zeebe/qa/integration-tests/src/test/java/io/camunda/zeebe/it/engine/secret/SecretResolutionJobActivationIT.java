@@ -11,7 +11,9 @@ import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.AWAI
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.INPUT_TARGET;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.JOB_TIMEOUT;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.LONG_POLL_TIMEOUT;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.REACTIVATION_BATCH_SIZE;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.applyRecordWaitTime;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.assertNoIncidentWasRaised;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.assertNoRecordCarriesValue;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitActivationExported;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitJobKeyOf;
@@ -19,12 +21,16 @@ import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awai
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitResolutionRequested;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitStreamRegistered;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.createProcessInstance;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.createProcessInstances;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.deployProcessWithInput;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.incidentsOf;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.newBrokerWithEmptySecretStore;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.onlyJob;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.parkedJobKeys;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.pollJobs;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.pollUntilActivated;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.primingPoll;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.reactivationRounds;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionFailureStates;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionWasRequestedFor;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.secretReference;
@@ -50,8 +56,10 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -62,7 +70,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Covers what a worker actually receives for a job whose input mapping references a secret, on both
  * activation paths, against a real gateway, a real client and a real file-based secret store. That
- * includes a job that references more than one secret.
+ * includes a job that references more than one secret, and the two bounds the resolution runs into
+ * once a value or a waiting-job list gets large.
  *
  * <p>The engine suites ({@code JobSecretActivationInjectionTest}, {@code
  * JobSecretPushInjectionTest} and {@code SecretResolutionLifecycleTest}) already cover the
@@ -78,6 +87,26 @@ import org.junit.jupiter.api.Test;
  */
 @ZeebeIntegration
 final class SecretResolutionJobActivationIT {
+
+  /**
+   * Larger than the growth an activation batch has to spare, which is {@code
+   * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} (8 KB) rather than the whole message size.
+   */
+  private static final int OVERSIZED_SECRET_LENGTH = 16 * 1024;
+
+  /**
+   * More than the 100 jobs one reactivation command carries, so the chain has to follow up, and
+   * more than the 100 jobs one activation skips for uncached references ({@code
+   * EngineConfiguration#MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION}), so the first poll cuts
+   * off at the skip cap and the client has to come back for the rest.
+   */
+  private static final int WAITING_JOBS = 150;
+
+  /**
+   * Only has to outlive the park, the resolution and the injection attempt of the one job the test
+   * expects to be dropped, since nothing is ever returned to end the request early.
+   */
+  private static final Duration DROPPED_JOB_POLL_TIMEOUT = Duration.ofSeconds(5);
 
   /** The variable a second secret is mapped into, for the jobs that reference two. */
   private static final String OTHER_INPUT_TARGET = "otherToken";
@@ -472,6 +501,76 @@ final class SecretResolutionJobActivationIT {
     assertThat(incidentsOf(processInstanceKey)).hasSize(1);
     assertNoRecordCarriesValue(secretValue);
     assertNoRecordCarriesValue(otherSecretValue);
+  }
+
+  @Test
+  void shouldRaiseIncidentWhenTheSecretValueOutgrowsTheActivationBatch() {
+    // given - a secret whose value cannot be injected without outgrowing the batch
+    final String oversizedValue = "v".repeat(OVERSIZED_SECRET_LENGTH);
+    writeSecret(broker, secretName, oversizedValue);
+    deployProcessWithSecretInput();
+    final long processInstanceKey = createProcessInstance(client, processId);
+
+    // when - the job is polled, which parks it, resolves the value and then attempts the injection.
+    // The dropped job is taken out of the activation, so this request has nothing left to return
+    // and only its own timeout ends it
+    final CamundaFuture<ActivateJobsResponse> pendingPoll =
+        pollJobs(client, jobType, 1, DROPPED_JOB_POLL_TIMEOUT);
+
+    // then - the job is not activated and the worker is left with an incident to act on
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.MESSAGE_SIZE_EXCEEDED);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains(String.valueOf(incident.getValue().getJobKey()));
+    assertThat(pendingPoll.join().getJobs()).isEmpty();
+
+    // and - the value was resolved into the cache before the injection was rejected, so a value too
+    // large to hand out is still a value that must not reach a record. The incident above is
+    // written after the injection, so the records of that attempt are exported by now
+    assertNoRecordCarriesValue(oversizedValue);
+  }
+
+  @Test
+  void shouldDeliverEveryJobWaitingOnOneReference() {
+    // given - more jobs waiting on one reference than a single reactivation command carries
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithSecretInput();
+    final List<Long> processInstanceKeys = createProcessInstances(client, processId, WAITING_JOBS);
+
+    // when
+    final Map<Long, ActivatedJob> activated = pollUntilActivated(client, jobType, WAITING_JOBS);
+
+    // then - every waiting job was handed out, each with the resolved value
+    assertThat(activated.values())
+        .allSatisfy(
+            job -> assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue));
+    assertThat(activated.values())
+        .map(ActivatedJob::getProcessInstanceKey)
+        .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
+    activated.keySet().forEach(jobKey -> awaitActivationExported(jobType, jobKey));
+    assertNoIncidentWasRaised();
+    assertNoRecordCarriesValue(secretValue);
+
+    // and - the reactivation drained the jobs it parked in chained rounds rather than one batch,
+    // which delivering them all does not by itself show. How many jobs end up parked is a matter of
+    // timing (a job whose poll finds the value already cached is never parked at all), so the round
+    // count is required against the jobs that actually were parked rather than against a fixed
+    // number
+    final Set<Long> parked = parkedJobKeys(secretName);
+    final List<List<Long>> rounds = reactivationRounds(secretName);
+    assertThat(rounds)
+        .as("no round carried more jobs than one reactivation command holds")
+        .allSatisfy(round -> assertThat(round).hasSizeLessThanOrEqualTo(REACTIVATION_BATCH_SIZE));
+    assertThat(rounds.stream().flatMap(List::stream).toList())
+        .as("every parked job was reactivated")
+        .containsAll(parked);
+    assertThat(rounds)
+        .as("the %d parked jobs took more than one reactivation round".formatted(parked.size()))
+        .hasSizeGreaterThanOrEqualTo(
+            (parked.size() + REACTIVATION_BATCH_SIZE - 1) / REACTIVATION_BATCH_SIZE);
   }
 
   private Record<IncidentRecordValue> awaitSecretIncident(final long processInstanceKey) {
