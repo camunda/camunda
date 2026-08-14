@@ -157,7 +157,9 @@ public class BpmnJobActivationBehavior {
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
             wrappedJobRecord.getTypeBuffer(),
-            jobActivationProperties -> isAuthorized(jobActivationProperties, wrappedJobRecord));
+            jobActivationProperties ->
+                isAuthorized(jobActivationProperties, wrappedJobRecord)
+                    && isLeaseCompatible(jobActivationProperties, wrappedJobRecord));
 
     if (optionalJobStream.isEmpty()) {
       // the job stays activatable; a long poll checks its secret references when it collects it
@@ -412,5 +414,10 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  }
+
+  private boolean isLeaseCompatible(
+      final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
+    return jobActivationProperties.withLease() || !jobRecord.hasLeaseToken();
   }
 }
