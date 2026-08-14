@@ -77,8 +77,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -2922,12 +2922,12 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// ProcessInstanceBufferedCommandRecord
+      //////////////////////////////// BufferedCommandRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "ProcessInstanceBufferedCommandRecord",
+        "BufferedCommandRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final var commandValue =
@@ -2936,7 +2936,7 @@ final class JsonSerializableToJsonTest {
                       .setElementId("activity")
                       .setBpmnElementType(BpmnElementType.SERVICE_TASK);
 
-              return new ProcessInstanceBufferedCommandRecord()
+              return new BufferedCommandRecord()
                   .setProcessInstanceKey(1234)
                   .setProcessDefinitionKey(13)
                   .setTenantId("tenant-1")
@@ -2981,14 +2981,14 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// Empty ProcessInstanceBufferedCommandRecord
+      //////////////////////////////// Empty BufferedCommandRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty ProcessInstanceBufferedCommandRecord",
+        "Empty BufferedCommandRecord",
         (Supplier<UnifiedRecordValue>)
-            () -> new ProcessInstanceBufferedCommandRecord().setProcessInstanceKey(1234),
+            () -> new BufferedCommandRecord().setProcessInstanceKey(1234),
         """
                 {
                   "processInstanceKey": 1234,

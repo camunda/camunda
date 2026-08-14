@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -79,7 +79,7 @@ public final class ProcessInstanceSuspensionGateTest {
     final long bufferedCommandKey = Long.MAX_VALUE - processInstanceKey;
     suspensionState.bufferCommand(
         bufferedCommandKey,
-        new ProcessInstanceBufferedCommandRecord()
+        new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setCommandKey(bufferedCommandKey));
 
