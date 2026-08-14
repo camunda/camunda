@@ -145,6 +145,14 @@
         <artifactId>httpcore5-h2</artifactId>
         <version>${apache.http5-core.version}</version>
       </dependency>
+      <!-- Override Spring Boot's netty version to resolve CVE-2026-59901 -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
