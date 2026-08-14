@@ -293,13 +293,13 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
 
     await test.step('Setup - Assign limited role to limited user', async () => {
       const path = {
-        userId: LIMITED_USER.username,
+        username: LIMITED_USER.username,
         roleId: LIMITED_ROLE.roleId,
       };
 
       await expect(async () => {
         const res = await request.put(
-          buildUrl('/roles/{roleId}/users/{userId}', path),
+          buildUrl('/roles/{roleId}/users/{username}', path),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 204);

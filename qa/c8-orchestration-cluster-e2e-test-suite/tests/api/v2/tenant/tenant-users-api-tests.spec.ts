@@ -60,13 +60,13 @@ test.describe.parallel('Tenant Users API Tests', () => {
       'test-user' + generateUniqueId(),
     );
     const p = {
-      userName: user.username,
+      username: user.username,
       tenantId: tenant.tenantId as string,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/tenants/{tenantId}/users/{userName}', p),
+        buildUrl('/tenants/{tenantId}/users/{username}', p),
         {headers: jsonHeaders()},
       );
       await assertStatusCode(res, 204);
@@ -76,11 +76,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
 
   test('Assign User To Tenant Non Existent User Success', async ({request}) => {
     const p = {
-      userName: 'invalidUserName',
+      username: 'invalidUserName',
       tenantId: state['tenantId1'] as string,
     };
     const res = await request.put(
-      buildUrl('/tenants/{tenantId}/users/{userName}', p),
+      buildUrl('/tenants/{tenantId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -93,11 +93,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
     request,
   }) => {
     const p = {
-      userName: userFromState('tenantId1', state) as string,
+      username: userFromState('tenantId1', state) as string,
       tenantId: 'invalidTenantId',
     };
     const res = await request.put(
-      buildUrl('/tenants/{tenantId}/users/{userName}', p),
+      buildUrl('/tenants/{tenantId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -109,13 +109,13 @@ test.describe.parallel('Tenant Users API Tests', () => {
   test('Assign User To Tenant Unauthorized', async ({request}) => {
     const tenantId: string = state['tenantId1'] as string;
     const p = {
-      userName: userFromState('tenantId1', state) as string,
+      username: userFromState('tenantId1', state) as string,
       tenantId: tenantId,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/tenants/{tenantId}/users/{userName}', p),
+        buildUrl('/tenants/{tenantId}/users/{username}', p),
         {headers: {}},
       );
       await assertUnauthorizedRequest(res);
@@ -125,13 +125,13 @@ test.describe.parallel('Tenant Users API Tests', () => {
   test('Assign Already Added User To Tenant Conflict', async ({request}) => {
     const tenantId: string = state['tenantId1'] as string;
     const p = {
-      userName: userFromState('tenantId1', state) as string,
+      username: userFromState('tenantId1', state) as string,
       tenantId: tenantId,
     };
 
     await expect(async () => {
       const res = await request.put(
-        buildUrl('/tenants/{tenantId}/users/{userName}', p),
+        buildUrl('/tenants/{tenantId}/users/{username}', p),
         {headers: jsonHeaders()},
       );
       await assertConflictRequest(res);
@@ -204,14 +204,14 @@ test.describe.parallel('Tenant Users API Tests', () => {
     const tenantId: string = state['tenantId2'] as string;
     const tenantUser: string = userFromState('tenantId2', state, 1);
     const p = {
-      userName: tenantUser,
+      username: tenantUser,
       tenantId: tenantId,
     };
 
     await test.step('Unassign User From Tenant', async () => {
       await expect(async () => {
         const res = await request.delete(
-          buildUrl('/tenants/{tenantId}/users/{userName}', p),
+          buildUrl('/tenants/{tenantId}/users/{username}', p),
           {headers: jsonHeaders()},
         );
         await assertStatusCode(res, 204);
@@ -243,11 +243,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
   test('Unassign User From Tenant Unauthorized', async ({request}) => {
     const tenantId: string = state['tenantId1'] as string;
     const p = {
-      userName: userFromState('tenantId1', state) as string,
+      username: userFromState('tenantId1', state) as string,
       tenantId: tenantId,
     };
     const res = await request.delete(
-      buildUrl('/tenants/{tenantId}/users/{userName}', p),
+      buildUrl('/tenants/{tenantId}/users/{username}', p),
       {headers: {}},
     );
     await assertUnauthorizedRequest(res);
@@ -257,11 +257,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
     request,
   }) => {
     const p = {
-      userName: 'invalidUserId',
+      username: 'invalidUserId',
       tenantId: state['tenantId1'] as string,
     };
     const res = await request.delete(
-      buildUrl('/tenants/{tenantId}/users/{userName}', p),
+      buildUrl('/tenants/{tenantId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(
@@ -274,11 +274,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
     request,
   }) => {
     const p = {
-      userName: userFromState('tenantId1', state) as string,
+      username: userFromState('tenantId1', state) as string,
       tenantId: 'invalidTenantId',
     };
     const res = await request.delete(
-      buildUrl('/tenants/{tenantId}/users/{userName}', p),
+      buildUrl('/tenants/{tenantId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertNotFoundRequest(

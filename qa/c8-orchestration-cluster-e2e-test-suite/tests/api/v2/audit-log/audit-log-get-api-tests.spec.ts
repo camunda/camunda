@@ -92,9 +92,14 @@ test.describe.parallel('Get Audit Logs API Tests', () => {
   });
 
   test('Get Audit Logs - Unauthorized', async ({request}) => {
-    const res = await request.get(buildUrl('/audit-logs/someAuditLogKey'), {
-      headers: {},
-    });
+    const res = await request.get(
+      buildUrl('/audit-logs/{auditLogKey}', {
+        auditLogKey: 'someAuditLogKey',
+      }),
+      {
+        headers: {},
+      },
+    );
     await assertUnauthorizedRequest(res);
   });
 

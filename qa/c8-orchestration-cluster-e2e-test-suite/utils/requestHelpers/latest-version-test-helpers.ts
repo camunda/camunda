@@ -8,7 +8,7 @@
 
 import {expect, type APIRequestContext} from '@playwright/test';
 import {deployWithSubstitutions} from '../zeebeClient';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {assertStatusCode, buildUrl, jsonHeaders, type ApiPath} from '../http';
 import {extendedAssertionOptions} from '../constants';
 
 /**
@@ -110,7 +110,7 @@ export async function seedUniqueDecisionDefinitions(
  */
 export async function walkLatestVersionCursor(
   request: APIRequestContext,
-  endpoint: string,
+  endpoint: ApiPath,
   filter: Record<string, unknown>,
   limit: number,
 ): Promise<unknown[]> {
@@ -168,7 +168,7 @@ export async function walkLatestVersionCursor(
  */
 export async function waitForLatestVersionTotalItems(
   request: APIRequestContext,
-  endpoint: string,
+  endpoint: ApiPath,
   filter: Record<string, unknown>,
   expectedTotal: number,
 ): Promise<void> {

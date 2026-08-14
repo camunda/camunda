@@ -115,7 +115,9 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     await test.step('Send cancel request with invalid key', async () => {
       const res = await request.post(
-        buildUrl('/batch-operations/not-a-valid-key/cancellation'),
+        buildUrl('/batch-operations/{batchOperationKey}/cancellation', {
+          batchOperationKey: 'not-a-valid-key',
+        }),
         {
           headers: jsonHeaders(),
         },
