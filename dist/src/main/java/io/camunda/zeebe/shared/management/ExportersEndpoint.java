@@ -12,7 +12,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
@@ -93,16 +93,25 @@ public class ExportersEndpoint {
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 
+  /**
+   * Lists the exporters of every physical tenant, grouped by tenant, or of the one named by the
+   * {@code physicalTenant} query parameter. Each entry carries the tenant it belongs to, except for
+   * an unscoped request against a single-tenant cluster, which keeps the response shape that
+   * predates physical tenants — see {@link ClusterApiUtils#aggregateExporterState}.
+   */
   @GetMapping(produces = "application/json")
-  public CompletableFuture<ResponseEntity<?>> listExporters() {
+  public CompletableFuture<ResponseEntity<?>> listExporters(
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final var tenant = nonBlank(physicalTenant);
     return requestSender
         .getTopology()
-        .thenApply(result -> result.map(CurrentClusterConfiguration::toLegacyDefault))
-        .handle(this::mapQueryResponse);
+        .handle((response, throwable) -> mapQueryResponse(tenant, response, throwable));
   }
 
   private ResponseEntity<?> mapQueryResponse(
-      final Either<ErrorResponse, ClusterConfiguration> response, final Throwable throwable) {
+      final Optional<String> physicalTenant,
+      final Either<ErrorResponse, CurrentClusterConfiguration> response,
+      final Throwable throwable) {
     if (throwable != null) {
       return ClusterApiUtils.mapError(throwable);
     }
@@ -111,7 +120,21 @@ public class ExportersEndpoint {
       return ClusterApiUtils.mapErrorResponse(response.getLeft());
     }
 
-    return ResponseEntity.status(200).body(ClusterApiUtils.aggregateExporterState(response.get()));
+    final var configuration = response.get();
+    // an uninitialized configuration has no partition groups yet (broker startup, or right after a
+    // restore), so absence there means "not bootstrapped", not "unknown tenant" - reporting an
+    // empty exporter list is then more truthful than a 404 on a tenant that is merely not up yet.
+    if (physicalTenant.isPresent()
+        && !configuration.isUninitialized()
+        && !configuration.hasPartitionGroup(physicalTenant.get())) {
+      return ClusterApiUtils.mapErrorResponse(
+          new ErrorResponse(
+              ErrorCode.NOT_FOUND,
+              "Physical tenant '" + physicalTenant.get() + "' does not exist"));
+    }
+
+    return ResponseEntity.status(200)
+        .body(ClusterApiUtils.aggregateExporterState(configuration, physicalTenant.orElse(null)));
   }
 
   private static Optional<String> nonBlank(final @Nullable String value) {

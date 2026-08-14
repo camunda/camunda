@@ -96,7 +96,14 @@ paths:
   /:
     get:
       summary: List all exporters
-      description: List all exporters and their status whether they are enabled or disabled.
+      description: >
+        List all exporters and their status whether they are enabled or disabled.
+        Exporters are configured per physical tenant, so the same exporter id may exist in some
+        tenants only and may be in a different state in each of them. Without the physicalTenant
+        parameter every physical tenant is listed, grouped by tenant and each entry tagged with the
+        tenant it belongs to; with it, only the given physical tenant is listed.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '200':
           description: "List of exporters"
@@ -104,6 +111,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExporterList"
+        '404':
+          description: "The requested physical tenant does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: 'components.yaml#/schemas/Error'
 components:
   parameters:
     ExporterId:
@@ -154,6 +167,12 @@ components:
             - CONFIG_NOT_FOUND
           description: Status of the exporter
           example: "ENABLED"
+        physicalTenant:
+          description: >
+            The physical tenant this status belongs to. Absent only for an unscoped request against
+            a single-tenant cluster, which keeps the response shape that predates physical tenants.
+          allOf:
+            - $ref: 'components.yaml#/schemas/PhysicalTenantId'
 
     EnableExporterRequest:
       type: object

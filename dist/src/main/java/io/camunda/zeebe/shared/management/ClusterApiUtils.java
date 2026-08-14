@@ -1101,6 +1101,36 @@ final class ClusterApiUtils {
     return config;
   }
 
+  /**
+   * Aggregates the exporter state of every physical tenant, or of {@code physicalTenant} alone when
+   * given. Exporter configuration is per physical tenant, so an exporter id may exist in some
+   * tenants only and the same id can be in different states in each of them; each tenant is
+   * therefore aggregated on its own and reported as its own entry, tagged with {@code
+   * physicalTenant}, rather than reduced across tenants into one status that belongs to none of
+   * them. Entries are grouped by tenant, tenants in ascending id order.
+   *
+   * <p>The tag is omitted for an unscoped request against a single-tenant cluster, so a caller that
+   * predates physical tenants keeps exactly the response it always had. Every other shape carries
+   * it — without it an unscoped multi-tenant response would list the same exporter id repeatedly
+   * with no way to tell the entries apart, and a scoped response repeating the requested id is the
+   * same trade-off {@code GET /cluster?physicalTenant=} already makes for {@code physicalTenants}.
+   */
+  static List<ExporterStatus> aggregateExporterState(
+      final CurrentClusterConfiguration configuration, final @Nullable String physicalTenant) {
+    final List<String> tenantsInView =
+        physicalTenant == null
+            ? configuration.partitionGroups().keySet().stream().sorted().toList()
+            : List.of(physicalTenant);
+    final boolean tagWithPhysicalTenant = physicalTenant != null || tenantsInView.size() > 1;
+
+    return tenantsInView.stream()
+        .flatMap(
+            tenant ->
+                aggregateExporterState(configuration.toLegacy(tenant)).stream()
+                    .map(status -> tagWithPhysicalTenant ? status.physicalTenant(tenant) : status))
+        .toList();
+  }
+
   static List<ExporterStatus> aggregateExporterState(
       final ClusterConfiguration clusterConfiguration) {
     // Map of ExporterId => List of ExporterState (each item corresponds to a partition)
