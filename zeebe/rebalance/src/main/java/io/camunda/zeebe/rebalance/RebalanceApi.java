@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.rebalance;
 
+import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import org.jspecify.annotations.NullMarked;
 
 /** Interface for the rebalance coordinator. */
-@NullMarked
 public interface RebalanceApi {
   /**
    * Starts a cluster-wide rebalance and reports the status it starts from. Fails with {@link
@@ -23,6 +22,8 @@ public interface RebalanceApi {
    * @throws RebalanceInProgressException If a rebalance is already running.
    * @throws NotCoordinatorException If the request is received by a broker that is not the current
    *     coordinator.
+   * @throws ConfigurationChangeInProgressException If a cluster configuration change is pending, so
+   *     there is no settled configuration to plan the rebalance against.
    */
   ActorFuture<RebalanceStatus> triggerRebalance(TriggerRebalanceRequest request);
 

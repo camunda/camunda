@@ -11,13 +11,15 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Nulls;
+import java.time.Clock;
 import java.util.function.LongSupplier;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,6 @@ import org.slf4j.LoggerFactory;
  * coordinator. A member that stops being eligible to act as the coordinator drops any currently
  * running rebalance.
  */
-@NullMarked
 public final class RebalanceCoordinator
     implements RebalanceApi, ClusterConfigurationUpdateListener {
 
@@ -42,8 +43,13 @@ public final class RebalanceCoordinator
   private final ConcurrencyControl executor;
   private final RebalanceRunner runner;
   private final LongSupplier rebalanceIdGenerator;
+  private final Clock clock;
 
-  private boolean coordinating;
+  /**
+   * The configuration this member coordinates under, or {@code null} while it does not coordinate.
+   */
+  private @Nullable CurrentClusterConfiguration configuration;
+
   private @Nullable RebalanceRun running;
 
   private RebalanceStatus.@Nullable Completed lastCompleted;
@@ -52,15 +58,23 @@ public final class RebalanceCoordinator
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final RebalanceRunner runner,
-      final LongSupplier rebalanceIdGenerator) {
+      final LongSupplier rebalanceIdGenerator,
+      final Clock clock) {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.runner = runner;
     this.rebalanceIdGenerator = rebalanceIdGenerator;
+    this.clock = clock;
   }
 
   @Override
   public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterConfiguration));
+  }
+
+  @Override
+  public void onClusterConfigurationUpdated(
+      final CurrentClusterConfiguration clusterConfiguration) {
     executor.run(() -> updateCoordinatorRole(clusterConfiguration));
   }
 
@@ -72,7 +86,7 @@ public final class RebalanceCoordinator
     final ActorFuture<Void> result = executor.createFuture();
     executor.run(
         () -> {
-          coordinating = false;
+          configuration = null;
           discardState();
           result.complete(Nulls.uncheckedCastToNonNull(null));
         });
@@ -84,7 +98,15 @@ public final class RebalanceCoordinator
     final ActorFuture<RebalanceStatus> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          final var coordinatedConfiguration = coordinatedConfiguration(result);
+          if (coordinatedConfiguration == null) {
+            return;
+          }
+          if (!coordinatedConfiguration.phasedChangeState().pending().isEmpty()) {
+            result.completeExceptionally(
+                new ConfigurationChangeInProgressException(
+                    "Cannot start a rebalance while a cluster configuration change is in "
+                        + "progress"));
             return;
           }
           final var inFlight = running;
@@ -96,13 +118,21 @@ public final class RebalanceCoordinator
           }
           final var rebalance =
               new RebalanceRun(
-                  rebalanceIdGenerator.getAsLong(), request.overrides(), request.dryRun());
+                  rebalanceIdGenerator.getAsLong(),
+                  request.overrides(),
+                  request.dryRun(),
+                  coordinatedConfiguration,
+                  clock.instant());
           running = rebalance;
           LOG.info("Starting {}rebalance {}", rebalance.dryRun() ? "dry-run " : "", rebalance.id());
-          // Answer before running so the operator sees the rebalance they started, whatever it goes
-          // on to do.
-          result.complete(status());
-          start(rebalance);
+          if (rebalance.dryRun()) {
+            // A dry run only reads the plan, so it is over within the request and answers with the
+            // plan itself.
+            start(rebalance, () -> result.complete(status()));
+          } else {
+            result.complete(status());
+            start(rebalance, () -> {});
+          }
         });
     return result;
   }
@@ -112,7 +142,7 @@ public final class RebalanceCoordinator
     final ActorFuture<RebalanceStatus> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          if (coordinatedConfiguration(result) == null) {
             return;
           }
           result.complete(status());
@@ -125,7 +155,7 @@ public final class RebalanceCoordinator
     final ActorFuture<CancelRebalanceResponse> result = executor.createFuture();
     executor.run(
         () -> {
-          if (rejectIfNotCoordinating(result)) {
+          if (coordinatedConfiguration(result) == null) {
             return;
           }
           final var inFlight = running;
@@ -142,15 +172,21 @@ public final class RebalanceCoordinator
     return result;
   }
 
-  private void start(final RebalanceRun rebalance) {
+  private void start(final RebalanceRun rebalance, final Runnable whenFinished) {
     final ActorFuture<Void> run;
     try {
       run = runner.run(rebalance);
     } catch (final Exception e) {
       finish(rebalance, e);
+      whenFinished.run();
       return;
     }
-    executor.runOnCompletion(run, (ignored, error) -> finish(rebalance, error));
+    executor.runOnCompletion(
+        run,
+        (ignored, error) -> {
+          finish(rebalance, error);
+          whenFinished.run();
+        });
   }
 
   private void finish(final RebalanceRun rebalance, final @Nullable Throwable error) {
@@ -168,28 +204,36 @@ public final class RebalanceCoordinator
     } else {
       outcome = RebalanceOutcome.COMPLETED;
     }
-    lastCompleted = new RebalanceStatus.Completed(rebalance.id(), outcome);
+    final var finishedAt = clock.instant();
+    rebalance.finish(finishedAt);
+    lastCompleted =
+        new RebalanceStatus.Completed(
+            rebalance.id(),
+            outcome,
+            rebalance.dryRun(),
+            rebalance.partitions(),
+            rebalance.startedAt(),
+            finishedAt);
     LOG.info("Rebalance {} finished as {}", rebalance.id(), outcome);
   }
 
-  private void updateCoordinatorRole(final ClusterConfiguration clusterConfiguration) {
+  private void updateCoordinatorRole(final CurrentClusterConfiguration clusterConfiguration) {
     if (clusterConfiguration.isUninitialized()) {
       return;
     }
     final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(clusterConfiguration.members().keySet())
+        ClusterConfigurationCoordinatorSupplier.ofMembers(clusterConfiguration.getMembers())
             .getDefaultCoordinator();
     final var nowCoordinating = localMemberId.equals(coordinator);
-    if (nowCoordinating == coordinating) {
-      return;
+    if (nowCoordinating != (configuration != null)) {
+      if (nowCoordinating) {
+        LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
+      } else {
+        LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
+        discardState();
+      }
     }
-    coordinating = nowCoordinating;
-    if (nowCoordinating) {
-      LOG.info("Coordinating rebalances as the lowest-id member of the cluster configuration");
-    } else {
-      LOG.info("No longer coordinating rebalances, {} is now the lowest-id member", coordinator);
-      discardState();
-    }
+    configuration = nowCoordinating ? clusterConfiguration : null;
   }
 
   private void discardState() {
@@ -202,14 +246,19 @@ public final class RebalanceCoordinator
     lastCompleted = null;
   }
 
-  private boolean rejectIfNotCoordinating(final ActorFuture<?> result) {
-    if (coordinating) {
-      return false;
+  /**
+   * The configuration this member coordinates under, or {@code null} - having refused {@code
+   * result} - if it is not the coordinator.
+   */
+  private @Nullable CurrentClusterConfiguration coordinatedConfiguration(
+      final ActorFuture<?> result) {
+    final var current = configuration;
+    if (current == null) {
+      result.completeExceptionally(
+          new NotCoordinatorException(
+              "Member %s is not the rebalancing coordinator".formatted(localMemberId.id())));
     }
-    result.completeExceptionally(
-        new NotCoordinatorException(
-            "Member %s is not the rebalancing coordinator".formatted(localMemberId.id())));
-    return true;
+    return current;
   }
 
   private RebalanceStatus status() {
@@ -221,7 +270,8 @@ public final class RebalanceCoordinator
                 inFlight.id(),
                 inFlight.overrides(),
                 inFlight.dryRun(),
-                inFlight.isCancelRequested());
+                inFlight.isCancelRequested(),
+                inFlight.partitions());
     return new RebalanceStatus(runningStatus, lastCompleted);
   }
 }

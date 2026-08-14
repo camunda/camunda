@@ -16,6 +16,7 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
+import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -100,7 +102,8 @@ final class RebalanceForwardingTest {
     final var request =
         new TriggerRebalanceRequest(new RebalanceOverrides(2048L, Duration.ofSeconds(20), 3), true);
     COORDINATOR.status =
-        new RebalanceStatus(new RebalanceStatus.Running(9, request.overrides(), true, false), null);
+        new RebalanceStatus(
+            new RebalanceStatus.Running(9, request.overrides(), true, false, List.of()), null);
 
     // when
     final var response = sender.triggerRebalance(request).join();
@@ -114,7 +117,15 @@ final class RebalanceForwardingTest {
   void shouldForwardAStatusQuery() {
     // given
     COORDINATOR.status =
-        new RebalanceStatus(null, new RebalanceStatus.Completed(8, RebalanceOutcome.COMPLETED));
+        new RebalanceStatus(
+            null,
+            new RebalanceStatus.Completed(
+                8,
+                RebalanceOutcome.COMPLETED,
+                false,
+                List.of(PartitionRebalance.alreadyLeader("default", 1, MemberId.from("1"))),
+                Instant.parse("2024-01-01T00:00:00Z"),
+                Instant.parse("2024-01-01T00:00:05Z")));
 
     // when
     final var response = sender.getRebalanceStatus().join();
@@ -150,6 +161,25 @@ final class RebalanceForwardingTest {
         .isEqualTo(
             new RebalanceErrorResponse(
                 RebalanceErrorCode.REBALANCE_IN_PROGRESS, "Rebalance 7 is already running"));
+  }
+
+  @Test
+  void shouldReportARefusalDueToAPendingConfigurationChange() {
+    // given
+    COORDINATOR.failure =
+        new ConfigurationChangeInProgressException(
+            "Cannot start a rebalance while a cluster configuration change is in progress");
+
+    // when
+    final var response =
+        sender.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings()).join();
+
+    // then
+    assertThat(response.getLeft())
+        .isEqualTo(
+            new RebalanceErrorResponse(
+                RebalanceErrorCode.CONFIGURATION_CHANGE_IN_PROGRESS,
+                "Cannot start a rebalance while a cluster configuration change is in progress"));
   }
 
   @Test

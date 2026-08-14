@@ -8,14 +8,16 @@
 package io.camunda.zeebe.rebalance;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.rebalance.RebalanceErrorResponse.RebalanceErrorCode;
 import io.camunda.zeebe.rebalance.protocol.Rebalance;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
-import org.jspecify.annotations.NullMarked;
+import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSerializer {
 
   @Override
@@ -131,16 +133,130 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
               .setRebalanceId(running.rebalanceId())
               .setOverrides(encodeOverrides(running.overrides()))
               .setDryRun(running.dryRun())
-              .setCancelRequested(running.cancelRequested()));
+              .setCancelRequested(running.cancelRequested())
+              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList()));
     }
     final var lastCompleted = status.lastCompleted();
     if (lastCompleted != null) {
       builder.setLastCompleted(
           Rebalance.CompletedRebalance.newBuilder()
               .setRebalanceId(lastCompleted.rebalanceId())
-              .setOutcome(encodeOutcome(lastCompleted.outcome())));
+              .setOutcome(encodeOutcome(lastCompleted.outcome()))
+              .setDryRun(lastCompleted.dryRun())
+              .addAllPartitions(
+                  lastCompleted.partitions().stream().map(this::encodePartition).toList())
+              .setStartedAt(toTimestamp(lastCompleted.startedAt()))
+              .setFinishedAt(toTimestamp(lastCompleted.finishedAt())));
     }
     return builder.build();
+  }
+
+  private Rebalance.PartitionRebalance encodePartition(final PartitionRebalance partition) {
+    final var builder =
+        Rebalance.PartitionRebalance.newBuilder()
+            .setPhysicalTenantId(partition.physicalTenantId())
+            .setPartitionId(partition.partitionId())
+            .setDesiredLeader(partition.desiredLeader().id())
+            .setProgress(encodePartitionProgress(partition.progress()));
+    if (partition.currentLeader() != null) {
+      builder.setCurrentLeader(partition.currentLeader().id());
+    }
+    if (partition.outcome() != null) {
+      builder.setOutcome(encodePartitionOutcome(partition.outcome()));
+    }
+    return builder.build();
+  }
+
+  private PartitionRebalance decodePartition(final Rebalance.PartitionRebalance partition) {
+    if (!partition.hasDesiredLeader()) {
+      throw new DecodingFailed("A partition rebalance is missing its desired leader: " + partition);
+    }
+    return new PartitionRebalance(
+        partition.getPhysicalTenantId(),
+        partition.getPartitionId(),
+        partition.hasCurrentLeader() ? MemberId.from(partition.getCurrentLeader()) : null,
+        MemberId.from(partition.getDesiredLeader()),
+        decodePartitionProgress(partition.getProgress()),
+        decodePartitionOutcome(partition));
+  }
+
+  private Rebalance.PartitionRebalance.Progress encodePartitionProgress(
+      final PartitionRebalanceProgress progress) {
+    return switch (progress) {
+      case PENDING -> Rebalance.PartitionRebalance.Progress.PENDING;
+      case TRANSFERRING -> Rebalance.PartitionRebalance.Progress.TRANSFERRING;
+      case COMPLETED -> Rebalance.PartitionRebalance.Progress.COMPLETED;
+    };
+  }
+
+  private PartitionRebalanceProgress decodePartitionProgress(
+      final Rebalance.PartitionRebalance.Progress progress) {
+    return switch (progress) {
+      case PENDING -> PartitionRebalanceProgress.PENDING;
+      case TRANSFERRING -> PartitionRebalanceProgress.TRANSFERRING;
+      case COMPLETED -> PartitionRebalanceProgress.COMPLETED;
+      case PROGRESS_UNSPECIFIED, UNRECOGNIZED ->
+          throw new DecodingFailed(
+              "Partition rebalance progress is missing or unrecognized: " + progress);
+    };
+  }
+
+  private @Nullable PartitionRebalanceOutcome decodePartitionOutcome(
+      final Rebalance.PartitionRebalance partition) {
+    return partition.hasOutcome() ? decodePartitionOutcomeValue(partition.getOutcome()) : null;
+  }
+
+  private Rebalance.PartitionRebalance.Outcome encodePartitionOutcome(
+      final PartitionRebalanceOutcome outcome) {
+    return switch (outcome) {
+      case TRANSFERRED -> Rebalance.PartitionRebalance.Outcome.TRANSFERRED;
+      case ALREADY_LEADER -> Rebalance.PartitionRebalance.Outcome.ALREADY_LEADER;
+      case NOT_MEMBER -> Rebalance.PartitionRebalance.Outcome.NOT_MEMBER;
+      case NOT_REPLICATING -> Rebalance.PartitionRebalance.Outcome.NOT_REPLICATING;
+      case UNREACHABLE -> Rebalance.PartitionRebalance.Outcome.UNREACHABLE;
+      case NOT_COORDINATOR -> Rebalance.PartitionRebalance.Outcome.NOT_COORDINATOR;
+      case STALE_CONFIGURATION -> Rebalance.PartitionRebalance.Outcome.STALE_CONFIGURATION;
+      case TRANSFER_IN_PROGRESS -> Rebalance.PartitionRebalance.Outcome.TRANSFER_IN_PROGRESS;
+      case LAG_TOO_HIGH -> Rebalance.PartitionRebalance.Outcome.LAG_TOO_HIGH;
+      case LEADER_INITIALIZING -> Rebalance.PartitionRebalance.Outcome.LEADER_INITIALIZING;
+      case CONFIGURATION_CHANGE_IN_PROGRESS ->
+          Rebalance.PartitionRebalance.Outcome.CONFIGURATION_CHANGE_IN_PROGRESS;
+      case PAUSE_FAILED -> Rebalance.PartitionRebalance.Outcome.PAUSE_FAILED;
+      case REPLICATION_TIMED_OUT -> Rebalance.PartitionRebalance.Outcome.REPLICATION_TIMED_OUT;
+      case TIMEOUT_NOW_EXHAUSTED -> Rebalance.PartitionRebalance.Outcome.TIMEOUT_NOW_EXHAUSTED;
+      case LEADER_CHANGED -> Rebalance.PartitionRebalance.Outcome.LEADER_CHANGED;
+      case NO_LEADER -> Rebalance.PartitionRebalance.Outcome.NO_LEADER;
+      case NO_RESPONSE -> Rebalance.PartitionRebalance.Outcome.NO_RESPONSE;
+      case CANCELLED -> Rebalance.PartitionRebalance.Outcome.CANCELLED;
+    };
+  }
+
+  private PartitionRebalanceOutcome decodePartitionOutcomeValue(
+      final Rebalance.PartitionRebalance.Outcome outcome) {
+    return switch (outcome) {
+      case TRANSFERRED -> PartitionRebalanceOutcome.TRANSFERRED;
+      case ALREADY_LEADER -> PartitionRebalanceOutcome.ALREADY_LEADER;
+      case NOT_MEMBER -> PartitionRebalanceOutcome.NOT_MEMBER;
+      case NOT_REPLICATING -> PartitionRebalanceOutcome.NOT_REPLICATING;
+      case UNREACHABLE -> PartitionRebalanceOutcome.UNREACHABLE;
+      case NOT_COORDINATOR -> PartitionRebalanceOutcome.NOT_COORDINATOR;
+      case STALE_CONFIGURATION -> PartitionRebalanceOutcome.STALE_CONFIGURATION;
+      case TRANSFER_IN_PROGRESS -> PartitionRebalanceOutcome.TRANSFER_IN_PROGRESS;
+      case LAG_TOO_HIGH -> PartitionRebalanceOutcome.LAG_TOO_HIGH;
+      case LEADER_INITIALIZING -> PartitionRebalanceOutcome.LEADER_INITIALIZING;
+      case CONFIGURATION_CHANGE_IN_PROGRESS ->
+          PartitionRebalanceOutcome.CONFIGURATION_CHANGE_IN_PROGRESS;
+      case PAUSE_FAILED -> PartitionRebalanceOutcome.PAUSE_FAILED;
+      case REPLICATION_TIMED_OUT -> PartitionRebalanceOutcome.REPLICATION_TIMED_OUT;
+      case TIMEOUT_NOW_EXHAUSTED -> PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED;
+      case LEADER_CHANGED -> PartitionRebalanceOutcome.LEADER_CHANGED;
+      case NO_LEADER -> PartitionRebalanceOutcome.NO_LEADER;
+      case NO_RESPONSE -> PartitionRebalanceOutcome.NO_RESPONSE;
+      case CANCELLED -> PartitionRebalanceOutcome.CANCELLED;
+      case OUTCOME_UNSPECIFIED, UNRECOGNIZED ->
+          throw new DecodingFailed(
+              "Partition rebalance outcome is missing or unrecognized: " + outcome);
+    };
   }
 
   private RebalanceStatus decodeStatus(final Rebalance.RebalanceStatusResponse status) {
@@ -154,12 +270,18 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         running.getRebalanceId(),
         decodeOverrides(running.getOverrides()),
         running.getDryRun(),
-        running.getCancelRequested());
+        running.getCancelRequested(),
+        running.getPartitionsList().stream().map(this::decodePartition).toList());
   }
 
   private RebalanceStatus.Completed decodeCompleted(final Rebalance.CompletedRebalance completed) {
     return new RebalanceStatus.Completed(
-        completed.getRebalanceId(), decodeOutcome(completed.getOutcome()));
+        completed.getRebalanceId(),
+        decodeOutcome(completed.getOutcome()),
+        completed.getDryRun(),
+        completed.getPartitionsList().stream().map(this::decodePartition).toList(),
+        fromTimestamp(completed.getStartedAt()),
+        fromTimestamp(completed.getFinishedAt()));
   }
 
   private RebalanceErrorResponse decodeError(final Rebalance.RebalanceErrorResponse error) {
@@ -167,37 +289,56 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         decodeErrorCode(error.getErrorCode()), error.getErrorMessage());
   }
 
-  private Rebalance.RebalanceOutcome encodeOutcome(final RebalanceOutcome outcome) {
+  private Rebalance.CompletedRebalance.RebalanceOutcome encodeOutcome(
+      final RebalanceOutcome outcome) {
     return switch (outcome) {
-      case COMPLETED -> Rebalance.RebalanceOutcome.REBALANCE_COMPLETED;
-      case CANCELLED -> Rebalance.RebalanceOutcome.REBALANCE_CANCELLED;
-      case FAILED -> Rebalance.RebalanceOutcome.REBALANCE_FAILED;
+      case COMPLETED -> Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED;
+      case CANCELLED -> Rebalance.CompletedRebalance.RebalanceOutcome.CANCELLED;
+      case FAILED -> Rebalance.CompletedRebalance.RebalanceOutcome.FAILED;
     };
   }
 
-  private RebalanceOutcome decodeOutcome(final Rebalance.RebalanceOutcome outcome) {
+  private RebalanceOutcome decodeOutcome(
+      final Rebalance.CompletedRebalance.RebalanceOutcome outcome) {
     return switch (outcome) {
-      case REBALANCE_COMPLETED -> RebalanceOutcome.COMPLETED;
-      case REBALANCE_CANCELLED -> RebalanceOutcome.CANCELLED;
-      case REBALANCE_FAILED -> RebalanceOutcome.FAILED;
+      case COMPLETED -> RebalanceOutcome.COMPLETED;
+      case CANCELLED -> RebalanceOutcome.CANCELLED;
+      case FAILED -> RebalanceOutcome.FAILED;
       case REBALANCE_OUTCOME_UNSPECIFIED, UNRECOGNIZED ->
           throw new DecodingFailed("Rebalance outcome is missing or unrecognized: " + outcome);
     };
   }
 
-  private Rebalance.RebalanceErrorCode encodeErrorCode(final RebalanceErrorCode code) {
+  private Rebalance.RebalanceErrorResponse.RebalanceErrorCode encodeErrorCode(
+      final RebalanceErrorCode code) {
     return switch (code) {
-      case REBALANCE_IN_PROGRESS -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_IN_PROGRESS;
-      case NOT_COORDINATOR -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_NOT_COORDINATOR;
-      case INTERNAL_ERROR -> Rebalance.RebalanceErrorCode.REBALANCE_ERROR_UNSPECIFIED;
+      case REBALANCE_IN_PROGRESS -> Rebalance.RebalanceErrorResponse.RebalanceErrorCode.IN_PROGRESS;
+      case NOT_COORDINATOR -> Rebalance.RebalanceErrorResponse.RebalanceErrorCode.NOT_COORDINATOR;
+      case CONFIGURATION_CHANGE_IN_PROGRESS ->
+          Rebalance.RebalanceErrorResponse.RebalanceErrorCode.CONFIGURATION_CHANGE_IN_PROGRESS;
+      case INTERNAL_ERROR ->
+          Rebalance.RebalanceErrorResponse.RebalanceErrorCode.REBALANCE_ERROR_UNSPECIFIED;
     };
   }
 
-  private RebalanceErrorCode decodeErrorCode(final Rebalance.RebalanceErrorCode code) {
+  private RebalanceErrorCode decodeErrorCode(
+      final Rebalance.RebalanceErrorResponse.RebalanceErrorCode code) {
     return switch (code) {
-      case REBALANCE_ERROR_IN_PROGRESS -> RebalanceErrorCode.REBALANCE_IN_PROGRESS;
-      case REBALANCE_ERROR_NOT_COORDINATOR -> RebalanceErrorCode.NOT_COORDINATOR;
+      case IN_PROGRESS -> RebalanceErrorCode.REBALANCE_IN_PROGRESS;
+      case NOT_COORDINATOR -> RebalanceErrorCode.NOT_COORDINATOR;
+      case CONFIGURATION_CHANGE_IN_PROGRESS -> RebalanceErrorCode.CONFIGURATION_CHANGE_IN_PROGRESS;
       case REBALANCE_ERROR_UNSPECIFIED, UNRECOGNIZED -> RebalanceErrorCode.INTERNAL_ERROR;
     };
+  }
+
+  private static Timestamp toTimestamp(final Instant instant) {
+    return Timestamp.newBuilder()
+        .setSeconds(instant.getEpochSecond())
+        .setNanos(instant.getNano())
+        .build();
+  }
+
+  private static Instant fromTimestamp(final Timestamp timestamp) {
+    return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
   }
 }

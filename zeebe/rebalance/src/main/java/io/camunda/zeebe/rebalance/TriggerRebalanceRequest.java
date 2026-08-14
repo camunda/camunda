@@ -7,15 +7,12 @@
  */
 package io.camunda.zeebe.rebalance;
 
-import org.jspecify.annotations.NullMarked;
-
 /**
  * Asks the coordinator to start a cluster-wide rebalance.
  *
  * @param overrides any overrides for rebalance settings applying to this run
  * @param dryRun run pre-checks and report the plan without pausing or transferring anything
  */
-@NullMarked
 public record TriggerRebalanceRequest(RebalanceOverrides overrides, boolean dryRun) {
   public static TriggerRebalanceRequest withConfiguredSettings() {
     return new TriggerRebalanceRequest(RebalanceOverrides.none(), false);

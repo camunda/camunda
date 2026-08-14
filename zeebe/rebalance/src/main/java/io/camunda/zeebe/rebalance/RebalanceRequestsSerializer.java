@@ -8,10 +8,8 @@
 package io.camunda.zeebe.rebalance;
 
 import io.camunda.zeebe.util.Either;
-import org.jspecify.annotations.NullMarked;
 
 /** Serializes rebalance requests to be forwarded to the coordinator. */
-@NullMarked
 public interface RebalanceRequestsSerializer {
 
   byte[] encodeTriggerRebalanceRequest(TriggerRebalanceRequest request);

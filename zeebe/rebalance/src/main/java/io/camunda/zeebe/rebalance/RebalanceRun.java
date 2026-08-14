@@ -7,27 +7,42 @@
  */
 package io.camunda.zeebe.rebalance;
 
-import org.jspecify.annotations.NullMarked;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A rebalance the coordinator is running.
  *
  * <p>Access is confined to the coordinator's actor thread.
  */
-@NullMarked
 public final class RebalanceRun {
 
   private final long id;
   private final RebalanceOverrides overrides;
   private final boolean dryRun;
+  private final CurrentClusterConfiguration configuration;
+  private final Instant startedAt;
+  private final List<PartitionRebalance> partitions = new ArrayList<>();
 
   private boolean cancelRequested;
   private boolean abandoned;
+  private @Nullable Instant finishedAt;
 
-  public RebalanceRun(final long id, final RebalanceOverrides overrides, final boolean dryRun) {
+  public RebalanceRun(
+      final long id,
+      final RebalanceOverrides overrides,
+      final boolean dryRun,
+      final CurrentClusterConfiguration configuration,
+      final Instant startedAt) {
     this.id = id;
     this.overrides = overrides;
     this.dryRun = dryRun;
+    this.configuration = configuration;
+    this.startedAt = startedAt;
   }
 
   public long id() {
@@ -44,9 +59,56 @@ public final class RebalanceRun {
     return dryRun;
   }
 
+  /** The committed cluster configuration this rebalance was admitted under. */
+  public CurrentClusterConfiguration configuration() {
+    return configuration;
+  }
+
+  /** When this rebalance was created. */
+  public Instant startedAt() {
+    return startedAt;
+  }
+
+  /** When this rebalance finished, or {@code null} while it is still running. */
+  public @Nullable Instant finishedAt() {
+    return finishedAt;
+  }
+
+  /** Records that this rebalance finished at the given instant. */
+  public void finish(final Instant finishedAt) {
+    this.finishedAt = finishedAt;
+  }
+
   /**
-   * Asks the rebalance to stop. A cancellation never interrupts a partition transfer which is
-   * currently in flight.
+   * The partitions this rebalance covers, in the order it works through them, each with where the
+   * rebalance has got to with it. Empty until the runner has planned the rebalance.
+   */
+  public List<PartitionRebalance> partitions() {
+    return List.copyOf(partitions);
+  }
+
+  /** Fixes the partitions this rebalance covers, and the leaders it moves leadership between. */
+  public void plan(final List<PartitionRebalance> planned) {
+    partitions.clear();
+    partitions.addAll(planned);
+  }
+
+  public PartitionRebalance partition(final int index) {
+    return partitions.get(index);
+  }
+
+  public int partitionCount() {
+    return partitions.size();
+  }
+
+  /** Records what became of the partition at {@code index} as the rebalance works through it. */
+  public void updatePartition(final int index, final UnaryOperator<PartitionRebalance> updater) {
+    partitions.set(index, updater.apply(partitions.get(index)));
+  }
+
+  /**
+   * Asks the rebalance to stop. A cancellation never interrupts the transfer in flight, so the
+   * runner is expected to observe this between partitions rather than part-way through one.
    */
   public void requestCancel() {
     cancelRequested = true;

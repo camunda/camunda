@@ -8,7 +8,6 @@
 package io.camunda.zeebe.rebalance;
 
 import java.time.Duration;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,7 +21,6 @@ import org.jspecify.annotations.Nullable;
  * @param maxTransferAttempts The maximum number of TimeoutNow requests the current leader sends
  *     (including the initial request).
  */
-@NullMarked
 public record RebalanceOverrides(
     @Nullable Long replicationLagThreshold,
     @Nullable Duration replicationTimeout,

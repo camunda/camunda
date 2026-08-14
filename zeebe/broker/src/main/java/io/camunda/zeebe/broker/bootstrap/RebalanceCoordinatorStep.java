@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionLeaders;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
-import io.camunda.zeebe.rebalance.RebalanceRunner;
+import io.camunda.zeebe.rebalance.SequentialRebalanceRunner;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import java.time.Clock;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +64,12 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                   new RebalanceCoordinator(
                       localMember,
                       rebalanceCoordinatorActor,
-                      RebalanceRunner.none(),
-                      () -> brokerStartupContext.getRequestIdGenerator().nextId());
+                      new SequentialRebalanceRunner(
+                          rebalanceCoordinatorActor,
+                          new TopologyPartitionLeaders(
+                              brokerStartupContext.getBrokerClient().getTopologyManager())),
+                      () -> brokerStartupContext.getRequestIdGenerator().nextId(),
+                      Clock.systemUTC());
               rebalanceRequestServer =
                   new RebalanceRequestServer(
                       brokerStartupContext.getClusterServices().getCommunicationService(),

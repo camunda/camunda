@@ -43,4 +43,20 @@ public abstract sealed class RebalanceRequestFailedException extends RuntimeExce
       return RebalanceErrorCode.NOT_COORDINATOR;
     }
   }
+
+  /**
+   * Signals that a cluster configuration change is pending, so there is no settled configuration to
+   * plan a rebalance against.
+   */
+  public static final class ConfigurationChangeInProgressException
+      extends RebalanceRequestFailedException {
+    public ConfigurationChangeInProgressException(final String message) {
+      super(message);
+    }
+
+    @Override
+    public RebalanceErrorCode getErrorCode() {
+      return RebalanceErrorCode.CONFIGURATION_CHANGE_IN_PROGRESS;
+    }
+  }
 }
