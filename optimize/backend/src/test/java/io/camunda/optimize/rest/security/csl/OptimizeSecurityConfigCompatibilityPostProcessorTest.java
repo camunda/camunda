@@ -49,8 +49,10 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
-  void shouldDoNothingWhenCslDisabled() {
+  void shouldDoNothingAndWarnWhenCslExplicitlyDisabled() {
+    // given an operator using the escape hatch (CSL now defaults to true, camunda/camunda#58483)
     final Map<String, Object> legacy = new HashMap<>();
+    legacy.put("optimize.security.csl.enabled", "false");
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
 
     final StandardEnvironment env = environmentWith(legacy);
@@ -58,8 +60,26 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isNull();
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    logs.assertContains(
+        entry ->
+            entry.getLevel() == Level.WARN
+                && entry.getMessage().contains("optimize.security.csl.enabled")
+                && entry.getMessage().contains("8.11"),
+        "expected a deprecation warning naming the flag and the 8.11 removal");
+  }
+
+  @Test
+  void shouldBridgeByDefaultWhenFlagAbsent() {
+    // given the flag is not set at all — CSL is now the default (camunda/camunda#58483)
+    final Map<String, Object> legacy = new HashMap<>();
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
     logs.assertDoesNotContain(
-        entry -> entry.getLevel() == Level.WARN, "expected no logging when CSL is disabled");
+        entry -> entry.getLevel() == Level.WARN,
+        "expected no deprecation warning when the flag is simply left at its default");
   }
 
   @Test

@@ -200,30 +200,31 @@ public class UIConfigurationServiceTest {
   }
 
   @Test
-  public void testCslDisabledByDefault() {
+  public void testCslEnabledByDefault() {
     // given
     initializeMocks();
     when(environment.getActiveProfiles()).thenReturn(new String[] {CCSM_PROFILE});
-
-    // when
-    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
-
-    // then
-    assertThat(configurationResponse.isCslEnabled()).isFalse();
-  }
-
-  @Test
-  public void testCslEnabledWhenFlagSet() {
-    // given
-    initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {CCSM_PROFILE});
-    when(environment.getProperty("optimize.security.csl.enabled")).thenReturn("true");
+    when(environment.getProperty("optimize.security.csl.enabled", "true")).thenReturn("true");
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
     assertThat(configurationResponse.isCslEnabled()).isTrue();
+  }
+
+  @Test
+  public void testCslDisabledWhenFlagExplicitlySetFalse() {
+    // given an operator using the escape hatch (camunda/camunda#58483)
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CCSM_PROFILE});
+    when(environment.getProperty("optimize.security.csl.enabled", "true")).thenReturn("false");
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.isCslEnabled()).isFalse();
   }
 
   private void initializeMocks() {
