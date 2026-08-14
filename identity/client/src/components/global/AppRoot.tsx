@@ -12,10 +12,13 @@ import { styles } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
+import { useSessionHeartbeat } from "@camunda/session-heartbeat/react";
 import { authenticationQueries } from "src/utility/api/authentication/queries";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
-import { activateSession } from "src/utility/auth";
+import { activateSession, disableSession } from "src/utility/auth";
+import { getCsrfToken } from "src/utility/api/request";
+import { getSessionHeartbeatApiUrl } from "src/configuration/urlConfig";
 import { C3Provider } from "../layout/C3Provider";
 import { ThemeProvider } from "src/common/theme/ThemeProvider";
 
@@ -71,6 +74,13 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   const { data: camundaUser, isLoading: loading } = useQuery(
     authenticationQueries.me(),
   );
+
+  useSessionHeartbeat({
+    enabled: camundaUser !== undefined,
+    url: getSessionHeartbeatApiUrl(),
+    csrfToken: getCsrfToken,
+    onUnauthorized: disableSession,
+  });
 
   useEffect(() => {
     if (camundaUser) {

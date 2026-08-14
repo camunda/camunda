@@ -10,6 +10,7 @@ const adminPath = "/admin";
 const apiBaseUrl = "/v2";
 const loginApiUrl = "/login";
 const logoutApiUrl = "/logout";
+const sessionHeartbeatApiUrl = "/session/heartbeat";
 
 export function getApiBaseUrl() {
   return getBasePathBeforeAdmin() + apiBaseUrl;
@@ -21,6 +22,10 @@ export function getLoginApiUrl() {
 
 export function getLogoutApiUrl() {
   return getBasePathBeforeAdmin() + logoutApiUrl;
+}
+
+export function getSessionHeartbeatApiUrl() {
+  return getBasePathBeforeAdmin() + sessionHeartbeatApiUrl;
 }
 
 export function getBaseUrl() {
