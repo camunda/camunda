@@ -12,9 +12,14 @@
 #   name       incident title
 #   status     incident status, e.g. "Investigating", "Closed"
 #   severity   incident severity
-#   commander  name of the incident lead
+#   commander  name of the incident commander
 #   permalink  link to the incident in incident.io
+#   slack_url  incident.io's Slack channel URL for the incident (optional — see below)
 #   summary    incident summary
+#
+# slack_url may be empty on the very first event, because the incident channel is
+# still being provisioned when the "incident created" trigger fires. The sync is
+# idempotent, so the link fills itself in on the next incident update.
 ---
 name: incident.io issue sync
 
@@ -49,6 +54,7 @@ jobs:
           SEVERITY: ${{ github.event.client_payload.severity }}
           COMMANDER: ${{ github.event.client_payload.commander }}
           PERMALINK: ${{ github.event.client_payload.permalink }}
+          SLACK_URL: ${{ github.event.client_payload.slack_url }}
           SUMMARY: ${{ github.event.client_payload.summary }}
         run: |
           set -euo pipefail
@@ -59,11 +65,20 @@ jobs:
           fi
 
           title="[$REFERENCE] ${NAME:-untitled incident}"
+
+          # Rendered only once incident.io has provisioned the incident channel, so
+          # the issue never shows a dead "Slack" link.
+          slack_line=""
+          if [[ -n "${SLACK_URL:-}" ]]; then
+            slack_line="**Slack:** [incident channel]($SLACK_URL)"
+          fi
+
           body=$(cat <<EOF
           **Incident:** [$REFERENCE](${PERMALINK:-https://app.incident.io})
           **Status:** ${STATUS:-unknown}
           **Severity:** ${SEVERITY:-unknown}
-          **Incident lead:** ${COMMANDER:-unassigned}
+          **Incident commander:** ${COMMANDER:-unassigned}
+          $slack_line
 
           ${SUMMARY:-_No summary yet._}
 
