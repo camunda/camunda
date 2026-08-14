@@ -150,16 +150,19 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonIgnore
   public String getAuthorizedUsername() {
     return BufferUtil.bufferAsString(authorizedUsernameProperty.getValue());
   }
 
   @Override
+  @JsonIgnore
   public String getAuthorizedClientId() {
     return BufferUtil.bufferAsString(authorizedClientIdProperty.getValue());
   }
 
   @Override
+  @JsonIgnore
   public boolean getAuthorizedAnonymousUser() {
     return authorizedAnonymousUserProperty.getValue();
   }

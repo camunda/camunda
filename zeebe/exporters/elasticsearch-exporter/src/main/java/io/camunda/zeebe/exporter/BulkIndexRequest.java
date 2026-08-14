@@ -13,10 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
@@ -39,6 +41,8 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(AsyncRequestRecordValue.class, ActorMetadataMixin.class)
+          .addMixIn(IncidentRecordValue.class, ActorMetadataMixin.class)
           .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -52,6 +56,8 @@ final class BulkIndexRequest {
           .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
+          .addMixIn(AsyncRequestRecordValue.class, ActorMetadataMixin.class)
+          .addMixIn(IncidentRecordValue.class, ActorMetadataMixin.class)
           .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -73,6 +79,9 @@ final class BulkIndexRequest {
   private static final String METADATA_PROPERTY = "metadata";
   private static final String KIND_PROPERTY = "kind";
   private static final String STORAGE_ORDINAL_KEY_PROPERTY = "storageOrdinalKey";
+  private static final String AUTHORIZED_USERNAME_PROPERTY = "authorizedUsername";
+  private static final String AUTHORIZED_CLIENT_ID_PROPERTY = "authorizedClientId";
+  private static final String AUTHORIZED_ANONYMOUS_USER_PROPERTY = "authorizedAnonymousUser";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -214,6 +223,14 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({METADATA_PROPERTY, KIND_PROPERTY, SECRET_REFERENCES_PROPERTY})
   private static final class ClusterVariableMixin {}
+
+  @JsonIgnoreProperties({
+    AUTHORIZED_USERNAME_PROPERTY,
+    AUTHORIZED_CLIENT_ID_PROPERTY,
+    AUTHORIZED_ANONYMOUS_USER_PROPERTY,
+    STORAGE_ORDINAL_KEY_PROPERTY
+  })
+  private static final class ActorMetadataMixin {}
 
   /**
    * The storage ordinal key is only used to route a record's document to its storage location; it

@@ -145,16 +145,19 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
+  @JsonIgnore
   public String getAuthorizedUsername() {
     return BufferUtil.bufferAsString(authorizedUsernameProp.getValue());
   }
 
   @Override
+  @JsonIgnore
   public String getAuthorizedClientId() {
     return BufferUtil.bufferAsString(authorizedClientIdProp.getValue());
   }
 
   @Override
+  @JsonIgnore
   public boolean getAuthorizedAnonymousUser() {
     return authorizedAnonymousUserProp.getValue();
   }

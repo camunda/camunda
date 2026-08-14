@@ -41,15 +41,6 @@
             },
             "batchOperationReference": {
               "type": "long"
-            },
-            "authorizedUsername": {
-              "type": "keyword"
-            },
-            "authorizedClientId": {
-              "type": "keyword"
-            },
-            "authorizedAnonymousUser": {
-              "type": "boolean"
             }
           }
         }
