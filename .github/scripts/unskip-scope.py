@@ -48,6 +48,7 @@ API_DATABASES = {
 }
 
 DIFF_FILE_RE = re.compile(r"^\+\+\+ b/(.+)$")
+DIFF_HUNK_RE = re.compile(r"^@@ ")
 # `test('title'`, `test.describe('title'`, `test.step('title'` — the three call
 # shapes the unskip transform flips. Quote style varies across the suite.
 TEST_CALL_RE = re.compile(
@@ -115,7 +116,10 @@ def parse_diff(diff):
 
     A test is attributed to the bug whose skip marker was removed immediately
     above it; markers and the `test(` call can be separated by kept prose
-    comments, so the most recent unconsumed marker in the hunk wins.
+    comments, so the most recent unconsumed marker wins — the nearest marker is
+    the attached one when several stack up. Pending markers are dropped at each
+    hunk boundary: a marker and the call it guards are always in the same hunk,
+    so one that never finds a test cannot leak into a later one.
     """
     files = {}
     current = None
@@ -132,6 +136,9 @@ def parse_diff(diff):
             continue
         if current is None:
             continue
+        if DIFF_HUNK_RE.match(line):
+            pending_bugs = []
+            continue
         if SKIP_MARKER_RE.match(line):
             found = ISSUE_URL_RE.search(line)
             if found:
@@ -142,7 +149,7 @@ def parse_diff(diff):
             files[current]["tests"].append(
                 {
                     "test_name": test_match.group(1),
-                    "bug": pending_bugs.pop(0) if pending_bugs else None,
+                    "bug": pending_bugs.pop() if pending_bugs else None,
                 }
             )
     return files
