@@ -462,6 +462,55 @@ def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
     return out
 
 
+def _e2e_touched_since(suite: str, since: str) -> bool:
+    """True when the e2e repo changed this version's test code after `since`."""
+    for path in (f"tests/{suite}", f"pages/{suite}"):
+        commits = gh_json(
+            [
+                "api",
+                f"repos/{E2E_REPO}/commits?path={path}&since={since}&per_page=5",
+            ],
+            [],
+        )
+        if isinstance(commits, list) and commits:
+            shas = [str(c.get("sha") or "")[:7] for c in commits if isinstance(c, dict)]
+            log(f"e2e {path} changed after the run started: {', '.join(shas)}")
+            return True
+    return False
+
+
+def fixed_upstream_fingerprints(
+    candidates: list[planning.Candidate], since: str
+) -> set[str]:
+    """Fingerprints whose test code was already superseded when triage ran.
+
+    The suite executes the published `@camunda/e2e-test-suite` package, not repo
+    source, so a merged fix keeps failing until the package is published. Every run
+    inside that window dispatched an agent that could only conclude "already fixed,
+    no diff to open" — runs 30887597964 and 31016165246 both did exactly that for
+    e2e PR #2899, which merged 33 minutes after the first of them started.
+
+    Anchored to the failing run's start, which makes it self-limiting: once the fix
+    has landed, a later run that still fails started *after* the commit, nothing
+    matches, and the agent is dispatched normally. It only ever withholds the window
+    between a run beginning and a fix landing mid-flight.
+    """
+    if not since:
+        return set()
+    out: set[str] = set()
+    touched: dict[str, bool] = {}
+    for cand in candidates:
+        for spec, fp in zip(cand.specs, cand.spec_fingerprints):
+            suite = planning.spec_suite(spec.file)
+            if not suite:
+                continue
+            if suite not in touched:
+                touched[suite] = _e2e_touched_since(suite, since)
+            if touched[suite]:
+                out.add(fp)
+    return out
+
+
 def product_bug_fingerprints() -> set[str]:
     issues = gh_json(
         [
@@ -643,6 +692,9 @@ def main() -> int:
             pr_keys = {c.key for c in candidates}
             log("::warning::open fix PR lookup failed; suppressing dispatch this run")
 
+        run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
+        started = run.get("run_started_at") or run.get("created_at") or ""
+
         result = planning.plan_dispatches(
             candidates,
             covered_fingerprints=covered_fingerprints(),
@@ -650,11 +702,11 @@ def main() -> int:
             open_pr_keys=pr_keys,
             product_bug_fingerprints=product_bug_fingerprints(),
             recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
+            fixed_upstream_fingerprints=fixed_upstream_fingerprints(candidates, started),
             max_dispatches=args.max_dispatches,
         )
         result.noise = noise
 
-        run = gh_json(["api", f"repos/{REPO}/actions/runs/{args.run_id}"], {})
         blame = resolve_blame(run.get("head_sha") or "")
 
         payload = serialise(result, blame, args.run_id)

@@ -153,6 +153,76 @@ def test_no_fix_defaults_to_nothing_suppressed():
     assert len(result.dispatches) == 1
 
 
+def test_fixed_upstream_suppresses_the_candidate():
+    # The run executed the published package, and the fix merged after it started.
+    cand = _cand()
+    result = _plan([cand], fixed_upstream_fingerprints=set(cand.spec_fingerprints))
+    assert result.dispatches == []
+    assert result.suppressed[0].reason == plan.SUPPRESSED_FIXED_UPSTREAM
+
+
+def test_fixed_upstream_spec_does_not_block_a_new_failure_beside_it():
+    stale = _spec(name="already fixed upstream")
+    fresh = _spec(name="new failure")
+    cand = _cand(specs=[stale, fresh])
+    stale_fp = classify.spec_fingerprint(
+        "main", classify.SURFACE_SM_E2E, stale.file, stale.test_name
+    )
+
+    result = _plan([cand], fixed_upstream_fingerprints={stale_fp})
+    assert len(result.dispatches) == 1
+    assert [s.test_name for s in result.dispatches[0].specs] == ["new failure"]
+
+
+# ---------------------------------------------------------------------------
+# Base refs the fix agent accepts
+# ---------------------------------------------------------------------------
+
+
+def test_unsupported_base_ref_is_not_dispatched():
+    # The fix workflow rejects anything outside its whitelist on its first step, so
+    # dispatching it spends a runner to produce a confusing failure (run 31115770750
+    # on ci/alwaysgreen-helm-live-check).
+    result = _plan([_cand(base_ref="ci/alwaysgreen-helm-live-check")])
+    assert result.dispatches == []
+    assert result.suppressed[0].reason == plan.SUPPRESSED_UNSUPPORTED_REF
+    assert result.suppressed[0].detail == "ci/alwaysgreen-helm-live-check"
+
+
+def test_every_supported_base_ref_is_dispatchable():
+    for ref in plan.SUPPORTED_BASE_REFS:
+        result = _plan([_cand(base_ref=ref)])
+        assert len(result.dispatches) == 1, ref
+
+
+def test_unsupported_ref_is_reported_before_any_other_reason():
+    # Checked first so the summary names the real blocker rather than the cap.
+    result = _plan(
+        [_cand(base_ref="feature/x"), _cand(surface=classify.SURFACE_SAAS_E2E)],
+        max_dispatches=1,
+    )
+    assert result.suppressed[0].reason == plan.SUPPRESSED_UNSUPPORTED_REF
+
+
+# ---------------------------------------------------------------------------
+# Suite of a spec
+# ---------------------------------------------------------------------------
+
+
+def test_spec_suite_from_a_mapped_spec_path():
+    assert plan.spec_suite("tests/SM-8.10/smoke-tests.spec.ts") == "SM-8.10"
+    assert plan.spec_suite("tests/8.9/smoke-tests.spec.ts") == "8.9"
+
+
+def test_spec_suite_is_none_for_anything_else():
+    # A saas-ci synthetic spec carries a workflow path, and a bare filename means the
+    # report gave no rootDir to map from.
+    assert plan.spec_suite(".github/workflows/playwright_saas.yml") is None
+    assert plan.spec_suite("smoke-tests.spec.ts") is None
+    assert plan.spec_suite("") is None
+    assert plan.spec_suite("tests/") is None
+
+
 # ---------------------------------------------------------------------------
 # Reading a past run's verdict off its own artifacts
 # ---------------------------------------------------------------------------

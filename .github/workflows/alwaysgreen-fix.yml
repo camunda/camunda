@@ -102,6 +102,16 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      # Ahead of validation because `Observe build status` is a local action running
+      # under `if: always()`. With the checkout after a failing step, it died on
+      # "Did you forget to run actions/checkout" and buried the real error — which is
+      # all run 31115770750 showed for a rejected base_ref.
+      - name: Checkout main for tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Validate inputs
         id: target
         env:
@@ -128,12 +138,6 @@ jobs:
             echo "suite=${suite}"
             echo "chart=camunda-platform-${version}"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Checkout main for tooling
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
-          persist-credentials: false
 
       # The bundled JSON inputs exist because workflow_dispatch caps at 10 inputs.
       # Unpacked once here into step outputs so later steps read plain strings.
@@ -525,23 +529,42 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+      # Gated on `always()` alone, not on the ctx step's outputs: a failure before ctx
+      # runs leaves them empty, which used to mean an early failure was silent in the
+      # thread. The bundle is re-read from the raw input below as a fallback.
       - name: Slack thread reply
-        if: ${{ always() && steps.ctx.outputs.slack_ts != '' }}
+        if: always()
         continue-on-error: true
         env:
           SLACK_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_TS: ${{ steps.ctx.outputs.slack_ts }}
           SLACK_CHANNEL: ${{ steps.ctx.outputs.slack_channel }}
+          INPUT_SLACK: ${{ inputs.slack }}
           SURFACE: ${{ inputs.surface }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
-          if [ -f /tmp/fix-meta.json ] && [ "$(jq '.prs | length' /tmp/fix-meta.json)" -gt 0 ]; then
+          # ctx unpacks the bundle, but it may never have run.
+          if [ -z "${SLACK_TS}" ] && [ -n "${INPUT_SLACK}" ]; then
+            SLACK_TS=$(jq -r '.ts // ""' <<<"${INPUT_SLACK}" 2>/dev/null || echo "")
+            SLACK_CHANNEL=$(jq -r '.channel // ""' <<<"${INPUT_SLACK}" 2>/dev/null || echo "")
+          fi
+          if [ -z "${SLACK_TS}" ] || [ -z "${SLACK_CHANNEL}" ]; then
+            echo "no slack thread to reply to"
+            exit 0
+          fi
+          # -1 when absent or unparseable, so a broken manifest reports the no-verdict
+          # branch instead of erroring on an empty numeric comparison.
+          pr_count=-1
+          if [ -f /tmp/fix-meta.json ]; then
+            pr_count=$(jq '.prs | length' /tmp/fix-meta.json 2>/dev/null || echo -1)
+          fi
+          if [ "${pr_count}" -gt 0 ]; then
             links=$(jq -r '[.prs[] | "<\(.url // "")|PR #\(.number)>"] | join("  ")' /tmp/fix-meta.json)
             text=":white_check_mark: *${SURFACE}* — ${links}"
-          elif [ "${JOB_STATUS}" = "failure" ] && [ ! -f /tmp/fix-meta.json ]; then
-            text=":x: *${SURFACE}* — agent failed, no fix applied"
+          elif [ "${JOB_STATUS}" = "failure" ] && [ "${pr_count}" -lt 0 ]; then
+            text=":x: *${SURFACE}* — agent failed before producing a verdict, no fix applied"
           else
             # The analysis is the whole value of a no-fix run, and it used to reach the
             # on-call only as a 14-day artifact they had to know to download.

@@ -28,8 +28,25 @@ SUPPRESSED_PR_COVERED = "open-pr-covers-all-specs"
 SUPPRESSED_PR_OPEN = "open-fix-pr-for-surface"
 SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
 SUPPRESSED_RECENT_NO_FIX = "no-fix-verdict-within-cooldown"
+SUPPRESSED_FIXED_UPSTREAM = "fixed-upstream-after-run-started"
+SUPPRESSED_UNSUPPORTED_REF = "base-ref-not-supported-by-fix-agent"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
+
+
+#: Branches the fix agent accepts. Must stay in sync with the `Validate inputs` case
+#: statement in alwaysgreen-fix.yml: dispatching anything else spends a runner only to
+#: fail on the agent's first step, which is what happened to run 31115770750 on
+#: `ci/alwaysgreen-helm-live-check`.
+SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9"})
+
+
+def spec_suite(spec_file: str) -> str | None:
+    """The version directory a spec lives in: `tests/SM-8.10/x.spec.ts` -> `SM-8.10`."""
+    parts = (spec_file or "").split("/")
+    if len(parts) >= 3 and parts[0] == "tests" and parts[1]:
+        return parts[1]
+    return None
 
 
 def dispatch_key(base_ref: str, surface: str) -> str:
@@ -137,6 +154,8 @@ def plan_dispatches(
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
     recent_no_fix_fingerprints: set[str] | None = None,
+    fixed_upstream_fingerprints: set[str] | None = None,
+    supported_base_refs: frozenset[str] = SUPPORTED_BASE_REFS,
     max_dispatches: int = 2,
     dispatchable_surfaces: frozenset[str] = classify.DISPATCHABLE_SURFACES,
 ) -> Plan:
@@ -149,13 +168,23 @@ def plan_dispatches(
     window and could not safely fix. Without them a `not-determined` verdict leaves no
     state anywhere — no PR, so no coverage block and no key label — and the identical
     forensic run is dispatched again on the next failure.
+
+    `fixed_upstream_fingerprints` are those whose test code changed in the e2e repo
+    after the failing run started, so the run executed source that is already superseded.
     """
     plan = Plan()
     no_fix = recent_no_fix_fingerprints or set()
+    fixed_upstream = fixed_upstream_fingerprints or set()
 
     for cand in candidates:
         # Before anything reads .specs or derives fingerprints from them.
         cand.specs = dedupe_specs(cand.specs)
+
+        if cand.base_ref not in supported_base_refs:
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_UNSUPPORTED_REF, cand.base_ref)
+            )
+            continue
 
         if cand.surface not in dispatchable_surfaces:
             plan.suppressed.append(
@@ -192,8 +221,14 @@ def plan_dispatches(
             )
             continue
 
-        # Drop specs an open PR or a recent no-fix verdict already accounts for;
-        # dispatch only what is left.
+        if fps and all(f in fixed_upstream for f in fps):
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_FIXED_UPSTREAM, ",".join(sorted(set(fps))))
+            )
+            continue
+
+        # Drop specs an open PR, a recent no-fix verdict or an upstream fix already
+        # accounts for; dispatch only what is left.
         if not cand.job_level:
             remaining = [
                 s
@@ -201,6 +236,7 @@ def plan_dispatches(
                 if fp not in covered_fingerprints
                 and fp not in product_bug_fingerprints
                 and fp not in no_fix
+                and fp not in fixed_upstream
             ]
             if not remaining:
                 plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_COVERED))

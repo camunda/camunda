@@ -146,6 +146,11 @@ effect only once that package is published. Say so in the PR body: until then th
 stays red and the same failure will be re-dispatched unless your PR carries the coverage
 block.
 
+The other side of that lag: triage withholds a spec whose `tests/<suite>/` or
+`pages/<suite>/` code changed in the e2e repo *after* the failing run started, because the
+run executed source that is already superseded. So if you find the fix already merged
+upstream, that is expected — say so in `reason` and open nothing.
+
 ## When the surface is helm-install
 
 There is no Playwright report: the install never got far enough to run tests. Your evidence
