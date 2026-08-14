@@ -9,12 +9,18 @@ package io.camunda.gateway.mapping.http.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
+import io.camunda.service.ClusterTopologyServices.ClusterBroker;
+import io.camunda.service.ClusterTopologyServices.ClusterTopology;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantBroker;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantTopology;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SecretServices.SecretResolution;
 import io.camunda.service.SecretServices.SecretResolutionError;
+import io.camunda.service.TopologyServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -765,6 +771,87 @@ class ResponseMapperTest {
       // then the mapped REST code exists and has the identical name
       assertThat(result.getErrors()).hasSize(1);
       assertThat(result.getErrors().get(0).getCode().name()).isEqualTo(code.name());
+    }
+  }
+
+  @Nested
+  class ClusterTopologyMappingTest {
+
+    @Test
+    void shouldMapClusterLevelFieldsOnce() {
+      // given
+      final var broker = new ClusterBroker(BrokerMemberId.from(0), "host-0", 26501, "8.10.0");
+      final var topology =
+          new ClusterTopology(List.of(broker), "cluster-1", 3, "8.10.0", List.of());
+
+      // when
+      final var result = ResponseMapper.toClusterTopologyResponse(topology);
+
+      // then
+      assertThat(result.getClusterId()).isEqualTo("cluster-1");
+      assertThat(result.getClusterSize()).isEqualTo(3);
+      assertThat(result.getGatewayVersion()).isEqualTo("8.10.0");
+      assertThat(result.getBrokers()).hasSize(1);
+      assertThat(result.getBrokers().get(0).getBrokerId()).isEqualTo("0");
+      assertThat(result.getBrokers().get(0).getHost()).isEqualTo("host-0");
+      assertThat(result.getBrokers().get(0).getPort()).isEqualTo(26501);
+      assertThat(result.getBrokers().get(0).getVersion()).isEqualTo("8.10.0");
+    }
+
+    /**
+     * The per-PT broker's partitions must be mapped by the same {@code buildPartitions} helper as
+     * {@link ResponseMapper#toTopologyResponse}, so a partition maps to an identical wire shape
+     * (role/health/state enum casing included) on both endpoints.
+     */
+    @Test
+    void shouldMapPerPhysicalTenantPartitionsIdenticallyToTopologyResponse() {
+      // given the same partition domain object fed into both mapping paths
+      final var partition =
+          new TopologyServices.Partition(
+              1,
+              TopologyServices.Role.LEADER,
+              TopologyServices.Health.HEALTHY,
+              TopologyServices.State.ACTIVE);
+      final var brokerId = BrokerMemberId.from(0);
+
+      final var topologyBroker =
+          new TopologyServices.Broker(null, 0, "host-0", 26501, List.of(partition), "8.10.0");
+      final var singleTenantTopology =
+          new TopologyServices.Topology(
+              List.of(topologyBroker), "cluster-1", 1, 1, 1, "8.10.0", 1L);
+
+      final var clusterTopology =
+          new ClusterTopology(
+              List.of(),
+              "cluster-1",
+              1,
+              "8.10.0",
+              List.of(
+                  new PhysicalTenantTopology(
+                      "default",
+                      1,
+                      1,
+                      1L,
+                      List.of(new PhysicalTenantBroker(brokerId, List.of(partition))))));
+
+      // when
+      final var topologyResponse = ResponseMapper.toTopologyResponse(singleTenantTopology);
+      final var clusterTopologyResponse = ResponseMapper.toClusterTopologyResponse(clusterTopology);
+
+      // then
+      final var expectedPartition = topologyResponse.getBrokers().get(0).getPartitions().get(0);
+      final var actualPartition =
+          clusterTopologyResponse
+              .getPhysicalTenants()
+              .get(0)
+              .getBrokers()
+              .get(0)
+              .getPartitions()
+              .get(0);
+      assertThat(actualPartition.getPartitionId()).isEqualTo(expectedPartition.getPartitionId());
+      assertThat(actualPartition.getRole()).isEqualTo(expectedPartition.getRole());
+      assertThat(actualPartition.getHealth()).isEqualTo(expectedPartition.getHealth());
+      assertThat(actualPartition.getState()).isEqualTo(expectedPartition.getState());
     }
   }
 }

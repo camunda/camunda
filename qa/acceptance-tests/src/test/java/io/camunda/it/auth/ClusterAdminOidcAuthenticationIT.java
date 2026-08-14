@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Full-stack integration tests for the cluster-admin OIDC chain ({@code /cluster/v2/**}), exercised
- * against the real {@link io.camunda.zeebe.gateway.rest.controller.DummyClusterTopologyController}
+ * against the real {@link io.camunda.zeebe.gateway.rest.controller.ClusterTopologyController}
  * endpoint with raw bearer tokens minted by Keycloak.
  */
 @Testcontainers
@@ -120,6 +120,12 @@ public class ClusterAdminOidcAuthenticationIT {
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    final JsonNode body = JSON.readTree(response.body());
+    assertThat(body.get("physicalTenants"))
+        .anySatisfy(
+            physicalTenant ->
+                assertThat(physicalTenant.get("physicalTenantId").asText()).isEqualTo("default"));
+    assertThat(body.get("brokers")).isNotEmpty();
   }
 
   @Test

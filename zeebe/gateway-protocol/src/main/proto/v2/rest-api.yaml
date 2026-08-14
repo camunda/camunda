@@ -508,6 +508,8 @@ paths:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
   /cluster/v2/status:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status'
+  /cluster/v2/topology:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1topology'
 
   # User endpoints
   /users:

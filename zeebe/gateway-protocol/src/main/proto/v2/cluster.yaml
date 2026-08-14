@@ -364,6 +364,12 @@ components:
             - leaving
             - recovering
       x-properties-added-in-version:
+        - propertyName: "partitionId"
+          addedInVersion: "8.6"
+        - propertyName: "role"
+          addedInVersion: "8.6"
+        - propertyName: "health"
+          addedInVersion: "8.6"
         - propertyName: state
           addedInVersion: "8.10"
 

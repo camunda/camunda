@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * Tests for the cluster-admin security chain ({@code /cluster/v2/**}) with Basic auth.
  *
  * <p>Runs against {@link TestApiController}'s cluster-admin dummy endpoints (the real {@code
- * DummyClusterTopologyController} lives in another module); the chain is exercised by path, so the
+ * ClusterTopologyController} lives in another module); the chain is exercised by path, so the
  * behavior is identical.
  */
 @SpringBootTest(
