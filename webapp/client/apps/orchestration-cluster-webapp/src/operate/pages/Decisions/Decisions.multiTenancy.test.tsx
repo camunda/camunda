@@ -92,11 +92,14 @@ describe('Multi tenancy', () => {
 	});
 
 	afterEach(async () => {
-		await waitForRequests?.();
-		await unmountPage?.();
-		waitForRequests = undefined;
-		unmountPage = undefined;
-		sessionStorage.clear();
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should hide the tenant filter when multi tenancy is not enabled', async ({worker}) => {
