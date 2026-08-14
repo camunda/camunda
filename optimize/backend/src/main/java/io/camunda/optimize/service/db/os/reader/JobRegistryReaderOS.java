@@ -12,24 +12,30 @@ import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDE
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
 import io.camunda.optimize.service.db.schema.index.JobRegistryIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class JobRegistryReaderOS extends JobRegistryReader {
+public class JobRegistryReaderOS implements JobRegistryReader {
 
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JobRegistryReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
 
   public JobRegistryReaderOS(final OptimizeOpenSearchClient osClient) {
@@ -37,17 +43,17 @@ public class JobRegistryReaderOS extends JobRegistryReader {
   }
 
   @Override
-  protected Optional<JobRegistryEntryDto> performFindOldestQueuedJob(final JobType jobType) {
+  public List<JobRegistryEntryDto> findOldestQueuedJobs(final int limit) {
+    LOG.debug("Fetching up to [{}] oldest QUEUED job registry entries.", limit);
     final BoolQuery boolQuery =
         new BoolQuery.Builder()
-            .must(QueryDSL.term(JobRegistryIndex.JOB_TYPE, jobType.name()))
             .must(QueryDSL.term(JobRegistryIndex.STATUS, JobStatus.QUEUED.name()))
             .build();
 
     final SearchRequest.Builder searchReqBuilder =
         new SearchRequest.Builder()
             .index(JOB_REGISTRY_INDEX_NAME)
-            .size(1)
+            .size(limit)
             .query(boolQuery.toQuery())
             .sort(
                 new SortOptions.Builder()
@@ -55,22 +61,26 @@ public class JobRegistryReaderOS extends JobRegistryReader {
                     .build());
 
     final String errorMessage =
-        String.format("Was not able to fetch oldest QUEUED job registry entry for [%s].", jobType);
+        String.format(
+            "Was not able to fetch oldest QUEUED job registry entries (limit [%s]).", limit);
     final SearchResponse<JobRegistryEntryDto> searchResponse =
         osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
 
-    if (searchResponse.hits().hits().isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
+    return searchResponse.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
   }
 
   @Override
-  protected Optional<JobRegistryEntryDto> performFindByJobTypeAndTargetEntityId(
-      final JobType jobType, final String targetEntityId) {
+  public Optional<JobRegistryEntryDto> findLastByJobTypeAndTargetEntityId(
+      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
+    LOG.debug(
+        "Fetching job registry entry for [{}] target type [{}] target [{}].",
+        jobType,
+        targetEntityType,
+        targetEntityId);
     final BoolQuery boolQuery =
         new BoolQuery.Builder()
             .must(QueryDSL.term(JobRegistryIndex.JOB_TYPE, jobType.name()))
+            .must(QueryDSL.term(JobRegistryIndex.TARGET_ENTITY_TYPE, targetEntityType.name()))
             .must(QueryDSL.term(JobRegistryIndex.TARGET_ENTITY_ID, targetEntityId))
             .build();
 
@@ -86,8 +96,8 @@ public class JobRegistryReaderOS extends JobRegistryReader {
 
     final String errorMessage =
         String.format(
-            "Was not able to fetch job registry entry for [%s] target [%s].",
-            jobType, targetEntityId);
+            "Was not able to fetch job registry entry for [%s] target type [%s] target [%s].",
+            jobType, targetEntityType, targetEntityId);
     final SearchResponse<JobRegistryEntryDto> searchResponse =
         osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
 
