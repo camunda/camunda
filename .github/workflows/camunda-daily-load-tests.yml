@@ -337,11 +337,16 @@ jobs:
           FLAMEGRAPH_LINKS: ${{ steps.flamegraph-artifacts.outputs.links }}
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Install Google Sheets client libraries
+        continue-on-error: true
         run: python3 -m pip install --quiet google-api-python-client google-auth
       - name: Log results to sheet
-        # Logs a real row for each protocol that collected metrics, and a
-        # failed row (blank metrics) for one that didn't - so a partial
-        # failure still records the side that succeeded.
+        # Best-effort: sheet logging shouldn't fail the whole job (and thus
+        # trigger the `notify` failure alert for an otherwise-healthy run) -
+        # e.g. before the one-time Vault/GCP setup is done, or on a transient
+        # Sheets API error. Logs a real row for each protocol that collected
+        # metrics, and a failed row (blank metrics) for one that didn't - so
+        # a partial failure still records the side that succeeded.
+        continue-on-error: true
         env:
           GRPC_RESULTS_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
           REST_RESULTS_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
@@ -438,12 +443,18 @@ jobs:
               ]
             }
       - name: Install Google Sheets client libraries
+        continue-on-error: true
         run: python3 -m pip install --quiet google-api-python-client google-auth
       - name: Log failed run to sheet
-        # This job only runs when some part of the pipeline failed. Log a row per
-        # protocol so a hard failure doesn't leave a silent gap in the sheet for
-        # that day; a protocol whose metrics collection did succeed still gets a
-        # real row instead of being marked failed.
+        # notify-results already logs both rows (real + failed) whenever at
+        # least one protocol succeeded - see its own condition above. Only
+        # run here for the complementary case (both protocols failed, so
+        # notify-results was skipped entirely), otherwise this would log
+        # duplicate rows alongside notify-results on a partial failure.
+        if: needs.collect-metrics-grpc.result != 'success' && needs.collect-metrics-rest.result != 'success'
+        # Best-effort, same reasoning as the notify-results step: sheet
+        # logging shouldn't affect this job's own status.
+        continue-on-error: true
         env:
           GRPC_RESULTS_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
           REST_RESULTS_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
