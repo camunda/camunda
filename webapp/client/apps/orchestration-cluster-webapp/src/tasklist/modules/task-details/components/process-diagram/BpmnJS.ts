@@ -60,8 +60,11 @@ class BpmnJS {
 	addMarker(elementId: string, className: string) {
 		const canvas = this.#navigatedViewer?.get('canvas');
 		const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+		const element = elementRegistry?.get(elementId);
 
-		if (elementRegistry?.get(elementId) !== undefined) {
+		if (element !== undefined) {
+			// @ts-expect-error wrong bpmn-js types
+			this.#navigatedViewer?.get('outline')?.createOutline(element);
 			canvas?.addMarker(elementId, className);
 		}
 	}
