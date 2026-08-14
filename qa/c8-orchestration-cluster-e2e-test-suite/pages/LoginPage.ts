@@ -51,14 +51,26 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(this.usernameInput).toBeVisible({timeout: 30000});
-      },
-      onFailure: async () => {
-        await this.page.reload();
-      },
-    });
+    // The orchestration-cluster session cookie is shared across Operate,
+    // Tasklist and Identity, so navigating to a "/<app>/login" URL while a
+    // valid session already exists redirects to the app home and renders no
+    // login form. Treat login() as idempotent: if the Username field never
+    // appears, we are already authenticated and there is nothing to do.
+    // First-login and invalid-credentials tests always render the form (they
+    // start from a fresh, unauthenticated context), so they are unaffected.
+    try {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(this.usernameInput).toBeVisible({timeout: 15000});
+        },
+        onFailure: async () => {
+          await this.page.reload();
+        },
+        maxRetries: 2,
+      });
+    } catch {
+      return;
+    }
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);

@@ -361,6 +361,21 @@ class OperateProcessesPage {
     }
   }
 
+  async clickRetryButton(): Promise<void> {
+    // Toggling the "Suspended" filter just before selecting all rows triggers a
+    // fresh instances query; when it resolves the batch-operation toolbar
+    // re-renders and the Retry button remounts, detaching a click mid-flight.
+    // Retry the whole click until the confirmation dialog's Apply button is up,
+    // but never re-click once the dialog is already open.
+    await expect(async () => {
+      if (!(await this.applyButton.isVisible())) {
+        await expect(this.retryButton).toBeVisible({timeout: 5000});
+        await this.retryButton.click({timeout: 5000});
+      }
+      await expect(this.applyButton).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
+  }
+
   async clickCancelBatchOperationButton(): Promise<void> {
     // The toolbar click can be lost under load and leave the confirmation
     // dialog unopened; retry until the dialog is present, but do not re-click

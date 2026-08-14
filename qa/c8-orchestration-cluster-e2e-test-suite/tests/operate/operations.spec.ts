@@ -169,9 +169,12 @@ test.describe('Operations', () => {
       // checkboxes render.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      // A single header-checkbox click can be lost while the Suspended-filter
+      // toggle re-queries the table, leaving no selection and no batch toolbar;
+      // selectAllProcessInstances retries until the toolbar (Retry button) is up.
+      await operateProcessesPage.selectAllProcessInstances();
 
-      await operateProcessesPage.retryButton.click();
+      await operateProcessesPage.clickRetryButton();
 
       await operateProcessesPage.applyButton.click();
       await sleep(1000);

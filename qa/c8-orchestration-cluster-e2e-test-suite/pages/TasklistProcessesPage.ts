@@ -35,8 +35,24 @@ class TasklistProcessesPage {
       .last();
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
-    this.processTile = page.getByTestId('process-tile');
-    this.processFilterDropdown = page.getByTestId('process-filters');
+    // The migrated Processes page (orchestration-cluster-webapp) renders each
+    // process as a ProcessTile whose only <h2> is the process name and which
+    // carries a "Start process" button; the legacy data-testid="process-tile"
+    // is gone and Carbon's grid/CSS-module classes are not stable selectors.
+    // Anchor on each tile's <h2>, then walk up to the nearest ancestor <div>
+    // that contains the tile's "Start process" button — one element per tile,
+    // and the empty-state heading (no such button) is excluded.
+    this.processTile = page
+      .getByRole('main')
+      .getByRole('heading', {level: 2})
+      .locator(
+        'xpath=ancestor::div[.//button[contains(., "Start process")]][1]',
+      );
+    // The start-form filter is now a Carbon Dropdown exposed as a combobox
+    // labelled "Filter processes" (was data-testid="process-filters").
+    this.processFilterDropdown = page.getByRole('combobox', {
+      name: 'Filter processes',
+    });
   }
 
   processTileByName(name: string): Locator {
