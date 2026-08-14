@@ -56,13 +56,10 @@
 // small to stand alone above a login form. Scaled up; the token-based fills
 // (fill-foreground/fill-background) still resolve at any size.
 .logoMarkDS {
-	width: 3.5rem;
-	height: 3.5rem;
+	width: 3rem;
+	height: 3rem;
 }
 
-// DS type scale token `heading-lg` (Heading component, typography.tsx):
-// text-[28px] / leading-9 / font-normal. `font-heading` is skipped — it
-// resolves to `var(--font-sans)`, already inherited from `.c4-ui`.
 .titleDS {
 	// .cardContentDS's flex `gap` already puts 1rem (16px) below this box;
 	// this adds the remaining 0.5rem so the fields sit 24px below the title,
@@ -70,8 +67,8 @@
 	margin-bottom: 0.5rem;
 	padding-bottom: 0.5rem;
 	text-align: center;
-	font-size: 1.75rem;
-	line-height: 2.25rem;
+	font-size: 1.5rem;
+	line-height: 2rem;
 	font-weight: 400;
 	color: var(--foreground);
 }
