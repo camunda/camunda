@@ -12,9 +12,8 @@ import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {Eye, EyeOff, Loader2} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import {Alert, Button, Card, CardContent, Input, Label} from '@camunda/design-system';
+import {Alert, Button, CamundaLogo, Card, CardContent, Input, Label} from '@camunda/design-system';
 import {TextInput} from '@camunda/design-system/carbon-compat';
-import {CamundaLogo} from '#/shared/login/components/CamundaLogo';
 import {getCurrentCopyrightNoticeText} from '#/shared/login/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '#/shared/login/components/Disclaimer';
 import {authenticationStore} from '#/shared/auth/authentication.store';
@@ -172,7 +171,12 @@ const LoginPageDS: React.FC<Props> = ({title}) => {
 							<Card>
 								<CardContent className={styles.cardContentDS}>
 									<div className={styles.logoDS}>
-										<CamundaLogo aria-label={t('loginLogoLabel')} />
+										{/* The same mark AppHeader renders by default (TasklistDSHeader.tsx
+										    passes no `logo` override) — fills use DS foreground/background
+										    tokens, so it themes correctly in dark mode. Aria-hidden already,
+										    same as in the header; unlike the old wordmark it carries no
+										    separate label. */}
+										<CamundaLogo className={styles.logoMarkDS} />
 									</div>
 									<h1 className={styles.titleDS}>{title}</h1>
 									{submitError !== undefined ? <Alert variant="destructive" title={submitError} /> : null}

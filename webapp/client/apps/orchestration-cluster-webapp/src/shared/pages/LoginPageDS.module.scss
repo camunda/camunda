@@ -58,6 +58,14 @@
 	padding-top: 0.5rem;
 }
 
+// The DS logomark is a 24x24 icon, sized to sit inline in a 48px header — too
+// small to stand alone above a login form. Scaled up; the token-based fills
+// (fill-foreground/fill-background) still resolve at any size.
+.logoMarkDS {
+	width: 2.5rem;
+	height: 2.5rem;
+}
+
 .titleDS {
 	padding-bottom: 0.5rem;
 	text-align: center;
