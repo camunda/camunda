@@ -100,8 +100,8 @@ paths:
         List all exporters and their status whether they are enabled or disabled.
         Exporters are configured per physical tenant, so the same exporter id may exist in some
         tenants only and may be in a different state in each of them. Without the physicalTenant
-        parameter every physical tenant is listed, grouped by tenant and each entry tagged with the
-        tenant it belongs to; with it, only the given physical tenant is listed.
+        parameter every physical tenant is listed, grouped by tenant; with it, only the given
+        physical tenant is listed. Every entry names the physical tenant it belongs to either way.
       parameters:
         - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
@@ -169,8 +169,9 @@ components:
           example: "ENABLED"
         physicalTenant:
           description: >
-            The physical tenant this status belongs to. Absent only for an unscoped request against
-            a single-tenant cluster, which keeps the response shape that predates physical tenants.
+            The physical tenant this status belongs to. Always present, including on a single-tenant
+            cluster, where it reads "default". Not required, so a client that predates physical
+            tenants can ignore it.
           allOf:
             - $ref: 'components.yaml#/schemas/PhysicalTenantId'
 

@@ -1109,11 +1109,10 @@ final class ClusterApiUtils {
    * physicalTenant}, rather than reduced across tenants into one status that belongs to none of
    * them. Entries are grouped by tenant, tenants in ascending id order.
    *
-   * <p>The tag is omitted for an unscoped request against a single-tenant cluster, so a caller that
-   * predates physical tenants keeps exactly the response it always had. Every other shape carries
-   * it — without it an unscoped multi-tenant response would list the same exporter id repeatedly
-   * with no way to tell the entries apart, and a scoped response repeating the requested id is the
-   * same trade-off {@code GET /cluster?physicalTenant=} already makes for {@code physicalTenants}.
+   * <p>Every entry carries the tag, including a single-tenant cluster's — where it reads {@code
+   * default} — so the field means the same thing in every response instead of being present only
+   * when a caller could have deduced it anyway. This stays backwards compatible because the field
+   * is not required: a client that predates physical tenants ignores it.
    */
   static List<ExporterStatus> aggregateExporterState(
       final CurrentClusterConfiguration configuration, final @Nullable String physicalTenant) {
@@ -1121,13 +1120,12 @@ final class ClusterApiUtils {
         physicalTenant == null
             ? configuration.partitionGroups().keySet().stream().sorted().toList()
             : List.of(physicalTenant);
-    final boolean tagWithPhysicalTenant = physicalTenant != null || tenantsInView.size() > 1;
 
     return tenantsInView.stream()
         .flatMap(
             tenant ->
                 aggregateExporterState(configuration.toLegacy(tenant)).stream()
-                    .map(status -> tagWithPhysicalTenant ? status.physicalTenant(tenant) : status))
+                    .map(status -> status.physicalTenant(tenant)))
         .toList();
   }
 

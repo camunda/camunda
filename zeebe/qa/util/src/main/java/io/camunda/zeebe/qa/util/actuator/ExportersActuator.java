@@ -146,8 +146,8 @@ public interface ExportersActuator {
       @Param final String exporterId, @Param final String physicalTenant);
 
   /**
-   * Returns the list of exporters with their status, for every physical tenant. Each entry carries
-   * the physical tenant it belongs to, unless the cluster has a single physical tenant.
+   * Returns the list of exporters with their status, for every physical tenant. Each entry names
+   * the physical tenant it belongs to, {@code default} included.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */

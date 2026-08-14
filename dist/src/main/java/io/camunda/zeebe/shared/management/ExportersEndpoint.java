@@ -95,9 +95,8 @@ public class ExportersEndpoint {
 
   /**
    * Lists the exporters of every physical tenant, grouped by tenant, or of the one named by the
-   * {@code physicalTenant} query parameter. Each entry carries the tenant it belongs to, except for
-   * an unscoped request against a single-tenant cluster, which keeps the response shape that
-   * predates physical tenants — see {@link ClusterApiUtils#aggregateExporterState}.
+   * {@code physicalTenant} query parameter. Each entry names the tenant it belongs to — see {@link
+   * ClusterApiUtils#aggregateExporterState}.
    */
   @GetMapping(produces = "application/json")
   public CompletableFuture<ResponseEntity<?>> listExporters(

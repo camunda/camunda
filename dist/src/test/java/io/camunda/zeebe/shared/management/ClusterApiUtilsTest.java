@@ -119,17 +119,22 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
-  void shouldOmitPhysicalTenantWhenAggregatingUnscopedForSingleTenant() {
+  void shouldTagPhysicalTenantWhenAggregatingUnscopedForSingleTenant() {
     // given
     final var configuration =
-        configWithExporters(Map.of("tenant-a", Map.of("exporter-1", State.ENABLED)));
+        configWithExporters(
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, Map.of("exporter-1", State.ENABLED)));
 
     // when
     final var result = ClusterApiUtils.aggregateExporterState(configuration, null);
 
-    // then — the response a caller that predates physical tenants always got
+    // then — the tag is present even though a single-tenant caller could have deduced it
     assertThat(result)
-        .containsExactly(new ExporterStatus().exporterId("exporter-1").status(StatusEnum.ENABLED));
+        .containsExactly(
+            new ExporterStatus()
+                .exporterId("exporter-1")
+                .status(StatusEnum.ENABLED)
+                .physicalTenant(CurrentClusterConfiguration.DEFAULT_GROUP));
   }
 
   @Test
