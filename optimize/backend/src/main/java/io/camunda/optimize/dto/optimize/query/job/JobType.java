@@ -8,5 +8,5 @@
 package io.camunda.optimize.dto.optimize.query.job;
 
 public enum JobType {
-  PROCESS_DEFINITION_DATA_DELETE
+  DELETE
 }

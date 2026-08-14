@@ -8,8 +8,8 @@
 package io.camunda.optimize.dto.optimize.query.job;
 
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.camunda.optimize.service.util.IdGenerator;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 public class JobRegistryEntryDto {
 
@@ -20,11 +20,11 @@ public class JobRegistryEntryDto {
   private JobStatus status;
   private String errorMessage;
   private OffsetDateTime createdAt;
-  private OffsetDateTime completedAt;
+  private OffsetDateTime updatedAt;
 
   public JobRegistryEntryDto(
       final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
-    id = UUID.randomUUID().toString();
+    id = IdGenerator.getNextId();
     this.jobType = jobType;
     this.targetEntityType = targetEntityType;
     this.targetEntityId = targetEntityId;
@@ -90,11 +90,11 @@ public class JobRegistryEntryDto {
     this.createdAt = createdAt;
   }
 
-  public OffsetDateTime getCompletedAt() {
-    return completedAt;
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
   }
 
-  public void setCompletedAt(final OffsetDateTime completedAt) {
-    this.completedAt = completedAt;
+  public void setUpdatedAt(final OffsetDateTime updatedAt) {
+    this.updatedAt = updatedAt;
   }
 }
