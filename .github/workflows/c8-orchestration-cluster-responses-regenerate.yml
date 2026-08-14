@@ -136,11 +136,14 @@ jobs:
             echo '{"responses":null}' > /tmp/responses.before.json
           fi
 
-      # paths:regenerate (added by #59888) may not exist yet on every matrix
-      # ref — stable branches lag main until the feature is backported. Gate
-      # every apiPaths.ts step on this so an unrelated ref without the script
-      # doesn't fail the whole job; the steps activate automatically once the
-      # backport lands.
+      # The typed-buildUrl line (#59880, #60009, #60010, #59888) is main-only:
+      # none of it was backported, so stable refs have an untyped buildUrl, no
+      # apiPaths.ts, and no paths:regenerate script. That is defensible — the
+      # rot #59888 prevents is an endpoint renamed or removed in rest-api.yaml,
+      # which on a released stable branch would itself be a breaking change.
+      # Gate every apiPaths.ts step on the script actually being present, so
+      # refs without it skip that half of the job instead of failing it, and so
+      # the steps start working on their own if the line ever is backported.
       - name: Check API paths feature availability
         id: paths-feature
         working-directory: ${{ env.SUITE_DIR }}
@@ -150,7 +153,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "No paths:regenerate script on ${TARGET_REF} — apiPaths.ts regeneration not backported to this ref yet, skipping."
+            echo "No paths:regenerate script on ${TARGET_REF} — typed buildUrl is main-only, skipping apiPaths.ts regeneration."
           fi
 
       - name: Snapshot committed API paths (pre-regeneration)
@@ -416,7 +419,7 @@ jobs:
             echo "## API paths regeneration — \`${TARGET_REF}\`"
             echo ""
             if [ "${PATHS_FEATURE_AVAILABLE:-false}" != "true" ]; then
-              echo ":fast_forward: \`paths:regenerate\` not backported to this ref yet — skipped."
+              echo ":fast_forward: No \`paths:regenerate\` on this ref (typed \`buildUrl\` is main-only) — skipped."
             elif [ "${CHANGED_PATHS:-false}" = "true" ]; then
               echo ":white_check_mark: API path changes detected."
               if [ -n "${PR_URL_PATHS:-}" ]; then
