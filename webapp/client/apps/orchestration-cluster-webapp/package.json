@@ -68,7 +68,7 @@
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@axe-core/playwright": "4.12.1",
+		"@axe-core/playwright": "4.13.0",
 		"@msw/playwright": "0.6.7",
 		"@playwright/test": "1.62.1",
 		"@svgr/cli": "8.1.0",
