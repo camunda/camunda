@@ -118,5 +118,18 @@ public interface ConfigurationChangeCoordinator {
     default boolean isForced() {
       return false;
     }
+
+    /**
+     * Whether {@link #phases(CurrentClusterConfiguration)} should see disabled physical tenants
+     * (see {@link CurrentClusterConfiguration#activePartitionGroups()}). Defaults to {@code false}:
+     * the coordinator passes a view with disabled partition groups removed, so a request that
+     * enumerates "all physical tenants" when none is explicitly targeted automatically skips
+     * disabled ones, and a request that explicitly targets a disabled tenant by id sees it as
+     * absent. Override to {@code true} for a request that must operate on disabled tenants as well,
+     * e.g. one that manages tenant availability itself.
+     */
+    default boolean applyToDisabledTenants() {
+      return false;
+    }
   }
 }

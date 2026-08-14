@@ -27,6 +27,8 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
@@ -37,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -566,5 +569,86 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(ConcurrentModificationException.class);
+  }
+
+  /**
+   * Same as {@link #twoMemberClusterWithSecondGroup()}, except the second group ("tenanta") is
+   * disabled.
+   */
+  private CurrentClusterConfiguration twoMemberClusterWithDisabledSecondGroup() {
+    final var base = twoMemberClusterWithSecondGroup();
+    final var disabledTenantA = base.partitionGroup("tenanta").disable();
+    return new CurrentClusterConfiguration(
+        base.version(),
+        base.globalConfiguration(),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            base.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+            "tenanta",
+            disabledTenantA),
+        base.phasedChangeState());
+  }
+
+  @Test
+  void shouldExcludeDisabledPartitionGroupFromPhasesByDefault() {
+    // given — a cluster with an active "default" group and a disabled "tenanta" group
+    wire(MEMBER_0, twoMemberClusterWithDisabledSecondGroup());
+    final CurrentClusterConfiguration[] seenByPhases = new CurrentClusterConfiguration[1];
+    final ConfigurationChangeRequest request =
+        new ConfigurationChangeRequest() {
+          @Override
+          public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+              final ClusterConfiguration clusterConfiguration) {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public Either<Exception, List<Phase>> phases(
+              final CurrentClusterConfiguration clusterConfiguration) {
+            seenByPhases[0] = clusterConfiguration;
+            return Either.right(List.of());
+          }
+        };
+
+    // when
+    coordinator.applyOperations(request).join();
+
+    // then — the request only sees the active group; the disabled one is filtered out
+    assertThat(seenByPhases[0].partitionGroups().keySet())
+        .containsExactly(CurrentClusterConfiguration.DEFAULT_GROUP);
+  }
+
+  @Test
+  void shouldPassDisabledPartitionGroupsWhenRequestOptsIn() {
+    // given — a cluster with an active "default" group and a disabled "tenanta" group
+    wire(MEMBER_0, twoMemberClusterWithDisabledSecondGroup());
+    final CurrentClusterConfiguration[] seenByPhases = new CurrentClusterConfiguration[1];
+    final ConfigurationChangeRequest request =
+        new ConfigurationChangeRequest() {
+          @Override
+          public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+              final ClusterConfiguration clusterConfiguration) {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public Either<Exception, List<Phase>> phases(
+              final CurrentClusterConfiguration clusterConfiguration) {
+            seenByPhases[0] = clusterConfiguration;
+            return Either.right(List.of());
+          }
+
+          @Override
+          public boolean applyToDisabledTenants() {
+            return true;
+          }
+        };
+
+    // when
+    coordinator.applyOperations(request).join();
+
+    // then — the request opted in, so it sees the disabled group too
+    assertThat(seenByPhases[0].partitionGroups().keySet())
+        .containsExactlyInAnyOrder(CurrentClusterConfiguration.DEFAULT_GROUP, "tenanta");
   }
 }

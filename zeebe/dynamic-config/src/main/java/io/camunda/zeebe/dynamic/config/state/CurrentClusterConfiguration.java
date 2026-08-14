@@ -594,6 +594,18 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * A view of this configuration with every disabled partition group (see {@link
+   * #activePartitionGroups()}) removed, leaving {@link #version()}, {@link #globalConfiguration()}
+   * and {@link #phasedChangeState()} unchanged. Intended for {@link
+   * io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest#phases}
+   * implementations that enumerate all physical tenants and must not target a disabled one.
+   */
+  public CurrentClusterConfiguration withoutDisabledPartitionGroups() {
+    return new CurrentClusterConfiguration(
+        version, globalConfiguration, activePartitionGroups(), phasedChangeState);
+  }
+
+  /**
    * Returns the desired leader of every partition in the cluster, grouped by partition group id.
    * Partition ids are unique only within a group, so the outer group-id key is required to
    * disambiguate them. See {@link PartitionGroupConfiguration#desiredLeaders()} for how the
