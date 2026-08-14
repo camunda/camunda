@@ -47,6 +47,7 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,16 +155,17 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+    final var leaseMismatch = new MutableBoolean(false);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
             wrappedJobRecord.getTypeBuffer(),
             jobActivationProperties ->
                 isAuthorized(jobActivationProperties, wrappedJobRecord)
-                    && isLeaseCompatible(jobActivationProperties, wrappedJobRecord));
+                    && isLeaseCompatible(jobActivationProperties, wrappedJobRecord, leaseMismatch));
 
     if (optionalJobStream.isEmpty()) {
       // the job stays activatable; a long poll checks its secret references when it collects it
-      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes, leaseMismatch.get());
       return true;
     }
 
@@ -199,7 +201,7 @@ public class BpmnJobActivationBehavior {
         jobBatchRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
       // the job is not activated, so it stays available; the notification lets a long poll collect
       // it, and the caller stops handing out jobs this batch can no longer take
-      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes, false);
       return false;
     }
     final var jobBatchKey = keyGenerator.nextKey();
@@ -264,16 +266,19 @@ public class BpmnJobActivationBehavior {
     if (parked) {
       jobMetrics.countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, jobKind, jobType);
     } else {
-      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes, false);
     }
     return batchHadRoom;
   }
 
   /** Notifies the workers of the job type unless this batch of jobs already did. */
   private void notifyJobAvailableOnce(
-      final String jobType, final JobKind jobKind, final Set<String> notifiedJobTypes) {
+      final String jobType,
+      final JobKind jobKind,
+      final Set<String> notifiedJobTypes,
+      final boolean leasedJobSkipped) {
     if (notifiedJobTypes.add(jobType)) {
-      notifyJobAvailable(jobType, jobKind);
+      notifyJobAvailable(jobType, jobKind, leasedJobSkipped);
     }
   }
 
@@ -315,12 +320,19 @@ public class BpmnJobActivationBehavior {
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
-    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
+    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind(), false);
   }
 
-  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
+  private void notifyJobAvailable(
+      final String jobType, final JobKind jobKind, final boolean leaseMismatch) {
     sideEffectWriter.appendSideEffect(
         () -> {
+          if (leaseMismatch) {
+            // push-side counterpart of the skip JobBatchCollector counts when a poll request
+            // without withLease encounters an already-leased job: here, a stream matched the
+            // type but not the lease, so the job is demoted to waiting for a poller instead
+            jobMetrics.countJobEvent(JobAction.SKIPPED, jobKind, jobType);
+          }
           jobStreamer.notifyWorkAvailable(jobType);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
           return true;
@@ -417,7 +429,13 @@ public class BpmnJobActivationBehavior {
   }
 
   private boolean isLeaseCompatible(
-      final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
-    return jobActivationProperties.withLease() || !jobRecord.hasLeaseToken();
+      final JobActivationProperties jobActivationProperties,
+      final JobRecord jobRecord,
+      final MutableBoolean leaseMismatch) {
+    if (jobActivationProperties.withLease() || !jobRecord.hasLeaseToken()) {
+      return true;
+    }
+    leaseMismatch.set(true);
+    return false;
   }
 }
