@@ -13,8 +13,11 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,6 +149,50 @@ public final class SecretReferenceInputMappingTest {
     assertThat(job.getVariables())
         .containsEntry("region", "eu-1")
         .containsEntry("authToken", "camunda.secrets.token");
+  }
+
+  @Test
+  public void shouldResolveConditionalWhoseTakenBranchIsAContextWithoutSecrets() {
+    // given - "if true then {x: \"literal\"} else camunda.secrets.token" always takes the context
+    // branch, which holds no secret reference; the untaken branch's reference is leaf-precise
+    // (deploy-time validation permits this shape) and must leave the taken branch untouched
+    final var process =
+        Bpmn.createExecutableProcess("secret-conditional-context")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("secret-conditional-context-job")
+                        .zeebeInputExpression(
+                            "if true then {x: \"literal\"} else camunda.secrets.token",
+                            "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("secret-conditional-context").create();
+
+    // then - the context literal survives untouched, and no incident is raised
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("secret-conditional-context-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("authToken", Map.of("x", "literal"));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
   }
 
   @Test
@@ -289,5 +336,52 @@ public final class SecretReferenceInputMappingTest {
     assertThat(rejected.getRejectionReason())
         .contains("camunda.secrets.token")
         .contains("must be used as an expression");
+  }
+
+  @Test
+  public void shouldRejectSecretReferenceInsideListLiteralInInputMapping() {
+    // given - a secret reference inside a FEEL list literal is recorded at the enclosing path,
+    // which can never resolve to a text leaf at injection (#58614)
+    final var process =
+        Bpmn.createExecutableProcess("secret-list")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t -> t.zeebeJobType("job").zeebeInputExpression("[camunda.secrets.token]", "creds"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejected = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    assertThat(rejected.getRejectionReason())
+        .contains("camunda.secrets.token")
+        .contains("would never be filled in");
+  }
+
+  @Test
+  public void shouldRejectSecretReferenceInsideContextProducedByAnIfBranchInInputMapping() {
+    // given - a reference inside a context produced by a branch of the expression is recorded
+    // at the enclosing path too (#58614)
+    final var process =
+        Bpmn.createExecutableProcess("secret-if-context")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("job")
+                        .zeebeInputExpression(
+                            "if true then {x: camunda.secrets.token} else null", "creds"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejected = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    assertThat(rejected.getRejectionReason())
+        .contains("camunda.secrets.token")
+        .contains("would never be filled in");
   }
 }

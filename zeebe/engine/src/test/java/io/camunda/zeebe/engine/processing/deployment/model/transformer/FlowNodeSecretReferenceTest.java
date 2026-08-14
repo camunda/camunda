@@ -257,6 +257,45 @@ class FlowNodeSecretReferenceTest {
     assertThat(secretReferences).containsExactly(entry("/a", Set.of(new SecretReference("s2"))));
   }
 
+  @Test
+  void shouldKeyBothConditionalBranchesToTheSameTargetPointer() {
+    // given - two references, one leaf
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression(
+                    "if cond then camunda.secrets.x else camunda.secrets.y", "authToken"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - both land on the mapping target's pointer, not on separate ones
+    assertThat(secretReferences)
+        .containsExactly(
+            entry("/authToken", Set.of(new SecretReference("x"), new SecretReference("y"))));
+  }
+
+  @Test
+  void shouldKeepAPreciseEntryAndAConditionalEntryOnSeparatePointers() {
+    // given - a context mixes a precise reference with a conditional entry
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression(
+                    "{a: camunda.secrets.x, b: if c then camunda.secrets.y else null}", "cfg"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - "/cfg/a" and "/cfg/b" are separate keys; the conditional entry is still scoped to its
+    // own context key because the context itself is descended precisely
+    assertThat(secretReferences)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                "/cfg/a", Set.of(new SecretReference("x")),
+                "/cfg/b", Set.of(new SecretReference("y"))));
+  }
+
   private ExecutableFlowNode transform(final Consumer<ServiceTaskBuilder> modifier) {
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
