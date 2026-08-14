@@ -58,6 +58,7 @@ public final class BrokerStartupProcess {
 
     result.add(new ApiMessagingServiceStep());
     result.add(new RequestIdGeneratorStep());
+    result.add(new RebalanceCoordinatorStep());
     result.add(new GatewayBrokerTransportStep());
 
     if (config.getGateway().isEnable()) {
