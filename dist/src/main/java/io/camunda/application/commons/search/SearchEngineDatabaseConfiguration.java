@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
+
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -19,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType({
@@ -36,6 +39,12 @@ public class SearchEngineDatabaseConfiguration {
     return searchEngineConfigurationsByTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
+  /**
+   * The initializer exists on every node, but only a node with an HTTP gateway holds startup until
+   * a physical tenant is serviceable (ADR 004 D2) — hence a flag rather than a bean condition. The
+   * flag comes from the same predicate that decides whether the schema readiness indicator joins
+   * the readiness group, so the socket and the probe cannot disagree about what an HTTP node is.
+   */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
       @Qualifier("searchEngineConfigurationsByTenant")
@@ -43,10 +52,14 @@ public class SearchEngineDatabaseConfiguration {
       @Qualifier("physicalTenantScopedIndexDescriptors")
           final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final MeterRegistry meterRegistry,
+      final Environment environment,
       @Autowired(required = false)
           final Broker broker // if present, then it will ensure that the broker is started first
       ) {
     return new SearchEngineSchemaInitializer(
-        searchEngineConfigurationsByTenant, physicalTenantScopedIndexDescriptors, meterRegistry);
+        searchEngineConfigurationsByTenant,
+        physicalTenantScopedIndexDescriptors,
+        meterRegistry,
+        isAnyHttpGatewayEnabled(environment));
   }
 }

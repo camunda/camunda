@@ -33,6 +33,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -44,8 +46,8 @@ import org.springframework.mock.env.MockEnvironment;
 
 /**
  * Covers the storage-specific half of schema initialization — which failures are terminal, what one
- * attempt does, and how per-tenant state is reported. The settle barrier and the retry loop belong
- * to {@code PerTenantSchemaInitializationTest}.
+ * attempt does, how per-tenant state is reported, and whether this node holds startup at the gate.
+ * The gate rule itself and the retry loop belong to {@code PerTenantSchemaInitializationTest}.
  *
  * <p>No Elasticsearch is involved: building a search client performs no I/O, and an unreachable one
  * fails within its connect timeout, which is the situation the design exists to survive.
@@ -78,11 +80,12 @@ class SearchEngineSchemaInitializerTest {
   }
 
   @Test
-  void shouldNotFailStartupWhenStorageIsUnreachable() {
-    // given
-    initializer = initializerFor(tenants(camunda -> {}, Map.of()));
+  void shouldNotHoldStartupWithoutAnHttpGateway() {
+    // given - a node whose storage is unreachable and which serves no HTTP surface: its exporter
+    // retries per partition, and nothing about its startup benefits from waiting
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
 
-    // when / then - the node comes up, the tenant is simply not ready
+    // when / then - startup carries on, the tenant is simply not ready
     assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
     assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
     assertThat(initializer.isInitialized()).isFalse();
@@ -91,7 +94,7 @@ class SearchEngineSchemaInitializerTest {
   @Test
   void shouldNotFailStartupWhenNoTenantCanBeInitialized() {
     // given - two tenants, neither reachable: the case that used to abort the context
-    initializer = initializerFor(tenants(camunda -> {}, unreachableTenantB()));
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, unreachableTenantB()));
 
     // when / then
     assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
@@ -100,11 +103,34 @@ class SearchEngineSchemaInitializerTest {
   }
 
   @Test
+  void shouldHoldStartupWithAnHttpGatewayUntilATenantIsServiceable() throws Exception {
+    // given - a node that serves HTTP and whose only tenant's storage is unreachable
+    initializer = gatewayInitializerFor(tenants(camunda -> {}, Map.of()));
+    final var returned = new CountDownLatch(1);
+    Thread.ofPlatform()
+        .name("test-startup")
+        .start(
+            () -> {
+              initializer.afterPropertiesSet();
+              returned.countDown();
+            });
+
+    // when / then - the port stays shut rather than opening on the first connect timeout and
+    // serving the webapp 503 from every endpoint that needs secondary storage
+    assertThat(returned.await(500, TimeUnit.MILLISECONDS)).isFalse();
+
+    // and - shutdown still releases it
+    initializer.destroy();
+    assertThat(returned.await(10, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
   void shouldReportReadyImmediatelyWhenSchemaCreationIsDisabled() {
-    // given - with createSchema=false there is nothing to apply, so the tenant must neither hold
-    // the barrier nor be reported as degraded, even though its storage is unreachable
+    // given - with createSchema=false there is nothing to apply, so the tenant is serviceable at
+    // once and opens the gate, even though its storage is unreachable
     initializer =
-        initializerFor(tenants(SearchEngineSchemaInitializerTest::noSchemaCreation, Map.of()));
+        gatewayInitializerFor(
+            tenants(SearchEngineSchemaInitializerTest::noSchemaCreation, Map.of()));
 
     // when
     initializer.afterPropertiesSet();
@@ -118,10 +144,10 @@ class SearchEngineSchemaInitializerTest {
   void shouldReportPerTenantReadinessIndependently() {
     // given - one tenant with nothing to apply, one whose storage is unreachable
     initializer =
-        initializerFor(
+        gatewayInitializerFor(
             tenants(SearchEngineSchemaInitializerTest::noSchemaCreation, unreachableTenantB()));
 
-    // when
+    // when - the gate opens on the serviceable tenant
     initializer.afterPropertiesSet();
 
     // then - one tenant's failure does not withhold the other
@@ -133,7 +159,7 @@ class SearchEngineSchemaInitializerTest {
   @Test
   void shouldSynthesizeDefaultTenantWhenNoneDeclared() {
     // given
-    initializer = initializerFor(tenants(camunda -> {}, Map.of()));
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
 
     // when / then
     assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
@@ -149,7 +175,7 @@ class SearchEngineSchemaInitializerTest {
     configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
     initializer =
         new SearchEngineSchemaInitializer(
-            configs, descriptorsFor(resolver), new SimpleMeterRegistry());
+            configs, descriptorsFor(resolver), new SimpleMeterRegistry(), false);
 
     // when / then
     assertThatThrownBy(() -> initializer.initializeTenant(DEFAULT_TENANT))
@@ -193,9 +219,22 @@ class SearchEngineSchemaInitializerTest {
         .doesNotThrowAnyException();
   }
 
-  private SearchEngineSchemaInitializer initializerFor(final PhysicalTenantResolver resolver) {
+  /** A node with an HTTP gateway: it holds startup at the gate (ADR 004 D2). */
+  private SearchEngineSchemaInitializer gatewayInitializerFor(
+      final PhysicalTenantResolver resolver) {
+    return initializerFor(resolver, true);
+  }
+
+  /** A node without one: it starts the tasks and carries on. */
+  private SearchEngineSchemaInitializer backgroundInitializerFor(
+      final PhysicalTenantResolver resolver) {
+    return initializerFor(resolver, false);
+  }
+
+  private SearchEngineSchemaInitializer initializerFor(
+      final PhysicalTenantResolver resolver, final boolean holdsStartup) {
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry());
+        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
   }
 
   /**

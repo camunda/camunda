@@ -25,8 +25,9 @@ import org.springframework.beans.factory.InitializingBean;
 
 /**
  * Binds the Elasticsearch/OpenSearch schema managers to {@link PerTenantSchemaInitialization},
- * which owns the retry loop, the startup barrier and the per-tenant state. This class only supplies
- * the storage-specific parts: what one attempt does, and which failures retrying cannot repair.
+ * which owns the retry loop, the startup gate and the per-tenant state. This class only supplies
+ * the storage-specific parts: what one attempt does, which failures retrying cannot repair, and
+ * whether this node holds startup at the gate.
  */
 public class SearchEngineSchemaInitializer
     implements InitializingBean, DisposableBean, SchemaManagerContainer {
@@ -36,15 +37,23 @@ public class SearchEngineSchemaInitializer
   private final Map<String, SearchEngineConfiguration> configs;
   private final Map<String, IndexDescriptors> descriptors;
   private final MeterRegistry meterRegistry;
+  private final boolean holdsStartup;
   private final PerTenantSchemaInitialization initialization;
 
+  /**
+   * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
+   *     is serviceable. Only a node with an HTTP gateway does; every other node has no consumer
+   *     that benefits from waiting (ADR 004 D2).
+   */
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup) {
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
     this.meterRegistry = meterRegistry;
+    this.holdsStartup = holdsStartup;
     initialization =
         new PerTenantSchemaInitialization(
             configs.keySet(),
@@ -65,7 +74,19 @@ public class SearchEngineSchemaInitializer
       return;
     }
 
-    initialization.startAndAwaitFirstOutcome();
+    initialization.start();
+
+    if (!holdsStartup) {
+      LOGGER.info(
+          "No HTTP gateway is enabled on this node, so schema initialization continues in the"
+              + " background and startup is not held.");
+      return;
+    }
+
+    LOGGER.info(
+        "Holding startup until a physical tenant is serviceable, so that no client reaches this"
+            + " node before it can answer.");
+    initialization.awaitGate();
   }
 
   @Override

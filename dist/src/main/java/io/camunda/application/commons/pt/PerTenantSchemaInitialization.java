@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,15 +31,19 @@ import org.slf4j.LoggerFactory;
  * Storage-agnostic — the attempt, the terminal classification and the retry configuration are
  * supplied by the caller, so that Elasticsearch/OpenSearch and RDBMS can share this component.
  *
- * <p>{@link #startAndAwaitFirstOutcome()} blocks until every tenant has <em>settled</em>: it has
- * either initialized or failed at least once. Waiting for a first outcome rather than for the first
- * <em>ready</em> tenant is what keeps a rolling-upgrade node out of the load balancer until all its
- * tenants have migrated, while still letting a node whose storage is unreachable come up promptly —
- * a failing tenant settles within its storage client's connect or socket timeout. See ADR 004 D1/D2
- * ({@code docs/adr/management/004-per-physical-tenant-schema-initialization.md}).
+ * <p>{@link #awaitGate()} blocks until every tenant has <em>settled</em> — initialized or failed at
+ * least once — and either one tenant is serviceable or none is still trying. Requiring a
+ * serviceable tenant is what keeps a node started alongside its storage from opening its port a
+ * second in, on the first connect timeout, and then serving 503s until the storage finishes
+ * booting; requiring it only while some tenant can still make progress is what keeps the gate from
+ * waiting on a condition nothing can satisfy. See ADR 004 D3 ({@code
+ * docs/adr/management/004-per-physical-tenant-schema-initialization.md}).
+ *
+ * <p>Only a caller that serves an HTTP surface calls {@link #awaitGate()}; every other caller
+ * {@link #start()}s the tasks and returns (ADR 004 D2).
  *
  * <p>{@link #isInitialized(String)} is a one-way latch: it asserts that the schema described in the
- * source code was applied, never that the tenant's storage is currently reachable (ADR 004 D3).
+ * source code was applied, never that the tenant's storage is currently reachable (ADR 004 D4).
  */
 @NullMarked
 public final class PerTenantSchemaInitialization implements AutoCloseable {
@@ -55,8 +60,10 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   private final Predicate<Throwable> terminal;
   private final Function<String, RetryConfiguration> retryConfig;
 
-  private final Map<String, AtomicBoolean> initialized;
-  private final CountDownLatch firstOutcome;
+  private final Map<String, TenantState> tenants;
+
+  private final ReentrantLock gateLock = new ReentrantLock();
+  private final Condition gateChanged = gateLock.newCondition();
   private final AtomicBoolean shutdown = new AtomicBoolean(false);
   // written by the thread that starts the tasks, read by whichever thread closes this
   private final List<Thread> workers = new CopyOnWriteArrayList<>();
@@ -65,9 +72,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * @param tenantIds the physical tenants to initialize, one background task each
    * @param attempt applies one tenant's schema in a single attempt; throws to report failure
    * @param terminal decides whether one failure will not be repaired by retrying — the cause chain
-   *     is walked for the caller, so this only classifies a single throwable. Classification is
-   *     observational: it selects the log level and stops that tenant's retry loop, but never
-   *     changes node-level behavior (ADR 004 D5), so it does not need to be exhaustive.
+   *     is walked for the caller, so this only classifies a single throwable. A tenant classified
+   *     terminal stops trying, and therefore stops holding the gate shut, so the bar is "certainly
+   *     not repairable without operator action" (ADR 004 D6).
    * @param retryConfig the backoff applied between a tenant's attempts
    */
   public PerTenantSchemaInitialization(
@@ -81,77 +88,111 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
 
     // insertion-ordered so that tasks are started, and logged, in the order the tenants are
     // configured in
-    final var latches = new LinkedHashMap<String, AtomicBoolean>();
-    tenantIds.forEach(tenantId -> latches.put(tenantId, new AtomicBoolean(false)));
-    initialized = Collections.unmodifiableMap(latches);
-    firstOutcome = new CountDownLatch(initialized.size());
+    final var states = new LinkedHashMap<String, TenantState>();
+    tenantIds.forEach(tenantId -> states.put(tenantId, new TenantState()));
+    tenants = Collections.unmodifiableMap(states);
   }
 
   /**
-   * Starts one background task per physical tenant and blocks until every one of them has settled.
-   * Returns normally however many tenants failed — a storage failure degrades its own tenant and
-   * nothing else (ADR 004 D1).
-   *
-   * <p>The wait is interruptible so that a shutdown signal arriving mid-initialization releases it.
-   * A shutdown-triggered interrupt is deliberately not re-raised: the Spring context refresh has to
-   * be allowed to finish for the broker to shut down gracefully.
+   * Starts one background task per physical tenant and returns as soon as they are running. A
+   * storage failure degrades its own tenant and nothing else (ADR 004 D1).
    */
-  public void startAndAwaitFirstOutcome() {
-    initialized.forEach(
-        (tenantId, latch) -> {
+  public void start() {
+    tenants.forEach(
+        (tenantId, state) -> {
           // virtual: a tenant's task is a storage call and a sleep, and a tenant that stays
           // degraded holds its thread for as long as it keeps retrying
           final var worker =
               Thread.ofVirtual()
                   .name("schema-init-" + tenantId)
-                  .unstarted(() -> initializeTenant(tenantId, latch));
+                  .unstarted(() -> initializeTenant(tenantId, state));
           // registered before it runs, so that a close() racing this loop still interrupts it
           workers.add(worker);
-          worker.start();
+          try {
+            worker.start();
+          } catch (final Exception notStarted) {
+            // A tenant whose task never runs would keep the gate shut forever, and a silent
+            // permanent startup hang is a worse outcome than a degraded tenant.
+            LOG.error(
+                "Could not start the schema-initialization task of physical tenant '{}', so the"
+                    + " tenant stays degraded until the node is restarted. Other physical tenants"
+                    + " are unaffected.",
+                tenantId,
+                notStarted);
+            stopTrying(state);
+          }
         });
+  }
 
+  /**
+   * Blocks until the gate opens: every tenant has settled and either one is serviceable or none is
+   * still trying. Returns immediately once that already holds, and for a node with no tenants at
+   * all.
+   *
+   * <p>The wait is interruptible so that a shutdown signal arriving mid-initialization releases it.
+   * A shutdown-triggered interrupt is deliberately not re-raised: the Spring context refresh has to
+   * be allowed to finish for the broker to shut down gracefully.
+   */
+  public void awaitGate() {
+    gateLock.lock();
     try {
-      firstOutcome.await();
+      while (!isGateOpen()) {
+        gateChanged.await();
+      }
     } catch (final InterruptedException e) {
       LOG.debug(
-          "Interrupted while waiting for the first schema-initialization outcome of every physical"
-              + " tenant. Shutdown signal is caught={}",
+          "Interrupted while waiting for a serviceable physical tenant. Shutdown signal is"
+              + " caught={}",
           shutdown.get(),
           e);
       if (!shutdown.get()) {
         Thread.currentThread().interrupt();
       }
+    } finally {
+      gateLock.unlock();
     }
   }
 
   /** Whether the physical tenant's schema has been applied. An unknown tenant is never ready. */
   public boolean isInitialized(final String physicalTenantId) {
-    final AtomicBoolean latch = initialized.get(physicalTenantId);
-    return latch != null && latch.get();
+    final TenantState state = tenants.get(physicalTenantId);
+    return state != null && state.ready.get();
   }
 
-  /** Stops all retrying and releases the barrier; idempotent. */
+  /** Stops all retrying and opens the gate; idempotent. */
   @Override
   public void close() {
     if (!shutdown.compareAndSet(false, true)) {
       return;
     }
     workers.forEach(Thread::interrupt);
-    // Release the barrier here rather than leaving it to the interrupted tasks: a task blocked in a
+    // Open the gate here rather than leaving it to the interrupted tasks: a task blocked in a
     // storage read may not observe the interrupt before its client's socket timeout, and shutdown
-    // must not wait that long. Counting down a latch that already reached zero is a no-op.
-    while (firstOutcome.getCount() > 0) {
-      firstOutcome.countDown();
-    }
+    // must not wait that long.
+    signalGateChanged();
   }
 
-  private void initializeTenant(final String physicalTenantId, final AtomicBoolean latch) {
-    boolean settled = false;
+  /** Must be called with {@link #gateLock} held. */
+  private boolean isGateOpen() {
+    if (shutdown.get()) {
+      return true;
+    }
+    boolean anyReady = false;
+    boolean noneTrying = true;
+    for (final TenantState state : tenants.values()) {
+      if (!state.settled) {
+        return false;
+      }
+      anyReady |= state.ready.get();
+      noneTrying &= !state.trying;
+    }
+    return anyReady || noneTrying;
+  }
 
+  private void initializeTenant(final String physicalTenantId, final TenantState state) {
     try {
-      // read inside the try: the barrier is only guaranteed to be released by the finally below,
-      // so anything that can throw — an unusable retry configuration included — has to be in it,
-      // or startup would block on a tenant that never produces an outcome
+      // read inside the try: everything that can throw — an unusable retry configuration included
+      // — has to be covered by the finally below, or this tenant would keep the gate shut forever
       final RetryConfiguration retry = retryConfig.apply(physicalTenantId);
       final int maxAttempts = retry.getMaxRetries();
       final var backoff =
@@ -162,10 +203,13 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
         final long retryDelayMillis;
         try {
           attempt.accept(physicalTenantId);
-          latch.set(true);
+          markReady(state);
           logInitialized(physicalTenantId, attemptNumber);
           return;
         } catch (final Exception failure) {
+          // unconditionally, before anything that decides what to do with the failure: the tenant
+          // has produced an outcome, and that is all settling asserts
+          settle(state);
           if (shutdown.get()) {
             LOG.debug(
                 "Schema initialization for physical tenant '{}' failed during shutdown.",
@@ -202,11 +246,6 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
               attemptNumber,
               retryDelayMillis,
               failure);
-        } finally {
-          if (!settled) {
-            settled = true;
-            firstOutcome.countDown();
-          }
         }
 
         if (!sleep(retryDelayMillis)) {
@@ -221,11 +260,61 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
           physicalTenantId,
           unexpected);
     } finally {
-      // Nothing above has released this tenant's share of the barrier if shutdown won the race
-      // against the first attempt, or if the task could not be set up at all.
-      if (!settled) {
-        firstOutcome.countDown();
+      // The one guarantee the gate rests on: however this task ends — success, terminal failure,
+      // an exhausted retry budget, shutdown, or an Error this class never sees — it stops counting
+      // as still trying. Miss this on any path and a node with no serviceable tenant hangs at the
+      // gate forever, with nothing in the logs to say why.
+      stopTrying(state);
+    }
+  }
+
+  /** Records a tenant's first outcome, whatever that outcome was. */
+  private void settle(final TenantState state) {
+    gateLock.lock();
+    try {
+      if (!state.settled) {
+        state.settled = true;
+        gateChanged.signalAll();
       }
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  private void markReady(final TenantState state) {
+    gateLock.lock();
+    try {
+      state.ready.set(true);
+      state.settled = true;
+      gateChanged.signalAll();
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  /**
+   * Records that a tenant's task has stopped for good. A task that stopped without ever producing
+   * an outcome — it could not be set up at all, or shutdown won the race against its first attempt
+   * — counts as settled too: it has stopped contributing either way, and leaving it unsettled would
+   * hold the gate shut on a condition nothing can satisfy.
+   */
+  private void stopTrying(final TenantState state) {
+    gateLock.lock();
+    try {
+      state.trying = false;
+      state.settled = true;
+      gateChanged.signalAll();
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  private void signalGateChanged() {
+    gateLock.lock();
+    try {
+      gateChanged.signalAll();
+    } finally {
+      gateLock.unlock();
     }
   }
 
@@ -261,5 +350,17 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
       cause = cause.getCause();
     }
     return false;
+  }
+
+  /**
+   * One tenant's contribution to the gate. {@code settled} and {@code trying} are written and read
+   * only under {@link #gateLock}; {@code ready} is also written under it, but is read without the
+   * lock by {@link #isInitialized(String)}, which every rejected request consults and which must
+   * not serialize on a lock shared with every other tenant.
+   */
+  private static final class TenantState {
+    private final AtomicBoolean ready = new AtomicBoolean(false);
+    private boolean settled;
+    private boolean trying = true;
   }
 }

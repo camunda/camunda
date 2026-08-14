@@ -25,8 +25,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Exercises the settle barrier and the background retry loop against a fake attempt, so that the
+ * Exercises the startup gate and the background retry loop against a fake attempt, so that the
  * concurrency is asserted without a storage container and in milliseconds.
+ *
+ * <p>Two failure modes are worth more than the rest, and most of these tests exist for one of them.
+ * Opening the gate too early serves the webapp a 503 storm with a broken login for as long as a
+ * co-started storage takes to boot. Never opening it — one exit path that leaves a tenant counted
+ * as still trying — is a permanent startup hang with nothing in the logs to say why. The class
+ * timeout is what turns the second one into a failing test rather than a stuck build.
  */
 @Timeout(60)
 final class PerTenantSchemaInitializationTest {
@@ -35,83 +41,298 @@ final class PerTenantSchemaInitializationTest {
   private static final String TENANT_B = "tenantb";
 
   @Test
-  void shouldReleaseBarrierOnlyAfterEveryTenantHasAFirstOutcome() throws Exception {
-    // given - tenant A initializes immediately while tenant B is still held up, as during a
-    // rolling upgrade where one tenant's migration takes much longer than the other's
-    final var releaseTenantB = new CountDownLatch(1);
-    final var tenantBEntered = new CountDownLatch(1);
+  void shouldHoldTheGateWhileTheOnlyTenantKeepsFailing() throws Exception {
+    // given - the ordinary case of a node started alongside its storage: the first attempt fails
+    // within the client's one-second connect timeout, and the storage is simply not up yet
+    final var attempts = new AtomicInteger();
     try (final var initialization =
         initialization(
-            bothTenants(),
+            Set.of(TENANT_A),
             tenantId -> {
-              if (TENANT_B.equals(tenantId)) {
-                tenantBEntered.countDown();
-                awaitUninterruptibly(releaseTenantB);
-              }
+              attempts.incrementAndGet();
+              throw new IllegalStateException("storage is still starting");
             })) {
-      final var barrierReleased = startInBackground(initialization);
+      final var gateOpened = startInBackground(initialization);
 
-      // when - tenant A has settled but tenant B has not
-      assertThat(tenantBEntered.await(10, TimeUnit.SECONDS)).isTrue();
-      Awaitility.await("tenant A is initialized")
-          .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_A)).isTrue());
+      // when - the tenant has settled by failing, and keeps retrying
+      Awaitility.await("the tenant is retrying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(attempts.get()).isGreaterThan(3));
 
-      // then - the barrier still holds: admitting the node here would route tenant B's traffic to
-      // a node that has not migrated tenant B yet
-      assertThat(barrierReleased.await(200, TimeUnit.MILLISECONDS)).isFalse();
-
-      // when - tenant B produces its first outcome too
-      releaseTenantB.countDown();
-
-      // then
-      assertThat(barrierReleased.await(10, TimeUnit.SECONDS)).isTrue();
-      assertThat(initialization.isInitialized(TENANT_B)).isTrue();
+      // then - the port stays shut. Releasing the gate on a first outcome alone is what admitted
+      // the node a second into startup and then served 503 from every endpoint that needs
+      // secondary storage.
+      assertThat(gateOpened.await(500, TimeUnit.MILLISECONDS)).isFalse();
     }
   }
 
   @Test
-  void shouldReleaseBarrierWhenATenantOnlyEverFails() {
-    // given
+  void shouldOpenTheGateOnceAnotherTenantBecomesServiceable() throws Exception {
+    // given - one tenant whose storage is unreachable, and one that is merely slow
+    final var releaseTenantB = new CountDownLatch(1);
+    final var tenantAFailures = new AtomicInteger();
     try (final var initialization =
         initialization(
             bothTenants(),
             tenantId -> {
-              if (TENANT_B.equals(tenantId)) {
+              if (TENANT_A.equals(tenantId)) {
+                tenantAFailures.incrementAndGet();
                 throw new IllegalStateException("storage unreachable");
               }
+              awaitUninterruptibly(releaseTenantB);
+            })) {
+      final var gateOpened = startInBackground(initialization);
+
+      // when - tenant A has settled, repeatedly, but nothing is serviceable yet
+      Awaitility.await("tenant A is retrying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(tenantAFailures.get()).isGreaterThan(1));
+
+      // then
+      assertThat(gateOpened.await(200, TimeUnit.MILLISECONDS)).isFalse();
+
+      // when - the other tenant initializes
+      releaseTenantB.countDown();
+
+      // then - the node is admitted for the tenant it can serve, while the degraded one keeps
+      // retrying in the background
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(initialization.isInitialized(TENANT_B)).isTrue();
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldHoldTheGateWhileATenantIsStillInsideItsFirstAttempt() throws Exception {
+    // given - tenant B initializes immediately while tenant A is still applying its schema, as
+    // during a rolling upgrade where one tenant's migration takes much longer than the other's
+    final var releaseTenantA = new CountDownLatch(1);
+    final var tenantAEntered = new CountDownLatch(1);
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_A.equals(tenantId)) {
+                tenantAEntered.countDown();
+                awaitUninterruptibly(releaseTenantA);
+              }
+            })) {
+      final var gateOpened = startInBackground(initialization);
+
+      // when - tenant B is serviceable but tenant A has not settled
+      assertThat(tenantAEntered.await(10, TimeUnit.SECONDS)).isTrue();
+      Awaitility.await("tenant B is initialized")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_B)).isTrue());
+
+      // then - the gate still holds: admitting the node here would route tenant A's traffic to a
+      // node that has not migrated tenant A yet
+      assertThat(gateOpened.await(200, TimeUnit.MILLISECONDS)).isFalse();
+
+      // when - tenant A's migration completes too
+      releaseTenantA.countDown();
+
+      // then
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+    }
+  }
+
+  @Test
+  void shouldOpenTheGateWhenEveryTenantFailedTerminally() {
+    // given - a misconfiguration no retry can repair, on every tenant
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              throw new TerminalFailure();
             })) {
 
-      // when - one tenant's storage never comes back
-      initialization.startAndAwaitFirstOutcome();
+      // when - nothing will ever become serviceable, and nothing is still trying
+      initialization.start();
+      initialization.awaitGate();
 
-      // then - startup is not held by it, and only that tenant is degraded
-      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
+      // then - the node comes up not-ready rather than hanging at the gate forever
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
       assertThat(initialization.isInitialized(TENANT_B)).isFalse();
     }
   }
 
   @Test
-  void shouldInitializeInBackgroundAfterTransientFailures() {
-    // given - tenant B's storage only accepts the third attempt
+  void shouldOpenTheGateWhenEveryTenantExhaustedItsRetries() {
+    // given - an operator who bounded the attempts rather than taking the unbounded default
+    final var bounded = fastRetry();
+    bounded.setMaxRetries(3);
+    final var attempts = new ConcurrentHashMap<String, AtomicInteger>();
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            bothTenants(),
+            tenantId -> {
+              attempts.computeIfAbsent(tenantId, id -> new AtomicInteger()).incrementAndGet();
+              throw new IllegalStateException("storage unreachable");
+            },
+            TerminalFailure.class::isInstance,
+            tenantId -> bounded)) {
+
+      // when - the retry budget runs out on every tenant
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - the bound is honoured exactly, and the node comes up not-ready rather than waiting
+      // for a serviceable tenant no task is left to produce
+      assertThat(attempts.get(TENANT_A)).hasValue(3);
+      assertThat(attempts.get(TENANT_B)).hasValue(3);
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldOpenTheGateWhenTheRetryConfigurationIsUnusable() {
+    // given - a max delay resilience4j rejects, which throws while the task is being set up rather
+    // than from an attempt, so only the outer handler can stop the tenant counting as still trying
+    final var unusable = new RetryConfiguration();
+    unusable.setMaxRetryDelay(Duration.ZERO);
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> {},
+            TerminalFailure.class::isInstance,
+            tenantId -> unusable)) {
+
+      // when / then - a tenant that cannot even start must not hold the gate shut forever
+      initialization.start();
+      initialization.awaitGate();
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldOpenTheGateWhenTheTerminalClassificationItselfFails() {
+    // given - the classification is caller-supplied, so it is one more thing that can throw from
+    // an unexpected place in the loop
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw new IllegalStateException("storage unreachable");
+            },
+            failure -> {
+              throw new IllegalArgumentException("the classification is broken");
+            },
+            retryConfig())) {
+
+      // when / then
+      initialization.start();
+      initialization.awaitGate();
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldOpenTheGateWhenATenantsTaskDiesWithAnError() {
+    // given - an Error is not an Exception, so no catch in the loop sees it and only the finally
+    // is left to stop the tenant counting as still trying. The stack trace this prints is the
+    // JVM's default handler and is expected.
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw new DeliberateError();
+            })) {
+
+      // when / then
+      initialization.start();
+      initialization.awaitGate();
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldOpenTheGateOnClose() throws Exception {
+    // given - attempts that do not observe interruption, standing in for a storage client blocked
+    // in a socket read
+    final var blockForever = new CountDownLatch(1);
+    final var initialization =
+        initialization(bothTenants(), tenantId -> awaitUninterruptibly(blockForever));
+    try {
+      final var gateOpened = startInBackground(initialization);
+      assertThat(gateOpened.await(200, TimeUnit.MILLISECONDS)).isFalse();
+
+      // when
+      initialization.close();
+
+      // then - shutdown does not wait for the stuck attempts
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      blockForever.countDown();
+      initialization.close();
+    }
+  }
+
+  @Test
+  void shouldNotHoldTheCallerThatOnlyStartsTheTasks() {
+    // given - a node with no HTTP gateway, whose exporter retries per partition and which has no
+    // consumer that benefits from waiting
+    final var blockForever = new CountDownLatch(1);
+    final var initialization =
+        initialization(bothTenants(), tenantId -> awaitUninterruptibly(blockForever));
+    try {
+      // when / then - starting returns even though no tenant can ever settle
+      initialization.start();
+      assertThat(initialization.isInitialized(TENANT_A)).isFalse();
+    } finally {
+      blockForever.countDown();
+      initialization.close();
+    }
+  }
+
+  @Test
+  void shouldHoldTheGateUntilATenantRecoversFromTransientFailures() {
+    // given - the only tenant's storage accepts the third attempt
     final var attempts = new AtomicInteger();
     try (final var initialization =
         initialization(
             Set.of(TENANT_B),
             tenantId -> {
               if (attempts.incrementAndGet() < 3) {
+                throw new IllegalStateException("storage is still starting");
+              }
+            })) {
+
+      // when - the retry loop keeps going until the tenant recovers, with no restart and no
+      // operator action
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - the gate opened on the tenant becoming serviceable, not on its first failure
+      assertThat(initialization.isInitialized(TENANT_B)).isTrue();
+      assertThat(attempts).hasValue(3);
+    }
+  }
+
+  @Test
+  void shouldRecoverADegradedTenantInTheBackgroundAfterTheGateOpened() {
+    // given - one healthy tenant, and one whose storage only accepts the third attempt
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId) && attempts.incrementAndGet() < 3) {
                 throw new IllegalStateException("storage unreachable");
               }
             })) {
 
-      // when - the barrier releases on the first failure, so this returns without the tenant
-      initialization.startAndAwaitFirstOutcome();
+      // when - the gate opens on the healthy tenant
+      initialization.start();
+      initialization.awaitGate();
+      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
 
-      // then - the retry loop keeps going in the background until the tenant recovers, with no
-      // restart and no operator action
-      Awaitility.await("tenant B recovers on its own")
+      // then - the degraded tenant is still retried, and recovers on its own
+      Awaitility.await("tenant B recovers without a restart")
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(() -> assertThat(initialization.isInitialized(TENANT_B)).isTrue());
-      assertThat(attempts).hasValue(3);
     }
   }
 
@@ -128,7 +349,8 @@ final class PerTenantSchemaInitializationTest {
             })) {
 
       // when
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then - the tenant is degraded and no further attempt is made
       assertThat(initialization.isInitialized(TENANT_B)).isFalse();
@@ -150,7 +372,8 @@ final class PerTenantSchemaInitializationTest {
             })) {
 
       // when
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then
       assertAttemptCountStopsGrowing(attempts, 1);
@@ -172,8 +395,9 @@ final class PerTenantSchemaInitializationTest {
               throw cyclic;
             })) {
 
-      // when
-      initialization.startAndAwaitFirstOutcome();
+      // when - the gate is deliberately not awaited: a tenant that keeps retrying holds it, which
+      // is what shouldHoldTheGateWhileTheOnlyTenantKeepsFailing asserts
+      initialization.start();
 
       // then
       Awaitility.await("the tenant keeps being retried")
@@ -183,84 +407,16 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
-  void shouldReleaseBarrierWhenTheRetryConfigurationIsUnusable() {
-    // given - a max delay resilience4j rejects, which throws while the task is being set up rather
-    // than from an attempt
-    final var unusable = new RetryConfiguration();
-    unusable.setMaxRetryDelay(Duration.ZERO);
-    try (final var initialization =
-        new PerTenantSchemaInitialization(
-            bothTenants(),
-            tenantId -> {},
-            TerminalFailure.class::isInstance,
-            tenantId -> TENANT_B.equals(tenantId) ? unusable : fastRetry())) {
-
-      // when / then - a tenant that cannot even start must not hold startup open forever
-      initialization.startAndAwaitFirstOutcome();
-      assertThat(initialization.isInitialized(TENANT_A)).isTrue();
-      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
-    }
-  }
-
-  @Test
-  void shouldStopRetryingOnceTheConfiguredAttemptsAreExhausted() {
-    // given - an operator who bounded the attempts rather than taking the unbounded default
-    final var bounded = fastRetry();
-    bounded.setMaxRetries(3);
-    final var attempts = new AtomicInteger();
-    try (final var initialization =
-        new PerTenantSchemaInitialization(
-            Set.of(TENANT_B),
-            tenantId -> {
-              attempts.incrementAndGet();
-              throw new IllegalStateException("storage unreachable");
-            },
-            TerminalFailure.class::isInstance,
-            tenantId -> bounded)) {
-
-      // when
-      initialization.startAndAwaitFirstOutcome();
-
-      // then - the bound is honoured exactly, and the tenant is left degraded rather than retried
-      // forever
-      assertAttemptCountStopsGrowing(attempts, 3);
-      assertThat(attempts).hasValue(3);
-      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
-    }
-  }
-
-  @Test
   void shouldReportUnknownTenantAsNotInitialized() {
     // given
     try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
       // when
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then
       assertThat(initialization.isInitialized(TENANT_A)).isTrue();
       assertThat(initialization.isInitialized("never-configured")).isFalse();
-    }
-  }
-
-  @Test
-  void shouldReleaseABlockedBarrierOnClose() throws Exception {
-    // given - attempts that do not observe interruption, standing in for a storage client blocked
-    // in a socket read
-    final var blockForever = new CountDownLatch(1);
-    final var initialization =
-        initialization(bothTenants(), tenantId -> awaitUninterruptibly(blockForever));
-    try {
-      final var barrierReleased = startInBackground(initialization);
-      assertThat(barrierReleased.await(200, TimeUnit.MILLISECONDS)).isFalse();
-
-      // when
-      initialization.close();
-
-      // then - shutdown does not wait for the stuck attempts
-      assertThat(barrierReleased.await(10, TimeUnit.SECONDS)).isTrue();
-    } finally {
-      blockForever.countDown();
-      initialization.close();
     }
   }
 
@@ -275,7 +431,7 @@ final class PerTenantSchemaInitializationTest {
               attempts.incrementAndGet();
               throw new IllegalStateException("storage unreachable");
             });
-    initialization.startAndAwaitFirstOutcome();
+    initialization.start();
     Awaitility.await("the retry loop is running")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(attempts.get()).isGreaterThan(1));
@@ -296,9 +452,10 @@ final class PerTenantSchemaInitializationTest {
 
     // when
     initialization.close();
-    initialization.startAndAwaitFirstOutcome();
+    initialization.start();
+    initialization.awaitGate();
 
-    // then - the barrier releases without blocking, and no tenant is claimed as initialized
+    // then - the gate opens without blocking, and no tenant is claimed as initialized
     assertThat(attempts).hasValue(0);
     assertThat(initialization.isInitialized(TENANT_A)).isFalse();
     assertThat(initialization.isInitialized(TENANT_B)).isFalse();
@@ -319,7 +476,8 @@ final class PerTenantSchemaInitializationTest {
             })) {
 
       // when
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then
       assertThat(requestedFor).containsExactlyInAnyOrder(TENANT_A, TENANT_B);
@@ -330,7 +488,8 @@ final class PerTenantSchemaInitializationTest {
   void shouldBeIdempotentOnClose() {
     // given
     final var initialization = initialization(Set.of(TENANT_A), tenantId -> {});
-    initialization.startAndAwaitFirstOutcome();
+    initialization.start();
+    initialization.awaitGate();
 
     // when / then
     initialization.close();
@@ -352,7 +511,8 @@ final class PerTenantSchemaInitializationTest {
 
       // when - a sequential initialization would deadlock here, which is what starves the tenants
       // queued behind an unreachable one today
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then
       assertThat(bothRunning.await(0, TimeUnit.SECONDS)).isTrue();
@@ -363,10 +523,12 @@ final class PerTenantSchemaInitializationTest {
 
   @Test
   void shouldTolerateNoTenants() {
-    // given - a deployment with no search-engine tenant must not hold startup
+    // given - a deployment with no search-engine tenant must not hold startup: every tenant has
+    // settled vacuously, and none is trying
     try (final var initialization = initialization(Set.of(), tenantId -> {})) {
       // when / then
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
       assertThat(initialization.isInitialized("anything")).isFalse();
     }
   }
@@ -385,7 +547,8 @@ final class PerTenantSchemaInitializationTest {
             })) {
 
       // when
-      initialization.startAndAwaitFirstOutcome();
+      initialization.start();
+      initialization.awaitGate();
 
       // then
       assertThat(initialization.isInitialized("a")).isTrue();
@@ -394,17 +557,19 @@ final class PerTenantSchemaInitializationTest {
     }
   }
 
+  /** Runs the gate wait off the test thread, so that "the gate stays shut" is assertable. */
   private static CountDownLatch startInBackground(
       final PerTenantSchemaInitialization initialization) {
-    final var barrierReleased = new CountDownLatch(1);
+    final var gateOpened = new CountDownLatch(1);
+    initialization.start();
     Thread.ofPlatform()
         .name("test-startup")
         .start(
             () -> {
-              initialization.startAndAwaitFirstOutcome();
-              barrierReleased.countDown();
+              initialization.awaitGate();
+              gateOpened.countDown();
             });
-    return barrierReleased;
+    return gateOpened;
   }
 
   private static void assertAttemptCountStopsGrowing(
@@ -425,9 +590,15 @@ final class PerTenantSchemaInitializationTest {
     return tenantId -> fastRetry();
   }
 
-  /** Milliseconds rather than the production seconds, so retries are observable within a test. */
+  /**
+   * Milliseconds rather than the production seconds, so retries are observable within a test.
+   * Retries are unbounded, as {@code SchemaManagerRetryConfiguration} makes them in production —
+   * the plain {@link RetryConfiguration} default is three attempts, which would quietly turn every
+   * "keeps failing" case into an "exhausted its retries" one.
+   */
   private static RetryConfiguration fastRetry() {
     final var retry = new RetryConfiguration();
+    retry.setMaxRetries(Integer.MAX_VALUE);
     retry.setMinRetryDelay(Duration.ofMillis(1));
     retry.setMaxRetryDelay(Duration.ofMillis(5));
     retry.setRetryDelayMultiplier(1.5);
@@ -458,4 +629,11 @@ final class PerTenantSchemaInitializationTest {
 
   /** A failure the orchestrator is told retrying cannot repair. */
   private static final class TerminalFailure extends RuntimeException {}
+
+  /** Stands in for anything that kills a worker without passing through a catch block. */
+  private static final class DeliberateError extends Error {
+    private DeliberateError() {
+      super("deliberate: exercises the finally that stops a tenant counting as still trying");
+    }
+  }
 }
