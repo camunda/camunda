@@ -187,4 +187,46 @@ public final class SecretReferenceInputMappingTest {
         .contains("camunda.secrets.token")
         .contains("must be used as an expression");
   }
+
+  @Test
+  public void shouldRejectStaticValueSecretReferenceInProperty() {
+    // given - a static property value equal to a secret reference is a string literal
+    final var process =
+        Bpmn.createExecutableProcess("secret-property-static")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t -> t.zeebeJobType("job").zeebeProperty("authToken", "camunda.secrets.token"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejected = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    assertThat(rejected.getRejectionReason())
+        .contains("camunda.secrets.token")
+        .contains("must be used as an expression");
+  }
+
+  @Test
+  public void shouldRejectFeelStringLiteralSecretReferenceInProperty() {
+    // given - a FEEL string literal property value equal to a secret reference
+    final var process =
+        Bpmn.createExecutableProcess("secret-property-feel")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t -> t.zeebeJobType("job").zeebeProperty("authToken", "=\"camunda.secrets.token\""))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejected = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    assertThat(rejected.getRejectionReason())
+        .contains("camunda.secrets.token")
+        .contains("must be used as an expression");
+  }
 }
