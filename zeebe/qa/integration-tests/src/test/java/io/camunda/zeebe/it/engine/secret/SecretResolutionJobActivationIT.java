@@ -61,7 +61,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Covers what a worker actually receives for a job whose input mapping references a secret, on both
- * activation paths, against a real gateway, a real client and a real file-based secret store.
+ * activation paths, against a real gateway, a real client and a real file-based secret store. That
+ * includes a job that references more than one secret.
  *
  * <p>The engine suites ({@code JobSecretActivationInjectionTest}, {@code
  * JobSecretPushInjectionTest} and {@code SecretResolutionLifecycleTest}) already cover the
@@ -78,6 +79,9 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class SecretResolutionJobActivationIT {
 
+  /** The variable a second secret is mapped into, for the jobs that reference two. */
+  private static final String OTHER_INPUT_TARGET = "otherToken";
+
   @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker broker;
 
@@ -85,6 +89,8 @@ final class SecretResolutionJobActivationIT {
 
   private final String secretName = uniqueSecretName();
   private final String secretValue = "value-of-" + secretName;
+  private final String otherSecretName = uniqueSecretName();
+  private final String otherSecretValue = "value-of-" + otherSecretName;
   private final String processId = Strings.newRandomValidBpmnId();
   private final String jobType = Strings.newRandomValidBpmnId();
 
@@ -399,6 +405,75 @@ final class SecretResolutionJobActivationIT {
     assertNoRecordCarriesValue(secretValue);
   }
 
+  @Test
+  void shouldActivateOnceWithEveryReferenceOfAJobResolved() {
+    // given - one of the two secrets of a job already in the cache, from an earlier job of its own
+    writeSecret(broker, secretName, secretValue);
+    writeSecret(broker, otherSecretName, otherSecretValue);
+    final String warmUpProcessId = Strings.newRandomValidBpmnId();
+    final String warmUpJobType = Strings.newRandomValidBpmnId();
+    deployProcessWithInput(client, warmUpProcessId, warmUpJobType, secretReference(secretName));
+    createProcessInstance(client, warmUpProcessId);
+    assertThat(onlyJob(poll(warmUpJobType).join()).getVariablesAsMap())
+        .containsEntry(INPUT_TARGET, secretValue);
+
+    // when - a job references both, so one is cached and the other is not
+    deployProcessWithTwoSecretInputs();
+    final long processInstanceKey = createProcessInstance(client, processId);
+    final ActivatedJob job = onlyJob(poll().join());
+
+    // then - the job waited for the reference that was missing and was then activated once with
+    // both values, rather than handed out as soon as one of them could be injected
+    assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(job.getVariablesAsMap())
+        .containsEntry(INPUT_TARGET, secretValue)
+        .containsEntry(OTHER_INPUT_TARGET, otherSecretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(otherSecretName, job.getKey()))
+        .as("the reference that was not cached was requested")
+        .isTrue();
+    assertThat(resolutionWasRequestedFor(secretName, job.getKey()))
+        .as("the reference that was cached was not requested again")
+        .isFalse();
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(secretValue);
+    assertNoRecordCarriesValue(otherSecretValue);
+  }
+
+  @Test
+  void shouldRaiseIncidentWhenOnlyOneOfTheReferencesOfAJobResolves() {
+    // given - a job referencing two secrets, one of which the store does not hold
+    writeSecret(broker, secretName, secretValue);
+    deployProcessWithTwoSecretInputs();
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+    assertThat(primingPoll(client, jobType)).isEmpty();
+
+    // when - one reference resolves and the other cannot
+    final Record<IncidentRecordValue> incident = awaitSecretIncident(processInstanceKey);
+
+    // then - the job is not handed out with what could be resolved; it gets an incident naming the
+    // reference that failed, and the reactivation of the one that resolved leaves it alone since it
+    // is still parked on the other
+    assertThat(incident.getValue().getErrorMessage()).contains(otherSecretName);
+    assertThat(resolutionFailureStates(otherSecretName)).containsOnly(ResolutionState.NOT_FOUND);
+    assertThat(resolutionFailureStates(secretName)).isEmpty();
+
+    // when - the operator adds the missing secret and resolves the incident
+    writeSecret(broker, otherSecretName, otherSecretValue);
+    client.newResolveIncidentCommand(incident.getKey()).send().join();
+
+    // then - the job is handed out with both values, and no second incident was raised
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getVariablesAsMap())
+        .containsEntry(INPUT_TARGET, secretValue)
+        .containsEntry(OTHER_INPUT_TARGET, otherSecretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(incidentsOf(processInstanceKey)).hasSize(1);
+    assertNoRecordCarriesValue(secretValue);
+    assertNoRecordCarriesValue(otherSecretValue);
+  }
+
   private Record<IncidentRecordValue> awaitSecretIncident(final long processInstanceKey) {
     return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -408,6 +483,27 @@ final class SecretResolutionJobActivationIT {
 
   private void deployProcessWithSecretInput() {
     deployProcessWithInput(client, processId, jobType, secretReference(secretName));
+  }
+
+  /** A task whose input mappings read two secrets, into two different variables. */
+  private void deployProcessWithTwoSecretInputs() {
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType(jobType)
+                            .zeebeInputExpression(secretReference(secretName), INPUT_TARGET)
+                            .zeebeInputExpression(
+                                secretReference(otherSecretName), OTHER_INPUT_TARGET))
+                .endEvent()
+                .done(),
+            processId + ".bpmn")
+        .send()
+        .join();
   }
 
   private CamundaFuture<ActivateJobsResponse> poll() {
