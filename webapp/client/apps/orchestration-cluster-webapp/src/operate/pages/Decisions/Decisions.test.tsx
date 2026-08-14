@@ -23,7 +23,11 @@ import {
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {DecisionsHarness} from './DecisionsHarness';
+import {
+	DecisionsHarness,
+	DecisionsNavigationWithoutInstancesHarness,
+	DecisionsWithoutInstancesHarness,
+} from './DecisionsHarness';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -38,12 +42,23 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
 
-function renderDecisionsPage(searchParams?: Record<string, string>) {
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderDecisionsPage(
+	searchParams?: Record<string, string>,
+	Harness: React.ComponentType = DecisionsHarness,
+) {
 	const query = searchParams ? `?${new URLSearchParams(searchParams).toString()}` : '';
-	return renderWithRouter(DecisionsHarness, {
+	const screen = await renderWithRouter(Harness, {
 		path: '/operate/decisions',
 		initialEntry: `/operate/decisions${query}`,
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 describe('<Decisions />', () => {
@@ -51,7 +66,11 @@ describe('<Decisions />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
 		sessionStorage.clear();
 	});
 
@@ -61,7 +80,7 @@ describe('<Decisions />', () => {
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 		);
 
-		const screen = await renderDecisionsPage();
+		const screen = await renderDecisionsPage(undefined, DecisionsWithoutInstancesHarness);
 
 		await expect.element(screen.getByText('Instances States')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toBeVisible();
@@ -75,7 +94,7 @@ describe('<Decisions />', () => {
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 		);
 
-		const screen = await renderDecisionsPage();
+		const screen = await renderDecisionsPage(undefined, DecisionsWithoutInstancesHarness);
 
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeDisabled();
 	});
@@ -86,7 +105,10 @@ describe('<Decisions />', () => {
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 		);
 
-		const screen = await renderDecisionsPage({decisionDefinitionId: 'invoice-approval'});
+		const screen = await renderDecisionsPage(
+			{decisionDefinitionId: 'invoice-approval'},
+			DecisionsWithoutInstancesHarness,
+		);
 
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).not.toBeDisabled();
 	});
@@ -98,7 +120,10 @@ describe('<Decisions />', () => {
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 		);
 
-		const screen = await renderDecisionsPage({decisionDefinitionId: 'discount-rate', decisionDefinitionVersion: '1'});
+		const screen = await renderDecisionsPage(
+			{decisionDefinitionId: 'discount-rate', decisionDefinitionVersion: '1'},
+			DecisionsNavigationWithoutInstancesHarness,
+		);
 
 		const nameCombobox = screen.getByRole('combobox', {name: 'Name'});
 		await nameCombobox.click({force: true});
@@ -245,7 +270,10 @@ describe('<Decisions />', () => {
 				mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 			);
 
-			const screen = await renderDecisionsPage({decisionDefinitionId: 'invoice-approval'});
+			const screen = await renderDecisionsPage(
+				{decisionDefinitionId: 'invoice-approval'},
+				DecisionsWithoutInstancesHarness,
+			);
 
 			await expect.element(screen.getByRole('button', {name: 'Reset filters'})).not.toBeDisabled();
 		});

@@ -37,8 +37,18 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 
 const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitionsResponse());
 
-function renderPage(search?: Partial<OperationsLogSearch>) {
-	return renderWithRouter(() => <OperationsLog {...(search ?? {})} />, {path: '/operate/operations-log'});
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderPage(search?: Partial<OperationsLogSearch>) {
+	const screen = await renderWithRouter(() => <OperationsLog {...(search ?? {})} />, {
+		path: '/operate/operations-log',
+	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 describe('<OperationsLog />', () => {
@@ -46,7 +56,11 @@ describe('<OperationsLog />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
 		sessionStorage.clear();
 	});
 

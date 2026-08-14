@@ -25,7 +25,13 @@ function toOptionalNumber(value: unknown) {
 	return Number.isFinite(number) ? number : undefined;
 }
 
-function DecisionsHarness() {
+function DecisionsHarness({
+	renderSelectedVersion = true,
+	renderInstances = true,
+}: {
+	renderSelectedVersion?: boolean;
+	renderInstances?: boolean;
+}) {
 	const search = useSearch({strict: false}) as Record<string, unknown>;
 
 	return (
@@ -34,10 +40,12 @@ function DecisionsHarness() {
 		<div style={{height: '100vh'}}>
 			<Decisions
 				decisionDefinitionId={toOptionalString(search.decisionDefinitionId)}
-				decisionDefinitionVersion={toOptionalNumber(search.decisionDefinitionVersion)}
+				decisionDefinitionVersion={
+					renderSelectedVersion ? toOptionalNumber(search.decisionDefinitionVersion) : undefined
+				}
 				tenantId={toOptionalString(search.tenantId)}
-				evaluated={search.evaluated === undefined ? true : Boolean(search.evaluated)}
-				failed={search.failed === undefined ? true : Boolean(search.failed)}
+				evaluated={renderInstances && (search.evaluated === undefined ? true : Boolean(search.evaluated))}
+				failed={renderInstances && (search.failed === undefined ? true : Boolean(search.failed))}
 				decisionEvaluationInstanceKey={toOptionalString(search.decisionEvaluationInstanceKey)}
 				processInstanceKey={toOptionalString(search.processInstanceKey)}
 				businessId={toOptionalString(search.businessId)}
@@ -49,4 +57,21 @@ function DecisionsHarness() {
 	);
 }
 
-export {DecisionsHarness};
+function DecisionsNavigationHarness() {
+	return <DecisionsHarness renderSelectedVersion={false} />;
+}
+
+function DecisionsWithoutInstancesHarness() {
+	return <DecisionsHarness renderInstances={false} />;
+}
+
+function DecisionsNavigationWithoutInstancesHarness() {
+	return <DecisionsHarness renderInstances={false} renderSelectedVersion={false} />;
+}
+
+export {
+	DecisionsHarness,
+	DecisionsNavigationHarness,
+	DecisionsWithoutInstancesHarness,
+	DecisionsNavigationWithoutInstancesHarness,
+};
