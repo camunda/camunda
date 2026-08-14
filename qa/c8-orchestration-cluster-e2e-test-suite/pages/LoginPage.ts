@@ -54,8 +54,7 @@ export class LoginPage {
     // The orchestration-cluster session cookie is shared across Operate,
     // Tasklist and Identity, so navigating to a "/<app>/login" URL while a
     // valid session already exists redirects to the app home and renders no
-    // login form. Treat login() as idempotent: if the Username field never
-    // appears, we are already authenticated and there is nothing to do.
+    // login form. Treat login() as idempotent in exactly that case.
     // First-login and invalid-credentials tests always render the form (they
     // start from a fresh, unauthenticated context), so they are unaffected.
     try {
@@ -68,7 +67,15 @@ export class LoginPage {
         },
         maxRetries: 2,
       });
-    } catch {
+    } catch (error) {
+      // A missing form only means "already signed in" if the app has actually
+      // navigated off the login route. Still being on /login means the form
+      // genuinely failed to render — a slow shell, an app that is not up, a
+      // wrong URL — and swallowing that would resurface as a confusing failure
+      // somewhere later in the test, so let the original error through.
+      if (new URL(this.page.url()).pathname.endsWith('/login')) {
+        throw error;
+      }
       return;
     }
     await this.clickUsername();
