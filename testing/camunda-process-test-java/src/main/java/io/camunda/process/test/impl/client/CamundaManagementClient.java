@@ -177,6 +177,13 @@ public final class CamundaManagementClient implements CamundaClockClient {
       return false;
     }
 
+    if (change.isTerminallyFailed()) {
+      throw new IllegalStateException(
+          String.format(
+              "The cluster reported the purge as %s. [changeId: %d]",
+              change.getStatus(), changeId));
+    }
+
     return change.isCompleted() && isClusterHealthy();
   }
 

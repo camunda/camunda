@@ -22,6 +22,8 @@ package io.camunda.process.test.impl.client.purge;
 public class ManagementConfigurationChangeDto {
 
   private static final String COMPLETED = "COMPLETED";
+  private static final String FAILED = "FAILED";
+  private static final String CANCELLED = "CANCELLED";
 
   private long id;
   private String status;
@@ -44,5 +46,10 @@ public class ManagementConfigurationChangeDto {
 
   public boolean isCompleted() {
     return COMPLETED.equalsIgnoreCase(status);
+  }
+
+  /** Returns true if the change has ended without completing, so it will never complete. */
+  public boolean isTerminallyFailed() {
+    return FAILED.equalsIgnoreCase(status) || CANCELLED.equalsIgnoreCase(status);
   }
 }

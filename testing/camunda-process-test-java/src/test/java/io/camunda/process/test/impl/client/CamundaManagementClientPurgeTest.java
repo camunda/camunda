@@ -117,6 +117,34 @@ public class CamundaManagementClientPurgeTest {
         .hasMessage("Failed to purge the cluster, timeout expired.");
   }
 
+  @Test
+  void shouldFailPurgeWhenTheClusterReportsTheChangeAsFailed() {
+    // given
+    stubPurge();
+    stubChange(change("FAILED"));
+    stubTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
+
+    // when / then the purge fails with the reason instead of waiting for the timeout to expire
+    assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
+        .hasMessage("Failed to purge the cluster.")
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("The cluster reported the purge as FAILED. [changeId: 7]");
+  }
+
+  @Test
+  void shouldFailPurgeWhenTheClusterReportsTheChangeAsCancelled() {
+    // given
+    stubPurge();
+    stubChange(change("CANCELLED"));
+    stubTopology(MULTI_PHYSICAL_TENANT_TOPOLOGY);
+
+    // when / then
+    assertThatThrownBy(() -> createClient().purgeCluster(Duration.ofSeconds(10)))
+        .hasMessage("Failed to purge the cluster.")
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("The cluster reported the purge as CANCELLED. [changeId: 7]");
+  }
+
   private static CamundaManagementClient createClient() {
     return CamundaManagementClient.createClient(URI.create(MANAGEMENT_API.baseUrl()));
   }
