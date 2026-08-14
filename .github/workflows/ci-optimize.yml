@@ -1,0 +1,617 @@
+# Unified CI for Optimize. Runs backend unit tests, front end unit tests, dockerfile linting (hadolint), and self-managed E2E smoke tests
+# test location: /optimize, /optimize/client, optimize.Dockerfile
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
+name: Optimize CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
+      use-shared-distball:
+        description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
+      runDockerfileChecks:
+        description: "Set to true if optimize.Dockerfile was changed"
+        type: boolean
+        required: false
+        default: true
+      use-shared-distball:
+        description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Optimize
+
+jobs:
+  # run every time this workflow is called
+  optimize-backend-unit-tests:
+    name: "Unit"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    # When ci.yml sets use-shared-distball, the reusable workflow restores the shared distball
+    # m2 from GCS via WIF instead of running build-zeebe (see #52693); that needs id-token.
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+            owner: '@camunda/data-layer'
+          - suite: CoreFeatures
+            suiteName: Core Features
+            owner: '@camunda/core-features'
+    with:
+      componentName: "Optimize"
+      suite: ${{ matrix.suite }}
+      suiteName: ${{ matrix.suiteName }}
+      owner: ${{ matrix.owner }}
+      use-shared-distball: ${{ inputs.use-shared-distball }}
+
+  optimize-it-elasticsearch:
+    name: "Integration / Elasticsearch ITs"
+    if: inputs.runBeTests
+    runs-on: gcp-core-32-longrunning
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: IT
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false', 'true' ]
+        # This entry deliberately omits cslEnabled so it merges into both matrix values above,
+        # instead of two near-duplicate entries repeating excludedGroups/profiles. Do not add
+        # cslEnabled back to only one of them: the other combination would then have no include
+        # entry supplying `profiles`, so `-P` would swallow the next Maven argument instead of
+        # activating `ccsm-it` (which wires up src/it/java and failsafe) — Maven only warns on an
+        # unknown profile, so that job would go green having run zero ITs.
+        include:
+          - includedGroups: 'ccsm-test'
+            excludedGroups: ''
+            profiles: 'ccsm-it'
+    steps:
+      - name: Checkout repository
+        # Credentials stay: the next step fetches from origin.
+        # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+      - name: Start Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          ELASTIC_JVM_MEMORY: 16
+          ELASTIC_HTTP_PORT: 9200
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
+            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend,upgrade -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
+          path: |
+            **/failsafe-reports/**
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-it-opensearch:
+    name: "Integration / OpenSearch ITs"
+    if: inputs.runBeTests
+    runs-on: gcp-core-32-longrunning
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: IT
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false', 'true' ]
+        # See the identical comment on the Elasticsearch job above: this entry deliberately omits
+        # cslEnabled so it merges into both matrix values instead of duplicating itself per value.
+        include:
+          - includedGroups: 'ccsm-test'
+            excludedGroups: 'openSearchSingleTestFailOK'
+            profiles: 'ccsm-it'
+    steps:
+      - name: Checkout repository
+        # Credentials stay: the next step fetches from origin.
+        # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+      - name: Start OpenSearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch
+        env:
+          OPENSEARCH_VERSION: ${{ steps.db-versions.outputs.opensearch-2 }}
+          OPENSEARCH_JVM_MEMORY: 16
+          OPENSEARCH_HTTP_PORT: 9200
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+          # optimize/upgrade's ITs select their database via this env var rather than
+          # the -Ddatabase.type system property that optimize/backend's ITs use.
+          CAMUNDA_OPTIMIZE_DATABASE: opensearch
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
+            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend,upgrade -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: integration-test-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
+          path: |
+            **/failsafe-reports/**
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-frontend-unit-tests:
+    name: "Unit - Front End"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+      TEST_TYPE: Unit
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        with:
+          work-dir: ./optimize
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
+        with:
+          directory: optimize/client
+      - name: Install dependencies
+        uses: ./.github/actions/yarn-install-with-retry
+        with:
+          directory: optimize/client
+          args: install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optimize-unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  hadolint:
+    if: inputs.runDockerfileChecks
+    name: "Tool / Dockerfile / Hadolint"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 4
+    env:
+      TEST_TYPE: Tool
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "hadolint/${{ matrix.dockerfile }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  validate-base-image:
+    if: inputs.runDockerfileChecks && github.event_name != 'push' && github.event_name != 'schedule'
+    name: "Tool / Dockerfile / Validate Base Image"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 5
+    env:
+      TEST_TYPE: Tool
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Check for Fork
+        uses: ./.github/actions/is-fork
+        id: is-fork
+      - if: steps.is-fork.outputs.is-fork != 'true'
+        uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      # Same class of check as camunda.Dockerfile gets in the docker-checks job
+      # (.github/workflows/ci.yml), but here it's a metadata-only resolve since this job never
+      # builds the image. The pinned digest is content-addressable, so we must resolve it by digest
+      # exactly as BuildKit does for `FROM ${BASE_IMAGE}@${BASE_DIGEST}`. `docker buildx imagetools
+      # inspect` mirrors that resolution path; plain `docker manifest inspect` on the tag@digest
+      # form instead false-fails as soon as the rolling Minimus 25-dev tag advances off the pinned
+      # digest, even though that digest is still perfectly pullable. This job runs only on
+      # pull_request/merge_group, where it gates a Renovate digest bump before it lands. On push
+      # to main/stable the digest is already resolved as a side effect of the real image build in
+      # deploy-optimize-docker-snapshot (.github/workflows/ci.yml) - mirroring how docker-checks
+      # covers camunda.Dockerfile - so running this standalone resolve on push/schedule would be
+      # redundant, hence it is scoped out of push/schedule events.
+      - name: Validate base image digest is resolvable
+        if: steps.is-fork.outputs.is-fork != 'true'
+        run: |
+          set -euo pipefail
+          base_image=$(grep -m1 '^ARG BASE_IMAGE=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          base_digest=$(grep -m1 '^ARG BASE_DIGEST=' ${{ matrix.dockerfile }} | cut -d'"' -f2)
+          echo "Resolving ${base_image}@${base_digest}"
+          docker buildx imagetools inspect "${base_image}@${base_digest}" > /dev/null
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "validate-base-image/${{ matrix.dockerfile }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  optimize-e2e-smoke:
+    name: "E2E / Self-Managed (Smoke)"
+    if: inputs.runE2eTests
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions: { }
+    env:
+      TEST_TYPE: E2E
+      TEST_OWNER: '@camunda/optimize-frontend'
+
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - uses: ./.github/actions/apt-fast-mirror-failover
+      # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
+      # so a hang self-terminates inside the sudo'd root process tree instead of
+      # requiring nick-fields/retry to kill across the privilege boundary -- doing
+      # that externally throws `kill EPERM` and crashes instead of retrying, see
+      # https://github.com/nick-fields/retry/issues/124. Budgeted against the 7-minute
+      # outer timeout: 90s + 30s + 180s = 300s worst case, leaving 2 minutes of headroom
+      # for the (fast, non-network) tee/verification steps and process overhead.
+      # google-chrome-stable itself gets the largest share (180s): it and its
+      # dependencies are a much bigger download than the other two apt calls.
+      - name: Install Google Chrome
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 7
+          shell: bash
+          command: |
+            set -euo pipefail
+
+            if ! command -v google-chrome >/dev/null 2>&1; then
+              sudo timeout 90 bash -c "apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates"
+
+              sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
+
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+                | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+
+              sudo timeout 180 bash -c "apt-get update && apt-get install -y --no-install-recommends google-chrome-stable"
+            fi
+
+            google-chrome --version
+            google-chrome --headless=new --no-sandbox --disable-gpu --dump-dom about:blank >/dev/null
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@094dc70cf4050d156dded76d5574c962886c0b0a # 3.0.12
+        with:
+          work-dir: ./optimize
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize-e2e-smoke
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
+        uses: ./.github/actions/compose
+        with:
+          compose_file: optimize/client/docker-compose.yml
+          project_name: e2e
+          additional_flags: "--profile self-managed"
+        env:
+          CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+
+      - name: Create backend logs file
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
+
+      - name: Start backend
+        working-directory: ./optimize/client
+        run: |
+          yarn run start-backend ci &> ./build/backendLogs.log &
+
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+
+      - name: Wait for import to complete
+        run: |
+          while : ; do
+            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
+            if [[ $count -eq 60 ]]; then
+              echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
+              prev="-1"
+              stable=0
+              while [[ $stable -lt 2 ]]; do
+                cur=$(curl -s -X GET "http://localhost:9200/optimize-process-instance/_count" | jq '.count // 0')
+                echo "Process instances: $cur"
+                if [[ "$cur" == "$prev" ]]; then
+                  stable=$((stable + 1))
+                else
+                  stable=0
+                fi
+                prev="$cur"
+                sleep 10
+              done
+              echo "Import stabilized at $cur process instances"
+              break
+            fi
+            echo "Index has $count entities. Waiting for 60..."
+            sleep 10
+          done
+
+      - name: Wait for frontend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
+
+      - name: Run smoke tests
+        working-directory: ./optimize/client
+        run: yarn run e2e:ci:sm:smoke:headless
+
+      - name: Upload logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: optimize-e2e-smoke-logs
+          path: |
+            ./optimize/client/build/*.log
+            ./optimize/client/build/smoke-test-results.txt
+            ./optimize/client/build/screenshots/
+            ./optimize/client/build/videos/
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: optimize-e2e-smoke-docker-logs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
