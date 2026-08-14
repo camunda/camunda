@@ -160,6 +160,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
               checkpointSchedule,
               backupSchedule,
               backupRequestHandler,
+              brokerClient.getTopologyManager(),
               tenantMeterRegistry);
     }
 

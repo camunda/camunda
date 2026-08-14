@@ -61,12 +61,13 @@ public class CheckpointScheduleTest {
 
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private CheckpointScheduler checkpointScheduler;
+  private BrokerTopologyManager topologyManager;
 
   @BeforeEach
   void setup() {
     meterRegistry.clear();
     brokerClient = mock(BrokerClient.class);
-    final var topologyManager = mock(BrokerTopologyManager.class);
+    topologyManager = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
     lenient().when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     lenient()
@@ -538,6 +539,59 @@ public class CheckpointScheduleTest {
     verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
+  @Test
+  void shouldNotSendAnyRequestWhileTenantIsRecovering() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(
+            new Schedule.IntervalSchedule(Duration.ofSeconds(5)),
+            new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+    when(topologyManager.isRecovering(DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(true);
+    lenient()
+        .when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(now.toEpochMilli(), now.toEpochMilli())));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then — not even the state query is sent, so a recovering tenant sees no traffic at all
+    verify(backupRequestHandler, never()).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+    verify(backupRequestHandler, never()).checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
+  }
+
+  @Test
+  void shouldKeepTickingWhileTenantIsRecovering() {
+    // given — recovery ends after the first two ticks were skipped
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(5)), null);
+    when(topologyManager.isRecovering(DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(true, true, false);
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
+
+    // when — the initial tick and the one 5s later are skipped
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+    verify(backupRequestHandler, never()).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when — the tick after that finds the tenant back in processing mode
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then — the loop was still ticking on its own schedule, so it resumes without a restart
+    verify(backupRequestHandler, times(1)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+    verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
+  }
+
   private CheckpointStateResponse checkpointState(
       final long checkpointTimestamp, final long backupTimestamp) {
     final var response = new CheckpointStateResponse();
@@ -568,7 +622,12 @@ public class CheckpointScheduleTest {
       final Schedule checkpointSchedule,
       final Schedule backupSchedule) {
     return new CheckpointScheduler(
-        physicalTenantId, checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
+        physicalTenantId,
+        checkpointSchedule,
+        backupSchedule,
+        backupRequestHandler,
+        topologyManager,
+        meterRegistry);
   }
 
   private Gauge getGauge(final String gaugeName, final CheckpointType type) {

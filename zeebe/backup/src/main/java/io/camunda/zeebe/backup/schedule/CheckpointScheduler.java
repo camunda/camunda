@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -39,6 +40,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final Schedule checkpointSchedule;
   private final Schedule backupSchedule;
   private final BackupRequestHandler backupRequestHandler;
+  private final BrokerTopologyManager topologyManager;
   private final SchedulerMetrics metrics;
 
   private long markerErrorDelayMs;
@@ -51,6 +53,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final Schedule checkpointSchedule,
       final Schedule backupSchedule,
       final BackupRequestHandler backupRequestHandler,
+      final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     super("CheckpointScheduler", null, Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
     this.physicalTenantId = physicalTenantId;
@@ -58,6 +61,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     this.backupSchedule = backupSchedule;
     metrics = new SchedulerMetrics(meterRegistry);
     this.backupRequestHandler = backupRequestHandler;
+    this.topologyManager = topologyManager;
     markerErrorStrategy =
         new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
     backupErrorStrategy =
@@ -85,6 +89,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void markerSchedulingTask() {
+    if (rescheduledRecoveringTenant(CheckpointType.MARKER)) {
+      return;
+    }
     acquirePartitionStates(CheckpointStateResponse::getCheckpointStates)
         .thenApply(this::determineNextCheckpoint, this)
         .andThen(this::markerCheckpoint, this)
@@ -92,12 +99,47 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void backupSchedulingTask() {
+    if (rescheduledRecoveringTenant(CheckpointType.SCHEDULED_BACKUP)) {
+      return;
+    }
     acquirePartitionStates(CheckpointStateResponse::getBackupStates)
         .thenApply(this::determineNextBackup, this)
         .andThen(this::backupCheckpoint, this)
         .onComplete(
             (res, err) -> handleExecutionCompletion(res, err, CheckpointType.SCHEDULED_BACKUP),
             this);
+  }
+
+  /**
+   * Skips this tick's requests while the physical tenant is recovering, rescheduling the loop on
+   * its normal schedule instead.
+   *
+   * <p>A recovering tenant is having its partitions restored, so a checkpoint taken now would
+   * capture a half-restored state; a tenant whose mode this broker cannot see yet is treated the
+   * same way. The loop keeps ticking rather than stopping, so it picks the schedule back up on its
+   * own as soon as the tenant returns to processing mode — no restart of the actor is needed.
+   *
+   * @return {@code true} if the tick was skipped, in which case the loop is already rescheduled
+   */
+  private boolean rescheduledRecoveringTenant(final CheckpointType type) {
+    if (!topologyManager.isRecovering(physicalTenantId)) {
+      return false;
+    }
+
+    final var tickSchedule = type == CheckpointType.MARKER ? checkpointSchedule : backupSchedule;
+    final var next = nextExecution(tickSchedule, ActorClock.currentInstant());
+    metrics.recordNextExecution(next, type);
+    LOG.debug(
+        "Skipping {} checkpoint, physical tenant {} is in recovery mode. Next attempt at {}",
+        type,
+        physicalTenantId,
+        next);
+
+    final Runnable task =
+        type == CheckpointType.MARKER ? this::markerSchedulingTask : this::backupSchedulingTask;
+    final long delay = Math.max(0, next.toEpochMilli() - ActorClock.currentTimeMillis());
+    schedule(Duration.ofMillis(delay), task);
+    return true;
   }
 
   /**

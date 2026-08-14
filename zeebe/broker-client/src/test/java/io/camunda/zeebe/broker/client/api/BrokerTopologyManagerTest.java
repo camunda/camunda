@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -984,6 +985,77 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology("unknown-group").isInitialized()).isFalse();
   }
 
+  @Test
+  void shouldReportUnknownTenantAsRecoveringOrUnknown() {
+    // given -- no configuration was ever received for this tenant
+
+    // when / then -- recovery cannot be ruled out, so callers must hold off rather than act
+    assertThat(topologyManager.isRecovering("unknowntenant")).isTrue();
+  }
+
+  @Test
+  void shouldReportTenantWithoutBrokersAsRecoveringOrUnknown() {
+    // given -- a configured group that carries no brokers at all
+    final var configuration = configureTenantWithMode(Map.of());
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then -- there is no broker whose mode could rule recovery out
+    assertThat(topologyManager.isRecovering("tenant1")).isTrue();
+  }
+
+  @Test
+  void shouldNotReportTenantAsRecoveringOrUnknownWhileEveryBrokerIsProcessing() {
+    // given
+    final var configuration =
+        configureTenantWithMode(
+            Map.of(MemberId.from("1"), Mode.PROCESSING, MemberId.from("2"), Mode.PROCESSING));
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(topologyManager.isRecovering("tenant1")).isFalse();
+  }
+
+  @Test
+  void shouldReportTenantAsRecoveringWhileOnlyOneBrokerHasEnteredRecovery() {
+    // given -- a mode change that has flipped one of the two brokers so far
+    final var configuration =
+        configureTenantWithMode(
+            Map.of(MemberId.from("1"), Mode.RECOVERING, MemberId.from("2"), Mode.PROCESSING));
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then -- the tenant counts as recovering for the whole transition window
+    assertThat(topologyManager.isRecovering("tenant1")).isTrue();
+  }
+
+  @Test
+  void shouldNotReportTenantAsRecoveringBecauseAnotherTenantIs() {
+    // given
+    final var configuration =
+        configureTenantsWithModes(
+            Map.of(
+                "tenant1",
+                Map.of(MemberId.from("1"), Mode.RECOVERING),
+                DEFAULT_PHYSICAL_TENANT_ID,
+                Map.of(MemberId.from("1"), Mode.PROCESSING)));
+
+    // when
+    topologyManager.onClusterConfigurationUpdated(configuration);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(topologyManager.isRecovering(DEFAULT_PHYSICAL_TENANT_ID)).isFalse();
+    assertThat(topologyManager.isRecovering("tenant1")).isTrue();
+  }
+
   private void addTopologyListener(final BrokerTopologyListener listener) {
     topologyManager.addTopologyListener(listener);
     actorSchedulerRule.workUntilDone();
@@ -1026,6 +1098,43 @@ final class BrokerTopologyManagerTest {
         Optional.empty(),
         Optional.empty(),
         Optional.empty());
+  }
+
+  // builds a cluster configuration holding only a "tenant1" group, whose members are in the given
+  // modes
+  private static CurrentClusterConfiguration configureTenantWithMode(
+      final Map<MemberId, Mode> modeByMember) {
+    return configureTenantsWithModes(Map.of("tenant1", modeByMember));
+  }
+
+  private static CurrentClusterConfiguration configureTenantsWithModes(
+      final Map<String, Map<MemberId, Mode>> modeByMemberByTenant) {
+    final Map<String, PartitionGroupConfiguration> groups = new HashMap<>();
+    modeByMemberByTenant.forEach(
+        (physicalTenantId, modeByMember) -> {
+          final Map<MemberId, BrokerPartitionState> members = new HashMap<>();
+          modeByMember.forEach(
+              (memberId, mode) ->
+                  members.put(
+                      memberId,
+                      BrokerPartitionState.initialize(
+                              Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+                          .setMode(mode)));
+          groups.put(
+              physicalTenantId,
+              new PartitionGroupConfiguration(
+                  PartitionGroupConfiguration.INITIAL_VERSION,
+                  PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER,
+                  members,
+                  Optional.empty(),
+                  Optional.empty(),
+                  Optional.empty()));
+        });
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        globalConfigWithMember(MemberId.from("1")),
+        groups,
+        PhasedChangeState.empty());
   }
 
   private static PartitionGroupConfiguration incrementIncarnation(
