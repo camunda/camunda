@@ -457,7 +457,7 @@ Key responsibilities:
 - Authentication Provider (CSL): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
 - Session Repository (CSL): implements Spring Session's `SessionRepository` interface and manages server‑side sessions backed by secondary storage via the local `PersistentWebSessionClient` (`search/search-client`). Wired locally by `WebSessionRepositoryConfiguration` (`dist`) — so the repository is CSL's, but the storage behind it is OC's.
 
-Extern responsibilities:
+External responsibilities:
 
 - Spring Security (`OAuth2LoginAuthenticationFilter`, `BearerTokenAuthenticationFilter`): manages the OIDC authorization code flow and Bearer token validation, using stock Spring Security components not shown in the diagram — `SupplierJwtDecoder` (Bearer JWT decoding, single- or issuer-aware multi-provider), `DefaultOAuth2AuthorizedClientManager` (authorized client state for the authorization code, refresh token, and client credentials flows, including `private_key_jwt` — see [6.3.2](#632-oidc-with-private_key_jwt-client-authentication)), and `OidcUserService` (userinfo lookup during browser login).
 - OIDC IdP: issues ID tokens, access tokens, and JWKS for signature verification.
