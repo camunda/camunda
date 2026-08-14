@@ -60,8 +60,8 @@
 	height: 3rem;
 }
 
-// DS type scale token `heading-md` (Heading component, typography.tsx):
-// text-xl / leading-7 / font-semibold. `font-heading` is skipped — it
+// DS type scale token `heading-lg` (Heading component, typography.tsx):
+// text-[28px] / leading-9 / font-normal. `font-heading` is skipped — it
 // resolves to `var(--font-sans)`, already inherited from `.c4-ui`.
 .titleDS {
 	// .cardContentDS's flex `gap` already puts 1rem (16px) below this box;
@@ -70,9 +70,9 @@
 	margin-bottom: 0.5rem;
 	padding-bottom: 0.5rem;
 	text-align: center;
-	font-size: 1.25rem;
-	line-height: 1.75rem;
-	font-weight: 600;
+	font-size: 1.75rem;
+	line-height: 2.25rem;
+	font-weight: 400;
 	color: var(--foreground);
 }
 
