@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.7.20
+          image: camunda/connectors-bundle:8.7.23
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -100,8 +100,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-87-elasticsearch-camunda-platform-identity-env-vars
-            - configMapRef:
-                name: c8-golden-stable-87-elasticsearch-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2
