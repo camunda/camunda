@@ -308,7 +308,13 @@ final class LeaderAppender {
     final var leader = raft.getLeader();
     final var configuration = raft.getCluster().getConfiguration();
     return ConfigureRequest.builder()
+        // The leader's current term, which the receiver uses to update its own term and leader.
         .withTerm(raft.getTerm())
+        // The term that identifies the configuration, which is a different thing: it belongs to the
+        // configuration entry, not to whoever disseminates it. Sending only the leader's term is
+        // what made a member label the same configuration differently depending on whether it
+        // appended the entry or learned it from here.
+        .withConfigurationTerm(raft.getCluster().getConfigurationTerm())
         .withLeader(leader.memberId())
         .withIndex(configuration.index())
         .withTime(configuration.time())
