@@ -30,6 +30,8 @@ SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
 SUPPRESSED_RECENT_NO_FIX = "no-fix-verdict-within-cooldown"
 SUPPRESSED_FIXED_UPSTREAM = "fixed-upstream-after-run-started"
 SUPPRESSED_UNSUPPORTED_REF = "base-ref-not-supported-by-fix-agent"
+#: Every spec was dropped, but by more than one of the sources above.
+SUPPRESSED_ALL_ACCOUNTED = "all-specs-already-accounted-for"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
 
@@ -227,19 +229,31 @@ def plan_dispatches(
             )
             continue
 
-        # Drop specs an open PR, a recent no-fix verdict or an upstream fix already
-        # accounts for; dispatch only what is left.
+        # Drop specs an open PR, a product bug, a recent no-fix verdict or an upstream
+        # fix already accounts for; dispatch only what is left. Which source dropped
+        # each one is tracked so the summary names the real blocker: reporting every
+        # empty remainder as "open-pr-covers-all-specs" hid the other three.
         if not cand.job_level:
-            remaining = [
-                s
-                for s, fp in zip(cand.specs, cand.spec_fingerprints)
-                if fp not in covered_fingerprints
-                and fp not in product_bug_fingerprints
-                and fp not in no_fix
-                and fp not in fixed_upstream
-            ]
+            accounted: list[str] = []
+            remaining = []
+            for spec, fp in zip(cand.specs, cand.spec_fingerprints):
+                if fp in covered_fingerprints:
+                    accounted.append(SUPPRESSED_PR_COVERED)
+                elif fp in product_bug_fingerprints:
+                    accounted.append(SUPPRESSED_PRODUCT_BUG)
+                elif fp in no_fix:
+                    accounted.append(SUPPRESSED_RECENT_NO_FIX)
+                elif fp in fixed_upstream:
+                    accounted.append(SUPPRESSED_FIXED_UPSTREAM)
+                else:
+                    remaining.append(spec)
             if not remaining:
-                plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_COVERED))
+                sources = sorted(set(accounted))
+                plan.suppressed.append(
+                    Suppression(cand, sources[0], "")
+                    if len(sources) == 1
+                    else Suppression(cand, SUPPRESSED_ALL_ACCOUNTED, ",".join(sources))
+                )
                 continue
             cand.specs = remaining
         elif fps and all(f in covered_fingerprints for f in fps):

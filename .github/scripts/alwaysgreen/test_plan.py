@@ -248,6 +248,13 @@ def test_crashed_run_suppresses_nothing():
     assert plan.verdict_fingerprints({"prs": "broken"}, ["76a3348c"]) == set()
 
 
+def test_malformed_prs_shapes_suppress_nothing():
+    # A readable manifest whose `prs` is missing, null or an object must not be read
+    # as "opened nothing": only a genuine empty list is a no-fix verdict.
+    for meta in ({}, {"prs": None}, {"prs": {}}, {"other": 1}):
+        assert plan.verdict_fingerprints(meta, ["76a3348c"]) == set(), meta
+
+
 def test_verdict_without_fingerprints_suppresses_nothing():
     assert plan.verdict_fingerprints({"prs": []}, None) == set()
     assert plan.verdict_fingerprints({"prs": []}, []) == set()
@@ -257,6 +264,45 @@ def test_verdict_fingerprints_are_normalised_and_deduped():
     assert plan.verdict_fingerprints(
         {"prs": []}, ["76a3348c", "76a3348c", "", None]
     ) == {"76a3348c"}
+
+
+def test_mixed_suppression_sources_are_named_not_reported_as_pr_coverage():
+    # Each spec is dropped by a different source. Reporting the whole candidate as
+    # "open-pr-covers-all-specs" would hide the other sources from the summary.
+    by_pr = _spec(name="covered by pr")
+    by_upstream = _spec(name="fixed upstream")
+    cand = _cand(specs=[by_pr, by_upstream])
+    fp = {
+        s.test_name: classify.spec_fingerprint(
+            "main", classify.SURFACE_SM_E2E, s.file, s.test_name
+        )
+        for s in (by_pr, by_upstream)
+    }
+
+    result = _plan(
+        [cand],
+        covered_fingerprints={fp["covered by pr"]},
+        fixed_upstream_fingerprints={fp["fixed upstream"]},
+    )
+    assert result.dispatches == []
+    assert result.suppressed[0].reason == plan.SUPPRESSED_ALL_ACCOUNTED
+    assert result.suppressed[0].detail == ",".join(
+        sorted({plan.SUPPRESSED_PR_COVERED, plan.SUPPRESSED_FIXED_UPSTREAM})
+    )
+
+
+def test_single_suppression_source_keeps_its_own_reason():
+    # Only one source accounts for every spec, so the specific reason survives.
+    a, b = _spec(name="a"), _spec(name="b")
+    cand = _cand(specs=[a, b])
+    fps = {
+        classify.spec_fingerprint("main", classify.SURFACE_SM_E2E, s.file, s.test_name)
+        for s in (a, b)
+    }
+    # Partial overlap with a second source would otherwise be indistinguishable.
+    result = _plan([cand], covered_fingerprints=fps)
+    assert result.suppressed[0].reason == plan.SUPPRESSED_PR_COVERED
+    assert result.suppressed[0].detail == ""
 
 
 def test_product_bug_suppresses_the_candidate():
