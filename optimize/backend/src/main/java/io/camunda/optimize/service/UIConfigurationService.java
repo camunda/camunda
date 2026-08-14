@@ -67,7 +67,7 @@ public class UIConfigurationService {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setCslEnabled(
-        Boolean.parseBoolean(environment.getProperty("optimize.security.csl.enabled")));
+        Boolean.parseBoolean(environment.getProperty("optimize.security.csl.enabled", "true")));
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(
         settingService.getSettings().getSharingEnabled().orElse(false));

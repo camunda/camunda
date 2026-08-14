@@ -39,7 +39,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Conditional(CCSaaSCondition.class)
-@ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public final class OptimizeCslLoginSuccessListener {
 
   /** Auth0 claim carrying the user's previous SaaS identity, absent unless it changed. */

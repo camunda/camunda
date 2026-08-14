@@ -30,8 +30,11 @@ import org.springframework.core.env.MapPropertySource;
  * <p>The derived property source is added at the <b>end</b> of the source list (lowest precedence),
  * so any explicit {@code camunda.security.*} value an operator sets still wins.
  *
- * <p>Only active when {@code optimize.security.csl.enabled=true}. Keys with no meaning under CSL
- * (server-side sessions, no self-signed tokens) are logged as deprecated and otherwise ignored.
+ * <p>Only active while CSL is active, i.e. {@code optimize.security.csl.enabled} is {@code true} or
+ * absent — the default since 8.10 (camunda/camunda#58483). Keys with no meaning under CSL
+ * (server-side sessions, no self-signed tokens) are logged as deprecated and otherwise ignored. An
+ * operator who explicitly sets the flag to {@code false} gets a startup warning naming the 8.11
+ * removal instead (camunda/camunda#58484, camunda/camunda#58485).
  *
  * <p>Bridges the CCSM (Identity) and CCSaaS (Auth0) OIDC registrations from their {@code
  * CAMUNDA_OPTIMIZE_IDENTITY_*} / {@code CAMUNDA_OPTIMIZE_AUTH0_*} / {@code
@@ -66,7 +69,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
-    if (!Boolean.parseBoolean(env.getProperty(CSL_ENABLED_PROPERTY, "false"))) {
+    if (!Boolean.parseBoolean(env.getProperty(CSL_ENABLED_PROPERTY, "true"))) {
+      warnCslFlagExplicitlyDisabled();
       return;
     }
 
@@ -88,6 +92,19 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
               + " (always-on defaults plus values derived from legacy Optimize config).",
           derived.size());
     }
+  }
+
+  // Reached only when an operator explicitly sets the flag to false: every other path now
+  // defaults CSL to active (camunda/camunda#58483), so an unset property never reaches here.
+  private void warnCslFlagExplicitlyDisabled() {
+    LOG.warn(
+        "Optimize config '{}' is deprecated and set to false, keeping the legacy authentication"
+            + " stack active instead of CSL. Support for the flag and for the legacy config keys"
+            + " it gates will be removed in {}, together with the legacy stack itself"
+            + " (camunda/camunda#58484, camunda/camunda#58485). Unset it once CSL is confirmed"
+            + " working to prepare for that removal.",
+        CSL_ENABLED_PROPERTY,
+        LEGACY_KEY_REMOVAL_VERSION);
   }
 
   // Always applied when CSL is enabled, independent of any legacy key.
