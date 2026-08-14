@@ -46,6 +46,7 @@ import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -67,647 +68,666 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
         .producedAt(PRODUCED_AT);
   }
 
-  // ── Happy-path: request routing ───────────────────────────────────────────
+  @Nested
+  class RequestRoutingTest {
 
-  @Test
-  void shouldSendPatchToCorrectUrl() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+    @Test
+    void shouldSendPatchToCorrectUrl() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .execute();
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .execute();
 
-    // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.PATCH);
-    assertThat(request.getUrl()).isEqualTo("/v2/agent-instances/1234");
+      // then
+      final LoggedRequest request = RestGatewayService.getLastRequest();
+      assertThat(request.getMethod()).isEqualTo(RequestMethod.PATCH);
+      assertThat(request.getUrl()).isEqualTo("/v2/agent-instances/1234");
+    }
+
+    @Test
+    void shouldSendAllOptionalFieldsInRequestBody() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .status(AgentInstanceUpdateStatus.THINKING)
+          .inputTokens(100L)
+          .outputTokens(200L)
+          .modelCalls(3)
+          .toolCalls(2)
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
+      assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
+      assertThat(body.getMetrics().getInputTokens()).isEqualTo(100L);
+      assertThat(body.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(body.getMetrics().getModelCalls()).isEqualTo(3);
+      assertThat(body.getMetrics().getToolCalls()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldSendOnlyElementInstanceKeyWhenNoOtherFieldsSet() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
+      assertThat(body.getStatus()).isNull();
+      assertThat(body.getMetrics()).isNull();
+      assertThat(body.getTools()).isNull();
+      assertThat(body.getJobKey()).isNull();
+      assertThat(body.getJobLease()).isNull();
+      assertThat(body.getHistory()).isNull();
+    }
   }
 
-  @Test
-  void shouldSendAllOptionalFieldsInRequestBody() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+  @Nested
+  class ToolsMappingTest {
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .status(AgentInstanceUpdateStatus.THINKING)
-        .inputTokens(100L)
-        .outputTokens(200L)
-        .modelCalls(3)
-        .toolCalls(2)
-        .execute();
+    @Test
+    void shouldMapToolsWithAllFields() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
-    assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
-    assertThat(body.getMetrics().getInputTokens()).isEqualTo(100L);
-    assertThat(body.getMetrics().getOutputTokens()).isEqualTo(200L);
-    assertThat(body.getMetrics().getModelCalls()).isEqualTo(3);
-    assertThat(body.getMetrics().getToolCalls()).isEqualTo(2);
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getTools())
+          .singleElement()
+          .satisfies(
+              tool -> {
+                assertThat(tool.getName()).isEqualTo("search");
+                assertThat(tool.getDescription()).isEqualTo("A web search tool");
+                assertThat(tool.getElementId()).isEqualTo("searchTask");
+              });
+    }
+
+    @Test
+    void shouldMapToolWithNameOnlyOmittingNullOptionalFields() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .tools(Arrays.asList(AgentTool.of("summarize")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getTools()).hasSize(1);
+      final io.camunda.client.protocol.rest.AgentTool tool = body.getTools().get(0);
+      assertThat(tool.getName()).isEqualTo("summarize");
+      assertThat(tool.getDescription()).isNull();
+      assertThat(tool.getElementId()).isNull();
+    }
+
+    @Test
+    void shouldSendEmptyToolsList() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .tools(Collections.emptyList())
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getTools()).isEmpty();
+    }
+
+    @Test
+    void shouldMapMultipleToolsMixingOptionalFields() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .tools(
+              Arrays.asList(
+                  AgentTool.of("search", "Search the web", "searchTask"),
+                  AgentTool.of("summarize")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getTools())
+          .extracting(
+              io.camunda.client.protocol.rest.AgentTool::getName,
+              io.camunda.client.protocol.rest.AgentTool::getDescription,
+              io.camunda.client.protocol.rest.AgentTool::getElementId)
+          .containsExactly(
+              tuple("search", "Search the web", "searchTask"), tuple("summarize", null, null));
+    }
   }
 
-  @Test
-  void shouldSendOnlyElementInstanceKeyWhenNoOtherFieldsSet() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+  @Nested
+  class AgentInstanceKeyValidationTest {
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getElementInstanceKey()).isEqualTo(String.valueOf(ELEMENT_INSTANCE_KEY));
-    assertThat(body.getStatus()).isNull();
-    assertThat(body.getMetrics()).isNull();
-    assertThat(body.getTools()).isNull();
-    assertThat(body.getJobKey()).isNull();
-    assertThat(body.getJobLease()).isNull();
-    assertThat(body.getHistory()).isNull();
+    @ParameterizedTest(name = "agentInstanceKey={0} should be rejected")
+    @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
+    void shouldRejectNonPositiveAgentInstanceKey(final long invalidKey) {
+      assertThatThrownBy(() -> client.newUpdateAgentInstanceCommand(invalidKey))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("agentInstanceKey must be greater than 0");
+    }
   }
 
-  // ── Tools mapping ─────────────────────────────────────────────────────────
+  @Nested
+  class ElementInstanceKeyValidationTest {
 
-  @Test
-  void shouldMapToolsWithAllFields() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getTools())
-        .singleElement()
-        .satisfies(
-            tool -> {
-              assertThat(tool.getName()).isEqualTo("search");
-              assertThat(tool.getDescription()).isEqualTo("A web search tool");
-              assertThat(tool.getElementId()).isEqualTo("searchTask");
-            });
+    @ParameterizedTest(name = "elementInstanceKey={0} should be rejected")
+    @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
+    void shouldRejectNonPositiveElementInstanceKey(final long invalidKey) {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(invalidKey)
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("elementInstanceKey must be greater than 0");
+    }
   }
 
-  @Test
-  void shouldMapToolWithNameOnlyOmittingNullOptionalFields() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+  @Nested
+  class JobKeyValidationTest {
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .tools(Arrays.asList(AgentTool.of("summarize")))
-        .execute();
+    @ParameterizedTest(name = "jobKey={0} should be rejected")
+    @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
+    void shouldRejectNonPositiveJobKey(final long invalidKey) {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(invalidKey))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("jobKey must be greater than 0");
+    }
 
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getTools()).hasSize(1);
-    final io.camunda.client.protocol.rest.AgentTool tool = body.getTools().get(0);
-    assertThat(tool.getName()).isEqualTo("summarize");
-    assertThat(tool.getDescription()).isNull();
-    assertThat(tool.getElementId()).isNull();
+    @Test
+    void shouldRejectHistoryWithoutJobKey() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .history(Collections.singletonList(historyItem("item-1")))
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("jobKey must be set when history is not empty");
+    }
   }
 
-  @Test
-  void shouldSendEmptyToolsList() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+  @Nested
+  class JobLeaseValidationTest {
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .tools(Collections.emptyList())
-        .execute();
+    @Test
+    void shouldRejectNullJobLease() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobLease(null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("jobLease must not be null");
+    }
 
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getTools()).isEmpty();
+    @ParameterizedTest(name = "jobLease=''{0}'' should be rejected")
+    @ValueSource(strings = {"", " "})
+    void shouldRejectBlankJobLease(final String jobLease) {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobLease(jobLease))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("jobLease must not be blank");
+    }
   }
 
-  @Test
-  void shouldMapMultipleToolsMixingOptionalFields() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+  @Nested
+  class HistoryBatchMappingTest {
 
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .tools(
-            Arrays.asList(
-                AgentTool.of("search", "Search the web", "searchTask"), AgentTool.of("summarize")))
-        .execute();
+    @Test
+    void shouldSendSingleHistoryItemWithRequiredFieldsOnly() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getTools())
-        .extracting(
-            io.camunda.client.protocol.rest.AgentTool::getName,
-            io.camunda.client.protocol.rest.AgentTool::getDescription,
-            io.camunda.client.protocol.rest.AgentTool::getElementId)
-        .containsExactly(
-            tuple("search", "Search the web", "searchTask"), tuple("summarize", null, null));
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(historyItem("item-1")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getHistory())
+          .singleElement()
+          .satisfies(
+              item -> {
+                assertThat(item.getHistoryItemId()).isEqualTo("item-1");
+                assertThat(item.getLoopIteration()).isEqualTo(1);
+                assertThat(item.getRole()).isEqualTo(AgentInstanceHistoryRoleEnum.USER);
+                assertThat(item.getContent()).hasSize(1);
+                assertThat(item.getContent().get(0)).isInstanceOf(AgentInstanceTextContent.class);
+                assertThat(((AgentInstanceTextContent) item.getContent().get(0)).getText())
+                    .isEqualTo("hello");
+                assertThat(item.getProducedAt()).isEqualTo("2025-06-01T12:00Z");
+                assertThat(item.getToolCalls()).isNull();
+                assertThat(item.getMetrics()).isNull();
+              });
+    }
+
+    @Test
+    void shouldMapHistoryItemWithToolCallsAndMetrics() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1")
+              .toolCalls(
+                  Collections.singletonList(
+                      new AgentInstanceHistoryToolCall()
+                          .toolCallId("call-1")
+                          .toolName("search")
+                          .elementId("searchTask")
+                          .arguments(Collections.<String, Object>singletonMap("query", "weather"))))
+              .metrics(
+                  new AgentInstanceHistoryMetrics()
+                      .inputTokens(100L)
+                      .outputTokens(50L)
+                      .durationMs(200L));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getHistory()).isNotNull().hasSize(1);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getToolCalls())
+          .singleElement()
+          .satisfies(
+              (final AgentInstanceToolCall toolCall) -> {
+                assertThat(toolCall.getToolCallId()).isEqualTo("call-1");
+                assertThat(toolCall.getToolName()).isEqualTo("search");
+                assertThat(toolCall.getElementId()).isEqualTo("searchTask");
+                assertThat(toolCall.getArguments()).containsEntry("query", "weather");
+              });
+      assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(100L);
+      assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(50L);
+      assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(200L);
+    }
+
+    @Test
+    void shouldMapHistoryItemWithDocumentContent() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final DocumentReferenceResponseImpl doc =
+          new DocumentReferenceResponseImpl(
+              new DocumentReference()
+                  .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
+                  .documentId("doc-abc")
+                  .storeId("store-1"));
+      final HistoryItem item =
+          historyItem("item-1")
+              .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc)));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getHistory())
+          .singleElement()
+          .satisfies(
+              mappedItem -> {
+                assertThat(mappedItem.getContent()).hasSize(1);
+                assertThat(mappedItem.getContent().get(0))
+                    .isInstanceOf(AgentInstanceDocumentContent.class);
+                final AgentInstanceDocumentContent docContent =
+                    (AgentInstanceDocumentContent) mappedItem.getContent().get(0);
+                assertThat(docContent.getDocumentReference().getCamundaDocumentType())
+                    .isEqualTo(CamundaDocumentTypeEnum.CAMUNDA);
+                assertThat(docContent.getDocumentReference().getDocumentId()).isEqualTo("doc-abc");
+                assertThat(docContent.getDocumentReference().getStoreId()).isEqualTo("store-1");
+              });
+    }
+
+    @Test
+    void shouldSendMultipleHistoryItemsInOrder() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(
+              Arrays.asList(historyItem("item-1"), historyItem("item-2"), historyItem("item-3")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getHistory())
+          .extracting(io.camunda.client.protocol.rest.AgentInstanceHistoryItem::getHistoryItemId)
+          .containsExactly("item-1", "item-2", "item-3");
+    }
+
+    @Test
+    void shouldCombineJobKeyJobLeaseStatusToolsAndHistoryInOneRequest() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .jobLease(JOB_LEASE)
+          .status(AgentInstanceUpdateStatus.THINKING)
+          .tools(Collections.singletonList(AgentTool.of("search")))
+          .history(Collections.singletonList(historyItem("item-1")))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getJobKey()).isEqualTo("91011");
+      assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
+      assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
+      assertThat(body.getTools())
+          .singleElement()
+          .satisfies(tool -> assertThat(tool.getName()).isEqualTo("search"));
+      assertThat(body.getHistory())
+          .singleElement()
+          .satisfies(item -> assertThat(item.getHistoryItemId()).isEqualTo("item-1"));
+    }
   }
 
-  // ── Argument validation: agentInstanceKey ────────────────────────────────
+  @Nested
+  class HistoryBatchValidationTest {
 
-  @ParameterizedTest(name = "agentInstanceKey={0} should be rejected")
-  @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
-  void shouldRejectNonPositiveAgentInstanceKey(final long invalidKey) {
-    assertThatThrownBy(() -> client.newUpdateAgentInstanceCommand(invalidKey))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("agentInstanceKey must be greater than 0");
+    @Test
+    void shouldRejectNullHistoryList() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .history(null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("history must not be null");
+    }
+
+    @Test
+    void shouldRejectNullElementInHistoryList() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(Collections.singletonList(null)))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("history must not contain null elements");
+    }
+
+    @Test
+    void shouldRejectNullHistoryItemId() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(historyItem("item-1").historyItemId(null))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("historyItemId must not be null");
+    }
+
+    @ParameterizedTest(name = "historyItemId=''{0}'' should be rejected")
+    @ValueSource(strings = {"", " "})
+    void shouldRejectBlankHistoryItemId(final String historyItemId) {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").historyItemId(historyItemId))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("historyItemId must not be blank");
+    }
+
+    @ParameterizedTest(name = "loopIteration={0} should be rejected")
+    @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
+    void shouldRejectNonPositiveLoopIteration(final int loopIteration) {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").loopIteration(loopIteration))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("loopIteration must be greater than 0");
+    }
+
+    @Test
+    void shouldRejectNullRoleInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(Collections.singletonList(historyItem("item-1").role(null))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("role must not be null");
+    }
+
+    @Test
+    void shouldRejectNullContentInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(Collections.singletonList(historyItem("item-1").content(null))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("content must not be null");
+    }
+
+    @Test
+    void shouldRejectNullProducedAtInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(Collections.singletonList(historyItem("item-1").producedAt(null))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("producedAt must not be null");
+    }
+
+    @Test
+    void shouldRejectBlankTextContentInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1")
+                                  .content(
+                                      Collections.singletonList(
+                                          AgentInstanceHistoryContent.text(" ")))))
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("text content value must not be null or blank");
+    }
+
+    @Test
+    void shouldRejectEmptyContentListInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").content(Collections.emptyList())))
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("content must not be empty");
+    }
+
+    @Test
+    void shouldRejectBlankToolCallIdInHistoryItem() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1")
+                                  .toolCalls(
+                                      Collections.singletonList(
+                                          new AgentInstanceHistoryToolCall()
+                                              .toolCallId(" ")
+                                              .toolName("search")))))
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("toolCallId must not be null or blank");
+    }
   }
 
-  // ── Argument validation: elementInstanceKey ───────────────────────────────
+  @Nested
+  class ResponseParsingTest {
 
-  @ParameterizedTest(name = "elementInstanceKey={0} should be rejected")
-  @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
-  void shouldRejectNonPositiveElementInstanceKey(final long invalidKey) {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(invalidKey)
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("elementInstanceKey must be greater than 0");
-  }
+    @Test
+    void shouldParseCreatedHistoryInResponseOrderWithDuplicateFlag() {
+      // given
+      final AgentInstanceUpdateResult response =
+          new AgentInstanceUpdateResult()
+              .createdHistory(
+                  Arrays.asList(
+                      new AgentInstanceCreatedHistoryItem()
+                          .historyItemId("item-1")
+                          .historyItemKey("100")
+                          .isDuplicate(false),
+                      new AgentInstanceCreatedHistoryItem()
+                          .historyItemId("item-2")
+                          .historyItemKey("101")
+                          .isDuplicate(true),
+                      new AgentInstanceCreatedHistoryItem()
+                          .historyItemId("item-3")
+                          .historyItemKey("102")
+                          .isDuplicate(false)));
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY, response);
 
-  // ── Argument validation: jobKey ───────────────────────────────────────────
+      // when
+      final UpdateAgentInstanceResponse result =
+          client
+              .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .execute();
 
-  @ParameterizedTest(name = "jobKey={0} should be rejected")
-  @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
-  void shouldRejectNonPositiveJobKey(final long invalidKey) {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(invalidKey))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobKey must be greater than 0");
-  }
+      // then
+      assertThat(result.getCreatedHistory())
+          .isNotNull()
+          .extracting(
+              CreatedHistoryItem::getHistoryItemId,
+              CreatedHistoryItem::getHistoryItemKey,
+              CreatedHistoryItem::isDuplicate)
+          .containsExactly(
+              tuple("item-1", 100L, false),
+              tuple("item-2", 101L, true),
+              tuple("item-3", 102L, false));
+    }
 
-  // ── Argument validation: jobLease ─────────────────────────────────────────
+    @Test
+    void shouldReturnEmptyCreatedHistoryWhenResponseHasNoBody() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
 
-  @Test
-  void shouldRejectNullJobLease() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobLease(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobLease must not be null");
-  }
+      // when
+      final UpdateAgentInstanceResponse result =
+          client
+              .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .execute();
 
-  @ParameterizedTest(name = "jobLease=''{0}'' should be rejected")
-  @ValueSource(strings = {"", " "})
-  void shouldRejectBlankJobLease(final String jobLease) {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobLease(jobLease))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobLease must not be blank");
-  }
-
-  // ── Happy-path: history batch ─────────────────────────────────────────────
-
-  @Test
-  void shouldSendSingleHistoryItemWithRequiredFieldsOnly() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .jobKey(JOB_KEY)
-        .history(Collections.singletonList(historyItem("item-1")))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getHistory())
-        .singleElement()
-        .satisfies(
-            item -> {
-              assertThat(item.getHistoryItemId()).isEqualTo("item-1");
-              assertThat(item.getLoopIteration()).isEqualTo(1);
-              assertThat(item.getRole()).isEqualTo(AgentInstanceHistoryRoleEnum.USER);
-              assertThat(item.getContent()).hasSize(1);
-              assertThat(item.getContent().get(0)).isInstanceOf(AgentInstanceTextContent.class);
-              assertThat(((AgentInstanceTextContent) item.getContent().get(0)).getText())
-                  .isEqualTo("hello");
-              assertThat(item.getProducedAt()).isEqualTo("2025-06-01T12:00Z");
-              assertThat(item.getToolCalls()).isNull();
-              assertThat(item.getMetrics()).isNull();
-            });
-  }
-
-  @Test
-  void shouldMapHistoryItemWithToolCallsAndMetrics() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-    final HistoryItem item =
-        historyItem("item-1")
-            .toolCalls(
-                Collections.singletonList(
-                    new AgentInstanceHistoryToolCall()
-                        .toolCallId("call-1")
-                        .toolName("search")
-                        .elementId("searchTask")
-                        .arguments(Collections.<String, Object>singletonMap("query", "weather"))))
-            .metrics(
-                new AgentInstanceHistoryMetrics()
-                    .inputTokens(100L)
-                    .outputTokens(50L)
-                    .durationMs(200L));
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .jobKey(JOB_KEY)
-        .history(Collections.singletonList(item))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getHistory()).isNotNull().hasSize(1);
-    final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
-        body.getHistory().get(0);
-    assertThat(mappedItem.getToolCalls())
-        .singleElement()
-        .satisfies(
-            (final AgentInstanceToolCall toolCall) -> {
-              assertThat(toolCall.getToolCallId()).isEqualTo("call-1");
-              assertThat(toolCall.getToolName()).isEqualTo("search");
-              assertThat(toolCall.getElementId()).isEqualTo("searchTask");
-              assertThat(toolCall.getArguments()).containsEntry("query", "weather");
-            });
-    assertThat(mappedItem.getMetrics().getInputTokens()).isEqualTo(100L);
-    assertThat(mappedItem.getMetrics().getOutputTokens()).isEqualTo(50L);
-    assertThat(mappedItem.getMetrics().getDurationMs()).isEqualTo(200L);
-  }
-
-  @Test
-  void shouldMapHistoryItemWithDocumentContent() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-    final DocumentReferenceResponseImpl doc =
-        new DocumentReferenceResponseImpl(
-            new DocumentReference()
-                .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-                .documentId("doc-abc")
-                .storeId("store-1"));
-    final HistoryItem item =
-        historyItem("item-1")
-            .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc)));
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .jobKey(JOB_KEY)
-        .history(Collections.singletonList(item))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getHistory())
-        .singleElement()
-        .satisfies(
-            mappedItem -> {
-              assertThat(mappedItem.getContent()).hasSize(1);
-              assertThat(mappedItem.getContent().get(0))
-                  .isInstanceOf(AgentInstanceDocumentContent.class);
-              final AgentInstanceDocumentContent docContent =
-                  (AgentInstanceDocumentContent) mappedItem.getContent().get(0);
-              assertThat(docContent.getDocumentReference().getCamundaDocumentType())
-                  .isEqualTo(CamundaDocumentTypeEnum.CAMUNDA);
-              assertThat(docContent.getDocumentReference().getDocumentId()).isEqualTo("doc-abc");
-              assertThat(docContent.getDocumentReference().getStoreId()).isEqualTo("store-1");
-            });
-  }
-
-  @Test
-  void shouldSendMultipleHistoryItemsInOrder() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .jobKey(JOB_KEY)
-        .history(Arrays.asList(historyItem("item-1"), historyItem("item-2"), historyItem("item-3")))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getHistory())
-        .extracting(io.camunda.client.protocol.rest.AgentInstanceHistoryItem::getHistoryItemId)
-        .containsExactly("item-1", "item-2", "item-3");
-  }
-
-  @Test
-  void shouldCombineJobKeyJobLeaseStatusToolsAndHistoryInOneRequest() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-    // when
-    client
-        .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-        .jobKey(JOB_KEY)
-        .jobLease(JOB_LEASE)
-        .status(AgentInstanceUpdateStatus.THINKING)
-        .tools(Collections.singletonList(AgentTool.of("search")))
-        .history(Collections.singletonList(historyItem("item-1")))
-        .execute();
-
-    // then
-    final AgentInstanceUpdateRequest body =
-        gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
-    assertThat(body.getJobKey()).isEqualTo("91011");
-    assertThat(body.getJobLease()).isEqualTo(JOB_LEASE);
-    assertThat(body.getStatus()).isEqualTo(AgentInstanceUpdateStatusEnum.THINKING);
-    assertThat(body.getTools())
-        .singleElement()
-        .satisfies(tool -> assertThat(tool.getName()).isEqualTo("search"));
-    assertThat(body.getHistory())
-        .singleElement()
-        .satisfies(item -> assertThat(item.getHistoryItemId()).isEqualTo("item-1"));
-  }
-
-  // ── Argument validation: history batch ────────────────────────────────────
-
-  @Test
-  void shouldRejectNullHistoryList() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .history(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("history must not be null");
-  }
-
-  @Test
-  void shouldRejectNullElementInHistoryList() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(Collections.singletonList(null)))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("history must not contain null elements");
-  }
-
-  @Test
-  void shouldRejectNullHistoryItemId() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(Collections.singletonList(historyItem("item-1").historyItemId(null))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("historyItemId must not be null");
-  }
-
-  @ParameterizedTest(name = "historyItemId=''{0}'' should be rejected")
-  @ValueSource(strings = {"", " "})
-  void shouldRejectBlankHistoryItemId(final String historyItemId) {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(
-                        Collections.singletonList(
-                            historyItem("item-1").historyItemId(historyItemId))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("historyItemId must not be blank");
-  }
-
-  @ParameterizedTest(name = "loopIteration={0} should be rejected")
-  @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
-  void shouldRejectNonPositiveLoopIteration(final int loopIteration) {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(
-                        Collections.singletonList(
-                            historyItem("item-1").loopIteration(loopIteration))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("loopIteration must be greater than 0");
-  }
-
-  @Test
-  void shouldRejectNullRoleInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(Collections.singletonList(historyItem("item-1").role(null))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("role must not be null");
-  }
-
-  @Test
-  void shouldRejectNullContentInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(Collections.singletonList(historyItem("item-1").content(null))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("content must not be null");
-  }
-
-  @Test
-  void shouldRejectNullProducedAtInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(Collections.singletonList(historyItem("item-1").producedAt(null))))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("producedAt must not be null");
-  }
-
-  @Test
-  void shouldRejectBlankTextContentInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(
-                        Collections.singletonList(
-                            historyItem("item-1")
-                                .content(
-                                    Collections.singletonList(
-                                        AgentInstanceHistoryContent.text(" ")))))
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("text content value must not be null or blank");
-  }
-
-  @Test
-  void shouldRejectEmptyContentListInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(
-                        Collections.singletonList(
-                            historyItem("item-1").content(Collections.emptyList())))
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("content must not be empty");
-  }
-
-  @Test
-  void shouldRejectBlankToolCallIdInHistoryItem() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .history(
-                        Collections.singletonList(
-                            historyItem("item-1")
-                                .toolCalls(
-                                    Collections.singletonList(
-                                        new AgentInstanceHistoryToolCall()
-                                            .toolCallId(" ")
-                                            .toolName("search")))))
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("toolCallId must not be null or blank");
-  }
-
-  // ── Argument validation: jobKey required when history is set ─────────────
-
-  @Test
-  void shouldRejectHistoryWithoutJobKey() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .history(Collections.singletonList(historyItem("item-1")))
-                    .execute())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("jobKey must be set when history is not empty");
-  }
-
-  // ── Response parsing: createdHistory ──────────────────────────────────────
-
-  @Test
-  void shouldParseCreatedHistoryInResponseOrderWithDuplicateFlag() {
-    // given
-    final AgentInstanceUpdateResult response =
-        new AgentInstanceUpdateResult()
-            .createdHistory(
-                Arrays.asList(
-                    new AgentInstanceCreatedHistoryItem()
-                        .historyItemId("item-1")
-                        .historyItemKey("100")
-                        .isDuplicate(false),
-                    new AgentInstanceCreatedHistoryItem()
-                        .historyItemId("item-2")
-                        .historyItemKey("101")
-                        .isDuplicate(true),
-                    new AgentInstanceCreatedHistoryItem()
-                        .historyItemId("item-3")
-                        .historyItemKey("102")
-                        .isDuplicate(false)));
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY, response);
-
-    // when
-    final UpdateAgentInstanceResponse result =
-        client
-            .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-            .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-            .execute();
-
-    // then
-    assertThat(result.getCreatedHistory())
-        .isNotNull()
-        .extracting(
-            CreatedHistoryItem::getHistoryItemId,
-            CreatedHistoryItem::getHistoryItemKey,
-            CreatedHistoryItem::isDuplicate)
-        .containsExactly(
-            tuple("item-1", 100L, false),
-            tuple("item-2", 101L, true),
-            tuple("item-3", 102L, false));
-  }
-
-  @Test
-  void shouldReturnEmptyCreatedHistoryWhenResponseHasNoBody() {
-    // given
-    gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-
-    // when
-    final UpdateAgentInstanceResponse result =
-        client
-            .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-            .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-            .execute();
-
-    // then
-    assertThat(result.getCreatedHistory()).isNotNull().isEmpty();
+      // then
+      assertThat(result.getCreatedHistory()).isNotNull().isEmpty();
+    }
   }
 }
