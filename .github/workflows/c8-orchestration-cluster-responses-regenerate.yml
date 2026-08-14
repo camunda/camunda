@@ -331,12 +331,17 @@ jobs:
               # follow-up work — the fix for the very rot this job exists to
               # surface. The bot pushes exactly one commit, so anything above
               # that is human work: leave those PRs alone.
+              # An unreadable count must not close anything: this is one API
+              # call per stale PR, so a transient blip would otherwise both
+              # fail the job (losing that day's regeneration PR entirely, since
+              # the later steps never run) and abort the loop before the
+              # remaining PRs are looked at. Treat unknown as "leave it alone".
               commits=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" \
-                --json commits --jq '.commits | length')
-              if [ "$commits" -gt 1 ]; then
-                echo "PR #${number} has ${commits} commits — follow-up work on top of the bot's commit, leaving open."
+                --json commits --jq '.commits | length' 2>/dev/null || true)
+              if [ -z "$commits" ] || [ "$commits" -gt 1 ]; then
+                echo "PR #${number} (commits: ${commits:-unreadable}) — not the bot's single commit, leaving open."
                 gh pr comment "$number" --repo "$GITHUB_REPOSITORY" \
-                  --body "A newer regeneration run produced a different path set, but this PR carries follow-up commits — not closing it automatically. Please rebase or close it by hand."
+                  --body "A newer regeneration run produced a different path set, but this PR does not look like an untouched bot commit — not closing it automatically. Please rebase or close it by hand." || true
                 continue
               fi
               echo "Closing stale PR #${number} (branch: ${branch})"
