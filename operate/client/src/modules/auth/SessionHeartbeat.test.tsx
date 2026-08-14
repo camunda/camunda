@@ -25,13 +25,19 @@ describe('SessionHeartbeat', () => {
   it('should send a heartbeat while logged in', async () => {
     const heartbeat = vi.fn();
     mockHeartbeat().withSuccess(null, {mockResolverFn: heartbeat});
+    mockHeartbeat().withSuccess(null, {mockResolverFn: heartbeat});
     vi.useFakeTimers({shouldAdvanceTime: true});
     act(() => authenticationStore.activateSession());
 
     render(<SessionHeartbeat />);
     await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL);
 
-    await waitFor(() => expect(heartbeat).toHaveBeenCalled());
+    await waitFor(() => expect(heartbeat).toHaveBeenCalledTimes(1));
+
+    document.dispatchEvent(new KeyboardEvent('keydown'));
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL);
+
+    await waitFor(() => expect(heartbeat).toHaveBeenCalledTimes(2));
   });
 
   it('should not send a heartbeat before the session is established', async () => {
@@ -48,6 +54,7 @@ describe('SessionHeartbeat', () => {
   it('should stop sending heartbeats once the session ends', async () => {
     const heartbeat = vi.fn();
     mockHeartbeat().withSuccess(null, {mockResolverFn: heartbeat});
+    mockHeartbeat().withSuccess(null, {mockResolverFn: heartbeat});
     vi.useFakeTimers({shouldAdvanceTime: true});
     act(() => authenticationStore.activateSession());
 
@@ -56,6 +63,7 @@ describe('SessionHeartbeat', () => {
     await waitFor(() => expect(heartbeat).toHaveBeenCalledTimes(1));
 
     act(() => authenticationStore.disableSession());
+    document.dispatchEvent(new KeyboardEvent('keydown'));
     await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL * 3);
 
     expect(heartbeat).toHaveBeenCalledTimes(1);
