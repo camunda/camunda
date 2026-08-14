@@ -17,6 +17,9 @@
 #   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${SCRIPT_DIR}/../../setup/utils.sh"
+
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
   echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]"
@@ -34,8 +37,11 @@ if [[ $profiler_event == "wall" ]]; then
 fi
 
 # Determine right container path
+# Retried: a transient exec/connection flake here would otherwise be
+# misread as "new path doesn't exist", silently picking the wrong
+# containerPath for the rest of the script.
 containerPath=/usr/local/camunda/data
-if ! kubectl exec "$node" -- ls -la "$containerPath";
+if ! retry_with_backoff kubectl exec "$node" -- ls -la "$containerPath";
 then
   # Old container path
   containerPath=/usr/local/zeebe/data
@@ -49,12 +55,13 @@ then
   tar -xzvf profiler.tar.gz
 fi
 
-if ! kubectl exec "$node" -- test -f data/libasyncProfiler.so;
+if ! retry_with_backoff kubectl exec "$node" -- test -f data/libasyncProfiler.so;
 then
-  # Copy async profiler to pod
-  kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":"$containerPath/asprof"
-  kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":"$containerPath/libasyncProfiler.so"
-  kubectl exec "$node" -- chmod +x "$containerPath/asprof"
+  # Copy async profiler to pod. Safely retryable: re-copying/re-chmod-ing the
+  # same files after a transient exec/cp failure is idempotent.
+  retry_with_backoff kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":"$containerPath/asprof"
+  retry_with_backoff kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":"$containerPath/libasyncProfiler.so"
+  retry_with_backoff kubectl exec "$node" -- chmod +x "$containerPath/asprof"
 fi
 
 # Run profiling
@@ -75,13 +82,23 @@ filename="$filename-$profiler_event-$(date +%Y%m%d).html"
 #   As we want to find the PID of the Java process we can use awk
 #   to check the fifth input whether it contains "/java/"
 #   If so we return the first input, which is the PID
-PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
+get_java_pid() {
+  kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}'
+}
+PID=$(retry_with_backoff get_java_pid)
 
 # Run profiling
+# Intentionally NOT wrapped in retry_with_backoff: PROFILING_DURATION can run
+# up to 30 minutes, and a failure here (e.g. exit 137/SIGKILL) is far more
+# likely to be the profiled JVM or asprof itself getting OOM-killed under
+# profiling overhead than a transient exec/connection flake. Retrying an
+# OOM-killed run just burns another full profiling window to get OOM-killed
+# again, with no realistic chance of succeeding.
 kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
-# Copy result
-kubectl cp "$node:$containerPath/$filename" "$node-$filename"
+# Copy result. Safely retryable: re-running kubectl cp for the same
+# already-written flamegraph file is idempotent.
+retry_with_backoff kubectl cp "$node:$containerPath/$filename" "$node-$filename"
 
 # Clean up
 # Comment out the following lines to make exeuction faster next time
