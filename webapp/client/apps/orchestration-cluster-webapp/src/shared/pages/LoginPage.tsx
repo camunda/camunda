@@ -16,6 +16,8 @@ import {getCurrentCopyrightNoticeText} from '#/shared/login/getCurrentCopyrightN
 import {Disclaimer} from '#/shared/login/components/Disclaimer';
 import {LoadingSpinner} from '#/shared/login/components/LoadingSpinner';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {featureFlags} from '#/shared/feature-flags';
+import {LoginPageDS} from './LoginPageDS';
 import styles from './LoginPage.module.scss';
 
 type FormValues = {
@@ -30,6 +32,16 @@ type Props = {
 const LoginPage: React.FC<Props> = ({title}) => {
 	const router = useRouter();
 	const {t} = useTranslation();
+
+	// DS path, Tasklist only: Operate and Admin's generic `/login` (title
+	// undefined) always keeps the Carbon page below, even with the flag on —
+	// same scoping Header.tsx uses for TasklistDSHeader.tsx. LoginPageDS.tsx
+	// carries the DS Card / --background / hand-composed password field per
+	// the Tasklist-only design requirement; the Carbon markup below is
+	// untouched either way.
+	if (featureFlags.dsTasklistUI && title === 'Tasklist') {
+		return <LoginPageDS title={title} />;
+	}
 
 	return (
 		<Grid as="main" condensed className={styles.container}>

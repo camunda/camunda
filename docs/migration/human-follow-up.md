@@ -1694,3 +1694,60 @@ append-only scan log.
     using `UserMenu`, so the logout item can stay conditional.
   - **Ask**: make `onLogout` optional, or add a `showLogout` prop, so the
     logout item can be omitted rather than only ever unconditionally shown.
+
+- **2026-08-14 — installed `@camunda/design-system@0.32.2`'s `Button` has no
+  `loading` prop.** `dist/src/components/ui/button.d.ts` types `ButtonProps`
+  as plain `React.ComponentProps<"button"> & VariantProps<...> & {asChild}` —
+  no `loading`, no built-in spinner/`aria-busy` handling. (The DS package's
+  own repo source already has this — see `src/components/ui/button.tsx`'s
+  `loading` prop with `Loader2` + `aria-busy`/`aria-disabled` — it just hasn't
+  reached this consumer's installed version yet.)
+  - **Impact**: hit this migrating `LoginPage.tsx`'s submit button
+    (`LoginPageDS.tsx`) — the Carbon original used `disabled={submitting}` +
+    `renderIcon={submitting ? LoadingSpinner : undefined}`, and the intended
+    DS-native replacement was the native `loading` prop.
+  - **App-side workaround applied**: `disabled={submitting}` +
+    `aria-busy={submitting || undefined}` + a hand-rolled `Loader2` icon with
+    a manual `@keyframes spinDS` animation in `LoginPageDS.module.scss`,
+    rendered ahead of the button label when `submitting` is true.
+  - **Ask**: bump the installed `@camunda/design-system` dependency once a
+    release ships with the `loading` prop, then this workaround can be
+    dropped in favour of `<Button loading={submitting}>`.
+
+- **2026-08-14 — `carbon-compat/password-input.tsx` is a bare passthrough,
+  same class of gap as the already-logged `actionable-notification.tsx`.**
+  `export {PasswordInput} from '@carbon/react'` with a
+  `// MIGRATION TODO: PasswordInput shadcn component not yet implemented`
+  comment — no DS-backed adapter exists, unlike `text-input.tsx`, which does
+  render a real `Input`-backed field.
+  - **Impact**: `LoginPage.tsx`'s password field could not be migrated via a
+    simple import swap; using the shim as-is would have embedded raw
+    `cds--*` Carbon markup inside the new DS `Card`.
+  - **App-side workaround applied**: hand-composed a `PasswordField` in
+    `LoginPageDS.tsx` from the DS `Input` + `Label` plus a lucide
+    `Eye`/`EyeOff` visibility toggle button, following the same
+    label/error-text layout `carbon-compat/text-input.tsx` uses internally so
+    the two fields read consistently.
+  - **Ask**: ship a real `PasswordInput` adapter (DS `Input` + visibility
+    toggle), same shape as the `text-input.tsx` adapter, so future consumers
+    don't each re-implement the toggle by hand.
+
+- **2026-08-14 — `TasklistProcessesPage.module.scss`'s `.pageDS` (and
+  `.pageDescriptionDS`) reference `var(--muted-foreground)`, which is not a
+  real token in the shipped `@camunda/design-system` CSS.** Confirmed by
+  grepping `node_modules/@camunda/design-system/dist/styles.css` for every
+  `--*foreground*` custom property actually emitted — `--muted-foreground` is
+  not among them (`--foreground`, `--neutral-foreground-subtle`,
+  `--danger-foreground-strong`, etc. are). An invalid `var()` on an inherited
+  property like `color` silently falls back to the inherited value rather
+  than erroring, so this reads as "probably fine" rather than throwing.
+  - **Impact**: not directly blocking (the property just inherits instead of
+    getting the intended muted tone), but any new DS-only file copying that
+    convention verbatim inherits the same latent gap.
+  - **App-side workaround applied**: `LoginPageDS.module.scss` (this
+    migration) uses `var(--neutral-foreground-subtle)` instead, which is a
+    real, shipped token, for its copyright-notice and password-toggle-icon
+    colors.
+  - **Ask**: either add a `--muted-foreground` alias token, or fix
+    `TasklistProcessesPage.module.scss` to reference an existing token
+    (`--neutral-foreground-subtle` looks like the intended one).

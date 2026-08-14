@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link} from '@carbon/react';
+import {Link} from '#/shared/design-system-compat';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import styles from './styles.module.scss';
 

@@ -1,0 +1,152 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+// DS-only login page (see LoginPageDS.tsx). Mirrors the `--background` page
+// convention already established in TasklistProcessesPage.module.scss's
+// `.pageDS` ("page background on the DS token", as opposed to Carbon's
+// `--cds-background`).
+.pageDS {
+	display: flex;
+	min-height: 100%;
+	flex-direction: column;
+	align-items: center;
+	padding: 1rem;
+	background: var(--background);
+}
+
+.contentDS {
+	display: flex;
+	flex: 1;
+	width: 100%;
+	align-items: center;
+	justify-content: center;
+}
+
+// Replaces Carbon's Grid/Column span+offset centering (sm=4 of 4, md=span
+// 4/offset 2 of 8, lg=span 6/offset 5 of 16, xlg=span 4/offset 6 of 16) —
+// carbon-compat's Grid/Column are a SHIM passthrough with no Tailwind
+// equivalent yet (same gap ProcessesFilters.tsx's FilterGrid/GridCell and
+// TasklistProcessesPage.tsx's tile grid hit), so this reproduces the same
+// visual centering with a single max-width column, narrowing at roughly
+// Carbon's own md/lg/xlg breakpoints (672 / 1056 / 1312px) rather than
+// re-deriving exact per-breakpoint track math for a single full-page layout.
+.formWrapperDS {
+	width: 100%;
+	max-width: 26rem;
+}
+
+@media (min-width: 1312px) {
+	.formWrapperDS {
+		max-width: 22rem;
+	}
+}
+
+.cardContentDS {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.logoDS {
+	display: flex;
+	justify-content: center;
+	padding-top: 0.5rem;
+}
+
+.titleDS {
+	padding-bottom: 0.5rem;
+	text-align: center;
+	font-size: 1.75rem;
+	line-height: 2.25rem;
+	font-weight: 400;
+	color: var(--foreground);
+}
+
+.fieldDS {
+	display: flex;
+	flex-direction: column;
+}
+
+.buttonDS {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	width: 100%;
+}
+
+// The installed @camunda/design-system version's `Button` has no built-in
+// `loading` spinner yet — see LoginPageDS.tsx's comment at the call site.
+@keyframes spinDS {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.buttonSpinnerDS {
+	width: 1rem;
+	height: 1rem;
+	animation: spinDS 1s linear infinite;
+}
+
+.passwordFieldDS {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+}
+
+.labelDS {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--foreground);
+}
+
+.passwordInputWrapperDS {
+	position: relative;
+	display: flex;
+}
+
+.passwordInputDS {
+	padding-right: 2.25rem;
+}
+
+.passwordToggleDS {
+	position: absolute;
+	top: 50%;
+	right: 0.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	color: var(--neutral-foreground-subtle);
+	cursor: pointer;
+	transform: translateY(-50%);
+}
+
+.passwordToggleDS:hover {
+	color: var(--foreground);
+}
+
+.passwordToggleIconDS {
+	width: 1rem;
+	height: 1rem;
+}
+
+.fieldErrorDS {
+	margin: 0;
+	font-size: 0.75rem;
+	color: var(--danger-foreground-strong);
+}
+
+.copyrightNoticeDS {
+	padding: 1rem 0;
+	text-align: center;
+	font-size: 0.75rem;
+	color: var(--neutral-foreground-subtle);
+}

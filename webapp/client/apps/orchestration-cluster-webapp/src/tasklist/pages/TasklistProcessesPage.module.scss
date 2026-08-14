@@ -92,7 +92,12 @@
 .pageDescriptionDS {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
-	color: var(--muted-foreground);
+	// --muted-foreground isn't a real token in the shipped
+	// @camunda/design-system CSS — an invalid var() on an inherited property
+	// silently falls back to the inherited value rather than erroring, so this
+	// read as "probably fine." --neutral-foreground-subtle is the real,
+	// shipped token for this tone (see docs/migration/human-follow-up.md).
+	color: var(--neutral-foreground-subtle);
 }
 
 .processTileWrapper {
