@@ -4,8 +4,9 @@ name: Setup AWS OpenSearch env
 # owner: @camunda/data-layer
 
 description: |
-  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected 
-  version, and configures AWS credentials.
+  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected
+  version, and exports the web identity env vars AWS SDKs need to assume
+  the OpenSearch role on their own.
 
 inputs:
   vault-address:
@@ -68,10 +69,3 @@ runs:
 
         echo "OPENSEARCH_URL=$OS_URL" >> "$GITHUB_ENV"
         echo "opensearch-url=$OS_URL" >> "$GITHUB_OUTPUT"
-
-    - name: Pre-login to AWS
-      uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
-      with:
-        aws-region: ${{ env.AWS_REGION }}
-        web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
-        role-to-assume: ${{ env.AWS_ROLE_ARN }}
