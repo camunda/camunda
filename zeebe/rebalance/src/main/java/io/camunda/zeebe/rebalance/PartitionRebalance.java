@@ -108,9 +108,4 @@ public record PartitionRebalance(
         PartitionRebalanceProgress.COMPLETED,
         PartitionRebalanceOutcome.TRANSFERRED);
   }
-
-  @Override
-  public String toString() {
-    return "partition %d of %s".formatted(partitionId, physicalTenantId);
-  }
 }
