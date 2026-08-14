@@ -27,12 +27,53 @@ SUPPRESSED_IN_FLIGHT = "agent-already-running"
 SUPPRESSED_PR_COVERED = "open-pr-covers-all-specs"
 SUPPRESSED_PR_OPEN = "open-fix-pr-for-surface"
 SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
+SUPPRESSED_RECENT_NO_FIX = "no-fix-verdict-within-cooldown"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
 
 
 def dispatch_key(base_ref: str, surface: str) -> str:
     return f"{base_ref}:{surface}"
+
+
+def dedupe_specs(specs: list[classify.FailingSpec]) -> list[classify.FailingSpec]:
+    """Collapse repeats of the same (file, test_name), keeping the first.
+
+    A SaaS run on 8.8/8.9 publishes one Playwright report per Tasklist generation
+    (`json-report-v1` and `json-report-v2`), and discover concatenates every report
+    it downloads. A spec that fails in both generations therefore arrives twice, which
+    doubles the agent's spec list and the fingerprints it is told to claim — observed
+    on run 31016165246, where two failing tests were dispatched as four.
+    """
+    out: list[classify.FailingSpec] = []
+    seen: set[tuple[str, str]] = set()
+    for spec in specs:
+        identity = (spec.file, spec.test_name)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        out.append(spec)
+    return out
+
+
+def verdict_fingerprints(
+    fix_meta: object, fingerprints: object
+) -> set[str]:
+    """Fingerprints a finished agent run leaves suppressed, from its own artifacts.
+
+    Empty unless the run produced a manifest that opened nothing. A crashed agent
+    (no manifest, or one that will not parse) and a run that opened a PR must both
+    contribute nothing: the first is an infrastructure failure rather than a verdict,
+    and the second is already covered by the PR's own coverage block.
+    """
+    if not isinstance(fix_meta, dict):
+        return set()
+    prs = fix_meta.get("prs")
+    if not isinstance(prs, list) or prs:
+        return set()
+    if not isinstance(fingerprints, list):
+        return set()
+    return {str(fp)[:8] for fp in fingerprints if fp}
 
 
 @dataclass
@@ -95,6 +136,7 @@ def plan_dispatches(
     inflight_keys: set[str],
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
+    recent_no_fix_fingerprints: set[str] | None = None,
     max_dispatches: int = 2,
     dispatchable_surfaces: frozenset[str] = classify.DISPATCHABLE_SURFACES,
 ) -> Plan:
@@ -102,10 +144,19 @@ def plan_dispatches(
 
     Checks are ordered cheapest-and-most-decisive first so the summary reports the
     most useful reason when several apply.
+
+    `recent_no_fix_fingerprints` are those an agent investigated inside the cooldown
+    window and could not safely fix. Without them a `not-determined` verdict leaves no
+    state anywhere — no PR, so no coverage block and no key label — and the identical
+    forensic run is dispatched again on the next failure.
     """
     plan = Plan()
+    no_fix = recent_no_fix_fingerprints or set()
 
     for cand in candidates:
+        # Before anything reads .specs or derives fingerprints from them.
+        cand.specs = dedupe_specs(cand.specs)
+
         if cand.surface not in dispatchable_surfaces:
             plan.suppressed.append(
                 Suppression(cand, SUPPRESSED_NOT_DISPATCHABLE, cand.surface)
@@ -135,13 +186,21 @@ def plan_dispatches(
             )
             continue
 
-        # Drop specs an open PR already covers; dispatch only what is left.
+        if fps and all(f in no_fix for f in fps):
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_RECENT_NO_FIX, ",".join(sorted(set(fps))))
+            )
+            continue
+
+        # Drop specs an open PR or a recent no-fix verdict already accounts for;
+        # dispatch only what is left.
         if not cand.job_level:
             remaining = [
                 s
                 for s, fp in zip(cand.specs, cand.spec_fingerprints)
                 if fp not in covered_fingerprints
                 and fp not in product_bug_fingerprints
+                and fp not in no_fix
             ]
             if not remaining:
                 plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_COVERED))

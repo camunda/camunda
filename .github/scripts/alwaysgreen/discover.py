@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from dataclasses import asdict
 from pathlib import Path
 
@@ -36,6 +37,11 @@ FIX_WORKFLOW = os.environ.get("ALWAYSGREEN_FIX_WORKFLOW", "alwaysgreen-fix.yml")
 FIX_LABEL = os.environ.get("ALWAYSGREEN_FIX_LABEL", "alwaysgreen-fix")
 #: Prefix of the per-dispatch-key label the fix workflow stamps on every PR it opens.
 KEY_LABEL_PREFIX = "alwaysgreen-key:"
+#: How long a no-fix verdict keeps its fingerprints out of dispatch.
+NO_FIX_COOLDOWN_DAYS = int(os.environ.get("ALWAYSGREEN_NO_FIX_COOLDOWN_DAYS", "7"))
+#: Cap on artifact downloads while reading past verdicts, so a burst of agent runs
+#: cannot make triage slow.
+NO_FIX_MAX_RUNS = 20
 #: Repos a fix PR can land in, mirroring the fix workflow's own label list.
 FIX_PR_REPOS = [
     REPO,
@@ -316,17 +322,24 @@ def downstream_ci_specs(downstream_id: str) -> list[classify.FailingSpec]:
 
 
 def covered_fingerprints() -> set[str]:
-    prs = gh_json(
-        [
-            "pr", "list", "--repo", REPO,
-            "--search", f"label:{FIX_LABEL} is:open",
-            "--limit", "100", "--json", "number,body",
-        ],
-        [],
-    )
+    """Fingerprints claimed by an open fix PR, in any repo a fix can land in.
+
+    Scoped to every repo in FIX_PR_REPOS, not just the monorepo: most fixes land in
+    the e2e or chart repo, and reading only `REPO` made those coverage blocks
+    invisible here, so their specs stayed dispatchable.
+    """
     out: set[str] = set()
-    for pr in prs if isinstance(prs, list) else []:
-        out |= planning.parse_coverage_block(pr.get("body"))
+    for repo in FIX_PR_REPOS:
+        prs = gh_json(
+            [
+                "pr", "list", "--repo", repo,
+                "--search", f"label:{FIX_LABEL} is:open",
+                "--limit", "100", "--json", "number,body",
+            ],
+            [],
+        )
+        for pr in prs if isinstance(prs, list) else []:
+            out |= planning.parse_coverage_block(pr.get("body"))
     return out
 
 
@@ -392,6 +405,61 @@ def inflight_keys() -> tuple[set[str], bool]:
         if r.get("status") in {"queued", "in_progress"} and "[" in (r.get("name") or "")
     }
     return {k for k in keys if k}, True
+
+
+def recent_no_fix_fingerprints(workdir: Path) -> set[str]:
+    """Fingerprints an agent investigated recently and could not safely fix.
+
+    A verdict with an empty `prs` list opens no PR, so neither a coverage block nor a
+    key label exists to record it, and the identical investigation was dispatched
+    again on the next red run. The agent already uploads its manifest as
+    `alwaysgreen-fix-<run_id>`, so its own artifacts are the record — no issue and no
+    label are created anywhere, and the cooldown expires on its own rather than
+    suppressing a surface indefinitely.
+
+    Runs older than the cooldown are skipped before they are downloaded, and no more
+    than NO_FIX_MAX_RUNS artifacts are fetched per triage run. Fingerprints already
+    encode base_ref and surface, so verdicts from other dispatch keys cannot leak in.
+    """
+    runs = gh_json(
+        [
+            "run", "list", "--repo", REPO, "--workflow", FIX_WORKFLOW,
+            "--status", "completed", "--limit", "50",
+            "--json", "databaseId,createdAt",
+        ],
+        [],
+    )
+    if not isinstance(runs, list):
+        return set()
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=NO_FIX_COOLDOWN_DAYS)
+    out: set[str] = set()
+    fetched = 0
+    for run in runs:
+        if fetched >= NO_FIX_MAX_RUNS:
+            log(f"no-fix lookback capped at {NO_FIX_MAX_RUNS} runs")
+            break
+        created = run.get("createdAt") or ""
+        try:
+            when = datetime.fromisoformat(created.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if when < cutoff:
+            continue
+        run_id = run.get("databaseId")
+        dest = workdir / f"verdict-{run_id}"
+        if not download_artifacts(run_id, REPO, f"alwaysgreen-fix-{run_id}", dest):
+            continue
+        fetched += 1
+        metas = read_json_files(dest, "fix-meta.json")
+        fps = read_json_files(dest, "fingerprints.json")
+        claimed = planning.verdict_fingerprints(
+            metas[0] if metas else None, fps[0] if fps else None
+        )
+        if claimed:
+            log(f"run {run_id} recorded no fix for {sorted(claimed)}")
+        out |= claimed
+    return out
 
 
 def product_bug_fingerprints() -> set[str]:
@@ -581,6 +649,7 @@ def main() -> int:
             inflight_keys=keys,
             open_pr_keys=pr_keys,
             product_bug_fingerprints=product_bug_fingerprints(),
+            recent_no_fix_fingerprints=recent_no_fix_fingerprints(workdir),
             max_dispatches=args.max_dispatches,
         )
         result.noise = noise

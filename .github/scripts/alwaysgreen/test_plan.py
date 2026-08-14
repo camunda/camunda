@@ -119,6 +119,76 @@ def test_partially_covered_candidate_dispatches_only_uncovered_specs():
     assert [s.test_name for s in result.dispatches[0].specs] == ["new failure"]
 
 
+def test_recent_no_fix_verdict_suppresses_the_candidate():
+    # An agent already investigated this inside the cooldown and could not fix it
+    # safely; its own uploaded manifest is the only record, since no PR was opened.
+    cand = _cand()
+    result = _plan([cand], recent_no_fix_fingerprints=set(cand.spec_fingerprints))
+    assert result.dispatches == []
+    assert result.suppressed[0].reason == plan.SUPPRESSED_RECENT_NO_FIX
+
+
+def test_no_fix_spec_does_not_block_a_new_failure_beside_it():
+    tracked = _spec(name="unfixable")
+    fresh = _spec(name="new failure")
+    cand = _cand(specs=[tracked, fresh])
+    tracked_fp = classify.spec_fingerprint(
+        "main", classify.SURFACE_SM_E2E, tracked.file, tracked.test_name
+    )
+
+    result = _plan([cand], recent_no_fix_fingerprints={tracked_fp})
+    assert len(result.dispatches) == 1
+    assert [s.test_name for s in result.dispatches[0].specs] == ["new failure"]
+
+
+def test_no_fix_defaults_to_nothing_suppressed():
+    # The argument is optional so callers that predate it keep dispatching.
+    result = plan.plan_dispatches(
+        [_cand()],
+        covered_fingerprints=set(),
+        inflight_keys=set(),
+        open_pr_keys=set(),
+        product_bug_fingerprints=set(),
+    )
+    assert len(result.dispatches) == 1
+
+
+# ---------------------------------------------------------------------------
+# Reading a past run's verdict off its own artifacts
+# ---------------------------------------------------------------------------
+
+
+def test_verdict_of_a_run_that_opened_nothing_suppresses_its_fingerprints():
+    assert plan.verdict_fingerprints(
+        {"category": "not-determined", "prs": []}, ["76a3348c", "2e9d6176"]
+    ) == {"76a3348c", "2e9d6176"}
+
+
+def test_verdict_of_a_run_that_opened_a_pr_suppresses_nothing():
+    # Already covered by that PR's own coverage block; double-counting it here would
+    # keep suppressing after the PR is closed or merged.
+    assert plan.verdict_fingerprints({"prs": [{"number": 1}]}, ["76a3348c"]) == set()
+
+
+def test_crashed_run_suppresses_nothing():
+    # No manifest is an infrastructure failure, not a verdict, and must not be
+    # mistaken for "we looked and there was nothing to do".
+    assert plan.verdict_fingerprints(None, ["76a3348c"]) == set()
+    assert plan.verdict_fingerprints("not json", ["76a3348c"]) == set()
+    assert plan.verdict_fingerprints({"prs": "broken"}, ["76a3348c"]) == set()
+
+
+def test_verdict_without_fingerprints_suppresses_nothing():
+    assert plan.verdict_fingerprints({"prs": []}, None) == set()
+    assert plan.verdict_fingerprints({"prs": []}, []) == set()
+
+
+def test_verdict_fingerprints_are_normalised_and_deduped():
+    assert plan.verdict_fingerprints(
+        {"prs": []}, ["76a3348c", "76a3348c", "", None]
+    ) == {"76a3348c"}
+
+
 def test_product_bug_suppresses_the_candidate():
     cand = _cand()
     result = _plan([cand], product_bug_fingerprints=set(cand.spec_fingerprints))
@@ -157,6 +227,42 @@ def test_in_flight_is_checked_before_cap_so_the_reason_is_useful():
     assert plan.SUPPRESSED_IN_FLIGHT in reasons
     assert len(result.dispatches) == 1
     assert result.dispatches[0].surface == classify.SURFACE_SAAS_E2E
+
+
+# ---------------------------------------------------------------------------
+# Spec dedupe
+# ---------------------------------------------------------------------------
+
+
+def test_dedupe_collapses_the_same_spec_from_two_reports():
+    # SaaS 8.8/8.9 publish json-report-v1 and json-report-v2; discover concatenates
+    # both, so a spec failing in each generation arrives twice.
+    a, b = _spec(name="flow"), _spec(name="flow")
+    assert [s.test_name for s in plan.dedupe_specs([a, b])] == ["flow"]
+
+
+def test_dedupe_keeps_distinct_tests_and_distinct_files():
+    specs = [
+        _spec(name="flow"),
+        _spec(name="connector"),
+        _spec(name="flow", file="tests/8.9/other.spec.ts"),
+    ]
+    assert len(plan.dedupe_specs(specs)) == 3
+
+
+def test_dedupe_preserves_order():
+    specs = [_spec(name="b"), _spec(name="a"), _spec(name="b")]
+    assert [s.test_name for s in plan.dedupe_specs(specs)] == ["b", "a"]
+
+
+def test_duplicated_specs_are_dispatched_once():
+    # Run 31016165246 dispatched two failing tests as four, with each fingerprint
+    # repeated, because nothing deduped across the two reports.
+    cand = _cand(specs=[_spec(name="flow"), _spec(name="connector")] * 2)
+    result = _plan([cand])
+    dispatched = result.dispatches[0]
+    assert [s.test_name for s in dispatched.specs] == ["flow", "connector"]
+    assert len(dispatched.fingerprints) == len(set(dispatched.fingerprints)) == 2
 
 
 # ---------------------------------------------------------------------------
