@@ -369,8 +369,7 @@ class CachingSecretStoreTest {
         CaffeineSecretCache.DEFAULT_MAX_SIZE,
         Duration.ofMinutes(20),
         new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
-        registry,
-        STORE_ID);
+        new SecretCacheMetrics(registry, STORE_ID));
   }
 
   private static double evictions(

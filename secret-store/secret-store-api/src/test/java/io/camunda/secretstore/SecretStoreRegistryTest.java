@@ -309,13 +309,11 @@ class SecretStoreRegistryTest {
 
   /** A factory building the instrumented cache the Spring wiring builds, as it builds it. */
   private static SecretCacheFactory meteredCacheFactory(final SimpleMeterRegistry meterRegistry) {
-    return storeId ->
-        CaffeineSecretCache.create(
-            CaffeineSecretCache.DEFAULT_MAX_SIZE,
-            CaffeineSecretCache.DEFAULT_TTL,
-            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
-            meterRegistry,
-            storeId);
+    return SecretCacheFactory.metered(
+        CaffeineSecretCache.DEFAULT_MAX_SIZE,
+        CaffeineSecretCache.DEFAULT_TTL,
+        new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+        meterRegistry);
   }
 
   private static Optional<String> lookupLocal(

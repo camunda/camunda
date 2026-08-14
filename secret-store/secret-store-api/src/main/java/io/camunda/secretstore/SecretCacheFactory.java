@@ -7,6 +7,9 @@
  */
 package io.camunda.secretstore;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.time.InstantSource;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -31,4 +34,22 @@ public interface SecretCacheFactory {
    * @param storeId the ID the store is configured under, unique within one physical tenant
    */
   SecretCache create(String storeId);
+
+  /**
+   * Returns a factory building a {@link CaffeineSecretCache} bounded by the given size and TTL for
+   * every store ID, publishing what each one does on the given registry tagged with that store ID.
+   *
+   * <p>The sole place that hands a {@link MeterRegistry} to a {@link CaffeineSecretCache}: that
+   * class itself only knows {@link SecretCacheMetrics}, so a caller outside this package cannot
+   * construct one directly and reaches the cache through here instead.
+   */
+  static SecretCacheFactory metered(
+      final int maxSize,
+      final Duration ttl,
+      final InstantSource timeSource,
+      final MeterRegistry meterRegistry) {
+    return storeId ->
+        CaffeineSecretCache.create(
+            maxSize, ttl, timeSource, new SecretCacheMetrics(meterRegistry, storeId));
+  }
 }

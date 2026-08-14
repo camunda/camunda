@@ -28,9 +28,7 @@ final class CaffeineSecretCacheMetricsTest {
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
   private final ControlledInstantSource timeSource =
       new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z"));
-  private final CaffeineSecretCache cache =
-      CaffeineSecretCache.create(
-          CaffeineSecretCache.DEFAULT_MAX_SIZE, TTL, timeSource, registry, STORE_ID);
+  private final CaffeineSecretCache cache = meteredCache(STORE_ID);
 
   @Test
   void shouldCountALookupThatTheCacheAnswers() {
@@ -87,7 +85,9 @@ final class CaffeineSecretCacheMetricsTest {
   @Test
   void shouldCountEntriesDroppedBecauseTheCacheIsFull() {
     // given a cache bounded to a small size
-    final var bounded = CaffeineSecretCache.create(10, TTL, timeSource, registry, "store-b");
+    final var bounded =
+        CaffeineSecretCache.create(
+            10, TTL, timeSource, new SecretCacheMetrics(registry, "store-b"));
 
     // when more distinct names are written than the bound allows
     for (int i = 0; i < 100; i++) {
@@ -169,7 +169,9 @@ final class CaffeineSecretCacheMetricsTest {
   @Test
   void shouldKeepTheMetersOfTwoStoresApart() {
     // given two caches on one registry, as one registry per physical tenant holds
-    final var other = CaffeineSecretCache.create(10, TTL, timeSource, registry, "store-b");
+    final var other =
+        CaffeineSecretCache.create(
+            10, TTL, timeSource, new SecretCacheMetrics(registry, "store-b"));
     cache.put("token", "value");
 
     // when each is looked up a different number of times
@@ -245,5 +247,13 @@ final class CaffeineSecretCacheMetricsTest {
 
   private double size(final String storeId) {
     return SecretCacheMeters.size(registry, storeId);
+  }
+
+  private CaffeineSecretCache meteredCache(final String storeId) {
+    return CaffeineSecretCache.create(
+        CaffeineSecretCache.DEFAULT_MAX_SIZE,
+        TTL,
+        timeSource,
+        new SecretCacheMetrics(registry, storeId));
   }
 }

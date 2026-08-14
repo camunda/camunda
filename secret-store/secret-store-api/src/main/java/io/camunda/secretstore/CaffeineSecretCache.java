@@ -10,7 +10,6 @@ package io.camunda.secretstore;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
@@ -38,7 +37,10 @@ import java.util.concurrent.TimeUnit;
  * synchronously, which is only useful in tests that need to observe the bound immediately.
  *
  * <p>What the cache does is published on {@link SecretCacheMetricsDoc}'s meters, tagged with the
- * store the cache belongs to; the factories that take no {@link MeterRegistry} publish nothing.
+ * store the cache belongs to; the factories that take no {@link SecretCacheMetrics} publish
+ * nothing. {@link SecretCacheFactory#metered} is the entry point that builds one from a {@link
+ * io.micrometer.core.instrument.MeterRegistry}, so this class itself has no dependency on
+ * Micrometer's registry type.
  */
 public final class CaffeineSecretCache implements SecretCache {
 
@@ -53,20 +55,7 @@ public final class CaffeineSecretCache implements SecretCache {
     this.metrics = metrics;
   }
 
-  /**
-   * Creates a cache bounded by the given size and expiring entries the given duration after write,
-   * publishing what it does on the given registry under the given store ID.
-   */
-  public static CaffeineSecretCache create(
-      final int maxSize,
-      final Duration ttl,
-      final InstantSource timeSource,
-      final MeterRegistry meterRegistry,
-      final String storeId) {
-    return create(maxSize, ttl, timeSource, new SecretCacheMetrics(meterRegistry, storeId));
-  }
-
-  /** Creates a cache as the five-argument factory does, but publishing nothing. */
+  /** Creates a cache as the four-argument factory does, but publishing nothing. */
   public static CaffeineSecretCache create(
       final int maxSize, final Duration ttl, final InstantSource timeSource) {
     return create(maxSize, ttl, timeSource, SecretCacheMetrics.none());
@@ -82,7 +71,10 @@ public final class CaffeineSecretCache implements SecretCache {
     return create(DEFAULT_MAX_SIZE, DEFAULT_TTL, timeSource);
   }
 
-  private static CaffeineSecretCache create(
+  /**
+   * Creates a cache bounded by the given size and expiring entries the given duration after write.
+   */
+  static CaffeineSecretCache create(
       final int maxSize,
       final Duration ttl,
       final InstantSource timeSource,

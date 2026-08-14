@@ -15,7 +15,6 @@ import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretCacheFactory;
 import io.camunda.secretstore.SecretStore;
@@ -189,9 +188,8 @@ public class SecretStoreConfiguration {
       final Secrets.Cache config,
       final InstantSource timeSource,
       final MeterRegistry meterRegistry) {
-    return storeId ->
-        CaffeineSecretCache.create(
-            config.getMaxSize(), config.getTtl(), timeSource, meterRegistry, storeId);
+    return SecretCacheFactory.metered(
+        config.getMaxSize(), config.getTtl(), timeSource, meterRegistry);
   }
 
   private static void closeAll(final List<SecretStore> stores) {
