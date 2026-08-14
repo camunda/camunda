@@ -34,6 +34,17 @@
 	color: var(--foreground);
 }
 
+// DS-only. Card's own edge is a box-shadow ring (`ring-1 ring-border`), same
+// --border token and same 20% alpha as this border — the value isn't the
+// issue (confirmed by forcing the ring to a fully opaque color: it renders
+// uniformly on all four sides, so nothing is being clipped). A plain `border`
+// renders as a crisper 1px hairline than the box-shadow spread does at this
+// width, and reads reliably on all four sides where the ring did not,
+// particularly at the top edge with nothing adjacent to contrast against.
+.emptyStateCardDS {
+	border: 1px solid var(--border);
+}
+
 .separator {
 	width: 100%;
 	max-height: 1px;

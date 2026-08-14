@@ -209,7 +209,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 											// the panel background via Carbon's Layer (no real DS equivalent —
 											// see the Layer compat comment below).
 											<div className={cn(styles.layerContainer, styles.gutter)}>
-												<Card>
+												<Card className={styles.emptyStateCardDS}>
 													<CardContent>
 														<EmptyState
 															size="sm"
