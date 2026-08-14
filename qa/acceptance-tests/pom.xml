@@ -208,6 +208,12 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sts</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.jeasy</groupId>
       <artifactId>easy-random-core</artifactId>
       <scope>test</scope>
@@ -770,6 +776,9 @@
             <dep>io.camunda:zeebe-opensearch-exporter</dep>
             <dep>io.camunda:camunda-exporter</dep>
             <dep>org.springframework.boot:spring-boot-starter-log4j2</dep>
+            <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
+                 classes on the classpath in order to resolve the AWS credentials -->
+            <dep>software.amazon.awssdk:sts</dep>
           </ignoredUnusedDeclaredDependencies>
           <!--
             The servlet API (jakarta.servlet.HttpServletRequest, used by web-session tests to
