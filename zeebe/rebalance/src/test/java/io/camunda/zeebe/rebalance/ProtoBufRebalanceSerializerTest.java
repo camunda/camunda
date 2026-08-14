@@ -206,7 +206,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
@@ -246,7 +246,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
@@ -269,7 +269,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
@@ -293,7 +293,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
@@ -318,7 +318,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
@@ -344,7 +344,7 @@ final class ProtoBufRebalanceSerializerTest {
                     .setLastCompleted(
                         Rebalance.CompletedRebalance.newBuilder()
                             .setRebalanceId(7)
-                            .setOutcome(Rebalance.RebalanceOutcome.REBALANCE_COMPLETED)
+                            .setOutcome(Rebalance.CompletedRebalance.RebalanceOutcome.COMPLETED)
                             .addPartitions(
                                 Rebalance.PartitionRebalance.newBuilder()
                                     .setPhysicalTenantId("default")
