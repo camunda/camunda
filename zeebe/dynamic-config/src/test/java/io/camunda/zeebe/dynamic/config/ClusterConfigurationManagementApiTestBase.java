@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.api;
+package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,19 +16,49 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
+import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
+import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -44,8 +74,11 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -57,7 +90,11 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -65,6 +102,8 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -79,21 +118,31 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * Drives every {@link io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementApi}
+ * endpoint through the real request handler, {@link ConfigurationChangeCoordinatorImpl} and {@link
+ * ClusterConfigurationManagerImpl}, over the real {@code communicationService} â€” i.e. against the
+ * new multi-partition-group model end to end, the same stack production runs.
+ */
 abstract class ClusterConfigurationManagementApiTestBase {
+  private static final String TENANT_B = "tenant-b";
+
   protected final MemberId coordinatorId;
   protected ClusterConfigurationManagementRequestSender clientApi;
-  protected final RecordingChangeCoordinator recordingCoordinator =
-      new RecordingChangeCoordinator();
   protected final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+  protected ClusterConfigurationManagerImpl manager;
   private final ClusterConfiguration initialTopology;
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
+  private final Function<Integer, MemberId> memberFactory;
   private ClusterConfigurationRequestServer requestServer;
   private List<ClusterConfigurationRequestServer> extraRequestServers = List.of();
   private AtomixCluster gateway;
   private AtomixCluster coordinator;
   private List<AtomixCluster> extraNodes = List.of();
   @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
-  private final Function<Integer, MemberId> memberFactory;
+  @TempDir private Path tmp;
 
   ClusterConfigurationManagementApiTestBase(final Function<Integer, MemberId> memberFactory) {
     this.memberFactory = memberFactory;
@@ -107,9 +156,31 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
   @BeforeEach
   void setup() {
-    // seed the coordinator so that the "no topology yet" default still resolves to the physical
+    final var persistedConfiguration =
+        PersistedCurrentClusterConfiguration.ofFile(
+            tmp.resolve("config.meta"), new ProtoBufSerializer());
+    manager =
+        new ClusterConfigurationManagerImpl(
+            executor,
+            coordinatorId,
+            persistedConfiguration,
+            new TopologyManagerMetrics(registry),
+            Duration.ofMillis(1),
+            Duration.ofMillis(1));
+    manager.setCurrentConfigurationGossiper(ignored -> {});
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    // seed the manager so that the "no topology yet" default still resolves to the physical
     // coordinator node, rather than falling back to member "0"
-    recordingCoordinator.setCurrentTopology(initialTopology);
+    setCurrentTopology(initialTopology);
 
     final var gatewayId = MemberId.from("gateway");
     final var gatewayNode =
@@ -162,7 +233,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         new ClusterConfigurationManagementRequestSender(
             gateway.getCommunicationService(),
             ClusterConfigurationCoordinatorSupplier.from(
-                () -> recordingCoordinator.getClusterConfiguration().join()),
+                () -> manager.getMultiConfiguration().join()),
             new ProtoBufSerializer());
 
     final var validatorRegistry = new RequestValidatorRegistry();
@@ -190,9 +261,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator,
+                new ConfigurationChangeCoordinatorImpl(manager, coordinatorId, executor),
                 coordinatorId,
-                new TestConcurrencyControl(),
+                executor,
                 validatorRegistry));
     requestServer.start();
 
@@ -206,9 +277,10 @@ abstract class ClusterConfigurationManagementApiTestBase {
                         entry.getValue().getCommunicationService(),
                         new ProtoBufSerializer(),
                         new ClusterConfigurationManagementRequestsHandler(
-                            recordingCoordinator,
+                            new ConfigurationChangeCoordinatorImpl(
+                                manager, entry.getKey(), executor),
                             entry.getKey(),
-                            new TestConcurrencyControl(),
+                            executor,
                             validatorRegistry)))
             .toList();
     extraRequestServers.forEach(ClusterConfigurationRequestServer::start);
@@ -251,26 +323,53 @@ abstract class ClusterConfigurationManagementApiTestBase {
         .build();
   }
 
+  /** Seeds the manager's configuration, as if a coordinator's gossip round had produced it. */
+  protected final void setCurrentTopology(final ClusterConfiguration topology) {
+    manager
+        .updateMultiConfiguration(ignored -> CurrentClusterConfiguration.fromLegacy(topology))
+        .join();
+  }
+
+  /**
+   * Initializes the default group's routing state, a precondition {@link
+   * io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier} enforces before
+   * a partition-count scale-up can proceed.
+   */
+  protected final void initializeRoutingState(final int partitionCount) {
+    clientApi
+        .updateRoutingState(
+            new UpdateRoutingStateRequest(
+                Optional.of(RoutingState.initializeWithPartitionCount(partitionCount)),
+                Optional.empty(),
+                false))
+        .join()
+        .get();
+  }
+
   @Test
   void shouldGetCurrentTopology() {
     // given
     final var expectedTopology =
         initialTopology.addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()));
-    recordingCoordinator.setCurrentTopology(expectedTopology);
+    setCurrentTopology(expectedTopology);
 
     // when
     final var topology = clientApi.getTopology().join();
 
-    // then
-    assertThat(topology.get()).isEqualTo(CurrentClusterConfiguration.fromLegacy(expectedTopology));
+    // then — member-key equality alone would miss a lifecycle-state or per-member metadata
+    // regression, so every member's state is checked too; whole-object equality against
+    // CurrentClusterConfiguration.fromLegacy(expectedTopology) isn't possible here because the
+    // real coordinator bumps its own version counters on every update
+    assertThat(topology.get().globalConfiguration().members())
+        .containsOnlyKeys(coordinatorId, memberFactory.apply(1))
+        .allSatisfy(
+            (memberId, state) -> assertThat(state.state()).isEqualTo(BrokerState.State.ACTIVE));
   }
 
   @Test
   void shouldAddMembers() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.AddMembersRequest(
-            Set.of(memberFactory.apply(1)), false);
+    final var request = new AddMembersRequest(Set.of(memberFactory.apply(1)), false);
 
     // when
     final var changeStatus = clientApi.addMembers(request).join().get();
@@ -283,13 +382,12 @@ abstract class ClusterConfigurationManagementApiTestBase {
   @Test
   void shouldRemoveMembers() {
     // given
-    recordingCoordinator.setCurrentTopology(
+    setCurrentTopology(
         initialTopology
             .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
             .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of())));
     final var request =
-        new ClusterConfigurationManagementRequest.RemoveMembersRequest(
-            Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
+        new RemoveMembersRequest(Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
 
     // when
     final var changeStatus = clientApi.removeMembers(request).join().get();
@@ -304,10 +402,13 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
   @Test
   void shouldJoinPartition() {
-    // given
-    final var request =
-        new ClusterConfigurationManagementRequest.JoinPartitionRequest(
-            memberFactory.apply(1), 1, 3, false);
+    // given — partition 1 already has an active member (the coordinator), so member 1 can join it
+    setCurrentTopology(
+        initialTopology
+            .updateMember(
+                coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of())));
+    final var request = new JoinPartitionRequest(memberFactory.apply(1), 1, 3, false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
@@ -319,10 +420,17 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
   @Test
   void shouldLeavePartition() {
-    // given
-    final var request =
-        new ClusterConfigurationManagementRequest.LeavePartitionRequest(
-            memberFactory.apply(1), 1, false);
+    // given — partition 1 has two replicas so member 1 can leave without dropping below the
+    // minimum
+    setCurrentTopology(
+        initialTopology
+            .updateMember(
+                coordinatorId, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .addMember(
+                memberFactory.apply(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+    final var request = new LeavePartitionRequest(memberFactory.apply(1), 1, false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();
@@ -336,7 +444,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
   void shouldReassignPartitions() {
     // given
     final var request =
-        new ClusterConfigurationManagementRequest.ReassignPartitionsRequest(
+        new ReassignPartitionsRequest(
             Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
     final ClusterConfiguration currentTopology =
         initialTopology
@@ -349,7 +457,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                         2,
                         PartitionState.active(1, partitionConfig))))
             .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.reassignPartitions(request).join().get();
@@ -375,7 +483,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.scaleMembers(request).join().get();
@@ -407,7 +515,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.scaleMembers(request).join().get();
@@ -444,7 +552,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.scaleMembers(request).join();
@@ -479,7 +587,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(1),
                 m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.scaleMembers(request).join().get();
@@ -516,7 +624,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 memberFactory.apply(3),
                 m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.forceScaleDown(request).join().get();
@@ -558,7 +666,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                         new ZoneAwareConfig(List.of(new ZoneSpec(zone, 1, 1)))))
             .orElse(topologyWithPartitions);
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
+    initializeRoutingState(2);
 
     // when
     final var changeStatus = clientApi.scaleCluster(request).join();
@@ -595,7 +704,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
+    initializeRoutingState(2);
 
     // when
     final var changeStatus = clientApi.patchCluster(request).join().get();
@@ -640,7 +750,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 memberFactory.apply(3),
                 m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
 
     // when
     final var changeStatus = clientApi.forceRemoveBrokers(request).join().get();
@@ -681,7 +791,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .setPartitionDistributorConfig(
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec("zone-a", 2, 1), new ZoneSpec("zone-b", 2, 2))));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
     final var request = new ForceZoneRemoveRequest("zone-a", false);
 
     // when
@@ -719,7 +829,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .setPartitionDistributorConfig(
                 new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1))));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
     final var request = new AddZoneRequest("zone-b", 1, 2, Set.of(zoneB0), false);
 
     // when
@@ -740,9 +850,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
   void shouldDisableExporter() {
     // given
     final String exporterId = "exporterId";
-    final var request =
-        new ClusterConfigurationManagementRequest.ExporterDisableRequest(
-            exporterId, Optional.empty(), false);
+    final var request = new ExporterDisableRequest(exporterId, Optional.empty(), false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -752,7 +860,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         initialTopology.updateMember(
             memberFactory.apply(0),
             m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
-    recordingCoordinator.setCurrentTopology(configurationWithExporter);
+    setCurrentTopology(configurationWithExporter);
 
     // when
     final var changeStatus = clientApi.disableExporter(request).join().get();
@@ -764,12 +872,46 @@ abstract class ClusterConfigurationManagementApiTestBase {
   }
 
   @Test
+  void shouldApplyDisableExporterEndToEndForLocalMember() {
+    // given — the exporter lives on the local (coordinator) member's partition, so the plan
+    // drains synchronously against the no-op appliers
+    final String exporterId = "exporterId";
+    final var partitionConfigWithExporter =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
+    final var configurationWithExporter =
+        initialTopology.updateMember(
+            coordinatorId,
+            m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+    setCurrentTopology(configurationWithExporter);
+    final var request = new ExporterDisableRequest(exporterId, Optional.empty(), false);
+
+    // when
+    clientApi.disableExporter(request).join().get();
+
+    // then — the plan is applied on the local member and completes
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    final var exporterState =
+        config
+            .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+            .getMember(coordinatorId)
+            .partitions()
+            .get(1)
+            .config()
+            .exporting()
+            .exporters()
+            .get(exporterId);
+    assertThat(exporterState.state()).isEqualTo(State.DISABLED);
+  }
+
+  @Test
   void shouldDeleteExporter() {
     // given — the exporter is in CONFIG_NOT_FOUND, the state a delete requires
     final String exporterId = "exporterId";
-    final var request =
-        new ClusterConfigurationManagementRequest.ExporterDeleteRequest(
-            exporterId, Optional.empty(), false);
+    final var request = new ExporterDeleteRequest(exporterId, Optional.empty(), false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -780,7 +922,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         initialTopology.updateMember(
             memberFactory.apply(0),
             m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
-    recordingCoordinator.setCurrentTopology(configurationWithExporter);
+    setCurrentTopology(configurationWithExporter);
 
     // when
     final var changeStatus = clientApi.deleteExporter(request).join().get();
@@ -796,8 +938,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // given
     final String exporterId = "exporterId";
     final var request =
-        new ClusterConfigurationManagementRequest.ExporterEnableRequest(
-            exporterId, Optional.empty(), Optional.empty(), false);
+        new ExporterEnableRequest(exporterId, Optional.empty(), Optional.empty(), false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -807,7 +948,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         initialTopology.updateMember(
             memberFactory.apply(0),
             m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
-    recordingCoordinator.setCurrentTopology(configurationWithExporter);
+    setCurrentTopology(configurationWithExporter);
 
     // when
     final var changeStatus = clientApi.enableExporter(request).join().get();
@@ -823,7 +964,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
   void shouldReturnInvalidErrorForInvalidRequests() {
     // given
     final var request = new BrokerScaleRequest(Set.of(), false); // invalid request when no brokers
-    recordingCoordinator.setCurrentTopology(initialTopology);
+    setCurrentTopology(initialTopology);
 
     // when
     final var changeStatus = clientApi.scaleMembers(request).join();
@@ -838,13 +979,14 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
   @Test
   void shouldValidateRestoreWhenClusterRecovering() {
-    // given
-    recordingCoordinator.setCurrentTopology(
+    // given — the coordinator must host a partition: recovery mode lives on BrokerPartitionState,
+    // so a partitionless member is not in the default group and its mode would not survive the
+    // round-trip through toLegacyDefault
+    setCurrentTopology(
         ClusterConfiguration.init()
             .addMember(
-                memberFactory.apply(0),
-                MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+                coordinatorId,
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, partitionConfig)))
                     .toRecovering()));
     final var request =
         new RestoreRequest(
@@ -861,9 +1003,34 @@ abstract class ClusterConfigurationManagementApiTestBase {
   }
 
   @Test
+  void shouldValidateRestoreAsDryRunWhenClusterRecovering() {
+    // given — same fixture as shouldValidateRestoreWhenClusterRecovering, but this drives the
+    // coordinator's simulateOperations() path (dryRun=true) instead of applyOperations(): the
+    // plan is validated/simulated against the real appliers but never actually applied
+    setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(
+                coordinatorId,
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, partitionConfig)))
+                    .toRecovering()));
+    final var request =
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            new TenantRestoreArguments(
+                new RestoreParameters(List.of(100L, 101L), null, null), "elasticsearch", false),
+            true);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then — accepted, because toLegacyDefault projects the coordinator back to RECOVERING
+    EitherAssert.assertThat(result).isRight();
+  }
+
+  @Test
   void shouldRejectRestoreWhenClusterNotRecovering() {
     // given
-    recordingCoordinator.setCurrentTopology(initialTopology); // member is ACTIVE
+    setCurrentTopology(initialTopology); // member is ACTIVE
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
@@ -882,35 +1049,36 @@ abstract class ClusterConfigurationManagementApiTestBase {
             error -> {
               assertThat(error.code()).isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
               assertThat(error.message())
-                  .isEqualTo("Restore is only allowed while the cluster is in recovery mode.");
+                  .isEqualTo(
+                      "Restore is only allowed while physical tenant 'default' is in recovery mode.");
             });
   }
 
   @Test
   void shouldPurgeCluster() {
     // given
-    recordingCoordinator.setCurrentTopology(
+    setCurrentTopology(
         initialTopology
             .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
             .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
             .updateMember(
                 memberFactory.apply(0),
-                m -> m.addPartition(0, PartitionState.active(2, partitionConfig)))
-            .updateMember(
-                memberFactory.apply(1),
-                m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
-            .updateMember(
-                memberFactory.apply(2),
-                m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
-            .updateMember(
-                memberFactory.apply(0),
-                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(
-                memberFactory.apply(1),
                 m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
                 memberFactory.apply(2),
-                m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(2),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig))));
     final var request = new PurgeRequest(Optional.empty(), false);
 
     // when
@@ -927,5 +1095,365 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .collect(Collectors.toSet());
 
     assertThat(currentConfiguration).containsExactlyElementsOf(expectedConfiguration);
+  }
+
+  @Test
+  void shouldRejectUpdatePartitionDistributionForNonZoneAwareConfig() {
+    // given — a non-zone-aware config, which the transformer rejects regardless of coordinator
+    // shape
+    setCurrentTopology(
+        initialTopology.updateMember(
+            coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    final var request = new UpdatePartitionDistributorConfigRequest(new RoundRobinConfig(), false);
+
+    // when
+    final var result = clientApi.updatePartitionDistribution(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .satisfies(error -> assertThat(error.message()).contains("ZONE_AWARE"));
+  }
+
+  @Test
+  void shouldCancelTopologyChangeEndToEnd() {
+    // given — a pending plan whose operation targets a member other than the coordinator, so it
+    // never drains on its own
+    final var otherMember = memberFactory.apply(1);
+    setCurrentTopology(
+        initialTopology
+            .addMember(otherMember, MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(new GlobalPhase(List.of(new MemberLeaveOperation(otherMember))))))
+        .join();
+    final var changeId =
+        manager.getMultiConfiguration().join().phasedChangeState().onlyPending().id();
+
+    // when — cancelled via the management API endpoint
+    final var response = clientApi.cancelTopologyChange(new CancelChangeRequest(changeId)).join();
+
+    // then — no pending change remains, on both the response and the real configuration
+    EitherAssert.assertThat(response).isRight();
+    assertThat(response.get().phasedChangeState().pending()).isEmpty();
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.phasedChangeState().lastChange())
+        .hasValueSatisfying(
+            last -> assertThat(last.status()).isEqualTo(PhasedChangePlanStatus.CANCELLED));
+  }
+
+  @Test
+  void shouldApplyModeChangeEndToEndForLocalMember() {
+    // given — the coordinator is active and processing in the default group
+    setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(
+                coordinatorId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+
+    // when — switch to recovery mode
+    clientApi
+        .modeChange(
+            new ModeChangeRequest(
+                Optional.of(CurrentClusterConfiguration.DEFAULT_GROUP), Mode.RECOVERING, false))
+        .join()
+        .get();
+
+    // then — the plan is applied and the coordinator is now in recovery mode
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .mode())
+        .isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldApplyModeChangeToEveryPhysicalTenantInOnePlan() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    clientApi
+        .modeChange(new ModeChangeRequest(Optional.empty(), Mode.RECOVERING, false))
+        .join()
+        .get();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .mode())
+        .isEqualTo(Mode.RECOVERING);
+    assertThat(config.partitionGroup(TENANT_B).getMember(coordinatorId).mode())
+        .isEqualTo(Mode.RECOVERING);
+  }
+
+  @Test
+  void shouldApplyModeChangeToOnlyTheRequestedPhysicalTenant() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    clientApi
+        .modeChange(new ModeChangeRequest(Optional.of(TENANT_B), Mode.RECOVERING, false))
+        .join()
+        .get();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).getMember(coordinatorId).mode())
+        .isEqualTo(Mode.RECOVERING);
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .mode())
+        .isEqualTo(Mode.PROCESSING);
+  }
+
+  /**
+   * Wires a cluster with two physical tenants — the default group and {@link #TENANT_B} — both
+   * hosted by {@link #coordinatorId} and both processing.
+   */
+  private void wireTwoPhysicalTenants() {
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(
+                coordinatorId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
+    setCurrentTopology(
+        Optional.ofNullable(coordinatorId.zone())
+            .map(
+                zone ->
+                    topology.setPartitionDistributorConfig(
+                        new ZoneAwareConfig(List.of(new ZoneSpec(zone, 1, 1)))))
+            .orElse(topology));
+    manager.registerPartitionGroupChangeAppliers(
+        TENANT_B,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    manager
+        .updateMultiConfiguration(
+            current ->
+                new CurrentClusterConfiguration(
+                    current.version(),
+                    current.globalConfiguration(),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        current.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+                        TENANT_B,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(
+                                coordinatorId,
+                                BrokerPartitionState.initialize(
+                                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    current.phasedChangeState()))
+        .join();
+  }
+
+  /**
+   * Seeds a routing state on each named group: {@code StartPartitionScaleUpApplier} refuses to
+   * scale up a group whose routing state is not initialized yet, so the scale-up tests need it
+   * seeded on both groups regardless of which one is actually targeted.
+   */
+  private void seedRoutingState(final int partitionCount, final String... groupIds) {
+    manager
+        .updateMultiConfiguration(
+            current -> {
+              var updated = current;
+              for (final var groupId : groupIds) {
+                updated =
+                    updated.updatePartitionGroupConfig(
+                        groupId,
+                        group ->
+                            group.setRoutingState(
+                                RoutingState.initializeWithPartitionCount(partitionCount)));
+              }
+              return updated;
+            })
+        .join();
+  }
+
+  @Test
+  void shouldApplyScaleClusterToOnlyTheRequestedPhysicalTenant() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — scale only tenant-b's partition count up to 2
+    clientApi
+        .scaleCluster(
+            new ClusterScaleRequest(
+                Optional.empty(),
+                Optional.of(2),
+                Optional.empty(),
+                Optional.ofNullable(coordinatorId.zone()),
+                Optional.of(TENANT_B),
+                false))
+        .join()
+        .get();
+
+    // then — only tenant-b's partition count changed; the default group is untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(2);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyScaleClusterToOnlyTheDefaultTenantWhenUnscoped() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — no physicalTenant parameter is given
+    clientApi
+        .scaleCluster(
+            new ClusterScaleRequest(
+                Optional.empty(),
+                Optional.of(2),
+                Optional.empty(),
+                Optional.ofNullable(coordinatorId.zone()),
+                false))
+        .join()
+        .get();
+
+    // then — only the default tenant's partition count changed
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(2);
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyPatchClusterToOnlyTheRequestedPhysicalTenant() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — patch only tenant-b's partition count up to 2
+    clientApi
+        .patchCluster(
+            new ClusterPatchRequest(
+                Set.of(), Set.of(), Optional.of(2), Optional.empty(), Optional.of(TENANT_B), false))
+        .join()
+        .get();
+
+    // then — only tenant-b's partition count changed; the default group is untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(2);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyPatchClusterToOnlyTheDefaultTenantWhenUnscoped() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — no physicalTenant parameter is given
+    clientApi
+        .patchCluster(
+            new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(2), Optional.empty(), false))
+        .join()
+        .get();
+
+    // then — only the default tenant's partition count changed
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(2);
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldPlanUpdateRoutingState() {
+    // given
+    setCurrentTopology(
+        initialTopology.updateMember(
+            coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    final var routingState = RoutingState.initializeWithPartitionCount(1);
+
+    // when
+    final var response =
+        clientApi
+            .updateRoutingState(
+                new UpdateRoutingStateRequest(Optional.of(routingState), Optional.empty(), false))
+            .join()
+            .get();
+
+    // then
+    assertThat(response.legacyResponse().plannedChanges())
+        .containsExactly(new UpdateRoutingState(coordinatorId, Optional.of(routingState)));
+  }
+
+  @Test
+  void shouldApplyRoutingStateUpdateToOnlyTheRequestedPhysicalTenant() {
+    // given
+    wireTwoPhysicalTenants();
+    final var routingState = RoutingState.initializeWithPartitionCount(1);
+
+    // when
+    clientApi
+        .updateRoutingState(
+            new UpdateRoutingStateRequest(Optional.of(routingState), Optional.of(TENANT_B), false))
+        .join()
+        .get();
+
+    // then — only tenant-b's routing state changed; the default group's is left untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).routingState()).contains(routingState);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).routingState())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldApplyRoutingStateUpdateToTheDefaultPhysicalTenantWhenUnscoped() {
+    // given — unlike mode changes, where an absent physicalTenantId means "every tenant", an
+    // unscoped routing-state update keeps writing only the default group
+    wireTwoPhysicalTenants();
+    final var routingState = RoutingState.initializeWithPartitionCount(1);
+
+    // when
+    clientApi
+        .updateRoutingState(
+            new UpdateRoutingStateRequest(Optional.of(routingState), Optional.empty(), false))
+        .join()
+        .get();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).routingState())
+        .contains(routingState);
+    assertThat(config.partitionGroup(TENANT_B).routingState()).isEmpty();
   }
 }
