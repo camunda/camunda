@@ -328,30 +328,19 @@ test.describe('Delete Operations', () => {
       );
     });
 
-    await test.step('Select all completed instances', async () => {
+    await test.step('Delete all completed instances in batch', async () => {
       // Batch selection is disabled while the "Suspended" state filter is
       // active (the default processes view). Turn it off so the row-selection
       // checkboxes render.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-    });
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
 
-    await test.step('Click Delete batch operation button', async () => {
-      await expect(operateProcessesPage.deleteButton).toBeEnabled();
-      await operateProcessesPage.deleteButton.click();
-    });
-
-    await test.step('Confirm deletion in modal', async () => {
-      await operateProcessesPage.deleteBatchOperationConfirmButton.click();
-    });
-
-    await test.step('Verify batch delete operation started', async () => {
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage(
-          'Delete Process Instance',
-        ),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.deleteSelectedInstancesInBatch();
     });
 
     await test.step('Verify instances are removed from the list after deletion', async () => {
