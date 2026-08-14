@@ -22,9 +22,14 @@
 // DS-only (see TasksLayoutPage.tsx). The first `auto` track held the filter
 // panel, which no longer renders here — without dropping the track the two
 // remaining panels would auto-place one column to the left of where they belong.
-// Declared after `.container`: equal specificity, so source order decides.
+// `.container`'s padding-top cleared Carbon's fixed header; the DS AppHeader is
+// `sticky` instead and already occupies its own space in flow, and
+// TasklistNavLayout's wrapper already accounts for it — this padding would be
+// a second, redundant offset. Declared after `.container`: equal specificity,
+// so source order decides.
 .containerDS {
 	grid-template-columns: layout.to-rem(312px) 1fr;
+	padding-top: 0;
 }
 
 .tasksPanel {
