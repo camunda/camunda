@@ -8,57 +8,14 @@
 package io.camunda.optimize.service.db.writer;
 
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
-import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryUpdateDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.security.util.LocalDateUtil;
-import java.io.IOException;
-import org.slf4j.Logger;
 
-public abstract class JobRegistryWriter {
+public interface JobRegistryWriter {
 
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JobRegistryWriter.class);
+  JobRegistryEntryDto createJobEntry(
+      JobType jobType, TargetEntityType targetEntityType, String targetEntityId);
 
-  public JobRegistryEntryDto createJobEntry(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
-    final JobRegistryEntryDto entry =
-        new JobRegistryEntryDto(jobType, targetEntityType, targetEntityId);
-    LOG.debug(
-        "Creating job registry entry with id [{}] for [{}] target [{}].",
-        entry.getId(),
-        jobType,
-        targetEntityId);
-    try {
-      performCreatingJobEntry(entry);
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Could not write job registry entry with id [%s] to database.", entry.getId());
-      LOG.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-    return entry;
-  }
-
-  public void updateJobStatus(final String id, final JobStatus status, final String errorMessage) {
-    LOG.debug("Updating job registry entry [{}] to status [{}].", id, status);
-    final JobRegistryEntryUpdateDto update =
-        new JobRegistryEntryUpdateDto(status, errorMessage, LocalDateUtil.getCurrentDateTime());
-    try {
-      performUpdatingJobStatus(id, update);
-    } catch (final IOException e) {
-      final String message =
-          String.format("Could not update job registry entry with id [%s] in database.", id);
-      LOG.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  protected abstract void performCreatingJobEntry(final JobRegistryEntryDto entry)
-      throws IOException;
-
-  protected abstract void performUpdatingJobStatus(
-      final String id, final JobRegistryEntryUpdateDto update) throws IOException;
+  void updateJobStatus(String id, JobStatus status, String errorMessage);
 }
