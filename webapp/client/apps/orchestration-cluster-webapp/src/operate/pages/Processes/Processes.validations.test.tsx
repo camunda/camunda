@@ -25,11 +25,19 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 	}),
 );
 
-function renderProcessesPage() {
-	return renderWithRouter(ProcessesHarness, {
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderProcessesPage() {
+	const screen = await renderWithRouter(ProcessesHarness, {
 		path: '/operate/processes',
 		initialEntry: '/operate/processes',
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 const ERRORS = {
@@ -43,7 +51,11 @@ describe('Validations', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
 		sessionStorage.clear();
 	});
 

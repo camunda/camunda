@@ -7,8 +7,28 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {describe, it, expect, vi} from 'vitest';
-import {DecisionViewer} from './index';
+import {afterAll, beforeAll, describe, it, expect, vi} from 'vitest';
+
+let DecisionViewer: typeof import('./index').DecisionViewer;
+let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+let infernoWarningCount = 0;
+const originalConsoleWarn = console.warn;
+
+beforeAll(async () => {
+	consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+		if (args[0] === 'You are running production build of Inferno in development mode. Use dev:module entry point.') {
+			infernoWarningCount += 1;
+			return;
+		}
+		originalConsoleWarn(...args);
+	});
+	({DecisionViewer} = await import('./index'));
+});
+
+afterAll(() => {
+	expect(infernoWarningCount).toBe(1);
+	consoleWarnSpy.mockRestore();
+});
 
 const DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn">
