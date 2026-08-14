@@ -21,6 +21,6 @@ dependencies:
     condition: prometheus-elasticsearch-exporter.enabled
 
   - name: opensearch
-    version: "3.7.0"
+    version: "3.8.0"
     repository: https://opensearch-project.github.io/helm-charts/
     condition: opensearch.enabled
