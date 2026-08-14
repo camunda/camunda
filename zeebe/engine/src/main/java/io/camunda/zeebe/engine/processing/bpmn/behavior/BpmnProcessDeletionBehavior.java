@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -82,6 +83,16 @@ public final class BpmnProcessDeletionBehavior {
       return;
     }
 
+    finalizeDrain(process.getPersistedProcess());
+  }
+
+  /**
+   * Removes the definition from local state ({@link ProcessIntent#DELETING} / {@link
+   * ProcessIntent#DELETED}) and reports the drain to the deployment partition ({@link
+   * ProcessIntent#DELETE_COMPLETE}). Callers must ensure the definition is {@code DRAINING} and has
+   * no remaining active instances on this partition.
+   */
+  public void finalizeDrain(final PersistedProcess process) {
     final var processRecord =
         new ProcessRecord()
             .setBpmnProcessId(process.getBpmnProcessId())
