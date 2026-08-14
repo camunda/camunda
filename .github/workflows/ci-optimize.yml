@@ -105,7 +105,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -198,7 +197,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-tests
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -384,7 +382,6 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          harbor: true
           maven-cache-key-modifier: optimize-e2e-smoke
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
