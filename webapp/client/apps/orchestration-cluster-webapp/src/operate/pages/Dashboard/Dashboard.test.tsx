@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
@@ -84,7 +84,26 @@ const CURRENT_USER_RESPONSE = HttpResponse.json({
 	c8Links: {},
 });
 
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderDashboard() {
+	const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
+}
+
 describe('<Dashboard />', () => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
+	});
+
 	it('should render metric panel with running instance counts', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -99,7 +118,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByTestId('metric-panel')).toBeVisible();
 		await expect.element(screen.getByText('20 Running Process Instances in total')).toBeVisible();
@@ -119,7 +138,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
@@ -139,7 +158,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
 		await expect.element(screen.getByText('Process One')).toBeVisible();
@@ -160,7 +179,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByTestId('incidents-by-error-list')).toBeVisible();
 		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
@@ -181,7 +200,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByText('Your processes are healthy')).toBeVisible();
 	});
@@ -203,7 +222,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByText('No running process instances')).toBeVisible();
 	});
@@ -225,7 +244,7 @@ describe('<Dashboard />', () => {
 			}),
 		);
 
-		const screen = await renderWithRouter(Dashboard, {path: '/operate'});
+		const screen = await renderDashboard();
 
 		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
 		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();

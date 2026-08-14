@@ -20,11 +20,19 @@ import {DecisionInstance} from './DecisionInstance';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
-function renderPage() {
-	return renderWithRouter(() => <DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />, {
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderPage() {
+	const screen = await renderWithRouter(() => <DecisionInstance decisionInstanceId={DECISION_INSTANCE_ID} />, {
 		path: '/operate/decisions/$decisionInstanceId',
 		initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
 	});
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 describe('<DecisionInstance />', () => {
@@ -32,7 +40,11 @@ describe('<DecisionInstance />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
 		sessionStorage.clear();
 		notificationsStore.reset();
 	});

@@ -26,8 +26,11 @@ import type {DecisionsSearch} from './decisionsFilter';
 
 const BASE_SEARCH: DecisionsSearch = {evaluated: true, failed: true};
 
-function renderInstancesTable(search: DecisionsSearch = BASE_SEARCH) {
-	return renderWithRouter(
+let unmountPage: (() => Promise<void>) | undefined;
+let waitForRequests: (() => Promise<void>) | undefined;
+
+async function renderInstancesTable(search: DecisionsSearch = BASE_SEARCH) {
+	const screen = await renderWithRouter(
 		() => (
 			// The table's scroll container is `height: 100%` and needs a sized ancestor, which the
 			// full page's Frame/ResizablePanel normally provides — give it one here in isolation.
@@ -38,6 +41,11 @@ function renderInstancesTable(search: DecisionsSearch = BASE_SEARCH) {
 		),
 		{path: '/operate/decisions'},
 	);
+	unmountPage = () => screen.unmount();
+	waitForRequests = async () => {
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+	};
+	return screen;
 }
 
 describe('<InstancesTable />', () => {
@@ -45,7 +53,11 @@ describe('<InstancesTable />', () => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
+		await waitForRequests?.();
+		await unmountPage?.();
+		waitForRequests = undefined;
+		unmountPage = undefined;
 		sessionStorage.clear();
 		notificationsStore.reset();
 	});

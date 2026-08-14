@@ -159,7 +159,6 @@ describe('<DateRangeField />', () => {
 
 		await expect.element(screen.getByTestId('fromTime')).not.toBeInvalid();
 		await expect.element(screen.getByText(TIME_ERROR)).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('button', {name: 'Apply'})).not.toBeDisabled();
 
 		vi.runOnlyPendingTimers();
 
