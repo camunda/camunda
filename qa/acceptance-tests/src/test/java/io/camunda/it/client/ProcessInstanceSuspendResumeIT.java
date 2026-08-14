@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -84,27 +85,16 @@ public class ProcessInstanceSuspendResumeIT {
                       assertThat(instance.getSuspendedDate()).isNull();
                     }));
 
-    // TODO(#59812): re-instate once resume hands parked jobs out again. Suspend already parks
-    // every ACTIVATABLE job out of the hand-out index, but nothing writes Job.RESUMED yet, so the
-    // resumed instance never gets its job back and only the never-suspended instance can be
-    // activated below.
     // when - both instances driven through the same three sequential tasks
-    // for (final String jobType : process.jobTypes()) {
-    //   activateAndCompleteJobs(jobType, 2);
-    // }
+    for (final String jobType : process.jobTypes()) {
+      activateAndCompleteJobs(jobType, 2);
+    }
 
     // then - both complete, with the same elements in the same end state
-    // waitForProcessInstancesToBeCompleted(
-    //     camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
-    // assertThat(elementIdsAndStates(suspendedKey))
-    //     .containsExactlyInAnyOrderElementsOf(elementIdsAndStates(notSuspendedKey));
-
-    // with the job flow disabled above, both instances are left waiting at taskA; cancel them so
-    // they don't linger on the shared broker for the rest of the suite
-    camundaClient.newCancelInstanceCommand(suspendedKey).send().join();
-    camundaClient.newCancelInstanceCommand(notSuspendedKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, suspendedKey);
-    waitForProcessInstanceToBeTerminated(camundaClient, notSuspendedKey);
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
+    assertThat(elementIdsAndStates(suspendedKey))
+        .containsExactlyInAnyOrderElementsOf(elementIdsAndStates(notSuspendedKey));
   }
 
   @Test
