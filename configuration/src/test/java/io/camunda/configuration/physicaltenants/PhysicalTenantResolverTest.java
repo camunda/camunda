@@ -401,6 +401,72 @@ class PhysicalTenantResolverTest {
         .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
+  // --- exporter assignment wiring (ADR-0008 D1/D2/D5) --------------------------------------------
+  // PhysicalTenantExporterAssignedValidation and
+  // PhysicalTenantExporterConfigurations#narrowToAssigned
+  // are unit-tested standalone elsewhere; these tests instead pin that PhysicalTenantResolver#of
+  // actually wires them in, in the right order (validate against the pre-narrow universe, then
+  // narrow) — the two lines an unrelated refactor could most easily drop or reorder.
+
+  @Test
+  void shouldRejectPhysicalTenantMissingExportersAssignedWhenGenericExporterExists() {
+    // given a root-declared generic exporter and a tenant that never declares
+    // camunda.physical-tenants.tenanta.data.exporters-assigned
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.custom.class-name", "com.acme.CustomExporter",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when / then resolution fails fast at boot — proves PhysicalTenantExporterAssignedValidation
+    // is actually invoked from the resolver, not just independently unit-testable
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("tenanta")
+        .withMessageContaining("exporters-assigned");
+  }
+
+  @Test
+  void shouldNarrowAwayUnassignedGenericExporterThroughResolver() {
+    // given two root-declared generic exporters; tenantA's manifest assigns only one of them
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.kept.class-name", "com.acme.KeptExporter",
+            "camunda.data.exporters.dropped.class-name", "com.acme.DroppedExporter",
+            "camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "kept",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when — proves narrowToAssigned is actually invoked from the resolver on its resolved output
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then only the assigned entry survives in the resolved catalog
+    assertThat(tenantA.getData().getExporters()).containsOnlyKeys("kept");
+  }
+
+  @Test
+  void shouldKeepAutoconfiguredExporterAfterNarrowingThroughResolverEvenWhenUnassigned() {
+    // given an already-materialized autoconfigured entry (simulating what secondary-storage
+    // autoconfiguration would have produced) alongside a generic exporter the tenant does assign;
+    // the autoconfigured id must never be listed in exporters-assigned (it is exempt/rejected)
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.camundaexporter.args.a", 1,
+            "camunda.data.exporters.custom.class-name", "com.acme.CustomExporter",
+            "camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "custom",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then narrowing keeps both the assigned generic entry and the unassigned autoconfigured one
+    assertThat(tenantA.getData().getExporters()).containsOnlyKeys("custom", "camundaexporter");
+  }
+
   @Test
   void shouldRejectInvalidTenantIds() {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
