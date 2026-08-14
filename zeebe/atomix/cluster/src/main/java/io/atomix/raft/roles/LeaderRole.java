@@ -117,8 +117,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Reset state for the leader.
     takeLeadership();
 
-    // Append initial entries to the log, including an initial no-op entry and the server's
-    // configuration.
+    // Append an initial no-op entry to the log, so that the leader can commit its log prefix.
+    // Note this does not append a configuration entry: the current configuration keeps the term of
+    // whichever entry introduced it, across any number of elections.
     appendInitialEntries();
     commitInitialEntriesFuture = commitInitialEntries();
     lastZbEntry = findLastZeebeEntry();
@@ -214,8 +215,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // If the configuration request index is less than the last known configuration index for
     // the leader, fail the request to ensure servers can't reconfigure an old configuration.
     final var configuration = raft.getCluster().getConfiguration();
+    final var configurationTerm = raft.getCluster().getConfigurationTerm();
     if (request.index() > 0 && request.index() < configuration.index()
-        || request.term() != configuration.term()) {
+        || request.term() != configurationTerm) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
@@ -292,7 +294,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
-                .withTerm(currentConfiguration.term())
+                // The same term the validation in onReconfigure expects, see
+                // RaftClusterContext#getConfigurationTerm: this request is built from the leader's
+                // own configuration, so it must never be rejected as stale.
+                .withTerm(raft.getCluster().getConfigurationTerm())
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(request.joiningMember())
@@ -329,7 +334,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return onReconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
-                .withTerm(currentConfiguration.term())
+                // See onJoin: the leader's own request must not be rejected as stale.
+                .withTerm(raft.getCluster().getConfigurationTerm())
                 .withMembers(updatedMembers)
                 .from(raft.getCluster().getLocalMember().memberId().id())
                 .build())

@@ -39,6 +39,16 @@ public class ConfigureRequest extends AbstractRaftRequest {
   private final String leader;
   private final long index;
   private final long timestamp;
+
+  /**
+   * The term of the configuration entry at {@link #index}, which together with the index identifies
+   * the configuration - as opposed to {@link #term}, the leader's current term, which only says who
+   * is disseminating it. Absent (zero) from requests built by members that predate this field; a
+   * receiver then has to fall back to {@link #term}, which is what made {@code
+   * Configuration#term()} ambiguous in the first place.
+   */
+  private final long configurationTerm;
+
   private final Collection<RaftMember> members;
   private final Collection<RaftMember> oldMembers;
 
@@ -48,18 +58,20 @@ public class ConfigureRequest extends AbstractRaftRequest {
       final long index,
       final long timestamp,
       final Collection<RaftMember> newMembers,
-      final Collection<RaftMember> oldMembers) {
+      final Collection<RaftMember> oldMembers,
+      final long configurationTerm) {
     this.term = term;
     this.leader = leader;
     this.index = index;
     this.timestamp = timestamp;
     members = newMembers;
     this.oldMembers = oldMembers;
+    this.configurationTerm = configurationTerm;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(term, leader, index, timestamp, members, oldMembers);
+    return Objects.hash(term, leader, index, timestamp, members, oldMembers, configurationTerm);
   }
 
   @Override
@@ -74,6 +86,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
     return term == that.term
         && index == that.index
         && timestamp == that.timestamp
+        && configurationTerm == that.configurationTerm
         && Objects.equals(leader, that.leader)
         && Objects.equals(members, that.members)
         && Objects.equals(oldMembers, that.oldMembers);
@@ -95,6 +108,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
         + members
         + ", oldMembers="
         + oldMembers
+        + ", configurationTerm="
+        + configurationTerm
         + '}';
   }
 
@@ -135,6 +150,16 @@ public class ConfigureRequest extends AbstractRaftRequest {
   }
 
   /**
+   * Returns the term of the configuration entry at {@link #index()}, or {@code 0} when the sender
+   * does not provide it.
+   *
+   * @return The configuration's term, or {@code 0} if unknown.
+   */
+  public long configurationTerm() {
+    return configurationTerm;
+  }
+
+  /**
    * Returns the configuration timestamp.
    *
    * @return The configuration timestamp.
@@ -170,6 +195,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
   public static class Builder extends AbstractRaftRequest.Builder<Builder, ConfigureRequest> {
 
     private long term;
+    private long configurationTerm;
     private String leader;
     private long index;
     private long timestamp;
@@ -210,6 +236,18 @@ public class ConfigureRequest extends AbstractRaftRequest {
     public Builder withIndex(final long index) {
       checkArgument(index >= 0, "index must be positive");
       this.index = index;
+      return this;
+    }
+
+    /**
+     * Sets the term of the configuration entry at the request index.
+     *
+     * @param configurationTerm The configuration entry's term.
+     * @return The request builder.
+     */
+    public Builder withConfigurationTerm(final long configurationTerm) {
+      checkArgument(configurationTerm >= 0, "configurationTerm must not be negative");
+      this.configurationTerm = configurationTerm;
       return this;
     }
 
@@ -255,7 +293,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
     @Override
     public ConfigureRequest build() {
       validate();
-      return new ConfigureRequest(term, leader, index, timestamp, newMembers, oldMembers);
+      return new ConfigureRequest(
+          term, leader, index, timestamp, newMembers, oldMembers, configurationTerm);
     }
 
     @Override
