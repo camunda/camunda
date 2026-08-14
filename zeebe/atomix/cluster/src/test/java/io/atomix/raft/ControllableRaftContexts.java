@@ -468,7 +468,7 @@ public final class ControllableRaftContexts {
 
   public void restart(final MemberId memberId) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
@@ -500,7 +500,7 @@ public final class ControllableRaftContexts {
   public CompletableFuture<Void> join(
       final MemberId memberId, final Collection<MemberId> otherMembers) {
     final var raftcontext = raftServers.get(memberId);
-    raftcontext.getThreadContext().execute(raftcontext::close);
+    raftcontext.getThreadContext().execute(() -> closeRaftContext(raftcontext));
     runUntilDone(memberId);
 
     deterministicExecutors.remove(memberId).close();
@@ -512,6 +512,18 @@ public final class ControllableRaftContexts {
     return future;
   }
 
+  /**
+   * Mirrors {@link io.atomix.raft.impl.DefaultRaftServer#shutdown()}: transition to INACTIVE before
+   * closing so that the current role - in particular a leader's appender - is stopped first. Tasks
+   * already queued behind the close (append callbacks, reconfiguration completions) then no-op on
+   * the stopped role instead of touching the closed, unmapped journal, which crashed with "journal
+   * not open" or a SIGSEGV in the memory-mapped segment.
+   */
+  private static void closeRaftContext(final RaftContext raftContext) {
+    raftContext.transition(RaftServer.Role.INACTIVE);
+    raftContext.close();
+  }
+
   // This is a different from other operations, as it restarts the node and force operations on
   // other
   // nodes to wait until this node is ready. This is required because we can only tolerate data loss
@@ -520,7 +532,7 @@ public final class ControllableRaftContexts {
     LOG.info("Shutting down member {}", memberId.id());
     {
       final var raftContext = raftServers.get(memberId);
-      raftContext.getThreadContext().execute(raftContext::close);
+      raftContext.getThreadContext().execute(() -> closeRaftContext(raftContext));
       runUntilDone(memberId);
     }
     deterministicExecutors.remove(memberId).close();
