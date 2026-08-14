@@ -256,11 +256,14 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         },
       );
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: USAGE_METRICS_GET_ENDPOINT,
-        method: 'GET',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: USAGE_METRICS_GET_ENDPOINT,
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.activeTenants).toBe(0);
       expect(body.processInstances).toBe(0);
