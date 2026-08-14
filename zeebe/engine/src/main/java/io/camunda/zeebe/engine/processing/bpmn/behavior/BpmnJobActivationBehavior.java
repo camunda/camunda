@@ -272,14 +272,29 @@ public class BpmnJobActivationBehavior {
     return batchHadRoom;
   }
 
-  /** Notifies the workers of the job type unless this batch of jobs already did. */
+  /**
+   * Notifies the workers of the job type unless this batch of jobs already did. The lease-skip
+   * metric is counted independently of that dedup: several same-type jobs demoted within one
+   * shared-notification batch must each be counted, even though the batch notifies workers only
+   * once for all of them.
+   */
   private void notifyJobAvailableOnce(
       final String jobType,
       final JobKind jobKind,
       final Set<String> notifiedJobTypes,
       final boolean leasedJobSkipped) {
+    if (leasedJobSkipped) {
+      // push-side counterpart of the skip JobBatchCollector counts when a poll request without
+      // withLease encounters an already-leased job: here, a stream matched the type but not the
+      // lease, so the job is demoted to waiting for a poller instead
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
+            return true;
+          });
+    }
     if (notifiedJobTypes.add(jobType)) {
-      notifyJobAvailable(jobType, jobKind, leasedJobSkipped);
+      notifyJobAvailable(jobType, jobKind);
     }
   }
 
@@ -321,19 +336,12 @@ public class BpmnJobActivationBehavior {
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
-    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind(), false);
+    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
   }
 
-  private void notifyJobAvailable(
-      final String jobType, final JobKind jobKind, final boolean leasedJobSkipped) {
+  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
     sideEffectWriter.appendSideEffect(
         () -> {
-          if (leasedJobSkipped) {
-            // push-side counterpart of the skip JobBatchCollector counts when a poll request
-            // without withLease encounters an already-leased job: here, a stream matched the
-            // type but not the lease, so the job is demoted to waiting for a poller instead
-            jobMetrics.countJobEvent(JobAction.SKIPPED, jobKind, jobType);
-          }
           jobStreamer.notifyWorkAvailable(jobType);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
           return true;
