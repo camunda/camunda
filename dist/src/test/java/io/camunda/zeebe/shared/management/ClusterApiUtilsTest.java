@@ -1042,18 +1042,27 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
-  void shouldListPendingAndLastCompletedChange() {
+  void shouldListAllPendingAndCompletedChanges() {
     // given
     final var startedAt = Instant.ofEpochSecond(1000);
     final var lastCompletedAt = Instant.ofEpochSecond(500);
-    final var pendingPlan =
+    final var pendingPlan1 =
         new PhasedChangePlan(
             2, 0, List.of(new GlobalPhase(List.of(new MemberJoinOperation(member(1))))), startedAt);
-    final var lastChange =
+    final var pendingPlan2 =
+        new PhasedChangePlan(
+            3,
+            0,
+            List.of(new GlobalPhase(List.of(new MemberLeaveOperation(member(2))))),
+            startedAt);
+    final var lastChange1 =
         new CompletedPhasedChange(1, PhasedChangePlanStatus.COMPLETED, startedAt, lastCompletedAt);
+    final var lastChange2 =
+        new CompletedPhasedChange(4, PhasedChangePlanStatus.CANCELLED, startedAt, lastCompletedAt);
     final var config =
         configWithPhasedChangeState(
-            new PhasedChangeState(Optional.of(pendingPlan), Optional.of(lastChange)));
+            new PhasedChangeState(
+                5, Map.of(2L, pendingPlan1, 3L, pendingPlan2), List.of(lastChange1, lastChange2)));
 
     // when
     final var response = ClusterApiUtils.mapConfigurationChangesResponse(config);
@@ -1066,7 +1075,9 @@ final class ClusterApiUtilsTest {
         .extracting(ConfigurationChange::getId, ConfigurationChange::getStatus)
         .containsExactlyInAnyOrder(
             tuple(2L, ConfigurationChange.StatusEnum.IN_PROGRESS),
-            tuple(1L, ConfigurationChange.StatusEnum.COMPLETED));
+            tuple(3L, ConfigurationChange.StatusEnum.IN_PROGRESS),
+            tuple(1L, ConfigurationChange.StatusEnum.COMPLETED),
+            tuple(4L, ConfigurationChange.StatusEnum.CANCELLED));
   }
 
   @Test
@@ -1081,7 +1092,7 @@ final class ClusterApiUtilsTest {
     final var config =
         configWithPhasedChangeState(
             new PhasedChangeState(
-                Optional.of(new PhasedChangePlan(2, 0, phases, Instant.now())), Optional.empty()));
+                5, Map.of(2L, new PhasedChangePlan(2, 0, phases, Instant.now())), List.of()));
 
     // when
     final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 2);
@@ -1127,7 +1138,7 @@ final class ClusterApiUtilsTest {
             GlobalConfiguration.init(),
             Map.of("tenant-a", tenantGroup),
             new PhasedChangeState(
-                Optional.of(new PhasedChangePlan(7, 0, phases, Instant.now())), Optional.empty()));
+                8, Map.of(7L, new PhasedChangePlan(7, 0, phases, Instant.now())), List.of()));
 
     // when
     final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 7);
@@ -1153,8 +1164,7 @@ final class ClusterApiUtilsTest {
     final var lastChange =
         new CompletedPhasedChange(5, PhasedChangePlanStatus.FAILED, startedAt, completedAt);
     final var config =
-        configWithPhasedChangeState(
-            new PhasedChangeState(Optional.empty(), Optional.of(lastChange)));
+        configWithPhasedChangeState(new PhasedChangeState(10, Map.of(), List.of(lastChange)));
 
     // when
     final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 5);
@@ -1177,7 +1187,7 @@ final class ClusterApiUtilsTest {
     final var config =
         configWithPhasedChangeState(
             new PhasedChangeState(
-                Optional.of(new PhasedChangePlan(2, 0, phases, Instant.now())), Optional.empty()));
+                3, Map.of(2L, new PhasedChangePlan(2, 0, phases, Instant.now())), List.of()));
 
     // when
     final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 999);

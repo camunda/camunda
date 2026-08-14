@@ -738,7 +738,7 @@ final class NewModelManagementApiEndpointsTest {
             c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(ID_1))))))
         .join();
     final var changeId =
-        manager.getMultiConfiguration().join().phasedChangeState().pending().orElseThrow().id();
+        manager.getMultiConfiguration().join().phasedChangeState().onlyPending().id();
 
     // when — cancelled via the management API endpoint
     final var response = handler.cancelTopologyChange(new CancelChangeRequest(changeId)).join();

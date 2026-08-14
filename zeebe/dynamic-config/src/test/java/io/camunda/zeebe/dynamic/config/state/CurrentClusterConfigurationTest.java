@@ -164,7 +164,7 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy).activatePendingPhase();
 
       // then — the ops become three phases in order: [global], [default: 2 partition ops], [global]
-      final var plan = migrated.phasedChangeState().pending().orElseThrow();
+      final var plan = migrated.phasedChangeState().onlyPending();
       assertThat(plan.id()).isEqualTo(9);
       assertThat(plan.currentPhaseIndex()).isZero();
       assertThat(plan.phases())
@@ -224,11 +224,11 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy).activatePendingPhase();
 
       // when — advance to phase 1, exactly as would happen for a plan started via initPlan
-      final var advanced = migrated.activateNextPhase();
+      final var advanced =
+          migrated.activateNextPhase(migrated.phasedChangeState().onlyPending().id());
 
       // then — phase 1 (the default-group phase) is now activated
-      assertThat(advanced.phasedChangeState().pending().orElseThrow().currentPhaseIndex())
-          .isEqualTo(1);
+      assertThat(advanced.phasedChangeState().onlyPending().currentPhaseIndex()).isEqualTo(1);
       assertThat(
               advanced.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).pendingChanges())
           .isPresent();
@@ -278,7 +278,7 @@ class CurrentClusterConfigurationTest {
       // group, endlessly restarting an already in-progress plan from scratch — this was a real
       // regression caught by ExporterEnableTest once a broker/gateway kept re-deriving its topology
       // from repeated legacy gossip.
-      assertThat(migrated.phasedChangeState().pending()).isPresent();
+      assertThat(migrated.phasedChangeState().pending()).isNotEmpty();
       assertThat(
               migrated
                   .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
@@ -364,7 +364,7 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the pending plan is assigned the new model's own restore sentinel id
-      final var plan = migrated.phasedChangeState().pending().orElseThrow();
+      final var plan = migrated.phasedChangeState().onlyPending();
       assertThat(plan.id()).isEqualTo(PhasedChangePlan.RESTORED_PLAN_ID);
       assertThat(plan.hasRestorePlanId()).isTrue();
     }
@@ -458,7 +458,7 @@ class CurrentClusterConfigurationTest {
       assertThat(migrated.phasedChangeState().lastChange().orElseThrow().id()).isEqualTo(0);
       final var withPlan =
           migrated.initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
-      assertThat(withPlan.phasedChangeState().pending().orElseThrow().id()).isEqualTo(1);
+      assertThat(withPlan.phasedChangeState().onlyPending().id()).isEqualTo(1);
     }
 
     @Test
@@ -477,7 +477,7 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — a single GlobalPhase holds both, in order
-      assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
+      assertThat(migrated.phasedChangeState().onlyPending().phases())
           .containsExactly(new GlobalPhase(List.of(join, leave)));
     }
 
@@ -497,7 +497,7 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — a single default-group phase holds both, in order
-      assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
+      assertThat(migrated.phasedChangeState().onlyPending().phases())
           .containsExactly(
               new PartitionGroupParallelPhase(
                   Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, List.of(join, leave))));
@@ -555,7 +555,7 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — startedAt of the pending plan and both timestamps of the last change are preserved
-      assertThat(migrated.phasedChangeState().pending().orElseThrow().startedAt())
+      assertThat(migrated.phasedChangeState().onlyPending().startedAt())
           .isEqualTo(pendingStartedAt);
       final var lastChange = migrated.phasedChangeState().lastChange().orElseThrow();
       assertThat(lastChange.startedAt()).isEqualTo(Instant.ofEpochSecond(100));
@@ -666,14 +666,16 @@ class CurrentClusterConfigurationTest {
       // given — no pending plan, but different last completed changes
       final var older =
           new PhasedChangeState(
-              Optional.empty(),
-              Optional.of(
+              3L,
+              Map.of(),
+              List.of(
                   new CompletedPhasedChange(
                       2, PhasedChangePlanStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH)));
       final var newer =
           new PhasedChangeState(
-              Optional.empty(),
-              Optional.of(
+              6L,
+              Map.of(),
+              List.of(
                   new CompletedPhasedChange(
                       5, PhasedChangePlanStatus.FAILED, Instant.EPOCH, Instant.EPOCH)));
       final var left = config(global(1, Map.of()), Map.of(), older);
@@ -691,9 +693,7 @@ class CurrentClusterConfigurationTest {
       // given — same plan id, this at phase 0, other at phase 1
       final List<Phase> phases = List.of(new GlobalPhase(List.of()), new GlobalPhase(List.of()));
       final var atPhase0 = PhasedChangeState.empty().initPlan(phases);
-      final var atPhase1 =
-          new PhasedChangeState(
-              Optional.of(atPhase0.pending().orElseThrow().withNextPhase()), Optional.empty());
+      final var atPhase1 = atPhase0.withAdvancedPlan(atPhase0.onlyPending().withNextPhase());
       final var left = config(global(1, Map.of()), Map.of(), atPhase0);
       final var right = config(global(1, Map.of()), Map.of(), atPhase1);
 
@@ -701,8 +701,7 @@ class CurrentClusterConfigurationTest {
       final var merged = left.merge(right);
 
       // then — higher phase index wins (delegated to PhasedChangeState/PhasedChangePlan merge)
-      assertThat(merged.phasedChangeState().pending().orElseThrow().currentPhaseIndex())
-          .isEqualTo(1);
+      assertThat(merged.phasedChangeState().onlyPending().currentPhaseIndex()).isEqualTo(1);
     }
   }
 
@@ -781,9 +780,9 @@ class CurrentClusterConfigurationTest {
       final var updated = config.initPlan(List.of(globalPhase()));
 
       // then — the plan is pending at phase 0 (id derived by PhasedChangeState) and activated
-      assertThat(updated.phasedChangeState().pending()).isPresent();
-      assertThat(updated.phasedChangeState().pending().orElseThrow().currentPhaseIndex()).isZero();
-      assertThat(updated.phasedChangeState().pending().orElseThrow().id()).isEqualTo(1);
+      assertThat(updated.phasedChangeState().pending()).isNotEmpty();
+      assertThat(updated.phasedChangeState().onlyPending().currentPhaseIndex()).isZero();
+      assertThat(updated.phasedChangeState().onlyPending().id()).isEqualTo(1);
       assertThat(updated.globalConfiguration().hasPendingChanges()).isTrue();
     }
 
@@ -805,11 +804,10 @@ class CurrentClusterConfigurationTest {
               .initPlan(List.of(globalPhase(), parallelPhase("a")));
 
       // when
-      final var updated = config.activateNextPhase();
+      final var updated = config.activateNextPhase(config.phasedChangeState().onlyPending().id());
 
       // then — now on phase 1, and group "a" has the activated change
-      assertThat(updated.phasedChangeState().pending().orElseThrow().currentPhaseIndex())
-          .isEqualTo(1);
+      assertThat(updated.phasedChangeState().onlyPending().currentPhaseIndex()).isEqualTo(1);
       assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
     }
 
@@ -817,9 +815,11 @@ class CurrentClusterConfigurationTest {
     void shouldThrowWhenActivatingNextPhaseOnLastPhase() {
       // given — a single-phase plan
       final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+      final var planId = config.phasedChangeState().onlyPending().id();
 
       // when / then
-      assertThatThrownBy(config::activateNextPhase).isInstanceOf(IllegalStateException.class);
+      assertThatThrownBy(() -> config.activateNextPhase(planId))
+          .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -828,7 +828,8 @@ class CurrentClusterConfigurationTest {
       final var config = CurrentClusterConfiguration.init();
 
       // when / then
-      assertThatThrownBy(config::activateNextPhase).isInstanceOf(IllegalStateException.class);
+      assertThatThrownBy(() -> config.activateNextPhase(1L))
+          .isInstanceOf(IllegalStateException.class);
     }
 
     @ParameterizedTest
@@ -838,7 +839,8 @@ class CurrentClusterConfigurationTest {
       final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
 
       // when
-      final var completed = config.completePlan(status);
+      final var completed =
+          config.completePlan(config.phasedChangeState().onlyPending().id(), status);
 
       // then — the pending plan is moved into the last completed change with the given status
       assertThat(completed.phasedChangeState().pending()).isEmpty();
@@ -863,7 +865,7 @@ class CurrentClusterConfigurationTest {
       final var config = CurrentClusterConfiguration.init();
 
       // when / then
-      assertThatThrownBy(() -> config.completePlan(PhasedChangePlanStatus.COMPLETED))
+      assertThatThrownBy(() -> config.completePlan(1L, PhasedChangePlanStatus.COMPLETED))
           .isInstanceOf(IllegalStateException.class);
     }
 
@@ -909,7 +911,7 @@ class CurrentClusterConfigurationTest {
       final var config = CurrentClusterConfiguration.init();
 
       // when
-      final var cancelled = config.cancelPendingChanges();
+      final var cancelled = config.cancelPendingChanges(1L);
 
       // then
       assertThat(cancelled).isEqualTo(config);
@@ -921,10 +923,10 @@ class CurrentClusterConfigurationTest {
       final var config =
           CurrentClusterConfiguration.init()
               .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
-      final var changeId = config.phasedChangeState().pending().orElseThrow().id();
+      final var changeId = config.phasedChangeState().onlyPending().id();
 
       // when
-      final var cancelled = config.cancelPendingChanges();
+      final var cancelled = config.cancelPendingChanges(changeId);
 
       // then
       assertThat(cancelled.globalConfiguration().hasPendingChanges()).isFalse();
@@ -951,9 +953,10 @@ class CurrentClusterConfigurationTest {
                               List.of(new DeleteHistoryOperation(MEMBER_0)),
                               "b",
                               List.of(new DeleteHistoryOperation(MEMBER_0))))));
+      final var changeId = config.phasedChangeState().onlyPending().id();
 
       // when
-      final var cancelled = config.cancelPendingChanges();
+      final var cancelled = config.cancelPendingChanges(changeId);
 
       // then
       assertThat(cancelled.partitionGroup("a").hasPendingChanges()).isFalse();
@@ -978,9 +981,10 @@ class CurrentClusterConfigurationTest {
                           Map.of("a", List.of(new DeleteHistoryOperation(MEMBER_0)))),
                       new PartitionGroupParallelPhase(
                           Map.of("b", List.of(new DeleteHistoryOperation(MEMBER_0))))));
+      final var changeId = config.phasedChangeState().onlyPending().id();
 
       // when — cancel while phase 0 is still active
-      final var cancelled = config.cancelPendingChanges();
+      final var cancelled = config.cancelPendingChanges(changeId);
 
       // then — only the already-activated group "a" is cleared; "b" is untouched, still at its
       // original version since it was never activated

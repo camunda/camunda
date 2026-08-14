@@ -88,36 +88,24 @@ public interface ClusterConfigurationCoordinatorSupplier {
   private static Set<MemberId> getActiveMembers(
       final CurrentClusterConfiguration currentClusterConfiguration) {
     final var toBeRemovedMembers =
-        currentClusterConfiguration
-            .phasedChangeState()
-            .pending()
-            .map(
-                plan ->
-                    plan.phases().stream()
-                        .filter(phase -> phase instanceof GlobalPhase)
-                        .flatMap(
-                            phase ->
-                                ((GlobalPhase) phase)
-                                    .operations().stream()
-                                        .filter(
-                                            op ->
-                                                op
-                                                    instanceof
-                                                    GlobalChangeOperation.MemberRemoveOperation)
-                                        .map(
-                                            op ->
-                                                ((GlobalChangeOperation.MemberRemoveOperation) op)
-                                                    .memberToRemove()))
-                        .toList());
+        currentClusterConfiguration.phasedChangeState().pending().values().stream()
+            .flatMap(plan -> plan.phases().stream())
+            .filter(phase -> phase instanceof GlobalPhase)
+            .flatMap(
+                phase ->
+                    ((GlobalPhase) phase)
+                        .operations().stream()
+                            .filter(op -> op instanceof GlobalChangeOperation.MemberRemoveOperation)
+                            .map(
+                                op ->
+                                    ((GlobalChangeOperation.MemberRemoveOperation) op)
+                                        .memberToRemove()))
+            .collect(Collectors.toSet());
 
     final var result =
-        toBeRemovedMembers
-            .map(
-                memberIds ->
-                    currentClusterConfiguration.getMembers().stream()
-                        .filter(member -> !memberIds.contains(member))
-                        .collect(Collectors.toSet()))
-            .orElseGet(currentClusterConfiguration::getMembers);
+        currentClusterConfiguration.getMembers().stream()
+            .filter(member -> !toBeRemovedMembers.contains(member))
+            .collect(Collectors.toSet());
     return result;
   }
 }

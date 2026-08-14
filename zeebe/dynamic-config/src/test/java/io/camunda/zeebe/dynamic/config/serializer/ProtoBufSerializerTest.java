@@ -538,7 +538,7 @@ final class ProtoBufSerializerTest {
             CurrentClusterConfiguration.INITIAL_VERSION,
             GlobalConfiguration.init(),
             Map.of(),
-            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+            new PhasedChangeState(2L, Map.of(plan.id(), plan), List.of()));
 
     // when
     final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
@@ -569,7 +569,7 @@ final class ProtoBufSerializerTest {
             CurrentClusterConfiguration.INITIAL_VERSION,
             GlobalConfiguration.init(),
             Map.of(),
-            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+            new PhasedChangeState(2L, Map.of(plan.id(), plan), List.of()));
 
     // when
     final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);

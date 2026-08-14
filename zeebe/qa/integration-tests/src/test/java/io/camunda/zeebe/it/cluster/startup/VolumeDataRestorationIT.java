@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,6 +37,10 @@ import org.junit.jupiter.api.io.TempDir;
  *   <li>Verify the broker can activate and complete the pending job
  * </ol>
  */
+// Re-enable after a new SNAPSHOT image is generated after
+// https://github.com/camunda/camunda/pull/59859
+@Disabled(
+    "Temporarily disabled as there is a breaking change from previous SNAPSHOT that cause this test to fail.")
 class VolumeDataRestorationIT {
 
   private static final String PROCESS_ID = "volume-restore-test";

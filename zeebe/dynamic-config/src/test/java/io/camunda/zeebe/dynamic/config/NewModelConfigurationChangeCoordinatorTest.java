@@ -349,7 +349,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .updateMultiConfiguration(
             c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
         .join();
-    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+    final var changeId = configuration().phasedChangeState().onlyPending().id();
 
     // when
     final var cancelled = coordinator.cancelChange(changeId).join();
@@ -383,7 +383,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
         .join();
-    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+    final var changeId = configuration().phasedChangeState().onlyPending().id();
 
     // when
     coordinator.cancelChange(changeId).join();
@@ -417,7 +417,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .updateMultiConfiguration(
             c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
         .join();
-    final var changeId = configuration().phasedChangeState().pending().orElseThrow().id();
+    final var changeId = configuration().phasedChangeState().onlyPending().id();
 
     // when — cancelling a different id
     final var cancelFuture = coordinator.cancelChange(changeId + 1);
@@ -427,6 +427,144 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(InvalidRequest.class);
-    assertThat(configuration().phasedChangeState().pending()).isPresent();
+    assertThat(configuration().phasedChangeState().pending()).isNotEmpty();
+  }
+
+  @Test
+  void shouldRunConcurrentChangesOnDisjointPartitionGroupsAndCancelIndependently() {
+    // given — a cluster with two independent partition groups: "default" and "tenanta". A change
+    // is started on "default" that never drains on its own (its operation targets member 1)
+    wire(MEMBER_0, twoMemberClusterWithSecondGroup());
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
+        .join();
+    final var defaultChangeId = configuration().phasedChangeState().onlyPending().id();
+
+    // when — a second, independent change is admitted concurrently on "tenanta"
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                "tenanta", List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)))))))
+        .join();
+    final var pendingAfterBothStarted = configuration().phasedChangeState().pending();
+    final var tenantaChangeId =
+        pendingAfterBothStarted.keySet().stream()
+            .filter(id -> id != defaultChangeId)
+            .findFirst()
+            .orElseThrow();
+
+    // then — both plans are pending concurrently, each with its own distinct id
+    assertThat(pendingAfterBothStarted).containsOnlyKeys(defaultChangeId, tenantaChangeId);
+
+    // when — only the default-group change is cancelled
+    coordinator.cancelChange(defaultChangeId).join();
+
+    // then — the default group's change is gone, but tenanta's change is untouched and still
+    // pending — cancelling one concurrent change must not affect the other
+    final var afterCancellingDefault = configuration();
+    assertThat(afterCancellingDefault.phasedChangeState().pending())
+        .containsOnlyKeys(tenantaChangeId);
+    assertThat(
+            afterCancellingDefault
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .hasPendingChanges())
+        .isFalse();
+    assertThat(afterCancellingDefault.partitionGroup("tenanta").hasPendingChanges()).isTrue();
+
+    // and — the remaining tenanta change can independently be cancelled too
+    coordinator.cancelChange(tenantaChangeId).join();
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    assertThat(configuration().partitionGroup("tenanta").hasPendingChanges()).isFalse();
+  }
+
+  @Test
+  void shouldAllowApplyingANewRequestOnADisjointPartitionGroupWhileOneIsPending() {
+    // given — a plan already pending on "tenanta", never draining on its own (no appliers are
+    // registered for "tenanta" in this test's wiring)
+    wire(MEMBER_0, twoMemberClusterWithSecondGroup());
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                "tenanta", List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)))))))
+        .join();
+    final var tenantaChangeId = configuration().phasedChangeState().onlyPending().id();
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when — a request targeting the disjoint "default" group is applied through the real
+    // coordinator
+    final var result = coordinator.applyOperations(request).join();
+
+    // then — admitted with its own distinct id and drains to completion; the tenanta plan is
+    // untouched throughout
+    assertThat(result.changeId()).isNotEqualTo(tenantaChangeId);
+    final var config = configuration();
+    assertThat(config.phasedChangeState().pending()).containsOnlyKeys(tenantaChangeId);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).hasPendingChanges())
+        .isFalse();
+    assertThat(config.partitionGroup("tenanta").hasPendingChanges()).isTrue();
+  }
+
+  @Test
+  void shouldRejectGlobalScopedRequestWhilePartitionGroupChangeIsPending() {
+    // given — a plan pending on the default group only
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
+        .join();
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new MemberLeaveOperation(MEMBER_1)));
+
+    // when — a global-scoped request is applied while the group-scoped one is still pending
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then — rejected: a global-scoped change conflicts with everything, even a disjoint group
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(ConcurrentModificationException.class);
+  }
+
+  @Test
+  void shouldRejectPartitionGroupRequestWhileGlobalChangeIsPending() {
+    // given — a global-scoped plan is pending
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
+        .join();
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when — a group-scoped request is applied while the global one is still pending
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then — rejected: everything conflicts with a pending global-scoped change
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(ConcurrentModificationException.class);
   }
 }
