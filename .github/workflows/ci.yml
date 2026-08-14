@@ -2554,6 +2554,8 @@ jobs:
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
         run: bats .github/scripts/validate-flattened-poms.bats
+      - name: Run release merge-back script tests
+        run: bats .github/scripts/mergeback/mergeback.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
