@@ -43,6 +43,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -60,6 +61,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -70,8 +72,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Covers what a worker actually receives for a job whose input mapping references a secret, on both
  * activation paths, against a real gateway, a real client and a real file-based secret store. That
- * includes a job that references more than one secret, and the two bounds the resolution runs into
- * once a value or a waiting-job list gets large.
+ * includes a job that references more than one secret, the two bounds the resolution runs into once
+ * a value or a waiting-job list gets large, and a secret a process reaches through a cluster
+ * variable rather than a literal of its own.
  *
  * <p>The engine suites ({@code JobSecretActivationInjectionTest}, {@code
  * JobSecretPushInjectionTest} and {@code SecretResolutionLifecycleTest}) already cover the
@@ -108,6 +111,8 @@ final class SecretResolutionJobActivationIT {
    */
   private static final Duration DROPPED_JOB_POLL_TIMEOUT = Duration.ofSeconds(5);
 
+  private static final String CLUSTER_VARIABLE_SECRET_FIELD = "apiToken";
+
   /** The variable a second secret is mapped into, for the jobs that reference two. */
   private static final String OTHER_INPUT_TARGET = "otherToken";
 
@@ -120,6 +125,7 @@ final class SecretResolutionJobActivationIT {
   private final String secretValue = "value-of-" + secretName;
   private final String otherSecretName = uniqueSecretName();
   private final String otherSecretValue = "value-of-" + otherSecretName;
+  private final String clusterVariableName = "cv" + UUID.randomUUID().toString().replace("-", "");
   private final String processId = Strings.newRandomValidBpmnId();
   private final String jobType = Strings.newRandomValidBpmnId();
 
@@ -435,6 +441,87 @@ final class SecretResolutionJobActivationIT {
   }
 
   @Test
+  void shouldActivateWithASecretReachedThroughAClusterVariable() {
+    // given - a cluster variable holding the reference, and a process reading it
+    writeSecret(broker, secretName, secretValue);
+    createSecretReferenceClusterVariable();
+    deployProcessReadingTheClusterVariable();
+    createProcessInstance(client, processId);
+
+    // when
+    final ActivatedJob job = onlyJob(poll().join());
+
+    // then
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isTrue();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldPushJobWithASecretReachedThroughAClusterVariable() {
+    // given
+    writeSecret(broker, secretName, secretValue);
+    createSecretReferenceClusterVariable();
+    deployProcessReadingTheClusterVariable();
+    final List<ActivatedJob> streamed = new CopyOnWriteArrayList<>();
+    final var stream = openJobStream(streamed::add);
+
+    try {
+      awaitStreamRegistered(broker, jobType);
+
+      // when
+      createProcessInstance(client, processId);
+
+      // then
+      Awaitility.await("until the job is pushed")
+          .atMost(AWAIT_TIMEOUT)
+          .untilAsserted(() -> assertThat(streamed).hasSize(1));
+    } finally {
+      stream.cancel(true);
+    }
+
+    assertThat(streamed)
+        .singleElement()
+        .satisfies(
+            job -> assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue));
+    final long jobKey = streamed.get(0).getKey();
+    awaitActivationExported(jobType, jobKey);
+    assertThat(resolutionWasRequestedFor(secretName, jobKey)).isTrue();
+    assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldServeTheUpdatedReferenceAfterTheClusterVariableIsUpdated() {
+    // given - a worker served the secret the cluster variable pointed at when it was created
+    writeSecret(broker, secretName, secretValue);
+    writeSecret(broker, otherSecretName, otherSecretValue);
+    createSecretReferenceClusterVariable(secretName);
+    deployProcessReadingTheClusterVariable();
+    createProcessInstance(client, processId);
+    assertThat(onlyJob(poll().join()).getVariablesAsMap()).containsEntry(INPUT_TARGET, secretValue);
+
+    // when - the variable is updated to hold the reference of another secret
+    client
+        .newGloballyScopedClusterVariableUpdateRequest()
+        .update(
+            clusterVariableName,
+            Map.of(CLUSTER_VARIABLE_SECRET_FIELD, secretReference(otherSecretName)))
+        .send()
+        .join();
+
+    // then - the update is scanned like the creation was, so the next job carries the new secret
+    final long processInstanceKey = createProcessInstance(client, processId);
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, otherSecretValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(otherSecretName, job.getKey())).isTrue();
+    assertNoRecordCarriesValue(secretValue);
+    assertNoRecordCarriesValue(otherSecretValue);
+  }
+
+  @Test
   void shouldActivateOnceWithEveryReferenceOfAJobResolved() {
     // given - one of the two secrets of a job already in the cache, from an earlier job of its own
     writeSecret(broker, secretName, secretValue);
@@ -605,6 +692,32 @@ final class SecretResolutionJobActivationIT {
         .join();
   }
 
+  private void createSecretReferenceClusterVariable() {
+    createSecretReferenceClusterVariable(secretName);
+  }
+
+  private void createSecretReferenceClusterVariable(final String referencedSecret) {
+    client
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(
+            clusterVariableName,
+            Map.of(CLUSTER_VARIABLE_SECRET_FIELD, secretReference(referencedSecret)))
+        .kind(ClusterVariableKind.SECRET_REFERENCE)
+        .send()
+        .join();
+  }
+
+  private void deployProcessReadingTheClusterVariable() {
+    deployProcessWithInput(
+        client,
+        processId,
+        jobType,
+        "camunda.vars.cluster.%s.%s".formatted(clusterVariableName, CLUSTER_VARIABLE_SECRET_FIELD));
+  }
+
+  /**
+   * A long poll for one job of this test's type, kept apart from the harness's {@code pollJobs}.
+   */
   private CamundaFuture<ActivateJobsResponse> poll() {
     return poll(jobType);
   }
