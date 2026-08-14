@@ -43,6 +43,15 @@ message PartitionGroupConfiguration {
   RoutingState routingState = 4;
   ClusterChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
+  TenantAvailability availability = 7;
+}
+
+// Whether a physical tenant is currently disabled (removed from local static configuration, but
+// retaining its partition assignment and data). Carries its own version, independent of the
+// enclosing PartitionGroupConfiguration.version.
+message TenantAvailability {
+  int64 version = 1;
+  bool disabled = 2;
 }
 
 // Broker lifecycle state. Holds State and timestamps; no partition assignment.

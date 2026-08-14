@@ -99,6 +99,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -1936,7 +1937,8 @@ public class ProtoBufSerializer
         Topology.PartitionGroupConfiguration.newBuilder()
             .setVersion(configuration.version())
             .setIncarnationNumber(configuration.incarnationNumber())
-            .putAllMembers(members);
+            .putAllMembers(members)
+            .setAvailability(encodeTenantAvailability(configuration.availability()));
     configuration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
@@ -1966,13 +1968,30 @@ public class ProtoBufSerializer
         proto.hasLastChange()
             ? Optional.of(decodeCompletedChange(proto.getLastChange()))
             : Optional.empty();
+    final var availability =
+        proto.hasAvailability()
+            ? decodeTenantAvailability(proto.getAvailability())
+            : TenantAvailability.enabled();
     return new PartitionGroupConfiguration(
         proto.getVersion(),
         proto.getIncarnationNumber(),
         members,
         routingState,
         pendingChanges,
-        lastChange);
+        lastChange,
+        availability);
+  }
+
+  private Topology.TenantAvailability encodeTenantAvailability(
+      final TenantAvailability availability) {
+    return Topology.TenantAvailability.newBuilder()
+        .setVersion(availability.version())
+        .setDisabled(availability.disabled())
+        .build();
+  }
+
+  private TenantAvailability decodeTenantAvailability(final Topology.TenantAvailability proto) {
+    return new TenantAvailability(proto.getVersion(), proto.getDisabled());
   }
 
   private Topology.BrokerState encodeBrokerState(final BrokerState brokerState) {

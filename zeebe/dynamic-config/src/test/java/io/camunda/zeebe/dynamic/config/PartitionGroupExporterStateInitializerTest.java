@@ -243,6 +243,140 @@ final class PartitionGroupExporterStateInitializerTest {
   }
 
   @Test
+  void shouldSkipAGroupAbsentFromLocalConfiguration() {
+    // given — tenant-b was removed from local static configuration (see
+    // PhysicalTenantAvailabilityInitializer) after being provisioned, so it has no entry in the
+    // locally-configured exporters map, even though its group still exists and — since this is the
+    // very first restart after the removal, before the coordinator-only availability initializer
+    // has run — is still marked enabled
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a", groupWithMember(LOCAL_MEMBER_ID, config),
+                "tenant-b", groupWithMember(LOCAL_MEMBER_ID, config)),
+            PhasedChangeState.empty());
+
+    // when — only tenant-a has a local exporter configuration
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — tenant-a is reconciled normally, tenant-b is left untouched rather than throwing,
+    // regardless of its still-stale disabled flag
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(result.partitionGroup("tenant-b"))
+        .isEqualTo(configuration.partitionGroup("tenant-b"));
+  }
+
+  @Test
+  void shouldSkipAGroupAbsentFromLocalConfigurationWhenCoordinatorAndPostRestore() {
+    // given — same as above, but on the coordinator's post-restore, all-members reconciliation path
+    final var config = DynamicPartitionConfig.init();
+    final var otherMember = MemberId.from("1");
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                "tenant-a",
+                groupWithMember(LOCAL_MEMBER_ID, config)
+                    .addMember(otherMember, initialPartitionState(config)),
+                "tenant-b",
+                groupWithMember(LOCAL_MEMBER_ID, config)),
+            postRestorePendingState());
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, true)
+            .modify(configuration)
+            .join();
+
+    // then
+    assertThat(
+            result
+                .partitionGroup("tenant-a")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+    assertThat(result.partitionGroup("tenant-b"))
+        .isEqualTo(configuration.partitionGroup("tenant-b"));
+  }
+
+  @Test
+  void shouldReconcileATenantThatReappearedInLocalConfigurationWhileStillMarkedDisabled() {
+    // given — tenant-b reappeared in local static configuration, but this is the very first
+    // restart since then: the coordinator-only PhysicalTenantAvailabilityInitializer has not yet
+    // flipped its persisted flag back, so the group is still marked disabled even though it is now
+    // locally configured again
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-b", groupWithMember(LOCAL_MEMBER_ID, config).disable()),
+            PhasedChangeState.empty());
+
+    // when — tenant-b is locally configured again
+    final var exporters = Map.of("tenant-b", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — reconciled normally despite the still-stale disabled flag
+    assertThat(
+            result
+                .partitionGroup("tenant-b")
+                .getMember(LOCAL_MEMBER_ID)
+                .getPartition(1)
+                .config()
+                .exporting()
+                .exporters())
+        .containsKey("expA");
+  }
+
+  @Test
+  void shouldSkipALocallyConfiguredTenantNotYetProvisioned() {
+    // given — tenant-b is locally configured (has a local exporter configuration), but has not
+    // been provisioned into the cluster configuration yet - PhysicalTenantProvisioningInitializer's
+    // job, not this one's
+    final var config = DynamicPartitionConfig.init();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", groupWithMember(LOCAL_MEMBER_ID, config)),
+            PhasedChangeState.empty());
+
+    // when
+    final var exporters = Map.of("tenant-a", Set.of("expA"), "tenant-b", Set.of("expA"));
+    final var result =
+        new PartitionGroupExporterStateInitializer(exporters, LOCAL_MEMBER_ID, false)
+            .modify(configuration)
+            .join();
+
+    // then — no error, and no group was created for tenant-b
+    assertThat(result.partitionGroups()).containsOnlyKeys("tenant-a");
+  }
+
+  @Test
   void shouldUpdateAllMembersInEveryGroupWhenCoordinatorAndPostRestore() {
     // given — two groups, each with the local member and another member; the local member is
     // the coordinator, and a restore was just migrated (pending post-restore plan)

@@ -152,6 +152,95 @@ class PartitionGroupConfigurationTest {
       // then — the mode rides the winning (higher-version) broker state
       assertThat(merged.members().get(MEMBER_0).mode()).isEqualTo(Mode.RECOVERING);
     }
+
+    @Test
+    void shouldMergeAvailabilityByItsOwnVersionWhenConfigVersionsAreEqual() {
+      // given — same config version, but the right side was disabled more recently
+      final var left = group(3, Map.of()).disable(); // availability version 1, disabled
+      final var right = group(3, Map.of()).disable().enable(); // availability version 2, enabled
+
+      // when / then — availability's own version decides, independent of member/config state
+      assertThat(left.merge(right).isDisabled()).isFalse();
+      assertThat(right.merge(left).isDisabled()).isFalse();
+    }
+
+    @Test
+    void shouldPreserveHigherVersionedAvailabilityAcrossAWholeRecordVersionMismatch() {
+      // given — the lower config-version side was disabled more recently than the higher side ever
+      // toggled its own availability; a plain top-level-version-wins merge would otherwise silently
+      // drop the more recent disable when the higher-config-version side wins wholesale
+      final var lower = group(1, Map.of()).disable();
+      final var higher = group(2, Map.of());
+
+      // when / then — the higher config version wins for everything else, but the more recently
+      // toggled availability (owned independently of the top-level version) survives
+      assertThat(lower.merge(higher))
+          .usingRecursiveComparison()
+          .ignoringFields("availability")
+          .isEqualTo(higher);
+      assertThat(lower.merge(higher).isDisabled()).isTrue();
+      assertThat(higher.merge(lower).isDisabled()).isTrue();
+    }
+  }
+
+  @Nested
+  class Availability {
+
+    @Test
+    void shouldBeEnabledByDefault() {
+      // given
+      final var config = group(1, Map.of());
+
+      // when / then
+      assertThat(config.isDisabled()).isFalse();
+    }
+
+    @Test
+    void shouldDisableWithoutChangingGroupVersionOrMembers() {
+      // given
+      final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
+
+      // when
+      final var disabled = config.disable();
+
+      // then
+      assertThat(disabled.isDisabled()).isTrue();
+      assertThat(disabled.version()).isEqualTo(config.version());
+      assertThat(disabled.members()).isEqualTo(config.members());
+    }
+
+    @Test
+    void shouldReturnSameInstanceWhenAlreadyDisabled() {
+      // given
+      final var disabled = group(1, Map.of()).disable();
+
+      // when / then
+      assertThat(disabled.disable()).isSameAs(disabled);
+    }
+
+    @Test
+    void shouldReturnSameInstanceWhenAlreadyEnabled() {
+      // given
+      final var config = group(1, Map.of());
+
+      // when / then
+      assertThat(config.enable()).isSameAs(config);
+    }
+
+    @Test
+    void shouldReEnableWithoutChangingGroupVersionOrMembers() {
+      // given
+      final var config = group(4, Map.of(MEMBER_0, broker(1, 1)));
+      final var disabled = config.disable();
+
+      // when
+      final var reEnabled = disabled.enable();
+
+      // then
+      assertThat(reEnabled.isDisabled()).isFalse();
+      assertThat(reEnabled.version()).isEqualTo(config.version());
+      assertThat(reEnabled.members()).isEqualTo(config.members());
+    }
   }
 
   @Nested

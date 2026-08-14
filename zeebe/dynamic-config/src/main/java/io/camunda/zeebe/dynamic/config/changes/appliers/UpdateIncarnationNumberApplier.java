@@ -41,6 +41,7 @@ public final class UpdateIncarnationNumberApplier
                 group.members(),
                 group.routingState(),
                 group.pendingChanges(),
-                group.lastChange()));
+                group.lastChange(),
+                group.availability()));
   }
 }
