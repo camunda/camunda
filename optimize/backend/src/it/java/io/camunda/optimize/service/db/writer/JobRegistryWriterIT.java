@@ -30,65 +30,82 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldCreateQueuedJobEntry() {
+    // given
     final JobRegistryEntryDto created =
         jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE,
-            TargetEntityType.PROCESS_DEFINITION,
-            "2251799813685251");
+            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
 
+    // when
     final List<JobRegistryEntryDto> stored =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
 
-    assertThat(stored).hasSize(1);
-    final JobRegistryEntryDto persisted = stored.get(0);
-    assertThat(persisted.getId()).isEqualTo(created.getId());
-    assertThat(persisted.getJobType()).isEqualTo(JobType.PROCESS_DEFINITION_DATA_DELETE);
-    assertThat(persisted.getTargetEntityType()).isEqualTo(TargetEntityType.PROCESS_DEFINITION);
-    assertThat(persisted.getTargetEntityId()).isEqualTo("2251799813685251");
-    assertThat(persisted.getStatus()).isEqualTo(JobStatus.QUEUED);
-    assertThat(persisted.getCompletedAt()).isNull();
+    // then
+    assertThat(stored)
+        .singleElement()
+        .satisfies(
+            jobRegistry -> {
+              assertThat(jobRegistry.getId()).isEqualTo(created.getId());
+              assertThat(jobRegistry.getJobType()).isEqualTo(JobType.DELETE);
+              assertThat(jobRegistry.getTargetEntityType())
+                  .isEqualTo(TargetEntityType.PROCESS_DEFINITION);
+              assertThat(jobRegistry.getTargetEntityId()).isEqualTo("2251799813685251");
+              assertThat(jobRegistry.getStatus()).isEqualTo(JobStatus.QUEUED);
+              assertThat(jobRegistry.getUpdatedAt()).isNull();
+            });
   }
 
   @Test
   void shouldUpdateJobStatusToCompletedWithCompletionTimestamp() {
+    // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
+    // when
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
 
+    // then
     final List<JobRegistryEntryDto> stored =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
-    assertThat(stored).hasSize(1);
-    assertThat(stored.get(0).getStatus()).isEqualTo(JobStatus.COMPLETED);
-    assertThat(stored.get(0).getCompletedAt()).isNotNull();
-    assertThat(stored.get(0).getErrorMessage()).isNull();
+    assertThat(stored)
+        .singleElement()
+        .satisfies(
+            jobRegistry -> {
+              assertThat(jobRegistry.getStatus()).isEqualTo(JobStatus.COMPLETED);
+              assertThat(jobRegistry.getUpdatedAt()).isNotNull();
+              assertThat(jobRegistry.getErrorMessage()).isNull();
+            });
   }
 
   @Test
   void shouldUpdateJobStatusToFailedWithErrorMessage() {
+    // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
+    // when
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.FAILED, "boom");
 
+    // then
     final List<JobRegistryEntryDto> stored =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
-    assertThat(stored).hasSize(1);
-    assertThat(stored.get(0).getStatus()).isEqualTo(JobStatus.FAILED);
-    assertThat(stored.get(0).getErrorMessage()).isEqualTo("boom");
-    assertThat(stored.get(0).getCompletedAt()).isNotNull();
+    assertThat(stored)
+        .singleElement()
+        .satisfies(
+            jobRegistry -> {
+              assertThat(jobRegistry.getStatus()).isEqualTo(JobStatus.FAILED);
+              assertThat(jobRegistry.getErrorMessage()).isEqualTo("boom");
+              assertThat(jobRegistry.getUpdatedAt()).isNotNull();
+            });
   }
 
   @Test
   void shouldClearErrorMessageWhenRetryCompletesSuccessfully() {
+    // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
     // Move the entry into a FAILED state first, so errorMessage is populated. A retry that
     // completes successfully must clear it back to null -- the JobRegistryEntryUpdateDto relies
@@ -98,16 +115,24 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
     final List<JobRegistryEntryDto> afterFailure =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
-    assertThat(afterFailure.get(0).getErrorMessage()).isNotNull();
+    assertThat(afterFailure)
+        .singleElement()
+        .satisfies(e -> assertThat(e.getErrorMessage()).isNotNull());
 
+    // when
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
 
+    // then
     final List<JobRegistryEntryDto> stored =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
             JOB_REGISTRY_INDEX_NAME, JobRegistryEntryDto.class);
-    assertThat(stored).hasSize(1);
-    assertThat(stored.get(0).getStatus()).isEqualTo(JobStatus.COMPLETED);
-    assertThat(stored.get(0).getCompletedAt()).isNotNull();
-    assertThat(stored.get(0).getErrorMessage()).isNull();
+    assertThat(stored)
+        .singleElement()
+        .satisfies(
+            jobRegistry -> {
+              assertThat(jobRegistry.getStatus()).isEqualTo(JobStatus.COMPLETED);
+              assertThat(jobRegistry.getUpdatedAt()).isNotNull();
+              assertThat(jobRegistry.getErrorMessage()).isNull();
+            });
   }
 }
