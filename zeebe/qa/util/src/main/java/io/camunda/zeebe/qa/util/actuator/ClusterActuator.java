@@ -24,6 +24,8 @@ import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
+import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -326,6 +328,27 @@ public interface ClusterActuator {
   @RequestLine("DELETE /changes/{changeId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetTopologyResponse cancelChange(@Param final long changeId);
+
+  /**
+   * Returns the status and operations of one configuration change - the pending plan if {@code
+   * changeId} matches it, otherwise the last completed change.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     no change with this id is known
+   */
+  @RequestLine("GET /changes/{changeId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  ConfigurationChange getChange(@Param final long changeId);
+
+  /**
+   * Lists every configuration change currently known to this broker (the pending plan, if any, and
+   * the last completed change).
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET /changes")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  GetConfigurationChangesResponse getChanges();
 
   // invalid parameter types
   @RequestLine("POST /brokers")
