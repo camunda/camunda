@@ -1,10 +1,18 @@
-# description: Regenerates the JSON-body response assertions for the C8 Orchestration
-#              Cluster E2E test suite across all supported refs (main, stable/8.9,
-#              stable/8.8) via a matrix. For each ref it runs
-#              `npm run responses:regenerate` + `npm run lint:fix` and opens a PR
-#              (reviewer: @camunda/test-automation-team) ONLY when the actual API
-#              response schemas change. Metadata-only churn (generatedAt / commit /
-#              specSha256) is ignored and never opens a PR.
+# description: Regenerates two OpenAPI-derived, checked-in artifacts for the C8
+#              Orchestration Cluster E2E test suite across all supported refs
+#              (main, stable/8.9, stable/8.8) via a matrix:
+#                - json-body-assertions/_generated/responses.json, via
+#                  `npm run responses:regenerate` + `npm run lint:fix`
+#                - utils/_generated/apiPaths.ts (the `ApiPath` union consumed by
+#                  `buildUrl`), via `npm run paths:regenerate`
+#              Each artifact is diffed, committed, and PR'd independently
+#              (reviewer: @camunda/test-automation-team) — a PR is opened only
+#              when that artifact's own content actually changed, so a rename or
+#              removal in rest-api.yaml can no longer hide behind a stale-but-
+#              internally-consistent apiPaths.ts indefinitely (see #60109).
+#              Metadata-only churn in responses.json (generatedAt / commit /
+#              specSha256) is ignored and never opens a PR; apiPaths.ts carries
+#              no such metadata, so any diff there is a real path change.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -28,7 +36,7 @@ env:
 
 jobs:
   regenerate:
-    name: Regenerate responses (${{ matrix.ref }})
+    name: Regenerate responses & API paths (${{ matrix.ref }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -53,6 +61,7 @@ jobs:
     env:
       SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
       RESPONSES_FILE: qa/c8-orchestration-cluster-e2e-test-suite/json-body-assertions/_generated/responses.json
+      PATHS_FILE: qa/c8-orchestration-cluster-e2e-test-suite/utils/_generated/apiPaths.ts
       # matrix context is available to job-level env; shell steps read these
       # instead of interpolating ${{ matrix.* }} directly (injection-safe).
       TARGET_REF: ${{ matrix.ref }}
@@ -69,6 +78,16 @@ jobs:
           # so the short-lived GITHUB_TOKEN must not linger in .git/config
           # (zizmor: artipacked).
           persist-credentials: false
+
+      # Both artifact branches below are created FROM this SHA explicitly
+      # (git checkout -B "$branch" "$BASE_SHA"), never from "whatever HEAD
+      # happens to be" — otherwise, if both responses.json and apiPaths.ts
+      # changed, the second branch created would be based on the first
+      # branch's commit instead of on ${{ matrix.ref }}, contaminating one
+      # artifact's PR with the other's change.
+      - name: Record base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -117,9 +136,23 @@ jobs:
             echo '{"responses":null}' > /tmp/responses.before.json
           fi
 
+      - name: Snapshot committed API paths (pre-regeneration)
+        run: |
+          set -euo pipefail
+          if [ -f "$PATHS_FILE" ]; then
+            cp "$PATHS_FILE" /tmp/apiPaths.before.ts
+          else
+            echo "No existing API paths file at $PATHS_FILE — will be treated as a change."
+            : > /tmp/apiPaths.before.ts
+          fi
+
       - name: Regenerate responses
         working-directory: ${{ env.SUITE_DIR }}
         run: npm run responses:regenerate
+
+      - name: Regenerate API paths
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npm run paths:regenerate
 
       - name: Detect response changes (ignore metadata)
         id: diff
@@ -151,25 +184,67 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create branch, commit & push
+      - name: Detect API path changes
+        id: diff-paths
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "$PATHS_FILE" ]; then
+            echo "::error::Regeneration did not produce $PATHS_FILE"
+            exit 1
+          fi
+
+          # Unlike responses.json, apiPaths.ts carries no generatedAt/commit/
+          # specSha256 metadata fields — a plain byte-for-byte compare is
+          # sufficient, no normalization needed.
+          if cmp -s /tmp/apiPaths.before.ts "$PATHS_FILE"; then
+            echo "No API path changes. Nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "API path changes detected:"
+            diff /tmp/apiPaths.before.ts "$PATHS_FILE" || true
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create branch, commit & push (responses)
         id: push
         if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
         run: |
           set -euo pipefail
           stamp="$(date -u +%Y%m%d-%H%M%S)"
           branch="regenerate-responses-${SAFE}-${stamp}-${GITHUB_RUN_ID}"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
 
-          git checkout -b "$branch"
+          git checkout -B "$branch" "$BASE_SHA"
           # Stage ONLY the generated responses file — nothing else.
           git add -- "$RESPONSES_FILE"
           # 'test:' prefix — commitlint rejects 'fix:' for this kind of change.
           git commit -m "test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
           git push origin "$branch"
-      
-      - name: Close stale regeneration PRs
+
+      - name: Create branch, commit & push (API paths)
+        id: push-paths
+        if: steps.diff-paths.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y%m%d-%H%M%S)"
+          branch="regenerate-api-paths-${SAFE}-${stamp}-${GITHUB_RUN_ID}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+          git checkout -B "$branch" "$BASE_SHA"
+          # Stage ONLY the generated API paths file — nothing else.
+          git add -- "$PATHS_FILE"
+          # 'test:' prefix — commitlint rejects 'fix:' for this kind of change.
+          git commit -m "test: regenerate API path union from latest ${TARGET_REF} OpenAPI spec"
+          git push origin "$branch"
+
+      - name: Close stale regeneration PRs (responses)
         if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -202,7 +277,38 @@ jobs:
             done <<< "$stale"
           fi
 
-      - name: Open pull request
+      - name: Close stale regeneration PRs (API paths)
+        if: steps.diff-paths.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          title="test: regenerate API path union from latest ${TARGET_REF} OpenAPI spec"
+
+          export TITLE="$title"
+          export PREFIX="regenerate-api-paths-${SAFE}-"
+          stale=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "$TARGET_REF" \
+            --state open \
+            --limit 200 \
+            --search "in:title \"${title}\"" \
+            --json number,headRefName,title \
+            --jq '.[] | select(.title == env.TITLE) | select(.headRefName | startswith(env.PREFIX)) | "\(.number) \(.headRefName)"')
+
+          if [ -z "$stale" ]; then
+            echo "No stale PRs found."
+          else
+            while IFS=" " read -r number branch; do
+              echo "Closing stale PR #${number} (branch: ${branch})"
+              gh pr close "$number" \
+                --repo "$GITHUB_REPOSITORY" \
+                --comment "Superseded by a newer regeneration run — closing in favour of the incoming PR." \
+                --delete-branch
+            done <<< "$stale"
+          fi
+
+      - name: Open pull request (responses)
         id: pr
         if: steps.diff.outputs.changed == 'true'
         env:
@@ -234,11 +340,44 @@ jobs:
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
 
+      - name: Open pull request (API paths)
+        id: pr-paths
+        if: steps.diff-paths.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          BRANCH:   ${{ steps.push-paths.outputs.branch }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "Automated regeneration of the \`ApiPath\` literal union via \`npm run paths:regenerate\`." \
+            "" \
+            "This PR was opened because the **set of paths** in \`utils/_generated/apiPaths.ts\` changed — an endpoint was added, renamed, or removed in \`rest-api.yaml\`." \
+            "" \
+            "Please review the path changes against the upstream REST API spec, paying particular attention to renames/removals: those are otherwise silent (a stale-but-internally-consistent union produces no \`tsc\` error)." \
+            "" \
+            "_Opened by the C8 Orchestration Cluster responses-regeneration workflow for ${TARGET_REF}._" \
+            > /tmp/pr-body-paths.md
+
+          url=$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "$TARGET_REF" \
+            --head "$BRANCH" \
+            --title "test: regenerate API path union from latest ${TARGET_REF} OpenAPI spec" \
+            --body-file /tmp/pr-body-paths.md \
+            --reviewer "camunda/test-automation-team")
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+          number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+          echo "Opened PR #${number}: ${url}"
+
       - name: Job summary
         if: always()
         env:
           CHANGED: ${{ steps.diff.outputs.changed }}
           PR_URL:  ${{ steps.pr.outputs.url }}
+          CHANGED_PATHS: ${{ steps.diff-paths.outputs.changed }}
+          PR_URL_PATHS:  ${{ steps.pr-paths.outputs.url }}
         run: |
           {
             echo "## Responses regeneration — \`${TARGET_REF}\`"
@@ -251,6 +390,18 @@ jobs:
               fi
             else
               echo ":information_source: No response schema changes — metadata-only churn ignored, no PR opened."
+            fi
+            echo ""
+            echo "## API paths regeneration — \`${TARGET_REF}\`"
+            echo ""
+            if [ "${CHANGED_PATHS:-false}" = "true" ]; then
+              echo ":white_check_mark: API path changes detected."
+              if [ -n "${PR_URL_PATHS:-}" ]; then
+                echo ""
+                echo "**PR:** ${PR_URL_PATHS}"
+              fi
+            else
+              echo ":information_source: No API path changes — no PR opened."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
       
