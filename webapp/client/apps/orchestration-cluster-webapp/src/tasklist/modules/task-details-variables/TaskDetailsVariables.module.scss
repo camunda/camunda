@@ -34,15 +34,17 @@
 	color: var(--foreground);
 }
 
-// DS-only. Card's own edge is a box-shadow ring (`ring-1 ring-border`), same
-// --border token and same 20% alpha as this border — the value isn't the
-// issue (confirmed by forcing the ring to a fully opaque color: it renders
-// uniformly on all four sides, so nothing is being clipped). A plain `border`
-// renders as a crisper 1px hairline than the box-shadow spread does at this
-// width, and reads reliably on all four sides where the ring did not,
-// particularly at the top edge with nothing adjacent to contrast against.
-.emptyStateCardDS {
-	border: 1px solid var(--border);
+// DS-only. .layerContainer's padding-bottom (below, shared with Carbon's own
+// Layer usage — long-standing, unrelated to this migration) has no
+// padding-top counterpart. That was never visible for Carbon's C3EmptyState,
+// but for the DS Card here it means the card sits flush against the top of
+// its wrapper with zero breathing room while the bottom gets a full
+// var(--cds-spacing-05) of clear space — that asymmetry is what makes the
+// Card's own border (identical CSS on all four sides) read as present at the
+// bottom and missing at the top. Matching padding on top restores the
+// symmetry the border needs to be visible.
+.emptyStateWrapperDS {
+	padding-top: var(--cds-spacing-05);
 }
 
 .separator {

@@ -208,8 +208,8 @@ const TaskDetailsVariables: React.FC<Props> = ({
 											// TaskDetailsForm.tsx's Card wrapping, instead of sitting flat on
 											// the panel background via Carbon's Layer (no real DS equivalent —
 											// see the Layer compat comment below).
-											<div className={cn(styles.layerContainer, styles.gutter)}>
-												<Card className={styles.emptyStateCardDS}>
+											<div className={cn(styles.layerContainer, styles.gutter, styles.emptyStateWrapperDS)}>
+												<Card>
 													<CardContent>
 														<EmptyState
 															size="sm"
