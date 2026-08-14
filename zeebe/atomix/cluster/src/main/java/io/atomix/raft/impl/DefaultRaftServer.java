@@ -98,8 +98,8 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> join(final Collection<MemberId> cluster) {
-    return start(() -> cluster().join(cluster));
+  public CompletableFuture<RaftServer> join(final Type type, final Collection<MemberId> cluster) {
+    return start(() -> cluster().join(type, cluster));
   }
 
   @Override
