@@ -109,10 +109,12 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false' ]
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
+            cslEnabled: 'false'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -165,13 +167,14 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
             -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
+          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
           path: |
             **/failsafe-reports/**
 
@@ -180,14 +183,14 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
+          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}"
+          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -205,10 +208,12 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
+        cslEnabled: [ 'false' ]
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: 'openSearchSingleTestFailOK'
             profiles: 'ccsm-it'
+            cslEnabled: 'false'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -261,13 +266,14 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
+            -Doptimize.security.csl.enabled=${{ matrix.cslEnabled }}
             -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend,upgrade -am
 
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
+          name: integration-test-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-junit
           path: |
             **/failsafe-reports/**
 
@@ -276,14 +282,14 @@ jobs:
         if: always()
         continue-on-error: true
         with:
-          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
+          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}-docker
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}"
+          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}-csl-${{ matrix.cslEnabled }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
