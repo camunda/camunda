@@ -17,6 +17,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.env.Environment;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -28,6 +29,24 @@ public @interface ConditionalOnAnyHttpGatewayEnabled {
 
     public AnyHttpGatewayEnabledCondition() {
       super(ConfigurationPhase.PARSE_CONFIGURATION);
+    }
+
+    /**
+     * The same properties as the nested conditions below, evaluated directly against an {@link
+     * Environment}. It exists for the callers that cannot express the question as a bean condition
+     * — a context initializer running before any bean definition, and a bean that has to exist
+     * either way and only behaves differently — and lives here so that there is one definition of
+     * "an HTTP gateway is enabled" rather than several that can drift apart.
+     *
+     * <p>The nested conditions additionally require a web application context. Every context that
+     * asks this question is one ({@code MainSupport.createDefaultApplicationBuilder} fixes {@code
+     * WebApplicationType.SERVLET}), so the two agree; a caller that could run outside a web context
+     * has to account for that itself.
+     */
+    public static boolean isAnyHttpGatewayEnabled(final Environment env) {
+      return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)
+          && (env.getProperty("camunda.rest.enabled", Boolean.class, true)
+              || env.getProperty("camunda.mcp.enabled", Boolean.class, false));
     }
 
     @ConditionalOnRestGatewayEnabled

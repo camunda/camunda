@@ -7,6 +7,8 @@
  */
 package io.camunda.application.initializers;
 
+import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled.AnyHttpGatewayEnabledCondition.isAnyHttpGatewayEnabled;
+
 import io.camunda.application.Profile;
 import io.camunda.application.commons.search.SchemaReadinessCheck;
 import io.camunda.spring.utils.DatabaseTypeUtils;
@@ -172,15 +174,5 @@ public class HealthConfigurationInitializer
     }
 
     return healthIndicators;
-  }
-
-  /**
-   * Same condition as {@link
-   * io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled}
-   */
-  private boolean isAnyHttpGatewayEnabled(final Environment env) {
-    return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)
-        && (env.getProperty("camunda.rest.enabled", Boolean.class, true)
-            || env.getProperty("camunda.mcp.enabled", Boolean.class, false));
   }
 }
