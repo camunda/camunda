@@ -20,7 +20,16 @@
 // keeps its exact field names — those come from createVariableFieldName /
 // createNewVariableFieldName and the form state is keyed on them.
 import {type RefObject, useEffect} from 'react';
-import {Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@camunda/design-system';
+import {
+	Button,
+	EmptyState,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@camunda/design-system';
 import {CloseIcon, InlineNotification, MaximizeIcon, SkeletonText} from '#/shared/design-system-compat';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -58,6 +67,7 @@ type Props = {
 	totalVariables: number;
 	readOnly: boolean;
 	isDisabled: boolean;
+	isCompleted: boolean;
 	fetchFullVariable: (variableKey: string) => Promise<void>;
 	variablesLoadingFullValue: string[];
 	onMaximizeClick: (fieldName: string, value: string) => void;
@@ -74,6 +84,7 @@ const VariableEditorDS: React.FC<Props> = ({
 	totalVariables,
 	readOnly,
 	isDisabled,
+	isCompleted,
 	fetchFullVariable,
 	variablesLoadingFullValue,
 	onMaximizeClick,
@@ -83,8 +94,18 @@ const VariableEditorDS: React.FC<Props> = ({
 	isNextPageError,
 	scrollContainerRef,
 }) => {
-	const {dirtyFields} = useFormState<VariablesFormValues>();
+	const {dirtyFields, values} = useFormState<VariablesFormValues>();
 	const {t} = useTranslation();
+	// DS convention: the empty state lives inside the table body as a single
+	// full-width row (EmptyState size="sm"), not as a separate element
+	// replacing the table — see
+	// https://camunda.github.io/design-system/?path=/docs/ui-emptystate--docs#sm.
+	// Read-only never has an in-progress newVariables row (the add button is
+	// disabled whenever editing isn't allowed), so it only needs to check
+	// variables.length.
+	const hasNoRows = readOnly
+		? variables.length === 0
+		: variables.length === 0 && (values.newVariables?.length ?? 0) === 0;
 	// eslint-disable-next-line react-hooks/incompatible-library
 	const virtualizer = useVirtualizer({
 		count: totalVariables,
@@ -127,7 +148,17 @@ const VariableEditorDS: React.FC<Props> = ({
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{readOnly ? (
+				{hasNoRows ? (
+					<TableRow>
+						<TableCell colSpan={COLUMN_COUNT} className={styles.emptyStateCellDS}>
+							<EmptyState
+								size="sm"
+								heading={t('tasklist.variablesNoVariablesHeading')}
+								description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+							/>
+						</TableCell>
+					</TableRow>
+				) : readOnly ? (
 					<>
 						{/* Virtualizer spacers. Carbon's StructuredList tolerated bare <div>s here;
 						    a real <tbody> does not, so they are empty rows with a colSpan cell. */}

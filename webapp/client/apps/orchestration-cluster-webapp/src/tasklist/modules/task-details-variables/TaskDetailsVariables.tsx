@@ -9,7 +9,6 @@
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
 import {Button, Heading, IconButton, InformationIcon, Layer, PlusIcon} from '#/shared/design-system-compat';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Card, CardContent, EmptyState} from '@camunda/design-system';
 import {featureFlags} from '#/shared/feature-flags';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
@@ -202,37 +201,26 @@ const TaskDetailsVariables: React.FC<Props> = ({
 							<form className={styles.form} onSubmit={handleSubmit} data-testid="variables-table" ref={formRef}>
 								<ResetForm isAssigned={isEditingAllowed} />
 								<div className={styles.content} tabIndex={-1} data-testid="task-tab-content">
-									{variables.length === 0 && (values.newVariables?.length ?? 0) === 0 ? (
-										featureFlags.dsTasklistUI ? (
-											// DS-only: the empty state as a raised tile (DS Card), matching
-											// TaskDetailsForm.tsx's Card wrapping, instead of sitting flat on
-											// the panel background via Carbon's Layer (no real DS equivalent —
-											// see the Layer compat comment below).
-											<div className={cn(styles.layerContainer, styles.gutter, styles.emptyStateWrapperDS)}>
-												<Card>
-													<CardContent>
-														<EmptyState
-															size="sm"
-															heading={t('tasklist.variablesNoVariablesHeading')}
-															description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
-														/>
-													</CardContent>
-												</Card>
-											</div>
-										) : (
-											<Layer className={cn(styles.layerContainer, styles.gutter)}>
-												<C3EmptyState
-													heading={t('tasklist.variablesNoVariablesHeading')}
-													description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
-												/>
-											</Layer>
-										)
+									{/* DS design system convention: the empty state lives inside the table
+									    body (EmptyState size="sm" in a single full-width row), not as a
+									    separate tile replacing the table — see
+									    https://camunda.github.io/design-system/?path=/docs/ui-emptystate--docs#sm.
+									    So the DS path always renders the table, even with zero variables;
+									    only Carbon keeps the separate C3EmptyState-instead-of-the-table
+									    branch it always had. */}
+									{variables.length === 0 && (values.newVariables?.length ?? 0) === 0 && !featureFlags.dsTasklistUI ? (
+										<Layer className={cn(styles.layerContainer, styles.gutter)}>
+											<C3EmptyState
+												heading={t('tasklist.variablesNoVariablesHeading')}
+												description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+											/>
+										</Layer>
 									) : (
 										// Layer has no real DS equivalent (carbon-compat/layer.tsx is a bare
 										// re-export of Carbon's own Layer — logged in
 										// docs/migration/human-follow-up.md), so it still renders Carbon's
 										// surface here on both paths; `.gutter` adds the side padding
-										// requested for the DS path only, matching the empty state above.
+										// requested for the DS path only.
 										<Layer
 											className={cn(styles.layerContainer, featureFlags.dsTasklistUI && styles.gutter)}
 											data-testid="variables-form-table"
@@ -243,6 +231,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 												totalVariables={totalVariables}
 												readOnly={!isEditingAllowed}
 												isDisabled={isCompletionBusy}
+												isCompleted={isCompleted}
 												fetchFullVariable={fetchFullVariable}
 												variablesLoadingFullValue={variablesLoadingFullValue}
 												onMaximizeClick={(fieldName) => setEditingVariable(fieldName)}

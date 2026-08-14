@@ -55,6 +55,12 @@ type Props = {
 	totalVariables: number;
 	readOnly: boolean;
 	isDisabled: boolean;
+	// Only read by VariableEditorDS, for the empty-state row's description —
+	// VariableEditorLegacy never renders one (Carbon's empty state is a
+	// separate C3EmptyState in TaskDetailsVariables.tsx, not part of this
+	// table). Kept on the shared type anyway since both components share
+	// this Props type and are dispatched on the same flag.
+	isCompleted: boolean;
 	fetchFullVariable: (variableKey: string) => Promise<void>;
 	variablesLoadingFullValue: string[];
 	onMaximizeClick: (fieldName: string, value: string) => void;

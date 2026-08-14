@@ -28,6 +28,13 @@
 	width: 5rem;
 }
 
+// DS-only (see VariableEditorDS.tsx). Matches the DS EmptyState "Sm" story's
+// own example (h-32 on the wrapping TableCell) — gives the empty state room
+// to sit centered rather than collapsing to its own content height.
+.emptyStateCellDS {
+	height: 8rem;
+}
+
 .controls {
 	display: flex;
 	justify-content: flex-end;
