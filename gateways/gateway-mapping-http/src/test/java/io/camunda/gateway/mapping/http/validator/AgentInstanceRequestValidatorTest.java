@@ -20,6 +20,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.gateway.protocol.model.AgentTool;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -677,6 +678,37 @@ class AgentInstanceRequestValidatorTest {
 
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No history[0].tools[0].name provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a null tool element in a batch item")
+    void shouldRejectNullToolInHistoryItem() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .tools(Arrays.asList((AgentTool) null))));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].tools[0] provided.");
     }
 
     @Test

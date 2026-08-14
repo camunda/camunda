@@ -275,6 +275,10 @@ public class AgentInstanceRequestValidator {
       final String fieldPrefix, final List<AgentTool> tools, final List<String> violations) {
     for (int i = 0; i < tools.size(); i++) {
       final var tool = tools.get(i);
+      if (tool == null) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "]"));
+        continue;
+      }
       if (tool.getName() == null || tool.getName().isBlank()) {
         violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "].name"));
       }
