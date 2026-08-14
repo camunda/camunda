@@ -98,10 +98,13 @@ async function renderDashboard() {
 
 describe('<Dashboard />', () => {
 	afterEach(async () => {
-		await waitForRequests?.();
-		await unmountPage?.();
-		waitForRequests = undefined;
-		unmountPage = undefined;
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+		}
 	});
 
 	it('should render metric panel with running instance counts', async ({worker}) => {

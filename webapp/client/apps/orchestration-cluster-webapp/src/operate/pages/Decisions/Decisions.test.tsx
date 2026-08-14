@@ -90,11 +90,14 @@ describe('<Decisions />', () => {
 	});
 
 	afterEach(async () => {
-		await waitForRequests?.();
-		await unmountPage?.();
-		waitForRequests = undefined;
-		unmountPage = undefined;
-		sessionStorage.clear();
+		try {
+			await waitForRequests?.();
+		} finally {
+			await unmountPage?.();
+			waitForRequests = undefined;
+			unmountPage = undefined;
+			sessionStorage.clear();
+		}
 	});
 
 	it('should render the filter sections', async ({worker}) => {
@@ -128,10 +131,7 @@ describe('<Decisions />', () => {
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
 		);
 
-		const screen = await renderDecisionsPage(
-			{decisionDefinitionId: 'invoice-approval'},
-			DecisionsWithoutInstancesHarness,
-		);
+		const screen = await renderDecisionsPage({decisionDefinitionId: 'invoice-approval'});
 
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).not.toBeDisabled();
 	});

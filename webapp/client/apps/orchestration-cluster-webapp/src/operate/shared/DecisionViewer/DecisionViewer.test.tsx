@@ -10,24 +10,17 @@ import {render} from 'vitest-browser-react';
 import {afterAll, beforeAll, describe, it, expect, vi} from 'vitest';
 
 let DecisionViewer: typeof import('./index').DecisionViewer;
-let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-let infernoWarningCount = 0;
-const originalConsoleWarn = console.warn;
 
 beforeAll(async () => {
-	consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
-		if (args[0] === 'You are running production build of Inferno in development mode. Use dev:module entry point.') {
-			infernoWarningCount += 1;
-			return;
-		}
-		originalConsoleWarn(...args);
+	vi.doMock('inferno', () => {
+		// @ts-expect-error Inferno does not publish declarations for its development entry point
+		return import('inferno/dist/index.dev.esm.js');
 	});
 	({DecisionViewer} = await import('./index'));
 });
 
 afterAll(() => {
-	expect(infernoWarningCount).toBe(1);
-	consoleWarnSpy.mockRestore();
+	vi.doUnmock('inferno');
 });
 
 const DMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
