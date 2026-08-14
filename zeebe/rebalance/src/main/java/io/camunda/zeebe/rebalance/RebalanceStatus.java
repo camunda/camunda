@@ -9,7 +9,6 @@ package io.camunda.zeebe.rebalance;
 
 import java.time.Instant;
 import java.util.List;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -20,7 +19,6 @@ import org.jspecify.annotations.Nullable;
  * @param lastCompleted the last rebalance this coordinator finished, or {@code null} if it has not
  *     finished one since becoming coordinator (not preserved over restarts)
  */
-@NullMarked
 public record RebalanceStatus(@Nullable Running running, @Nullable Completed lastCompleted) {
   /** No running rebalance, no previously completed rebalance. */
   public static RebalanceStatus idle() {

@@ -9,7 +9,6 @@ package io.camunda.zeebe.rebalance;
 
 import io.atomix.cluster.MemberId;
 import java.util.Optional;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Identifies which member currently leads each partition, as the cluster topology sees it.
@@ -18,7 +17,6 @@ import org.jspecify.annotations.NullMarked;
  * configuration, which says which members replicate a partition and with what priority but not
  * which of them holds leadership right now.
  */
-@NullMarked
 public interface PartitionLeaders {
   /**
    * Obtains a view of the leaders known for a physical tenant's partition group, backed by a single
@@ -30,7 +28,6 @@ public interface PartitionLeaders {
   PartitionGroupLeaders forGroup(String physicalTenantId);
 
   /** A snapshot of which member leads each partition of a single physical tenant's group. */
-  @NullMarked
   interface PartitionGroupLeaders {
     /**
      * The member leading the given partition, or empty if the topology is known to have no leader

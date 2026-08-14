@@ -16,14 +16,12 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Receives the forwarded rebalance requests on every member and answers them from the local {@link
  * RebalanceApi} implementation. On any node other than the current coordinator, the API refuses
  * requests with {@link RebalanceErrorCode#NOT_COORDINATOR}.
  */
-@NullMarked
 public final class RebalanceRequestServer implements AutoCloseable {
   private final ClusterCommunicationService communicationService;
   private final RebalanceRequestsSerializer serializer;

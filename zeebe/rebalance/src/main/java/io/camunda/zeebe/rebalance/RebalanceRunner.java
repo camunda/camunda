@@ -9,10 +9,8 @@ package io.camunda.zeebe.rebalance;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import org.jspecify.annotations.NullMarked;
 
 /** Drives the leadership transfers of one rebalance, one partition at a time. */
-@NullMarked
 @FunctionalInterface
 public interface RebalanceRunner {
   /**

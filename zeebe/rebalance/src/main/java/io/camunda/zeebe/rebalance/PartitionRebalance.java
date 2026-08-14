@@ -9,7 +9,6 @@ package io.camunda.zeebe.rebalance;
 
 import io.atomix.cluster.MemberId;
 import java.util.Objects;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,7 +26,6 @@ import org.jspecify.annotations.Nullable;
  * @param outcome the terminal outcome for this partition in the rebalance (only set if {@code
  *     progress} is {@link PartitionRebalanceProgress#COMPLETED})
  */
-@NullMarked
 public record PartitionRebalance(
     String physicalTenantId,
     int partitionId,

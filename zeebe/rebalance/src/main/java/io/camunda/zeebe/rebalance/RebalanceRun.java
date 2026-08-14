@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -20,7 +19,6 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Access is confined to the coordinator's actor thread.
  */
-@NullMarked
 public final class RebalanceRun {
 
   private final long id;

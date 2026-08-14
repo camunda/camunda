@@ -13,7 +13,6 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Forwards rebalance requests to the coordinator (the lowest-id member of the cluster).
@@ -21,7 +20,6 @@ import org.jspecify.annotations.NullMarked;
  * <p>Rebalances are run asynchronously, so these requests only ever start, check, or stop one (none
  * of them waits for a rebalance to finish).
  */
-@NullMarked
 public final class RebalanceRequestSender {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
 

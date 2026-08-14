@@ -20,7 +20,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Nulls;
 import java.time.Clock;
 import java.util.function.LongSupplier;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
  * coordinator. A member that stops being eligible to act as the coordinator drops any currently
  * running rebalance.
  */
-@NullMarked
 public final class RebalanceCoordinator
     implements RebalanceApi, ClusterConfigurationUpdateListener {
 

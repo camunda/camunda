@@ -16,10 +16,8 @@ import io.camunda.zeebe.rebalance.protocol.Rebalance;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.Instant;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSerializer {
 
   @Override

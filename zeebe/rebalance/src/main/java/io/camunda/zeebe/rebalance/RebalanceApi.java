@@ -11,10 +11,8 @@ import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationC
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.RebalanceInProgressException;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import org.jspecify.annotations.NullMarked;
 
 /** Interface for the rebalance coordinator. */
-@NullMarked
 public interface RebalanceApi {
   /**
    * Starts a cluster-wide rebalance and reports the status it starts from. Fails with {@link

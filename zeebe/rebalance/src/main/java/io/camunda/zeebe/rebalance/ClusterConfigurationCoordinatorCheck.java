@@ -14,14 +14,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSuppli
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Broker-supplied check that the node asking for a leadership transfer really is the cluster's
  * current coordinator.
  */
-@NullMarked
 public final class ClusterConfigurationCoordinatorCheck
     implements LeadershipTransferCoordinatorCheck {
 

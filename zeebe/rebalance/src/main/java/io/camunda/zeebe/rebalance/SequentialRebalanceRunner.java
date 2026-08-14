@@ -14,7 +14,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Runs entirely on the coordinator's actor thread.
  */
-@NullMarked
 public final class SequentialRebalanceRunner implements RebalanceRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(SequentialRebalanceRunner.class);
