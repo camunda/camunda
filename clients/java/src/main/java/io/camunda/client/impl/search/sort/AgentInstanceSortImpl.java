@@ -32,6 +32,11 @@ public class AgentInstanceSortImpl extends SearchRequestSortBase<AgentInstanceSo
   }
 
   @Override
+  public AgentInstanceSort agentDefinitionKey() {
+    return field("agentDefinitionKey");
+  }
+
+  @Override
   public AgentInstanceSort status() {
     return field("status");
   }

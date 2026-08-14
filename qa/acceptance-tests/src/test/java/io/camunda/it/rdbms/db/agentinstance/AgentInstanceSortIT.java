@@ -88,6 +88,23 @@ public class AgentInstanceSortIT {
   }
 
   @TestTemplate
+  public void shouldSortByAgentDefinitionKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.agentDefinitionKey().asc(),
+        Comparator.comparingLong(AgentInstanceEntity::agentDefinitionKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByAgentDefinitionKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.agentDefinitionKey().desc(),
+        Comparator.comparingLong(AgentInstanceEntity::agentDefinitionKey).reversed());
+  }
+
+  @TestTemplate
   public void shouldSortByAgentInstanceKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,

@@ -11,6 +11,7 @@ import io.camunda.search.entities.AgentInstanceEntity;
 
 public enum AgentInstanceSearchColumn implements SearchColumn<AgentInstanceEntity> {
   AGENT_INSTANCE_KEY("agentInstanceKey"),
+  AGENT_DEFINITION_KEY("agentDefinitionKey"),
   STATUS("status"),
   ELEMENT_ID("elementId"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),

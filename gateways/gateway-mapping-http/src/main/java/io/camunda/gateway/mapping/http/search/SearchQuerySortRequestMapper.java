@@ -1090,6 +1090,7 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case AGENT_INSTANCE_KEY -> builder.agentInstanceKey();
+        case AGENT_DEFINITION_KEY -> builder.agentDefinitionKey();
         case STATUS -> builder.status();
         case ELEMENT_ID -> builder.elementId();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();

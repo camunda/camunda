@@ -334,6 +334,7 @@
             <typeMapping>ResourceKey=String</typeMapping>
             <typeMapping>ScopeKey=String</typeMapping>
             <!-- map specific filter properties to basic filter types -->
+            <typeMapping>AgentDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>

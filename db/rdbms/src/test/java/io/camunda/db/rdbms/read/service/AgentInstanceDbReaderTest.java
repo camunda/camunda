@@ -159,6 +159,23 @@ class AgentInstanceDbReaderTest {
   }
 
   @Test
+  void shouldPassAgentDefinitionKeyFilterToMapper() {
+    when(agentInstanceMapper.count(any())).thenReturn(1L);
+    when(agentInstanceMapper.search(any())).thenReturn(List.of(buildModel(1L)));
+
+    agentInstanceDbReader.search(
+        AgentInstanceQuery.of(b -> b.filter(f -> f.agentDefinitionKeys(300L))),
+        ResourceAccessChecks.disabled());
+
+    verify(agentInstanceMapper)
+        .search(
+            argThat(
+                q ->
+                    q.filter().agentDefinitionKeyOperations().stream()
+                        .anyMatch(op -> op.value().equals(300L))));
+  }
+
+  @Test
   void shouldPassStatusFilterToMapper() {
     when(agentInstanceMapper.count(any())).thenReturn(1L);
     when(agentInstanceMapper.search(any())).thenReturn(List.of(buildModel(1L)));

@@ -62,6 +62,19 @@ public class AgentInstanceFilterImpl
   }
 
   @Override
+  public AgentInstanceFilter agentDefinitionKey(final long value) {
+    return agentDefinitionKey(f -> f.eq(value));
+  }
+
+  @Override
+  public AgentInstanceFilter agentDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setAgentDefinitionKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AgentInstanceFilter status(final AgentInstanceStatus value) {
     return status(f -> f.eq(value));
   }

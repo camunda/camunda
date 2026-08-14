@@ -30,6 +30,10 @@ public class AgentInstanceFieldSortingTransformerTest extends AbstractSortTransf
     return Stream.of(
         new TestArguments(
             AgentInstanceTemplate.KEY, SortOrder.DESC, s -> s.agentInstanceKey().desc()),
+        new TestArguments(
+            AgentInstanceTemplate.AGENT_DEFINITION_KEY,
+            SortOrder.ASC,
+            s -> s.agentDefinitionKey().asc()),
         new TestArguments(AgentInstanceTemplate.STATUS, SortOrder.ASC, s -> s.status().asc()),
         new TestArguments(
             AgentInstanceTemplate.ELEMENT_ID, SortOrder.ASC, s -> s.elementId().asc()),

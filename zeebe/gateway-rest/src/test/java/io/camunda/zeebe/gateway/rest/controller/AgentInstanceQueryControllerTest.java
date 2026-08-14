@@ -23,6 +23,7 @@ import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -30,8 +31,12 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -329,6 +334,54 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             any());
   }
 
+  @ParameterizedTest
+  @MethodSource("provideAgentDefinitionKeyFilterOperations")
+  void shouldSearchAgentInstancesWithAgentDefinitionKeyFilter(
+      final String filterString, final AgentInstanceFilter filter) {
+    // given
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(AGENT_INSTANCE_ENTITY))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": %s
+            }
+            """
+                .formatted(filterString))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(agentInstanceServices)
+        .search(eq(new AgentInstanceQuery.Builder().filter(filter).build()), any());
+  }
+
+  private static Stream<Arguments> provideAgentDefinitionKeyFilterOperations() {
+    final var streamBuilder = Stream.<Arguments>builder();
+    keyOperationTestCases(
+        streamBuilder,
+        "agentDefinitionKey",
+        ops -> new AgentInstanceFilter.Builder().agentDefinitionKeyOperations(ops).build());
+    return streamBuilder.build();
+  }
+
   @Test
   void shouldSearchAgentInstancesWithProcessDefinitionFilters() {
     // given
@@ -375,6 +428,49 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                             .processDefinitionVersionOperations(List.of(Operation.eq(1)))
                             .versionTagOperations(List.of(Operation.eq("v1")))
                             .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSortAgentInstancesByAgentDefinitionKey() {
+    // given
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(AGENT_INSTANCE_ENTITY))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [
+                { "field": "agentDefinitionKey", "order": "ASC" }
+              ]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(agentInstanceServices)
+        .search(
+            eq(
+                new AgentInstanceQuery.Builder()
+                    .sort(AgentInstanceSort.of(s -> s.agentDefinitionKey().asc()))
                     .build()),
             any());
   }
