@@ -17,12 +17,14 @@ import static io.camunda.optimize.service.dashboard.BusinessValueDashboardServic
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.L1_SECTION_UNGROUPED;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.TILE_CONFIG_L0_SECTION;
 import static io.camunda.optimize.service.dashboard.BusinessValueDashboardService.TILE_CONFIG_L1_SECTION;
+import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,6 +41,7 @@ import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EntityConfiguration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,14 +54,17 @@ public class BusinessValueDashboardServiceTest {
   private static final List<String> SEED_REPORT_IDS =
       List.of(
           BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID,
+          BusinessValueDashboardService.VOLUME_TOTAL_L1_REPORT_ID,
           BusinessValueDashboardService.DURATION_AVG_TOTAL_REPORT_ID,
           BusinessValueDashboardService.COUNT_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID,
+          BusinessValueDashboardService.COUNT_BY_DATE_L1_REPORT_ID,
           BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID,
           BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID,
           BusinessValueDashboardService.AGENT_PRESENCE_BY_PROCESS_REPORT_ID,
           BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+          BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
           BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID);
 
   private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
@@ -225,22 +231,24 @@ public class BusinessValueDashboardServiceTest {
   }
 
   @Test
-  void shouldRenderEverySeededTileOnAtLeastOneLevel() {
+  void shouldRenderEverySeededTileOnExactlyOneLevel() {
     // given
     when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
 
     // when
     underTest.reconcile();
 
-    // then a tile without any section key would be dropped by the frontend
+    // then a tile with no section key is dropped by the frontend, and one with both would have to
+    // render under the name of whichever view asked for it last
     assertThat(captureSavedDashboard().getTiles())
         .allSatisfy(
-            tile ->
-                assertThat(
-                        sectionOf(tile, TILE_CONFIG_L0_SECTION) != null
-                            || sectionOf(tile, TILE_CONFIG_L1_SECTION) != null)
-                    .as("tile '%s' must declare an L0 and/or L1 section", tile.getId())
-                    .isTrue());
+            tile -> {
+              final boolean l0 = sectionOf(tile, TILE_CONFIG_L0_SECTION) != null;
+              final boolean l1 = sectionOf(tile, TILE_CONFIG_L1_SECTION) != null;
+              assertThat(l0 ^ l1)
+                  .as("tile '%s' must declare exactly one of an L0 or L1 section", tile.getId())
+                  .isTrue();
+            });
   }
 
   @Test
@@ -281,15 +289,56 @@ public class BusinessValueDashboardServiceTest {
     // then
     assertThat(sectionsByReportId(TILE_CONFIG_L1_SECTION))
         .containsOnly(
-            entry(BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID, L1_SECTION_OVERVIEW),
+            entry(BusinessValueDashboardService.VOLUME_TOTAL_L1_REPORT_ID, L1_SECTION_OVERVIEW),
             entry(BusinessValueDashboardService.DURATION_AVG_TOTAL_REPORT_ID, L1_SECTION_OVERVIEW),
-            entry(BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED),
+            entry(BusinessValueDashboardService.COUNT_BY_DATE_L1_REPORT_ID, L1_SECTION_UNGROUPED),
             entry(
                 BusinessValueDashboardService.DURATION_PERCENTILES_REPORT_ID, L1_SECTION_UNGROUPED),
             entry(BusinessValueDashboardService.DURATION_BY_DATE_REPORT_ID, L1_SECTION_UNGROUPED),
             entry(
-                BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+                BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
                 L1_SECTION_OVERVIEW));
+  }
+
+  @Test
+  void shouldSeedEachL1TwinWithItsOwnNameAndItsCounterpartsShape() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then each L1 copy measures exactly what its L0 counterpart does, and differs only in the
+    // name — a shape that drifts would make the two views disagree on the same number
+    assertTwinOf(
+        BusinessValueDashboardService.WORK_HANDLED_TOTAL_REPORT_ID,
+        BusinessValueDashboardService.VOLUME_TOTAL_L1_REPORT_ID,
+        BusinessValueDashboardService.KPI_VOLUME_NAME,
+        BusinessValueDashboardService.KPI_VOLUME_DESCRIPTION);
+    assertTwinOf(
+        BusinessValueDashboardService.COUNT_BY_DATE_REPORT_ID,
+        BusinessValueDashboardService.COUNT_BY_DATE_L1_REPORT_ID,
+        BusinessValueDashboardService.KPI_MOMENTUM_NAME,
+        BusinessValueDashboardService.KPI_MOMENTUM_DESCRIPTION);
+    assertTwinOf(
+        BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_REPORT_ID,
+        BusinessValueDashboardService.AUTOMATION_RATE_AGGREGATE_L1_REPORT_ID,
+        BusinessValueDashboardService.KPI_AUTOMATION_RATE_NAME,
+        BusinessValueDashboardService.KPI_AUTOMATION_RATE_DESCRIPTION);
+  }
+
+  @Test
+  void shouldGiveEveryTileOnALevelADistinctName() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then Hub renders the report name verbatim, so two tiles sharing one on the same page leave
+    // the reader unable to tell them apart
+    assertThat(namesOfTilesIn(TILE_CONFIG_L0_SECTION)).doesNotHaveDuplicates();
+    assertThat(namesOfTilesIn(TILE_CONFIG_L1_SECTION)).doesNotHaveDuplicates();
   }
 
   @Test
@@ -308,10 +357,104 @@ public class BusinessValueDashboardServiceTest {
         .doesNotHaveDuplicates();
   }
 
+  @Test
+  void shouldLayOutL0TilesTheWayHubRendersThem() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then position is the reading order Hub sorts on
+    assertThat(namesOfTilesIn(TILE_CONFIG_L0_SECTION))
+        .containsExactly(
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_NAME,
+            BusinessValueDashboardService.KPI_TOP_BY_VOLUME_NAME,
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_OVER_TIME_NAME,
+            BusinessValueDashboardService.KPI_TOP_BY_CYCLE_TIME_NAME,
+            BusinessValueDashboardService.KPI_AGENTIC_PROCESSES_NAME,
+            BusinessValueDashboardService.KPI_AGGREGATED_AUTOMATION_RATE_NAME,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_BY_PROCESS_NAME);
+
+    // and the trend chart owns a full row while the tiles it sits between pair up
+    assertThat(widthsByNameIn(TILE_CONFIG_L0_SECTION))
+        .containsEntry(
+            BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_OVER_TIME_NAME,
+            BusinessValueDashboardService.GRID_WIDTH)
+        .containsEntry(BusinessValueDashboardService.KPI_COMPLETED_INSTANCES_NAME, 9)
+        .containsEntry(BusinessValueDashboardService.KPI_TOP_BY_VOLUME_NAME, 9);
+  }
+
+  @Test
+  void shouldLayOutL1TilesTheWayHubRendersThem() {
+    // given
+    when(dashboardReader.getDashboard(BUSINESS_VALUE_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then position is the reading order Hub sorts on
+    assertThat(namesOfTilesIn(TILE_CONFIG_L1_SECTION))
+        .containsExactly(
+            BusinessValueDashboardService.KPI_CYCLE_TIME_NAME,
+            BusinessValueDashboardService.KPI_AUTOMATION_RATE_NAME,
+            BusinessValueDashboardService.KPI_VOLUME_NAME,
+            BusinessValueDashboardService.KPI_MOMENTUM_NAME,
+            BusinessValueDashboardService.KPI_CYCLE_TIME_DISTRIBUTION_NAME,
+            BusinessValueDashboardService.KPI_CYCLE_TIME_HISTORY_NAME);
+
+    // and the charts below the overview each own a full row — Hub spans dimensions.width
+    assertThat(tilesInRenderOrder(TILE_CONFIG_L1_SECTION))
+        .filteredOn(tile -> L1_SECTION_UNGROUPED.equals(sectionOf(tile, TILE_CONFIG_L1_SECTION)))
+        .allSatisfy(
+            tile ->
+                assertThat(tile.getDimensions().getWidth())
+                    .isEqualTo(BusinessValueDashboardService.GRID_WIDTH));
+  }
+
   private Map<String, String> sectionsByReportId(final String configKey) {
     return captureSavedDashboard().getTiles().stream()
         .filter(tile -> sectionOf(tile, configKey) != null)
         .collect(toMap(DashboardReportTileDto::getId, tile -> sectionOf(tile, configKey)));
+  }
+
+  // Hub's read model: tiles of one level, ordered by position (y, then x).
+  private List<DashboardReportTileDto> tilesInRenderOrder(final String configKey) {
+    return captureSavedDashboard().getTiles().stream()
+        .filter(tile -> sectionOf(tile, configKey) != null)
+        .sorted(
+            comparingInt((final DashboardReportTileDto tile) -> tile.getPosition().getY())
+                .thenComparingInt(tile -> tile.getPosition().getX()))
+        .toList();
+  }
+
+  private List<String> namesOfTilesIn(final String configKey) {
+    final Map<String, String> namesByReportId = capturedReportNamesById();
+    return tilesInRenderOrder(configKey).stream()
+        .map(tile -> namesByReportId.get(tile.getId()))
+        .toList();
+  }
+
+  private Map<String, Integer> widthsByNameIn(final String configKey) {
+    final Map<String, String> namesByReportId = capturedReportNamesById();
+    return tilesInRenderOrder(configKey).stream()
+        .collect(
+            toMap(
+                tile -> namesByReportId.get(tile.getId()),
+                tile -> tile.getDimensions().getWidth()));
+  }
+
+  private Map<String, String> capturedReportNamesById() {
+    final ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
+    verify(reportWriter, atLeastOnce())
+        .createOrUpdateSingleProcessReport(
+            idCaptor.capture(), isNull(), any(), nameCaptor.capture(), any(), isNull());
+    final Map<String, String> namesById = new HashMap<>();
+    for (int i = 0; i < idCaptor.getAllValues().size(); i++) {
+      namesById.put(idCaptor.getAllValues().get(i), nameCaptor.getAllValues().get(i));
+    }
+    return namesById;
   }
 
   private static String sectionOf(final DashboardReportTileDto tile, final String configKey) {
@@ -324,6 +467,21 @@ public class BusinessValueDashboardServiceTest {
         ArgumentCaptor.forClass(DashboardDefinitionRestDto.class);
     verify(dashboardWriter).saveDashboard(captor.capture());
     return captor.getValue();
+  }
+
+  private void assertTwinOf(
+      final String l0ReportId,
+      final String l1ReportId,
+      final String l1Name,
+      final String l1Description) {
+    final ArgumentCaptor<ProcessReportDataDto> captor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(l1ReportId), isNull(), captor.capture(), eq(l1Name), eq(l1Description), isNull());
+    assertThat(captor.getValue())
+        .usingRecursiveComparison()
+        .isEqualTo(captureReportData(l0ReportId));
   }
 
   private ProcessReportDataDto captureReportData(final String reportId) {
