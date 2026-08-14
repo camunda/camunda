@@ -7,7 +7,9 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -20,6 +22,7 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -64,9 +67,25 @@ public class BasicAuthBeansConfiguration {
         .orElse(false);
   }
 
+  /**
+   * Physical-tenant-aware propagator for the lazy membership lists built during BASIC-auth login,
+   * so they still resolve once the request scope that built them is gone.
+   *
+   * <p>Not redundant with CSL's bean of the same type, which defaults to {@code identity()}: this
+   * wins only because this configuration is a plain {@code @Import} while CSL arrives via the
+   * deferred {@code @ImportAutoConfiguration}. Removing it silently restores the no-op.
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public MembershipResolutionContextPropagator membershipResolutionContextPropagator() {
+    return new PhysicalTenantMembershipContextPropagator();
+  }
+
   @Bean
   public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-      final MembershipPort membershipPort) {
-    return new LazyUsernamePasswordAuthenticationTokenConverter(membershipPort);
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
+    return new LazyUsernamePasswordAuthenticationTokenConverter(
+        membershipPort, membershipResolutionContextPropagator);
   }
 }
