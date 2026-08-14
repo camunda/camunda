@@ -125,8 +125,8 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
       final int replicationFactor) {
     // A disabled tenant's partitions are not actually running on any broker, so they must not
     // count as load when deciding where to place a new tenant's partitions — but they still need
-    // to appear in distributionByGroup/currentById (above) and validateNoRemoval (below) so they
-    // are correctly left untouched rather than treated as removed.
+    // to appear in distributionByGroup/currentById so they are correctly left untouched rather
+    // than treated as removed.
     distributionByGroup.entrySet().stream()
         .filter(entry -> activeGroupIds.contains(entry.getKey()))
         .forEach(
