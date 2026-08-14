@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.ResponseEntity;
@@ -39,38 +40,56 @@ public class ExportersEndpoint {
     this.requestSender = requestSender;
   }
 
+  /**
+   * Disables an exporter. Without a {@code physicalTenant} query parameter, the exporter is
+   * disabled in every physical tenant that has it configured, keeping the whole-cluster meaning the
+   * operation always had. With the parameter, only the given physical tenant is affected.
+   */
   @PostMapping(path = "/{exporterId}/disable")
   public CompletableFuture<ResponseEntity<?>> disableExporter(
       @PathVariable("exporterId") final String exporterId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
 
     return requestSender
-        .disableExporter(new ExporterDisableRequest(exporterId, Optional.empty(), dryRun))
+        .disableExporter(new ExporterDisableRequest(exporterId, nonBlank(physicalTenant), dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 
+  /**
+   * Enables an exporter. Without a {@code physicalTenant} query parameter, the exporter is enabled
+   * in every physical tenant, keeping the whole-cluster meaning the operation always had. With the
+   * parameter, only the given physical tenant is affected.
+   */
   @PostMapping(path = "/{exporterId}/enable")
   public CompletableFuture<ResponseEntity<?>> enableExporter(
       @PathVariable("exporterId") final String exporterId,
       @RequestBody(required = false) final InitializationInfo initializeInfo,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
     return requestSender
         .enableExporter(
             new ExporterEnableRequest(
                 exporterId,
                 Optional.ofNullable(initializeInfo).map(InitializationInfo::initializeFrom),
-                Optional.empty(),
+                nonBlank(physicalTenant),
                 dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 
+  /**
+   * Deletes an exporter. Without a {@code physicalTenant} query parameter, the exporter is deleted
+   * from every physical tenant that has it configured, keeping the whole-cluster meaning the
+   * operation always had. With the parameter, only the given physical tenant is affected.
+   */
   @DeleteMapping(path = "/{exporterId}")
   public CompletableFuture<ResponseEntity<?>> deleteExporter(
       @PathVariable("exporterId") final String exporterId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
 
     return requestSender
-        .deleteExporter(new ExporterDeleteRequest(exporterId, Optional.empty(), dryRun))
+        .deleteExporter(new ExporterDeleteRequest(exporterId, nonBlank(physicalTenant), dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 
@@ -93,6 +112,10 @@ public class ExportersEndpoint {
     }
 
     return ResponseEntity.status(200).body(ClusterApiUtils.aggregateExporterState(response.get()));
+  }
+
+  private static Optional<String> nonBlank(final @Nullable String value) {
+    return Optional.ofNullable(value).filter(s -> !s.isBlank());
   }
 
   private record InitializationInfo(String initializeFrom) {}

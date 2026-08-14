@@ -18,9 +18,13 @@ paths:
   /{exporterId}/disable:
     post:
       summary: Disable an exporter
-      description: Disable the exporter with the given exporterId. After the exporter is disabled, the records are not exported to this exporter anymore.
+      description: >
+        Disable the exporter with the given exporterId. After the exporter is disabled, the records are not exported to this exporter anymore.
+        Without the physicalTenant parameter the exporter is disabled in every physical tenant that has it configured;
+        with it, only the given physical tenant is affected.
       parameters:
         - $ref: '#/components/parameters/ExporterId'
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -37,10 +41,14 @@ paths:
 
   /{exporterId}/enable:
     summary: Enable an exporter
-    description: Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
+    description: >
+      Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
+      Without the physicalTenant parameter the exporter is enabled in every physical tenant;
+      with it, only the given physical tenant is affected.
     post:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       requestBody:
         required: false
         content:
@@ -64,9 +72,13 @@ paths:
   /{exporterId}:
     delete:
       summary: Delete an exporter
-      description: Delete the exporter with the given exporterId. This will remove the exporter configuration and stop all export operations for this exporter.
+      description: >
+        Delete the exporter with the given exporterId. This will remove the exporter configuration and stop all export operations for this exporter.
+        Without the physicalTenant parameter the exporter is deleted from every physical tenant that has it configured;
+        with it, only the given physical tenant is affected.
       parameters:
         - $ref: '#/components/parameters/ExporterId'
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -101,6 +113,15 @@ components:
       description: Id of the exporter
       schema:
         $ref: 'components.yaml#/schemas/ExporterId'
+
+    PhysicalTenantParameter:
+      name: physicalTenant
+      description: Id of the physical tenant to target. If not specified, the operation applies to all physical tenants.
+      in: query
+      style: form
+      required: false
+      schema:
+        $ref: 'components.yaml#/schemas/PhysicalTenantId'
 
   responses:
     ExporterOperationResponse:
