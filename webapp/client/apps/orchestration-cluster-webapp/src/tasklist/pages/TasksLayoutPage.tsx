@@ -38,8 +38,11 @@ const TasksLayoutPage: React.FC<Props> = ({
 	const {t} = useTranslation();
 
 	return (
-		<main id="main-content" className={styles.container}>
-			<CollapsiblePanel />
+		<main id="main-content" className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}>
+			{/* DS-only: the rail moved up to the tasklist route so it is present on
+			    Processes too (TasklistNavLayout.tsx), and its filters moved into the
+			    filter picker below. Carbon keeps the filter panel here. */}
+			{featureFlags.dsTasklistUI ? null : <CollapsiblePanel />}
 			<Stack
 				as="section"
 				className={cn(styles.tasksPanel, featureFlags.dsTasklistUI && styles.tasksPanelDS)}

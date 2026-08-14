@@ -19,6 +19,14 @@
 	box-sizing: border-box;
 }
 
+// DS-only (see TasksLayoutPage.tsx). The first `auto` track held the filter
+// panel, which no longer renders here — without dropping the track the two
+// remaining panels would auto-place one column to the left of where they belong.
+// Declared after `.container`: equal specificity, so source order decides.
+.containerDS {
+	grid-template-columns: layout.to-rem(312px) 1fr;
+}
+
 .tasksPanel {
 	align-content: flex-start;
 	min-width: layout.to-rem(312px);

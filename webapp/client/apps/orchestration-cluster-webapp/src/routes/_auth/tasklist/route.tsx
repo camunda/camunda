@@ -6,13 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
+import {TasklistNavLayout} from '#/tasklist/modules/navigation/components/TasklistNavLayout';
+import {featureFlags} from '#/shared/feature-flags';
+
+// DS-only. The navigation rail wraps every Tasklist page from here so it is
+// present on both Tasks and Processes. On the flag-off path this route keeps
+// rendering a bare Outlet, and the Carbon filter panel stays inside the tasks
+// layout where it has always been (TasksLayoutPage.tsx).
+function RouteComponent() {
+	if (!featureFlags.dsTasklistUI) {
+		return <Outlet />;
+	}
+
+	return (
+		<TasklistNavLayout>
+			<Outlet />
+		</TasklistNavLayout>
+	);
+}
 
 export const Route = createFileRoute('/_auth/tasklist')({
+	component: RouteComponent,
 	beforeLoad: () => {
 		if (!getClientConfig().components.active.includes('tasklist')) {
 			throw new ComponentNotAvailableError('tasklist');

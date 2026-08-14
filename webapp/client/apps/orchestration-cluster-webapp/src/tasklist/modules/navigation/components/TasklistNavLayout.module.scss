@@ -1,0 +1,38 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+// AppSidebar already positions itself `fixed left-0 top-12 bottom-0`, which
+// lines up with the app header — only the surface and the divider need setting.
+// Both match the panels the rail sits beside (TasksLayoutPage.module.scss).
+.sidebar {
+	background-color: var(--background);
+	border-right: 1px solid var(--border);
+}
+
+// Height, not min-height: the pages inside size themselves against a definite
+// height (`height: 100%` on the tasks grid, `calc(100% - header)` on processes).
+// 100% here resolves against the same box those percentages used before this
+// wrapper existed, so the pages keep the heights they had.
+.content {
+	// flow-root, not block: the page's own top margin (below) would otherwise
+	// collapse through this wrapper and push the wrapper itself down by 48px,
+	// leaving the document 48px taller than the viewport and scrollable.
+	display: flow-root;
+	height: 100%;
+	padding-left: var(--tasklist-nav-width);
+	box-sizing: border-box;
+
+	// Carbon clears its fixed header with a sibling rule —
+	// `.cds--header ~ .cds--content { margin-block-start: 3rem }` — which this
+	// wrapper breaks by making the page a nephew of the header rather than a
+	// sibling. Without this the pages render underneath the header. Same value,
+	// applied through the Carbon spacing token.
+	> :global(.cds--content) {
+		margin-block-start: var(--cds-spacing-09);
+	}
+}
