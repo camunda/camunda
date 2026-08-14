@@ -2,7 +2,7 @@
 #              Orchestration Cluster E2E test suite across all supported refs
 #              (main, stable/8.9, stable/8.8) via a matrix:
 #                - json-body-assertions/_generated/responses.json, via
-#                  `npm run responses:regenerate` + `npm run lint:fix`
+#                  `npm run responses:regenerate`
 #                - utils/_generated/apiPaths.ts (the `ApiPath` union consumed by
 #                  `buildUrl`), via `npm run paths:regenerate`
 #              Each artifact is diffed, committed, and PR'd independently
@@ -146,7 +146,7 @@ jobs:
         working-directory: ${{ env.SUITE_DIR }}
         run: |
           set -euo pipefail
-          if node -e "process.exit(require('./package.json').scripts['paths:regenerate'] ? 0 : 1)"; then
+          if node -e "process.exit((require('./package.json').scripts || {})['paths:regenerate'] ? 0 : 1)"; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -337,7 +337,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s\n' \
-            "Automated regeneration of the JSON body response assertions via \`npm run responses:regenerate\` (followed by \`npm run lint:fix\`)." \
+            "Automated regeneration of the JSON body response assertions via \`npm run responses:regenerate\`." \
             "" \
             "This PR was opened because the **response schemas** in \`json-body-assertions/_generated/responses.json\` changed." \
             "Metadata-only differences (\`generatedAt\`, \`commit\`, \`specSha256\`) do not trigger a PR." \
