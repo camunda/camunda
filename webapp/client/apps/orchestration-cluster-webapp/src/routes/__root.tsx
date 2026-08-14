@@ -11,16 +11,12 @@ import {TanStackRouterDevtoolsPanel} from '@tanstack/react-router-devtools';
 import {TanStackDevtools} from '@tanstack/react-devtools';
 import {ReactQueryDevtoolsPanel} from '@tanstack/react-query-devtools';
 import type {QueryClient} from '@tanstack/react-query';
-import {NotFoundPage} from '#/shared/pages/NotFoundPage';
-import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
-import {Notifications} from '#/shared/notifications/components/Notifications';
-import {NetworkStatusWatcher} from '#/shared/notifications/components/NetworkStatusWatcher';
 
 const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
 }>()({
-	notFoundComponent: NotFoundPage,
-	errorComponent: ({reset}) => <GenericErrorPage reset={reset} />,
+	notFoundComponent: RootNotFoundPage,
+	errorComponent: RootErrorPage,
 	head: () => ({
 		meta: [
 			{
@@ -42,8 +38,6 @@ function RootDocument() {
 	return (
 		<>
 			<HeadContent />
-			<Notifications />
-			<NetworkStatusWatcher />
 			<Outlet />
 			<TanStackDevtools
 				config={{position: 'bottom-right'}}
@@ -59,6 +53,22 @@ function RootDocument() {
 				]}
 			/>
 		</>
+	);
+}
+
+function RootNotFoundPage() {
+	return (
+		<main>
+			<h1>Page not found</h1>
+		</main>
+	);
+}
+
+function RootErrorPage() {
+	return (
+		<main>
+			<h1>Something went wrong</h1>
+		</main>
 	);
 }
 

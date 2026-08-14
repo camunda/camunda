@@ -54,7 +54,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 	) => {
 		const {t} = useTranslation();
 		const match = useMatch({
-			from: '/_auth/tasklist/_tasks/$userTaskKey',
+			from: '/_carbon/_auth/tasklist/_tasks/$userTaskKey',
 			shouldThrow: false,
 		});
 		const isActive = match?.params.userTaskKey === userTaskKey;
