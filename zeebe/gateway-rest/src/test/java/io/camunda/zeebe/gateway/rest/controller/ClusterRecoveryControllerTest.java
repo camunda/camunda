@@ -182,23 +182,32 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectABlankPhysicalTenantAsAMalformedRequest() {
-    // when / then
+  void shouldChangeModeOfEveryPhysicalTenantWhenTheGivenTenantIsBlank() {
+    // given
+    when(clusterRecoveryServices.changeMode(
+            Mockito.isNull(), Mockito.eq(Mode.RECOVERING), Mockito.eq(false)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(plannedChange(8L, "tenant-b", "default"))));
+
+    // when / then — a blank id names no tenant, so the operation spans the cluster instead of being
+    // rejected
     webClient
         .patch()
         .uri(MODE_URL + "?mode=RECOVERING&physicalTenantId=")
         .exchange()
         .expectStatus()
-        .isBadRequest();
+        .isOk();
 
-    Mockito.verify(clusterRecoveryServices, Mockito.never())
-        .changeMode(Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+    Mockito.verify(clusterRecoveryServices).changeMode(null, Mode.RECOVERING, false);
   }
 
   @Test
-  void shouldRejectABlankPhysicalTenantOnARestoreAsAMalformedRequest() {
-    // when / then — the parameter both operations share is rejected the same way, rather than a
-    // restore being scoped to an empty physical tenant id
+  void shouldRestoreEveryPhysicalTenantWhenTheGivenTenantIsBlank() {
+    // given
+    givenRestoreAccepted(9L);
+
+    // when / then — the parameter both operations share resolves the same way
     webClient
         .post()
         .uri(RESTORE_URL + "?physicalTenantId=")
@@ -206,10 +215,11 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
         .bodyValue("{\"backupIds\": [ 55 ]}")
         .exchange()
         .expectStatus()
-        .isBadRequest();
+        .isAccepted();
 
-    Mockito.verify(clusterRecoveryServices, Mockito.never())
-        .restore(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+    Mockito.verify(clusterRecoveryServices)
+        .restore(
+            Optional.empty(), new RestoreParameters(List.of(55L), null, null), Map.of(), false);
   }
 
   @Test

@@ -56,16 +56,16 @@ public final class ClusterRecoveryController {
       @RequestParam final Mode mode,
       @RequestParam(required = false) final @Nullable String physicalTenantId,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
-    rejectBlankPhysicalTenantId(physicalTenantId);
+    final var targetPhysicalTenantId = targetPhysicalTenant(physicalTenantId);
     LOG.debug(
         "Requested cluster mode change to {} for {}",
         mode,
-        physicalTenantId == null ? "all tenants" : physicalTenantId);
+        targetPhysicalTenantId == null ? "all tenants" : targetPhysicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             serviceRegistry
                 .clusterRecoveryServices()
-                .changeMode(physicalTenantId, mode, dryRun)
+                .changeMode(targetPhysicalTenantId, mode, dryRun)
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
         ClusterModeChangeMapper::toClusterModeChangeResponse,
         HttpStatus.OK);
@@ -76,16 +76,16 @@ public final class ClusterRecoveryController {
       @RequestParam(required = false) final @Nullable String physicalTenantId,
       @RequestBody final io.camunda.gateway.protocol.model.ClusterRestoreRequest restoreRequest,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
-    rejectBlankPhysicalTenantId(physicalTenantId);
+    final var targetPhysicalTenantId = targetPhysicalTenant(physicalTenantId);
     LOG.info(
         "Requested restore for {}: {}",
-        physicalTenantId == null ? "all tenants" : physicalTenantId,
+        targetPhysicalTenantId == null ? "all tenants" : targetPhysicalTenantId,
         restoreRequest);
     final var overrides = restoreRequest.getOverrides();
-    if (physicalTenantId != null && overrides != null && !overrides.isEmpty()) {
+    if (targetPhysicalTenantId != null && overrides != null && !overrides.isEmpty()) {
       throw new ServiceException(
           "Expected to restore physical tenant '%s', but the request also carries overrides for "
-                  .formatted(physicalTenantId)
+                  .formatted(targetPhysicalTenantId)
               + "other physical tenants. Overrides are only allowed for a cluster-wide restore.",
           Status.INVALID_ARGUMENT);
     }
@@ -103,17 +103,22 @@ public final class ClusterRecoveryController {
             serviceRegistry
                 .clusterRecoveryServices()
                 .restore(
-                    Optional.ofNullable(physicalTenantId), parameters, overrideParameters, dryRun)
+                    Optional.ofNullable(targetPhysicalTenantId),
+                    parameters,
+                    overrideParameters,
+                    dryRun)
                 .thenApply(ClusterModeChangeMapper::unwrapOrThrow),
         ClusterModeChangeMapper::toClusterRestoreResponse,
         HttpStatus.ACCEPTED);
   }
 
-  private static void rejectBlankPhysicalTenantId(final @Nullable String physicalTenantId) {
-    if (physicalTenantId != null && physicalTenantId.isBlank()) {
-      throw new ServiceException(
-          "Expected physicalTenantId to identify a physical tenant, but it was empty.",
-          Status.INVALID_ARGUMENT);
-    }
+  /**
+   * Resolves which physical tenant an operation targets: the named tenant, or {@code null} when the
+   * request names none and the operation therefore spans every physical tenant of the cluster. A
+   * blank id names no tenant, so it is cluster-wide as well rather than a request the cluster-admin
+   * API rejects.
+   */
+  private static @Nullable String targetPhysicalTenant(final @Nullable String physicalTenantId) {
+    return physicalTenantId == null || physicalTenantId.isBlank() ? null : physicalTenantId;
   }
 }
