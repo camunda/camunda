@@ -200,7 +200,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
        cases, the reconfiguration request cannot complete because the joining member might already
        be part of the quorum and must be active to commit the configuration change.
       */
-      if (isDuplicateReconfigureRequest(request)) {
+      // There is no future to return when the configuration change was not requested from this
+      // leader role: a leader that recovered a joint configuration resumes its exit from a task
+      // queued in start(), and until that task runs there is nothing to hook onto. Reject the
+      // request as retriable instead of returning null.
+      if (isDuplicateReconfigureRequest(request) && ongoingReconfigurationRequestFuture != null) {
         return ongoingReconfigurationRequestFuture;
       }
       return CompletableFuture.completedFuture(
