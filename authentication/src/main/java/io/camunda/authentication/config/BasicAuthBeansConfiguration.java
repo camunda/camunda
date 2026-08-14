@@ -68,12 +68,13 @@ public class BasicAuthBeansConfiguration {
   }
 
   /**
-   * Physical-tenant-aware propagator for the lazy membership lists built during BASIC-auth login,
-   * so they still resolve once the request scope that built them is gone.
+   * Carries the physical tenant into the lazy membership lists built during BASIC-auth login, so
+   * they still work after the request that created them has ended.
    *
-   * <p>Not redundant with CSL's bean of the same type, which defaults to {@code identity()}: this
-   * wins only because this configuration is a plain {@code @Import} while CSL arrives via the
-   * deferred {@code @ImportAutoConfiguration}. Removing it silently restores the no-op.
+   * <p>This looks redundant next to CSL's bean of the same type, but it is not: CSL's does nothing
+   * ({@code identity()}). This one is used only because this configuration is a plain
+   * {@code @Import} while CSL is loaded later, via {@code @ImportAutoConfiguration}. Delete it and
+   * the no-op quietly takes over.
    */
   @Bean
   @ConditionalOnMissingBean
