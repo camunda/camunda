@@ -211,10 +211,11 @@ class SchemaManagerStartupIT {
   }
 
   /**
-   * The anti-hang regression test. When no tenant can ever become serviceable and none is still
-   * trying, the gate has to open anyway: a gateway node with every tenant terminally misconfigured
-   * used to abort the context, and under a gate that only counted serviceable tenants it would
-   * instead block in the context refresh forever, with no management endpoint to say why.
+   * The anti-hang regression test, and the one case where the gate refuses to open. When every
+   * tenant has failed in a way retrying cannot repair, nothing is left that could ever produce a
+   * serviceable tenant: a gate that only counted serviceable tenants would block in the context
+   * refresh forever with no management endpoint to say why, and releasing would admit a node that
+   * can serve nobody. It aborts instead, which is what it does today (ADR 004 D3).
    *
    * <p>The failure is made terminal by recording a schema version in the tenant's metadata index
    * that the running version refuses to migrate from, which is an {@code
@@ -222,29 +223,49 @@ class SchemaManagerStartupIT {
    * agree no retry can repair.
    */
   @Test
-  void shouldStartAndReportNotReadyWhenEveryTenantFailsTerminally() throws Exception {
+  void shouldAbortStartupWhenEveryTenantFailsTerminally() throws Exception {
     // given
     storeIncompatibleSchemaVersion();
     camunda
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
         .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
-        .withExposedPorts(MONITORING_PORT)
-        .waitingFor(managementEndpointsAnswering());
+        .waitingFor(runningContainer());
 
     // when
     camunda.start();
 
-    // then - the node came up rather than crash-looping or hanging at the gate
-    assertThat(camunda.getLogs())
-        .doesNotContain("Failed to start application")
-        .doesNotContain("BeanCreationException")
-        .as("the tenant stopped retrying, which is what let the gate open")
-        .contains("failed with a cause that retrying cannot repair");
+    // then - the classification reaches the gate, and the gate takes the node down rather than
+    // hanging at it or admitting a node that can serve nobody
+    Awaitility.await("startup aborts")
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () ->
+                assertThat(camunda.getLogs())
+                    .contains("failed with a cause that retrying cannot repair")
+                    .contains("EveryTenantTerminallyFailedException"));
 
-    // and - it withholds traffic through readiness instead, with logs, metrics and actuator
-    // available for diagnosis
-    assertThat(bodyOf("/actuator/health/readiness").statusCode()).isEqualTo(503);
-    assertThatDefaultTenantGaugeReportsDegraded();
+    // and - it exits non-zero, so an orchestrator restarts it and a rollout stops here rather
+    // than replacing healthy nodes with ones that will never serve
+    Awaitility.await("the node exits")
+        .atMost(Duration.ofMinutes(1))
+        .until(() -> !camunda.isRunning());
+    assertThat(camunda.getCurrentContainerInfo().getState().getExitCodeLong()).isNotZero();
+  }
+
+  /**
+   * Returns as soon as the container is running, without waiting for readiness — the only way to
+   * observe a node that is expected to take itself down.
+   */
+  private static WaitStrategy runningContainer() {
+    return new WaitStrategy() {
+      @Override
+      public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {}
+
+      @Override
+      public WaitStrategy withStartupTimeout(final Duration startupTimeout) {
+        return this;
+      }
+    };
   }
 
   /**

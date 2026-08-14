@@ -43,7 +43,9 @@ public class SearchEngineSchemaInitializer
   /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
    *     is serviceable. Only a node with an HTTP gateway does; every other node has no consumer
-   *     that benefits from waiting (ADR 004 D2).
+   *     that benefits from waiting (ADR 004 D2). It also decides whether the node can abort: the
+   *     abort belongs to the gate, so a node that does not wait at one stays up with every tenant
+   *     degraded, as it does today.
    */
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,

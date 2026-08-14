@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.search.SearchEngineSchemaInitializer.TerminalSchemaInitializationException;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -170,18 +171,36 @@ class SearchEngineSchemaInitializerTest {
   void shouldTreatAnUnbuildableSearchClientAsTerminal() {
     // given - connect settings that no search client can be built from. Retrying a static
     // misconfiguration like this would never succeed, so the tenant is left degraded instead
-    final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
-    final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
-    configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
-    initializer =
-        new SearchEngineSchemaInitializer(
-            configs, descriptorsFor(resolver), new SimpleMeterRegistry(), false);
+    initializer = terminallyMisconfiguredInitializer(false);
 
     // when / then
     assertThatThrownBy(() -> initializer.initializeTenant(DEFAULT_TENANT))
         .isInstanceOf(TerminalSchemaInitializationException.class)
         .cause()
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldAbortStartupWithAnHttpGatewayWhenEveryTenantFailsTerminally() {
+    // given - a node whose only tenant is misconfigured in a way retrying cannot repair
+    initializer = terminallyMisconfiguredInitializer(true);
+
+    // when / then - it takes itself down rather than coming up able to serve nobody, never
+    // becoming ready, and exporting into the schema the classification just refused
+    assertThatThrownBy(() -> initializer.afterPropertiesSet())
+        .isInstanceOf(EveryTenantTerminallyFailedException.class)
+        .hasMessageContaining(DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldNotAbortStartupWithoutAnHttpGatewayWhenEveryTenantFailsTerminally() {
+    // given - the same misconfiguration on a node that waits at no gate
+    initializer = terminallyMisconfiguredInitializer(false);
+
+    // when / then - the abort belongs to the gate, so a node without one stays up with its tenant
+    // degraded and its exporter retrying per partition, as it does today (ADR 004 D2, D3)
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
   }
 
   @Test
@@ -235,6 +254,20 @@ class SearchEngineSchemaInitializerTest {
       final PhysicalTenantResolver resolver, final boolean holdsStartup) {
     return new SearchEngineSchemaInitializer(
         configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
+  }
+
+  /**
+   * A single tenant whose connect settings no search client can be built from, so it is terminal
+   * from its first attempt and stays that way — the shortest route to "every tenant terminal"
+   * without a container.
+   */
+  private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
+      final boolean holdsStartup) {
+    final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
+    final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
+    configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
+    return new SearchEngineSchemaInitializer(
+        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
   }
 
   /**

@@ -22,14 +22,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Initializes every physical tenant's secondary-storage schema independently: one task per tenant,
- * each retrying in the background until it succeeds, with no failure ever aborting startup.
- * Storage-agnostic — the attempt, the terminal classification and the retry configuration are
- * supplied by the caller, so that Elasticsearch/OpenSearch and RDBMS can share this component.
+ * each retrying in the background until it succeeds, with no single tenant's failure aborting
+ * startup. Storage-agnostic — the attempt, the terminal classification and the retry configuration
+ * are supplied by the caller, so that Elasticsearch/OpenSearch and RDBMS can share this component.
  *
  * <p>{@link #awaitGate()} blocks until every tenant has <em>settled</em> — initialized or failed at
  * least once — and either one tenant is serviceable or none is still trying. Requiring a
@@ -38,6 +39,10 @@ import org.slf4j.LoggerFactory;
  * booting; requiring it only while some tenant can still make progress is what keeps the gate from
  * waiting on a condition nothing can satisfy. See ADR 004 D3 ({@code
  * docs/adr/management/004-per-physical-tenant-schema-initialization.md}).
+ *
+ * <p>The one state the gate refuses to open into is every tenant terminal: that is a diagnosis that
+ * no wait will change the outcome, so {@link #awaitGate()} throws instead and startup aborts. The
+ * other ways a tenant can stop trying are not diagnoses, and they release the gate as above.
  *
  * <p>Only a caller that serves an HTTP surface calls {@link #awaitGate()}; every other caller
  * {@link #start()}s the tasks and returns (ADR 004 D2).
@@ -73,8 +78,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * @param attempt applies one tenant's schema in a single attempt; throws to report failure
    * @param terminal decides whether one failure will not be repaired by retrying — the cause chain
    *     is walked for the caller, so this only classifies a single throwable. A tenant classified
-   *     terminal stops trying, and therefore stops holding the gate shut, so the bar is "certainly
-   *     not repairable without operator action" (ADR 004 D6).
+   *     terminal stops trying, and if every tenant is classified that way the gate aborts startup
+   *     rather than releasing, so the bar is "certainly not repairable without operator action"
+   *     (ADR 004 D6).
    * @param retryConfig the backoff applied between a tenant's attempts
    */
   public PerTenantSchemaInitialization(
@@ -132,6 +138,9 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * <p>The wait is interruptible so that a shutdown signal arriving mid-initialization releases it.
    * A shutdown-triggered interrupt is deliberately not re-raised: the Spring context refresh has to
    * be allowed to finish for the broker to shut down gracefully.
+   *
+   * @throws EveryTenantTerminallyFailedException if the gate opened with no serviceable tenant and
+   *     every tenant terminal, which aborts the caller's startup (ADR 004 D3)
    */
   public void awaitGate() {
     gateLock.lock();
@@ -139,6 +148,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
       while (!isGateOpen()) {
         gateChanged.await();
       }
+      failIfEveryTenantFailedTerminally();
     } catch (final InterruptedException e) {
       LOG.debug(
           "Interrupted while waiting for a serviceable physical tenant. Shutdown signal is"
@@ -189,6 +199,29 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     return anyReady || noneTrying;
   }
 
+  /**
+   * Aborts startup for the one state releasing cannot help: nothing serviceable, and every tenant
+   * stopped by a failure the classification called unrepairable. Any other reason for stopping — an
+   * exhausted retry budget, a task that could not be run — leaves the gate released and the node up
+   * but unable to serve, which is where an operator can still reach it.
+   *
+   * <p>Must be called with {@link #gateLock} held, and only once {@link #isGateOpen()} holds.
+   */
+  private void failIfEveryTenantFailedTerminally() {
+    if (shutdown.get() || tenants.isEmpty()) {
+      return;
+    }
+    final var terminalFailures = new LinkedHashMap<String, Throwable>();
+    for (final var tenant : tenants.entrySet()) {
+      final TenantState state = tenant.getValue();
+      if (state.ready.get() || state.terminalFailure == null) {
+        return;
+      }
+      terminalFailures.put(tenant.getKey(), state.terminalFailure);
+    }
+    throw EveryTenantTerminallyFailedException.of(terminalFailures);
+  }
+
   private void initializeTenant(final String physicalTenantId, final TenantState state) {
     try {
       // read inside the try: everything that can throw — an unusable retry configuration included
@@ -225,9 +258,10 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
                 "Schema initialization for physical tenant '{}' failed with a cause that retrying"
                     + " cannot repair, so it will not be retried. This tenant stays degraded, and"
                     + " its requests keep being rejected, until the cause is fixed and the node is"
-                    + " restarted.",
+                    + " restarted. If no other tenant can be served either, startup aborts.",
                 physicalTenantId,
                 failure);
+            recordTerminal(state, failure);
             return;
           }
           if (attemptNumber >= maxAttempts) {
@@ -279,6 +313,23 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
         state.settled = true;
         gateChanged.signalAll();
       }
+    } finally {
+      gateLock.unlock();
+    }
+  }
+
+  /**
+   * Records the failure that stopped a tenant for good, for the one cause the gate treats
+   * differently from the rest.
+   *
+   * <p>Called before {@link #stopTrying}, never after, because stopping is what can open the gate:
+   * the other order lets a waiter wake on the last tenant stopping and read a failure that has not
+   * been written yet, and release into the state this exists to abort.
+   */
+  private void recordTerminal(final TenantState state, final Throwable failure) {
+    gateLock.lock();
+    try {
+      state.terminalFailure = failure;
     } finally {
       gateLock.unlock();
     }
@@ -356,14 +407,20 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
   }
 
   /**
-   * One tenant's contribution to the gate. {@code settled} and {@code trying} are written and read
-   * only under {@link #gateLock}; {@code ready} is also written under it, but is read without the
-   * lock by {@link #isInitialized(String)}, which every rejected request consults and which must
-   * not serialize on a lock shared with every other tenant.
+   * One tenant's contribution to the gate. {@code settled}, {@code trying} and {@code
+   * terminalFailure} are written and read only under {@link #gateLock}; {@code ready} is also
+   * written under it, but is read without the lock by {@link #isInitialized(String)}, which every
+   * rejected request consults and which must not serialize on a lock shared with every other
+   * tenant.
+   *
+   * <p>{@code terminalFailure} is null for every way of stopping other than a terminal
+   * classification, which is the distinction the gate's abort rests on — not {@code trying}, which
+   * every way of stopping clears alike.
    */
   private static final class TenantState {
     private final AtomicBoolean ready = new AtomicBoolean(false);
     private boolean settled;
     private boolean trying = true;
+    private @Nullable Throwable terminalFailure;
   }
 }

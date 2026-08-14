@@ -8,6 +8,8 @@
 package io.camunda.application.commons.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
@@ -20,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -28,11 +31,13 @@ import org.junit.jupiter.api.Timeout;
  * Exercises the startup gate and the background retry loop against a fake attempt, so that the
  * concurrency is asserted without a storage container and in milliseconds.
  *
- * <p>Two failure modes are worth more than the rest, and most of these tests exist for one of them.
- * Opening the gate too early serves the webapp a 503 storm with a broken login for as long as a
- * co-started storage takes to boot. Never opening it — one exit path that leaves a tenant counted
- * as still trying — is a permanent startup hang with nothing in the logs to say why. The class
- * timeout is what turns the second one into a failing test rather than a stuck build.
+ * <p>Three failure modes are worth more than the rest, and most of these tests exist for one of
+ * them. Opening the gate too early serves the webapp a 503 storm with a broken login for as long as
+ * a co-started storage takes to boot. Never opening it — one exit path that leaves a tenant counted
+ * as still trying — is a permanent startup hang with nothing in the logs to say why; the class
+ * timeout is what turns that into a failing test rather than a stuck build. And aborting on the
+ * wrong set of tenants turns an outage the node would have retried through into a crash loop, or
+ * lets a node that can serve nothing come up and export into a schema it was told is unusable.
  */
 @Timeout(60)
 final class PerTenantSchemaInitializationTest {
@@ -139,7 +144,7 @@ final class PerTenantSchemaInitializationTest {
   }
 
   @Test
-  void shouldOpenTheGateWhenEveryTenantFailedTerminally() {
+  void shouldAbortStartupWhenEveryTenantFailedTerminally() {
     // given - a misconfiguration no retry can repair, on every tenant
     try (final var initialization =
         initialization(
@@ -150,11 +155,67 @@ final class PerTenantSchemaInitializationTest {
 
       // when - nothing will ever become serviceable, and nothing is still trying
       initialization.start();
-      initialization.awaitGate();
 
-      // then - the node comes up not-ready rather than hanging at the gate forever
+      // then - startup aborts rather than releasing into a node that can serve nothing, becomes
+      // ready never, and goes on exporting into the schema the classification just refused
+      assertThatThrownBy(initialization::awaitGate)
+          .isInstanceOf(EveryTenantTerminallyFailedException.class)
+          .hasMessageContaining(TENANT_A)
+          .hasMessageContaining(TENANT_B)
+          .as("one stack trace carries every tenant's failure")
+          .hasCauseInstanceOf(TerminalFailure.class)
+          .extracting(Throwable::getSuppressed, InstanceOfAssertFactories.array(Throwable[].class))
+          .singleElement()
+          .isInstanceOf(TerminalFailure.class);
+    }
+  }
+
+  @Test
+  void shouldNotAbortStartupWhileOneTenantIsStillServiceable() {
+    // given - the isolation this whole change exists for: one tenant terminally misconfigured
+    // must not take down a node that can serve the other
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_A.equals(tenantId)) {
+                throw new TerminalFailure();
+              }
+            })) {
+
+      // when / then
+      initialization.start();
+      assertThatNoException().isThrownBy(initialization::awaitGate);
+      assertThat(initialization.isInitialized(TENANT_B)).isTrue();
       assertThat(initialization.isInitialized(TENANT_A)).isFalse();
-      assertThat(initialization.isInitialized(TENANT_B)).isFalse();
+    }
+  }
+
+  @Test
+  void shouldNotAbortStartupWhenShuttingDown() {
+    // given - every tenant terminal, so the gate is in exactly the state it aborts on
+    final var attempts = new AtomicInteger();
+    final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              attempts.incrementAndGet();
+              throw new TerminalFailure();
+            });
+    try {
+      initialization.start();
+      Awaitility.await("both tenants have failed terminally")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(attempts.get()).isEqualTo(2));
+
+      // when - shutdown arrives before anything waits on the gate
+      initialization.close();
+
+      // then - the abort is not raised on top of a shutdown that is already under way, where it
+      // would mask whatever actually caused the context to close
+      assertThatNoException().isThrownBy(initialization::awaitGate);
+    } finally {
+      initialization.close();
     }
   }
 
@@ -176,10 +237,12 @@ final class PerTenantSchemaInitializationTest {
 
       // when - the retry budget runs out on every tenant
       initialization.start();
-      initialization.awaitGate();
 
-      // then - the bound is honoured exactly, and the node comes up not-ready rather than waiting
-      // for a serviceable tenant no task is left to produce
+      // then - the bound is honoured exactly, and the node comes up unable to serve rather than
+      // waiting for a serviceable tenant no task is left to produce. It does not abort: an
+      // exhausted budget is the operator's configured give-up, not a diagnosis that the
+      // deployment is wrong, so it is not grounds for taking the node down.
+      assertThatNoException().isThrownBy(initialization::awaitGate);
       assertThat(attempts.get(TENANT_A)).hasValue(3);
       assertThat(attempts.get(TENANT_B)).hasValue(3);
       assertThat(initialization.isInitialized(TENANT_A)).isFalse();
@@ -223,9 +286,10 @@ final class PerTenantSchemaInitializationTest {
             TerminalFailure.class::isInstance,
             tenantId -> unusable)) {
 
-      // when / then - a tenant that cannot even start must not hold the gate shut forever
+      // when / then - a tenant that cannot even start must not hold the gate shut forever, and
+      // must not abort startup either: this is our defect, not a diagnosis of the deployment
       initialization.start();
-      initialization.awaitGate();
+      assertThatNoException().isThrownBy(initialization::awaitGate);
       assertThat(initialization.isInitialized(TENANT_A)).isFalse();
     }
   }
@@ -245,9 +309,10 @@ final class PerTenantSchemaInitializationTest {
             },
             retryConfig())) {
 
-      // when / then
+      // when / then - a broken classification cannot classify anything as terminal, so the node
+      // is released unable to serve rather than aborted on a diagnosis that was never made
       initialization.start();
-      initialization.awaitGate();
+      assertThatNoException().isThrownBy(initialization::awaitGate);
       assertThat(initialization.isInitialized(TENANT_A)).isFalse();
     }
   }
@@ -266,7 +331,7 @@ final class PerTenantSchemaInitializationTest {
 
       // when / then
       initialization.start();
-      initialization.awaitGate();
+      assertThatNoException().isThrownBy(initialization::awaitGate);
       assertThat(initialization.isInitialized(TENANT_A)).isFalse();
     }
   }
@@ -371,9 +436,10 @@ final class PerTenantSchemaInitializationTest {
               throw new TerminalFailure();
             })) {
 
-      // when
+      // when - the only tenant is terminal, so the gate aborts as well as stopping the retries
       initialization.start();
-      initialization.awaitGate();
+      assertThatThrownBy(initialization::awaitGate)
+          .isInstanceOf(EveryTenantTerminallyFailedException.class);
 
       // then - the tenant is degraded and no further attempt is made
       assertThat(initialization.isInitialized(TENANT_B)).isFalse();
@@ -396,9 +462,10 @@ final class PerTenantSchemaInitializationTest {
 
       // when
       initialization.start();
-      initialization.awaitGate();
+      assertThatThrownBy(initialization::awaitGate)
+          .isInstanceOf(EveryTenantTerminallyFailedException.class);
 
-      // then
+      // then - the wrapped cause is classified, so it both stops the retries and reaches the abort
       assertAttemptCountStopsGrowing(attempts, 1);
     }
   }
