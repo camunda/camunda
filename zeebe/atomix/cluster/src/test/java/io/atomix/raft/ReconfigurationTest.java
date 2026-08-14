@@ -1466,6 +1466,97 @@ final class ReconfigurationTest {
     }
 
     /**
+     * The termination counterpart of {@link
+     * #shouldNotCommitPromotionWhilePromotedMemberUnreachable}: that test pins that an appended
+     * promotion does not commit without the promoted member, and deliberately keeps the step-down
+     * out of its observation window. This one pins that a promotion whose joint configuration can
+     * never commit does not leave the leader wedged either - it must not fall back to committing
+     * under the old configuration alone, which would apply the promotion without the promoted
+     * member ever having stored it, so instead it fails to reach a quorum and steps down. It uses
+     * the class's default timeouts for exactly that reason.
+     */
+    @Test
+    void shouldStepDownWhenPromotionCanNeverCommit(@TempDir final Path tmp) {
+      // given - a single-member cluster [1A] with a caught-up PROMOTABLE member 2
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(5));
+
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(m2.join(Type.PROMOTABLE, List.of(id1, id2)))
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitCaughtUp(m1, m2);
+      awaitSameConfiguration(m1, m2);
+
+      // when - m2 becomes unreachable in both directions, so it can neither acknowledge the joint
+      // configuration nor answer polls and votes: a member that still answered votes could
+      // re-elect the leader immediately after it stepped down. Blocking only entry-carrying
+      // appends, as the sibling test does, would leave exactly that hole. The promotion is then
+      // requested through a client rather than by m2 itself: an isolated m2 could not send it, and
+      // DefaultRaftMember#promote retries on NO_LEADER, so its future would never complete and
+      // there would be nothing deterministic to assert on. The leader's match index for m2 is
+      // untouched by the failing appends, so the request still passes the catch-up gate.
+      final var commitIndexBeforePromotion = m1.getContext().getCommitIndex();
+      final var configuration = m1.getContext().getCluster().getConfiguration();
+      final var client = protocolFactory.newServerProtocol(MemberId.from("test-client"));
+      protocolFactory.partition(id2);
+
+      final var promoted =
+          List.<RaftMember>of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
+      final var response =
+          client.reconfigure(
+              id1,
+              ReconfigureRequest.builder()
+                  .withIndex(configuration.index())
+                  .withTerm(m1.getContext().getCluster().getConfigurationTerm())
+                  .withMembers(promoted)
+                  .from(id1.id())
+                  .build());
+
+      // then - the joint configuration is appended
+      Awaitility.await("the joint configuration is appended")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          m1.getContext().getCluster().getConfiguration().requiresJointConsensus())
+                      .isTrue());
+      final var jointIndex = m1.getContext().getCluster().getConfiguration().index();
+      assertThat(jointIndex).isGreaterThan(commitIndexBeforePromotion);
+
+      // and - it never commits and the leader steps down instead of committing it under the old
+      // configuration [1A] alone. It also stays down: the joint vote quorum needs a majority of
+      // the new side [1A, 2A] too, which m2 is part of.
+      awaitNoLeader(m1);
+      Awaitility.await("the promotion never commits and the leader stays down")
+          .during(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                assertThat(m1.getContext().getCommitIndex())
+                    .isEqualTo(commitIndexBeforePromotion)
+                    .isLessThan(jointIndex);
+                assertThat(m1.isLeader()).isFalse();
+              });
+
+      // and - the promotion does not succeed. It terminates either with the error the stepping-down
+      // leader completes the pending reconfiguration with, or, if that response loses the race
+      // against the test protocol's request timeout, exceptionally. Both mean a failed promotion,
+      // and asserting only one of the two would be racy.
+      Awaitility.await("the promotion request completes")
+          .untilAsserted(() -> assertThat(response).isDone());
+      assertThat(response.isCompletedExceptionally() || response.join().status() == Status.ERROR)
+          .describedAs("the promotion must not succeed")
+          .isTrue();
+      assertThat(m1.getContext().getCluster().getConfiguration().requiresJointConsensus())
+          .describedAs("the promotion never took effect: the cluster is left in joint consensus")
+          .isTrue();
+    }
+
+    /**
      * A crash-recovery retry of join(PROMOTABLE) can arrive after the member was already promoted
      * to ACTIVE. Joining must never demote: the retry is acknowledged without a configuration
      * change.
