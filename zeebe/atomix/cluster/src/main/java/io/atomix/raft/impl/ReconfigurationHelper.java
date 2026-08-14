@@ -28,7 +28,9 @@ import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -78,19 +80,27 @@ public final class ReconfigurationHelper {
             return;
           }
 
-          // Always transition to PASSIVE or the last member type as found by
-          // `reloadConfigurationFromLog`.
-          // This ensures that the member trying to join is not stuck in `INACTIVE` which would
-          // prevent the joining from completing, particularly when joining a single-member cluster
-          // where this new node is already required for quorum.
-          switch (raftContext.getCluster().getLocalMember().getType()) {
-            // The last configuration entry is probably old and has the local member as INACTIVE.
-            // Ignore this and become PASSIVE instead.
-            case INACTIVE -> raftContext.transition(Type.PASSIVE);
-            // The last configuration entry has the local member as PASSIVE or ACTIVE, we can
-            // directly transition to that.
-            case final Type memberType -> raftContext.transition(memberType);
-          }
+          final var storedType = raftContext.getCluster().getLocalMember().getType();
+          final var startType =
+              switch (storedType) {
+                // No configuration at all: the member may replicate and catch up but must not
+                // enter the voting follower role, and it must not stay INACTIVE either, which
+                // accepts no appends and would prevent the join from completing, particularly
+                // when joining a single-member cluster where this new node is already required
+                // for quorum. ACTIVE joins keep starting as PASSIVE: starting them as PROMOTABLE
+                // would satisfy both constraints too, but would surface the PROMOTABLE role on
+                // the production one-shot join path before the dynamic-config orchestration
+                // adopts two-phase joins (#57392); the leader's configuration promotes them
+                // either way.
+                case INACTIVE -> type == Type.ACTIVE ? Type.PASSIVE : type;
+                // Never start above the requested type: non-voting members persist the leader's
+                // uncommitted tail, so the stored type may come from a configuration entry that a
+                // later leader has since truncated - a PROMOTABLE joiner must not enter the
+                // voting follower role on the strength of such an entry while the leader still
+                // counts it as non-voting.
+                default -> Collections.min(List.of(storedType, type));
+              };
+          raftContext.transition(startType);
 
           // We don't know if the latest configuration loaded from the log is valid. So we will
           // retry join any way.
