@@ -893,9 +893,17 @@ public class PassiveRole extends InactiveRole {
           return;
         }
 
-        // If the last log index meets the commitIndex, break the append loop to avoid appending
-        // uncommitted entries.
-        if (!role().active() && index == commitIndex) {
+        // A PASSIVE member is a committed-only replica by design - the leader ships entries to it
+        // through a committed reader (see RaftMemberContext#newReader) - so it stops appending
+        // when a batch straddles the request's commit index, to avoid persisting uncommitted
+        // entries. A PROMOTABLE member, by contrast, must accept the uncommitted tail that the
+        // leader ships via an uncommitted reader, so it can catch up to the leader's last index
+        // for promotion. Note that this break only fires for batches straddling the commit index:
+        // batches lying entirely beyond it are appended in full by every role, and a dropped
+        // straddle-tail is recovered by the leader's reject/rewind handling - so for PROMOTABLE
+        // this saves the extra probe/rewind round trips at each commit boundary during catch-up
+        // rather than gating it.
+        if (role() == RaftServer.Role.PASSIVE && index == commitIndex) {
           break;
         }
       }
