@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -92,7 +94,12 @@ public final class BpmnProcessors {
     final var keyGenerator = processingState.getKeyGenerator();
 
     addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState, asyncRequestBehavior, cslCheck);
+        writers,
+        typedRecordProcessors,
+        processingState,
+        asyncRequestBehavior,
+        cslCheck,
+        bpmnBehaviors.jobActivationBehavior());
     addProcessInstanceBufferedCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
@@ -167,7 +174,8 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final BpmnJobActivationBehavior jobActivationBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -177,6 +185,10 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME,
         new ProcessInstanceResumeProcessor(processingState, writers, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.RESUME_JOBS,
+        new ProcessInstanceResumeJobsProcessor(processingState, writers, jobActivationBehavior));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.COMPLETE_RESUMING,

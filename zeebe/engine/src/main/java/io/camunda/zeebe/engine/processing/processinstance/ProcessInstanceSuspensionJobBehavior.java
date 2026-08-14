@@ -19,10 +19,12 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Parks jobs of a process instance so they are no longer handed out while the instance is
- * suspended.
+ * suspended, and finds them again one at a time so resume can un-park them without writing every
+ * job of a large instance into a single record batch.
  *
  * <p>Jobs of called child instances are left untouched. {@link ElementInstanceState#getChildren}
  * does not return a child instance's root for the given element instance key, so the walk never
@@ -39,6 +41,9 @@ public final class ProcessInstanceSuspensionJobBehavior {
    */
   private static final Set<State> SUSPENDABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.WAITING_FOR_SECRET_RESOLUTION);
+
+  /** The only state {@link JobIntent#RESUMED} leaves; see {@code JobResumedApplier}. */
+  private static final Set<State> RESUMABLE_STATES = EnumSet.of(State.SUSPENDED);
 
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
@@ -63,6 +68,37 @@ public final class ProcessInstanceSuspensionJobBehavior {
         processInstanceKey,
         SUSPENDABLE_STATES,
         (jobKey, job) -> stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job));
+  }
+
+  /**
+   * Finds the first still-parked job of the process instance ({@link State#SUSPENDED}), without
+   * changing its state. Returns as soon as one is found instead of walking the rest of the
+   * instance, so a caller can un-park jobs one at a time across several commands instead of in a
+   * single batch; see {@code ProcessInstanceResumeJobsProcessor}.
+   */
+  public @Nullable ParkedJob findNextParkedJob(final long processInstanceKey) {
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    if (processInstance == null) {
+      return null;
+    }
+
+    final var elementInstances = new ArrayDeque<ElementInstance>();
+    elementInstances.add(processInstance);
+    while (!elementInstances.isEmpty()) {
+      final var elementInstance = elementInstances.poll();
+      final long jobKey = elementInstance.getJobKey();
+      if (jobKey > 0 && RESUMABLE_STATES.contains(jobState.getState(jobKey))) {
+        final var job = jobState.getJob(jobKey);
+        if (job != null) {
+          return new ParkedJob(jobKey, job);
+        }
+      }
+      // defensive invariant, see class javadoc: getChildren never returns a child instance's root
+      elementInstanceState.getChildren(elementInstance.getKey()).stream()
+          .filter(child -> child.getValue().getProcessInstanceKey() == processInstanceKey)
+          .forEach(elementInstances::add);
+    }
+    return null;
   }
 
   private void forEachJobInStates(
@@ -100,4 +136,7 @@ public final class ProcessInstanceSuspensionJobBehavior {
       consumer.accept(jobKey, job);
     }
   }
+
+  /** A job found by {@link #findNextParkedJob(long)}. */
+  public record ParkedJob(long jobKey, JobRecord job) {}
 }

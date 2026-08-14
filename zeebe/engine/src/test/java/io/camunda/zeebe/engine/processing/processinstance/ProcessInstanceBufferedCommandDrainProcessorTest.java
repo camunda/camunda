@@ -83,7 +83,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
   }
 
   @Test
-  void shouldAppendCompleteResumingWhenBufferEmpty() {
+  void shouldAppendResumeJobsWhenBufferEmpty() {
     // when
     processor.processRecord(drainCommand());
 
@@ -91,7 +91,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessorTest {
     verify(commandWriter)
         .appendFollowUpCommand(
             eq(PROCESS_INSTANCE_KEY),
-            eq(ProcessInstanceIntent.COMPLETE_RESUMING),
+            eq(ProcessInstanceIntent.RESUME_JOBS),
             any(ProcessInstanceRecord.class));
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
   }
