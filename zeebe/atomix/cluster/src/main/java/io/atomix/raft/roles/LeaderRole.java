@@ -473,6 +473,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private void leaveJointConsensus(
       final Collection<RaftMember> updatedMembers, final Configuration configuration) {
+    if (!isRunning() || !raft.isRunning()) {
+      // This runs deferred - from the completion of the joint configuration's commit or from a
+      // task scheduled in start() - so the role may have stopped or the server may have shut down
+      // in the meantime. Do not append as an ex-leader; the next elected leader resumes the exit
+      // from joint consensus (see start()). Both checks are needed: stepping down stops the role
+      // but a closing server does not stop it before closing the log.
+      ongoingReconfigurationRequestFuture.complete(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(Type.NO_LEADER, "Leader stopped before leaving joint consensus")
+                  .build()));
+      return;
+    }
     configure(updatedMembers, List.of())
         .whenComplete(
             (leftJointConsensusIndex, leftJointConsensusError) -> {
