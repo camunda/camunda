@@ -24,10 +24,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
@@ -35,6 +37,7 @@ import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
@@ -52,6 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.Timeout;
+import org.mockito.ArgumentCaptor;
 
 public class PassiveRoleTest {
 
@@ -324,5 +328,41 @@ public class PassiveRoleTest {
     final var field = PassiveRole.class.getDeclaredField("pendingSnapshot");
     field.setAccessible(true);
     return field.get(role);
+  }
+
+  /**
+   * A configuration is identified by its index and the term of the entry that introduced it, so a
+   * member configured by a leader has to store that term - not the leader's current term, which
+   * only says who disseminated it. Storing the latter made {@code Configuration#term()} mean one
+   * thing on a member that appended the entry and another on a member that was configured, which
+   * the leader then rejected as a stale configuration.
+   */
+  @Test
+  public void shouldStoreTheConfigurationsOwnTerm() {
+    // given
+    final var cluster = mock(RaftClusterContext.class);
+    when(ctx.getCluster()).thenReturn(cluster);
+    // the commit check at the end of onConfigure reads it back; any older configuration will do
+    when(cluster.getConfiguration()).thenReturn(new Configuration(1, 1, 1, List.of(), List.of()));
+
+    // when - a leader in term 5 disseminates a configuration whose entry was appended in term 2
+    role.onConfigure(
+            ConfigureRequest.builder()
+                .withTerm(5)
+                .withConfigurationTerm(2)
+                .withLeader(MemberId.from("1"))
+                .withIndex(7)
+                .withTime(1)
+                .withNewMembers(List.of())
+                .build())
+        .join();
+
+    // then
+    final var configuration = ArgumentCaptor.forClass(Configuration.class);
+    verify(cluster).configure(configuration.capture());
+    assertThat(configuration.getValue().term())
+        .describedAs("the term of the configuration entry, not of its dissemination")
+        .isEqualTo(2);
+    assertThat(configuration.getValue().index()).isEqualTo(7);
   }
 }
