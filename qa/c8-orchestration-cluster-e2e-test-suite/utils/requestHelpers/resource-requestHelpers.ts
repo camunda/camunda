@@ -9,7 +9,14 @@
 import {APIResponse, expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 import {APIRequestContext} from 'playwright-core';
-import {assertStatusCode, buildUrl, defaultHeaders, jsonHeaders} from '../http';
+import {
+  assertStatusCode,
+  authHeaders,
+  buildUrl,
+  credentials,
+  defaultHeaders,
+  jsonHeaders,
+} from '../http';
 import {generateUniqueId} from '../constants';
 
 type DeploymentItem = Record<string, Record<string, unknown> | undefined>;
@@ -404,13 +411,87 @@ export async function deployInlineResource(
   return resources[0];
 }
 
+// The endpoint constants are exported because a spec needs the same literal a
+// second time for `validateResponse({path, ...})`. Reusing the constant keeps
+// the requested path and the validated path from drifting apart.
+export const RESOURCE_SEARCH_ENDPOINT = '/resources/search';
+export const RESOURCE_ENDPOINT = '/resources/{resourceKey}';
+export const RESOURCE_CONTENT_ENDPOINT = '/resources/{resourceKey}/content';
+export const RESOURCE_CONTENT_BINARY_ENDPOINT =
+  '/resources/{resourceKey}/content/binary';
+export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
+
+// Every helper below returns the raw response so callers keep asserting the
+// status themselves — these endpoints are exercised for 200, 400, 401, 404 and
+// 406 alike. `headers` overrides the default, which is how the unauthorized
+// cases send none.
+interface ResourceRequestOptions {
+  headers?: Record<string, string>;
+}
+
 export async function searchResources(
   request: APIRequestContext,
   body: Record<string, unknown> = {},
+  options: ResourceRequestOptions = {},
 ): Promise<APIResponse> {
-  return request.post(buildUrl('/resources/search'), {
-    headers: jsonHeaders(),
+  return request.post(buildUrl(RESOURCE_SEARCH_ENDPOINT), {
+    headers: options.headers ?? jsonHeaders(),
     data: body,
+  });
+}
+
+export function getResource(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
+  });
+}
+
+export function getResourceContent(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_CONTENT_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
+  });
+}
+
+// Workaround for bug #59831: https://github.com/camunda/camunda/issues/59831
+// The handler is mapped with the gateway's default JSON produces list, so an
+// explicit `Accept: application/octet-stream` — the media type the API spec
+// documents — is answered with 406. Send no Accept header until that is fixed.
+export function getResourceContentBinary(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(
+    buildUrl(RESOURCE_CONTENT_BINARY_ENDPOINT, {resourceKey}),
+    {headers: options.headers ?? authHeaders(credentials.accessToken)},
+  );
+}
+
+interface DeleteResourceOptions extends ResourceRequestOptions {
+  data?: Record<string, unknown>;
+}
+
+export function deleteResource(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: DeleteResourceOptions = {},
+): Promise<APIResponse> {
+  // A request carrying a body states its own Content-Type rather than leaving
+  // Playwright to infer one; a bodyless delete only declares what it accepts.
+  const headers =
+    options.headers ??
+    (options.data === undefined ? defaultHeaders() : jsonHeaders());
+  return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
+    headers,
+    ...(options.data === undefined ? {} : {data: options.data}),
   });
 }
 

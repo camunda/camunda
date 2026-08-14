@@ -7,18 +7,13 @@
  */
 
 import {APIRequestContext, expect, test} from '@playwright/test';
-import {
-  assertStatusCode,
-  authHeaders,
-  buildUrl,
-  credentials,
-  jsonHeaders,
-} from '../../../../utils/http';
+import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {
   activateJobAndGetHeaders,
   completeJob,
   deployInlineFiles,
   deployInlineResource,
+  getResourceContentBinary,
   parseLinkedResourcesHeader,
   serviceTaskWithLinkedResourcesBpmn,
 } from '@requestHelpers';
@@ -46,11 +41,7 @@ async function fetchResourceContent(
   request: APIRequestContext,
   resourceKey: string,
 ): Promise<string> {
-  const res = await request.get(
-    buildUrl('/resources/{resourceKey}/content/binary', {resourceKey}),
-    // No Accept header — see camunda/camunda#59831.
-    {headers: authHeaders(credentials.accessToken)},
-  );
+  const res = await getResourceContentBinary(request, resourceKey);
   await assertStatusCode(res, 200);
   return res.text();
 }

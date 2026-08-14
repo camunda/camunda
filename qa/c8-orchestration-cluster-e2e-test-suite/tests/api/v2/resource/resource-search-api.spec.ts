@@ -12,7 +12,6 @@ import {
   assertPaginatedRequest,
   assertUnauthorizedRequest,
   assertStatusCode,
-  buildUrl,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -22,6 +21,7 @@ import {
   deployInlineResources,
   deployResourceAndGetMetadata,
   resourceKeysOf,
+  RESOURCE_SEARCH_ENDPOINT,
   rpaResourceContent,
   searchResources,
   uniqueResourceName,
@@ -48,7 +48,7 @@ async function searchAndValidate(
 ) {
   const res = await searchResources(request, body);
   await validateResponse(
-    {path: '/resources/search', method: 'POST', status: '200'},
+    {path: RESOURCE_SEARCH_ENDPOINT, method: 'POST', status: '200'},
     res,
   );
   return res;
@@ -398,10 +398,11 @@ test.describe('Resource Search API', () => {
 
   // eslint-disable-next-line playwright/expect-expect
   test('Search Resources - Unauthorized 401', async ({request}) => {
-    const res = await request.post(buildUrl('/resources/search'), {
-      headers: {'Content-Type': 'application/json'},
-      data: {},
-    });
+    const res = await searchResources(
+      request,
+      {},
+      {headers: {'Content-Type': 'application/json'}},
+    );
 
     await assertUnauthorizedRequest(res);
   });

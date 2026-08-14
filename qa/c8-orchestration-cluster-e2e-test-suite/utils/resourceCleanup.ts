@@ -7,7 +7,7 @@
  */
 
 import {APIRequestContext} from '@playwright/test';
-import {defaultHeaders, buildUrl} from './http';
+import {deleteResource} from './requestHelpers/resource-requestHelpers';
 
 export async function cleanupResources(
   request: APIRequestContext,
@@ -20,10 +20,7 @@ export async function cleanupResources(
   const results = await Promise.allSettled(
     resourceKeys.map(async (resourceKey) => {
       try {
-        const response = await request.post(
-          buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-          {headers: defaultHeaders()},
-        );
+        const response = await deleteResource(request, resourceKey);
         if (response.status() === 200) {
           console.log(`Successfully deleted resource: ${resourceKey}`);
           return {resourceKey, status: 'deleted'};

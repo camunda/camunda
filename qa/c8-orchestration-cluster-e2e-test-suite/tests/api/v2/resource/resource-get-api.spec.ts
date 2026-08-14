@@ -22,6 +22,8 @@ import {
 import {
   deployInlineResource,
   deployResourceAndGetMetadata,
+  getResource,
+  RESOURCE_ENDPOINT,
   ResourceMetadata,
   uniqueResourceName,
 } from '@requestHelpers';
@@ -33,7 +35,7 @@ function validateResourceResponse(
 ): void {
   validateResponseShape(
     {
-      path: '/resources/{resourceKey}',
+      path: RESOURCE_ENDPOINT,
       method: 'GET',
       status: '200',
     },
@@ -60,19 +62,12 @@ test.describe.parallel('Resource Get API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(
-        buildUrl('/resources/{resourceKey}', {
-          resourceKey: metadata.resourceKey,
-        }),
-        {
-          headers: jsonHeaders(),
-        },
-      );
+      const res = await getResource(request, metadata.resourceKey);
 
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-          path: '/resources/{resourceKey}',
+          path: RESOURCE_ENDPOINT,
           method: 'GET',
           status: '200',
         },
@@ -91,19 +86,12 @@ test.describe.parallel('Resource Get API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(
-        buildUrl('/resources/{resourceKey}', {
-          resourceKey: metadata.resourceKey,
-        }),
-        {
-          headers: jsonHeaders(),
-        },
-      );
+      const res = await getResource(request, metadata.resourceKey);
 
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-          path: '/resources/{resourceKey}',
+          path: RESOURCE_ENDPOINT,
           method: 'GET',
           status: '200',
         },
@@ -135,14 +123,7 @@ test.describe.parallel('Resource Get API', () => {
       await assertStatusCode(definitionRes, 200);
     }).toPass(defaultAssertionOptions);
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {
-        resourceKey: processDefinition.resourceKey,
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
+    const res = await getResource(request, processDefinition.resourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -154,14 +135,7 @@ test.describe.parallel('Resource Get API', () => {
   test('Get Resource - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {
-        resourceKey: nonExistentResourceKey,
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
+    const res = await getResource(request, nonExistentResourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -171,12 +145,7 @@ test.describe.parallel('Resource Get API', () => {
 
   // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - Unauthorized 401', async ({request}) => {
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {resourceKey: 'someKey'}),
-      {
-        headers: {},
-      },
-    );
+    const res = await getResource(request, 'someKey', {headers: {}});
 
     await assertUnauthorizedRequest(res);
   });

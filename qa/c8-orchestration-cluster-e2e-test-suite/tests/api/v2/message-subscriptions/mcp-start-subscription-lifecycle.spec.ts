@@ -7,12 +7,14 @@
  */
 
 import {test} from '@playwright/test';
-import {buildUrl, jsonHeaders, assertStatusCode} from '../../../../utils/http';
+import {assertStatusCode} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
+  deleteResource,
   expectStartSubscriptionPresent,
   expectStartSubscriptionAbsent,
+  RESOURCE_DELETION_ENDPOINT,
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
@@ -31,17 +33,13 @@ test.describe('MCP Start-Subscription Lifecycle API Tests', () => {
       resourceKey,
     );
 
-    const deletion = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-      {
-        headers: jsonHeaders(),
-        data: {deleteHistory: true},
-      },
-    );
+    const deletion = await deleteResource(request, resourceKey, {
+      data: {deleteHistory: true},
+    });
     await assertStatusCode(deletion, 200);
     await validateResponse(
       {
-        path: '/resources/{resourceKey}/deletion',
+        path: RESOURCE_DELETION_ENDPOINT,
         method: 'POST',
         status: '200',
       },
@@ -76,19 +74,13 @@ test.describe('MCP Start-Subscription Lifecycle API Tests', () => {
       resourceKeyB,
     );
 
-    const deletion = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {
-        resourceKey: resourceKeyA,
-      }),
-      {
-        headers: jsonHeaders(),
-        data: {deleteHistory: true},
-      },
-    );
+    const deletion = await deleteResource(request, resourceKeyA, {
+      data: {deleteHistory: true},
+    });
     await assertStatusCode(deletion, 200);
     await validateResponse(
       {
-        path: '/resources/{resourceKey}/deletion',
+        path: RESOURCE_DELETION_ENDPOINT,
         method: 'POST',
         status: '200',
       },

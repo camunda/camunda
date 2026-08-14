@@ -9,20 +9,19 @@
 import {expect, test} from '@playwright/test';
 import {
   assertStatusCode,
-  buildUrl,
-  credentials,
-  defaultHeaders,
   assertUnauthorizedRequest,
-  jsonHeaders,
   assertNotFoundRequest,
   assertBadRequest,
   assertPaginatedRequest,
-  authHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
+  deleteResource,
   deployInlineResource,
   deployResourceAndGetMetadata,
+  getResource,
+  getResourceContentBinary,
+  RESOURCE_DELETION_ENDPOINT,
   searchResources,
   uniqueResourceName,
 } from '@requestHelpers';
@@ -40,17 +39,12 @@ test.describe.parallel('Resource Delete API', () => {
     );
     const resourceKey = metadata.resourceKey;
 
-    const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    const res = await deleteResource(request, resourceKey);
 
     await assertStatusCode(res, 200);
     await validateResponse(
       {
-        path: '/resources/{resourceKey}/deletion',
+        path: RESOURCE_DELETION_ENDPOINT,
         method: 'POST',
         status: '200',
       },
@@ -67,45 +61,29 @@ test.describe.parallel('Resource Delete API', () => {
       '# System prompt',
     );
     const resourceKey = resource.resourceKey;
-    const contentBinaryUrl = buildUrl(
-      '/resources/{resourceKey}/content/binary',
-      {resourceKey},
-    );
 
     await expect(async () => {
       const searchRes = await searchResources(request, {filter: {resourceKey}});
       await assertPaginatedRequest(searchRes, {itemsLengthEqualTo: 1});
 
-      const contentRes = await request.get(contentBinaryUrl, {
-        headers: authHeaders(credentials.accessToken),
-      });
+      const contentRes = await getResourceContentBinary(request, resourceKey);
       await assertStatusCode(contentRes, 200);
     }).toPass(defaultAssertionOptions);
 
-    const deleteRes = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    const deleteRes = await deleteResource(request, resourceKey);
     await assertStatusCode(deleteRes, 200);
 
     await expect(async () => {
       const searchRes = await searchResources(request, {filter: {resourceKey}});
       await assertPaginatedRequest(searchRes, {itemsLengthEqualTo: 0});
 
-      const getRes = await request.get(
-        buildUrl('/resources/{resourceKey}', {resourceKey}),
-        {headers: defaultHeaders()},
-      );
+      const getRes = await getResource(request, resourceKey);
       await assertNotFoundRequest(
         getRes,
         `Resource with key '${resourceKey}' not found`,
       );
 
-      const contentRes = await request.get(contentBinaryUrl, {
-        headers: authHeaders(credentials.accessToken),
-      });
+      const contentRes = await getResourceContentBinary(request, resourceKey);
       await assertNotFoundRequest(
         contentRes,
         `Resource with key '${resourceKey}' not found`,
@@ -116,14 +94,7 @@ test.describe.parallel('Resource Delete API', () => {
   test('Delete Resource - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
-    const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {
-        resourceKey: nonExistentResourceKey,
-      }),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    const res = await deleteResource(request, nonExistentResourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -136,14 +107,7 @@ test.describe.parallel('Resource Delete API', () => {
   }) => {
     const invalidResourceKey = 'invalid-string-key';
 
-    const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {
-        resourceKey: invalidResourceKey,
-      }),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    const res = await deleteResource(request, invalidResourceKey);
 
     await assertBadRequest(
       res,
@@ -161,15 +125,9 @@ test.describe.parallel('Resource Delete API', () => {
     );
     const resourceKey = metadata.resourceKey;
 
-    const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-      {
-        headers: jsonHeaders(),
-        data: {
-          operationReference: 'invalid-string-reference',
-        },
-      },
-    );
+    const res = await deleteResource(request, resourceKey, {
+      data: {operationReference: 'invalid-string-reference'},
+    });
 
     await assertBadRequest(
       res,
@@ -185,12 +143,7 @@ test.describe.parallel('Resource Delete API', () => {
     );
     const resourceKey = metadata.resourceKey;
 
-    const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey}),
-      {
-        headers: {},
-      },
-    );
+    const res = await deleteResource(request, resourceKey, {headers: {}});
 
     await assertUnauthorizedRequest(res);
   });
