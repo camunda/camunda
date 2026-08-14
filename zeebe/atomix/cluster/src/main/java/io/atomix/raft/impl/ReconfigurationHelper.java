@@ -90,54 +90,67 @@ public final class ReconfigurationHelper {
           final var joining =
               new DefaultRaftMember(
                   raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
-          final var assistingMembers =
+          final var knownAssistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))
-                  .collect(Collectors.toCollection(LinkedBlockingQueue::new));
-          if (assistingMembers.isEmpty()) {
+                  .toList();
+          if (knownAssistingMembers.isEmpty()) {
             result.completeExceptionally(
                 new IllegalStateException(
                     "Cannot join cluster, because there are no other members in the cluster."));
             return;
           }
-
-          // if single member cluster, we retry with the same member a few times before failing the
-          // join request. This gives the other member a chance to become leader and continue the
-          // reconfiguration process.
-          if (clusterMembers.size() == 1) {
-            final var otherMember = clusterMembers.stream().findFirst().get();
-            assistingMembers.offer(otherMember);
-            assistingMembers.offer(otherMember);
-            assistingMembers.offer(otherMember);
-          }
+          final var assistingMembers = new LinkedBlockingQueue<>(knownAssistingMembers);
           final var deadline = Instant.now().plus(raftContext.getConfigurationChangeTimeout());
-          threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result, deadline));
+          threadContext.execute(
+              () ->
+                  joinWithRetry(
+                      joining, knownAssistingMembers, assistingMembers, result, deadline));
         });
     return result;
   }
 
   /**
-   * Repeatedly tries to join the cluster until it succeeds or there are no more members to try.
-   * When sending a join request to an assisting member fails because the member is currently not
-   * known, or it is known but not ready to receive join request, try again with a different
-   * assisting member.
+   * Repeatedly tries to join the cluster until it succeeds or the deadline passes. When sending a
+   * join request to an assisting member fails because the member is currently not known, or it is
+   * known but not ready to receive join request, try again with a different assisting member. Once
+   * every known member failed, start over with all of them after a delay.
    *
    * <p>Retrying helps in cases where the cluster is in flux and not all members are online and
    * ready.
    *
    * @param joining the new member joining
+   * @param knownAssistingMembers all members that can assist the join, used to refill the queue
    * @param assistingMembers a queue of members that we will send a join request to.
    * @param result a future to complete when joining succeeds or fails
-   * @param deadline until when a member that responded with NO_LEADER is retried
+   * @param deadline until when the join is retried
    */
   private void joinWithRetry(
       final RaftMember joining,
+      final Collection<MemberId> knownAssistingMembers,
       final Queue<MemberId> assistingMembers,
       final CompletableFuture<Void> result,
       final Instant deadline) {
 
     final var receiver = assistingMembers.poll();
     if (receiver == null) {
+      if (Instant.now().isBefore(deadline)) {
+        // Don't fail while the deadline still has budget: the reasons a member fails to accept a
+        // join request are transient, and there may be only a single assisting member - the
+        // production shape when scaling a partition from one to two replicas - so a single
+        // transport error can drain the queue within milliseconds. Refill it and start over after
+        // a delay, giving the cluster time to make progress.
+        LOGGER.debug(
+            "Join request failed on all known members {}, retrying after {}",
+            knownAssistingMembers,
+            raftContext.getElectionTimeout());
+        assistingMembers.addAll(knownAssistingMembers);
+        threadContext.schedule(
+            raftContext.getElectionTimeout(),
+            () ->
+                joinWithRetry(joining, knownAssistingMembers, assistingMembers, result, deadline));
+        return;
+      }
       result.completeExceptionally(
           new IllegalStateException(
               "Sent join request to all known members, but all failed. No more members left."));
@@ -156,7 +169,9 @@ public final class ReconfigurationHelper {
                     || cause instanceof ConnectException) {
                   LOGGER.debug("Join request was not acknowledged, retrying", cause);
                   threadContext.execute(
-                      () -> joinWithRetry(joining, assistingMembers, result, deadline));
+                      () ->
+                          joinWithRetry(
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
@@ -182,7 +197,9 @@ public final class ReconfigurationHelper {
                   assistingMembers.offer(receiver);
                   threadContext.schedule(
                       raftContext.getElectionTimeout(),
-                      () -> joinWithRetry(joining, assistingMembers, result, deadline));
+                      () ->
+                          joinWithRetry(
+                              joining, knownAssistingMembers, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error(
                       "Join request failed, not retrying because the join did not complete within {}",
@@ -193,7 +210,9 @@ public final class ReconfigurationHelper {
               } else if (response.error().type() == RaftError.Type.UNAVAILABLE) {
                 LOGGER.debug("Join request failed, retrying", response.error().createException());
                 threadContext.execute(
-                    () -> joinWithRetry(joining, assistingMembers, result, deadline));
+                    () ->
+                        joinWithRetry(
+                            joining, knownAssistingMembers, assistingMembers, result, deadline));
               } else {
                 final var errorAsException = response.error().createException();
                 LOGGER.error("Join request rejected, not retrying", errorAsException);

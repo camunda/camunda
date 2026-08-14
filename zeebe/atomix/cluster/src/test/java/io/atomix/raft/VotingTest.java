@@ -18,6 +18,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -76,7 +78,8 @@ final class VotingTest {
     // reachable
     final var id1 = MemberId.from("1");
     final var id2 = MemberId.from("2");
-    final var joiner = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+    final var joiner =
+        createServerWithFastFailingJoin(tmp, StaticClusterMembershipService.of(id2, id1));
     assertThat(joiner.join(id1)).failsWithin(Duration.ofSeconds(10));
     Awaitility.await("Joiner is passive")
         .until(() -> joiner.getContext().getRaftRole().role() == RaftServer.Role.PASSIVE);
@@ -95,7 +98,8 @@ final class VotingTest {
     // given - a passive, configuration-less joiner that voted for candidate A in term 2
     final var id1 = MemberId.from("1");
     final var id2 = MemberId.from("2");
-    final var joiner = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+    final var joiner =
+        createServerWithFastFailingJoin(tmp, StaticClusterMembershipService.of(id2, id1));
     assertThat(joiner.join(id1)).failsWithin(Duration.ofSeconds(10));
     Awaitility.await("Joiner is passive")
         .until(() -> joiner.getContext().getRaftRole().role() == RaftServer.Role.PASSIVE);
@@ -113,7 +117,8 @@ final class VotingTest {
     // when - the joiner restarts
     joiner.shutdown().join();
     servers.remove(joiner);
-    final var restarted = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+    final var restarted =
+        createServerWithFastFailingJoin(tmp, StaticClusterMembershipService.of(id2, id1));
     assertThat(restarted.join(id1)).failsWithin(Duration.ofSeconds(10));
     Awaitility.await("Restarted joiner is passive")
         .until(() -> restarted.getContext().getRaftRole().role() == RaftServer.Role.PASSIVE);
@@ -140,6 +145,41 @@ final class VotingTest {
     // then - member 3 answers instead of rejecting with ILLEGAL_MEMBER_STATE
     assertPoll(candidate.poll(id3, pollRequest(candidateId, term)), true);
     assertVote(candidate.vote(id3, voteRequest(candidateId, term)), true);
+  }
+
+  @Test
+  void inactiveMemberRejectsPollAndVote(@TempDir final Path tmp) {
+    // given - a cluster [1A, 2A, 3A] whose leader left, which leaves it INACTIVE. Demoting a
+    // member cannot produce an INACTIVE member: it is no replication target, so it never receives
+    // the configuration that demotes it. The leaving member has to be the leader for the same
+    // reason - it steps down to inactive when it sees its own removal commit, which a removed
+    // follower may never learn because the leader stops replicating to it at that point.
+    final var id1 = MemberId.from("1");
+    final var id2 = MemberId.from("2");
+    final var id3 = MemberId.from("3");
+
+    final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2, id3));
+    final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3));
+    final var m3 = createServer(tmp, StaticClusterMembershipService.of(id3, id1, id2));
+    CompletableFuture.allOf(
+            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+        .join();
+    awaitLeader(m1, m2, m3);
+    final var leaver = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+    final var leaverId = leaver.cluster().getLocalMember().memberId();
+    leaver.leave().join();
+    Awaitility.await("The member that left is inactive")
+        .until(() -> leaver.getContext().getRaftRole().role() == RaftServer.Role.INACTIVE);
+
+    // when - a candidate requests a poll and a vote in a new term with an up-to-date log
+    final var candidateId = MemberId.from("99");
+    final var candidate = protocolFactory.newServerProtocol(candidateId);
+    final var term = leaver.getContext().getTerm() + 1;
+
+    // then - both are rejected: a member that is no longer part of the cluster must not vote, even
+    // though members that are in the configuration vote without checking membership
+    assertRejected(candidate.poll(leaverId, pollRequest(candidateId, term)));
+    assertRejected(candidate.vote(leaverId, voteRequest(candidateId, term)));
   }
 
   @ParameterizedTest
@@ -298,6 +338,16 @@ final class VotingTest {
             });
   }
 
+  private <T extends RaftResponse> void assertRejected(final CompletableFuture<T> response) {
+    assertThat(response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .satisfies(
+            rejection -> {
+              assertThat(rejection.status()).isEqualTo(Status.ERROR);
+              assertThat(rejection.error().type()).isEqualTo(RaftError.Type.UNAVAILABLE);
+            });
+  }
+
   private void assertVote(final CompletableFuture<VoteResponse> response, final boolean voted) {
     assertThat(response)
         .succeedsWithin(Duration.ofSeconds(5))
@@ -350,6 +400,25 @@ final class VotingTest {
 
   private RaftServer createServer(
       final Path dir, final ClusterMembershipService membershipService) {
+    return createServer(dir, membershipService, config -> {});
+  }
+
+  /**
+   * Creates a server for the tests that join a member which does not exist. Such a join is retried
+   * until the configuration change timeout passes, so shorten it to keep those tests quick.
+   */
+  private RaftServer createServerWithFastFailingJoin(
+      final Path dir, final ClusterMembershipService membershipService) {
+    return createServer(
+        dir,
+        membershipService,
+        config -> config.setConfigurationChangeTimeout(Duration.ofSeconds(1)));
+  }
+
+  private RaftServer createServer(
+      final Path dir,
+      final ClusterMembershipService membershipService,
+      final Consumer<RaftPartitionConfig> configCustomizer) {
     final var memberId = membershipService.getLocalMember().id();
     final var protocol = protocolFactory.newServerProtocol(memberId);
     protocols.put(memberId, protocol);
@@ -359,15 +428,17 @@ final class VotingTest {
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)
             .build();
+    final var partitionConfig =
+        new RaftPartitionConfig()
+            .setElectionTimeout(Duration.ofMillis(500))
+            .setHeartbeatInterval(Duration.ofMillis(100));
+    configCustomizer.accept(partitionConfig);
     final var server =
         RaftServer.builder(memberId)
             .withMembershipService(membershipService)
             .withProtocol(protocol)
             .withStorage(storage)
-            .withPartitionConfig(
-                new RaftPartitionConfig()
-                    .setElectionTimeout(Duration.ofMillis(500))
-                    .setHeartbeatInterval(Duration.ofMillis(100)))
+            .withPartitionConfig(partitionConfig)
             .withMeterRegistry(meterRegistry)
             .build();
     servers.add(server);

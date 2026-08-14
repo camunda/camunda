@@ -85,6 +85,10 @@ public class RandomizedRaftJoinTest {
       final MemberId member = memberIter.next();
       LOG.info("{} on {}", operation, member);
       operation.run(raftContexts, member);
+      // sample the safety invariant on every step: it records the vote of each member at the term
+      // it is currently in, so a vote that is overwritten between two steps is only observable
+      // while it is still recorded
+      raftContexts.assertAtMostOneVotePerMemberAndTerm();
       if (joinFuture.isCompletedExceptionally()) {
         // retry join
         LOG.info("Join failed. Retrying...");
@@ -122,6 +126,7 @@ public class RandomizedRaftJoinTest {
     assertThat(joinFuture).describedAs("Join of member 1 should be completed").isCompleted();
     assertThat(raftContexts.hasLeaderAtTheLatestTerm()).describedAs("There is a leader").isTrue();
     raftContexts.assertAllMembersAreReady();
+    raftContexts.assertAtMostOneVotePerMemberAndTerm();
   }
 
   private void setUpRaftNodes(final Random random) throws Exception {
