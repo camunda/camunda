@@ -899,6 +899,22 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("toolCallId must not be null or blank");
     }
+
+    @Test
+    void shouldRejectNullElementInToolsList() {
+      assertThatThrownBy(
+              () ->
+                  client
+                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .jobKey(JOB_KEY)
+                      .history(
+                          Collections.singletonList(
+                              historyItem("item-1").tools(Collections.singletonList(null))))
+                      .execute())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("tools must not contain null elements");
+    }
   }
 
   @Nested

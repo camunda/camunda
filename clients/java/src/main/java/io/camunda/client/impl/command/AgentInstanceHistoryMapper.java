@@ -179,6 +179,9 @@ final class AgentInstanceHistoryMapper {
     final List<io.camunda.client.protocol.rest.AgentTool> protocolTools =
         new ArrayList<>(tools.size());
     for (final AgentTool tool : tools) {
+      if (tool == null) {
+        throw new IllegalArgumentException("tools must not contain null elements");
+      }
       final io.camunda.client.protocol.rest.AgentTool protocolTool =
           new io.camunda.client.protocol.rest.AgentTool();
       protocolTool.name(tool.getName());
