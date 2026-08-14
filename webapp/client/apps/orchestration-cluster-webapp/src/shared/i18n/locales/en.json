@@ -295,6 +295,7 @@
 			"taskVariablesRemoveVariable_ordinal_few": "Remove {{count}}rd new variable",
 			"taskVariablesRemoveVariable_ordinal_other": "Remove {{count}}th new variable",
 			"taskVariablesAddVariable": "Add Variable",
+			"taskVariablesAddVariableDS": "Add variable",
 			"processFiltersAllProcesses": "All Processes",
 			"customFiltersModalVariableValueLabel": "Value",
 			"customFiltersModalAddVariableButtonAria": "Add variable",

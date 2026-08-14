@@ -7,7 +7,7 @@
  */
 
 import {lazy, Suspense, useCallback, useMemo, useRef, useState} from 'react';
-import {AddIcon, Button, Heading, IconButton, InformationIcon, Layer} from '#/shared/design-system-compat';
+import {Button, Heading, IconButton, InformationIcon, Layer, PlusIcon} from '#/shared/design-system-compat';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {EmptyState} from '@camunda/design-system';
 import {featureFlags} from '#/shared/feature-flags';
@@ -152,16 +152,23 @@ const TaskDetailsVariables: React.FC<Props> = ({
 						<div className={styles.header}>
 							<Heading>{t('tasklist.variablesTitle')}</Heading>
 							{isCompleted ? null : (
+								// PlusIcon, not AddIcon: AddIcon deliberately maps to the
+								// process-diagram zoom-control glyph (ZoomIn) on the DS path —
+								// this is the generic add-a-row button, which is what PlusIcon
+								// is for (see design-system-compat/index.ts). Both fall back to
+								// the same CarbonAdd icon, so this has no effect on Carbon.
 								<Button
 									kind="ghost"
 									type="button"
 									size="sm"
 									onClick={() => form.mutators.push?.('newVariables')}
-									renderIcon={AddIcon}
+									renderIcon={PlusIcon}
 									disabled={!isEditingAllowed || isCompletionBusy}
 									title={isEditingAllowed ? undefined : t('tasklist.variablesAddVariableTooltip')}
 								>
-									{t('tasklist.taskVariablesAddVariable')}
+									{featureFlags.dsTasklistUI
+										? t('tasklist.taskVariablesAddVariableDS')
+										: t('tasklist.taskVariablesAddVariable')}
 								</Button>
 							)}
 						</div>

@@ -290,6 +290,7 @@
 			"taskVariablesValueLabel": "Wert",
 			"taskVariablesRemoveVariable_ordinal": "{{count}}. neue Variable entfernen",
 			"taskVariablesAddVariable": "Variable hinzufügen",
+			"taskVariablesAddVariableDS": "Variable hinzufügen",
 			"processFiltersAllProcesses": "Alle Prozesse",
 			"customFiltersModalVariableValueLabel": "Wert",
 			"customFiltersModalAddVariableButton": "Variable hinzufügen",

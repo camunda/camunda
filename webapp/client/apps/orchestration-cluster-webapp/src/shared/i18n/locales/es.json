@@ -290,6 +290,7 @@
 			"taskVariablesValueLabel": "Valor",
 			"taskVariablesRemoveVariable_ordinal": "Eliminar la {{count}}.ª variable",
 			"taskVariablesAddVariable": "Agregar variable",
+			"taskVariablesAddVariableDS": "Agregar variable",
 			"processFiltersAllProcesses": "Todos los procesos",
 			"customFiltersModalVariableValueLabel": "Valor",
 			"customFiltersModalRemoveVariableButton": "Eliminar variable",

@@ -288,6 +288,7 @@
 			"customFiltersModalTaskVariableLabel": "Variables de la tâche",
 			"taskVariablesValueLabel": "Valeur",
 			"taskVariablesAddVariable": "Ajouter une variable",
+			"taskVariablesAddVariableDS": "Ajouter une variable",
 			"taskVariablesRemoveVariable_ordinal_one": "Supprimer la 1re nouvelle variable",
 			"taskVariablesRemoveVariable_ordinal_other": "Supprimer la {{count}}e nouvelle variable",
 			"tofix_taskVariablesNamedValueLabel": "Valeur",
