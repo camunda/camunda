@@ -50,6 +50,16 @@ class VariableAddUpdateAuditLogTransformerTest {
   }
 
   @Test
+  void shouldSupportVariableRecordWithUserTaskCompletionSource() {
+    // given
+    final var record =
+        variableRecord(VariableIntent.CREATED, VariableSourceRecord.userTaskCompletion());
+
+    // then
+    assertThat(transformer.supports(record)).isTrue();
+  }
+
+  @Test
   void shouldTransformVariableRecord() {
     // given
     final Record<VariableRecordValue> record =

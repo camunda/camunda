@@ -47,6 +47,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final UserTaskCommandPreconditionValidator commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final UserTaskAuthorizationCheck userTaskAuth;
+  private final boolean enableVariableAudit;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
@@ -54,7 +55,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslTenantCheck tenantCheck,
-      final UserTaskAuthorizationCheck userTaskAuth) {
+      final UserTaskAuthorizationCheck userTaskAuth,
+      final boolean enableVariableAudit) {
     elementInstanceState = state.getElementInstanceState();
     asyncRequestState = state.getAsyncRequestState();
     this.eventHandle = eventHandle;
@@ -70,6 +72,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             state.getBannedInstanceState());
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.userTaskAuth = userTaskAuth;
+    this.enableVariableAudit = enableVariableAudit;
   }
 
   @Override
@@ -81,7 +84,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), command, enableVariableAudit);
 
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));

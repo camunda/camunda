@@ -81,7 +81,7 @@ class AuditLogHandlerTest {
 
   @Test
   void shouldNotHandleRecordWhenTransformerDoesNotSupport() {
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
     when(transformer.supports(any())).thenReturn(false);
 
     assertThat(handler.handlesRecord(record)).isFalse();
@@ -90,7 +90,7 @@ class AuditLogHandlerTest {
   @Test
   void shouldNotHandleRecordWhenAuditLogIsNotEnabled() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(false);
+    when(config.isEnabled(any(Record.class))).thenReturn(false);
 
     assertThat(handler.handlesRecord(record)).isFalse();
   }
@@ -98,7 +98,7 @@ class AuditLogHandlerTest {
   @Test
   void shouldHandleRecord() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isTrue();
   }

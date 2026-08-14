@@ -42,6 +42,8 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.evaluateBoundaryEventCorrelationKeyInActivityScope();
   private boolean evaluateDuplicateOutputMappingTargetsInOrder =
       DEFAULT_SETTINGS.evaluateDuplicateOutputMappingTargetsInOrder();
+  private boolean enableUserTaskCompletionVariableAudit =
+      DEFAULT_SETTINGS.enableUserTaskCompletionVariableAudit();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -112,6 +114,15 @@ public final class FeatureFlagsCfg {
         evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
+  public boolean isEnableUserTaskCompletionVariableAudit() {
+    return enableUserTaskCompletionVariableAudit;
+  }
+
+  public void setEnableUserTaskCompletionVariableAudit(
+      final boolean enableUserTaskCompletionVariableAudit) {
+    this.enableUserTaskCompletionVariableAudit = enableUserTaskCompletionVariableAudit;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
@@ -121,7 +132,8 @@ public final class FeatureFlagsCfg {
         enableStraightThroughProcessingLoopDetector,
         enableMessageBodyOnExpired,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder
+        evaluateDuplicateOutputMappingTargetsInOrder,
+        enableUserTaskCompletionVariableAudit
         /*, enableFoo*/ );
   }
 

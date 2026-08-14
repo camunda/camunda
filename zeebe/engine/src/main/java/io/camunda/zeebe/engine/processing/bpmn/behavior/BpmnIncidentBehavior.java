@@ -47,18 +47,21 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final IncidentMetrics incidentMetrics;
+  private final boolean preserveUserTaskCompletionActor;
 
   public BpmnIncidentBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean preserveUserTaskCompletionActor) {
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.incidentMetrics = incidentMetrics;
+    this.preserveUserTaskCompletionActor = preserveUserTaskCompletionActor;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -127,6 +130,13 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
   }
 
   public void createIncident(final Failure failure, final BpmnElementContext context) {
+    createIncident(failure, context, java.util.Map.of());
+  }
+
+  public void createIncident(
+      final Failure failure,
+      final BpmnElementContext context,
+      final java.util.Map<String, Object> actorClaims) {
     final var variableScopeKey =
         failure.getVariableScopeKey() > 0
             ? failure.getVariableScopeKey()
@@ -154,8 +164,16 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());
 
+    if (preserveUserTaskCompletionActor && !actorClaims.isEmpty()) {
+      incidentRecord.setActor(actorClaims);
+    }
+
     final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
+    stateWriter.appendFollowUpEvent(
+        key,
+        IncidentIntent.CREATED,
+        incidentRecord,
+        preserveUserTaskCompletionActor && !actorClaims.isEmpty() ? 2 : 1);
     incidentMetrics.incidentCreated();
   }
 

@@ -37,11 +37,21 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   private final long key;
   private final Intent intent;
   private final T record;
+  private final Map<String, Object> authorizations;
 
   RetryTypedRecord(final long key, final Intent intent, final T record) {
+    this(key, intent, record, Map.of());
+  }
+
+  RetryTypedRecord(
+      final long key,
+      final Intent intent,
+      final T record,
+      final Map<String, Object> authorizations) {
     this.key = key;
     this.intent = intent;
     this.record = record;
+    this.authorizations = authorizations;
   }
 
   @Override
@@ -96,7 +106,7 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return Map.of();
+    return authorizations;
   }
 
   @Override
@@ -151,7 +161,7 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
 
   @Override
   public AuthInfo getAuthInfo() {
-    return null;
+    return authorizations.isEmpty() ? null : new AuthInfo().setClaims(authorizations);
   }
 
   @Override

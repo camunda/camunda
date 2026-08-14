@@ -37,12 +37,14 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
@@ -86,7 +88,8 @@ public class UserTaskProcessor
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final boolean enableUserTaskCompletionVariableAudit) {
     commandProcessors =
         new UserTaskCommandProcessors(
             state,
@@ -95,7 +98,8 @@ public class UserTaskProcessor
             writers,
             asyncRequestBehavior,
             cslCheck,
-            tenantCheck);
+            tenantCheck,
+            enableUserTaskCompletionVariableAudit);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
@@ -120,6 +124,23 @@ public class UserTaskProcessor
       case DENY_TASK_LISTENER -> processDenyTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
+  }
+
+  @Override
+  public void processRecord(
+      final TypedRecord<UserTaskRecord> command, final ProcessingSession session) {
+    if (command.getIntent() == UserTaskIntent.COMPLETE_TASK_LISTENER
+        || command instanceof RetryTypedRecord<UserTaskRecord>) {
+      asyncRequestState
+          .findRequest(
+              command.getValue().getElementInstanceKey(),
+              ValueType.USER_TASK,
+              UserTaskIntent.COMPLETE)
+          .map(request -> request.record().getActorClaims())
+          .filter(claims -> !claims.isEmpty())
+          .ifPresent(claims -> session.appendAuthInfoToFollowUps(new AuthInfo().setClaims(claims)));
+    }
+    processRecord(command);
   }
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {

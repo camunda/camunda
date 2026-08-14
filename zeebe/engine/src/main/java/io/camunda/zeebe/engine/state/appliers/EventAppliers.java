@@ -1062,7 +1062,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAsyncRequestAppliers(final MutableProcessingState state) {
     final var asyncRequestState = state.getAsyncRequestState();
-    register(AsyncRequestIntent.RECEIVED, new AsyncRequestReceivedApplier(asyncRequestState));
+    register(AsyncRequestIntent.RECEIVED, 1, new AsyncRequestReceivedApplier(asyncRequestState));
+    register(AsyncRequestIntent.RECEIVED, 2, new AsyncRequestReceivedV2Applier(asyncRequestState));
     register(AsyncRequestIntent.PROCESSED, new AsyncRequestProcessedApplier(asyncRequestState));
   }
 

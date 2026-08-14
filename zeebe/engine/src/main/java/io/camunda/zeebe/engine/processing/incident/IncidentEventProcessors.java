@@ -31,7 +31,8 @@ public final class IncidentEventProcessors {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean preserveUserTaskCompletionActor) {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
@@ -43,6 +44,7 @@ public final class IncidentEventProcessors {
             jobActivationBehavior,
             cslCheck,
             tenantCheck,
-            incidentMetrics));
+            incidentMetrics,
+            preserveUserTaskCompletionActor));
   }
 }

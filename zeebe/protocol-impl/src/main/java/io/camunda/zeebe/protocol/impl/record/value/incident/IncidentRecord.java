@@ -8,7 +8,9 @@
 package io.camunda.zeebe.protocol.impl.record.value.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
@@ -45,6 +48,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
   private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
+  private static final StringValue AUTHORIZED_USERNAME_KEY = new StringValue("authorizedUsername");
+  private static final StringValue AUTHORIZED_CLIENT_ID_KEY = new StringValue("authorizedClientId");
+  private static final StringValue AUTHORIZED_ANONYMOUS_USER_KEY =
+      new StringValue("authorizedAnonymousUser");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -69,9 +76,15 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
+  private final StringProperty authorizedUsernameProp =
+      new StringProperty(AUTHORIZED_USERNAME_KEY, "");
+  private final StringProperty authorizedClientIdProp =
+      new StringProperty(AUTHORIZED_CLIENT_ID_KEY, "");
+  private final BooleanProperty authorizedAnonymousUserProp =
+      new BooleanProperty(AUTHORIZED_ANONYMOUS_USER_KEY, false);
 
   public IncidentRecord() {
-    super(14);
+    super(17);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -85,7 +98,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(authorizedUsernameProp)
+        .declareProperty(authorizedClientIdProp)
+        .declareProperty(authorizedAnonymousUserProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -103,6 +119,9 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     setElementInstancePath(record.getElementInstancePath());
     setProcessDefinitionPath(record.getProcessDefinitionPath());
     setCallingElementPath(record.getCallingElementPath());
+    authorizedUsernameProp.setValue(record.getAuthorizedUsername());
+    authorizedClientIdProp.setValue(record.getAuthorizedClientId());
+    authorizedAnonymousUserProp.setValue(record.getAuthorizedAnonymousUser());
   }
 
   @JsonIgnore
@@ -123,6 +142,47 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   @Override
   public ErrorType getErrorType() {
     return errorTypeProp.getValue();
+  }
+
+  @Override
+  public String getAuthorizedUsername() {
+    return BufferUtil.bufferAsString(authorizedUsernameProp.getValue());
+  }
+
+  @Override
+  public String getAuthorizedClientId() {
+    return BufferUtil.bufferAsString(authorizedClientIdProp.getValue());
+  }
+
+  @Override
+  public boolean getAuthorizedAnonymousUser() {
+    return authorizedAnonymousUserProp.getValue();
+  }
+
+  public IncidentRecord setActor(final Map<String, Object> claims) {
+    final var clientId = claims.get(Authorization.AUTHORIZED_CLIENT_ID);
+    final var username = claims.get(Authorization.AUTHORIZED_USERNAME);
+    if (clientId instanceof final String id && !id.isEmpty()) {
+      authorizedClientIdProp.setValue(id);
+    } else if (username instanceof final String name && !name.isEmpty()) {
+      authorizedUsernameProp.setValue(name);
+    } else if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      authorizedAnonymousUserProp.setValue(true);
+    }
+    return this;
+  }
+
+  public Map<String, Object> getActorClaims() {
+    if (!getAuthorizedClientId().isEmpty()) {
+      return Map.of(Authorization.AUTHORIZED_CLIENT_ID, getAuthorizedClientId());
+    }
+    if (!getAuthorizedUsername().isEmpty()) {
+      return Map.of(Authorization.AUTHORIZED_USERNAME, getAuthorizedUsername());
+    }
+    if (getAuthorizedAnonymousUser()) {
+      return Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+    }
+    return Map.of();
   }
 
   @Override

@@ -65,4 +65,22 @@ public interface AsyncRequestRecordValue extends RecordValue {
    * instance) can be correlated back to the batch operation that triggered them.
    */
   long getBatchOperationReference();
+
+  /** The user that initiated the request, or an empty string if the actor was not a user. */
+  @Value.Default
+  default String getAuthorizedUsername() {
+    return "";
+  }
+
+  /** The client that initiated the request, or an empty string if the actor was not a client. */
+  @Value.Default
+  default String getAuthorizedClientId() {
+    return "";
+  }
+
+  /** Whether the request was initiated anonymously. */
+  @Value.Default
+  default boolean getAuthorizedAnonymousUser() {
+    return false;
+  }
 }

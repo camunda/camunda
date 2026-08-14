@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -148,8 +149,18 @@ public class TaskListenerBlockedTransitionTest {
         .ofInstance(processInstanceKey)
         .withVariable("foo_var", "bar")
         .withAction("my_custom_action")
-        .complete();
-    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+        .complete("completing-user");
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete("listener-worker");
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .complete("listener-worker");
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_3")
+        .complete("listener-worker");
 
     // then
     helper.assertTaskListenerJobsCompletionSequence(
@@ -180,6 +191,13 @@ public class TaskListenerBlockedTransitionTest {
                 .hasVariables(Map.of("foo_var", "bar"))
                 .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
     helper.assertThatProcessInstanceCompleted(processInstanceKey);
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("foo_var")
+                .getFirst()
+                .getAuthorizations())
+        .containsEntry(AUTHORIZED_USERNAME, "completing-user");
   }
 
   @Test

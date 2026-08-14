@@ -7,13 +7,18 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 
 public final class AsyncRequestRecord extends UnifiedRecordValue
     implements AsyncRequestRecordValue {
@@ -29,16 +34,25 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
       new LongProperty("operationReference", -1);
   private final LongProperty batchOperationReferenceProperty =
       new LongProperty("batchOperationReference", -1);
+  private final StringProperty authorizedUsernameProperty =
+      new StringProperty("authorizedUsername", "");
+  private final StringProperty authorizedClientIdProperty =
+      new StringProperty("authorizedClientId", "");
+  private final BooleanProperty authorizedAnonymousUserProperty =
+      new BooleanProperty("authorizedAnonymousUser", false);
 
   public AsyncRequestRecord() {
-    super(7);
+    super(10);
     declareProperty(scopeKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty)
         .declareProperty(operationReferenceProperty)
-        .declareProperty(batchOperationReferenceProperty);
+        .declareProperty(batchOperationReferenceProperty)
+        .declareProperty(authorizedUsernameProperty)
+        .declareProperty(authorizedClientIdProperty)
+        .declareProperty(authorizedAnonymousUserProperty);
   }
 
   public void wrap(final AsyncRequestRecord record) {
@@ -49,6 +63,9 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     requestStreamIdProperty.setValue(record.getRequestStreamId());
     operationReferenceProperty.setValue(record.getOperationReference());
     batchOperationReferenceProperty.setValue(record.getBatchOperationReference());
+    authorizedUsernameProperty.setValue(record.getAuthorizedUsername());
+    authorizedClientIdProperty.setValue(record.getAuthorizedClientId());
+    authorizedAnonymousUserProperty.setValue(record.getAuthorizedAnonymousUser());
   }
 
   @Override
@@ -129,5 +146,46 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
   public AsyncRequestRecord setBatchOperationReference(final long batchOperationReference) {
     batchOperationReferenceProperty.setValue(batchOperationReference);
     return this;
+  }
+
+  @Override
+  public String getAuthorizedUsername() {
+    return BufferUtil.bufferAsString(authorizedUsernameProperty.getValue());
+  }
+
+  @Override
+  public String getAuthorizedClientId() {
+    return BufferUtil.bufferAsString(authorizedClientIdProperty.getValue());
+  }
+
+  @Override
+  public boolean getAuthorizedAnonymousUser() {
+    return authorizedAnonymousUserProperty.getValue();
+  }
+
+  public AsyncRequestRecord setActor(final Map<String, Object> claims) {
+    final var clientId = claims.get(Authorization.AUTHORIZED_CLIENT_ID);
+    final var username = claims.get(Authorization.AUTHORIZED_USERNAME);
+    if (clientId instanceof final String id && !id.isEmpty()) {
+      authorizedClientIdProperty.setValue(id);
+    } else if (username instanceof final String name && !name.isEmpty()) {
+      authorizedUsernameProperty.setValue(name);
+    } else if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      authorizedAnonymousUserProperty.setValue(true);
+    }
+    return this;
+  }
+
+  public Map<String, Object> getActorClaims() {
+    if (!getAuthorizedClientId().isEmpty()) {
+      return Map.of(Authorization.AUTHORIZED_CLIENT_ID, getAuthorizedClientId());
+    }
+    if (!getAuthorizedUsername().isEmpty()) {
+      return Map.of(Authorization.AUTHORIZED_USERNAME, getAuthorizedUsername());
+    }
+    if (getAuthorizedAnonymousUser()) {
+      return Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+    }
+    return Map.of();
   }
 }
