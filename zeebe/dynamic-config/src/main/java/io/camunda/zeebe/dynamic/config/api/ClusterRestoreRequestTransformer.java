@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -28,11 +29,11 @@ import java.util.Optional;
  * Restores one or every physical tenant of the cluster, as requested through the cluster-admin API.
  *
  * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the new-model coordinator
- * actually drives: each named physical tenant is projected to its own {@link ClusterConfiguration}
- * view via {@link CurrentClusterConfiguration#toLegacy(String)} and restored exactly like the same
- * restore submitted through that tenant's own API, then combined into one {@link
- * PartitionGroupParallelPhase} so every named tenant restores in parallel. A cluster-wide request —
- * one naming every physical tenant of the cluster — restores them all this way in a single change.
+ * actually drives: each named physical tenant is restored from its own {@link
+ * PartitionGroupConfiguration}, exactly like the same restore submitted through that tenant's own
+ * API, and the resulting plans are combined into one {@link PartitionGroupParallelPhase} so every
+ * named tenant restores in parallel. A cluster-wide request — one naming every physical tenant of
+ * the cluster — restores them all this way in a single change.
  *
  * <p>{@link #operations(ClusterConfiguration)} is the legacy single-group entry point predating
  * multi-tenant support; it only has a single, ungrouped {@link ClusterConfiguration} to work with,
@@ -62,7 +63,8 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       final CurrentClusterConfiguration clusterConfiguration) {
     final Map<String, List<PartitionGroupOperation>> operationsPerTenant = new LinkedHashMap<>();
     for (final var physicalTenantId : request.tenantArguments().keySet()) {
-      if (!clusterConfiguration.hasPartitionGroup(physicalTenantId)) {
+      final var partitionGroup = clusterConfiguration.partitionGroup(physicalTenantId);
+      if (partitionGroup == null) {
         return Either.left(
             new NotFound(
                 "Expected to restore physical tenant '%s', but there's no such tenant"
@@ -70,14 +72,12 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       }
       final var transformer =
           new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry);
-      final var result = transformer.operations(clusterConfiguration.toLegacy(physicalTenantId));
+      final var result = transformer.groupOperations(partitionGroup);
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      final var operations =
-          result.get().stream().map(PartitionGroupOperation.class::cast).toList();
-      if (!operations.isEmpty()) {
-        operationsPerTenant.put(physicalTenantId, operations);
+      if (!result.get().isEmpty()) {
+        operationsPerTenant.put(physicalTenantId, result.get());
       }
     }
     if (operationsPerTenant.isEmpty()) {
