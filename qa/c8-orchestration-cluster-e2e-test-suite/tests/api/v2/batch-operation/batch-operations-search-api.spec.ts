@@ -34,8 +34,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     }
   });
 
-  //Skipped due to bug 43161: https://github.com/camunda/camunda/issues/43161
-  test.skip('Search Batch Operations Success', async ({request}) => {
+  test('Search Batch Operations Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
@@ -191,8 +190,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Batch Operations Invalid Pagination', async ({request}) => {
+  test('Search Batch Operations Invalid Pagination', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
