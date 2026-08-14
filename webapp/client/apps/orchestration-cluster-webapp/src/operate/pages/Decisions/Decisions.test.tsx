@@ -9,6 +9,7 @@
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {useSearch} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -21,11 +22,8 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {
-	DecisionsHarness,
-	DecisionsNavigationWithoutInstancesHarness,
-	DecisionsWithoutInstancesHarness,
-} from './DecisionsHarness';
+import {DecisionsHarness} from './DecisionsHarness';
+import {Decisions} from './Decisions';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
 	createQueryDecisionDefinitionsResponse({
@@ -38,6 +36,34 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 );
 
 const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesResponse());
+
+function toOptionalString(value: unknown) {
+	return value === undefined ? undefined : String(value);
+}
+
+function DecisionsWithoutInstancesHarness({renderSelectedVersion = true}: {renderSelectedVersion?: boolean}) {
+	const search = useSearch({strict: false}) as Record<string, unknown>;
+
+	return (
+		<div style={{height: '100vh'}}>
+			<Decisions
+				decisionDefinitionId={toOptionalString(search.decisionDefinitionId)}
+				decisionDefinitionVersion={
+					renderSelectedVersion && typeof search.decisionDefinitionVersion === 'number'
+						? search.decisionDefinitionVersion
+						: undefined
+				}
+				tenantId={toOptionalString(search.tenantId)}
+				evaluated={false}
+				failed={false}
+			/>
+		</div>
+	);
+}
+
+function DecisionsNavigationWithoutInstancesHarness() {
+	return <DecisionsWithoutInstancesHarness renderSelectedVersion={false} />;
+}
 
 let unmountPage: (() => Promise<void>) | undefined;
 let waitForRequests: (() => Promise<void>) | undefined;
