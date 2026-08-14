@@ -376,43 +376,32 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
-      - name: Setup CI runtime (TestCafe + Chrome + Xvfb)
-        run: |
-          set -euo pipefail
+      - name: Install Google Chrome
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          shell: bash
+          command: |
+            set -euo pipefail
 
-          sudo apt-get update
+            if ! command -v google-chrome >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates
 
-          # ----------------------------
-          # Core system dependencies
-          # ----------------------------
-          sudo apt-get install -y --no-install-recommends \
-            wget gnupg ca-certificates xdg-utils curl \
-            fonts-dejavu fonts-noto fonts-liberation \
-            xvfb ffmpeg \
-            libgbm1 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
-            libgtk-3-0 libxcomposite1 libxrandr2 libxdamage1 libxfixes3 \
-            libasound2t64 libpangocairo-1.0-0
+              wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+                | sudo gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg
 
-          # ----------------------------
-          # Google Chrome install
-          # ----------------------------
-          if ! command -v google-chrome >/dev/null 2>&1; then
-            wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
-              | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+                | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
 
-            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
-              | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends google-chrome-stable
+            fi
 
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends google-chrome-stable
-          fi
-
-          google-chrome --version
-
-          # ----------------------------
-          # Sanity check (CI debug safety)
-          # ----------------------------
-          xvfb-run -a google-chrome --version
+            google-chrome --version
+            google-chrome --headless=new --no-sandbox --disable-gpu --dump-dom about:blank >/dev/null
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
