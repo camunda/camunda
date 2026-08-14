@@ -39,16 +39,17 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void shouldFindOldestQueuedJob() {
+  void shouldFindOnlyQueuedJob() {
+    // given
     final JobRegistryEntryDto created =
         jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE,
-            TargetEntityType.PROCESS_DEFINITION,
-            "2251799813685251");
+            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findOldestQueuedJob(JobType.PROCESS_DEFINITION_DATA_DELETE);
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
 
+    // then
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(created.getId());
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.QUEUED);
@@ -56,33 +57,48 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldNotFindQueuedJobWhenNoneAreQueued() {
+    // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findOldestQueuedJob(JobType.PROCESS_DEFINITION_DATA_DELETE);
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
 
+    // then
+    assertThat(found).isEmpty();
+  }
+
+  @Test
+  void shouldNotFindQueuedJobWhenIndexIsEmpty() {
+    // given no job entries at all
+
+    // when
+    final Optional<JobRegistryEntryDto> found =
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
+
+    // then
     assertThat(found).isEmpty();
   }
 
   @Test
   void shouldReturnOldestQueuedJobWhenMultipleAreQueued() {
+    // given
     // Pin the clock so the two entries get distinct, ordered createdAt values -- otherwise both
     // could land in the same millisecond and the sort-by-oldest assertion would be flaky.
     LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:00.000+00:00"));
     final JobRegistryEntryDto olderEntry =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:01.000+00:00"));
-    jobRegistryWriter.createJobEntry(
-        JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "2");
+    jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2");
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findOldestQueuedJob(JobType.PROCESS_DEFINITION_DATA_DELETE);
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
 
+    // then
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(olderEntry.getId());
     assertThat(found.get().getTargetEntityId()).isEqualTo("1");
@@ -90,18 +106,39 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldSkipCompletedEntryAndReturnTheQueuedOne() {
+    // given
     final JobRegistryEntryDto completedEntry =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
     jobRegistryWriter.updateJobStatus(completedEntry.getId(), JobStatus.COMPLETED, null);
 
     final JobRegistryEntryDto queuedEntry =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "2");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2");
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findOldestQueuedJob(JobType.PROCESS_DEFINITION_DATA_DELETE);
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
 
+    // then
+    assertThat(found).isPresent();
+    assertThat(found.get().getId()).isEqualTo(queuedEntry.getId());
+    assertThat(found.get().getStatus()).isEqualTo(JobStatus.QUEUED);
+  }
+
+  @Test
+  void shouldSkipFailedEntryAndReturnTheQueuedOne() {
+    // given
+    final JobRegistryEntryDto failedEntry =
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+    jobRegistryWriter.updateJobStatus(failedEntry.getId(), JobStatus.FAILED, "boom");
+
+    final JobRegistryEntryDto queuedEntry =
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2");
+
+    // when
+    final Optional<JobRegistryEntryDto> found =
+        jobRegistryReader.findOldestQueuedJob(JobType.DELETE);
+
+    // then
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(queuedEntry.getId());
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.QUEUED);
@@ -109,44 +146,46 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldFindJobByJobTypeAndTargetEntityId() {
+    // given
     final JobRegistryEntryDto created =
         jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE,
-            TargetEntityType.PROCESS_DEFINITION,
-            "2251799813685251");
+            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findByJobTypeAndTargetEntityId(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, "2251799813685251");
+        jobRegistryReader.findByJobTypeAndTargetEntityId(JobType.DELETE, "2251799813685251");
 
+    // then
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(created.getId());
   }
 
   @Test
   void shouldFindJobByJobTypeAndTargetEntityIdRegardlessOfStatus() {
+    // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findByJobTypeAndTargetEntityId(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, "1");
+        jobRegistryReader.findByJobTypeAndTargetEntityId(JobType.DELETE, "1");
 
+    // then
     assertThat(found).isPresent();
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
   }
 
   @Test
   void shouldNotFindJobForUnknownTargetEntityId() {
-    jobRegistryWriter.createJobEntry(
-        JobType.PROCESS_DEFINITION_DATA_DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+    // given
+    jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
 
+    // when
     final Optional<JobRegistryEntryDto> found =
-        jobRegistryReader.findByJobTypeAndTargetEntityId(
-            JobType.PROCESS_DEFINITION_DATA_DELETE, "does-not-exist");
+        jobRegistryReader.findByJobTypeAndTargetEntityId(JobType.DELETE, "does-not-exist");
 
+    // then
     assertThat(found).isEmpty();
   }
 }
