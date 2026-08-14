@@ -260,6 +260,22 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   /**
+   * Removes a physical tenant declared via {@link #withPtConfig}, so its {@code
+   * camunda.physical-tenants.<tenantId>.*} properties are no longer flattened at the next {@link
+   * #createSpringBuilder()} — simulating a physical tenant being removed from application
+   * configuration. Since those properties are refreshable (see {@link #createSpringBuilder()}),
+   * they are also cleared from any properties already registered from a previous start. Does
+   * nothing if the tenant was never declared.
+   *
+   * @param tenantId the physical tenant id to remove
+   * @return itself for chaining
+   */
+  public T removePtConfig(final String tenantId) {
+    ptConfigs.remove(tenantId);
+    return self();
+  }
+
+  /**
    * Replaces a set of properties that should be re-derived from in-memory builder state on every
    * {@link #start()}. Keys set in a previous call are removed before the new {@code properties} are
    * applied, so fields that disappear between restarts (e.g. an exporter cleared from the unified

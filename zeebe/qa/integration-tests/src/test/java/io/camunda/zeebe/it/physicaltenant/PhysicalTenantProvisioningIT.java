@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -26,6 +27,7 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -139,6 +141,60 @@ final class PhysicalTenantProvisioningIT {
       TopologyAssert.assertThat(tenantAClient.newTopologyRequest().send().join())
           .isComplete(BROKERS_COUNT, 2, BROKERS_COUNT);
     }
+  }
+
+  @Test
+  void shouldMarkPhysicalTenantDisabledOnActuatorWhenRemovedFromConfigAfterRestart() {
+    // given - tenantB is provisioned by adding it to every broker's configuration and restarting
+    restartCluster(cluster);
+    try (final var tenantBClient =
+        TENANTS_AFTER.newClientBuilder(cluster.availableGateway(), TENANT_B).build()) {
+      await("tenantB's topology is complete after provisioning")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(tenantBClient.newTopologyRequest().send().join())
+                      .isComplete(BROKERS_COUNT, TENANT_B_PARTITIONS_COUNT, BROKERS_COUNT));
+    }
+
+    // when - tenantB is removed from every broker's local static configuration and the cluster is
+    // restarted again
+    cluster.shutdown();
+    cluster.brokers().values().forEach(broker -> broker.removePtConfig(TENANT_B));
+    cluster.start().awaitCompleteTopology();
+
+    // then - the physical-tenant-scoped actuator reports tenantB as disabled, with no routing
+    // state or partitions: it is retained in the configuration, just not running anywhere
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    await("tenantB is reported as disabled via the actuator")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var topology = actuator.getTopology(TENANT_B);
+              assertThat(topology.getPhysicalTenants())
+                  .singleElement()
+                  .satisfies(
+                      info -> {
+                        assertThat(info.getId()).isEqualTo(TENANT_B);
+                        assertThat(info.getDisabled()).isTrue();
+                        assertThat(info.getRouting()).isNull();
+                      });
+              assertThat(topology.getBrokers())
+                  .allSatisfy(broker -> assertThat(broker.getPartitions()).isEmpty());
+            });
+
+    // and - tenantA, which is unaffected by tenantB's removal, is never explicitly marked enabled
+    // but still resolves normally with its routing state intact
+    final var tenantAInfo = actuator.getTopology(TENANT_A).getPhysicalTenants();
+    assertThat(tenantAInfo)
+        .singleElement()
+        .satisfies(
+            info -> {
+              assertThat(info.getId()).isEqualTo(TENANT_A);
+              assertThat(info.getDisabled()).isNull();
+              assertThat(info.getRouting()).isNotNull();
+            });
   }
 
   public static Stream<Arguments> restartStrategies() {

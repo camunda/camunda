@@ -580,6 +580,12 @@ final class ClusterApiUtils {
     for (final var entry : partitionGroups.entrySet()) {
       final var physicalTenantId = entry.getKey();
       final var group = entry.getValue();
+      if (group.isDisabled()) {
+        // not running anywhere - excluded from this broker's partitions/physicalTenants and from
+        // the version/lastUpdated fold below, the same way it is reported as disabled rather than
+        // with routing state in PhysicalTenantInfo (see mapPhysicalTenantInfo).
+        continue;
+      }
       final var brokerPartitionState = group.members().get(memberId);
       if (brokerPartitionState != null) {
         physicalTenants.add(
@@ -809,6 +815,12 @@ final class ClusterApiUtils {
   private static PhysicalTenantInfo mapPhysicalTenantInfo(
       final String groupId, final PartitionGroupConfiguration group) {
     final var info = new PhysicalTenantInfo().id(groupId);
+    if (group.isDisabled()) {
+      // disabled: not running anywhere, so its routing state is not reported - only that it is
+      // disabled. An enabled tenant never sets `disabled`; a populated `routing` already implies
+      // it.
+      return info.disabled(true);
+    }
     group.routingState().ifPresent(routingState -> info.routing(mapRoutingState(routingState)));
     return info;
   }
