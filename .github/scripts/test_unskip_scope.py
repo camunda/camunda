@@ -96,6 +96,7 @@ class TestParseDiff:
     def test_a_marker_is_consumed_by_only_one_test(self):
         diff = (
             f"+++ b/{SUITE}/tests/operate/x.spec.ts\n"
+            "@@ -1,4 +1,3 @@\n"
             "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/1\n"
             "+  test('first', async () => {\n"
             "+  test('second', async () => {\n"
@@ -103,6 +104,51 @@ class TestParseDiff:
         tests = u.parse_diff(diff)["tests/operate/x.spec.ts"]["tests"]
         assert tests[0]["bug"] == "https://github.com/camunda/camunda/issues/1"
         assert tests[1]["bug"] is None
+
+    def test_stacked_markers_attribute_the_nearest_one(self):
+        # A test skipped for two bugs: the marker directly above the call is the
+        # attached one, so the most recent pending marker must win (not the
+        # oldest).
+        diff = (
+            f"+++ b/{SUITE}/tests/operate/x.spec.ts\n"
+            "@@ -1,5 +1,3 @@\n"
+            "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/1\n"
+            "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/2\n"
+            "+  test('one', async () => {\n"
+        )
+        tests = u.parse_diff(diff)["tests/operate/x.spec.ts"]["tests"]
+        assert tests[0]["bug"] == "https://github.com/camunda/camunda/issues/2"
+
+    def test_an_unconsumed_marker_does_not_leak_into_a_later_hunk(self):
+        # The first hunk removes a marker without flipping a call (e.g. only a
+        # stale comment was dropped). That marker must not be attributed to the
+        # next hunk's test.
+        diff = (
+            f"+++ b/{SUITE}/tests/operate/x.spec.ts\n"
+            "@@ -1,3 +1,2 @@\n"
+            "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/1\n"
+            "@@ -40,4 +39,4 @@\n"
+            "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/2\n"
+            "+  test('later', async () => {\n"
+        )
+        tests = u.parse_diff(diff)["tests/operate/x.spec.ts"]["tests"]
+        assert len(tests) == 1
+        assert tests[0]["bug"] == "https://github.com/camunda/camunda/issues/2"
+
+    def test_a_hunk_with_no_marker_leaves_the_test_unattributed(self):
+        diff = (
+            f"+++ b/{SUITE}/tests/operate/x.spec.ts\n"
+            "@@ -1,3 +1,2 @@\n"
+            "-  // Skipped due to bug: https://github.com/camunda/camunda/issues/1\n"
+            "+  test('one', async () => {\n"
+            "@@ -40,4 +39,4 @@\n"
+            "+  test('two', async () => {\n"
+        )
+        tests = u.parse_diff(diff)["tests/operate/x.spec.ts"]["tests"]
+        assert [t["bug"] for t in tests] == [
+            "https://github.com/camunda/camunda/issues/1",
+            None,
+        ]
 
 
 class TestParseManualMarkers:
