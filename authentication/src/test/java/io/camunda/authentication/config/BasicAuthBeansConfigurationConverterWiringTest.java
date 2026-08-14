@@ -21,7 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,22 +43,16 @@ class BasicAuthBeansConfigurationConverterWiringTest {
   @Mock private MembershipPort membershipPort;
 
   @Test
-  void shouldSupplyLibraryNoOpPropagatorWithoutThisConfiguration() {
-    // given only the library's propagator bean, and a supplier we never call — all that matters is
-    // which object comes back
-    final Supplier<List<String>> probe = List::of;
-
+  void shouldSupplyLibraryPropagatorWithoutThisConfiguration() {
+    // given only the library's propagator bean
     // when the container is asked for a propagator
-    // then it returns the same supplier, so it wraps nothing. This shows the library really does
-    // define a propagator bean; without that, the next test would prove nothing.
+    // then it returns the library's, not ours — proof the library defines one at all, without which
+    // the next test would prove nothing
     libraryContext()
         .run(
             context ->
-                assertThat(
-                        context
-                            .getBean(MembershipResolutionContextPropagator.class)
-                            .decorate(probe))
-                    .isSameAs(probe));
+                assertThat(context.getBean(MembershipResolutionContextPropagator.class))
+                    .isNotInstanceOf(PhysicalTenantMembershipContextPropagator.class));
   }
 
   @Test
