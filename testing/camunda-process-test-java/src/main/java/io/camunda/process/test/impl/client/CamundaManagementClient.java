@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
 import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementConfigurationChangeDto;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import java.io.IOException;
 import java.net.URI;
@@ -44,6 +45,7 @@ public final class CamundaManagementClient implements CamundaClockClient {
 
   private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
+  private static final String CLUSTER_CHANGES_ENDPOINT = "/actuator/cluster/changes/";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -166,17 +168,50 @@ public final class CamundaManagementClient implements CamundaClockClient {
   }
 
   private boolean isPurgeComplete(final long changeId) {
-    // Use the management cluster topology (no auth required) to check if the purge operation
-    // identified by changeId has completed and the cluster is healthy.
+    // Track the purge through the status of the change it planned. The cluster topology reports the
+    // cluster-wide change state only for a response covering a single physical tenant, whereas the
+    // change endpoint reports one change regardless of how many physical tenants the cluster has.
+    final ManagementConfigurationChangeDto change = getConfigurationChange(changeId);
+    if (change == null) {
+      // Either the request failed, or the polled broker has not learned about the change yet.
+      return false;
+    }
+
+    if (change.isTerminallyFailed()) {
+      throw new IllegalStateException(
+          String.format(
+              "The cluster reported the purge as %s. [changeId: %d]",
+              change.getStatus(), changeId));
+    }
+
+    return change.isCompleted() && isClusterHealthy();
+  }
+
+  /**
+   * Reads the status of one configuration change. Returns {@code null} if the request failed -
+   * which includes the change not being known to the polled broker yet - leaving it to the caller
+   * to poll again; awaitility will abort after the timeout expires.
+   */
+  private ManagementConfigurationChangeDto getConfigurationChange(final long changeId) {
+    try {
+      final HttpGet changeRequest =
+          new HttpGet(camundaManagementApi + CLUSTER_CHANGES_ENDPOINT + changeId);
+
+      return sendRequest(changeRequest, ManagementConfigurationChangeDto.class);
+    } catch (final Exception e) {
+      return null;
+    }
+  }
+
+  /** Reads the cluster topology (no auth required) to check that the cluster is usable again. */
+  private boolean isClusterHealthy() {
     try {
       final HttpGet clusterStatusRequest =
           new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
-      final ManagementClusterTopologyResponseDto topologyResponse =
-          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
-      return topologyResponse.isTopologyChangeCompleted(changeId);
+
+      return sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class)
+          .isClusterHealthy();
     } catch (final Exception e) {
-      // Ignore silently and wait for next status request; awaitility will abort after timeout
-      // expires
       return false;
     }
   }

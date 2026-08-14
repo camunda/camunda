@@ -24,25 +24,14 @@ import java.util.List;
 public class ManagementClusterTopologyResponseDto {
 
   private List<ManagementBrokerStateDto> brokers;
-  private ManagementCompletedChangeDto lastChange;
-  private Object pendingChange;
 
   /**
-   * Returns true if the topology change identified by {@code changeId} has completed and the
-   * cluster is healthy.
+   * Returns true if every broker reports all of its partitions as active. {@code brokers} is
+   * reported regardless of how many physical tenants the response covers, unlike the cluster-wide
+   * change state.
    */
-  public boolean isTopologyChangeCompleted(final long changeId) {
-    if (lastChange == null) {
-      return false;
-    }
-
-    final boolean isLatestChangeId = changeId <= lastChange.getId();
-    final boolean isClusterHealthy =
-        pendingChange == null
-            && brokers != null
-            && brokers.stream().allMatch(ManagementBrokerStateDto::isActive);
-
-    return isLatestChangeId && isClusterHealthy;
+  public boolean isClusterHealthy() {
+    return brokers != null && brokers.stream().allMatch(ManagementBrokerStateDto::isActive);
   }
 
   public List<ManagementBrokerStateDto> getBrokers() {
@@ -51,21 +40,5 @@ public class ManagementClusterTopologyResponseDto {
 
   public void setBrokers(final List<ManagementBrokerStateDto> brokers) {
     this.brokers = brokers;
-  }
-
-  public ManagementCompletedChangeDto getLastChange() {
-    return lastChange;
-  }
-
-  public void setLastChange(final ManagementCompletedChangeDto lastChange) {
-    this.lastChange = lastChange;
-  }
-
-  public Object getPendingChange() {
-    return pendingChange;
-  }
-
-  public void setPendingChange(final Object pendingChange) {
-    this.pendingChange = pendingChange;
   }
 }
