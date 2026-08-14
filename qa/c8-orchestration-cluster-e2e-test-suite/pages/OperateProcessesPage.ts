@@ -361,52 +361,77 @@ class OperateProcessesPage {
     }
   }
 
-  async clickRetryButton(): Promise<void> {
-    // Toggling the "Suspended" filter just before selecting all rows triggers a
-    // fresh instances query; when it resolves the batch-operation toolbar
-    // re-renders and the Retry button remounts, detaching a click mid-flight.
-    // Retry the whole click until the confirmation dialog's Apply button is up,
-    // but never re-click once the dialog is already open.
-    await expect(async () => {
-      if (!(await this.applyButton.isVisible())) {
-        await expect(this.retryButton).toBeVisible({timeout: 5000});
-        await this.retryButton.click({timeout: 5000});
-      }
-      await expect(this.applyButton).toBeVisible({timeout: 5000});
-    }).toPass({timeout: 30000});
+  private batchOperationDialogButton(name: 'Apply' | 'Delete'): Locator {
+    // Scope to the dialog: the toolbar carries buttons with the same accessible
+    // names, so an unscoped lookup can resolve to the wrong one.
+    return this.page
+      .getByRole('dialog')
+      .getByRole('button', {name, exact: true});
   }
 
-  async deleteSelectedInstancesInBatch(): Promise<void> {
+  private async applyBatchOperationToAllInstances(options: {
+    toolbarButton: Locator;
+    confirmButton: Locator;
+    startedMessage: Locator;
+  }): Promise<void> {
     // The batch toolbar only renders while rows are selected, and the
     // confirmation modal lives inside it. A row selection made while the
     // instances query is still in flight is dropped when the result lands,
-    // which unmounts the toolbar and the open modal — the click is silently
-    // lost and no operation is ever submitted. So drive selection, dialog and
-    // confirmation as one retried unit, and treat only the "operation started"
-    // notification as success; a closed dialog on its own can just as easily
-    // mean the modal was unmounted.
+    // which unmounts the toolbar together with the open modal — the click is
+    // silently lost and no operation is ever submitted. So drive selection,
+    // dialog and confirmation as one retried unit, and treat only the
+    // "operation started" notification as success: a closed dialog on its own
+    // can just as easily mean the modal was unmounted.
+    const {toolbarButton, confirmButton, startedMessage} = options;
     const selectAll = this.selectAllRowsCheckbox.locator('label');
-    const started = this.batchOperationStartedMessage(
-      'Delete Process Instance',
-    );
 
     await expect(async () => {
-      if (!(await this.deleteBatchOperationConfirmButton.isVisible())) {
-        if (!(await this.deleteButton.isVisible())) {
+      if (!(await confirmButton.isVisible())) {
+        if (!(await toolbarButton.isVisible())) {
           // Clear a stale checked header before re-selecting: the checkbox can
-          // still read as checked after the store behind it was reset, and
+          // still read as checked after the selection behind it was reset, and
           // clicking it again would then deselect instead of select.
           if (await selectAll.isChecked()) {
             await selectAll.click();
           }
           await selectAll.click();
         }
-        await expect(this.deleteButton).toBeEnabled({timeout: 5000});
-        await this.deleteButton.click({timeout: 5000});
+        await expect(toolbarButton).toBeEnabled({timeout: 5000});
+        await toolbarButton.click({timeout: 5000});
       }
-      await this.deleteBatchOperationConfirmButton.click({timeout: 5000});
-      await expect(started).toBeVisible({timeout: 30000});
+      await confirmButton.click({timeout: 5000});
+      await expect(startedMessage).toBeVisible({timeout: 30000});
     }).toPass({timeout: 120000});
+  }
+
+  async retryAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.retryButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage('Resolve Incident'),
+    });
+  }
+
+  async cancelAllProcessInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      // The toolbar's Cancel shares its accessible name with the dialog's own
+      // Cancel, so address it by test id.
+      toolbarButton: this.cancelBatchOperationButton,
+      confirmButton: this.batchOperationDialogButton('Apply'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Cancel Process Instance',
+      ),
+    });
+  }
+
+  async deleteSelectedInstancesInBatch(): Promise<void> {
+    await this.applyBatchOperationToAllInstances({
+      toolbarButton: this.deleteButton,
+      confirmButton: this.batchOperationDialogButton('Delete'),
+      startedMessage: this.batchOperationStartedMessage(
+        'Delete Process Instance',
+      ),
+    });
   }
 
   async clickCancelBatchOperationButton(): Promise<void> {

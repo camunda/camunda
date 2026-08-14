@@ -17,7 +17,6 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
 import {jsonHeaders} from 'utils/http';
 
 type ProcessInstance = {
@@ -169,32 +168,17 @@ test.describe('Operations', () => {
       // checkboxes render.
       await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      // A single header-checkbox click can be lost while the Suspended-filter
-      // toggle re-queries the table, leaving no selection and no batch toolbar;
-      // selectAllProcessInstances retries until the toolbar (Retry button) is up.
-      await operateProcessesPage.selectAllProcessInstances();
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
 
-      await operateProcessesPage.clickRetryButton();
-
-      await operateProcessesPage.applyButton.click();
-      await sleep(1000);
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage('Resolve Incident'),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.retryAllProcessInstancesInBatch();
     });
 
     await test.step('Cancel all instances', async () => {
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-
-      await operateProcessesPage.cancelButton.click();
-      await operateProcessesPage.applyButton.click();
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage(
-          'Cancel Process Instance',
-        ),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.cancelAllProcessInstancesInBatch();
 
       // Apply filters to show canceled instances with retries
       await waitForAssertion({
