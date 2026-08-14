@@ -31,9 +31,14 @@ public class ExpressionBehavior {
       final ExpressionLanguage expressionLanguage,
       final Duration expressionEvaluationTimeout,
       final VariableState variableState) {
+    // Resolve camunda.secrets.<name> references to their own placeholder string (as the engine
+    // does for input mappings), so callers of the expression endpoint — e.g. inbound connectors,
+    // which have no job to trigger job-activation resolution — receive the reference text instead
+    // of null. Only that path is affected; camunda.vars.* and every other lookup forward unchanged.
     clusterExpressionProcessor =
         new ExpressionProcessor(
-            expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
+                expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout)
+            .withSecretReferenceContext();
     this.variableState = variableState;
   }
 

@@ -308,6 +308,42 @@ public class ExpressionEvaluationIT {
         .contains("No function found with name 'invalid_function' and 0 parameters");
   }
 
+  // ============ SECRET REFERENCE TESTS ============
+
+  @Test
+  void shouldEvaluateSecretReferenceToItsPlaceholder() {
+    // inbound connectors have no job, so they resolve secret references through this endpoint; a
+    // camunda.secrets.<name> reference must evaluate to its own placeholder, never the real value
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.secrets.TEST")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("camunda.secrets.TEST");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateSecretReferenceInsideConcatenation() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=\"Bearer \" + camunda.secrets.TEST")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Bearer camunda.secrets.TEST");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
   // ============ GLOBAL SCOPED CLUSTER VARIABLE TESTS ============
 
   @Test
