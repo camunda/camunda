@@ -46,6 +46,13 @@
 	justify-content: center;
 }
 
+// DS-only (see TaskDetailsForm.tsx). Same divider token as the task tile, the
+// task-details header/tabs, and the aside dividers. Declared after `.footer`:
+// equal specificity, so source order decides.
+.footerDS {
+	border-top-color: var(--border);
+}
+
 .footerContent {
 	width: 100%;
 	max-width: 900px;

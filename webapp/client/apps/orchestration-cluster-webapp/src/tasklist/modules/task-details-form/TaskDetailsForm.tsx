@@ -108,7 +108,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 						formRenderer
 					)}
 				</div>
-				<div className={styles.footer}>
+				<div className={cn(styles.footer, featureFlags.dsTasklistUI && styles.footerDS)}>
 					<div className={styles.footerContent}>
 						<CompleteTaskButton
 							status={submissionStatus}
