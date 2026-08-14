@@ -8,14 +8,18 @@
 package io.camunda.exporter.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.utils.CamundaExporterSchemaUtils;
+import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
+import io.camunda.search.test.utils.SearchClientAdapter;
+import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,47 +29,66 @@ import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValu
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Second half of the SUPPORT-34109 reproduction - fast, simulated-Elasticsearch version.
+ * Real-Elasticsearch counterpart of {@link ReorderedFlushCorruptsFlowNodeStateTest}.
  *
- * <p>{@code DualExporterDirectorReplayRaceTest} (zeebe/broker) proves that two {@link
- * io.camunda.zeebe.broker.exporter.stream.ExporterDirector} instances for one partition can make
- * Elasticsearch observe the {@code ELEMENT_ACTIVATING} write for a flow node instance
- * <em>after</em> the {@code ELEMENT_COMPLETED} write for the same instance.
+ * <p>{@code ReorderedFlushCorruptsFlowNodeStateTest} proves the same corruption mechanism fast,
+ * against a fake {@link BatchRequest} that simulates Elasticsearch's partial-{@code doc} merge
+ * semantics in Java code. This test proves it is not just a simulation: it drives the real {@link
+ * FlowNodeInstanceFromProcessInstanceHandler} and the real {@link ExporterBatchWriter} through the
+ * identical arrival-order reordering, but flushes through the real {@link
+ * ElasticsearchBatchRequest} against a real Elasticsearch Testcontainer, and asserts on the
+ * document fetched back from it.
  *
- * <p>This test takes that arrival order and drives the real {@link
- * FlowNodeInstanceFromProcessInstanceHandler} and the real {@link ExporterBatchWriter} through it,
- * against a {@link BatchRequest} that reproduces Elasticsearch partial-{@code doc} merge semantics
- * (see {@code ElasticsearchBatchRequest#upsertWithRouting}: {@code
- * a.doc(updateFields).upsert(...)}, with no {@code ifSeqNo}/{@code ifPrimaryTerm}/version guard).
- * It shows the resulting document is exactly the customer's: {@code state=ACTIVE} with a stale
- * non-null {@code endDate}.
- *
- * <p>This is the fast unit-level check: the {@code BatchRequest} here is a Mockito fake that
- * replays ES's field-merge semantics in Java, so it runs with no external process and stays fast to
- * keep in the everyday unit-test run. {@link ReorderedFlushCorruptsFlowNodeStateIT} is the slow
- * counterpart that proves the same thing against a real Elasticsearch Testcontainer end-to-end -
- * run that one whenever the ES-specific merge behaviour itself needs re-verifying.
+ * <p>Slow (spins up a container) - keep {@code ReorderedFlushCorruptsFlowNodeStateTest} as the fast
+ * unit-level check and run this one whenever the ES-specific merge behaviour itself needs
+ * re-verifying.
  */
-final class ReorderedFlushCorruptsFlowNodeStateTest {
+final class ReorderedFlushCorruptsFlowNodeStateIT {
 
-  private static final String INDEX = "operate-flownode-instance-8.3.1_";
   private static final long TARGET_KEY = 2251799813744123L;
+
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final TestProcessCache processCache = new TestProcessCache();
-  private final FlowNodeInstanceFromProcessInstanceHandler handler =
-      new FlowNodeInstanceFromProcessInstanceHandler(INDEX, processCache);
 
-  /** id -> document. Mutated exactly the way an Elasticsearch partial `doc` update would. */
-  private final Map<String, Map<String, Object>> elasticsearch = new HashMap<>();
+  private String indexPrefix;
+  private String indexName;
+  private FlowNodeInstanceFromProcessInstanceHandler handler;
+  private SearchClientAdapter clientAdapter;
+
+  @BeforeEach
+  void setUp() throws IOException {
+    indexPrefix =
+        "reordered-flush-it-" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+
+    final var config = new ExporterConfiguration();
+    config.getConnect().setIndexPrefix(indexPrefix);
+    config.getConnect().setUrl(searchDB.esUrl());
+    config.getConnect().setType(ConnectionTypes.ELASTICSEARCH.getType());
+    config.getConnect().setClusterName(ConnectionTypes.ELASTICSEARCH.name());
+    CamundaExporterSchemaUtils.createSchemas(config);
+
+    indexName = new FlowNodeInstanceTemplate(indexPrefix, true).getFullQualifiedName();
+    handler = new FlowNodeInstanceFromProcessInstanceHandler(indexName, processCache);
+    clientAdapter = new SearchClientAdapter(searchDB.esClient(), searchDB.objectMapper());
+  }
+
+  @AfterEach
+  void tearDown() throws IOException {
+    searchDB.esClient().indices().delete(d -> d.index(indexPrefix + "*"));
+  }
 
   @Test
-  void staleActivatingFlushLandingAfterCompletedLeavesActiveWithEndDate() {
+  void staleActivatingFlushLandingAfterCompletedLeavesActiveWithEndDate() throws IOException {
     // Positions taken from the customer's record stream for the affected element.
     final var activating =
         record(ProcessInstanceIntent.ELEMENT_ACTIVATING, 1444519674L, 1754817083371L);
@@ -78,33 +101,37 @@ final class ReorderedFlushCorruptsFlowNodeStateTest {
     flushAsOwnBulk(activating);
     flushAsOwnBulk(completed);
 
-    assertThat(doc()).containsEntry(FlowNodeInstanceTemplate.STATE, FlowNodeState.COMPLETED);
-    assertThat(doc().get(FlowNodeInstanceTemplate.END_DATE)).isNotNull();
-    final var endDateAfterCompletion = doc().get(FlowNodeInstanceTemplate.END_DATE);
+    var doc = fetchTargetDocument();
+    assertThat(doc.getState()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(doc.getEndDate()).isNotNull();
+    final var endDateAfterCompletion = doc.getEndDate();
 
     // --- the stale leader (D1) re-exports ACTIVATING and is then closed --------------------
     // CamundaExporter#close() flushes the pending batch, so this write does reach Elasticsearch,
     // and nothing follows it.
     flushAsOwnBulk(activating);
 
-    // --- then: exactly the corrupted Operate document from the ticket ---------------------
-    assertThat(doc())
+    // --- then: exactly the corrupted Operate document from the ticket, from real ES --------
+    doc = fetchTargetDocument();
+    assertThat(doc.getState())
         .describedAs("state was flipped back to ACTIVE by the replayed ACTIVATING write")
-        .containsEntry(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE);
-    assertThat(doc().get(FlowNodeInstanceTemplate.END_DATE))
+        .isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(doc.getEndDate())
         .describedAs(
             "endDate survives untouched: flush() only puts END_DATE when entity.getEndDate() != null,"
-                + " and never clears it")
+                + " and never clears it - real Elasticsearch partial doc merge leaves the stale"
+                + " value in place")
         .isNotNull()
         .isEqualTo(endDateAfterCompletion);
   }
 
   /**
-   * Control: the same two records in log order, in one single bulk, converge correctly - so the
-   * corruption is caused by the arrival order across bulks, not by the handler in isolation.
+   * Control: the same two records in log order, in one single bulk, converge correctly on real
+   * Elasticsearch - so the corruption is caused by the arrival order across bulks, not by the
+   * handler in isolation.
    */
   @Test
-  void inOrderExportProducesCompletedDocument() {
+  void inOrderExportProducesCompletedDocument() throws IOException {
     final var activating =
         record(ProcessInstanceIntent.ELEMENT_ACTIVATING, 1444519674L, 1754817083371L);
     final var completed =
@@ -113,17 +140,22 @@ final class ReorderedFlushCorruptsFlowNodeStateTest {
     flushAsOwnBulk(activating);
     flushAsOwnBulk(completed);
 
-    assertThat(doc()).containsEntry(FlowNodeInstanceTemplate.STATE, FlowNodeState.COMPLETED);
-    assertThat(doc().get(FlowNodeInstanceTemplate.END_DATE)).isNotNull();
+    final var doc = fetchTargetDocument();
+    assertThat(doc.getState()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(doc.getEndDate()).isNotNull();
   }
 
   // --------------------------------------------------------------------------------------------
 
-  private Map<String, Object> doc() {
-    return elasticsearch.get(String.valueOf(TARGET_KEY));
+  private FlowNodeInstanceEntity fetchTargetDocument() throws IOException {
+    searchDB.esClient().indices().refresh(r -> r.index(indexName));
+    return clientAdapter.get(String.valueOf(TARGET_KEY), indexName, FlowNodeInstanceEntity.class);
   }
 
-  /** Runs one record through a fresh ExporterBatchWriter and flushes it as its own bulk request. */
+  /**
+   * Runs one record through a fresh ExporterBatchWriter and flushes it as its own bulk request
+   * against the real Elasticsearch container.
+   */
   private void flushAsOwnBulk(final Record<ProcessInstanceRecordValue> record) {
     final var writer =
         ExporterBatchWriter.Builder.begin(new CamundaExporterMetrics(new SimpleMeterRegistry()))
@@ -131,28 +163,11 @@ final class ReorderedFlushCorruptsFlowNodeStateTest {
             .build();
     writer.addRecord(record);
     try {
-      writer.flush(newElasticsearchLikeBatchRequest());
+      writer.flush(
+          new ElasticsearchBatchRequest(searchDB.esClient(), new ElasticsearchScriptBuilder()));
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  /**
-   * A BatchRequest whose {@code upsert} applies Elasticsearch partial-{@code doc} merge semantics:
-   * only the keys present in {@code updateFields} are written; every other field of the stored
-   * document is left as it was.
-   */
-  private BatchRequest newElasticsearchLikeBatchRequest() {
-    final BatchRequest batchRequest = mock(BatchRequest.class);
-    when(batchRequest.upsert(any(), any(), any(), any()))
-        .thenAnswer(
-            invocation -> {
-              final String id = invocation.getArgument(1);
-              final Map<String, Object> updateFields = invocation.getArgument(3);
-              elasticsearch.computeIfAbsent(id, k -> new HashMap<>()).putAll(updateFields);
-              return batchRequest;
-            });
-    return batchRequest;
   }
 
   private Record<ProcessInstanceRecordValue> record(
