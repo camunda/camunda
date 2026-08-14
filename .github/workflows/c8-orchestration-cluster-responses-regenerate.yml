@@ -136,7 +136,25 @@ jobs:
             echo '{"responses":null}' > /tmp/responses.before.json
           fi
 
+      # paths:regenerate (added by #59888) may not exist yet on every matrix
+      # ref — stable branches lag main until the feature is backported. Gate
+      # every apiPaths.ts step on this so an unrelated ref without the script
+      # doesn't fail the whole job; the steps activate automatically once the
+      # backport lands.
+      - name: Check API paths feature availability
+        id: paths-feature
+        working-directory: ${{ env.SUITE_DIR }}
+        run: |
+          set -euo pipefail
+          if node -e "process.exit(require('./package.json').scripts['paths:regenerate'] ? 0 : 1)"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No paths:regenerate script on ${TARGET_REF} — apiPaths.ts regeneration not backported to this ref yet, skipping."
+          fi
+
       - name: Snapshot committed API paths (pre-regeneration)
+        if: steps.paths-feature.outputs.available == 'true'
         run: |
           set -euo pipefail
           if [ -f "$PATHS_FILE" ]; then
@@ -151,6 +169,7 @@ jobs:
         run: npm run responses:regenerate
 
       - name: Regenerate API paths
+        if: steps.paths-feature.outputs.available == 'true'
         working-directory: ${{ env.SUITE_DIR }}
         run: npm run paths:regenerate
 
@@ -186,6 +205,7 @@ jobs:
 
       - name: Detect API path changes
         id: diff-paths
+        if: steps.paths-feature.outputs.available == 'true'
         run: |
           set -euo pipefail
 
@@ -376,6 +396,7 @@ jobs:
         env:
           CHANGED: ${{ steps.diff.outputs.changed }}
           PR_URL:  ${{ steps.pr.outputs.url }}
+          PATHS_FEATURE_AVAILABLE: ${{ steps.paths-feature.outputs.available }}
           CHANGED_PATHS: ${{ steps.diff-paths.outputs.changed }}
           PR_URL_PATHS:  ${{ steps.pr-paths.outputs.url }}
         run: |
@@ -394,7 +415,9 @@ jobs:
             echo ""
             echo "## API paths regeneration — \`${TARGET_REF}\`"
             echo ""
-            if [ "${CHANGED_PATHS:-false}" = "true" ]; then
+            if [ "${PATHS_FEATURE_AVAILABLE:-false}" != "true" ]; then
+              echo ":fast_forward: \`paths:regenerate\` not backported to this ref yet — skipped."
+            elif [ "${CHANGED_PATHS:-false}" = "true" ]; then
               echo ":white_check_mark: API path changes detected."
               if [ -n "${PR_URL_PATHS:-}" ]; then
                 echo ""
