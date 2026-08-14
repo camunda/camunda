@@ -87,14 +87,17 @@ import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -113,6 +116,90 @@ final class ClusterApiUtilsTest {
 
     // then
     assertThat(result).containsExactlyInAnyOrderElementsOf(param.expectedResult());
+  }
+
+  @Test
+  void shouldTagPhysicalTenantWhenAggregatingUnscopedForSingleTenant() {
+    // given
+    final var configuration =
+        configWithExporters(
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, Map.of("exporter-1", State.ENABLED)));
+
+    // when
+    final var result = ClusterApiUtils.aggregateExporterState(configuration, null);
+
+    // then — the tag is present even though a single-tenant caller could have deduced it
+    assertThat(result)
+        .containsExactly(
+            new ExporterStatus()
+                .exporterId("exporter-1")
+                .status(StatusEnum.ENABLED)
+                .physicalTenant(CurrentClusterConfiguration.DEFAULT_GROUP));
+  }
+
+  @Test
+  void shouldAggregateEachPhysicalTenantOnItsOwnWhenAggregatingUnscoped() {
+    // given — the same exporter id is enabled in one tenant and disabled in the other, and each
+    // tenant has an exporter the other does not
+    final var configuration =
+        configWithExporters(
+            Map.of(
+                "tenant-b",
+                Map.of("shared", State.DISABLED, "only-in-b", State.ENABLED),
+                "tenant-a",
+                Map.of("shared", State.ENABLED, "only-in-a", State.DISABLED)));
+
+    // when
+    final var result = ClusterApiUtils.aggregateExporterState(configuration, null);
+
+    // then — grouped by tenant, tenants in ascending id order
+    assertThat(result)
+        .extracting(
+            ExporterStatus::getPhysicalTenant,
+            ExporterStatus::getExporterId,
+            ExporterStatus::getStatus)
+        .containsExactlyInAnyOrder(
+            tuple("tenant-a", "shared", StatusEnum.ENABLED),
+            tuple("tenant-a", "only-in-a", StatusEnum.DISABLED),
+            tuple("tenant-b", "shared", StatusEnum.DISABLED),
+            tuple("tenant-b", "only-in-b", StatusEnum.ENABLED));
+    assertThat(result).extracting(ExporterStatus::getPhysicalTenant).isSorted();
+  }
+
+  @Test
+  void shouldAggregateOnlyTheRequestedPhysicalTenant() {
+    // given
+    final var configuration =
+        configWithExporters(
+            Map.of(
+                "tenant-a",
+                Map.of("exporter-1", State.ENABLED),
+                "tenant-b",
+                Map.of("exporter-2", State.ENABLED)));
+
+    // when
+    final var result = ClusterApiUtils.aggregateExporterState(configuration, "tenant-b");
+
+    // then
+    assertThat(result)
+        .containsExactly(
+            new ExporterStatus()
+                .exporterId("exporter-2")
+                .status(StatusEnum.ENABLED)
+                .physicalTenant("tenant-b"));
+  }
+
+  @Test
+  void shouldAggregateNothingForAPhysicalTenantWithoutExporters() {
+    // given
+    final var configuration =
+        configWithExporters(Map.of("tenant-a", Map.of("exporter-1", State.ENABLED)));
+
+    // when
+    final var result = ClusterApiUtils.aggregateExporterState(configuration, "tenant-b");
+
+    // then — an unknown tenant is rejected by the endpoint, so all this needs to do is not fail
+    assertThat(result).isEmpty();
   }
 
   @ParameterizedTest
@@ -949,6 +1036,54 @@ final class ClusterApiUtilsTest {
 
   private static MemberId member(final int id) {
     return MemberId.from(String.valueOf(id));
+  }
+
+  /**
+   * A cluster configuration with one broker holding a single partition per physical tenant, each
+   * partition configured with the given exporters in the given states.
+   */
+  private static CurrentClusterConfiguration configWithExporters(
+      final Map<String, Map<String, State>> exportersPerTenant) {
+    final var globalConfiguration =
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                member(1),
+                new io.camunda.zeebe.dynamic.config.state.BrokerState(
+                    0,
+                    Instant.ofEpochSecond(1),
+                    io.camunda.zeebe.dynamic.config.state.BrokerState.State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final Map<String, PartitionGroupConfiguration> groups = new HashMap<>();
+    exportersPerTenant.forEach(
+        (tenant, exporters) -> groups.put(tenant, groupWithExporters(exporters)));
+    return new CurrentClusterConfiguration(
+        1, globalConfiguration, groups, PhasedChangeState.empty());
+  }
+
+  private static PartitionGroupConfiguration groupWithExporters(
+      final Map<String, State> exporters) {
+    final var partitionConfig =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                exporters.entrySet().stream()
+                    .collect(
+                        Collectors.toMap(
+                            Entry::getKey,
+                            e -> new ExporterState(0, e.getValue(), Optional.empty())))));
+    return new PartitionGroupConfiguration(
+        1,
+        0,
+        Map.of(
+            member(1),
+            BrokerPartitionState.initialize(Map.of(1, PartitionState.active(1, partitionConfig)))),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   private static CurrentClusterConfiguration configWithPhasedChangeState(

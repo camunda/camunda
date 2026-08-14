@@ -1102,6 +1102,34 @@ final class ClusterApiUtils {
     return config;
   }
 
+  /**
+   * Aggregates the exporter state of every physical tenant, or of {@code physicalTenant} alone when
+   * given. Exporter configuration is per physical tenant, so an exporter id may exist in some
+   * tenants only and the same id can be in different states in each of them; each tenant is
+   * therefore aggregated on its own and reported as its own entry, tagged with {@code
+   * physicalTenant}, rather than reduced across tenants into one status that belongs to none of
+   * them. Entries are grouped by tenant, tenants in ascending id order.
+   *
+   * <p>Every entry carries the tag, including a single-tenant cluster's — where it reads {@code
+   * default} — so the field means the same thing in every response instead of being present only
+   * when a caller could have deduced it anyway. This stays backwards compatible because the field
+   * is not required: a client that predates physical tenants ignores it.
+   */
+  static List<ExporterStatus> aggregateExporterState(
+      final CurrentClusterConfiguration configuration, final @Nullable String physicalTenant) {
+    final List<String> tenantsInView =
+        physicalTenant == null
+            ? configuration.partitionGroups().keySet().stream().sorted().toList()
+            : List.of(physicalTenant);
+
+    return tenantsInView.stream()
+        .flatMap(
+            tenant ->
+                aggregateExporterState(configuration.toLegacy(tenant)).stream()
+                    .map(status -> status.physicalTenant(tenant)))
+        .toList();
+  }
+
   static List<ExporterStatus> aggregateExporterState(
       final ClusterConfiguration clusterConfiguration) {
     // Map of ExporterId => List of ExporterState (each item corresponds to a partition)

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
@@ -96,7 +97,10 @@ final class ExportersEndpointIT {
         .hasSize(1)
         .first()
         .isEqualTo(
-            new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.DISABLED));
+            new ExporterStatus()
+                .exporterId("recordingExporter")
+                .status(StatusEnum.DISABLED)
+                .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   private boolean hasExporterDisabled(final BrokerState b) {
@@ -143,7 +147,11 @@ final class ExportersEndpointIT {
         .describedAs("Exporter is enabled")
         .hasSize(1)
         .first()
-        .isEqualTo(new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.ENABLED));
+        .isEqualTo(
+            new ExporterStatus()
+                .exporterId("recordingExporter")
+                .status(StatusEnum.ENABLED)
+                .physicalTenant(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   private void waitUntilOperationIsApplied(final PlannedOperationsResponse response) {
