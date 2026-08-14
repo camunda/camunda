@@ -389,7 +389,9 @@ final class ClusterConfigurationManagerImplTest {
   void shouldMergeAndApplyOperationOnGossipReceived() {
     // given — the local member (1) starts with an empty, initialized configuration
     final var manager = newManager(MEMBER_1);
-    manager.updateMultiConfiguration(ignored -> CurrentClusterConfiguration.init()).join();
+    manager
+        .start(() -> CompletableActorFuture.completed(CurrentClusterConfiguration.init()))
+        .join();
 
     // when — a configuration received via gossip carries a pending plan joining the local member
     final var received =
@@ -450,7 +452,7 @@ final class ClusterConfigurationManagerImplTest {
             Map.of(
                 CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup, "tenanta", tenantAGroup),
             PhasedChangeState.empty());
-    manager.updateMultiConfiguration(ignored -> seeded).join();
+    manager.start(() -> CompletableActorFuture.completed(seeded)).join();
 
     final var newConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
     final var oldConfigSeen = new AtomicReference<CurrentClusterConfiguration>();
@@ -558,7 +560,7 @@ final class ClusterConfigurationManagerImplTest {
             global,
             Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
             new PhasedChangeState(plan.id() + 1, Map.of(plan.id(), plan), List.of()));
-    manager.updateMultiConfiguration(ignored -> seeded).join();
+    manager.start(() -> CompletableActorFuture.completed(seeded)).join();
 
     final var listenerCalled = new AtomicBoolean(false);
     manager.registerTopologyChangedListener(
@@ -633,7 +635,7 @@ final class ClusterConfigurationManagerImplTest {
             global,
             Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, defaultGroup),
             PhasedChangeState.empty());
-    manager.updateMultiConfiguration(ignored -> seeded).join();
+    manager.start(() -> CompletableActorFuture.completed(seeded)).join();
 
     final var listenerCalled = new AtomicBoolean(false);
     manager.registerTopologyChangedListener(
@@ -887,7 +889,9 @@ final class ClusterConfigurationManagerImplTest {
     final var manager = newManager(MEMBER_0);
     final var gossiped = new AtomicReference<CurrentClusterConfiguration>();
     manager.setCurrentConfigurationGossiper(gossiped::set);
-    manager.updateMultiConfiguration(ignored -> CurrentClusterConfiguration.init()).join();
+    manager
+        .start(() -> CompletableActorFuture.completed(CurrentClusterConfiguration.init()))
+        .join();
     gossiped.set(null); // only interested in the gossip triggered by the gossip receipt below
 
     // when — a configuration received via gossip introduces a member the local manager doesn't
@@ -906,6 +910,27 @@ final class ClusterConfigurationManagerImplTest {
                     .isTrue());
     assertThat(gossiped.get()).isNotNull();
     assertThat(gossiped.get().globalConfiguration().hasMember(MEMBER_1)).isTrue();
+  }
+
+  @Test
+  void shouldNotUpdateLocalConfigurationOnGossipReceivedBeforeInitialization() {
+    // given — a manager that has not been started yet (no configuration has been initialized)
+    final var manager = newManager(MEMBER_0);
+    final var gossiped = new AtomicReference<CurrentClusterConfiguration>();
+    manager.setCurrentConfigurationGossiper(gossiped::set);
+    final var received =
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                g -> g.addMember(MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)));
+
+    // when
+    manager.onGossipReceivedCurrent(received);
+
+    // then — the received configuration is relayed onward as-is (so peers still converge), but the
+    // local (uninitialized) configuration is left untouched; updating it here would race with a
+    // concurrently running initializer
+    assertThat(gossiped.get()).isEqualTo(received);
+    assertThat(configuration(manager).isUninitialized()).isTrue();
   }
 
   @Test
