@@ -175,6 +175,76 @@ final class ClusterConfigurationManagerImplNewConfigTest {
   }
 
   @Test
+  void shouldApplyOneParallelPhaseToEveryPartitionGroupItTargets() {
+    // given — two partition groups (physical tenants), each with the local member replicating its
+    // own partition 1. A cluster purge plans one parallel phase spanning every group, so a phase
+    // that only drained in the default group would leave the other tenant untouched.
+    final var manager = newManager(MEMBER_0);
+    manager.registerPartitionGroupChangeAppliers(
+        "tenanta",
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig))),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(
+                    MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                    MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group, "tenanta", group),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    // when — one phase carries the local member's leave operation for both groups
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)),
+                                "tenanta",
+                                List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)))))))
+        .join();
+
+    // then — both groups drained their side of the phase
+    final var config = configuration(manager);
+    for (final var groupId : List.of(CurrentClusterConfiguration.DEFAULT_GROUP, "tenanta")) {
+      assertThat(config.partitionGroup(groupId).hasPendingChanges())
+          .describedAs("pending changes of group '%s'", groupId)
+          .isFalse();
+      assertThat(config.partitionGroup(groupId).hasMember(MEMBER_0))
+          .describedAs("member 0 left group '%s'", groupId)
+          .isFalse();
+    }
+  }
+
+  @Test
   void shouldNotApplyOperationForOtherMember() {
     // given — a plan whose only operation targets a different member
     final var manager = newManager(MEMBER_0);
