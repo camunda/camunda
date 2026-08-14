@@ -151,6 +151,147 @@ public final class SecretReferenceInputMappingTest {
         .containsEntry("authToken", "camunda.secrets.token");
   }
 
+  // ---- tolerated conditionals (#58614): detection records a reference for every branch at the
+  // same pointer, but only the branch FEEL actually took ever puts a placeholder there - so the
+  // untaken branch's reference must be ignored rather than fail the job closed.
+
+  @Test
+  public void shouldResolveTakenBranchOfConditionalOverTwoSecretsWhenConditionIsTrue() {
+    // given - "if useProd then camunda.secrets.prodToken else camunda.secrets.devToken"
+    final var process =
+        Bpmn.createExecutableProcess("secret-conditional-branches-true")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("secret-conditional-branches-true-job")
+                        .zeebeInputExpression(
+                            "if useProd then camunda.secrets.prodToken else camunda.secrets.devToken",
+                            "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("secret-conditional-branches-true")
+            .withVariable("useProd", true)
+            .create();
+
+    // then - the exported record keeps the taken branch's own placeholder (resolution only ever
+    // reaches the activation response, never the persisted record - see the class-level Javadoc),
+    // and no incident is raised for the untaken branch's reference
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("secret-conditional-branches-true-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("authToken", "camunda.secrets.prodToken");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldResolveTakenBranchOfConditionalOverTwoSecretsWhenConditionIsFalse() {
+    // given - the mirror of the above, so the outcome cannot depend on which reference is
+    // materialized first
+    final var process =
+        Bpmn.createExecutableProcess("secret-conditional-branches-false")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("secret-conditional-branches-false-job")
+                        .zeebeInputExpression(
+                            "if useProd then camunda.secrets.prodToken else camunda.secrets.devToken",
+                            "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("secret-conditional-branches-false")
+            .withVariable("useProd", false)
+            .create();
+
+    // then
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("secret-conditional-branches-false-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("authToken", "camunda.secrets.devToken");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldResolveConditionalWhoseTakenBranchIsAPlainLiteral() {
+    // given - "if true then \"localSecret\" else camunda.secrets.prod" always takes the
+    // literal branch; the untaken branch's reference is still recorded at the same pointer
+    final var process =
+        Bpmn.createExecutableProcess("secret-conditional-literal")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("secret-conditional-literal-job")
+                        .zeebeInputExpression(
+                            "if true then \"localSecret\" else camunda.secrets.prod", "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("secret-conditional-literal").create();
+
+    // then - the literal survives untouched, and no incident is raised for the untaken reference
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("secret-conditional-literal-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("authToken", "localSecret");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
   @Test
   public void shouldResolveConditionalWhoseTakenBranchIsAContextWithoutSecrets() {
     // given - "if true then {x: \"literal\"} else camunda.secrets.token" always takes the context
@@ -184,6 +325,49 @@ public final class SecretReferenceInputMappingTest {
             .getJobs()
             .getFirst();
     assertThat(job.getVariables()).containsEntry("authToken", Map.of("x", "literal"));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldResolveConditionalWhoseTakenBranchIsNullToNoValue() {
+    // given - "if false then camunda.secrets.token else null" always takes the null branch;
+    // detection still records the reference at the mapping target's pointer, but no
+    // placeholder ever reaches it
+    final var process =
+        Bpmn.createExecutableProcess("secret-conditional-null")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("secret-conditional-null-job")
+                        .zeebeInputExpression(
+                            "if false then camunda.secrets.token else null", "authToken"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("secret-conditional-null").create();
+
+    // then - the variable is null, not a placeholder, and no incident is raised
+    final JobRecordValue job =
+        ENGINE
+            .jobs()
+            .withType("secret-conditional-null-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("authToken", null);
     assertThat(
             RecordingExporter.<Boolean>expectNoMatchingRecords(
                 records ->

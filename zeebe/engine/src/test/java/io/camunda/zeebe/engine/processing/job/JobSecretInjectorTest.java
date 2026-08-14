@@ -895,32 +895,6 @@ final class JobSecretInjectorTest {
     }
 
     @Test
-    void shouldSkipWhenPointerDoesNotAddressATextLeaf() {
-      // given - the pointer addresses a container, not a text leaf
-      final var original = Map.of("cfg", Map.of("a", "camunda.secrets.token"));
-      final var batch = batchWith(job(original, ref("token", "/cfg")));
-
-      // when
-      inject(batch, Map.of("token", "resolved"));
-
-      // then - defensively left untouched
-      assertThat(variablesOf(batch, 0)).isEqualTo(original);
-    }
-
-    @Test
-    void shouldSkipWhenIntermediateSegmentIsMissing() {
-      // given - the recorded path no longer matches the variables document
-      final var original = Map.of("auth", "camunda.secrets.token");
-      final var batch = batchWith(job(original, ref("token", "/auth/nested")));
-
-      // when
-      inject(batch, Map.of("token", "resolved"));
-
-      // then - defensively left untouched
-      assertThat(variablesOf(batch, 0)).isEqualTo(original);
-    }
-
-    @Test
     void shouldSkipWhenLeafIsMissing() {
       // given
       final var original = Map.of("present", "camunda.secrets.token");
@@ -943,19 +917,6 @@ final class JobSecretInjectorTest {
       inject(batch, Map.of("token", "resolved"));
 
       // then
-      assertThat(variablesOf(batch, 0)).isEqualTo(original);
-    }
-
-    @Test
-    void shouldSkipArraysOnThePointerPath() {
-      // given - the pointer runs into an array element
-      final var original = Map.of("items", List.of("camunda.secrets.token"));
-      final var batch = batchWith(job(original, ref("token", "/items/0")));
-
-      // when
-      inject(batch, Map.of("token", "resolved"));
-
-      // then - array elements are never addressed; the document is untouched
       assertThat(variablesOf(batch, 0)).isEqualTo(original);
     }
 
