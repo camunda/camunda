@@ -16,13 +16,13 @@ public class JobRegistryEntryUpdateDto {
 
   private JobStatus status;
   private String errorMessage;
-  private OffsetDateTime completedAt;
+  private OffsetDateTime updatedAt;
 
   public JobRegistryEntryUpdateDto(
-      final JobStatus status, final String errorMessage, final OffsetDateTime completedAt) {
+      final JobStatus status, final String errorMessage, final OffsetDateTime updatedAt) {
     this.status = status;
     this.errorMessage = errorMessage;
-    this.completedAt = completedAt;
+    this.updatedAt = updatedAt;
   }
 
   protected JobRegistryEntryUpdateDto() {}
@@ -43,11 +43,11 @@ public class JobRegistryEntryUpdateDto {
     this.errorMessage = errorMessage;
   }
 
-  public OffsetDateTime getCompletedAt() {
-    return completedAt;
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
   }
 
-  public void setCompletedAt(final OffsetDateTime completedAt) {
-    this.completedAt = completedAt;
+  public void setUpdatedAt(final OffsetDateTime updatedAt) {
+    this.updatedAt = updatedAt;
   }
 }
