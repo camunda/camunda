@@ -188,6 +188,22 @@ final class JobBatchCollectorTest {
   }
 
   @Test
+  void shouldCountLeaseSkipOnTheActionOperatorsWatch() {
+    // given - a leased job, and an activation that did not ask for a lease
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    createLeasedJob(state.getKeyGenerator().nextKey());
+
+    // when
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then - panel 13 of monitor/grafana/zeebe.json highlights this emission orange to warn about
+    // unleased workers colliding with leased jobs, so it has to stay on the lease-skip action
+    JobBatchRecordValueAssert.assertThat(record.getValue()).hasNoJobKeys();
+    verify(jobMetrics).countJobEvent(JobAction.SKIPPED_LEASED, JobKind.BPMN_ELEMENT, JOB_TYPE);
+    verify(jobMetrics, never()).countJobEvent(eq(JobAction.SKIPPED_UNCACHED_SECRET), any(), any());
+  }
+
+  @Test
   void shouldStopCollectingWhenSkippedUncachedSecretJobsReachLimit() {
     // given - a plain job, one more uncached-secret job than the skip limit, and a plain job
     // behind them
@@ -762,6 +778,23 @@ final class JobBatchCollectorTest {
       final long variableScopeKey, final Map<String, String> variables) {
     setVariables(variableScopeKey, variables);
     createJob(variableScopeKey);
+  }
+
+  private Job createLeasedJob(final long variableScopeKey) {
+    final var jobRecord =
+        new JobRecord()
+            .setBpmnProcessId("process")
+            .setElementId("element")
+            .setElementInstanceKey(variableScopeKey)
+            .setType(JOB_TYPE)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            // the job stays activatable while holding a token, which is the state an unleased
+            // activation has to skip over
+            .setLeaseToken("lease-token");
+    final long jobKey = state.getKeyGenerator().nextKey();
+
+    state.getJobState().create(jobKey, jobRecord);
+    return new Job(jobKey, jobRecord);
   }
 
   private Job createJobWithSecretReference(final long variableScopeKey, final String secretName) {
