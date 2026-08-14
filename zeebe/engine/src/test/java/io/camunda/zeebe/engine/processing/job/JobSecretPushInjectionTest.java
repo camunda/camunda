@@ -395,6 +395,63 @@ public final class JobSecretPushInjectionTest {
   }
 
   /**
+   * A lease-skip counting regression, but this suite is the only place that can reproduce it:
+   * {@code SecretReferenceBatchReactivateJobsProcessor} reactivating jobs a resolved secret parked
+   * together is the only production path that demotes several same-type leased jobs within one
+   * shared-notification batch. Every trigger {@link ActivatableJobsPushWithLeaseTest} covers
+   * processes a single job per command, so none of them can build that precondition.
+   */
+  @Test
+  public void shouldCountEveryLeaseSkipWhenABatchDemotesJobsOfTheSameType() {
+    // given - two jobs already leased via a leasing stream, each carrying its own lease token
+    JOB_STREAMER.clearStreams();
+    final RecordingJobStream leasingStream = registerLeasingJobStream();
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long firstJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    final long secondJobKey =
+        jobKeyOf(engine.processInstance().ofBpmnProcessId(PROCESS_ID).create());
+    Awaitility.await("until both jobs are leased on the leasing stream")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(leasingStream.getActivatedJobs()).hasSize(2));
+    final String firstToken = leaseTokenOf(leasingStream, firstJobKey);
+    final String secondToken = leaseTokenOf(leasingStream, secondJobKey);
+
+    // and - each job parks for secret resolution again once its cached value is evicted
+    CACHED_SECRETS.remove(SECRET_NAME);
+    engine.job().withKey(firstJobKey).withLeaseToken(firstToken).withRetries(3).fail();
+    engine.job().withKey(secondJobKey).withLeaseToken(secondToken).withRetries(3).fail();
+    awaitResolutionRequests(2);
+
+    // and - only a non-leasing stream remains registered by the time the reference resolves
+    JOB_STREAMER.clearStreams();
+    final RecordingJobStream nonLeasingStream = registerJobStream();
+    final double skippedBefore = skippedMetric();
+
+    // when - the reference resolves, reactivating both jobs through one shared-notification batch
+    CACHED_SECRETS.put(SECRET_NAME, SECRET_VALUE);
+    completeResolution();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(SECRET_NAME)
+        .getFirst();
+
+    // then - the batch demotes both jobs from push to notify-only, and each must count on its own
+    Awaitility.await("until the skip signal accounts for both demoted jobs")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(skippedMetric() - skippedBefore)
+                    .describedAs(
+                        "a batch that demotes several same-type leased jobs must count every "
+                            + "demotion, not only the first job of the type")
+                    .isEqualTo(2));
+    assertThat(nonLeasingStream.getActivatedJobs())
+        .describedAs("neither leased job may be pushed to a non-leasing stream")
+        .isEmpty();
+  }
+
+  /**
    * A reactivation sizes its record batch against what handing each job out will write into that
    * same batch, but the sizing and the writing live in different classes. The processor's own test
    * mocks the writer, so it can only check the arithmetic; this drives the chain on a real record
@@ -573,6 +630,34 @@ public final class JobSecretPushInjectionTest {
             .setTimeout(30_000L)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+  }
+
+  private RecordingJobStream registerLeasingJobStream() {
+    final var worker = BufferUtil.wrapString("test");
+    final var properties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(30_000L)
+            .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+            .setWithLease(true);
+    return JOB_STREAMER.addJobStream(BufferUtil.wrapString(JOB_TYPE), properties);
+  }
+
+  private String leaseTokenOf(final RecordingJobStream jobStream, final long jobKey) {
+    return jobStream.getActivatedJobs().stream()
+        .filter(activatedJob -> activatedJob.jobKey() == jobKey)
+        .findFirst()
+        .orElseThrow()
+        .jobRecord()
+        .getLeaseToken();
+  }
+
+  private double skippedMetric() {
+    // the counter is only registered once the first lease-skip fires, so a read taken before any
+    // job has been demoted for a lease collision must treat "not registered yet" as zero rather
+    // than fail: shouldCountEveryLeaseSkipWhenABatchDemotesJobsOfTheSameType reads this as a
+    // before/after delta, and its "before" snapshot runs before that first demotion happens
+    return findJobCounter("skipped").map(Counter::count).orElse(0.0);
   }
 
   private long jobKeyOf(final long processInstanceKey) {
