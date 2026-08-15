@@ -154,7 +154,7 @@ const VariableEditorDS: React.FC<Props> = ({
 							<EmptyState
 								size="sm"
 								heading={t('tasklist.variablesNoVariablesHeading')}
-								description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPrompt')}
+								description={isCompleted ? '' : t('tasklist.variablesClickOnAddVariablesPromptDS')}
 							/>
 						</TableCell>
 					</TableRow>

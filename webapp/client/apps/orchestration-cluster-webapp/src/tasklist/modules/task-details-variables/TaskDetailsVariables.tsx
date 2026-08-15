@@ -243,7 +243,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 											/>
 										</Layer>
 									)}
-									<div className={styles.footer}>
+									<div className={cn(styles.footer, featureFlags.dsTasklistUI && styles.footerDS)}>
 										{hasEmptyNewVariable ? (
 											<IconButton
 												className={styles.warning}

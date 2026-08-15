@@ -92,6 +92,16 @@
 	background: var(--cds-background);
 }
 
+// DS-only. Matches TaskDetailsForm.module.scss's `.footerDS`/`.footer`
+// convention — same DS base surface token, and the same divider token as the
+// task tile, the task-details header/tabs, and the aside dividers. This
+// footer previously had no border-top at all (unlike the form's), so its
+// background sat directly against the table above it with no separator.
+.footerDS {
+	background: var(--background);
+	border-top: 1px solid var(--border);
+}
+
 .warning {
 	margin-right: var(--cds-spacing-01);
 }

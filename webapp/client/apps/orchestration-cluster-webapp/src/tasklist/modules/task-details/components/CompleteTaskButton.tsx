@@ -10,6 +10,7 @@ import {t as _t} from 'i18next';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
+import {featureFlags} from '#/shared/feature-flags';
 import {AsyncActionButton} from './AsyncActionButton/AsyncActionButton';
 
 const getCompletionButtonDescription = (status: CompletionStatus): string | undefined => {
@@ -64,7 +65,17 @@ const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onCl
 			status={status}
 			isHidden={isHidden}
 		>
-			{t('tasklist.taskDetailsCompleteTaskButtonLabel')}
+			{
+				// Sentence case on the DS path ("Complete task"), title case on
+				// Carbon ("Complete Task") — this button is shared across every
+				// task footer (form tab, variables tab), so fixing the key here
+				// covers all of them.
+				t(
+					featureFlags.dsTasklistUI
+						? 'tasklist.taskDetailsCompleteTaskButtonLabelDS'
+						: 'tasklist.taskDetailsCompleteTaskButtonLabel',
+				)
+			}
 		</AsyncActionButton>
 	);
 };
