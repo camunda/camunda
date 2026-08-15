@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-89-rdbms-stable
       namespace: c8-golden-stable-89-rdbms-stable
-      version: 14.8.1
+      version: 14.8.2
       tags:
       - dev
       custom-properties: []
