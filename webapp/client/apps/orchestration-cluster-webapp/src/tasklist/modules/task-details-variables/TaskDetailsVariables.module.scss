@@ -22,6 +22,18 @@
 	padding: 0 var(--cds-spacing-05);
 }
 
+// DS-only. This header is the first element under the shared .content flex
+// column (taskDetailsLayoutCommon.module.scss), which only contributes its
+// own 8px flex `gap` below the tabs — same shared baseline every Task Details
+// tab sits on. The other three tab-content paths (TaskDetailsForm.tsx's
+// .formDS, ProcessDiagramView.module.scss's Layer, TaskDetailsHistoryPage's
+// .containerDS) each add 16px on top of that to reach the 24px standardized
+// across the Task/Process/History tabs; this path — shown instead of the form
+// when a task has no form schema — never got that treatment. Matches it here.
+.headerDS {
+	margin-top: var(--cds-spacing-05);
+}
+
 // DS-only. Heading is a SHIM (carbon-compat/heading.tsx re-exports Carbon's
 // own Heading unstyled — no DS type scale applied, logged in
 // docs/migration/human-follow-up.md), so it renders at the browser's default
