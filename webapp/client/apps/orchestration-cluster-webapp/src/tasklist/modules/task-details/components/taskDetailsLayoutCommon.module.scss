@@ -126,10 +126,14 @@
  * - border-bottom here (not on TabsList itself): a border on the pill
  *   itself just outlines the small pill; this spans the full row width
  *   underneath it instead, like a proper section divider.
+ * - No padding-bottom: removed per explicit request. Each tab's own content
+ *   now supplies its own spacing below the tabs (TaskDetailsForm.module.scss's
+ *   .formDS margin-top, ProcessDiagramView.module.scss's Layer padding,
+ *   TaskDetailsHistoryPage.module.scss's .containerDS margin-top), so this
+ *   padding was doubling up with .content's own flex `gap` above.
  */
 .content > [data-slot='tabs'] {
 	width: 100%;
 	align-self: flex-start;
 	padding-left: var(--cds-spacing-05);
-	padding-bottom: var(--cds-spacing-03);
 }
