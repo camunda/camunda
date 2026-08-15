@@ -39,6 +39,86 @@
 	padding-top: var(--cds-spacing-02);
 }
 
+/*
+ * DS-only (see StartProcessFormModal.tsx). `size="lg"` is dropped by the
+ * compat `ComposedModal` (confirmed via its own `warnDroppedProps`), so the
+ * DS Dialog would fall back to its narrow default — unusable for an embedded
+ * form. Restores a width matching the DS's own "lg" tier (800px / 50rem).
+ *
+ * ComposedModal/ModalHeader/ModalBody/ModalFooter render as plain stacked
+ * divs in carbon-compat with no flex layout of their own — same gap
+ * FieldsModal.module.scss's `.modal` already works around: the DS Dialog's
+ * own max-h-[calc(100dvh-2rem)]/overflow-y-auto ends up scrolling the header
+ * and footer away along with the body instead of just the body. Making
+ * .modal a column flexbox and pinning header/footer via
+ * .modalHeader/.modalBody below fixes that: only the body (where the
+ * embedded process-start form actually grows) scrolls.
+ *
+ * max-height is a plain vh value here (90vh) rather than the DS's own
+ * calc(100dvh - 2rem) — same belt-and-suspenders reasoning as FieldsModal:
+ * a flex child's shrink-to-scroll behavior only reliably engages when its
+ * flex container has a real height limit to enforce.
+ */
+/*
+ * !important throughout: DialogContent/DialogFooter ship their own Tailwind
+ * utilities for these same properties (DialogContent is `grid` by default;
+ * DialogFooter is `flex`), at equal specificity to a plain CSS Module class.
+ * Verified empirically (computed style, not assumed from source order) that
+ * without !important these overrides silently lose — same conflict `.modal`'s
+ * `max-width` already needed it for below.
+ */
+.modal {
+	display: flex !important;
+	flex-direction: column !important;
+	max-width: 50rem !important;
+	width: calc(100vw - 4rem);
+	max-height: 90vh;
+}
+
+.modalHeader {
+	flex: none !important;
+}
+
+.modalBody {
+	flex: 1 1 auto !important;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+// DS-only. Overrides DialogFooter's default `sm:justify-end` (which would
+// pack all footer children flush right) so the relocated Share button sits
+// alone on the left while Cancel/Start process stay grouped on the right —
+// same grid-with-pinned-first-child technique FieldsModal.module.scss's
+// `.modalFooter` uses for its Reset button. Only ever applied to the footer
+// that actually has three children (share + cancel + start) — the skeleton
+// and error footers never render a share button, so they're left on the
+// DialogFooter's own default alignment.
+.modalFooter {
+	display: grid !important;
+	grid-template-columns: 1fr auto auto;
+	align-items: center;
+
+	& > :first-child {
+		justify-self: start;
+	}
+}
+
+// DS-only. Installed @camunda/design-system@0.32.2's Button has no built-in
+// `loading` prop yet (already logged in docs/migration/human-follow-up.md —
+// same gap hit migrating LoginPageDS.tsx's submit button). Hand-rolled
+// spinner, same technique as LoginPageDS.module.scss's `.buttonSpinnerDS`.
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.buttonSpinner {
+	width: 1rem;
+	height: 1rem;
+	animation: spin 1s linear infinite;
+}
+
 @media (width < 672px) {
 	.formSkeletonContainer {
 		grid-template-columns: 1fr;

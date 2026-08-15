@@ -1751,3 +1751,19 @@ append-only scan log.
   - **Ask**: either add a `--muted-foreground` alias token, or fix
     `TasklistProcessesPage.module.scss` to reference an existing token
     (`--neutral-foreground-subtle` looks like the intended one).
+
+- **2026-08-14 — `TextInputSkeleton` has no carbon-compat adapter.** No
+  shadcn-backed Skeleton component ships in `@camunda/design-system` yet (no
+  `skeleton.tsx` in `carbon-compat/`), so there's nothing to swap the import
+  path to.
+  - **Impact**: `StartProcessFormModal.tsx`'s loading placeholder
+    (`StartProcessFormModalSkeleton`, six skeleton rows shown for the brief
+    window before the process-start form schema loads) stays Carbon-styled
+    even with the flag on — the surrounding modal chrome is DS, but these
+    rows render Carbon's own `cds--skeleton` shimmer. A short-lived, minor
+    visual mismatch rather than a functional gap.
+  - **App-side workaround applied**: left `TextInputSkeleton` imported
+    directly from `@carbon/react`, unconditionally, with a comment explaining
+    why — no attempt to approximate with a different DS component.
+  - **Ask**: ship a DS-native `Skeleton`/`TextInputSkeleton` adapter so this
+    loading state can go fully DS.

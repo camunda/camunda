@@ -131,6 +131,7 @@ import {
 	Launch as CarbonLaunch,
 	Notification as CarbonNotification,
 	Search as CarbonSearchIcon,
+	Share as CarbonShare,
 	SidePanelClose as CarbonSidePanelClose,
 	SidePanelOpen as CarbonSidePanelOpen,
 	SkillLevelAdvanced as CarbonSkillLevelAdvanced,
@@ -165,6 +166,7 @@ import {
 	PanelLeftOpen as LucidePanelLeftOpen,
 	Plus as LucidePlus,
 	Search as LucideSearchIcon,
+	Share2 as LucideShare2,
 	TriangleAlert as LucideTriangleAlert,
 	X as LucideX,
 	ZoomIn as LucideZoomIn,
@@ -571,3 +573,11 @@ export const FilterIcon = featureFlags.dsTasklistUI ? LucideFilter : CarbonFilte
 // collapsing) maps to Carbon's `SidePanelClose`.
 export const SidePanelOpenIcon = featureFlags.dsTasklistUI ? LucidePanelLeftOpen : CarbonSidePanelOpen;
 export const SidePanelCloseIcon = featureFlags.dsTasklistUI ? LucidePanelLeftClose : CarbonSidePanelClose;
+
+// Share: generic "copy shareable link" affordance (the process-start-form
+// modal's "Share process URL" action), not a Camunda domain entity — no
+// registry match. Not in docs/kb/carbon-icons-to-lucide.md's mapping table,
+// so this is the tier-3 fallback: Lucide's `Share2` (the node-and-lines
+// glyph) is the closer visual match to Carbon's `Share` than Lucide's own
+// `Share` (an iOS-style box-with-arrow glyph, a different concept).
+export const ShareIcon = featureFlags.dsTasklistUI ? LucideShare2 : CarbonShare;
