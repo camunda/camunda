@@ -127,15 +127,9 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 
 	const footerShareButton =
 		isShareButtonVisible && featureFlags.dsTasklistUI ? (
-			<DSButton
-				key="share"
-				variant="ghost"
-				size="icon-sm"
-				aria-label={shareLabel}
-				title={shareLabel}
-				onClick={handleShareButtonClick}
-			>
+			<DSButton key="share" variant="ghost" size="sm" title={shareLabel} onClick={handleShareButtonClick}>
 				<ShareIcon aria-hidden />
+				{t('tasklist.processesStartProcessWithFormShareButtonLabel')}
 			</DSButton>
 		) : null;
 
