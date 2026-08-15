@@ -29,7 +29,7 @@
 		"@carbon/layout": "11.56.0",
 		"@carbon/react": "1.112.0",
 		"@carbon/styles": "1.112.0",
-		"@carbon/type": "11.64.0",
+		"@carbon/type": "11.65.0",
 		"@devbookhq/splitter": "1.4.2",
 		"@monaco-editor/react": "4.7.0",
 		"@tanstack/react-query": "5.101.4",
