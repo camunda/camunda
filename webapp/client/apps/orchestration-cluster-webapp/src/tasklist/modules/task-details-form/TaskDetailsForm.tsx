@@ -101,7 +101,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 				    inset from the panel edge rather than flush. */}
 				<div className={cn(styles.form, featureFlags.dsTasklistUI && styles.formDS)}>
 					{featureFlags.dsTasklistUI ? (
-						<Card>
+						<Card className={styles.formCardDS}>
 							<CardContent>{formRenderer}</CardContent>
 						</Card>
 					) : (

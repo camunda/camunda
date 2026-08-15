@@ -32,18 +32,38 @@
 // coloured panel inside the DS Card. Neutralise it so the Card provides the only
 // surface. Scoped under .formDS so the flag-off path keeps Carbon's own layering.
 //
-// padding-top: 0 overrides .form's own padding-top (16px) — that padding was
-// never DS-specific to begin with (it's shared with the Carbon path) and, on
-// the DS path, stacked with the tabs row's own spacing plus the Card's own
-// internal top padding (py-4) to put this tab's content 48px below the tabs —
-// 16px further than Process tab. The Card's padding alone now provides the
-// inset, bringing the total to the 32px standardized across all three tabs.
+// Splitting the 32px standardized gap across the Card's outside (16px, from
+// .form's own padding-top, shared with Carbon) and its inside (16px, the
+// Card's own py-4) reads as broken once the Card's border is actually
+// visible: the eye sees a small gap to the border, then a second, separate
+// gap inside it, rather than one clean 32px space. margin-top puts the full
+// 32px outside the Card instead — .form's own 16px padding-top plus this
+// additional 16px — and .formCardDS below zeroes the Card's own internal
+// top padding, so content starts right at the Card's edge, matching how
+// Process tab's Layer and History tab's table already work (their content
+// starts flush at the surface's own edge, with no internal cushion counted
+// separately).
 .formDS {
+	// Cancels .form's own padding-top (16px, above) — that padding is shared
+	// with Carbon and isn't DS-specific — then margin-top adds back the same
+	// 16px as pure external space, on top of the 16px the tabs row already
+	// contributes, for 32px total between the tabs and the Card.
 	padding-top: 0;
+	margin-top: var(--cds-spacing-05);
 
 	:global(.cds--layer-two) {
 		background: transparent;
 	}
+}
+
+// DS-only (see TaskDetailsForm.tsx). Overrides the Card's own `py-4` top
+// padding (see .formDS above). Declared after nothing Card-related in this
+// file, but must win over Card's own Tailwind utility class — verified via
+// computed style, not just source order, since Tailwind's `py-4` compiles to
+// a single `padding-block` shorthand rather than separate longhand
+// properties.
+.formCardDS {
+	padding-top: 0;
 }
 
 .footer {
