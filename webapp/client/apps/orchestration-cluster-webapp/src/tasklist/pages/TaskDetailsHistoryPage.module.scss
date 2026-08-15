@@ -15,6 +15,17 @@
 	margin-top: calc(-1 * var(--cds-spacing-03));
 }
 
+// DS-only. .container's margin-top (above) is a stray, unexplained
+// pre-migration rule that cancels the tabs row's own shared gap
+// (taskDetailsLayoutCommon.module.scss's .content flex gap + the tabs row's
+// own padding-bottom), collapsing this tab's spacing to 8px total — far
+// short of the 32px now standardized across all three tabs (Task, Process,
+// History). Overrides it with a positive 16px, bringing the total to 32px.
+// Declared after `.container`: equal specificity, source order decides.
+.containerDS {
+	margin-top: var(--cds-spacing-05);
+}
+
 .tableContainer {
 	flex: 1;
 	overflow: auto;

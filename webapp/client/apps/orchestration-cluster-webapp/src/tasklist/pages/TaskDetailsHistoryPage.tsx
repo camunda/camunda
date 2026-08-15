@@ -37,7 +37,10 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 
 	if (auditLogs.length === 0) {
 		return (
-			<div className={styles.container} data-testid="history-tab-content">
+			<div
+				className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}
+				data-testid="history-tab-content"
+			>
 				<div className={cn(styles.emptyContainer, featureFlags.dsTasklistUI && styles.emptyContainerDS)}>
 					<Layer>
 						<p>{t('tasklist.taskDetailsHistoryEmptyMessage')}</p>
@@ -48,7 +51,10 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 	}
 
 	return (
-		<div className={styles.container} data-testid="history-tab-content">
+		<div
+			className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}
+			data-testid="history-tab-content"
+		>
 			<div
 				className={cn(styles.tableContainer, featureFlags.dsTasklistUI && styles.tableContainerDS)}
 				data-testid="history-scroll-container"

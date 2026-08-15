@@ -31,7 +31,16 @@
 // wrapper with a Carbon surface colour, which would sit as a second, differently
 // coloured panel inside the DS Card. Neutralise it so the Card provides the only
 // surface. Scoped under .formDS so the flag-off path keeps Carbon's own layering.
+//
+// padding-top: 0 overrides .form's own padding-top (16px) — that padding was
+// never DS-specific to begin with (it's shared with the Carbon path) and, on
+// the DS path, stacked with the tabs row's own spacing plus the Card's own
+// internal top padding (py-4) to put this tab's content 48px below the tabs —
+// 16px further than Process tab. The Card's padding alone now provides the
+// inset, bringing the total to the 32px standardized across all three tabs.
 .formDS {
+	padding-top: 0;
+
 	:global(.cds--layer-two) {
 		background: transparent;
 	}
