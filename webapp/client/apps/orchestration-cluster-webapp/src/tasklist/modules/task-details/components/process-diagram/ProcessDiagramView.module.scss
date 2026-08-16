@@ -28,17 +28,6 @@
 	@include type.type-style('heading-02');
 
 	color: var(--cds-text-primary);
-
-	// DS-only (see ProcessDiagramView.tsx). heading-02 is 16px/24px semibold,
-	// matching Tailwind's text-base + font-semibold exactly, minus letter-
-	// spacing (Carbon sets none here anyway).
-	&.processNameDS {
-		font-size: 1rem;
-		line-height: 1.5rem;
-		font-weight: 600;
-		letter-spacing: normal;
-		color: var(--neutral-foreground-strong);
-	}
 }
 
 .version {
@@ -61,4 +50,14 @@
 	min-height: 0;
 	flex: 1;
 	padding-block: 0;
+}
+
+// DS-only (see ProcessDiagramView.tsx). .diagramCard zeroes the Card's own
+// vertical padding so the canvas fills edge to edge — this restores it for
+// the header specifically, plus a divider separating it from the canvas.
+// Keep in sync with TaskDetailsProcessSkeleton.module.scss's own header.
+.diagramCardHeaderDS {
+	padding-top: var(--cds-spacing-05);
+	padding-bottom: var(--cds-spacing-05);
+	border-bottom: 1px solid var(--border);
 }

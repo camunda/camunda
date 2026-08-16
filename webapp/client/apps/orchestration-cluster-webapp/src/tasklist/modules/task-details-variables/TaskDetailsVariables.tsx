@@ -157,7 +157,11 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								featureFlags.dsTasklistUI ? cn(layoutStyles.header, styles.headerDS) : styles.header
 							}
 						>
-							<Heading className={featureFlags.dsTasklistUI ? styles.headingDS : undefined}>
+							{/* DS-only: visually hidden per explicit request (the tab itself
+							    already says "Task", so a second "Variables" heading right
+							    below it is redundant) — kept in the DOM as a real heading for
+							    screen readers. */}
+							<Heading className={featureFlags.dsTasklistUI ? cn(styles.headingDS, 'sr-only') : undefined}>
 								{t('tasklist.variablesTitle')}
 							</Heading>
 							{isCompleted ? null : (
@@ -178,6 +182,11 @@ const TaskDetailsVariables: React.FC<Props> = ({
 									renderIcon={PlusIcon}
 									disabled={!isEditingAllowed || isCompletionBusy}
 									title={isEditingAllowed ? undefined : t('tasklist.variablesAddVariableTooltip')}
+									// DS-only: the heading above is now sr-only (position: absolute,
+									// out of flow), leaving this button as .header's only in-flow
+									// flex item — without this it would collapse to flex-start
+									// (the left) instead of staying pinned to the right.
+									className={featureFlags.dsTasklistUI ? styles.addVariableButtonDS : undefined}
 								>
 									{featureFlags.dsTasklistUI
 										? t('tasklist.taskVariablesAddVariableDS')

@@ -32,6 +32,15 @@
 	padding-top: 0;
 }
 
+/*
+ * DS-only, below `md` (see TasksLayoutPage.tsx). Only one of .tasksPanel/
+ * .detailsPanel renders at a time in this state, so the grid collapses to
+ * a single full-width track instead of reserving space for both.
+ */
+.containerMobileDS {
+	grid-template-columns: 1fr;
+}
+
 .tasksPanel {
 	align-content: flex-start;
 	min-width: layout.to-rem(312px);
@@ -44,6 +53,14 @@
 	// .detailsPanelDS below so both panels share the same background.
 	&.tasksPanelDS {
 		background-color: var(--background);
+	}
+
+	// DS-only, below `md` (see TasksLayoutPage.tsx). The list is the only
+	// pane on screen in this state, so it takes the full width instead of
+	// the fixed 312px sidebar measurement above.
+	&.tasksPanelMobileDS {
+		min-width: 0;
+		max-width: none;
 	}
 }
 

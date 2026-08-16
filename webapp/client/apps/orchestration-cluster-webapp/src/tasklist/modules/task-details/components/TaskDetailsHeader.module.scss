@@ -69,6 +69,15 @@
 		font-weight: 400;
 		letter-spacing: normal;
 		color: var(--neutral-foreground-subtle);
+
+		// DS-only. Below `lg` (see .headerResponsiveDS in
+		// taskDetailsLayoutCommon.module.scss) the assignee tag and assign
+		// button drop below the title as their own row — flips to button
+		// first, tag second there, per explicit request. DOM order is
+		// unchanged; only the visual order flips.
+		@media (width < 64rem) {
+			order: 2;
+		}
 	}
 }
 
@@ -76,8 +85,25 @@
 	flex-shrink: 0;
 	display: flex;
 	align-items: center;
+
+	// DS-only. See .taskAssigneeDS above — same flip, same breakpoint.
+	&.assignButtonContainerDS {
+		@media (width < 64rem) {
+			order: 1;
+		}
+	}
 }
 
 .alignItemsCenter {
 	align-items: center;
+}
+
+// DS-only (see TaskDetailsHeader.tsx). Below `md` the task list and task
+// detail are separate single-pane views (TasksLayoutPage.tsx); this is the
+// way back. Negative margin-left cancels the button's own horizontal
+// padding so its label lines up with the title/description below it.
+.backButtonDS {
+	align-self: flex-start;
+	margin-left: calc(var(--cds-spacing-04) * -1);
+	margin-bottom: var(--cds-spacing-02);
 }

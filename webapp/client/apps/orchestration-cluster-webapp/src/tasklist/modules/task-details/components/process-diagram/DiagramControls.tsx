@@ -8,6 +8,8 @@
 
 import {AddIcon, CenterCircleIcon, IconButton, SubtractIcon} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './DiagramControls.module.scss';
 
 type Props = {
@@ -20,9 +22,9 @@ const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) =>
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles.container}>
+		<div className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}>
 			<IconButton
-				className={styles.zoomReset}
+				className={cn(styles.zoomReset, featureFlags.dsTasklistUI && styles.zoomResetDS)}
 				size="sm"
 				kind="tertiary"
 				align="left"
@@ -44,7 +46,7 @@ const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) =>
 				<AddIcon />
 			</IconButton>
 			<IconButton
-				className={styles.zoomOut}
+				className={cn(styles.zoomOut, featureFlags.dsTasklistUI && styles.zoomOutDS)}
 				size="sm"
 				kind="tertiary"
 				align="left"

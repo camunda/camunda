@@ -27,6 +27,10 @@ type Props = {
 	tenantId: string;
 	businessId: string | null | undefined;
 	user: CurrentUser;
+	// DS-only: true when rendered inside TaskDetailsLayout's Sheet (below
+	// `xl`) instead of the grid column — the Sheet already has its own left
+	// border, so .aside's would double up.
+	hideBorder?: boolean;
 };
 
 const Aside: React.FC<Props> = ({
@@ -40,6 +44,7 @@ const Aside: React.FC<Props> = ({
 	tenantId,
 	businessId,
 	user,
+	hideBorder = false,
 }) => {
 	const {t} = useTranslation();
 	const taskTenant = user.tenants.length > 1 ? user.tenants.find((tenant) => tenant.tenantId === tenantId) : undefined;
@@ -47,10 +52,19 @@ const Aside: React.FC<Props> = ({
 
 	return (
 		<aside
-			className={cn(layoutStyles.aside, featureFlags.dsTasklistUI && layoutStyles.asideDS)}
+			className={cn(
+				layoutStyles.aside,
+				featureFlags.dsTasklistUI && layoutStyles.asideDS,
+				hideBorder && layoutStyles.asideNoBorderDS,
+			)}
 			aria-label={t('tasklist.taskDetailsRightPanel')}
 		>
-			<ContainedList label={t('tasklist.taskDetailsDetailsLabel')} kind="disclosed">
+			{/* DS-only, inside the Sheet (hideBorder): no label here — the Sheet's
+			    own SheetHeader/SheetTitle already carries the "Details" title,
+			    avoiding a duplicated title and the ContainedList's own disclosed-
+			    header row (and its background, which doesn't match the Sheet's
+			    surface — see TaskDetailsLayout.tsx). */}
+			<ContainedList label={hideBorder ? '' : t('tasklist.taskDetailsDetailsLabel')} kind="disclosed">
 				<>
 					{taskTenant === undefined ? null : (
 						<ContainedListItem>

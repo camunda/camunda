@@ -46,3 +46,11 @@
 	flex: 1;
 	padding-block: 0;
 }
+
+// DS-only (see TaskDetailsProcessSkeleton.tsx). Mirrors
+// ProcessDiagramView.module.scss's own .diagramCardHeaderDS.
+.diagramCardHeaderDS {
+	padding-top: var(--cds-spacing-05);
+	padding-bottom: var(--cds-spacing-05);
+	border-bottom: 1px solid var(--border);
+}

@@ -93,7 +93,11 @@ const TaskDetailsForm: React.FC<Props> = ({
 
 	return (
 		<div className={styles.container} data-testid="task-tab-content">
-			<div className={styles.content} data-testid="embedded-form" tabIndex={-1}>
+			<div
+				className={cn(styles.content, featureFlags.dsTasklistUI && styles.contentDS)}
+				data-testid="embedded-form"
+				tabIndex={-1}
+			>
 				{/* DS-only: the form-js output sits on the panel background with nothing
 				    separating it. Wrapping it in the DS Card gives it the same raised
 				    surface the task cards and the history table already have. The .form

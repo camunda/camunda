@@ -74,7 +74,9 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 	const buttonProps = useMemo(
 		() =>
 			({
-				kind: isAssigned ? 'ghost' : 'primary',
+				// DS-only: secondary (not ghost) for the Unassign state, per
+				// explicit request. Carbon keeps its original ghost styling.
+				kind: isAssigned ? (featureFlags.dsTasklistUI ? 'secondary' : 'ghost') : 'primary',
 				size: 'sm',
 				type: 'button',
 				onClick: toggle,

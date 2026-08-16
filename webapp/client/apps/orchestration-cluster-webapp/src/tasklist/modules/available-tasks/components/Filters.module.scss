@@ -45,6 +45,14 @@
 	white-space: nowrap;
 }
 
+// DS-only (see Filters.tsx). Spreads the row full-width so the checkmark
+// (last child, per explicit request) lands at the item's trailing edge
+// instead of immediately after the label.
+.sortItemDS {
+	width: 100%;
+	justify-content: space-between;
+}
+
 .overflowMenu {
 	width: fit-content;
 }

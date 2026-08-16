@@ -12,6 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CheckmarkIcon, OverflowMenu, OverflowMenuItem, SelectItem} from '#/shared/design-system-compat';
+import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
 import {ArrowDownWideNarrow} from 'lucide-react';
 import {queries} from '#/shared/http/queries';
 import {featureFlags} from '#/shared/feature-flags';
@@ -69,9 +70,33 @@ const Filters: React.FC = () => {
 		navigate({to: '.', search: (prev) => ({...prev, sortBy: id})});
 	};
 
+	// DS-only workaround for the same Radix body-lock leak handled in
+	// handleDeleteConfirmed below (see its comment for the full writeup, and
+	// CollapsiblePanel.tsx for the original report). Closing this modal can
+	// coincide with a re-render of whatever launched/reflects it (e.g.
+	// FilterSelectDS updating once a new or edited filter is applied), which
+	// breaks Radix's layer-count bookkeeping the same way — leaving the whole
+	// page unable to receive clicks with no dialog left on screen.
+	const releaseLeakedPointerLock = useCallback(() => {
+		if (!featureFlags.dsTasklistUI) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			const openLayer = document.querySelector(
+				'[role="dialog"], [role="alertdialog"], [role="menu"], [data-radix-popper-content-wrapper]',
+			);
+
+			if (openLayer === null && document.body.style.pointerEvents === 'none') {
+				document.body.style.pointerEvents = '';
+			}
+		});
+	}, []);
+
 	const closeModal = useCallback(() => {
 		setIsCustomFiltersModalOpen(false);
-	}, []);
+		releaseLeakedPointerLock();
+	}, [releaseLeakedPointerLock]);
 
 	const handleFilterSuccess = useCallback(
 		(filterId: string) => {
@@ -109,7 +134,8 @@ const Filters: React.FC = () => {
 
 	const closeEditModal = useCallback(() => {
 		setCustomFilterToEdit(undefined);
-	}, []);
+		releaseLeakedPointerLock();
+	}, [releaseLeakedPointerLock]);
 
 	const handleDeleteConfirmed = useCallback(() => {
 		if (customFilterToDelete === undefined) {
@@ -125,21 +151,8 @@ const Filters: React.FC = () => {
 		}
 
 		setCustomFilterToDelete(undefined);
-
-		// Same Radix body-lock leak worked around in CollapsiblePanel.tsx: the row
-		// and the dialog tear down in one commit, so the layer count never returns
-		// to zero and <body> keeps `pointer-events: none`. Clear it once no layer
-		// remains. See the DS feedback entry in docs/migration/human-follow-up.md.
-		requestAnimationFrame(() => {
-			const openLayer = document.querySelector(
-				'[role="dialog"], [role="alertdialog"], [role="menu"], [data-radix-popper-content-wrapper]',
-			);
-
-			if (openLayer === null && document.body.style.pointerEvents === 'none') {
-				document.body.style.pointerEvents = '';
-			}
-		});
-	}, [customFilterToDelete, filter, navigate]);
+		releaseLeakedPointerLock();
+	}, [customFilterToDelete, filter, navigate, releaseLeakedPointerLock]);
 
 	if (featureFlags.dsTasklistUI) {
 		return (
@@ -181,30 +194,45 @@ const Filters: React.FC = () => {
 					}}
 					onDelete={handleDeleteConfirmed}
 				/>
-				<OverflowMenu
-					aria-label={t('tasklist.taskFiltersSortButton')}
-					iconDescription={t('tasklist.taskFiltersSortButton')}
-					renderIcon={ArrowDownWideNarrow}
-					size="md"
-					align="bottom"
-					menuOptionsClass={styles.overflowMenu}
-				>
-					{sortOptionsOrder.map((id) => (
-						<OverflowMenuItem
-							key={id}
-							aria-selected={sortBy === id}
-							itemText={
-								<div className={styles.sortItem}>
-									<CheckmarkIcon aria-label="" size={20} style={{visibility: sortBy === id ? undefined : 'hidden'}} />
+				{/* DS-only: carbon-compat's OverflowMenu drops the `align` prop entirely
+				    (confirmed via its own warnDroppedProps), so the underlying Radix
+				    DropdownMenuContent always falls back to align="center" — the menu
+				    ends up centered under the trigger instead of flush with its right
+				    edge. No prop/className path through the compat shim can fix that,
+				    so this uses the DS's own DropdownMenu directly instead (REMAP, not
+				    SWAP) — align="end" per explicit request. Carbon keeps OverflowMenu
+				    unchanged below. */}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label={t('tasklist.taskFiltersSortButton')}
+							title={t('tasklist.taskFiltersSortButton')}
+						>
+							<ArrowDownWideNarrow aria-hidden />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						{sortOptionsOrder.map((id) => (
+							<DropdownMenuItem
+								key={id}
+								aria-selected={sortBy === id}
+								onClick={() => {
+									onSort(id);
+								}}
+							>
+								{/* Checkmark on the right, per explicit request — label first,
+								    indicator last, with the row spread full-width so it lands
+								    at the item's trailing edge instead of right after the label. */}
+								<div className={cn(styles.sortItem, styles.sortItemDS)}>
 									{t(SORTING_OPTION_LABEL_KEYS[id])}
+									<CheckmarkIcon aria-label="" size={20} style={{visibility: sortBy === id ? undefined : 'hidden'}} />
 								</div>
-							}
-							onClick={() => {
-								onSort(id);
-							}}
-						/>
-					))}
-				</OverflowMenu>
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</section>
 		);
 	}

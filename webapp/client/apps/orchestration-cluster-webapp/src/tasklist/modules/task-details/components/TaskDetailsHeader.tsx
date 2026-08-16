@@ -9,6 +9,9 @@
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {CheckmarkFilledIcon, Stack} from '#/shared/design-system-compat';
+import {Button, useMediaQuery} from '@camunda/design-system';
+import {ArrowLeft} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import {AssigneeTag} from '#/tasklist/modules/available-tasks/components/AssigneeTag';
 import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
@@ -36,6 +39,11 @@ type Props = {
 
 const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, taskState, user, assignButton}) => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
+	// DS-only: below `md` (--breakpoint-md, 48rem/768px) the task list and
+	// task detail are separate single-pane views (see TasksLayoutPage.tsx) —
+	// this is the way back to the list.
+	const isBelowMd = useMediaQuery('(width < 48rem)');
 
 	function renderRightContent() {
 		switch (taskState) {
@@ -75,7 +83,14 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 						>
 							<AssigneeTag currentUser={user} assignee={assignee} isShortFormat={false} />
 						</span>
-						<span className={styles.assignButtonContainer}>{assignButton}</span>
+						<span
+							className={cn(
+								styles.assignButtonContainer,
+								featureFlags.dsTasklistUI && styles.assignButtonContainerDS,
+							)}
+						>
+							{assignButton}
+						</span>
 					</>
 				);
 			case 'UPDATING':
@@ -106,16 +121,38 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 
 	return (
 		<header
-			className={cn(layoutStyles.header, featureFlags.dsTasklistUI && layoutStyles.headerBorder)}
+			className={cn(
+				layoutStyles.header,
+				featureFlags.dsTasklistUI && layoutStyles.headerBorder,
+				featureFlags.dsTasklistUI && layoutStyles.headerResponsiveDS,
+			)}
 			title={t('tasklist.taskDetailsHeader')}
 		>
+			{featureFlags.dsTasklistUI && isBelowMd ? (
+				<Button
+					variant="ghost"
+					size="sm"
+					className={styles.backButtonDS}
+					onClick={() => navigate({to: '/tasklist'})}
+				>
+					<ArrowLeft aria-hidden />
+					{t('tasklist.taskDetailsBackToListLabel')}
+				</Button>
+			) : null}
 			<div className={layoutStyles.headerLeftContainer}>
 				<span className={cn(styles.taskName, featureFlags.dsTasklistUI && styles.taskNameDS)}>{taskName}</span>
 				<span className={cn(styles.processName, featureFlags.dsTasklistUI && styles.processNameDS)}>
 					{processName}
 				</span>
 			</div>
-			<div className={layoutStyles.headerRightContainer}>{renderRightContent()}</div>
+			<div
+				className={cn(
+					layoutStyles.headerRightContainer,
+					featureFlags.dsTasklistUI && layoutStyles.headerRightContainerResponsiveDS,
+				)}
+			>
+				{renderRightContent()}
+			</div>
 		</header>
 	);
 };

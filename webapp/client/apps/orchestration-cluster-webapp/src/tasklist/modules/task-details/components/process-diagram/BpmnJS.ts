@@ -11,17 +11,25 @@ import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import OutlineModule from 'bpmn-js/lib/features/outline';
 // @ts-expect-error no type declarations for this package
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
+import {featureFlags} from '#/shared/feature-flags';
+
+// DS-only: matches the diagram Card's own background (bg-neutral-background-
+// subtle, see ProcessDiagramView.module.scss's .diagramCard) instead of
+// Carbon's --cds-layer, so BPMN nodes fill with the same surface as the tile
+// around them per explicit request, rather than standing out as a different
+// shade.
+const elementBackground = featureFlags.dsTasklistUI ? 'var(--neutral-background-subtle)' : 'var(--cds-layer)';
 
 const bpmnRendererColors = {
 	outline: {
 		fill: 'var(--cds-highlight)',
 	},
-	defaultFillColor: 'var(--cds-layer)',
+	defaultFillColor: elementBackground,
 	defaultStrokeColor: 'var(--cds-icon-secondary)',
 	element: {
 		text: 'var(--cds-text-primary)',
 		background: {
-			default: 'var(--cds-layer)',
+			default: elementBackground,
 		},
 	},
 };

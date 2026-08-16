@@ -15,9 +15,22 @@
 	flex-direction: column;
 }
 
+// DS-only (see DiagramControls.tsx). Identical 4px gap between all three
+// buttons, per explicit request — replaces Carbon's connected-pill
+// convention below (zoomIn/zoomOut adjoined with no gap, border between
+// them suppressed).
+.containerDS {
+	gap: var(--cds-spacing-02);
+}
+
 .zoomReset {
 	background-color: var(--cds-background);
 	margin-bottom: var(--cds-spacing-02);
+
+	// DS-only: .containerDS's gap already provides the 4px spacing.
+	&.zoomResetDS {
+		margin-bottom: 0;
+	}
 }
 
 .zoomIn {
@@ -26,5 +39,12 @@
 
 .zoomOut {
 	background-color: var(--cds-background);
-	border-top: none;
+
+	// Carbon-only: suppresses the border between the visually-adjoined
+	// zoomIn/zoomOut pair (no gap between them there). DS's .containerDS gap
+	// keeps every button apart, so the button's own border should render
+	// normally — scoped via :not() rather than guessing at a border value.
+	&:not(.zoomOutDS) {
+		border-top: none;
+	}
 }

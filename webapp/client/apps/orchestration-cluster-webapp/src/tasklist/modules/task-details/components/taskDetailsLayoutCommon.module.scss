@@ -16,6 +16,20 @@
 	overflow: auto;
 }
 
+/*
+ * DS-only (see TaskDetailsLayout.tsx). Below `xl` (the DS's own
+ * --breakpoint-xl token, 80rem/1280px — see the DS package's index.css),
+ * the Aside details panel moves into a Sheet instead of taking a permanent
+ * grid column, so the grid collapses to a single track. Applied only when
+ * featureFlags.dsTasklistUI and the matching useMediaQuery result are both
+ * true (JS-driven, not a pure media query — Aside isn't in the DOM at all
+ * in this state, it's rendered inside the Sheet instead).
+ */
+.containerNoAsideColumnDS {
+	grid-template-columns: 1fr;
+}
+
+
 .content {
 	padding-top: var(--cds-spacing-05);
 	display: flex;
@@ -60,6 +74,31 @@
 	margin-left: auto;
 }
 
+/*
+ * DS-only (see TaskDetailsHeader.tsx). Below `lg` (the DS's own
+ * --breakpoint-lg token, 64rem/1024px — see the DS package's index.css;
+ * media queries can't reference a custom property directly, so the
+ * equivalent value is hardcoded here), the assignee tag + assign button
+ * drop to their own left-aligned row below the title/process-name instead
+ * of wrapping to the right of them. Additive classes, applied only when
+ * the flag is on — .header/.headerRightContainer above stay untouched for
+ * Carbon.
+ */
+.headerResponsiveDS {
+	@media (width < 64rem) {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}
+
+.headerRightContainerResponsiveDS {
+	@media (width < 64rem) {
+		justify-content: flex-start;
+		margin-left: 0;
+		width: 100%;
+	}
+}
+
 .aside {
 	height: 100%;
 	padding-top: var(--cds-spacing-05);
@@ -96,6 +135,13 @@
 			background-color: var(--background);
 		}
 	}
+
+	// DS-only (see Aside.tsx's hideBorder prop). Used when Aside renders
+	// inside TaskDetailsLayout's Sheet (below xl) — the Sheet already has
+	// its own left border, so this one would double up.
+	&.asideNoBorderDS {
+		border-left: none;
+	}
 }
 
 /*
@@ -111,28 +157,23 @@
 }
 
 /*
- * DS (flag on) only, by construction: targets the DS Tabs root's own
- * [data-slot="tabs"] attribute, which Carbon's real Tabs component never
- * sets. Needed because carbon-compat's Tabs wrapper (tabs.tsx) doesn't
- * forward a className to its own root, only TabList's (onto TabsList, the
- * inner pill widget) — styling needed here is on the outer wrapper, not the
- * pill, so it can't go through TabListNav's className prop the way .tabs
- * above does.
+ * DS-only (see TaskDetailsLayout.tsx). Wraps TabListNav (and, below xl, the
+ * Sheet "Details" trigger) in one row so the two sit side by side. Replaces
+ * the old `.content > [data-slot='tabs']` attribute-selector approach —
+ * that existed only because carbon-compat's Tabs wrapper doesn't forward a
+ * className to its own root, but this wrapper is authored directly, so it
+ * doesn't need that workaround.
  *
  * - width: 100% + align-self: flex-start: .content (the parent Section) is a
- *   flex column with align-items: center, which centers this wrapper since
- *   it's naturally only as wide as the pill inside it. Breaks out of that so
- *   the tab row (and its border) sits flush left instead of centered.
- * - border-bottom here (not on TabsList itself): a border on the pill
- *   itself just outlines the small pill; this spans the full row width
- *   underneath it instead, like a proper section divider.
- * - No padding-bottom: removed per explicit request. Each tab's own content
- *   now supplies its own spacing below the tabs (TaskDetailsForm.module.scss's
- *   .formDS margin-top, ProcessDiagramView.module.scss's Layer padding,
- *   TaskDetailsHistoryPage.module.scss's .containerDS margin-top), so this
- *   padding was doubling up with .content's own flex `gap` above.
+ *   flex column with align-items: center, which would otherwise center this
+ *   row. Breaks out of that so it sits flush left instead.
+ * - gap: 24px between the tab list and the Details button, per explicit
+ *   request.
  */
-.content > [data-slot='tabs'] {
+.tabsRowDS {
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-06);
 	width: 100%;
 	align-self: flex-start;
 	padding-left: var(--cds-spacing-05);

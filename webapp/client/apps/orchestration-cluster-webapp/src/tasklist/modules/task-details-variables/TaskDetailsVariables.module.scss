@@ -46,6 +46,13 @@
 	color: var(--foreground);
 }
 
+// DS-only (see TaskDetailsVariables.tsx). Pins the Add-variable button to
+// the right now that the heading beside it is sr-only (out of flow) — see
+// the button's own className comment.
+.addVariableButtonDS {
+	margin-left: auto;
+}
+
 .separator {
 	width: 100%;
 	max-height: 1px;

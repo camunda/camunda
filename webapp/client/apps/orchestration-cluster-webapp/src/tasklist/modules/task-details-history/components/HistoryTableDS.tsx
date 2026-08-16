@@ -13,7 +13,7 @@
 // rewrite onto the DS declarative API rather than an import swap — the FLAG-tier
 // case recorded in docs/migration/human-follow-up.md.
 import {useCallback, useMemo} from 'react';
-import {Button, DataTable, type DataTableColumn} from '@camunda/design-system';
+import {Button, DataTable, EmptyState, type DataTableColumn} from '@camunda/design-system';
 import {InformationIcon} from '#/shared/design-system-compat';
 import {Link, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -188,6 +188,12 @@ const HistoryTableDS: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				onSortingChange: handleSortingChange,
 			}}
 			className={styles.tableContainer}
+			// DS convention (see VariableEditorDS.tsx): the empty state lives
+			// inside the table body as a single full-width row, not as a
+			// separate tile replacing the table — per explicit request. Same
+			// pattern, this table's own built-in `emptyState` slot instead of a
+			// hand-built TableRow/TableCell.
+			emptyState={<EmptyState size="sm" heading={t('tasklist.taskDetailsHistoryEmptyMessage')} />}
 		/>
 	);
 };

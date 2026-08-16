@@ -35,13 +35,14 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search
 		}
 	};
 
-	if (auditLogs.length === 0) {
+	// Carbon-only: a separate tile replacing the table entirely. DS always
+	// renders the table below — HistoryTableDS's own `emptyState` prop shows
+	// the empty message inside the table body instead, per explicit request
+	// (matching VariableEditorDS's convention for the Variables tab).
+	if (!featureFlags.dsTasklistUI && auditLogs.length === 0) {
 		return (
-			<div
-				className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}
-				data-testid="history-tab-content"
-			>
-				<div className={cn(styles.emptyContainer, featureFlags.dsTasklistUI && styles.emptyContainerDS)}>
+			<div className={styles.container} data-testid="history-tab-content">
+				<div className={styles.emptyContainer}>
 					<Layer>
 						<p>{t('tasklist.taskDetailsHistoryEmptyMessage')}</p>
 					</Layer>
