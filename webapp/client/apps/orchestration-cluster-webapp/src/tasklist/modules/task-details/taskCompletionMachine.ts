@@ -13,7 +13,7 @@ import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
@@ -128,7 +128,7 @@ const taskCompletionMachine = setup({
 			}
 		},
 		notifyCompletionDelayed: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'info',
 				title: t('tasklist.taskDetailsCompletionDelayInfoTitle'),
 				subtitle: t('tasklist.taskDetailsCompletionDelayInfoSubtitle'),
@@ -145,7 +145,7 @@ const taskCompletionMachine = setup({
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
 		notifyCompletionSuccess: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'success',
 				title: t('tasklist.taskCompletedNotification'),
 				isDismissable: true,
@@ -155,7 +155,7 @@ const taskCompletionMachine = setup({
 			storeStateLocally('tasklist.hasCompletedTask', true);
 		},
 		notifyCompletionFailure: (_, params: {error: CompletionFailure | undefined}) => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title: t('tasklist.taskCouldNotBeCompletedNotification'),
 				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,

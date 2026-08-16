@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {AppHeader, NavBreadcrumb, NavBreadcrumbItem} from '@camunda/design-system';
 import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
 import {authenticationStore} from '#/shared/auth/authentication.store';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {LicenseBadges} from './LicenseBadges';
 import {HelpMenu} from './HelpMenu';
@@ -34,7 +34,7 @@ const TasklistDSHeader: React.FC<Props> = ({currentUser, license}) => {
 	const {displayName} = currentUser;
 
 	const logoutWithNotification = () => {
-		notificationsStore.displayNotification({
+		notify({
 			kind: 'info',
 			title: t('notificationLogOutTitle'),
 			subtitle: t('notificationLogOutSubtitle'),

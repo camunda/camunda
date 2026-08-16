@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useTaskAssignment, type AssignmentStatus} from '#/tasklist/modules/task-details/useTaskAssignment';
 import {AsyncActionButton} from './AsyncActionButton/AsyncActionButton';
+import {featureFlags} from '#/shared/feature-flags';
 import {useMemo} from 'react';
 
 const getAssignmentToggleLabels = (): Record<Exclude<AssignmentStatus, 'off'>, string> => ({
@@ -41,7 +42,22 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 		if (isBusy || status !== 'off') {
 			const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
-			return ACTIVE_STATES.includes(status) ? 'active' : 'finished';
+			if (ACTIVE_STATES.includes(status)) {
+				return 'active';
+			}
+
+			// DS-only: skip the "Assignment successful"/"Unassignment successful"
+			// confirmation flash — the header's assignee badge already reflects
+			// the change immediately, so it's redundant. Carbon's InlineLoading
+			// is untouched.
+			if (
+				featureFlags.dsTasklistUI &&
+				(status === 'assignmentSuccessful' || status === 'unassignmentSuccessful')
+			) {
+				return 'inactive';
+			}
+
+			return 'finished';
 		}
 
 		return 'inactive';

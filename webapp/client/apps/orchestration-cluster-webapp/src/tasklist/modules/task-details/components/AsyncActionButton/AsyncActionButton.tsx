@@ -9,6 +9,7 @@
 import {type ButtonProps, type InlineLoadingProps, Button, InlineLoading} from '#/shared/design-system-compat';
 import {useEffect} from 'react';
 import {cn} from '#/shared/cn';
+import {featureFlags} from '#/shared/feature-flags';
 import styles from './AsyncActionButton.module.scss';
 
 type Props = {
@@ -51,11 +52,36 @@ const AsyncActionButton: React.FC<Props> = ({children, inlineLoadingProps, butto
 		};
 	}, [onSuccess, status]);
 
-	return status === 'inactive' ? (
-		<Button {...buttonProps} className={cn(isHidden && styles.hide, buttonProps?.className, styles.button)}>
-			{children}
-		</Button>
-	) : (
+	if (status === 'inactive') {
+		return (
+			<Button {...buttonProps} className={cn(isHidden && styles.hide, buttonProps?.className, styles.button)}>
+				{children}
+			</Button>
+		);
+	}
+
+	// DS-only: the DS Button's own `loading` prop (spinner + aria-busy +
+	// click-guard, see button.tsx) instead of Carbon's InlineLoading, which
+	// is a SHIM (bare Carbon passthrough per mapping.json) and still renders
+	// cds--inline-loading markup even with the flag on. Carbon path below is
+	// untouched. `loading` is only true for 'active' (spinner); 'finished'/
+	// 'error' show the confirmation/error text on a plain (non-spinning)
+	// button until the existing onSuccess/onError timeout reverts it.
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<Button
+				{...buttonProps}
+				loading={status === 'active'}
+				className={cn(isHidden && styles.hide, buttonProps?.className, styles.button)}
+			>
+				<span aria-live={restInlineLoadingProps['aria-live'] ?? 'polite'}>
+					{restInlineLoadingProps.description ?? children}
+				</span>
+			</Button>
+		);
+	}
+
+	return (
 		<InlineLoading
 			{...restInlineLoadingProps}
 			className={cn(restInlineLoadingProps.className, styles.fitContent)}

@@ -6,9 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Layer, Stack, Button} from '@carbon/react';
+import {Layer, Stack, Button as CarbonButton} from '@carbon/react';
+import {Button, EmptyState} from '@camunda/design-system';
+import {Compass} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
+import {featureFlags} from '#/shared/feature-flags';
+import {cn} from '#/shared/cn';
 import styles from './GenericErrorPage.module.scss';
 
 type Props = {
@@ -17,6 +21,24 @@ type Props = {
 
 const GenericErrorPage: React.FC<Props> = ({reset}) => {
 	const {t} = useTranslation();
+
+	// DS-only: the DS's own EmptyState component instead of the hand-rolled
+	// Layer/Stack/illustration markup below, which stays Carbon-only. The
+	// illustration is dropped for a lucide icon, per the "drop the
+	// illustration, EmptyState takes a node icon" precedent from
+	// TasklistProcessesPage.tsx.
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<div className={cn(styles.page, styles.pageDS)}>
+				<EmptyState
+					icon={<Compass aria-hidden />}
+					heading={t('errorGenericErrorPageTitle')}
+					description={t('errorGenericErrorPageMessage')}
+					action={<Button onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</Button>}
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<div className={styles.page}>
@@ -28,7 +50,7 @@ const GenericErrorPage: React.FC<Props> = ({reset}) => {
 							<h1 className={styles.heading}>{t('errorGenericErrorPageTitle')}</h1>
 							<p className={styles.description}>{t('errorGenericErrorPageMessage')}</p>
 						</Stack>
-						<Button onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</Button>
+						<CarbonButton onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</CarbonButton>
 					</Stack>
 				</Stack>
 			</Layer>

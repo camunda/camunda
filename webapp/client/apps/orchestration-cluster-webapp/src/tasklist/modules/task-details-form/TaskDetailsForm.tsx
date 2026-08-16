@@ -12,7 +12,7 @@ import {Card, CardContent} from '@camunda/design-system';
 import {featureFlags} from '#/shared/feature-flags';
 import {cn} from '#/shared/cn';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form-js/CamundaFormRenderer';
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
@@ -70,7 +70,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 			handleFileUpload={(files) => uploadDocuments(files)}
 			onImportError={() => {
 				setIsImportError(true);
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'error',
 					title: t('tasklist.formJSInvalidSchemaErrorNotificationTitle'),
 					isDismissable: true,

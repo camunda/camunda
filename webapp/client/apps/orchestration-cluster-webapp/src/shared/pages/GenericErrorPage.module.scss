@@ -18,6 +18,23 @@
 	padding: var(--cds-spacing-09) var(--cds-spacing-11);
 }
 
+// DS-only. Centers the DS EmptyState within the page, both axes — mirrors
+// NoTaskSelectedPage.module.scss's .containerDS convention for full-page
+// EmptyState placement. Also swaps .page's Carbon --cds-background
+// (#f4f4f4) for the DS's own --background (near-white): EmptyState's icon
+// circle (bg-neutral-background-medium) is calibrated against --background
+// per empty-state.specs.ts's 1.4.11 note, and #f4f4f4 sits too close to the
+// circle's own gray for the intended contrast step to read. Transparent
+// isn't an option here either — Carbon's global `body { background-color:
+// var(--cds-background) }` reset (from @carbon/react, loaded app-wide,
+// untouched by this migration) would just show through instead.
+.pageDS {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--background);
+}
+
 .heading {
 	@include type.type-style('heading-03');
 }

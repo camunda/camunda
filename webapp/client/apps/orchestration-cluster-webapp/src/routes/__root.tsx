@@ -14,6 +14,7 @@ import type {QueryClient} from '@tanstack/react-query';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
+import {AppToaster} from '#/shared/notifications/components/AppToaster';
 
 const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
@@ -42,6 +43,7 @@ function RootDocument() {
 		<>
 			<HeadContent />
 			<Notifications />
+			<AppToaster />
 			<Outlet />
 			<TanStackDevtools
 				config={{position: 'bottom-right'}}

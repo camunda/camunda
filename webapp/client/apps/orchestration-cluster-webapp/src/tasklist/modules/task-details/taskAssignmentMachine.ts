@@ -13,7 +13,7 @@ import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queries} from '#/shared/http/queries';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
@@ -156,7 +156,7 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyAssignmentDelayed: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'info',
 				title: t('tasklist.taskDetailsAssignmentDelayInfoTitle'),
 				subtitle: t('tasklist.taskDetailsAssignmentDelayInfoSubtitle'),
@@ -175,7 +175,7 @@ const taskAssignmentMachine = setup({
 			}
 		},
 		notifyUnassignmentDelayed: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'info',
 				title: t('tasklist.taskDetailsUnassignmentDelayInfoTitle'),
 				subtitle: t('tasklist.taskDetailsUnassignmentDelayInfoSubtitle'),
@@ -192,7 +192,7 @@ const taskAssignmentMachine = setup({
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
 		notifyAssignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title: t('tasklist.taskDetailsTaskAssignmentError'),
 				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
@@ -200,7 +200,7 @@ const taskAssignmentMachine = setup({
 			});
 		},
 		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title: t('tasklist.taskDetailsTaskUnassignmentError'),
 				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,

@@ -17,7 +17,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {endpoints} from '#/shared/http/endpoints';
 import {request, requestErrorSchema} from '#/shared/http/request';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
 const HTTP_STATUS_FORBIDDEN = 403;
@@ -143,7 +143,7 @@ const startProcessMachine = setup({
 			failureReason: getStartProcessFailureReason(params.error),
 		})),
 		notifySuccess: () => {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'success',
 				title: t('tasklist.processesStartProcessNotificationSuccess'),
 				isDismissable: true,
@@ -157,7 +157,7 @@ const startProcessMachine = setup({
 			}
 
 			if (context.failureReason === 'forbidden') {
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'error',
 					title: t('tasklist.processesStartProcessFailed'),
 					subtitle: t('tasklist.taskActionForbidden'),
@@ -166,7 +166,7 @@ const startProcessMachine = setup({
 				return;
 			}
 
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title:
 					getClientConfig().deployment.isMultiTenancyEnabled && process.tenantId === undefined
@@ -178,7 +178,7 @@ const startProcessMachine = setup({
 		},
 		notifyNewTasks: ({context}) => {
 			context.tasks.forEach(({elementId, name, processDefinitionId, processName, userTaskKey}) => {
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'success',
 					title: t('tasklist.processesNewTaskNotification', {
 						processName: processName ?? processDefinitionId,

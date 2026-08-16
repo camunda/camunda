@@ -11,7 +11,7 @@ import {createFileRoute, redirect, stripSearchParams, useNavigate} from '@tansta
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queries} from '#/shared/http/queries';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {getAuditLogsRequestBody} from '#/tasklist/modules/task-details-history/getAuditLogsRequestBody';
 import {
 	getAuditLogSort,
@@ -47,7 +47,7 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/histor
 		try {
 			await queryClient.ensureQueryData(queries.getAuditLog(auditLogKey));
 		} catch {
-			notificationsStore.displayNotification({
+			notify({
 				kind: 'error',
 				title: t('tasklist.taskDetailsHistoryAuditLogErrorTitle'),
 				isDismissable: true,

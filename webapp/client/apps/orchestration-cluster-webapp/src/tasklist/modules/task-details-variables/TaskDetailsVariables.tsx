@@ -19,7 +19,7 @@ import intersection from 'lodash/intersection';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
 import {queries} from '#/shared/http/queries';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {notify} from '#/shared/notifications/toast';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {VariableEditor} from '#/tasklist/modules/task-details-variables/components/VariableEditor';
@@ -107,7 +107,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 								},
 				);
 			} catch {
-				notificationsStore.displayNotification({
+				notify({
 					kind: 'error',
 					title: t('tasklist.variablesFullValueFetchError'),
 					isDismissable: true,
