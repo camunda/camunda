@@ -36,9 +36,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Plans a change to where the cluster's partitions live, for {@link ClusterScaleRequestTransformer}
- * and {@link ClusterPatchRequestTransformer}: a partition-count scale-up of one physical tenant's
- * partition group, a change of the cluster-wide replication factor, or both at once.
+ * Plans a change to where the cluster's partitions live, for {@link
+ * ClusterScaleRequestTransformer}, {@link ClusterPatchRequestTransformer} and {@link
+ * ScaleRequestTransformer}: a partition-count scale-up of one physical tenant's partition group, a
+ * change of the cluster-wide replication factor, a change of the cluster's membership, or any
+ * combination of them.
  *
  * <p>Partitions are distributed across brokers considering every physical tenant's partitions at
  * once, not just those of the tenant being scaled: a tenant scaled on its own would be placed as if
@@ -71,6 +73,9 @@ final class PartitionGroupScalingPhases {
   private PartitionGroupScalingPhases() {}
 
   /**
+   * Plans the placement over the cluster's live members, for a request that does not change
+   * membership.
+   *
    * @param targetGroupId the partition group whose partition count changes; must exist in {@code
    *     clusterConfiguration} whenever {@code newPartitionCount} is present, and is unused
    *     otherwise — the replication factor has no target group
@@ -89,29 +94,55 @@ final class PartitionGroupScalingPhases {
       final CurrentClusterConfiguration clusterConfiguration,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
-    final var distributionByGroup =
-        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration);
-    final var currentPartitionCount =
-        distributionByGroup.getOrDefault(targetGroupId, Set.of()).size();
-    final int targetPartitionCount = newPartitionCount.orElse(currentPartitionCount);
-
-    if (newReplicationFactor.isEmpty() && targetPartitionCount == currentPartitionCount) {
+    final var currentPartitionCount = currentPartitionCount(clusterConfiguration, targetGroupId);
+    if (newReplicationFactor.isEmpty()
+        && newPartitionCount.orElse(currentPartitionCount) == currentPartitionCount) {
       // Nothing is asked for that the cluster does not already have. Returning before the
       // distributor runs is what keeps such a request a no-op: a placement that has drifted from
       // what the distributor would compute now — after a manual reassignment through
       // /partition-distribution, say — would otherwise be rebalanced by a request that asked for
       // no change at all. It also keeps a request that asks for nothing answerable while the
       // cluster cannot satisfy its own replication factor, e.g. with a broker down.
+      //
+      // The guard belongs to this entry point alone: a membership change does ask for something
+      // even when neither partition dimension moves, and running the distributor is then exactly
+      // right.
       return Either.right(List.of());
     }
+    return phases(
+        targetGroupId,
+        clusterConfiguration,
+        clusterConfiguration.liveMembers(),
+        newPartitionCount,
+        newReplicationFactor);
+  }
+
+  /**
+   * As {@link #phases(String, CurrentClusterConfiguration, Optional, Optional)}, but places the
+   * partitions on {@code targetMembers} rather than on whichever members are currently live, and
+   * always runs the distributor.
+   *
+   * @param targetMembers the members every partition of every group should end up on — the complete
+   *     desired member set, so a member being removed from the cluster is simply absent from it
+   */
+  static Either<Exception, List<Phase>> phases(
+      final String targetGroupId,
+      final CurrentClusterConfiguration clusterConfiguration,
+      final Set<MemberId> targetMembers,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor) {
+    final var distributionByGroup =
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration);
+    final var currentPartitionCount =
+        distributionByGroup.getOrDefault(targetGroupId, Set.of()).size();
+    final int targetPartitionCount = newPartitionCount.orElse(currentPartitionCount);
 
     final int replicationFactor =
         newReplicationFactor.orElseGet(() -> currentReplicationFactor(distributionByGroup));
-    final var liveMembers = clusterConfiguration.liveMembers();
     final var rejection =
         reject(
             targetGroupId,
-            liveMembers,
+            targetMembers,
             currentPartitionCount,
             targetPartitionCount,
             replicationFactor);
@@ -135,7 +166,7 @@ final class PartitionGroupScalingPhases {
     try {
       final var targetDistribution =
           targetDistribution(
-              clusterConfiguration, liveMembers, targetPartitionIds, replicationFactor);
+              clusterConfiguration, targetMembers, targetPartitionIds, replicationFactor);
       operationsByGroup =
           new LinkedHashMap<>(
               PartitionReassignmentOperationsGenerator.generateOperations(
@@ -180,7 +211,7 @@ final class PartitionGroupScalingPhases {
    */
   private static Optional<Exception> reject(
       final String targetGroupId,
-      final Set<MemberId> liveMembers,
+      final Set<MemberId> targetMembers,
       final int currentPartitionCount,
       final int targetPartitionCount,
       final int replicationFactor) {
@@ -195,13 +226,20 @@ final class PartitionGroupScalingPhases {
           new InvalidRequest(
               "Replication factor [%d] must be greater than 0".formatted(replicationFactor)));
     }
-    if (liveMembers.size() < replicationFactor) {
+    if (targetMembers.size() < replicationFactor) {
       return Optional.of(
           new InvalidRequest(
               "Number of brokers [%d] is less than the replication factor [%d]"
-                  .formatted(liveMembers.size(), replicationFactor)));
+                  .formatted(targetMembers.size(), replicationFactor)));
     }
     return Optional.empty();
+  }
+
+  private static int currentPartitionCount(
+      final CurrentClusterConfiguration clusterConfiguration, final String groupId) {
+    return ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration)
+        .getOrDefault(groupId, Set.of())
+        .size();
   }
 
   private static Set<PartitionMetadata> targetDistribution(
