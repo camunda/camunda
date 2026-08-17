@@ -73,6 +73,7 @@ public class ConfigurationService {
   private SecurityConfiguration securityConfiguration;
   private UsersConfiguration usersConfiguration;
   private ZeebeConfiguration configuredZeebe;
+  private JobRegistryDispatcherConfiguration jobRegistryDispatcherConfiguration;
   private Long initialBackoff;
   private Long maximumBackoff;
   // engine import settings
@@ -264,6 +265,21 @@ public class ConfigurationService {
 
   public void setConfiguredZeebe(final ZeebeConfiguration configuredZeebe) {
     this.configuredZeebe = configuredZeebe;
+  }
+
+  public JobRegistryDispatcherConfiguration getJobRegistryDispatcherConfiguration() {
+    if (jobRegistryDispatcherConfiguration == null) {
+      jobRegistryDispatcherConfiguration =
+          configJsonContext.read(
+              ConfigurationServiceConstants.JOB_REGISTRY_DISPATCHER,
+              JobRegistryDispatcherConfiguration.class);
+    }
+    return jobRegistryDispatcherConfiguration;
+  }
+
+  public void setJobRegistryDispatcherConfiguration(
+      final JobRegistryDispatcherConfiguration jobRegistryDispatcherConfiguration) {
+    this.jobRegistryDispatcherConfiguration = jobRegistryDispatcherConfiguration;
   }
 
   public SecurityConfiguration getSecurityConfiguration() {
