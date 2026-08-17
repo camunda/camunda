@@ -11,11 +11,11 @@ import {readFileSync} from 'node:fs';
 import {APIRequestContext} from 'playwright-core';
 import {
   assertStatusCode,
-  authHeaders,
   buildUrl,
   credentials,
   defaultHeaders,
   jsonHeaders,
+  octetStreamHeaders,
 } from '../http';
 import {generateUniqueId} from '../constants';
 
@@ -460,10 +460,6 @@ export function getResourceContent(
   });
 }
 
-// Workaround for bug #59831: https://github.com/camunda/camunda/issues/59831
-// The handler is mapped with the gateway's default JSON produces list, so an
-// explicit `Accept: application/octet-stream` — the media type the API spec
-// documents — is answered with 406. Send no Accept header until that is fixed.
 export function getResourceContentBinary(
   request: APIRequestContext,
   resourceKey: string,
@@ -471,7 +467,9 @@ export function getResourceContentBinary(
 ): Promise<APIResponse> {
   return request.get(
     buildUrl(RESOURCE_CONTENT_BINARY_ENDPOINT, {resourceKey}),
-    {headers: options.headers ?? authHeaders(credentials.accessToken)},
+    {
+      headers: options.headers ?? octetStreamHeaders(credentials.accessToken),
+    },
   );
 }
 
