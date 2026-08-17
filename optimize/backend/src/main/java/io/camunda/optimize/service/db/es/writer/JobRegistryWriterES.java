@@ -46,7 +46,7 @@ public class JobRegistryWriterES implements JobRegistryWriter {
       final JobType jobType, final EntityType entityType, final String entityId) {
     final JobRegistryEntryDto entry = new JobRegistryEntryDto(jobType, entityType, entityId);
     LOG.debug(
-        "Creating job registry entry with id [{}] for [{}] target [{}].",
+        "Creating job registry entry with id [{}] for [{}] entity [{}].",
         entry.getId(),
         jobType,
         entityId);
