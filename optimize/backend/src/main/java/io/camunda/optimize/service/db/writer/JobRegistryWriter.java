@@ -7,15 +7,14 @@
  */
 package io.camunda.optimize.service.db.writer;
 
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 
 public interface JobRegistryWriter {
 
-  JobRegistryEntryDto createJobEntry(
-      JobType jobType, TargetEntityType targetEntityType, String targetEntityId);
+  JobRegistryEntryDto createJobEntry(JobType jobType, EntityType entityType, String entityId);
 
   void updateJobStatus(String id, JobStatus status, String errorMessage);
 }
