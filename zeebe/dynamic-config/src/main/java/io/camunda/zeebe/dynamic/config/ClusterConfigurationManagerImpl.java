@@ -9,17 +9,14 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
-import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -65,7 +62,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>When a member receives a configuration with pending changes, it applies the change if it is
  * applicable to the member. Only a member can make changes to its own state in the configuration.
- * See {@link ConfigurationChangeAppliers} to see how a change is applied locally.
+ * See {@link GlobalConfigurationChangeAppliers} and {@link
+ * PartitionGroupConfigurationChangeAppliers} to see how a change is applied locally.
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
 
@@ -73,21 +71,14 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(10);
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
   private final ConcurrencyControl executor;
-  private final PersistedClusterConfiguration persistedClusterConfiguration;
-  private Consumer<ClusterConfiguration> configurationGossiper;
   private final ActorFuture<Void> startFuture;
-  private ConfigurationChangeAppliers changeAppliers;
   private InconsistentConfigurationListener onInconsistentConfigurationDetected;
   private final MemberId localMemberId;
-  // Indicates whether there is a configuration change operation in progress on this member.
-  private boolean onGoingConfigurationChangeOperation = false;
-  private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
   private final boolean useNewConfig;
 
-  // New-model state, only used when useNewConfig is true.
   private final @Nullable PersistedCurrentClusterConfiguration persistedCurrentConfiguration;
   private @Nullable Consumer<CurrentClusterConfiguration> currentConfigurationGossiper;
   private final @Nullable ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
@@ -105,47 +96,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Map<Long, ScheduledTimer> advancePhaseRetryTimers = new HashMap<>();
   private final int completedChangeHistoryLimit;
 
-  ClusterConfigurationManagerImpl(
-      final ConcurrencyControl executor,
-      final MemberId localMemberId,
-      final PersistedClusterConfiguration persistedClusterConfiguration,
-      final TopologyManagerMetrics topologyMetrics) {
-    this(
-        executor,
-        localMemberId,
-        persistedClusterConfiguration,
-        topologyMetrics,
-        MIN_RETRY_DELAY,
-        MAX_RETRY_DELAY);
-  }
-
-  @VisibleForTesting
-  ClusterConfigurationManagerImpl(
-      final ConcurrencyControl executor,
-      final MemberId localMemberId,
-      final PersistedClusterConfiguration persistedClusterConfiguration,
-      final TopologyManagerMetrics topologyMetrics,
-      final Duration minRetryDelay,
-      final Duration maxRetryDelay) {
-    this.executor = executor;
-    this.persistedClusterConfiguration = persistedClusterConfiguration;
-    startFuture = executor.createFuture();
-    this.localMemberId = localMemberId;
-    this.topologyMetrics = topologyMetrics;
-    this.minRetryDelay = minRetryDelay;
-    this.maxRetryDelay = maxRetryDelay;
-    backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
-    useNewConfig = false;
-    persistedCurrentConfiguration = null;
-    coordinatorSupplier = null;
-    completedChangeHistoryLimit = PhasedChangeState.DEFAULT_HISTORY_LIMIT;
-  }
-
-  /**
-   * Constructs a manager operating on the new multi-partition-group model. Used when {@link
-   * ClusterConfigurationManagerService#USE_NEW_CONFIG} is enabled. The legacy {@code
-   * PersistedClusterConfiguration} is not used in this mode.
-   */
+  /** Constructs a manager operating on the multi-partition-group model. */
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
@@ -192,7 +143,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final Duration maxRetryDelay,
       final int completedChangeHistoryLimit) {
     this.executor = executor;
-    persistedClusterConfiguration = null;
     this.persistedCurrentConfiguration = persistedCurrentConfiguration;
     startFuture = executor.createFuture();
     this.localMemberId = localMemberId;
@@ -208,41 +158,24 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             () -> this.persistedCurrentConfiguration.getConfiguration());
   }
 
+  /** Legacy single-group projection of the multi-partition-group configuration. */
   @Override
   public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
     final var future = executor.<ClusterConfiguration>createFuture();
     executor.run(
-        () ->
-            future.complete(
-                useNewConfig
-                    ? persistedCurrentConfiguration.getConfiguration().toLegacyDefault()
-                    : persistedClusterConfiguration.getConfiguration()));
+        () -> future.complete(persistedCurrentConfiguration.getConfiguration().toLegacyDefault()));
     return future;
   }
 
+  /**
+   * Not supported on the multi-partition-group model — the legacy single-group configuration cannot
+   * be mutated in isolation. Use {@link #updateMultiConfiguration} instead.
+   */
   @Override
   public ActorFuture<ClusterConfiguration> updateClusterConfiguration(
       final UnaryOperator<ClusterConfiguration> configUpdater) {
-    final ActorFuture<ClusterConfiguration> future = executor.createFuture();
-    executor.run(
-        () -> {
-          try {
-            final ClusterConfiguration updatedConfiguration =
-                configUpdater.apply(persistedClusterConfiguration.getConfiguration());
-            updateLocalConfiguration(updatedConfiguration)
-                .ifRightOrLeft(
-                    updated -> {
-                      future.complete(updated);
-                      applyConfigurationChangeOperation(updatedConfiguration);
-                    },
-                    future::completeExceptionally);
-          } catch (final Exception e) {
-            LOG.error("Failed to update cluster configuration", e);
-            future.completeExceptionally(e);
-          }
-        });
-
-    return future;
+    throw new UnsupportedOperationException(
+        "updateClusterConfiguration is not supported; use updateMultiConfiguration instead");
   }
 
   @Override
@@ -286,7 +219,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   ActorFuture<Void> start(
-      final ClusterConfigurationInitializer<? extends InitializableClusterConfiguration>
+      final ClusterConfigurationInitializer<CurrentClusterConfiguration>
           clusterConfigurationInitializer) {
     executor.run(
         () -> {
@@ -299,12 +232,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return startFuture;
   }
 
-  public void setConfigurationGossiper(final Consumer<ClusterConfiguration> configurationGossiper) {
-    this.configurationGossiper = configurationGossiper;
-  }
-
   private void initialize(
-      final ClusterConfigurationInitializer<? extends InitializableClusterConfiguration>
+      final ClusterConfigurationInitializer<CurrentClusterConfiguration>
           clusterConfigurationInitializer) {
     clusterConfigurationInitializer
         .initialize()
@@ -319,43 +248,20 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
-                // temporary workaround to support both legacy and new configuration models.
-                if (configuration instanceof final ClusterConfiguration clusterConfiguration) {
-                  try {
-                    // merge in case there was a concurrent update via gossip
-                    persistedClusterConfiguration.update(
-                        clusterConfiguration.merge(
-                            persistedClusterConfiguration.getConfiguration()));
-                    LOG.debug(
-                        "Initialized (legacy) cluster configuration '{}'",
-                        persistedClusterConfiguration.getConfiguration());
-                    configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
-                  } catch (final IOException e) {
-                    startFuture.completeExceptionally(
-                        "Failed to start update cluster configuration", e);
-                  }
-                } else if (configuration
-                    instanceof final CurrentClusterConfiguration currentClusterConfiguration) {
-                  try {
-                    // merge in case there was a concurrent update via gossip
-                    persistedCurrentConfiguration.update(
-                        currentClusterConfiguration.merge(
-                            persistedCurrentConfiguration.getConfiguration()));
-                    LOG.debug(
-                        "Initialized cluster configuration '{}'",
+                try {
+                  // merge in case there was a concurrent update via gossip
+                  persistedCurrentConfiguration.update(
+                      configuration.merge(persistedCurrentConfiguration.getConfiguration()));
+                  LOG.debug(
+                      "Initialized cluster configuration '{}'",
+                      persistedCurrentConfiguration.getConfiguration());
+                  if (currentConfigurationGossiper != null) {
+                    currentConfigurationGossiper.accept(
                         persistedCurrentConfiguration.getConfiguration());
-                    if (currentConfigurationGossiper != null) {
-                      currentConfigurationGossiper.accept(
-                          persistedCurrentConfiguration.getConfiguration());
-                    }
-                  } catch (final IOException e) {
-                    startFuture.completeExceptionally(
-                        "Failed to start update cluster configuration", e);
                   }
-                } else {
+                } catch (final IOException e) {
                   startFuture.completeExceptionally(
-                      new IllegalStateException(
-                          "Unexpected configuration type: " + configuration.getClass()));
+                      "Failed to start update cluster configuration", e);
                 }
                 setStarted();
               }
@@ -369,73 +275,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
   }
 
-  void onGossipReceived(final ClusterConfiguration receivedConfiguration) {
-    executor.run(
-        () -> {
-          if (!initialized) {
-            LOG.trace(
-                "Received configuration {} before ClusterConfigurationManager is initialized.",
-                receivedConfiguration);
-            // When not started, do not update the local configuration. This is to avoid any race
-            // condition between FileInitializer and concurrently received configuration via gossip.
-            configurationGossiper.accept(receivedConfiguration);
-            return;
-          }
-          try {
-            if (receivedConfiguration != null) {
-              final var mergedConfiguration =
-                  persistedClusterConfiguration.getConfiguration().merge(receivedConfiguration);
-              // If received configuration is an older version, the merged configuration will be
-              // same as the
-              // local one. In that case, we can skip the next steps.
-              if (!mergedConfiguration.equals(persistedClusterConfiguration.getConfiguration())) {
-                LOG.debug(
-                    "Received new configuration {}. Updating local configuration to {}",
-                    receivedConfiguration,
-                    mergedConfiguration);
-
-                final var oldConfiguration = persistedClusterConfiguration.getConfiguration();
-                final var isConflictingConfiguration =
-                    isConflictingConfiguration(mergedConfiguration, oldConfiguration);
-                persistedClusterConfiguration.update(mergedConfiguration);
-
-                if (isConflictingConfiguration && onInconsistentConfigurationDetected != null) {
-                  onInconsistentConfigurationDetected.onInconsistentConfiguration(
-                      mergedConfiguration, oldConfiguration);
-                }
-
-                configurationGossiper.accept(mergedConfiguration);
-                applyConfigurationChangeOperation(mergedConfiguration);
-              }
-            }
-          } catch (final IOException error) {
-            LOG.warn(
-                "Failed to process cluster configuration received via gossip. '{}'",
-                receivedConfiguration,
-                error);
-          }
-        });
-  }
-
-  private boolean isConflictingConfiguration(
-      final ClusterConfiguration mergedConfiguration, final ClusterConfiguration oldConfiguration) {
-    if (!mergedConfiguration.hasMember(localMemberId)
-        && oldConfiguration.hasMember(localMemberId)
-        && oldConfiguration.getMember(localMemberId).state() == State.LEFT) {
-      // If the member has left, it's state will be removed from the configuration by another
-      // member. See ClusterConfiguration#advance()
-      return false;
-    }
-    return !Objects.equals(
-        mergedConfiguration.getMember(localMemberId), oldConfiguration.getMember(localMemberId));
-  }
-
   /**
-   * New-model counterpart of {@link #isConflictingConfiguration(ClusterConfiguration,
-   * ClusterConfiguration)}. The legacy model has a single partition group, so the local member's
-   * state is checked once; the new model has one {@link PartitionGroupConfiguration} per physical
-   * tenant, so the local member's state is checked in every group it appears in, in either
-   * configuration.
+   * The local member's state is checked in every {@link PartitionGroupConfiguration} (physical
+   * tenant) it appears in, in either configuration.
    */
   private boolean isConflictingConfiguration(
       final CurrentClusterConfiguration mergedConfiguration,
@@ -461,11 +303,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       // The member's zero-partition entry was pruned from this group as part of the current
       // plan's own operations targeting it (e.g. it is leaving this group as one of the plan's
       // steps). A faster peer's gossip can report that removal before the local apply catches up;
-      // that race is expected, not a forced/unexpected change, so it's not a conflict. Mirrors the
-      // LEFT-member exclusion in isConflictingConfiguration(ClusterConfiguration,
-      // ClusterConfiguration) above. A removal the member was never an operation-target for (e.g. a
-      // force-reconfigure applied by another member on its behalf) still falls through and
-      // conflicts, since {@code wasTargetedByCurrentPlan} only returns true for the former.
+      // that race is expected, not a forced/unexpected change, so it's not a conflict. A removal
+      // the member was never an operation-target for (e.g. a force-reconfigure applied by another
+      // member on its behalf) still falls through and conflicts, since {@code
+      // wasTargetedByCurrentPlan} only returns true for the former.
       return false;
     }
     return !Objects.equals(mergedMemberState, oldMemberState);
@@ -488,147 +329,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         .filter(Objects::nonNull)
         .flatMap(List::stream)
         .anyMatch(operation -> operation.memberId().equals(localMemberId));
-  }
-
-  private boolean shouldApplyConfigurationChangeOperation(
-      final ClusterConfiguration mergedConfiguration) {
-    // Configuration change operation should be applied only once. The operation is removed
-    // from the pending list only after the operation is completed. We should take care
-    // not to repeatedly trigger the same operation while it is in progress. This
-    // usually would not happen, because no other member will update the configuration while
-    // the current one is in progress. So the local configuration is not changed. The configuration
-    // change operation is triggered locally only when the local configuration is changes. However,
-    // as
-    // an extra precaution we check if there is an ongoing operation before applying one.
-    return (!onGoingConfigurationChangeOperation || shouldRetry)
-        && mergedConfiguration.pendingChangesFor(localMemberId).isPresent()
-        // changeApplier is registered only after PartitionManager in the Broker is started.
-        && changeAppliers != null;
-  }
-
-  private void applyConfigurationChangeOperation(final ClusterConfiguration mergedConfiguration) {
-    if (!shouldApplyConfigurationChangeOperation(mergedConfiguration)) {
-      return;
-    }
-
-    onGoingConfigurationChangeOperation = true;
-    shouldRetry = false;
-    final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
-    final var observer = topologyMetrics.observeOperation(operation);
-    LOG.info("Applying configuration change operation {}", operation);
-    final var operationApplier = changeAppliers.getApplier(operation);
-    final var operationInitialized =
-        operationApplier
-            .init(mergedConfiguration)
-            .map(transformer -> transformer.apply(mergedConfiguration))
-            .flatMap(this::updateLocalConfiguration);
-
-    if (operationInitialized.isLeft()) {
-      // TODO: Mark ClusterChangePlan as failed
-      observer.failed();
-      onGoingConfigurationChangeOperation = false;
-      LOG.error(
-          "Failed to initialize configuration change operation {}",
-          operation,
-          operationInitialized.getLeft());
-      return;
-    }
-
-    final var initializedConfiguration = operationInitialized.get();
-    operationApplier
-        .apply()
-        .onComplete(
-            (transformer, error) ->
-                onOperationApplied(
-                    initializedConfiguration, operation, transformer, error, observer));
-  }
-
-  private void logAndScheduleRetry(
-      final ClusterConfigurationChangeOperation operation, final Throwable error) {
-    shouldRetry = true;
-    final Duration delay = backoffRetry.nextDelay();
-    LOG.warn(
-        "Failed to apply configuration change operation {}. Will be retried in {}.",
-        operation,
-        delay,
-        error);
-    executor.schedule(
-        delay,
-        () -> {
-          LOG.debug("Retrying last applied operation");
-          applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
-        });
-  }
-
-  private void onOperationApplied(
-      final ClusterConfiguration topologyOnWhichOperationIsApplied,
-      final ClusterConfigurationChangeOperation operation,
-      final UnaryOperator<ClusterConfiguration> transformer,
-      final Throwable error,
-      final OperationObserver observer) {
-    onGoingConfigurationChangeOperation = false;
-    if (error == null) {
-      observer.applied();
-      backoffRetry.reset();
-      if (persistedClusterConfiguration.getConfiguration().version()
-          != topologyOnWhichOperationIsApplied.version()) {
-        LOG.debug(
-            "Configuration changed while applying operation {}. Expected configuration is {}. Current configuration is {}. Most likely the change operation was cancelled.",
-            operation,
-            topologyOnWhichOperationIsApplied,
-            persistedClusterConfiguration.getConfiguration());
-        return;
-      }
-      updateLocalConfiguration(
-          persistedClusterConfiguration.getConfiguration().advanceConfigurationChange(transformer));
-      LOG.info(
-          "Operation {} applied. Updated local configuration to {}",
-          operation,
-          persistedClusterConfiguration.getConfiguration());
-
-      executor.run(
-          () -> {
-            // Continue applying configuration change, if the next operation is for the local member
-            applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
-          });
-    } else {
-      observer.failed();
-      // Retry after a delay. The failure is most likely due to timeouts such
-      // as when joining a raft partition.
-      logAndScheduleRetry(operation, error);
-    }
-  }
-
-  private Either<Exception, ClusterConfiguration> updateLocalConfiguration(
-      final ClusterConfiguration configuration) {
-    if (configuration.equals(persistedClusterConfiguration.getConfiguration())) {
-      return Either.right(configuration);
-    }
-    try {
-      persistedClusterConfiguration.update(configuration);
-      configurationGossiper.accept(configuration);
-      return Either.right(configuration);
-    } catch (final Exception e) {
-      return Either.left(e);
-    }
-  }
-
-  void registerTopologyChangeAppliers(
-      final ConfigurationChangeAppliers configurationChangeAppliers) {
-    executor.run(
-        () -> {
-          changeAppliers = configurationChangeAppliers;
-          // Continue applying the configuration change operation, after a broker restart.
-          applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
-        });
-  }
-
-  // ---------------------------------------------------------------------------
-  // New multi-partition-group model (used only when useNewConfig is true).
-  // ---------------------------------------------------------------------------
-
-  void removeTopologyChangeAppliers() {
-    executor.run(() -> changeAppliers = null);
   }
 
   void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
@@ -668,9 +368,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   /**
    * Merges a {@link CurrentClusterConfiguration} received via gossip into the local one. If the
    * merge changes the local configuration, it is persisted, re-gossiped, and local operation
-   * application is triggered. Mirrors the legacy {@code onGossipReceived} merge behaviour,
-   * including leaving local state unchanged until {@link #start} has completed, to avoid a race
-   * between the configuration initializer and a concurrently received gossip update.
+   * application is triggered. Leaves local state unchanged until {@link #start} has completed, to
+   * avoid a race between the configuration initializer and a concurrently received gossip update.
    */
   void onGossipReceivedCurrent(final CurrentClusterConfiguration receivedConfiguration) {
     executor.run(
