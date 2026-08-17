@@ -23,7 +23,13 @@ public class AnalyticsExporterConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsExporterConfig.class);
 
-  private String endpoint = "https://analytics.cloud.camunda.io";
+  // NOTE for the next engineer touching this default: the Cloud Run hostname below is NOT the
+  // final endpoint. It was agreed as an interim value (see camunda/camunda analytics-exporter
+  // PR discussion with Stephan Epping) while SRE completes DNS/domain work for a friendlier
+  // camunda.io-style hostname. Before assuming this URL is permanent, check whether that
+  // migration has landed and update this default (and the README) accordingly.
+  private String endpoint =
+      "https://camunda-product-telemetry-collector-prod-yysisctcoa-ew.a.run.app";
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5M";
