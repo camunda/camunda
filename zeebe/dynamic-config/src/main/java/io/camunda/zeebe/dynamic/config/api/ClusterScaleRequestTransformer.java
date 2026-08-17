@@ -95,7 +95,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       return Either.left(invalidZone.get());
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount.get());
+        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
   }
 
   @Override

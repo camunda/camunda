@@ -86,7 +86,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                   .formatted(groupId)));
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount.get());
+        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
   }
 
   @Override
