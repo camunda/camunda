@@ -468,6 +468,14 @@ final class ClusterScaleRequestTransformerTest {
         .toList();
   }
 
+  private static List<PartitionJoinOperation> joins(
+      final PartitionGroupParallelPhase phase, final String groupId) {
+    return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
+        .filter(PartitionJoinOperation.class::isInstance)
+        .map(PartitionJoinOperation.class::cast)
+        .toList();
+  }
+
   @Test
   void shouldTargetOnlyTheRequestedPhysicalTenantsPartitionGroup() {
     // given — tenant-b currently has 1 partition; scale it to 2
@@ -630,5 +638,63 @@ final class ClusterScaleRequestTransformerTest {
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+  }
+
+  // -- cluster-wide replication factor (phases()) --
+
+  private ClusterScaleRequestTransformer replicationFactorTransformer(
+      final int newReplicationFactor, final Optional<String> zone) {
+    return new ClusterScaleRequestTransformer(
+        Optional.empty(), Optional.empty(), Optional.of(newReplicationFactor), zone);
+  }
+
+  @Test
+  void shouldApplyReplicationFactorToEveryPhysicalTenant() {
+    // given — every partition of both tenants is currently held by a single broker
+    final var transformer = replicationFactorTransformer(2, Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — every partition of every tenant gains a second replica, rather than only the default
+    // tenant's, which is what planning against the default group's projection alone produced
+    final var phase = singlePhase(result);
+    Assertions.assertThat(phase.groupOperations()).containsOnlyKeys(DEFAULT_GROUP, TENANT_B);
+    Assertions.assertThat(joins(phase, DEFAULT_GROUP))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactlyInAnyOrder(1, 2);
+    Assertions.assertThat(joins(phase, TENANT_B))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactly(1);
+  }
+
+  @Test
+  void shouldRejectReplicationFactorAboveTheNumberOfBrokers() {
+    // given — three brokers cannot hold four replicas of a partition
+    final var transformer = replicationFactorTransformer(4, Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("Number of brokers [3] is less than the replication factor [4]");
+  }
+
+  @Test
+  void shouldRejectReplicationFactorWithZone() {
+    // given — the replication factor of a zone-aware cluster follows from its zone specs
+    final var transformer = replicationFactorTransformer(2, Optional.of(ZONE_A));
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("/partition-distribution");
   }
 }

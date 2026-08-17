@@ -68,18 +68,28 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                     + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
       }
     }
-    if (changesMembership || newReplicationFactor.isPresent() || newPartitionCount.isEmpty()) {
-      // Cluster membership and the replication factor have no tenant dimension, so a request
-      // carrying either is planned exactly the way it always was, against the default group. So is
-      // a request that changes neither those nor the partition count, which has nothing to plan.
-      // That such a change redistributes only the default tenant's partitions, rather than every
-      // tenant's, is a gap that predates physical tenants being scalable at all; closing it needs
-      // global and partition-group phases planned together, tracked in #60192 and #60193.
+    if (changesMembership || (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty())) {
+      // Cluster membership has no tenant dimension, so a request carrying it is planned exactly the
+      // way it always was, against the default group. So is a request that changes neither
+      // membership nor a partition dimension, which has nothing to plan. That a membership change
+      // redistributes only the default tenant's partitions, rather than every tenant's, is a gap
+      // that predates physical tenants being scalable at all; closing it needs global and
+      // partition-group phases planned together, tracked in #60193.
       return ConfigurationChangeRequest.super.phases(clusterConfiguration);
+    }
+    // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
+    // set directly. Checked here as well as in operations(), because the new-model coordinator
+    // plans through phases() alone and never calls operations() at all.
+    if (newReplicationFactor.isPresent() && !clusterConfiguration.toLegacyDefault().isUnzoned()) {
+      return Either.left(
+          new InvalidRequest(
+              "Changing the replication factor is not supported on zone-aware clusters."));
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
-    if (!clusterConfiguration.hasPartitionGroup(groupId)) {
+    // Only the partition count targets a group; the replication factor spans every tenant, so a
+    // request carrying it alone has no group that has to exist.
+    if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
       return Either.left(
           new NotFound(
               "Expected to patch physical tenant '%s', but there's no such tenant"
