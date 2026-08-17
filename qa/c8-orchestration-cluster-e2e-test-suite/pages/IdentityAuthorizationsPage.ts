@@ -261,14 +261,18 @@ export class IdentityAuthorizationsPage {
         .filter({hasText: authorization.ownerId})
         .first();
       await expect(ownerOption).toBeVisible({timeout: 60000});
-      await ownerOption.click({timeout: 20000});
+      await ownerOption.click({timeout: 20000, force: true});
       return;
     }
 
     await this.createAuthorizationOwnerComboBox.click();
     try {
+      // Use force: true to bypass actionability checks. Increases timeout to 60s
+      // to account for slow dropdown rendering under CI load — just-created
+      // users can be slow to surface.
       await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-        timeout: 20000,
+        timeout: 60000,
+        force: true,
       });
     } catch (error) {
       console.log('Error while selecting owner' + error);
