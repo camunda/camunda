@@ -20,8 +20,8 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
 
   public static final String ID = "id";
   public static final String JOB_TYPE = "jobType";
-  public static final String TARGET_ENTITY_TYPE = "targetEntityType";
-  public static final String TARGET_ENTITY_ID = "targetEntityId";
+  public static final String ENTITY_TYPE = "entityType";
+  public static final String ENTITY_ID = "entityId";
   public static final String STATUS = "status";
   public static final String ERROR_MESSAGE = "errorMessage";
   public static final String CREATED_AT = "createdAt";
@@ -32,8 +32,8 @@ public abstract class JobRegistryIndex<TBuilder> extends DefaultIndexMappingCrea
     return builder
         .properties(ID, p -> p.keyword(k -> k))
         .properties(JOB_TYPE, p -> p.keyword(k -> k))
-        .properties(TARGET_ENTITY_TYPE, p -> p.keyword(k -> k))
-        .properties(TARGET_ENTITY_ID, p -> p.keyword(k -> k))
+        .properties(ENTITY_TYPE, p -> p.keyword(k -> k))
+        .properties(ENTITY_ID, p -> p.keyword(k -> k))
         .properties(STATUS, p -> p.keyword(k -> k))
         .properties(ERROR_MESSAGE, p -> p.keyword(k -> k.ignoreAbove(IGNORE_ABOVE_CHAR_LIMIT)))
         .properties(CREATED_AT, p -> p.date(d -> d.format(OPTIMIZE_DATE_FORMAT)))
