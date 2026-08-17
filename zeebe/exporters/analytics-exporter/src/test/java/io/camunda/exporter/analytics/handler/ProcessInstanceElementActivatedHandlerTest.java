@@ -27,6 +27,8 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ProcessInstanceElementActivatedHandlerTest {
 
@@ -130,10 +132,14 @@ class ProcessInstanceElementActivatedHandlerTest {
     assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
   }
 
-  @Test
-  void shouldSkipOtherElementTypes() {
+  @ParameterizedTest
+  @EnumSource(
+      value = BpmnElementType.class,
+      names = {"PROCESS"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldSkipOtherElementTypes(final BpmnElementType elementType) {
     // given — a root-scoped element that is not a process
-    final var record = elementActivated(BpmnElementType.SERVICE_TASK, NO_PARENT_INSTANCE);
+    final var record = elementActivated(elementType, NO_PARENT_INSTANCE);
 
     // when
     handler.handle(typed(record));
