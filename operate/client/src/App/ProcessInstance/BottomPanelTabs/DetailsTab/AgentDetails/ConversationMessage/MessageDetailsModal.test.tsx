@@ -61,7 +61,7 @@ describe('<MessageDetailsModal />', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Source'}));
 
-    expect(screen.getByTestId('monaco-editor')).toHaveValue('Hello **world**');
+    expect(await screen.findByRole('textbox')).toHaveValue('Hello **world**');
   });
 
   it('should render source only without tabs for json content', () => {

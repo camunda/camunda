@@ -18,9 +18,9 @@ describe('InstanceHistoryTab', () => {
   it('renders ElementInstanceLog as a panel with the header hidden', () => {
     render(<InstanceHistoryTab />);
 
-    expect(ElementInstanceLog).toHaveBeenCalledWith(
-      {isPanel: true, showHeader: false},
-      {},
-    );
+    expect(vi.mocked(ElementInstanceLog).mock.calls[0]?.[0]).toEqual({
+      isPanel: true,
+      showHeader: false,
+    });
   });
 });
