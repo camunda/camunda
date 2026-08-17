@@ -18,6 +18,8 @@ We use this process because:
 
 We want a fast feedback loop for any failed check on base branches that leads to short-term fixes and mid-term improvement work to prevent recurrence and increase reliability.
 
+By default we assume L1 severity for each CI incident created this way, until a preliminary investigation revealed that release-readiness and SNAPSHOT artifact generation are not impacted (can be downgraded to L2 then) - a reliability improvement is still needed.
+
 High-level steps:
 
 - Detect GHA job failures across `on: push` and `on: schedule` workflows on `main` and `stable/*`.

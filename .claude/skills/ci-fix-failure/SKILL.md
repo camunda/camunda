@@ -26,6 +26,12 @@ User shares a GHA URL (`actions/runs/<id>`, `actions/runs/<id>/job/<id>`, or `pu
 
 ## Procedure
 
+### 0. Search similar incidents
+
+Check for existing CI incidents for the same workflow and job.
+
+In case of prior open incidents, suggest merging for the same workflow and job.
+
 ### 1. Parse URL → `run_id` (required), `job_id` (optional), `attempt` (optional)
 
 For check URLs, `check_run_id` **is** the job id. `/attempts/<n>` → `attempt=<n>`.
@@ -90,6 +96,8 @@ Decide by Step 4 annotations:
 - timeout + step is non-deterministic by history → B
 - runner/image/infra signal, no test in picture → D
 - nothing useful → default A/B over D on `push`/`merge_group`. Prefer A over B without evidence.
+
+Suggest to lower severity to L2 for category **B** and **D**.
 
 ### 7. Find root cause
 
