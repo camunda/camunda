@@ -8,10 +8,12 @@
 package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterPatchRequestTransformer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -65,6 +68,8 @@ final class NewModelConfigurationChangeCoordinatorTest {
 
   private static final MemberId MEMBER_0 = MemberId.from("0");
   private static final MemberId MEMBER_1 = MemberId.from("1");
+  private static final MemberId MEMBER_2 = MemberId.from("2");
+  private static final String TENANT_A = "tenanta";
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -89,13 +94,19 @@ final class NewModelConfigurationChangeCoordinatorTest {
     manager.registerGlobalChangeAppliers(
         new GlobalConfigurationChangeAppliersImpl(
             new NoopClusterMembershipChangeExecutor(), new NoopClusterChangeExecutor()));
-    manager.registerPartitionGroupChangeAppliers(
-        CurrentClusterConfiguration.DEFAULT_GROUP,
-        new PartitionGroupConfigurationChangeAppliersImpl(
-            new NoopPartitionChangeExecutor(),
-            new NoopPartitionScalingChangeExecutor(),
-            new NoopModeChangeExecutor(),
-            new NoopRestoreChangeExecutor()));
+    // Every broker registers appliers for every physical tenant it is configured with, so a seed
+    // with more than one partition group needs more than one registration here too.
+    seed.partitionGroups()
+        .keySet()
+        .forEach(
+            groupId ->
+                manager.registerPartitionGroupChangeAppliers(
+                    groupId,
+                    new PartitionGroupConfigurationChangeAppliersImpl(
+                        new NoopPartitionChangeExecutor(),
+                        new NoopPartitionScalingChangeExecutor(),
+                        new NoopModeChangeExecutor(),
+                        new NoopRestoreChangeExecutor())));
     coordinator = new ConfigurationChangeCoordinatorImpl(manager, localMemberId, executor);
     manager.updateMultiConfiguration(ignored -> seed).join();
   }
@@ -159,8 +170,96 @@ final class NewModelConfigurationChangeCoordinatorTest {
         base.phasedChangeState());
   }
 
+  /**
+   * Three active members, replication factor 1. The default tenant runs partition 1 on member 0;
+   * "tenanta" runs its partition 1 on member 2, so member 2 holds nothing but a non-default
+   * tenant's partition.
+   */
+  private CurrentClusterConfiguration twoTenantCluster() {
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_2, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty()),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            singlePartitionGroup(MEMBER_0),
+            TENANT_A,
+            singlePartitionGroup(MEMBER_2)),
+        PhasedChangeState.empty());
+  }
+
+  private PartitionGroupConfiguration singlePartitionGroup(final MemberId member) {
+    return new PartitionGroupConfiguration(
+        1,
+        0,
+        Map.of(
+            member,
+            BrokerPartitionState.initialize(Map.of(1, PartitionState.active(1, partitionConfig)))),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
+  }
+
   private CurrentClusterConfiguration configuration() {
     return manager.getMultiConfiguration().join();
+  }
+
+  /**
+   * Before every physical tenant was considered when planning a membership change, this request was
+   * rejected during validation: the plan moved only the default tenant's partitions, so {@code
+   * MemberLeaveApplier} — which checks every partition group — refused to let member 2 leave while
+   * it still held tenanta's partition. The whole request failed with "the member still has
+   * partitions assigned", leaving the operator no way to remove the broker at all.
+   */
+  @Test
+  void shouldMoveANonDefaultTenantsPartitionOffARemovedBroker() {
+    // given — member 2 holds only tenanta's partition
+    wire(MEMBER_0, twoTenantCluster());
+
+    // when — member 2 is removed from the cluster
+    final var result =
+        coordinator
+            .applyOperations(
+                new ClusterPatchRequestTransformer(
+                    Set.of(), Set.of(MEMBER_2), Optional.empty(), Optional.empty()))
+            .join();
+
+    // then — the request is admitted at all, which is the regression: validation simulates every
+    // phase through the same appliers the manager uses, so reaching a pending plan proves
+    // MemberLeaveApplier no longer refuses the leave.
+    assertThat(configuration().phasedChangeState().pending()).containsKey(result.changeId());
+
+    // and the plan moves tenanta's partition to a retained broker, before member 2 leaves. It is
+    // not drained here: its operations target members 1 and 2, and this harness runs a single
+    // manager for member 0 — a real cluster applying every phase is covered by
+    // PhysicalTenantBrokerScalingIT.
+    assertThat(result.phases()).hasSize(3);
+    assertThat(result.phases().get(1))
+        .asInstanceOf(type(PartitionGroupParallelPhase.class))
+        .satisfies(
+            phase -> {
+              assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A);
+              assertThat(phase.groupOperations().get(TENANT_A))
+                  .contains(new PartitionLeaveOperation(MEMBER_2, 1, 1))
+                  .anySatisfy(
+                      operation ->
+                          assertThat(operation)
+                              .asInstanceOf(type(PartitionJoinOperation.class))
+                              .extracting(PartitionJoinOperation::memberId)
+                              .isNotEqualTo(MEMBER_2));
+            });
+    assertThat(result.phases().get(2))
+        .asInstanceOf(type(GlobalPhase.class))
+        .satisfies(
+            phase -> assertThat(phase.operations()).contains(new MemberLeaveOperation(MEMBER_2)));
   }
 
   @Test

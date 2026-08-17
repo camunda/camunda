@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
@@ -30,8 +31,10 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -681,6 +684,35 @@ final class ClusterScaleRequestTransformerTest {
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
         .hasMessageContaining("Number of brokers [3] is less than the replication factor [4]");
+  }
+
+  @Test
+  void shouldRedistributeEveryPhysicalTenantWhenChangingTheBrokerCount() {
+    // given — the cluster shrinks from three brokers to two. Only broker id2 holds anything that
+    // has to move, and what it holds belongs to tenant-b, so the whole partition half of this plan
+    // is work the default-group projection could never have produced.
+    final var transformer =
+        new ClusterScaleRequestTransformer(
+            Optional.of(2), Optional.empty(), Optional.empty(), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get()).hasSize(3);
+    final var partitionPhase = (PartitionGroupParallelPhase) result.get().get(1);
+    Assertions.assertThat(partitionPhase.groupOperations()).containsOnlyKeys(TENANT_B);
+    Assertions.assertThat(joins(partitionPhase, TENANT_B))
+        .describedAs("tenant-b's partition is placed on a retained broker")
+        .extracting(PartitionJoinOperation::memberId)
+        .containsExactly(id0);
+    Assertions.assertThat(partitionPhase.groupOperations().get(TENANT_B))
+        .describedAs("tenant-b gives up the partition on the departing broker")
+        .contains(new PartitionLeaveOperation(id2, 1, 1));
+    Assertions.assertThat(((GlobalPhase) result.get().get(2)).operations())
+        .describedAs("the broker leaves only after the partition work")
+        .contains(new MemberLeaveOperation(id2));
   }
 
   @Test
