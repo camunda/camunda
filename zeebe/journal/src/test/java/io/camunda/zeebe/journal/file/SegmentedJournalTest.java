@@ -400,6 +400,64 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldKeepDeletedSegmentReadableForAReaderThatReadFromIt() {
+    // given - a reader that read a record from a segment which is deleted afterwards
+    journal = openJournal("aaaa", 1);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, entry("bbbb"));
+    reader.next();
+    final var deletedRecord = reader.next();
+
+    // when - the whole segment holding that record is deleted
+    journal.deleteAfter(keptIndex);
+
+    // then - the record the reader is still holding is readable, i.e. the segment is still mapped
+    assertThat(BufferUtil.bufferAsString(deletedRecord.data())).isEqualTo("bbbb");
+  }
+
+  @Test
+  void shouldReadRecordsWrittenAfterTheReaderReadDeletedRecords() {
+    // given - a reader that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    reader.next();
+    reader.next();
+
+    // when
+    journal.deleteAfter(deletedIndex - 1);
+    journal.append(2, entry("bbbb"));
+
+    // then - the reader reads the new record instead of the deleted one
+    assertThat(reader.hasNext()).isTrue();
+    final var record = reader.next();
+    assertThat(record.index()).isEqualTo(deletedIndex);
+    assertThat(BufferUtil.bufferAsString(record.data())).isEqualTo("bbbb");
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldReadRecordsWrittenAfterTheSegmentAReaderReadFromIsDeleted() {
+    // given - a reader that read a record from a segment which is deleted afterwards
+    journal = openJournal(1);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry());
+    reader.next();
+    reader.next();
+
+    // when
+    journal.deleteAfter(keptIndex);
+    final var newRecord = journal.append(2, journalFactory.entry());
+
+    // then
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().index()).isEqualTo(newRecord.index());
+  }
+
+  @Test
   void shouldCompactUpToStartOfSegment() {
     final int entryPerSegment = 2;
     journal = openJournal(entryPerSegment);
@@ -1102,6 +1160,11 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
+  }
+
+  /** An entry with custom data, of the same size as {@link TestJournalFactory#entry()}. */
+  private DirectBufferWriter entry(final String data) {
+    return new DirectBufferWriter(BufferUtil.wrapString(data));
   }
 
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {
