@@ -41,6 +41,7 @@ import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.similarity.SemanticSimilarityConfigResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
@@ -187,7 +188,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
-    dataSource = new CamundaDataSource(client, testCaseStartTime);
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+    final int queryPageLimit =
+        runtimeConfiguration
+            .getAssertion()
+            .getQueryPageLimit()
+            .orElse(CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
+    dataSource = new CamundaDataSource(client, testCaseStartTime, queryPageLimit);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
