@@ -145,6 +145,10 @@ final class PhysicalTenantExporterDeleteIT {
   private void restartWithoutExporter() {
     broker.stop();
     broker.withRecordingExporter(false);
+    // tenant A's exporters-assigned[0]=recordingExporter (set by TENANTS.configure() while the
+    // exporter was still present) would otherwise go stale and trip the unknown-exporter-id check
+    // now that the exporter is gone from the root catalog
+    TENANTS.refreshExportersAssigned(broker);
     broker.start();
 
     await("every physical tenant reports the exporter as CONFIG_NOT_FOUND")

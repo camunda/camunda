@@ -28,11 +28,12 @@ import org.springframework.mock.env.MockEnvironment;
  * Covers the step-1 rows of the ADR-0008 §2 decision table (args merge, class-divergence, and
  * autoconfigured tuning) against the test-only mergers registered via {@code
  * src/test/resources/META-INF/services} (real-merger end-to-end coverage lives in {@code
- * PhysicalTenantExporterConfigIT}), plus the dormant step-2 {@link
- * PhysicalTenantExporterConfigurations#narrowToAssigned}. The step-2 mandatory-explicit and
- * boot-error validations live in {@link PhysicalTenantExporterAssignedValidationTest}. Both step-2
- * halves are dormant (not wired into {@link PhysicalTenantResolver}) pending #56652; see {@link
- * PhysicalTenantExporterConfigurations}.
+ * PhysicalTenantExporterConfigIT}), plus the {@link
+ * PhysicalTenantExporterConfigurations#narrowToAssigned} narrowing step. The mandatory-explicit and
+ * boot-error validations live in {@link PhysicalTenantExporterAssignedValidationTest}. Both are
+ * wired into {@link PhysicalTenantResolver}, so every test that resolves via {@link
+ * #resolveTenantA()} and expects a generic exporter entry to survive must assign it explicitly; see
+ * {@link PhysicalTenantExporterConfigurations}.
  */
 class PhysicalTenantExporterConfigurationsTest {
 
@@ -73,6 +74,7 @@ class PhysicalTenantExporterConfigurationsTest {
     // given — a root catalog entry the tenant never mentions
     properties.put("camunda.data.exporters.untouched.class-name", "com.acme.CustomExporter");
     properties.put("camunda.data.exporters.untouched.args.a", 1);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "untouched");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("untouched");
@@ -91,6 +93,7 @@ class PhysicalTenantExporterConfigurationsTest {
     properties.put("camunda.data.exporters.mergeable.args.a", 1);
     properties.put("camunda.data.exporters.mergeable.args.b", 2);
     properties.put("camunda.physical-tenants.tenanta.data.exporters.mergeable.args.b", 99);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "mergeable");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("mergeable");
@@ -111,6 +114,7 @@ class PhysicalTenantExporterConfigurationsTest {
     properties.put("camunda.data.exporters.custom.args.a", 1);
     properties.put("camunda.data.exporters.custom.args.b", 2);
     properties.put("camunda.physical-tenants.tenanta.data.exporters.custom.args.b", 99);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "custom");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("custom");
@@ -130,6 +134,7 @@ class PhysicalTenantExporterConfigurationsTest {
         "camunda.physical-tenants.tenanta.data.exporters.custom.class-name",
         "com.acme.CustomExporter");
     properties.put("camunda.physical-tenants.tenanta.data.exporters.custom.args.b", 5);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "custom");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("custom");
@@ -178,6 +183,7 @@ class PhysicalTenantExporterConfigurationsTest {
         "camunda.physical-tenants.tenanta.data.exporters.private.class-name",
         "com.acme.TenantOnlyExporter");
     properties.put("camunda.physical-tenants.tenanta.data.exporters.private.args.x", "y");
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "private");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("private");
@@ -257,6 +263,7 @@ class PhysicalTenantExporterConfigurationsTest {
     properties.put(
         "camunda.data.exporters.mergeable.class-name", TestExporterConfigMergers.MERGEABLE_CLASS);
     properties.put("camunda.data.exporters.mergeable.args.a", 1);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "mergeable");
 
     // when
     final Exporter resolved = resolveTenantA().getData().getExporters().get("mergeable");

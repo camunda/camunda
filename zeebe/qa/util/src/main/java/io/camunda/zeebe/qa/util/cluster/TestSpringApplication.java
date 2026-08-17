@@ -264,14 +264,21 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    * camunda.physical-tenants.<tenantId>.*} properties are no longer flattened at the next {@link
    * #createSpringBuilder()} — simulating a physical tenant being removed from application
    * configuration. Since those properties are refreshable (see {@link #createSpringBuilder()}),
-   * they are also cleared from any properties already registered from a previous start. Does
-   * nothing if the tenant was never declared.
+   * they are also cleared from any properties already registered from a previous start. Also strips
+   * any {@code camunda.physical-tenants.<tenantId>.*} key set directly via {@link #withProperty}
+   * (e.g. an {@code exporters-assigned} manifest, which has no {@code Camunda} POJO field to carry
+   * it and so cannot be set via {@link #withPtConfig}) — otherwise such a key would survive removal
+   * and make the tenant still look "explicitly configured" to {@link
+   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver#of}. Does nothing if the tenant
+   * was never declared.
    *
    * @param tenantId the physical tenant id to remove
    * @return itself for chaining
    */
   public T removePtConfig(final String tenantId) {
     ptConfigs.remove(tenantId);
+    final String prefix = "camunda.physical-tenants." + tenantId + ".";
+    propertyOverrides.keySet().removeIf(key -> key.startsWith(prefix));
     return self();
   }
 

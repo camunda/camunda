@@ -63,6 +63,7 @@ class ExporterArgsOverlayCharacterizationTest {
     properties.put("camunda.data.exporters.myexp.args.a", 1);
     properties.put("camunda.data.exporters.myexp.args.b", 2);
     properties.put("camunda.physical-tenants.tenanta.data.exporters.myexp.args.b", 99);
+    properties.put("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "myexp");
     // distinct storage location so the tenant does not collide with the synthesized 'default'
     // (cross-tenant isolation now runs inside PhysicalTenantResolver.of())
     properties.put(
