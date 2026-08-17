@@ -54,6 +54,7 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationWarningItem;
+import io.camunda.gateway.protocol.model.ExpressionSecretReferenceItem;
 import io.camunda.gateway.protocol.model.GroupCreateResult;
 import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
@@ -928,6 +929,15 @@ public final class ResponseMapper {
                 .map(
                     warning ->
                         ExpressionEvaluationWarningItem.Builder.create().message(warning).build())
+                .toList())
+        .referencedSecrets(
+            expressionRecord.getReferencedSecrets().stream()
+                .map(
+                    reference ->
+                        ExpressionSecretReferenceItem.Builder.create()
+                            .storeId(reference.getStoreId())
+                            .secretName(reference.getSecretReference())
+                            .build())
                 .toList())
         .build();
   }
