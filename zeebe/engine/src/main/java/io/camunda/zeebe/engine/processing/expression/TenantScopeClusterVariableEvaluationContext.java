@@ -13,22 +13,27 @@ import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class TenantScopeClusterVariableEvaluationContext implements ScopedEvaluationContext {
 
   private final ClusterVariableState clusterVariableState;
   private final String tenantId;
+  private final @Nullable ReferencedSecretCollector referencedSecretCollector;
 
   public TenantScopeClusterVariableEvaluationContext(
-      final ClusterVariableState clusterVariableState) {
-    this.clusterVariableState = clusterVariableState;
-    tenantId = "";
+      final ClusterVariableState clusterVariableState,
+      final @Nullable ReferencedSecretCollector referencedSecretCollector) {
+    this(clusterVariableState, "", referencedSecretCollector);
   }
 
-  public TenantScopeClusterVariableEvaluationContext(
-      final ClusterVariableState clusterVariableState, final String tenantId) {
+  private TenantScopeClusterVariableEvaluationContext(
+      final ClusterVariableState clusterVariableState,
+      final String tenantId,
+      final @Nullable ReferencedSecretCollector referencedSecretCollector) {
     this.clusterVariableState = clusterVariableState;
     this.tenantId = tenantId;
+    this.referencedSecretCollector = referencedSecretCollector;
   }
 
   @Override
@@ -36,13 +41,22 @@ public final class TenantScopeClusterVariableEvaluationContext implements Scoped
     return Either.left(
         clusterVariableState
             .getTenantScopedClusterVariable(BufferUtil.wrapString(variableName), tenantId)
+            .filter(instance -> instance.getValueBuffer().capacity() > 0)
+            .map(this::recordSecretReferences)
             .map(ClusterVariableInstance::getValueBuffer)
-            .filter(value -> value.capacity() > 0)
             .orElse(null));
   }
 
   @Override
   public ScopedEvaluationContext tenantScoped(final String tenantId) {
-    return new TenantScopeClusterVariableEvaluationContext(clusterVariableState, tenantId);
+    return new TenantScopeClusterVariableEvaluationContext(
+        clusterVariableState, tenantId, referencedSecretCollector);
+  }
+
+  private ClusterVariableInstance recordSecretReferences(final ClusterVariableInstance instance) {
+    if (referencedSecretCollector != null) {
+      referencedSecretCollector.addClusterVariableReferences(instance);
+    }
+    return instance;
   }
 }

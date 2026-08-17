@@ -14,6 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ReferencedSecretCollector;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.SecretReferenceEvaluationContext;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
@@ -101,9 +102,23 @@ public final class ExpressionProcessor {
    * @see SecretReferenceEvaluationContext
    */
   public ExpressionProcessor withSecretReferenceContext() {
+    return withSecretReferenceContext(null);
+  }
+
+  /**
+   * Like {@link #withSecretReferenceContext()}, but additionally records into {@code collector}
+   * every {@code camunda.secrets.<name>} reference resolved directly from the expression, so a
+   * caller (e.g. the expression endpoint) can report which secrets the evaluation touched.
+   *
+   * @param collector the collector to record referenced secrets into, or {@code null} to record
+   *     nothing
+   * @return a new secret-aware processor; this one is left unchanged
+   * @see SecretReferenceEvaluationContext
+   */
+  public ExpressionProcessor withSecretReferenceContext(final ReferencedSecretCollector collector) {
     return new ExpressionProcessor(
         expressionLanguage,
-        new SecretReferenceEvaluationContext(scopedEvaluationContext),
+        new SecretReferenceEvaluationContext(scopedEvaluationContext, collector),
         expressionEvaluationTimeout);
   }
 
