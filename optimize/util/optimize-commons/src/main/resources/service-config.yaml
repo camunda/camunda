@@ -168,6 +168,19 @@ zeebe:
     # using the sequence query
     maxEmptyPagesToImport: ${CAMUNDA_OPTIMIZE_ZEEBE_IMPORT_MAX_EMPTY_PAGES_TO_IMPORT:10}
 
+jobRegistry:
+  dispatcher:
+    # Toggles whether this Optimize instance dispatches queued job registry entries. Only one
+    # instance per cluster should have this enabled.
+    enabled: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_ENABLED:false}
+    # Delay, in seconds, before the dispatcher polls again for queued job registry entries,
+    # counted from the completion of the previous poll
+    intervalSeconds: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_INTERVAL_SECONDS:30}
+    # The maximum number of queued entries read and dispatched per poll cycle
+    batchSize: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_BATCH_SIZE:4}
+    # The number of threads used to dispatch entries of a batch to their handlers concurrently
+    threadCount: ${CAMUNDA_OPTIMIZE_JOB_REGISTRY_DISPATCHER_THREAD_COUNT:2}
+
 import:
   data:
     activity-instance:
