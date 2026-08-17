@@ -47,6 +47,10 @@ message ClusterScaleRequest {
   optional uint32 newReplicationFactor = 3;
   bool dryRun = 4;
   optional string zone = 5;
+  // The physical tenant newPartitionCount applies to; the default tenant if not set. Must not be
+  // set together with newClusterSize, which changes cluster membership, nor with
+  // newReplicationFactor, which is a cluster-wide setting; neither has a tenant dimension.
+  optional string physicalTenantId = 6;
 }
 
 message ClusterPatchRequest {
@@ -55,6 +59,10 @@ message ClusterPatchRequest {
   optional uint32 newPartitionCount = 3;
   optional uint32 newReplicationFactor = 4;
   bool dryRun = 5;
+  // The physical tenant newPartitionCount applies to; the default tenant if not set. Must not be
+  // set together with membersToAdd/membersToRemove, which change cluster membership, nor with
+  // newReplicationFactor, which is a cluster-wide setting; neither has a tenant dimension.
+  optional string physicalTenantId = 6;
 }
 
 message UpdateRoutingStateRequest{

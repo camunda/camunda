@@ -80,13 +80,24 @@ public record CurrentClusterConfiguration(
   }
 
   public int getClusterSize() {
-    return (int)
-        globalConfiguration.members().values().stream()
-            .filter(
-                brokerState ->
-                    brokerState.state() != BrokerState.State.LEFT
-                        && brokerState.state() != BrokerState.State.UNINITIALIZED)
-            .count();
+    return liveMembers().size();
+  }
+
+  /**
+   * The members eligible to host partitions: every broker known to the cluster except those in
+   * {@link BrokerState.State#LEFT} or {@link BrokerState.State#UNINITIALIZED}. Using the raw {@link
+   * #getMembers()} instead would let a decommissioned or not-yet-joined broker be picked as the
+   * target of a partition bootstrap or join, stalling the change once that operation can never
+   * complete.
+   */
+  public Set<MemberId> liveMembers() {
+    return globalConfiguration.members().entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().state() != BrokerState.State.LEFT
+                    && entry.getValue().state() != BrokerState.State.UNINITIALIZED)
+        .map(Entry::getKey)
+        .collect(Collectors.toSet());
   }
 
   public Optional<String> clusterId() {

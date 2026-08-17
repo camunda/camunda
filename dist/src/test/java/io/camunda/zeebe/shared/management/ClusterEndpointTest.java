@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.GetConfigurationChangesResponse;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
@@ -40,6 +43,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -413,6 +417,83 @@ final class ClusterEndpointTest {
       assertThat(body).isNotNull();
       assertThat(body.getChanges()).extracting(ConfigurationChange::getId).containsExactly(2L);
       verify(sender).getTopology();
+    }
+  }
+
+  @Nested
+  class PatchClusterEndpoint {
+
+    @Test
+    void shouldScaleTheGivenPhysicalTenant() {
+      // given
+      final var sender = senderAcceptingPatch();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), "tenant-a");
+
+      // then
+      verify(sender)
+          .patchCluster(
+              new ClusterPatchRequest(
+                  Set.of(),
+                  Set.of(),
+                  Optional.of(3),
+                  Optional.empty(),
+                  Optional.of("tenant-a"),
+                  false));
+    }
+
+    @Test
+    void shouldScaleTheDefaultPhysicalTenantWhenParameterIsAbsent() {
+      // given
+      final var sender = senderAcceptingPatch();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), null);
+
+      // then — an absent tenant is not passed on at all, which the transformer reads as the
+      // default tenant
+      verify(sender)
+          .patchCluster(
+              new ClusterPatchRequest(
+                  Set.of(), Set.of(), Optional.of(3), Optional.empty(), Optional.empty(), false));
+    }
+
+    @Test
+    void shouldTreatABlankPhysicalTenantAsAbsent() {
+      // given
+      final var sender = senderAcceptingPatch();
+      final var endpoint = new ClusterEndpoint(sender);
+
+      // when
+      endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), "  ");
+
+      // then
+      verify(sender)
+          .patchCluster(
+              new ClusterPatchRequest(
+                  Set.of(), Set.of(), Optional.of(3), Optional.empty(), Optional.empty(), false));
+    }
+
+    private ClusterConfigPatchRequest partitionCountRequest(final int count) {
+      return new ClusterConfigPatchRequest()
+          .partitions(new ClusterConfigPatchRequestPartitions().count(count));
+    }
+
+    private ClusterConfigurationManagementRequestSender senderAcceptingPatch() {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.patchCluster(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  Either.right(
+                      new ClusterConfigurationChangeResponse(
+                          1L,
+                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                              Map.of(), Map.of(), List.of()),
+                          null))));
+      return sender;
     }
   }
 }
