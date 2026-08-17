@@ -18,6 +18,8 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ProcessDrainingHandler;
+import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -373,6 +375,46 @@ public class DefaultExporterResourceProviderTest {
                 .isEqualTo(expectedValueType);
           }
         });
+  }
+
+  @Test
+  void shouldRegisterProcessLifecycleHandlersOnlyOnDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
+  }
+
+  @Test
+  void shouldNotRegisterProcessLifecycleHandlersOnNonDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION + 1),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
 
   @Test
