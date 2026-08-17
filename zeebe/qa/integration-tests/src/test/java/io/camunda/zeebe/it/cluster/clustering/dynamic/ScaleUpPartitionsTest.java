@@ -33,6 +33,8 @@ import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractStartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -160,6 +163,7 @@ public class ScaleUpPartitionsTest {
   @Test
   void shouldScaleWhenGlobalStateIsLarge() {
     // given
+    final int totalCount = 1000;
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
 
@@ -184,10 +188,9 @@ public class ScaleUpPartitionsTest {
 
     processDefinitionId.forEach(process -> deployProcessModel(camundaClient, process, false));
 
-    // Create a total of 1000 users in batch of 100
-    for (int b = 0; b < 10; b++) {
+    final int batches = totalCount / 100;
+    for (int b = 0; b < batches; b++) {
       final var batchId = b;
-      // create users in batches of 10 concurrently
       final var futures =
           IntStream.range(0, 100)
               .mapToObj(i -> createGroupWithIdx(i * 100 + batchId))
@@ -195,6 +198,8 @@ public class ScaleUpPartitionsTest {
               .toArray(CompletableFuture[]::new);
       CompletableFuture.allOf(futures).join();
     }
+
+    awaitAllGroupsDistributed(totalCount);
 
     // when
     executeScaling(desiredPartitionCount);
@@ -217,6 +222,18 @@ public class ScaleUpPartitionsTest {
         .name("Group#" + userIdx)
         .send()
         .toCompletableFuture();
+  }
+
+  private void awaitAllGroupsDistributed(final int count) {
+    RecordingExporter.await(Duration.ofMinutes(2))
+        .until(
+            () ->
+                RecordingExporter.commandDistributionRecords()
+                        .withDistributionIntent(GroupIntent.CREATE)
+                        .withIntent(CommandDistributionIntent.FINISHED)
+                        .limit(count)
+                        .count()
+                    == count);
   }
 
   @ParameterizedTest
@@ -397,8 +414,7 @@ public class ScaleUpPartitionsTest {
   }
 
   @Test
-  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup()
-      throws IOException, InterruptedException {
+  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup() throws IOException {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
