@@ -30,6 +30,7 @@ class SegmentedJournalReader implements JournalReader {
   private Segment currentSegment;
   private SegmentReader currentReader;
   private final JournalMetrics metrics;
+  private final boolean readsConcurrently;
 
   /**
    * The index a truncation deleted after, set by the truncating thread and applied by this reader's
@@ -38,10 +39,19 @@ class SegmentedJournalReader implements JournalReader {
    */
   private volatile long pendingTruncationIndex = NO_TRUNCATION;
 
-  SegmentedJournalReader(final SegmentedJournal journal, final JournalMetrics journalMetrics) {
+  SegmentedJournalReader(
+      final SegmentedJournal journal,
+      final JournalMetrics journalMetrics,
+      final boolean readsConcurrently) {
     this.journal = journal;
     metrics = journalMetrics;
+    this.readsConcurrently = readsConcurrently;
     initialize();
+  }
+
+  /** Whether this reader is read by another thread than the one writing to the journal. */
+  boolean readsConcurrently() {
+    return readsConcurrently;
   }
 
   /** Initializes the reader to the given index. */
