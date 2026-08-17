@@ -252,7 +252,9 @@ final class PerTenantSchemaInitializationTest {
 
   @Test
   void shouldStillMakeOneAttemptWhenRetriesAreConfiguredAway() {
-    // given - a max-retries an operator can set but that means nothing sensible
+    // given - a max-retries an operator can set but that means nothing sensible. resilience4j
+    // rejected it outright while it owned this bound; the loop that replaced it consults the bound
+    // only after a failure, so the guarantee to pin is that the tenant still gets its attempt.
     final var none = fastRetry();
     none.setMaxRetries(0);
     final var attempts = new AtomicInteger();
@@ -267,7 +269,7 @@ final class PerTenantSchemaInitializationTest {
       initialization.start();
       initialization.awaitGate();
 
-      // then - the tenant is initialized rather than degraded before it ever tried
+      // then - the tenant is initialized, on the one attempt the bound cannot take away from it
       assertThat(attempts).hasValue(1);
       assertThat(initialization.isInitialized(TENANT_A)).isTrue();
     }

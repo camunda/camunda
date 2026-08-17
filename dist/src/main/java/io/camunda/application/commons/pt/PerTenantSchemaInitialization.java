@@ -227,9 +227,11 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
       // read inside the try: everything that can throw — an unusable retry configuration included
       // — has to be covered by the finally below, or this tenant would keep the gate shut forever
       final RetryConfiguration retry = retryConfig.apply(physicalTenantId);
-      // Floored at one attempt. resilience4j's RetryConfig used to reject a non-positive value
-      // outright; without the floor, max-retries: 0 would mean "give up before trying", quietly
-      // degrading the tenant for the lifetime of the node.
+      // Floored at one attempt so that the give-up log below can only ever report a count the
+      // tenant actually made. The bound is read after a failure, never before the first attempt, so
+      // a configured 0 or a negative value costs the tenant no attempt either way — which is also
+      // why this is floored here rather than in RetryConfiguration, where a non-positive value is
+      // load-bearing for other consumers (PingHubRunner rejects it as invalid configuration).
       final int maxAttempts = Math.max(1, retry.getMaxRetries());
       final var backoff =
           IntervalFunction.ofExponentialRandomBackoff(
@@ -305,7 +307,15 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
     }
   }
 
-  /** Records a tenant's first outcome, whatever that outcome was. */
+  /**
+   * Records a tenant's first outcome, whatever that outcome was.
+   *
+   * <p>Settling on its own never opens the gate onto an unserviceable node, which is why a failing
+   * tenant may settle before its failure has been classified: settling leaves {@code trying} set,
+   * so {@link #isGateOpen()} can only be satisfied by some <em>other</em> tenant being ready — and
+   * a ready tenant is precisely the case {@link #failIfEveryTenantFailedTerminally()} declines to
+   * abort. The order that does matter is {@link #recordTerminal} before {@link #stopTrying}.
+   */
   private void settle(final TenantState state) {
     gateLock.lock();
     try {

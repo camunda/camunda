@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -39,6 +40,13 @@ public class SearchEngineSchemaInitializer
   private final MeterRegistry meterRegistry;
   private final boolean holdsStartup;
   private final PerTenantSchemaInitialization initialization;
+
+  /**
+   * One entry per tenant that currently holds a client: added by the tenant's own task on its first
+   * attempt, removed when the schema is applied or when the node shuts down. A tenant that keeps
+   * failing keeps its entry, and its client, for its next attempt.
+   */
+  private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
 
   /**
    * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
@@ -93,7 +101,11 @@ public class SearchEngineSchemaInitializer
 
   @Override
   public void destroy() {
+    // Stop the tasks before taking their clients away, so that a task still mid-attempt fails
+    // against a closed client only after it has already been told to stop, where the failure is
+    // logged as a shutdown and not as a degraded tenant.
     initialization.close();
+    clientsByTenant.keySet().forEach(this::releaseClientOf);
   }
 
   @Override
@@ -113,7 +125,15 @@ public class SearchEngineSchemaInitializer
     return !configs.isEmpty() && configs.keySet().stream().allMatch(this::isInitialized);
   }
 
-  /** One attempt at applying a tenant's schema. Any failure propagates to the retry loop. */
+  /**
+   * One attempt at applying a tenant's schema. Any failure propagates to the retry loop.
+   *
+   * <p>The client is built once per tenant and reused across that tenant's attempts, not rebuilt on
+   * each one: building it opens a connection pool and its I/O threads, and a tenant whose storage
+   * is down retries for as long as the node runs, so per-attempt rebuilding would churn both every
+   * backoff interval indefinitely. It is released as soon as the schema is applied, which is the
+   * only point at which this tenant has no further use for it.
+   */
   @VisibleForTesting
   void initializeTenant(final String physicalTenantId) {
     final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
@@ -125,7 +145,8 @@ public class SearchEngineSchemaInitializer
           "No index descriptors are configured for physical tenant '" + physicalTenantId + "'");
     }
 
-    final ClientAdapter clientAdapter = newClientAdapter(configuration);
+    final ClientAdapter clientAdapter =
+        clientsByTenant.computeIfAbsent(physicalTenantId, id -> newClientAdapter(configuration));
     try (final SchemaManager schemaManager =
         new SchemaManager(
             clientAdapter.getSearchEngineClient(),
@@ -135,7 +156,18 @@ public class SearchEngineSchemaInitializer
             clientAdapter.objectMapper(),
             new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startupOnce();
-    } finally {
+    }
+    releaseClientOf(physicalTenantId);
+  }
+
+  /**
+   * Releases a tenant's client, if it still holds one. Removing before closing is what makes this
+   * safe to call from the tenant's own task and from {@link #destroy()} concurrently: whichever
+   * gets the adapter closes it, and the other gets nothing.
+   */
+  private void releaseClientOf(final String physicalTenantId) {
+    final ClientAdapter clientAdapter = clientsByTenant.remove(physicalTenantId);
+    if (clientAdapter != null) {
       closeQuietly(clientAdapter, physicalTenantId);
     }
   }

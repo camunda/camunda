@@ -303,9 +303,8 @@ class SearchEngineSchemaInitializerTest {
         UNREACHABLE_URL,
         "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
         TENANT_B,
-        // a declared tenant with authorization on would have to bring its own initialization block
-        "camunda.physical-tenants.tenantb.security.authorization.enabled",
-        "false");
+        "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+        "tenantb-admin");
   }
 
   private static Map<String, IndexDescriptors> descriptorsFor(
@@ -331,5 +330,4 @@ class SearchEngineSchemaInitializerTest {
                       .schemaManager(schemaManager));
         });
   }
-}
 }
