@@ -5,22 +5,11 @@
 #   ./mvnw test -pl configuration -Dtest=PhysicalTenantOverridablePropertiesGoldenTest -Dgolden.update=true -DskipTests=false -Dquickly
 # Adding a new property forces a deliberate decision: keep it overridable (here) or add it
 # to the deny-list in PhysicalTenantOverridePolicyValidation (moves it to the non-overridable file).
-api.grpc.address
-api.grpc.interceptors
-api.grpc.management-threads
-api.grpc.min-keep-alive-interval
-api.grpc.port
-api.grpc.ssl
-api.long-polling.enabled
-api.long-polling.min-empty-responses
-api.long-polling.probe-timeout
-api.long-polling.timeout
 api.rest.cluster-variable.max-metadata-size
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
 cluster.global-listeners.user-task
 cluster.partition-count
-cluster.replication-factor
 data.audit-log.client.categories
 data.audit-log.client.excludes
 data.audit-log.enabled
@@ -75,11 +64,6 @@ data.primary-storage.backup.s3.support-legacy-md5
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
 data.primary-storage.backup.write-timeout
-data.primary-storage.directory
-data.primary-storage.disk.free-space.processing
-data.primary-storage.disk.free-space.replication
-data.primary-storage.disk.monitoring-enabled
-data.primary-storage.disk.monitoring-interval
 data.primary-storage.log-stream.log-index-density
 data.primary-storage.log-stream.log-segment-size
 data.primary-storage.rocks-db.access-metrics
@@ -87,15 +71,11 @@ data.primary-storage.rocks-db.column-family-options
 data.primary-storage.rocks-db.io-rate-bytes-per-second
 data.primary-storage.rocks-db.max-open-files
 data.primary-storage.rocks-db.max-write-buffer-number
-data.primary-storage.rocks-db.memory-allocation-strategy
-data.primary-storage.rocks-db.memory-fraction
-data.primary-storage.rocks-db.memory-limit
 data.primary-storage.rocks-db.min-write-buffer-number-to-merge
 data.primary-storage.rocks-db.sst-partitioning-enabled
 data.primary-storage.rocks-db.statistics-enabled
 data.primary-storage.rocks-db.wal-disabled
 data.primary-storage.runtime-directory
-data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.autoconfigure-camunda-exporter
 data.secondary-storage.elasticsearch.backup.database-name
 data.secondary-storage.elasticsearch.batch-operation-cache.cache-name
