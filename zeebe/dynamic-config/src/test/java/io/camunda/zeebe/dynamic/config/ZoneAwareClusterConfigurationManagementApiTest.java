@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.api;
+package io.camunda.zeebe.dynamic.config;
 
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +70,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
             .updateMember(
                 ZONE_A_1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
             .setPartitionDistributorConfig(new ZoneAwareConfig(DUAL_REGION));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
     final var request = new ForceZoneRemoveRequest(ZONE_A, false);
 
     // when
@@ -101,7 +101,7 @@ final class ZoneAwareClusterConfigurationManagementApiTest
                 ZONE_A_1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .setPartitionDistributorConfig(
                 new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1))));
-    recordingCoordinator.setCurrentTopology(currentTopology);
+    setCurrentTopology(currentTopology);
     final var request = new AddZoneRequest(ZONE_B, 1, 2, Set.of(ZONE_B_0), false);
 
     // when
