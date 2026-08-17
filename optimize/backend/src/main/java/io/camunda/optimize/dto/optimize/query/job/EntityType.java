@@ -7,6 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.query.job;
 
-public enum TargetEntityType {
+public enum EntityType {
   PROCESS_DEFINITION
 }

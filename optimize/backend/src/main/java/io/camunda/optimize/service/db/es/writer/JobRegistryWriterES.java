@@ -14,11 +14,11 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryUpdateDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
@@ -43,14 +43,13 @@ public class JobRegistryWriterES implements JobRegistryWriter {
 
   @Override
   public JobRegistryEntryDto createJobEntry(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
-    final JobRegistryEntryDto entry =
-        new JobRegistryEntryDto(jobType, targetEntityType, targetEntityId);
+      final JobType jobType, final EntityType entityType, final String entityId) {
+    final JobRegistryEntryDto entry = new JobRegistryEntryDto(jobType, entityType, entityId);
     LOG.debug(
         "Creating job registry entry with id [{}] for [{}] target [{}].",
         entry.getId(),
         jobType,
-        targetEntityId);
+        entityId);
     try {
       final IndexResponse indexResponse =
           esClient.index(
