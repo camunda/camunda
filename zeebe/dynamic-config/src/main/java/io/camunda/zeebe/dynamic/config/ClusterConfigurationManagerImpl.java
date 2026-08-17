@@ -668,12 +668,25 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   /**
    * Merges a {@link CurrentClusterConfiguration} received via gossip into the local one. If the
    * merge changes the local configuration, it is persisted, re-gossiped, and local operation
-   * application is triggered. Mirrors the legacy {@code onGossipReceived} merge behaviour.
+   * application is triggered. Mirrors the legacy {@code onGossipReceived} merge behaviour,
+   * including leaving local state unchanged until {@link #start} has completed, to avoid a race
+   * between the configuration initializer and a concurrently received gossip update.
    */
   void onGossipReceivedCurrent(final CurrentClusterConfiguration receivedConfiguration) {
     executor.run(
         () -> {
           if (receivedConfiguration == null) {
+            return;
+          }
+          if (!initialized) {
+            LOG.trace(
+                "Received configuration {} before ClusterConfigurationManager is initialized.",
+                receivedConfiguration);
+            // When not started, do not update the local configuration. This is to avoid any race
+            // condition between FileInitializer and concurrently received configuration via gossip.
+            if (currentConfigurationGossiper != null) {
+              currentConfigurationGossiper.accept(receivedConfiguration);
+            }
             return;
           }
           try {

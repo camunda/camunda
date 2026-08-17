@@ -335,6 +335,94 @@ final class NewModelManagementApiEndpointsTest {
   }
 
   @Test
+  void shouldApplyScaleClusterToOnlyTheRequestedPhysicalTenant() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — scale only tenant-b's partition count up to 2
+    handler
+        .scaleCluster(
+            new ClusterScaleRequest(
+                Optional.empty(),
+                Optional.of(2),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(TENANT_B),
+                false))
+        .join();
+
+    // then — only tenant-b's partition count changed; the default group is untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(2);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyScaleClusterToOnlyTheDefaultTenantWhenUnscoped() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — no physicalTenant parameter is given
+    handler
+        .scaleCluster(
+            new ClusterScaleRequest(
+                Optional.empty(), Optional.of(2), Optional.empty(), Optional.empty(), false))
+        .join();
+
+    // then — only the default tenant's partition count changed
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(2);
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyPatchClusterToOnlyTheRequestedPhysicalTenant() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — patch only tenant-b's partition count up to 2
+    handler
+        .patchCluster(
+            new ClusterPatchRequest(
+                Set.of(), Set.of(), Optional.of(2), Optional.empty(), Optional.of(TENANT_B), false))
+        .join();
+
+    // then — only tenant-b's partition count changed; the default group is untouched
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(2);
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldApplyPatchClusterToOnlyTheDefaultTenantWhenUnscoped() {
+    // given — both physical tenants start with 1 partition
+    wireTwoPhysicalTenants();
+    seedRoutingState(1, CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_B);
+
+    // when — no physicalTenant parameter is given
+    handler
+        .patchCluster(
+            new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(2), Optional.empty(), false))
+        .join();
+
+    // then — only the default tenant's partition count changed
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).partitionCount())
+        .isEqualTo(2);
+    assertThat(config.partitionGroup(TENANT_B).partitionCount()).isEqualTo(1);
+  }
+
+  @Test
   void shouldPlanForceScaleDown() {
     // given
     wire(fourMemberTwoPartitionCluster());
@@ -598,6 +686,29 @@ final class NewModelManagementApiEndpointsTest {
                             Optional.empty(),
                             Optional.empty())),
                     current.phasedChangeState()))
+        .join();
+  }
+
+  /**
+   * Seeds a routing state on each named group: {@code StartPartitionScaleUpApplier} refuses to
+   * scale up a group whose routing state is not initialized yet, so the scale-up tests need it
+   * seeded on both groups regardless of which one is actually targeted.
+   */
+  private void seedRoutingState(final int partitionCount, final String... groupIds) {
+    manager
+        .updateMultiConfiguration(
+            current -> {
+              var updated = current;
+              for (final var groupId : groupIds) {
+                updated =
+                    updated.updatePartitionGroupConfig(
+                        groupId,
+                        group ->
+                            group.setRoutingState(
+                                RoutingState.initializeWithPartitionCount(partitionCount)));
+              }
+              return updated;
+            })
         .join();
   }
 

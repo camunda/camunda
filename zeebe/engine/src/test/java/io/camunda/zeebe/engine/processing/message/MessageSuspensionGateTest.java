@@ -67,7 +67,7 @@ public final class MessageSuspensionGateTest {
   @Test
   public void shouldRejectMessageCorrelateWhileResuming() {
     // given - an instance waiting on a message catch event, with the RESUMING marker seeded
-    // directly (draining is implemented in a follow-up issue)
+    // directly to isolate the gate from the drain that puts the instance into that state
     final String processId = Strings.newRandomValidBpmnId();
     final String messageName = Strings.newRandomValidBpmnId();
     final String correlationKey = Strings.newRandomValidBpmnId();

@@ -44,14 +44,9 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-// @types/react is v19, which types `inert` as a boolean, but the React 18
-// runtime drops boolean values for it and only renders the string form.
-// Passing `true` here would silently produce no attribute at all.
-const inertWhileDimmed = '' as unknown as boolean;
-
 const DimmableResults = styled.div.attrs<{$dimmed: boolean}>(({$dimmed}) => ({
   'data-testid': 'filtered-results',
-  inert: $dimmed ? inertWhileDimmed : undefined,
+  inert: $dimmed || undefined,
 }))<{$dimmed: boolean}>`
   display: flex;
   flex-direction: column;

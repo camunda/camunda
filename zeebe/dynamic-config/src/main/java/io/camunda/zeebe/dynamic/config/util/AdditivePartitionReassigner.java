@@ -89,12 +89,15 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
     final List<PartitionId> sortedPartitionIds =
         targetPartitionIds.stream().distinct().sorted().toList();
 
+    final Set<String> activeGroupIds = currentConfiguration.activePartitionGroups().keySet();
+
     final Map<MemberId, Integer> replicaCountByMember = new HashMap<>();
     final Map<MemberId, Integer> leaderCountByMember = new HashMap<>();
     final var result =
         generateAssignmentForNewPartitions(
             sortedPartitionIds,
             distributionByGroup,
+            activeGroupIds,
             replicaCountByMember,
             leaderCountByMember,
             currentById,
@@ -114,15 +117,20 @@ public final class AdditivePartitionReassigner implements PartitionReassigner {
   private static Assignment generateAssignmentForNewPartitions(
       final List<PartitionId> sortedPartitionIds,
       final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Set<String> activeGroupIds,
       final Map<MemberId, Integer> replicaCountByMember,
       final Map<MemberId, Integer> leaderCountByMember,
       final Map<PartitionId, PartitionMetadata> currentById,
       final List<MemberId> sortedMembers,
       final int replicationFactor) {
-    distributionByGroup
-        .values()
+    // A disabled tenant's partitions are not actually running on any broker, so they must not
+    // count as load when deciding where to place a new tenant's partitions — but they still need
+    // to appear in distributionByGroup/currentById so they are correctly left untouched rather
+    // than treated as removed.
+    distributionByGroup.entrySet().stream()
+        .filter(entry -> activeGroupIds.contains(entry.getKey()))
         .forEach(
-            partitions -> accumulateLoad(partitions, replicaCountByMember, leaderCountByMember));
+            entry -> accumulateLoad(entry.getValue(), replicaCountByMember, leaderCountByMember));
 
     final List<PartitionId> newPartitionIds = new ArrayList<>();
     final Map<PartitionId, Set<MemberId>> newMembersById = new LinkedHashMap<>();

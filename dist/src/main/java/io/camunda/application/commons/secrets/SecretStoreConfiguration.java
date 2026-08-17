@@ -15,9 +15,8 @@ import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.NoopSecretStore;
-import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.SecretCacheFactory;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
@@ -26,6 +25,10 @@ import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
 import io.camunda.zeebe.shared.management.ActorClockService;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -62,23 +65,45 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
 
+  /**
+   * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
+   *     forwarded to. Each tenant gets its own {@link MicrometerUtil#wrap wrapped registry} tagging
+   *     them with {@link PartitionKeyNames#PHYSICAL_TENANT}, as {@code RdbmsDataSources} does for
+   *     its pools — a store ID is unique only within a tenant, so without that tag two tenants
+   *     using the same store ID would register the same series twice: Micrometer hands back the
+   *     meter that already exists, and the two caches silently share it.
+   */
   @Bean
   public SecretStoreRegistries secretStoreRegistries(
-      final PhysicalTenantResolver resolver, final ActorClockService clockService) {
+      final PhysicalTenantResolver resolver,
+      final ActorClockService clockService,
+      final MeterRegistry meterRegistry) {
     final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
     // tracks every store successfully constructed across all tenants processed so far, so a
     // failure partway through (e.g. a later tenant's AWS store failing to build) can close
     // them instead of leaking their underlying clients/connections
     final List<SecretStore> created = new ArrayList<>();
+    // tracked for the same reason: a wrapped registry left behind by a failed startup would keep
+    // publishing the meters of a cache nothing resolves through
+    final List<MeterRegistry> tenantMeterRegistries = new ArrayList<>();
     final var timeSource = new ActorClockInstantSource(clockService);
     try {
       resolver
           .mapValues(Camunda::getSecrets)
           .forEach(
               (tenantId, secrets) ->
-                  registries.put(tenantId, buildRegistry(tenantId, secrets, created, timeSource)));
+                  registries.put(
+                      tenantId,
+                      buildRegistry(
+                          tenantId,
+                          secrets,
+                          created,
+                          timeSource,
+                          meterRegistry,
+                          tenantMeterRegistries)));
     } catch (final RuntimeException e) {
       closeAll(created);
+      tenantMeterRegistries.forEach(MicrometerUtil::close);
       throw e;
     }
     return new SecretStoreRegistries(Map.copyOf(registries));
@@ -88,7 +113,9 @@ public class SecretStoreConfiguration {
       final String tenantId,
       final Secrets secrets,
       final List<SecretStore> created,
-      final InstantSource timeSource) {
+      final InstantSource timeSource,
+      final MeterRegistry meterRegistry,
+      final List<MeterRegistry> tenantMeterRegistries) {
     final Stores config = secrets.getStores();
     // cap is one store total per tenant, counted across all store types combined
     final long totalStores =
@@ -128,32 +155,41 @@ public class SecretStoreConfiguration {
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
+      // the three-argument constructor leaves the default cache publishing nothing: the noop store
+      // caches nothing, so its hit rate would read 0% forever against no TTL or size to tune
+      return new SecretStoreRegistry(Map.copyOf(stores), Map.of(), timeSource);
     }
+    // wrapped only now that the tenant is known to have a store worth measuring, so a tenant that
+    // fails the rules above never leaves a registry behind either
+    final var tenantMeterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
+    tenantMeterRegistries.add(tenantMeterRegistry);
     return new SecretStoreRegistry(
-        Map.copyOf(stores), caches(stores.keySet(), cacheConfig, timeSource), timeSource);
+        Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
   }
 
   /**
-   * One cache per store, keyed by the same store IDs the registry is given. Building from the
-   * finalized store IDs with a fresh instance per ID is what keeps {@link SecretStoreRegistry} from
-   * rejecting the map: no cache for a store nothing is configured for, and no instance shared by
-   * two store IDs (a cache is keyed by the bare secret name, so a shared one would let one store's
-   * value answer for another store's secret of the same name).
+   * Builds one cache per store the registry wraps, at the configured ttl and max-size, publishing
+   * what it does under the store ID it was built for. A fresh instance per call is what the factory
+   * contract requires: a cache is keyed by the bare secret name, so an instance shared by two
+   * stores would let one store's value answer for another store's secret of the same name.
    *
-   * <p>The noop fallback store is covered too. It never caches anything — only a resolved value is
-   * cached and it resolves none — but covering it keeps this a single loop over the finalized store
-   * IDs, with no branch that could later leave a real store on the registry's own cache defaults
-   * instead of the configured ttl and max-size.
+   * <p>Handed to the registry rather than applied to a map of prebuilt caches so that a store that
+   * caches natively never reaches this at all. Only the registry knows it leaves such a store
+   * unwrapped, so building a cache for every configured store ID here would register the meters of
+   * a cache nothing ever resolves through — seven series stuck at zero, for a store {@link
+   * io.camunda.secretstore.SecretCacheMetricsDoc} promises emits none.
+   *
+   * <p>The registry is already wrapped per tenant, so the meters carry both the tenant and the
+   * store ID they belong to.
    */
-  private static Map<String, SecretCache> caches(
-      final Set<String> storeIds, final Secrets.Cache config, final InstantSource timeSource) {
-    final Map<String, SecretCache> caches = new LinkedHashMap<>();
-    storeIds.forEach(
-        storeId ->
-            caches.put(
-                storeId,
-                CaffeineSecretCache.create(config.getMaxSize(), config.getTtl(), timeSource)));
-    return Map.copyOf(caches);
+  private static SecretCacheFactory cacheFactory(
+      final Secrets.Cache config,
+      final InstantSource timeSource,
+      final MeterRegistry meterRegistry) {
+    return SecretCacheFactory.metered(
+        config.getMaxSize(), config.getTtl(), timeSource, meterRegistry);
   }
 
   private static void closeAll(final List<SecretStore> stores) {

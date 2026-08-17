@@ -283,7 +283,9 @@ public class ClusterEndpoint {
   public ResponseEntity<?> updateClusterConfiguration(
       @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestParam(defaultValue = "false") final boolean force,
-      @RequestBody final ClusterConfigPatchRequest request) {
+      @RequestBody final ClusterConfigPatchRequest request,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final Optional<String> tenant = Optional.ofNullable(physicalTenant).filter(s -> !s.isBlank());
     try {
       final var brokers = request.getBrokers();
       final var partitions = request.getPartitions();
@@ -314,11 +316,13 @@ public class ClusterEndpoint {
                 newPartitionCount,
                 newReplicationFactor,
                 Optional.ofNullable(request.getBrokers().getZone()).filter(z -> !z.isBlank()),
+                tenant,
                 dryRun);
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {
-        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+        return patchCluster(
+            dryRun, request, brokers, newPartitionCount, newReplicationFactor, tenant);
       }
 
     } catch (final Exception error) {
@@ -331,7 +335,8 @@ public class ClusterEndpoint {
       final ClusterConfigPatchRequest request,
       final ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Optional<String> physicalTenant) {
     final Set<MemberId> brokersToAdd =
         brokers != null
             ? request.getBrokers().getAdd().stream()
@@ -348,7 +353,12 @@ public class ClusterEndpoint {
             : Set.of();
     final var patchRequest =
         new ClusterPatchRequest(
-            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+            brokersToAdd,
+            brokersToRemove,
+            newPartitionCount,
+            newReplicationFactor,
+            physicalTenant,
+            dryRun);
     return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
   }
 

@@ -18,6 +18,8 @@ We use this process because:
 
 We want a fast feedback loop for any failed check on base branches that leads to short-term fixes and mid-term improvement work to prevent recurrence and increase reliability.
 
+By default we assume L1 severity for each CI incident created this way, until a preliminary investigation revealed that release-readiness and SNAPSHOT artifact generation are not impacted (can be downgraded to L2 then) - a reliability improvement is still needed.
+
 High-level steps:
 
 - Detect GHA job failures across `on: push` and `on: schedule` workflows on `main` and `stable/*`.
@@ -127,9 +129,12 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
 - Escalate to Legal when license terms or obligations require clarification
   - Open a Jira ticket directly from the corresponding FOSSA issue
   - e.g. [issue](https://app.fossa.com/projects/custom%2B50756%2Fcamunda%2Fcamunda%40single-app/refs/branch/main/a23e32efeadc45545ae17ce70ed3908e3b9c5f7a/issues/licensing/10591187?revisionScanId=91861742) & [Jira ticket](https://jira.camunda.com/browse/OSS-24)
-- Delegate to the responsible team medics when Engineering actions are needed: use either of the 4 medics:
-  - **@core-features-medic** (Operate, Optimize, Tasklist)
-  - **@zeebe-medic** (Zeebe Engine)
+- Delegate to the responsible team medics when Engineering actions are needed: use either of the below medics:
+  - **@pod-operate-medic** (Operate Frontend)
+  - **@pod-employee-engagement-tasklist-medic** (Tasklist Frontend)
+  - **@bi-pod-medic** (Optimize Frontend)
+  - **@core-features-medic** (Operate, Tasklist, Optimize Backend)
+  - **@distributed-systems-medic** (Zeebe Engine)
   - **@data-layer-medic** (Elasticsearch, Opensearch, RDBMS layer)
   - **@identity-medic** (Identity) to delegate.
   - *If you're not sure about which medic to choose, pick the one that makes most sense to you. They will reroute you to the right one.*
@@ -141,14 +146,16 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
 - Follow the [CI incident management process](#ci-incident-management).
 - Debug problems on GitHub Actions level yourself, involve the stakeholder teams (via their medic) or subject-matter experts for advice on technical details in certain sub-areas:
   - CI Knowledge Base: https://camunda.github.io/camunda/ci
-  - Core Features: **@core-features-medic** on Slack (e.g. issues with Operate, Optimize, Tasklist)
-  - Core Foundations:
-    - Data Layer: **@data-layer-medic** on Slack (e.g. issues with OpenSearch/Elasticsearch tests)
-    - Identity: **@identity-medic** on Slack (e.g. issues with Identity and Identity Management)
-    - Zeebe: **@zeebe-medic** on Slack
-  - Self-Managed:
-    - Distro **@distro-medic** on Slack (e.g. Helm chart integration tests)
-  - Infra: **@infra-medic** on Slack (e.g. self-hosted runner problems, Vault issues)
+  - Core Features: **@core-features-medic** on Slack (e.g. issues with backend/Java code of Operate, Optimize, Tasklist)
+  - Data Layer: **@data-layer-medic** on Slack (e.g. issues with OpenSearch/Elasticsearch tests)
+  - Distributed Systems: **@distributed-systems-medic** on Slack
+  - Distribution: **@distro-medic** on Slack (e.g. Helm chart integration tests, C8run)
+  - Identity: **@identity-medic** on Slack (e.g. issues with Identity and Identity Management)
+  - Infra: **@infra-medic** on Slack (e.g. self-hosted runner problems, Vault issues, Harbor issues)
+  - Operate frontend: **@pod-operate-medic** on Slack
+  - Optimize frontend: **@bi-pod-medic** on Slack
+  - Reliability testing: **@reliability-testing-medic** on Slack (e.g. load test CI or benchmark infra issues)
+  - Tasklist frontend: **@pod-employee-engagement-tasklist-medic** on Slack
 - Try to identify a (limited) workaround to unblock users.
 
 ## CI Incident Management

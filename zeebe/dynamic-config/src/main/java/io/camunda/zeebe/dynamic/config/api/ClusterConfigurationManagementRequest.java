@@ -69,13 +69,20 @@ public sealed interface ClusterConfigurationManagementRequest {
    * @param brokerCount the target number of brokers. On a plain (non-zone-aware) cluster this is
    *     the total cluster size; when {@code zone} is set it is the target broker count <em>within
    *     that zone</em>, leaving the other zones untouched. Empty leaves the broker count unchanged.
-   * @param newPartitionCount the target number of partitions, or empty to leave it unchanged.
-   *     Partitions can only be scaled up.
+   *     Targets cluster membership, which has no tenant dimension, so it must not be combined with
+   *     {@code physicalTenantId}.
+   * @param newPartitionCount the target number of partitions of a single physical tenant — the one
+   *     named by {@code physicalTenantId}, or the default tenant when none is named — or empty to
+   *     leave it unchanged. Partitions can only be scaled up.
    * @param newReplicationFactor the target replication factor, or empty to leave it unchanged. When
    *     {@code zone} is set it must not be set. To change replication factor in zone aware clusters
-   *     use {@link UpdatePartitionDistributorConfigRequest}
+   *     use {@link UpdatePartitionDistributorConfigRequest}. A cluster-wide setting, so it has no
+   *     tenant to scope it to and must not be combined with {@code physicalTenantId}.
    * @param zone the zone to scale, or empty to scale a plain cluster. Required when scaling a
    *     zone-aware cluster and rejected on a plain one.
+   * @param physicalTenantId the physical tenant whose partition group {@code newPartitionCount}
+   *     applies to, or empty for the default physical tenant. Must not be combined with {@code
+   *     brokerCount} or {@code newReplicationFactor}.
    * @param dryRun when true, the resulting plan is computed and returned without being applied.
    */
   record ClusterScaleRequest(
@@ -83,25 +90,59 @@ public sealed interface ClusterConfigurationManagementRequest {
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
       Optional<String> zone,
+      Optional<String> physicalTenantId,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {
+    public ClusterScaleRequest(
+        final Optional<Integer> brokerCount,
+        final Optional<Integer> newPartitionCount,
+        final Optional<Integer> newReplicationFactor,
+        final Optional<String> zone,
+        final boolean dryRun) {
+      this(brokerCount, newPartitionCount, newReplicationFactor, zone, Optional.empty(), dryRun);
+    }
+
     public ClusterScaleRequest {
       zone.ifPresent(assertNonEmpty("zone"));
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
       brokerCount.ifPresent(assertPositive("brokerCount"));
       newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
       newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
     }
   }
 
+  /**
+   * @param physicalTenantId the physical tenant whose partition group {@code newPartitionCount}
+   *     applies to, or empty for the default physical tenant. Must not be combined with a non-empty
+   *     {@code membersToAdd}/{@code membersToRemove}, which change cluster membership and have no
+   *     tenant dimension, nor with {@code newReplicationFactor}, which is a cluster-wide setting.
+   */
   record ClusterPatchRequest(
       Set<MemberId> membersToAdd,
       Set<MemberId> membersToRemove,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      Optional<String> physicalTenantId,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {
 
+    public ClusterPatchRequest(
+        final Set<MemberId> membersToAdd,
+        final Set<MemberId> membersToRemove,
+        final Optional<Integer> newPartitionCount,
+        final Optional<Integer> newReplicationFactor,
+        final boolean dryRun) {
+      this(
+          membersToAdd,
+          membersToRemove,
+          newPartitionCount,
+          newReplicationFactor,
+          Optional.empty(),
+          dryRun);
+    }
+
     public ClusterPatchRequest {
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
       newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
       newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
     }

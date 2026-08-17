@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 
 /**
  * Carries a command that arrived while its target was unable to process it immediately (e.g. a
- * suspended process instance), so it can be replayed later via {@code DRAIN}.
+ * suspended process instance), so it can be written back to the log later via {@code DRAIN}.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceBufferedCommandRecordValue.Builder.class)

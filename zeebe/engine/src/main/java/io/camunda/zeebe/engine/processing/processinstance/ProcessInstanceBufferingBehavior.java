@@ -22,10 +22,10 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  * SuspensionAware}) and its target process instance is currently {@code SUSPENDED}.
  *
  * <p>Buffers the command, in FIFO order, as a {@link ProcessInstanceBufferedCommandRecord}; it is
- * replayed verbatim once the process instance is drained during resume. No client response is
- * written here: buffered commands are (or become, via distribution) internal commands and are
- * re-issued once the process instance resumes, at which point the normal command lifecycle produces
- * the response.
+ * written back to the log verbatim once the process instance is drained during resume. No client
+ * response is written here: buffered commands are (or become, via distribution) internal commands
+ * and are re-issued once the process instance resumes, at which point the normal command lifecycle
+ * produces the response.
  */
 public final class ProcessInstanceBufferingBehavior {
 

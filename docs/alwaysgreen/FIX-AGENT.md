@@ -130,15 +130,26 @@ usually is not. And `camunda-docs` describing the new copy or behaviour for this
 settles it as intended — cite it in the PR body.
 
 If it is still genuinely ambiguous, do **not** pick one. Write `category: "not-determined"`
-to `/tmp/fix-meta.json` with the evidence, name both candidate fixes, and leave the
-fingerprint unclaimed so a recurrence is re-triaged. A human deciding in ten minutes beats
-either wrong PR.
+to `/tmp/fix-meta.json` with the evidence and name both candidate fixes. A human deciding in
+ten minutes beats either wrong PR.
+
+Your `reason` is the entire output of such a run, so write it for the on-call engineer who
+picks this up: the workflow posts it to the Slack thread and to the job summary. The run's
+manifest is also uploaded as an artifact, and triage reads it back — a verdict that opened
+nothing keeps its fingerprints out of dispatch for a cooldown period, so the same
+investigation is not repeated on every subsequent red run. It expires on its own; no issue
+is filed and nothing needs closing.
 
 **A test-side fix does not turn the run green by itself.** The helm e2e job runs the
 published `@camunda/e2e-test-suite` package, not the repo source, so a locator fix takes
 effect only once that package is published. Say so in the PR body: until then the pipeline
 stays red and the same failure will be re-dispatched unless your PR carries the coverage
 block.
+
+The other side of that lag: triage withholds a spec whose `tests/<suite>/` or
+`pages/<suite>/` code changed in the e2e repo *after* the failing run started, because the
+run executed source that is already superseded. So if you find the fix already merged
+upstream, that is expected — say so in `reason` and open nothing.
 
 ## When the surface is helm-install
 
@@ -281,6 +292,9 @@ Write `/tmp/fix-meta.json` before stopping, always:
   "reason": "Required when prs is empty: what you found and why no change was safe."
 }
 ```
+
+`reason` is mandatory whenever `prs` is empty — it is the Slack thread reply and the job
+summary, and it is all the next reader gets.
 
 `owner` and `repo` are required — PRs can land in any of the four repositories and the
 workflow uses them to label and request review.

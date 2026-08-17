@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,6 +101,43 @@ final class AdditivePartitionReassignerTest {
     assertThat(assigned).contains(existingTenantB);
     final var placed = findPartition(assigned, NEW_GROUP, 2);
     assertThat(placed.members()).containsExactlyInAnyOrder(member(3), member(2));
+  }
+
+  @Test
+  void shouldNotCountADisabledTenantsPartitionsAsLoadWhenPlacingNewTenantPartitions() {
+    // given — tenantB (enabled) loads member 0 twice; tenantA (about to be disabled) loads member
+    // 1 three times, i.e. more heavily than member 0
+    final var tenantBPartitions =
+        Set.of(
+            PartitionMetadataFixtures.partition(
+                "tenantB-existing", 1, Set.of(member(0)), member(0)),
+            PartitionMetadataFixtures.partition(
+                "tenantB-existing", 2, Set.of(member(0)), member(0)));
+    final var tenantAPartitions =
+        Set.of(
+            PartitionMetadataFixtures.partition("tenantA", 1, Set.of(member(1)), member(1)),
+            PartitionMetadataFixtures.partition("tenantA", 2, Set.of(member(1)), member(1)),
+            PartitionMetadataFixtures.partition("tenantA", 3, Set.of(member(1)), member(1)));
+    final var configuration =
+        configurationWithExistingGroups(
+                Map.of(
+                    "tenantB-existing", tenantBPartitions,
+                    "tenantA", tenantAPartitions))
+            .updatePartitionGroupConfig("tenantA", PartitionGroupConfiguration::disable);
+
+    // when — placing one partition for a brand-new tenant, choosing between members 0 and 1
+    final var targetMembers = Set.of(member(0), member(1));
+    final var targetPartitionIds = new ArrayList<>(sortedPartitionIds("tenantB-existing", 1, 2));
+    targetPartitionIds.addAll(sortedPartitionIds("tenantA", 1, 3));
+    targetPartitionIds.add(new PartitionId(NEW_GROUP, 1));
+    final var assigned =
+        reassigner.reassignPartitions(configuration, targetMembers, targetPartitionIds, 1);
+
+    // then — with tenantA's (disabled) load excluded, member 1 looks less loaded (0) than member 0
+    // (2 from tenantB), so the new partition lands on member 1. Counting tenantA's load would have
+    // placed it on member 0 instead, since member 1 would then look more loaded (3 vs 2).
+    final var placed = findPartition(assigned, NEW_GROUP, 1);
+    assertThat(placed.members()).containsExactly(member(1));
   }
 
   @Test

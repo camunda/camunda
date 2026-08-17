@@ -173,6 +173,16 @@ paths:
       description: Reconfigure cluster by adding or removing brokers, adding more partitions, or
                    changing the replicationFactor. Note that adding partitions is an experimental
                    feature and not fully supported.
+                   Only the partition count can be scoped to a physical tenant, with the
+                   physicalTenant parameter; without it, the partition count of the default
+                   physical tenant is changed. Partitions are distributed across brokers
+                   considering every physical tenant's partitions at once, so that scaling one
+                   tenant does not overload brokers already busy with another tenant's partitions;
+                   as a consequence, it can also relocate partitions of the tenants that are not
+                   being scaled.
+                   The broker count (or the brokers to add/remove) changes cluster membership, and
+                   the replication factor is a cluster-wide setting; neither has a tenant to scope it
+                   to, so neither may be combined with physicalTenant.
       requestBody:
         required: true
         content:
@@ -182,11 +192,14 @@ paths:
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
         - $ref: '#/components/parameters/ForceParameter'
+        - $ref: '#/components/parameters/PhysicalTenantParameter'
       responses:
         '202':
           $ref: "#/components/responses/ClusterConfigPatchResponse"
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
         '409':
           $ref: 'components.yaml#/responses/ConcurrentChangeError'
         '500':

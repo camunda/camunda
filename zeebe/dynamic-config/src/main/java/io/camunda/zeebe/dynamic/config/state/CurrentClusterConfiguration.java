@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPara
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,13 +81,24 @@ public record CurrentClusterConfiguration(
   }
 
   public int getClusterSize() {
-    return (int)
-        globalConfiguration.members().values().stream()
-            .filter(
-                brokerState ->
-                    brokerState.state() != BrokerState.State.LEFT
-                        && brokerState.state() != BrokerState.State.UNINITIALIZED)
-            .count();
+    return liveMembers().size();
+  }
+
+  /**
+   * The members eligible to host partitions: every broker known to the cluster except those in
+   * {@link BrokerState.State#LEFT} or {@link BrokerState.State#UNINITIALIZED}. Using the raw {@link
+   * #getMembers()} instead would let a decommissioned or not-yet-joined broker be picked as the
+   * target of a partition bootstrap or join, stalling the change once that operation can never
+   * complete.
+   */
+  public Set<MemberId> liveMembers() {
+    return globalConfiguration.members().entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().state() != BrokerState.State.LEFT
+                    && entry.getValue().state() != BrokerState.State.UNINITIALIZED)
+        .map(Entry::getKey)
+        .collect(Collectors.toSet());
   }
 
   public Optional<String> clusterId() {
@@ -575,6 +587,21 @@ public record CurrentClusterConfiguration(
 
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
     return partitionGroups.get(groupId);
+  }
+
+  /**
+   * The subset of {@link #partitionGroups()} that are not disabled, keyed by physical tenant id. A
+   * disabled group (removed from local static configuration after being provisioned, see {@code
+   * PhysicalTenantAvailabilityInitializer}) is retained in {@link #partitionGroups()} — its data
+   * and partition assignment are not deleted — but excluded here, since it is not running on any
+   * broker: it must not be counted as load when placing a new tenant's partitions, nor shown in
+   * gateway routing topology, nor targeted by cluster-wide operations.
+   */
+  public Map<String, PartitionGroupConfiguration> activePartitionGroups() {
+    return Collections.unmodifiableMap(
+        partitionGroups.entrySet().stream()
+            .filter(entry -> !entry.getValue().isDisabled())
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
   }
 
   /**

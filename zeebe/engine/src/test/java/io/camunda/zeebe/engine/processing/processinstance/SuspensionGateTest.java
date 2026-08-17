@@ -99,8 +99,8 @@ public final class SuspensionGateTest {
 
   @Test
   public void shouldPassThroughBufferCategoryCommandWhileResuming() {
-    // given - seed the RESUMING marker directly since it is currently unreachable in production
-    // (draining is implemented in a follow-up issue)
+    // given - seed the RESUMING marker directly to isolate the gate from the drain that puts the
+    // instance into that state in production
     final String processId = Strings.newRandomValidBpmnId();
     final String jobType = Strings.newRandomValidBpmnId();
     ENGINE

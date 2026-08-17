@@ -59,7 +59,7 @@
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
-    <version.elasticsearch.client>8.19.19</version.elasticsearch.client>
+    <version.elasticsearch.client>8.19.20</version.elasticsearch.client>
     <version.elasticsearch-java-client>8.19.20</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
@@ -138,7 +138,7 @@
     <version.kotlin-stdlib>2.4.10</version.kotlin-stdlib>
     <version.immutables>2.12.2</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.190</version.classgraph>
+    <version.classgraph>4.8.191</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
