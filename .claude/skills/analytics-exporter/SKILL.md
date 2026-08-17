@@ -91,7 +91,18 @@ public static final class Event {
 
 ## Step 3 — Create the handler
 
-Create `handler/MyEventHandler.java` in the same package as the other handlers:
+Create `handler/MyEventHandler.java` in the same package as the other handlers.
+
+**Choose the correct category** by implementing `category()` (there is no default — every handler
+must make a deliberate choice):
+- `AnalyticsCategory.CONTRACTUAL` — commercial/licence metrics (process instances, decision
+  instances, task users, tenant events, usage metrics)
+- `AnalyticsCategory.OPTIONAL` — non-commercial product usage metrics (ad-hoc subprocess activations,
+  feature adoption signals)
+
+The category determines whether the handler is active based on the exporter's `categories`
+configuration. If a category is removed from the config array, all handlers in that category are
+excluded at startup. Changing categories also changes the exporter digest fingerprint.
 
 ```java
 package io.camunda.exporter.analytics.handler;
@@ -100,6 +111,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.MY_EVENT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -113,6 +125,13 @@ public final class MyEventHandler implements AnalyticsHandler<MyRecordValue> {
 
   public MyEventHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    // CONTRACTUAL — commercial/licence metrics (process instances, decision instances, task users)
+    // OPTIONAL — non-commercial product usage metrics (e.g. ad-hoc subprocess activations)
+    return AnalyticsCategory.CONTRACTUAL;
   }
 
   @Override

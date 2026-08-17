@@ -12,13 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class HandlerRegistryTest {
@@ -34,7 +38,7 @@ class HandlerRegistryTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                record -> handled.set(true))
+                contractualHandler(record -> handled.set(true)))
             .apply(testContext());
 
     final var record =
@@ -60,7 +64,7 @@ class HandlerRegistryTest {
             .register(
                 ValueType.PROCESS_INSTANCE,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                record -> handled.set(true))
+                contractualHandler(record -> handled.set(true)))
             .apply(testContext());
 
     final var record =
@@ -87,11 +91,11 @@ class HandlerRegistryTest {
             .register(
                 ValueType.PROCESS_INSTANCE,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                record -> activatedHandled.set(true))
+                contractualHandler(record -> activatedHandled.set(true)))
             .register(
                 ValueType.PROCESS_INSTANCE,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
-                record -> completedHandled.set(true))
+                contractualHandler(record -> completedHandled.set(true)))
             .apply(testContext());
 
     final var activatedRecord =
@@ -122,7 +126,9 @@ class HandlerRegistryTest {
     final var registry =
         new HandlerRegistry()
             .register(
-                ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED, record -> {});
+                ValueType.PROCESS_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                contractualHandler(record -> {}));
 
     // when / then
     assertThatThrownBy(
@@ -130,7 +136,7 @@ class HandlerRegistryTest {
                 registry.register(
                     ValueType.PROCESS_INSTANCE,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                    record -> {}))
+                    contractualHandler(record -> {})))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Duplicate");
   }
@@ -154,8 +160,9 @@ class HandlerRegistryTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                record -> {})
-            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, record -> {});
+                contractualHandler(record -> {}))
+            .register(
+                ValueType.USER_TASK, UserTaskIntent.CREATED, contractualHandler(record -> {}));
 
     // when
     final var registered = registry.registeredHandlers();
@@ -168,9 +175,79 @@ class HandlerRegistryTest {
     assertThat(registered.get(ValueType.USER_TASK)).containsKey(UserTaskIntent.CREATED);
   }
 
+  @Test
+  void shouldExcludeHandlersOutsideActiveCategory() {
+    // given — registry only accepts CONTRACTUAL; an OPTIONAL handler is registered but excluded
+    final var contractualHandled = new AtomicBoolean(false);
+    final var optionalHandled = new AtomicBoolean(false);
+    final var registry =
+        new HandlerRegistry(Set.of(AnalyticsCategory.CONTRACTUAL))
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                contractualHandler(record -> contractualHandled.set(true)))
+            .register(
+                ValueType.PROCESS_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                optionalHandler(record -> optionalHandled.set(true)))
+            .apply(testContext());
+
+    // when
+    registry.handle(
+        FACTORY.generateRecord(
+            ValueType.PROCESS_INSTANCE_CREATION,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(ProcessInstanceCreationIntent.CREATED)));
+    registry.handle(
+        FACTORY.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)));
+
+    // then
+    assertThat(contractualHandled).isTrue();
+    assertThat(optionalHandled).isFalse();
+    assertThat(registry.registrations())
+        .containsExactly(
+            java.util.Map.entry(
+                ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED));
+  }
+
   private static ExporterTestContext testContext() {
     return new ExporterTestContext()
         .setConfiguration(new ExporterTestConfiguration<>("test", new AnalyticsExporterConfig()))
         .setPartitionId(1);
+  }
+
+  private static AnalyticsHandler<RecordValue> contractualHandler(
+      final Consumer<Record<RecordValue>> action) {
+    return new AnalyticsHandler<>() {
+      @Override
+      public AnalyticsCategory category() {
+        return AnalyticsCategory.CONTRACTUAL;
+      }
+
+      @Override
+      public void handle(final Record<RecordValue> record) {
+        action.accept(record);
+      }
+    };
+  }
+
+  private static AnalyticsHandler<RecordValue> optionalHandler(
+      final Consumer<Record<RecordValue>> action) {
+    return new AnalyticsHandler<>() {
+      @Override
+      public AnalyticsCategory category() {
+        return AnalyticsCategory.OPTIONAL;
+      }
+
+      @Override
+      public void handle(final Record<RecordValue> record) {
+        action.accept(record);
+      }
+    };
   }
 }

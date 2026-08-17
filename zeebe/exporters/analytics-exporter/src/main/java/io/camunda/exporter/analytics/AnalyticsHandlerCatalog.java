@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Set;
 
 /**
  * Registers all analytics event handlers. This is the only file to edit when adding a new event:
@@ -28,8 +29,9 @@ final class AnalyticsHandlerCatalog {
 
   private AnalyticsHandlerCatalog() {}
 
-  static HandlerRegistry build(final OtelSdkManager otelSdkManager) {
-    return new HandlerRegistry()
+  static HandlerRegistry build(
+      final OtelSdkManager otelSdkManager, final Set<AnalyticsCategory> activeCategories) {
+    return new HandlerRegistry(activeCategories)
         .register(
             ValueType.PROCESS_INSTANCE_CREATION,
             ProcessInstanceCreationIntent.CREATED,

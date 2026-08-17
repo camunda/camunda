@@ -13,6 +13,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITI
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,6 +31,11 @@ public final class UserTaskCreatedHandler implements AnalyticsHandler<UserTaskRe
 
   public UserTaskCreatedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.CONTRACTUAL;
   }
 
   @Override

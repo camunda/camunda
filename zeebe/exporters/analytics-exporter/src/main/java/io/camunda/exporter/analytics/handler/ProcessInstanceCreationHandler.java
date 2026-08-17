@@ -14,6 +14,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.ID;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,6 +31,11 @@ public final class ProcessInstanceCreationHandler
 
   public ProcessInstanceCreationHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.CONTRACTUAL;
   }
 
   @Override
