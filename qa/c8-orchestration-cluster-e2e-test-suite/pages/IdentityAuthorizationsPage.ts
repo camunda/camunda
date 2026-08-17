@@ -239,12 +239,10 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
-    if (authorization.ownerType !== 'User') {
-      await this.createAuthorizationOwnerComboBox.waitFor({
-        state: 'visible',
-        timeout: 5000,
-      });
-    }
+    await this.createAuthorizationOwnerComboBox.waitFor({
+      state: 'visible',
+      timeout: 10000,
+    });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
