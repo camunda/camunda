@@ -17,6 +17,7 @@ spec:
   ports:
   - name: http
     port: 9600
+
 ---
 # Source: load-test-setup/charts/load-tester/templates/clients-service.yaml
 apiVersion: monitoring.coreos.com/v1
