@@ -31,7 +31,7 @@ spec:
       - "ReadWriteOnce"
       resources:
         requests:
-          storage: "160Gi"
+          storage: "256Gi"
       storageClassName: "benchmark-ssd-zonal-v1"
   template:
     metadata:

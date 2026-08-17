@@ -22,7 +22,7 @@ spec:
       memory: 8Gi
 
   storage:
-    size: 160Gi
+    size: 256Gi
     storageClass: benchmark-ssd-zonal-v1
 
   affinity:
