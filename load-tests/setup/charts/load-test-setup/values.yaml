@@ -125,7 +125,7 @@ elasticsearch:
     # -- Kubernetes StorageClass for the PersistentVolumeClaim.
     storageClassName: benchmark-ssd-zonal-v1
     # -- Storage capacity requested per Elasticsearch node.
-    requests: 160Gi
+    requests: 256Gi
 
   # -- Node selector labels for Elasticsearch pod scheduling.
   # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
@@ -304,7 +304,7 @@ opensearch:
 
   persistence:
     enabled: true
-    size: 160Gi
+    size: 256Gi
     storageClass: benchmark-ssd-zonal-v1
 
   nodeSelector:
@@ -394,7 +394,7 @@ postgresql:
 
   # -- Persistent storage configuration for the PostgreSQL cluster.
   storage:
-    size: 160Gi
+    size: 256Gi
     storageClass: benchmark-ssd-zonal-v1
 
   # -- The PostgreSQL database and user used by Camunda to connect to this cluster.
