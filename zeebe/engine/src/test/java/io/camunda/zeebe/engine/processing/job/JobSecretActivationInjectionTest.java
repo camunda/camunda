@@ -45,6 +45,10 @@ public final class JobSecretActivationInjectionTest {
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "task-type";
 
+  // The default max fragment size of the test log stream, which caps both the appended event and
+  // the activation response (see LogStreamBuilderImpl). The size checks are proxied against it.
+  private static final int MAX_MESSAGE_SIZE = 4 * 1024 * 1024;
+
   @Rule public final EngineRule engine;
 
   @Rule
@@ -263,10 +267,41 @@ public final class JobSecretActivationInjectionTest {
   }
 
   @Test
+  public void shouldActivateSingleJobWithSecretValueLargerThanCalculationBuffer() {
+    // given - a single job whose injected secret value is larger than the batch calculation
+    // buffer but still well within the message size; before the fix the buffer was misused as the
+    // whole growth budget, so this job was wrongly dropped
+    final var value = "x".repeat(EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER * 2);
+    secretActivation.putSecret("token", value);
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    createInstanceAndAwaitJob();
+
+    // when
+    final Record<JobBatchRecordValue> activated =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - the job is activated normally, the batch is not truncated, and no incident is raised
+    assertThat(activated.getValue().getJobs()).hasSize(1);
+    assertThat(activated.getValue().isTruncated()).isFalse();
+    final var response = secretActivation.awaitActivationResponse();
+    assertThat(response.getJobs()).hasSize(1);
+    assertThat(response.getJobs().get(0).getVariables())
+        .containsEntry("authorization", "Bearer " + value);
+
+    // and - no exported record (state, log) leaks the resolved secret value, and no message-size
+    // incident is raised for a job that fits the message size
+    final var records = RecordingExporter.getRecords();
+    assertThat(records).noneMatch(record -> record.toString().contains(value));
+    assertThat(records)
+        .as("no incident is raised for a job that fits the message size")
+        .noneMatch(record -> record.getValueType() == ValueType.INCIDENT);
+  }
+
+  @Test
   public void shouldDropJobExceedingMessageSizeBudgetAndHandItOutOnNextActivation() {
-    // given - two jobs referencing the same secret; the injected value fits the batch growth
-    // budget once, but not twice
-    final var value = "x".repeat(EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER / 2 + 1000);
+    // given - two jobs referencing the same secret; the injected value fits the free message size
+    // once, but two of them together would push the response past it
+    final var value = "x".repeat(2 * MAX_MESSAGE_SIZE / 3);
     secretActivation.putSecret("token", value);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     createInstanceAndAwaitJob();
@@ -307,9 +342,9 @@ public final class JobSecretActivationInjectionTest {
 
   @Test
   public void shouldRaiseIncidentWhenSecretValueCanNeverFitMessageSizeBudget() {
-    // given - the injected value alone exceeds the whole batch growth budget, so no activation
-    // batch could ever carry this job
-    final var value = "x".repeat(EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER + 1000);
+    // given - the injected value alone exceeds the whole message size, so no activation batch
+    // could ever carry this job
+    final var value = "x".repeat(MAX_MESSAGE_SIZE);
     secretActivation.putSecret("token", value);
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
     final long processInstanceKey = createInstanceAndAwaitJob();

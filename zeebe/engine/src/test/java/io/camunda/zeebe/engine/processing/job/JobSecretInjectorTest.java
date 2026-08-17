@@ -174,7 +174,7 @@ final class JobSecretInjectorTest {
 
       // and - the collected secret job gets its cached value injected
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOf(response, 0)).isEqualTo(Map.of("auth", "resolved"));
     }
 
@@ -193,7 +193,7 @@ final class JobSecretInjectorTest {
       // then - both jobs are collected and get their cached values injected
       assertThat(jobKeysOf(batch)).containsExactly(100L, 101L);
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOfAllJobs(response))
           .containsExactly(Map.of("auth", "t"), Map.of("key", "k"));
     }
@@ -327,7 +327,7 @@ final class JobSecretInjectorTest {
       // then - the job is collected and the value of the named store is injected
       assertThat(jobKeysOf(batch)).containsExactly(100L);
       final var response = copyOf(batch);
-      injector.injectSecretValues(response, batch);
+      injector.injectSecretValues(response, batch, batch.getLength(), length -> true);
       assertThat(variablesOf(response, 0)).isEqualTo(Map.of("auth", "resolved"));
     }
 
@@ -966,6 +966,11 @@ final class JobSecretInjectorTest {
     /**
      * Mirrors the processor flow: register the jobs of the to-be-activated batch like the
      * collector, then inject the prepared values into the response.
+     *
+     * <p>Sizes the message-size limit at the batch length plus twice the calculation buffer, so the
+     * effective growth the first job may add before it is dropped is exactly one {@link
+     * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} (the injector keeps one buffer as the
+     * framing margin on top of the growth), matching what these drop tests exercise.
      */
     private static Optional<DroppedJob> inject(
         final JobBatchRecord response,
@@ -978,7 +983,10 @@ final class JobSecretInjectorTest {
         injector.registerForInjection(injector.checkSecrets(job), index, job);
         index++;
       }
-      return injector.injectSecretValues(response, activated);
+      final int baseLength = activated.getLength();
+      final int maxMessageSize = baseLength + 2 * EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
+      return injector.injectSecretValues(
+          response, activated, baseLength, length -> length <= maxMessageSize);
     }
   }
 

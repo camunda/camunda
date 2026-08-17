@@ -92,10 +92,11 @@ import org.junit.jupiter.api.Test;
 final class SecretResolutionJobActivationIT {
 
   /**
-   * Larger than the growth an activation batch has to spare, which is {@code
-   * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER} (8 KB) rather than the whole message size.
+   * Larger than the broker's default max message size, which is what an activation batch has to
+   * spare since the injector now measures growth against it rather than against {@code
+   * EngineConfiguration#BATCH_SIZE_CALCULATION_BUFFER}.
    */
-  private static final int OVERSIZED_SECRET_LENGTH = 16 * 1024;
+  private static final int OVERSIZED_SECRET_LENGTH = 4 * 1024 * 1024;
 
   /**
    * More than the 100 jobs one reactivation command carries, so the chain has to follow up, and

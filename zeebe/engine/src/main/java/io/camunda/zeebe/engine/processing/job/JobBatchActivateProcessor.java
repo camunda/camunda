@@ -274,7 +274,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     }
     responseValue.copyFrom(value);
     jobSecretInjector
-        .injectSecretValues(responseValue, value)
+        .injectSecretValues(
+            responseValue, value, record.getLength(), stateWriter::canWriteEventOfLength)
         .ifPresent(this::raiseIncidentForDroppedJob);
     return responseValue;
   }
