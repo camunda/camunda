@@ -8,26 +8,24 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.ScopeReconciler.Operation;
+import io.camunda.zeebe.dynamic.config.ScopeReconciler.Operations;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
-import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
@@ -36,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
@@ -64,6 +63,21 @@ import org.slf4j.LoggerFactory;
  * applicable to the member. Only a member can make changes to its own state in the configuration.
  * See {@link GlobalConfigurationChangeAppliers} and {@link
  * PartitionGroupConfigurationChangeAppliers} to see how a change is applied locally.
+ *
+ * <h4>Driving changes forward: scopes and plans</h4>
+ *
+ * <p>Applying the local member's pending operations and advancing a phased change plan are both
+ * driven from one place: {@link #reconcile(CurrentClusterConfiguration)}, invoked after every
+ * successful local configuration update (see {@link #updateLocalCurrentConfiguration}). It fans out
+ * to two kinds of per-key workers, each independently retrying with its own backoff so that one
+ * key's failures cannot delay another's:
+ *
+ * <ul>
+ *   <li>A {@link ScopeReconciler} per {@link Scope} (the global configuration, or one named
+ *       partition group) applies the local member's next pending operation in that scope.
+ *   <li>A {@link PlanAdvancer} per pending plan id advances that plan to its next phase, or
+ *       completes it, once its current phase has fully drained.
+ * </ul>
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
 
@@ -74,7 +88,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final ActorFuture<Void> startFuture;
   private InconsistentConfigurationListener onInconsistentConfigurationDetected;
   private final MemberId localMemberId;
-  private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
   private final boolean useNewConfig;
@@ -85,15 +98,11 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private @Nullable GlobalConfigurationChangeAppliers globalChangeAppliers;
   private final Map<String, PartitionGroupConfigurationChangeAppliers>
       partitionGroupChangeAppliers = new HashMap<>();
-  private boolean onGoingGlobalOperation = false;
-  private boolean shouldRetryGlobal = false;
-  private final Map<String, Boolean> onGoingGroupOperation = new HashMap<>();
-  private final Map<String, Boolean> shouldRetryGroup = new HashMap<>();
-  private final Map<String, ExponentialBackoffRetryDelay> groupBackoffRetry = new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
+  private final Map<Scope, ScopeReconciler> scopeReconcilers = new HashMap<>();
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
-  private final Map<Long, ScheduledTimer> advancePhaseRetryTimers = new HashMap<>();
+  private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
   private final int completedChangeHistoryLimit;
 
   /** Constructs a manager operating on the multi-partition-group model. */
@@ -151,7 +160,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     this.maxRetryDelay = maxRetryDelay;
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
     PhasedChangeState.setHistoryLimit(completedChangeHistoryLimit);
-    backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
     useNewConfig = true;
     coordinatorSupplier =
         ClusterConfigurationCoordinatorSupplier.from(
@@ -194,7 +202,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   /**
    * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
-   * triggers local operation application. Only valid when {@link #useNewConfig} is true.
+   * triggers reconciliation (see {@link #reconcile}). Only valid when {@link #useNewConfig} is
+   * true.
    */
   @Override
   public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
@@ -205,12 +214,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           try {
             final var updated = updater.apply(persistedCurrentConfiguration.getConfiguration());
             updateLocalCurrentConfiguration(updated)
-                .ifRightOrLeft(
-                    applied -> {
-                      future.complete(applied);
-                      applyNewConfigurationChangeOperation();
-                    },
-                    future::completeExceptionally);
+                .ifRightOrLeft(future::complete, future::completeExceptionally);
           } catch (final Exception e) {
             LOG.error("Failed to update cluster configuration", e);
             future.completeExceptionally(e);
@@ -340,6 +344,20 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(() -> onInconsistentConfigurationDetected = null);
   }
 
+  /**
+   * Drops every scope's and plan's reconciliation worker. Only meant to be called once, as part of
+   * shutting down the whole manager (see {@link ClusterConfigurationManagerService#closeAsync} ) —
+   * unlike {@link #removePartitionGroupChangeAppliers}, which must leave a group's {@link
+   * ScopeReconciler} alone so it survives that group's own register/remove churn.
+   */
+  void close() {
+    executor.run(
+        () -> {
+          scopeReconcilers.clear();
+          planAdvancers.clear();
+        });
+  }
+
   void setCurrentConfigurationGossiper(
       final Consumer<CurrentClusterConfiguration> currentConfigurationGossiper) {
     this.currentConfigurationGossiper = currentConfigurationGossiper;
@@ -349,7 +367,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           globalChangeAppliers = appliers;
-          applyNewConfigurationChangeOperation();
+          scopeReconcilers.computeIfAbsent(
+              new Scope.Global(), ignored -> newGlobalScopeReconciler());
+          reconcile(persistedCurrentConfiguration.getConfiguration());
         });
   }
 
@@ -358,19 +378,31 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           partitionGroupChangeAppliers.put(groupId, appliers);
-          applyNewConfigurationChangeOperation();
+          scopeReconcilers.computeIfAbsent(
+              new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
+          reconcile(persistedCurrentConfiguration.getConfiguration());
         });
   }
 
   void removePartitionGroupChangeAppliers(final String groupId) {
-    executor.run(() -> partitionGroupChangeAppliers.remove(groupId));
+    executor.run(
+        () -> {
+          partitionGroupChangeAppliers.remove(groupId);
+          // Deliberately not removing this group's ScopeReconciler here: it's only ever fetched
+          // via computeIfAbsent in registerPartitionGroupChangeAppliers above, so it survives a
+          // remove/register round-trip unmolested. PartitionManagerImpl/RecoveryPartitionManager
+          // re-register their change appliers on every recovery/processing mode transition;
+          // discarding the ScopeReconciler here would discard its in-flight retry/backoff state
+          // on every such transition, leaving a broker stuck mid-transition (see
+          // ModeChangeAcceptanceIT#shouldCycleBetweenRecoveryAndProcessing).
+        });
   }
 
   /**
    * Merges a {@link CurrentClusterConfiguration} received via gossip into the local one. If the
-   * merge changes the local configuration, it is persisted, re-gossiped, and local operation
-   * application is triggered. Leaves local state unchanged until {@link #start} has completed, to
-   * avoid a race between the configuration initializer and a concurrently received gossip update.
+   * merge changes the local configuration, it is persisted, re-gossiped, and reconciliation is
+   * triggered. Leaves local state unchanged until {@link #start} has completed, to avoid a race
+   * between the configuration initializer and a concurrently received gossip update.
    */
   void onGossipReceivedCurrent(final CurrentClusterConfiguration receivedConfiguration) {
     executor.run(
@@ -402,7 +434,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                           onInconsistentConfigurationDetected.onInconsistentConfiguration(
                               applied, local);
                         }
-                        applyNewConfigurationChangeOperation();
                       },
                       error ->
                           LOG.warn(
@@ -429,7 +460,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       if (currentConfigurationGossiper != null) {
         currentConfigurationGossiper.accept(configuration);
       }
-      maybeAdvancePhase(configuration);
+      reconcile(configuration);
       return Either.right(configuration);
     } catch (final Exception e) {
       return Either.left(e);
@@ -437,85 +468,70 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * Drives phased-plan advancement for every currently pending plan (multiple may be pending
-   * concurrently, targeting disjoint sub-configurations). Invoked after every successful local
-   * configuration update. Only the coordinator (the member with the lowest id, per {@link
-   * ClusterConfigurationCoordinatorSupplier}) advances plans, so that a single member is
-   * responsible for the transition. When a plan's current phase's sub-configuration(s) have drained
-   * their pending changes, that plan is advanced to the next phase, or completed if it was the last
-   * phase. The action is idempotent — re-firing on an already-advanced phase is a no-op. Plans are
-   * advanced one at a time (each id re-reads the latest configuration before mutating it), so
-   * advancing one plan never clobbers a concurrent update to another.
+   * The single entry point that drives every pending plan and every scope's pending operation
+   * forward, invoked after every successful local configuration update. Only the coordinator (the
+   * member with the lowest id, per {@link ClusterConfigurationCoordinatorSupplier}) advances plans,
+   * so that a single member is responsible for the transition; every member applies its own pending
+   * operations regardless of coordinator status. Both are idempotent — re-firing while an action is
+   * already in flight for a given plan or scope is a no-op (see {@link PlanAdvancer} and {@link
+   * ScopeReconciler}).
+   *
+   * <p>This call chain is synchronous, not scheduled: staging an operation persists/gossips
+   * immediately, which re-enters this method before returning (guarded by the in-flight flags above
+   * from becoming a second concurrent attempt, not from recursing at all). Its stack depth is
+   * therefore bounded by the number of registered scopes with a simultaneously-ready operation, not
+   * by the number of phases or operations processed overall — acceptable at the scope counts
+   * (global plus one per physical tenant) this module deals with today, but worth keeping in mind
+   * if that count were ever to grow very large.
    */
-  private void maybeAdvancePhase(final CurrentClusterConfiguration config) {
-    if (config.phasedChangeState().pending().isEmpty() || !isLocalMemberCoordinator()) {
-      return;
+  private void reconcile(final CurrentClusterConfiguration config) {
+    final var pendingIds = config.phasedChangeState().pending().keySet();
+    if (isLocalMemberCoordinator()) {
+      for (final var planId : List.copyOf(pendingIds)) {
+        planAdvancers.computeIfAbsent(planId, this::newPlanAdvancer).maybeAdvance(config);
+      }
     }
-    for (final var planId : List.copyOf(config.phasedChangeState().pending().keySet())) {
-      maybeAdvancePhase(config, planId);
+    // Drop advancers for plans that are no longer pending, so this map doesn't grow one entry per
+    // plan for the process lifetime. Skipped when already empty (the common case: most updates
+    // happen while no plan is pending at all) rather than diffing against pendingIds for nothing.
+    if (!planAdvancers.isEmpty()) {
+      planAdvancers.keySet().retainAll(pendingIds);
     }
+    scopeReconcilers.values().forEach(ScopeReconciler::reconcile);
   }
 
-  private void maybeAdvancePhase(final CurrentClusterConfiguration config, final long planId) {
-    final var plan = config.phasedChangeState().pending().get(planId);
-    if (plan == null) {
-      // Already advanced/completed by a previous call in this same batch, or by another trigger.
-      return;
-    }
-    final boolean currentPhaseComplete =
-        switch (plan.currentPhase()) {
-          case final GlobalPhase ignored -> !config.globalConfiguration().hasPendingChanges();
-          case final PartitionGroupParallelPhase parallelPhase ->
-              parallelPhase.groupOperations().keySet().stream()
-                  .map(config::partitionGroup)
-                  .allMatch(group -> group != null && !group.hasPendingChanges());
-        };
-    if (!currentPhaseComplete) {
-      return;
-    }
-
-    if (plan.hasNextPhase()) {
-      updateMultiConfiguration(c -> c.activateNextPhase(planId))
-          .onComplete(
-              (ignore, error) -> {
-                if (error != null) {
-                  LOG.warn(
-                      "Failed to advance phased change plan '{}' to next phase", planId, error);
-                  scheduleAdvancePhase(planId);
-                } else {
-                  advancePhaseRetryTimers.remove(planId);
-                }
-              });
-    } else {
-      updateMultiConfiguration(
-              c ->
-                  c.completePlan(
-                      planId, PhasedChangePlanStatus.COMPLETED, completedChangeHistoryLimit))
-          .onComplete(
-              (ignore, error) -> {
-                if (error != null) {
-                  LOG.warn("Failed to complete phased change plan '{}'", planId, error);
-                  scheduleAdvancePhase(planId);
-                } else {
-                  advancePhaseRetryTimers.remove(planId);
-                }
-              });
-    }
-  }
-
-  private void scheduleAdvancePhase(final long planId) {
-    advancePhaseRetryTimers.computeIfAbsent(
+  private PlanAdvancer newPlanAdvancer(final long planId) {
+    return new PlanAdvancer(
         planId,
-        ignored ->
-            executor.schedule(
-                backoffRetry.nextDelay(),
-                () -> {
-                  // Cleared before firing (not in the success/failure branches of the retry
-                  // itself), so a repeat failure can schedule a new timer instead of finding a
-                  // stale, already-fired one still occupying this key.
-                  advancePhaseRetryTimers.remove(planId);
-                  maybeAdvancePhase(persistedCurrentConfiguration.getConfiguration(), planId);
-                }));
+        executor,
+        this::updateMultiConfiguration,
+        () -> persistedCurrentConfiguration.getConfiguration(),
+        this::isLocalMemberCoordinator,
+        minRetryDelay,
+        maxRetryDelay,
+        completedChangeHistoryLimit);
+  }
+
+  private ScopeReconciler newGlobalScopeReconciler() {
+    return new ScopeReconciler(
+        new GlobalScopeOperations(),
+        () -> persistedCurrentConfiguration.getConfiguration(),
+        this::updateLocalCurrentConfiguration,
+        executor,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay);
+  }
+
+  private ScopeReconciler newGroupScopeReconciler(final String groupId) {
+    return new ScopeReconciler(
+        new GroupScopeOperations(groupId),
+        () -> persistedCurrentConfiguration.getConfiguration(),
+        this::updateLocalCurrentConfiguration,
+        executor,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay);
   }
 
   private boolean isLocalMemberCoordinator() {
@@ -523,197 +539,127 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         && localMemberId.equals(coordinatorSupplier.getDefaultCoordinator());
   }
 
+  private record GlobalOperation(
+      GlobalChangeOperation operation, GlobalConfigurationChangeApplier applier)
+      implements Operation {
+
+    @Override
+    public Either<Exception, CurrentClusterConfiguration> initialize(
+        final CurrentClusterConfiguration config) {
+      return applier.init(config).map(config::updateGlobalConfiguration);
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply() {
+      return applier
+          .apply()
+          .thenApply(
+              transformer ->
+                  (UnaryOperator<CurrentClusterConfiguration>)
+                      config ->
+                          config.updateGlobalConfiguration(
+                              g -> g.advanceConfigurationChange(transformer)));
+    }
+  }
+
+  private record GroupOperation(
+      String groupId,
+      PartitionGroupOperation operation,
+      PartitionGroupConfigurationChangeApplier applier)
+      implements Operation {
+
+    @Override
+    public Either<Exception, CurrentClusterConfiguration> initialize(
+        final CurrentClusterConfiguration config) {
+      final var group = config.partitionGroup(groupId);
+      return applier
+          .init(config.globalConfiguration(), group)
+          .map(transformer -> config.updatePartitionGroupConfig(groupId, transformer));
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<CurrentClusterConfiguration>> apply() {
+      return applier
+          .apply()
+          .thenApply(
+              transformer ->
+                  (UnaryOperator<CurrentClusterConfiguration>)
+                      config ->
+                          config.updatePartitionGroupConfig(
+                              groupId, g -> g.advanceConfigurationChange(transformer)));
+    }
+  }
+
   /**
-   * Applies the next pending operation for the local member on the global configuration and on
-   * every partition group. Operations across partition groups are applied concurrently — each group
-   * has its own in-progress/retry state — while the operations within a single group (and within
-   * the global configuration) are applied sequentially.
+   * Identifies exactly one reconciliation target: the global configuration, or a single named
+   * partition group. Distinct from {@code PhasedChangePlan.Scope}, which names a <em>plan's</em>
+   * footprint (possibly several groups at once, for admission conflict checks) — this key always
+   * names exactly one target, since it addresses a single {@link ScopeReconciler}.
    */
-  private void applyNewConfigurationChangeOperation() {
-    applyGlobalConfigurationChangeOperation();
-    // can apply operations to global and groups in parallel. The ordering is constrained by the
-    // phases. So additional enforcement of ordering is not needed here.
-    for (final String groupId :
-        List.copyOf(persistedCurrentConfiguration.getConfiguration().partitionGroups().keySet())) {
-      // Can apply operations to multiple groups in parallel, but only one operation per group at a
-      // time.
-      applyPartitionGroupConfigurationChangeOperation(groupId);
+  private sealed interface Scope permits Scope.Global, Scope.Group {
+
+    record Global() implements Scope {}
+
+    record Group(String groupId) implements Scope {}
+  }
+
+  /** {@link ScopeReconciler.Operations} for the global configuration. */
+  private final class GlobalScopeOperations implements Operations {
+
+    @Override
+    public Optional<Operation> nextOperation(final CurrentClusterConfiguration config) {
+      if (globalChangeAppliers == null) {
+        return Optional.empty();
+      }
+      return config
+          .globalConfiguration()
+          .pendingChangesFor(localMemberId)
+          .map(
+              operation ->
+                  new GlobalOperation(operation, globalChangeAppliers.getApplier(operation)));
+    }
+
+    @Override
+    public long versionOf(final CurrentClusterConfiguration config) {
+      return config.globalConfiguration().version();
+    }
+
+    @Override
+    public String describe() {
+      return "global";
     }
   }
 
-  private void applyGlobalConfigurationChangeOperation() {
-    final var config = persistedCurrentConfiguration.getConfiguration();
-    final var pending = config.globalConfiguration().pendingChangesFor(localMemberId);
-    if ((onGoingGlobalOperation && !shouldRetryGlobal)
-        || globalChangeAppliers == null
-        || pending.isEmpty()) {
-      return;
+  /** {@link ScopeReconciler.Operations} for one named partition group. */
+  private final class GroupScopeOperations implements Operations {
+
+    private final String groupId;
+
+    private GroupScopeOperations(final String groupId) {
+      this.groupId = groupId;
     }
 
-    onGoingGlobalOperation = true;
-    shouldRetryGlobal = false;
-    final var operation = pending.orElseThrow();
-    final var observer = topologyMetrics.observeOperation(operation);
-    LOG.info("Applying global configuration change operation {}", operation);
-    final var applier = globalChangeAppliers.getApplier(operation);
-    final var initialized =
-        applier
-            .init(config)
-            .map(config::updateGlobalConfiguration)
-            .flatMap(this::updateLocalCurrentConfiguration);
-
-    if (initialized.isLeft()) {
-      observer.failed();
-      onGoingGlobalOperation = false;
-      LOG.error(
-          "Failed to initialize global configuration change operation {}",
-          operation,
-          initialized.getLeft());
-      return;
+    @Override
+    public Optional<Operation> nextOperation(final CurrentClusterConfiguration config) {
+      final var appliers = partitionGroupChangeAppliers.get(groupId);
+      final var group = config.partitionGroup(groupId);
+      if (appliers == null || group == null) {
+        return Optional.empty();
+      }
+      return group
+          .pendingChangesFor(localMemberId)
+          .map(operation -> new GroupOperation(groupId, operation, appliers.getApplier(operation)));
     }
 
-    final var startedConfiguration = initialized.get();
-    applier
-        .apply()
-        .onComplete(
-            (transformer, error) ->
-                onGlobalOperationApplied(
-                    startedConfiguration, operation, transformer, error, observer));
-  }
-
-  private void onGlobalOperationApplied(
-      final CurrentClusterConfiguration configurationOnWhichOperationIsApplied,
-      final GlobalChangeOperation operation,
-      final UnaryOperator<GlobalConfiguration> transformer,
-      final Throwable error,
-      final OperationObserver observer) {
-    onGoingGlobalOperation = false;
-    if (error != null) {
-      observer.failed();
-      shouldRetryGlobal = true;
-      final Duration delay = backoffRetry.nextDelay();
-      LOG.warn(
-          "Failed to apply global configuration change operation {}. Will be retried in {}.",
-          operation,
-          delay,
-          error);
-      executor.schedule(delay, this::applyNewConfigurationChangeOperation);
-      return;
+    @Override
+    public long versionOf(final CurrentClusterConfiguration config) {
+      final var group = config.partitionGroup(groupId);
+      return group == null ? -1 : group.version();
     }
 
-    observer.applied();
-    backoffRetry.reset();
-    if (persistedCurrentConfiguration.getConfiguration().globalConfiguration().version()
-        != configurationOnWhichOperationIsApplied.globalConfiguration().version()) {
-      LOG.debug(
-          "Global configuration changed while applying operation {}. Most likely the change was cancelled.",
-          operation);
-      return;
+    @Override
+    public String describe() {
+      return "partition group '%s'".formatted(groupId);
     }
-    final var advanced =
-        persistedCurrentConfiguration
-            .getConfiguration()
-            .updateGlobalConfiguration(g -> g.advanceConfigurationChange(transformer));
-    updateLocalCurrentConfiguration(advanced);
-    LOG.info("Global operation {} applied.", operation);
-    executor.run(this::applyNewConfigurationChangeOperation);
-  }
-
-  private void applyPartitionGroupConfigurationChangeOperation(final String groupId) {
-    final var config = persistedCurrentConfiguration.getConfiguration();
-    final var group = config.partitionGroup(groupId);
-    final var appliers = partitionGroupChangeAppliers.get(groupId);
-    if (group == null || appliers == null) {
-      return;
-    }
-    final var pending = group.pendingChangesFor(localMemberId);
-    if ((onGoingGroupOperation.getOrDefault(groupId, false)
-            && !shouldRetryGroup.getOrDefault(groupId, false))
-        || pending.isEmpty()) {
-      return;
-    }
-
-    onGoingGroupOperation.put(groupId, true);
-    shouldRetryGroup.put(groupId, false);
-    final var operation = pending.orElseThrow();
-    final var observer = topologyMetrics.observeOperation(operation);
-    LOG.info("Applying partition group '{}' configuration change operation {}", groupId, operation);
-    final var applier = appliers.getApplier(operation);
-    final var initialized =
-        applier
-            .init(config.globalConfiguration(), group)
-            .map(transformer -> config.updatePartitionGroupConfig(groupId, transformer))
-            .flatMap(this::updateLocalCurrentConfiguration);
-
-    if (initialized.isLeft()) {
-      observer.failed();
-      onGoingGroupOperation.put(groupId, false);
-      LOG.error(
-          "Failed to initialize partition group '{}' configuration change operation {}",
-          groupId,
-          operation,
-          initialized.getLeft());
-      return;
-    }
-
-    final var startedConfiguration = initialized.get();
-    applier
-        .apply()
-        .onComplete(
-            (transformer, error) ->
-                onPartitionGroupOperationApplied(
-                    groupId, startedConfiguration, operation, transformer, error, observer));
-  }
-
-  private void onPartitionGroupOperationApplied(
-      final String groupId,
-      final CurrentClusterConfiguration configurationOnWhichOperationIsApplied,
-      final PartitionGroupOperation operation,
-      final UnaryOperator<PartitionGroupConfiguration> transformer,
-      final Throwable error,
-      final OperationObserver observer) {
-    onGoingGroupOperation.put(groupId, false);
-    if (error != null) {
-      observer.failed();
-      shouldRetryGroup.put(groupId, true);
-      final Duration delay =
-          groupBackoffRetry
-              .computeIfAbsent(
-                  groupId,
-                  ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
-              .nextDelay();
-      LOG.warn(
-          "Failed to apply partition group '{}' configuration change operation {}. Will be retried in {}.",
-          groupId,
-          operation,
-          delay,
-          error);
-      executor.schedule(delay, this::applyNewConfigurationChangeOperation);
-      return;
-    }
-
-    observer.applied();
-    final var groupBackoff = groupBackoffRetry.get(groupId);
-    if (groupBackoff != null) {
-      groupBackoff.reset();
-    }
-    final var currentGroup =
-        persistedCurrentConfiguration.getConfiguration().partitionGroup(groupId);
-    if (currentGroup == null
-        || currentGroup.version()
-            != configurationOnWhichOperationIsApplied.partitionGroup(groupId).version()) {
-      LOG.warn(
-          "Partition group '{}' changed while applying operation {}. Most likely the change was cancelled.",
-          groupId,
-          operation);
-      return;
-    }
-    final var advanced =
-        persistedCurrentConfiguration
-            .getConfiguration()
-            .updatePartitionGroupConfig(groupId, g -> g.advanceConfigurationChange(transformer));
-    updateLocalCurrentConfiguration(advanced);
-    LOG.info("Partition group '{}' operation {} applied.", groupId, operation);
-    executor.run(this::applyNewConfigurationChangeOperation);
   }
 }
