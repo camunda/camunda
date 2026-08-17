@@ -1,7 +1,7 @@
 # description: Nightly frontend SBOM vulnerability scan using Snyk.
-#              Reports failures to #team-core-features-frontend on Slack.
+#              Reports failures to #team-orchestration-cluster-webapps on Slack.
 # type: CI
-# owner: @camunda/core-features
+# owner: @camunda/orchestration-cluster-webapps
 ---
 name: Frontend SBOM Snyk Nightly
 run-name: Frontend SBOM Snyk (${{ inputs.branch }})
@@ -38,7 +38,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/hub-frontend'
+  TEST_OWNER: '@camunda/orchestration-cluster-webapps'
 
 jobs:
   identity-fe-sbom-snyk:

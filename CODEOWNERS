@@ -41,7 +41,7 @@
 /.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-responses-regenerate.yml          @camunda/core-features
-/.github/workflows/frontend-sbom-snyk-nightly.yml                             @camunda/core-features
+/.github/workflows/frontend-sbom-snyk-nightly.yml                             @camunda/orchestration-cluster-webapps
 /.github/workflows/optimize-release-optimize-c8-only.yml                      @camunda/core-features
 /.github/workflows/publish-zod-schemas.yml                                    @camunda/core-features
 /.github/workflows/verify-x-added-in-version-annotations.yml                 @camunda/core-features
