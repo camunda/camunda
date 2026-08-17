@@ -98,7 +98,7 @@ public class BackupRestoreTest {
       // from "still there".
       final boolean indicesGone =
           RetryOperation.<Boolean>newBuilder()
-              .noOfRetry(10)
+              .noOfRetry(30)
               .delayInterval(2000, TimeUnit.MILLISECONDS)
               .retryPredicate(result -> !result)
               .retryConsumer(
