@@ -160,6 +160,7 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variableCellByName(/incident type a/i),
       ).toBeVisible();
@@ -173,6 +174,7 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variableCellByName(/incident type b/i),
       ).toBeVisible();

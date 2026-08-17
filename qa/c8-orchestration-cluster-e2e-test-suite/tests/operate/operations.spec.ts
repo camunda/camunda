@@ -106,6 +106,7 @@ test.describe('Operations', () => {
     });
 
     await test.step('Validate canceled instance details', async () => {
+      await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       const instanceRow = operateProcessesPage.getInstanceRow(0);
 
       await expect(
