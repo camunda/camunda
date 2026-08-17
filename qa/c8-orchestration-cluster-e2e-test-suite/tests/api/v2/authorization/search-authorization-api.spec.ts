@@ -442,7 +442,7 @@ test.describe.parallel('Search Authorization API', () => {
     });
   });
 
-  test('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({
+  test('Search Authorization - Negative pagination values - 400 Invalid Argument', async ({
     request,
   }) => {
     await expect(async () => {
