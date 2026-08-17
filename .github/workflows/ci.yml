@@ -1191,6 +1191,7 @@ jobs:
             name: "3.5.x"
             profile: "spring-boot-3.5"
             modules: "clients/spring-boot-starter-camunda-sdk,testing/camunda-process-test-spring"
+            consumer-modules: ""
           # The Spring Boot 4 line lives in dedicated modules that pin their own 4.x version, so it
           # needs a separate module list from the 3.x one above.
           - group: spring-boot-4.1
