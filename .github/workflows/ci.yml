@@ -1180,7 +1180,7 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-8-default
     # The 4.1 entry runs Camunda Process Test integration tests, which start a broker container.
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     strategy:
       fail-fast: false
