@@ -49,8 +49,7 @@ const LIMITED_ROLE_AUTHORIZATION = {
 };
 
 test.describe.serial('Get usage metrics API Tests', () => {
-  //Skipped due to bug 49032: https://github.com/camunda/camunda/issues/49032
-  test.skip('Get Usage Metrics Success', async ({request}) => {
+  test('Get Usage Metrics Success', async ({request}) => {
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();
@@ -257,11 +256,14 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         },
       );
       await assertStatusCode(res, 200);
-      await validateResponse({
-        path: USAGE_METRICS_GET_ENDPOINT,
-        method: 'GET',
-        status: '200',
-      }, res);
+      await validateResponse(
+        {
+          path: USAGE_METRICS_GET_ENDPOINT,
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.activeTenants).toBe(0);
       expect(body.processInstances).toBe(0);

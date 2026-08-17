@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -34,8 +35,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     }
   });
 
-  //Skipped due to bug 43161: https://github.com/camunda/camunda/issues/43161
-  test.skip('Search Batch Operations Success', async ({request}) => {
+  test('Search Batch Operations Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
@@ -191,8 +191,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Batch Operations Invalid Pagination', async ({request}) => {
+  test('Search Batch Operations Invalid Pagination', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
@@ -201,7 +200,11 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

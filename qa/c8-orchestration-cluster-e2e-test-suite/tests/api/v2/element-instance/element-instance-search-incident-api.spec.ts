@@ -215,7 +215,7 @@ test.describe('Element Instance Incident Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 46661: https://github.com/camunda/camunda/issues/46661
+  //Skipped due to bug 48703: https://github.com/camunda/camunda/issues/48703
   test.skip('Search for incidents of a specific element instance - ascending order by errorMessage - Success', async ({
     request,
   }) => {
@@ -255,6 +255,51 @@ test.describe('Element Instance Incident Search API', () => {
       expect(body.page.totalItems).toEqual(2);
       expect(body.items[0].errorMessage).toEqual(errorMessage2);
       expect(body.items[1].errorMessage).toEqual(errorMessage1);
+      body.items.forEach((item: Record<string, string>) => {
+        expect(item.processDefinitionKey).toEqual(
+          state.processDefinitionKeyCalled,
+        );
+      });
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search for incidents of a specific element instance - ascending order by errorType - Success', async ({
+    request,
+  }) => {
+    const sortedErrorTypes = ['IO_MAPPING_ERROR', 'JOB_NO_RETRIES'];
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(
+          `/element-instances/${state.elementInstanceKey}/incidents/search`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            sort: [
+              {
+                field: 'errorType',
+                order: 'ASC',
+              },
+            ],
+            filter: {
+              processDefinitionKey: state.processDefinitionKeyCalled,
+            },
+          },
+        },
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: `/element-instances/{elementInstanceKey}/incidents/search`,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const body = await res.json();
+      expect(body.page.totalItems).toEqual(2);
+      expect(body.items[0].errorType).toEqual(sortedErrorTypes[0]);
+      expect(body.items[1].errorType).toEqual(sortedErrorTypes[1]);
       body.items.forEach((item: Record<string, string>) => {
         expect(item.processDefinitionKey).toEqual(
           state.processDefinitionKeyCalled,
@@ -434,8 +479,7 @@ test.describe('Element Instance Incident Search API', () => {
     });
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search for incidents of a specific element instance - with invalid pagination parameters', async ({
+  test('Search for incidents of a specific element instance - with invalid pagination parameters', async ({
     request,
   }) => {
     await expect(async () => {
@@ -452,7 +496,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 });

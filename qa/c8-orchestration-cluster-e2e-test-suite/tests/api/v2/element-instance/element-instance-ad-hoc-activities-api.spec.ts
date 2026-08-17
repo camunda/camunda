@@ -103,6 +103,7 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
           },
         );
       });
+
       await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
