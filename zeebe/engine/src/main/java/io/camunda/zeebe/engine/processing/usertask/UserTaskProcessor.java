@@ -89,7 +89,7 @@ public class UserTaskProcessor
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final boolean enableUserTaskCompletionVariableAudit) {
+      final boolean userTaskCompletionVariableAuditEnabled) {
     commandProcessors =
         new UserTaskCommandProcessors(
             state,
@@ -99,7 +99,7 @@ public class UserTaskProcessor
             asyncRequestBehavior,
             cslCheck,
             tenantCheck,
-            enableUserTaskCompletionVariableAudit);
+            userTaskCompletionVariableAuditEnabled);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();

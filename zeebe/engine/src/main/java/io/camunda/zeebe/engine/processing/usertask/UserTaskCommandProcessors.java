@@ -41,7 +41,7 @@ public final class UserTaskCommandProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final boolean enableUserTaskCompletionVariableAudit) {
+      final boolean userTaskCompletionVariableAuditEnabled) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -84,7 +84,7 @@ public final class UserTaskCommandProcessors {
                     asyncRequestBehavior,
                     tenantCheck,
                     userTaskAuth,
-                    enableUserTaskCompletionVariableAudit),
+                    userTaskCompletionVariableAuditEnabled),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);

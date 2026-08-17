@@ -135,6 +135,12 @@ class AuditLogTest {
 
       assertThat(config.getAuditLog().isEnabled()).isFalse();
       assertThat(config.getAuditLog().isUserTaskCompletionVariableAuditEnabled()).isTrue();
+      assertThat(
+              brokerBasedProperties
+                  .getExperimental()
+                  .getEngine()
+                  .isUserTaskCompletionVariableAuditEnabled())
+          .isTrue();
       assertThat(config.getAuditLog().getUser().getCategories())
           .containsExactlyInAnyOrder(
               AuditLogOperationCategory.DEPLOYED_RESOURCES, AuditLogOperationCategory.USER_TASKS);
@@ -182,6 +188,12 @@ class AuditLogTest {
 
       assertThat(config.getAuditLog().isEnabled()).isTrue();
       assertThat(config.getAuditLog().isUserTaskCompletionVariableAuditEnabled()).isTrue();
+      assertThat(
+              brokerBasedProperties
+                  .getExperimental()
+                  .getEngine()
+                  .isUserTaskCompletionVariableAuditEnabled())
+          .isTrue();
       assertThat(config.getAuditLog().getUser().getCategories())
           .containsExactlyInAnyOrder(
               AuditLogOperationCategory.DEPLOYED_RESOURCES, AuditLogOperationCategory.ADMIN);

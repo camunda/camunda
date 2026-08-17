@@ -21,17 +21,14 @@ import org.junit.Test;
 
 public final class CompleteUserTaskVariableAuditDisabledTest {
 
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withFeatureFlags(flags -> flags.setEnableUserTaskCompletionVariableAudit(false));
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldUseUnknownSourceWhenFeatureIsDisabled() {
+  public void shouldUseUnknownSourceWhenAuditConfigIsDisabled() {
     // given
     ENGINE
         .deployment()

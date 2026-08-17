@@ -51,7 +51,6 @@ public final class FeatureFlags {
   private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
   // Kill-switch for a bug fix; intentionally enabled by default.
   private static final boolean EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER = true;
-  private static final boolean ENABLE_USER_TASK_COMPLETION_VARIABLE_AUDIT = false;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -61,7 +60,6 @@ public final class FeatureFlags {
   private boolean enableMessageBodyOnExpired;
   private boolean evaluateBoundaryEventCorrelationKeyInActivityScope;
   private boolean evaluateDuplicateOutputMappingTargetsInOrder;
-  private boolean enableUserTaskCompletionVariableAudit;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -71,8 +69,7 @@ public final class FeatureFlags {
       final boolean enableStraightThroughProcessingLoopDetector,
       final boolean enableMessageBodyOnExpired,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final boolean enableUserTaskCompletionVariableAudit
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -84,7 +81,6 @@ public final class FeatureFlags {
         evaluateBoundaryEventCorrelationKeyInActivityScope;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
-    this.enableUserTaskCompletionVariableAudit = enableUserTaskCompletionVariableAudit;
   }
 
   public static FeatureFlags createDefault() {
@@ -96,8 +92,7 @@ public final class FeatureFlags {
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_MESSAGE_BODY_ON_EXPIRED,
         EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
-        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER,
-        ENABLE_USER_TASK_COMPLETION_VARIABLE_AUDIT
+        EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER
         /*, FOO_DEFAULT*/ );
   }
 
@@ -115,8 +110,7 @@ public final class FeatureFlags {
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         true, /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
-        true, /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
-        true /* ENABLE_USER_TASK_COMPLETION_VARIABLE_AUDIT */
+        true /* EVALUATE_DUPLICATE_OUTPUT_MAPPING_TARGETS_IN_ORDER */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -150,10 +144,6 @@ public final class FeatureFlags {
 
   public boolean evaluateDuplicateOutputMappingTargetsInOrder() {
     return evaluateDuplicateOutputMappingTargetsInOrder;
-  }
-
-  public boolean enableUserTaskCompletionVariableAudit() {
-    return enableUserTaskCompletionVariableAudit;
   }
 
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
@@ -191,11 +181,6 @@ public final class FeatureFlags {
       final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
-  }
-
-  public void setEnableUserTaskCompletionVariableAudit(
-      final boolean enableUserTaskCompletionVariableAudit) {
-    this.enableUserTaskCompletionVariableAudit = enableUserTaskCompletionVariableAudit;
   }
 
   @Override

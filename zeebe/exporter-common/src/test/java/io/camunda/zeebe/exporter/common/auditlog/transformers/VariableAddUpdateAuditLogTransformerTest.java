@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
@@ -71,6 +72,7 @@ class VariableAddUpdateAuditLogTransformerTest {
 
     // then
     assertThat(entity.getUserTaskKey()).isEqualTo(456L);
+    assertThat(entity.getCategory()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
   }
 
   @Test
@@ -94,6 +96,7 @@ class VariableAddUpdateAuditLogTransformerTest {
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());
     assertThat(entity.getEntityDescription()).isEqualTo("variable-name");
+    assertThat(entity.getCategory()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
   }
 
   private Record<VariableRecordValue> variableRecord(

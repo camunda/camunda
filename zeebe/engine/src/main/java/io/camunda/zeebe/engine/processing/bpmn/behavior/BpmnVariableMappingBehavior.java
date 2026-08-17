@@ -50,7 +50,7 @@ public final class BpmnVariableMappingBehavior {
 
   private final EventTriggerBehavior eventTriggerBehavior;
   private final boolean evaluateDuplicateOutputMappingTargetsInOrder;
-  private final boolean enableUserTaskCompletionVariableAudit;
+  private final boolean userTaskCompletionVariableAuditEnabled;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
@@ -58,7 +58,7 @@ public final class BpmnVariableMappingBehavior {
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final boolean enableUserTaskCompletionVariableAudit) {
+      final boolean userTaskCompletionVariableAuditEnabled) {
     this.expressionProcessor = expressionProcessor;
     inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
@@ -68,7 +68,7 @@ public final class BpmnVariableMappingBehavior {
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
-    this.enableUserTaskCompletionVariableAudit = enableUserTaskCompletionVariableAudit;
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
   }
 
   /**
@@ -131,7 +131,7 @@ public final class BpmnVariableMappingBehavior {
 
   public Either<Failure, Void> applyUserTaskOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    if (!enableUserTaskCompletionVariableAudit) {
+    if (!userTaskCompletionVariableAuditEnabled) {
       return applyOutputMappings(context, element, variableBehavior);
     }
 

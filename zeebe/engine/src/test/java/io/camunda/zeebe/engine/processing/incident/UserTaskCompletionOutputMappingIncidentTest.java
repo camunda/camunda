@@ -22,7 +22,10 @@ import org.junit.Test;
 
 public final class UserTaskCompletionOutputMappingIncidentTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

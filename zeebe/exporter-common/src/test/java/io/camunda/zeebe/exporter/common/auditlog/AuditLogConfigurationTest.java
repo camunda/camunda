@@ -63,6 +63,18 @@ class AuditLogConfigurationTest {
   }
 
   @Test
+  void shouldApplyUserTaskCategoryConfigurationToCompletionVariableAudit() {
+    final var config = new AuditLogConfiguration();
+    config.setUserTaskCompletionVariableAuditEnabled(true);
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isFalse();
+
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.USER_TASKS));
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isTrue();
+  }
+
+  @Test
   void shouldHaveDefaultConfigurations() {
     final var config = new AuditLogConfiguration();
 

@@ -52,7 +52,11 @@ import org.junit.rules.TestWatcher;
 
 /** Tests verifying that a task listener blocks the lifecycle transition of a user task. */
 public class TaskListenerBlockedTransitionTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
+
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final TaskListenerTestHelper helper = new TaskListenerTestHelper(ENGINE);
 

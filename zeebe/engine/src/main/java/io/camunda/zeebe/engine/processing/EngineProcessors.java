@@ -285,7 +285,7 @@ public final class EngineProcessors {
             processDefinitionMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
             featureFlags.evaluateDuplicateOutputMappingTargetsInOrder(),
-            featureFlags.enableUserTaskCompletionVariableAudit(),
+            config.isUserTaskCompletionVariableAuditEnabled(),
             cslCheck,
             tenantCheck,
             secretStoreRegistry);
@@ -383,7 +383,7 @@ public final class EngineProcessors {
             asyncRequestBehavior,
             cslCheck,
             tenantCheck,
-            featureFlags.enableUserTaskCompletionVariableAudit());
+            config.isUserTaskCompletionVariableAuditEnabled());
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -396,7 +396,7 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics,
-        featureFlags.enableUserTaskCompletionVariableAudit());
+        config.isUserTaskCompletionVariableAuditEnabled());
     addResourceDeletionProcessors(
         partitionId,
         typedRecordProcessors,
@@ -619,7 +619,7 @@ public final class EngineProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final boolean enableUserTaskCompletionVariableAudit) {
+      final boolean userTaskCompletionVariableAuditEnabled) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -629,7 +629,7 @@ public final class EngineProcessors {
         asyncRequestBehavior,
         cslCheck,
         tenantCheck,
-        enableUserTaskCompletionVariableAudit);
+        userTaskCompletionVariableAuditEnabled);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
@@ -650,7 +650,7 @@ public final class EngineProcessors {
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
-      final boolean enableUserTaskCompletionVariableAudit,
+      final boolean userTaskCompletionVariableAuditEnabled,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -672,7 +672,7 @@ public final class EngineProcessors {
         processDefinitionMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
         evaluateDuplicateOutputMappingTargetsInOrder,
-        enableUserTaskCompletionVariableAudit,
+        userTaskCompletionVariableAuditEnabled,
         cslCheck,
         tenantCheck,
         secretStoreRegistry);
@@ -783,7 +783,7 @@ public final class EngineProcessors {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics,
-      final boolean preserveUserTaskCompletionActor) {
+      final boolean userTaskCompletionVariableAuditEnabled) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -794,7 +794,7 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         incidentMetrics,
-        preserveUserTaskCompletionActor);
+        userTaskCompletionVariableAuditEnabled);
   }
 
   private static void addMessageProcessors(

@@ -33,7 +33,11 @@ import org.junit.Test;
 
 public final class CompleteUserTaskTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
+
   private static final String PROCESS_ID = "process";
 
   @Rule

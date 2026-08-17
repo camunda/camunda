@@ -220,38 +220,4 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isFalse();
   }
-
-  @Test
-  void shouldDisableUserTaskCompletionVariableAuditByDefault() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-
-    // then
-    assertThat(cfg.getExperimental().getFeatures().isEnableUserTaskCompletionVariableAudit())
-        .isFalse();
-  }
-
-  @Test
-  void shouldEnableUserTaskCompletionVariableAuditFromConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-
-    // then
-    assertThat(cfg.getExperimental().getFeatures().isEnableUserTaskCompletionVariableAudit())
-        .isTrue();
-  }
-
-  @Test
-  void shouldEnableUserTaskCompletionVariableAuditFromEnv() {
-    // given
-    environment.put(
-        "zeebe.broker.experimental.features.enableUserTaskCompletionVariableAudit", "true");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-
-    // then
-    assertThat(cfg.getExperimental().getFeatures().isEnableUserTaskCompletionVariableAudit())
-        .isTrue();
-  }
 }
