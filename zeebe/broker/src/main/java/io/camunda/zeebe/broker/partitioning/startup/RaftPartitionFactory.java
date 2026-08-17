@@ -99,7 +99,9 @@ public final class RaftPartitionFactory {
         brokerCfg.getCluster().getRaft().isEnablePriorityElection());
     partitionConfig.setElectionTimeout(brokerCfg.getCluster().getElectionTimeout());
     partitionConfig.setHeartbeatInterval(brokerCfg.getCluster().getHeartbeatInterval());
-    partitionConfig.setRequestTimeout(brokerCfg.getExperimental().getRaft().getRequestTimeout());
+    final var requestTimeout = brokerCfg.getExperimental().getRaft().getRequestTimeout();
+    partitionConfig.setRequestTimeout(
+        requestTimeout != null ? requestTimeout : brokerCfg.getCluster().getElectionTimeout());
     partitionConfig.setSnapshotRequestTimeout(
         brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
     partitionConfig.setSnapshotChunkSize(
