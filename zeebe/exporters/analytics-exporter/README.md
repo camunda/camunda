@@ -136,7 +136,8 @@ rarely need to be changed.
 > **The default `endpoint` below is not final.** It currently points at an interim Cloud
 > Run hostname while SRE completes DNS/domain work for a friendlier `camunda.io`-style
 > hostname. If you're reading this after that migration has landed, update this default
-> (and the constant in `AnalyticsExporterConfig`) to the permanent hostname.
+> (and the `endpoint` field's default value in `AnalyticsExporterConfig`) to the permanent
+> hostname.
 
 |        Option        |   Type   |                                                                                                  Description                                                                                                  |                                  Default                                   |
 |----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|

@@ -140,7 +140,8 @@ Hash-based deterministic sampling in `OtelSdkManager.logEvent()`. See `docs/samp
 ### Config Defaults
 
 Note: the `endpoint` default below is an interim Cloud Run hostname, not final — see the
-comment on the constant in `AnalyticsExporterConfig` before relying on it staying stable.
+comment on the `endpoint` field's default value in `AnalyticsExporterConfig` before relying
+on it staying stable.
 
 |     Property      |                                  Default                                   |
 |-------------------|----------------------------------------------------------------------------|
