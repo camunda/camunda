@@ -400,6 +400,25 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldNotOverwriteDeletedRecordsThatAReaderRead() {
+    // given - a reader that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openConcurrentReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    reader.next();
+    final var deletedRecord = reader.next();
+
+    // when - a new record is written at the index of the deleted one
+    journal.deleteAfter(deletedIndex - 1);
+    final var newRecord = journal.append(2, entry("bbbb"));
+
+    // then - the record the reader is still holding is unchanged
+    assertThat(newRecord.index()).isEqualTo(deletedIndex);
+    assertThat(BufferUtil.bufferAsString(deletedRecord.data())).isEqualTo("aaaa");
+  }
+
+  @Test
   void shouldKeepDeletedSegmentReadableForAReaderThatReadFromIt() {
     // given - a reader that read a record from a segment which is deleted afterwards
     journal = openJournal("aaaa", 1);
@@ -455,6 +474,53 @@ class SegmentedJournalTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().index()).isEqualTo(newRecord.index());
+  }
+
+  @Test
+  void shouldOverwriteDeletedRecordsThatOnlyANonConcurrentReaderRead() {
+    // given - a reader on the writer's thread that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry());
+    reader.next();
+    reader.next();
+    final var segment = journal.getLastSegment();
+
+    // when
+    journal.deleteAfter(keptIndex);
+    journal.append(2, entry("bbbb"));
+
+    // then - the deleted record is overwritten in place instead of in a new segment
+    assertThat(journal.getLastSegment()).isSameAs(segment);
+  }
+
+  @Test
+  void shouldNotReadDeletedRecordsAfterRestart() {
+    // given - records deleted while a reader was holding them
+    journal = openJournal("aaaa", 8);
+    final var reader = journal.openConcurrentReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    journal.append(3, journalFactory.entry());
+    reader.next();
+    reader.next();
+    reader.next();
+    journal.deleteAfter(deletedIndex - 1);
+    journal.append(2, entry("bbbb"));
+
+    // when
+    journal.close();
+    journal = openJournal("aaaa", 8);
+
+    // then - the deleted records are gone, and what replaced them is not
+    assertThat(journal.getLastIndex()).isEqualTo(deletedIndex);
+    final var records = new ArrayList<String>();
+    final var reopenedReader = journal.openReader();
+    while (reopenedReader.hasNext()) {
+      records.add(BufferUtil.bufferAsString(reopenedReader.next().data()));
+    }
+    assertThat(records).containsExactly("aaaa", "bbbb");
   }
 
   @Test
