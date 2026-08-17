@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -241,6 +243,77 @@ class SecretStoreRegistryTest {
     // then the rotated value is picked up, with no restart required
     assertThat(lookupLocal(registry, "default", "token")).contains("v2");
     assertThat(store.resolveCalls).containsExactly(Set.of("token"), Set.of("token"));
+  }
+
+  @Test
+  void shouldPublishWhatTheCacheOfEachStoreDoes() {
+    // given two stores, each on a cache the factory built for its own store ID
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("store-a", storeHolding("token", "a"), "store-b", storeHolding("token", "b")),
+            meteredCacheFactory(meterRegistry));
+
+    // when only one of them resolves the name
+    registry.getStores().get("store-a").resolve(Set.of("token"));
+    registry.getStores().get("store-a").lookupLocal("token");
+
+    // then each cache reports under its own store ID, so one store's numbers never answer for
+    // another's — the registry is the only place that knows which cache belongs to which store
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-a", SecretCacheResult.MISS)).isOne();
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-a", SecretCacheResult.HIT)).isOne();
+    assertThat(SecretCacheMeters.results(meterRegistry, "store-b", SecretCacheResult.MISS))
+        .isZero();
+  }
+
+  @Test
+  void shouldBuildNoCacheForAStoreThatCachesNatively() {
+    // given a store that holds what it resolves itself
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var storeIdsBuiltFor = new ArrayList<String>();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("default", new NativelyCachingSecretStore()),
+            storeId -> {
+              storeIdsBuiltFor.add(storeId);
+              return meteredCacheFactory(meterRegistry).create(storeId);
+            });
+
+    // when it is resolved through
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then the factory was never called for it, so no cache meter exists either: wrapping such a
+    // store would put a second cache in front of its own, and meters registered for a cache it
+    // never resolves through would sit at zero forever
+    assertThat(storeIdsBuiltFor).isEmpty();
+    assertThat(SecretCacheMeters.cacheMeterNames(meterRegistry)).isEmpty();
+  }
+
+  @Test
+  void shouldPublishNothingForACacheTheCallerSupplied() {
+    // given a store whose cache the caller chose instead of an instrumented one
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registry =
+        new SecretStoreRegistry(
+            Map.of("default", storeHolding("token", "value")),
+            Map.of("default", new InMemorySecretCache()),
+            new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")));
+
+    // when it is resolved through
+    registry.getStores().get("default").resolve(Set.of("token"));
+
+    // then nothing is published: an arbitrary SecretCache exposes nothing to measure, so this seam
+    // stays a plain test double rather than half-instrumenting one
+    assertThat(SecretCacheMeters.cacheMeterNames(meterRegistry)).isEmpty();
+  }
+
+  /** A factory building the instrumented cache the Spring wiring builds, as it builds it. */
+  private static SecretCacheFactory meteredCacheFactory(final SimpleMeterRegistry meterRegistry) {
+    return SecretCacheFactory.metered(
+        CaffeineSecretCache.DEFAULT_MAX_SIZE,
+        CaffeineSecretCache.DEFAULT_TTL,
+        new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+        meterRegistry);
   }
 
   private static Optional<String> lookupLocal(

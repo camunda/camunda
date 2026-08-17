@@ -19,6 +19,9 @@ import io.camunda.configuration.Secrets;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.CaffeineSecretCache;
 import io.camunda.secretstore.LocallyCachedSecretStore;
+import io.camunda.secretstore.SecretCacheMetricsDoc;
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheKeyNames;
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheResult;
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
@@ -30,6 +33,10 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.shared.management.ControlledActorClockService;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -280,6 +287,87 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldKeepTheCacheMetersOfTwoPhysicalTenantsApart(@TempDir final Path secretsRoot)
+      throws IOException {
+    // given two tenants whose stores both carry the id 'default', the only supported one
+    final var tenantASecrets = Files.createDirectory(secretsRoot.resolve("tenanta"));
+    Files.writeString(tenantASecrets.resolve("token"), "a");
+    final var tenantBSecrets = Files.createDirectory(secretsRoot.resolve("tenantb"));
+    Files.writeString(tenantBSecrets.resolve("token"), "b");
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
+                tenantASecrets.toString(),
+                "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                "tenanta-admin",
+                "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+                "camunda.physical-tenants.tenantb.secrets.stores.file.default.path",
+                tenantBSecrets.toString(),
+                "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+                "tenantb-admin",
+                "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"));
+    // the meter has to survive the same nesting it does in production — a per-tenant wrapped
+    // registry inside the composite Spring injects, which forwards to the backend — because
+    // MicrometerUtil.wrap does not forward tags more than two levels down. Asserting against a bare
+    // leaf registry would leave that hop, and so the collision this test is about, untested
+    final var backend = new SimpleMeterRegistry();
+    final var clusterRegistry = new CompositeMeterRegistry();
+    clusterRegistry.add(backend);
+    final var registries =
+        CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry).byPhysicalTenant();
+
+    // when only one tenant resolves the name both stores hold
+    registries
+        .get("tenanta")
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+        .resolve(Set.of("token"));
+
+    // then the physical tenant tag tells the two caches apart, all the way down to the registry
+    // that would export them — the store id alone cannot, so the two would share one series
+    assertThat(cacheMisses(backend, "tenanta")).isOne();
+    assertThat(cacheMisses(backend, "tenantb")).isZero();
+  }
+
+  @Test
+  void shouldPublishNothingForATenantLeftOnTheNoopStore() {
+    // given a tenant with no store configured at all, so it falls back to the noop store
+    final var resolver = resolverFor(Map.of());
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var registries =
+        CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry).byPhysicalTenant();
+
+    // when it is resolved through
+    registries
+        .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+        .resolve(Set.of("token"));
+
+    // then no cache meter exists for it: the noop store caches nothing, so its hit rate would read
+    // 0% forever against no TTL or maximum an operator could change
+    assertThat(
+            meterRegistry.getMeters().stream()
+                .map(meter -> meter.getId().getName())
+                .filter(name -> name.startsWith("camunda.secret.cache.")))
+        .isEmpty();
+  }
+
+  private static double cacheMisses(
+      final MeterRegistry meterRegistry, final String physicalTenantId) {
+    return meterRegistry
+        .get(SecretCacheMetricsDoc.CACHE_RESULT.getName())
+        .tag(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId)
+        .tag(SecretCacheKeyNames.STORE.asString(), SecretStoreRegistry.DEFAULT_STORE_ID)
+        .tag(SecretCacheKeyNames.RESULT.asString(), SecretCacheResult.MISS.name())
+        .counter()
+        .count();
+  }
+
+  @Test
   void shouldBuildAwsSecretsManagerStoreEvenWithoutReachableCredentials() {
     // given — AwsSecretsManagerSecretStore.fromConfig() only probes connectivity/credentials
     // best-effort, logging a warning rather than failing, so wiring an aws-secrets-manager store
@@ -316,7 +404,10 @@ class SecretStoreConfigurationTest {
     final var resolver =
         resolverFor(Map.of("camunda.secrets.stores.file.default.path", secretsDir.toString()));
     final var clockService = new ControlledActorClockService(new ControlledActorClock());
-    final var registries = CONFIG.secretStoreRegistries(resolver, clockService).byPhysicalTenant();
+    final var registries =
+        CONFIG
+            .secretStoreRegistries(resolver, clockService, new SimpleMeterRegistry())
+            .byPhysicalTenant();
     final var store =
         registries
             .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
@@ -400,16 +491,24 @@ class SecretStoreConfigurationTest {
                   "tenantb-admin",
                   "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                   "tenantb"));
+      final var meterRegistry = new SimpleMeterRegistry();
 
       // when / then — the build fails and the failure propagates (Mockito wraps the construction
       // failure, but it is still a RuntimeException the rollback path catches)
-      assertThatThrownBy(() -> registries(resolver))
+      assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, meterRegistry))
           .isInstanceOf(RuntimeException.class)
           .hasRootCauseInstanceOf(IllegalStateException.class);
 
       // then — the first tenant's already-built store is rolled back (closed) so its client does
       // not leak
       verify(construction.constructed().get(0)).close();
+      // and so is the registry its cache meters were published on: a failed startup that left them
+      // behind would keep exporting the hit rate and size of a cache nothing resolves through
+      assertThat(
+              meterRegistry.getMeters().stream()
+                  .map(meter -> meter.getId().getName())
+                  .filter(name -> name.startsWith("camunda.secret.cache.")))
+          .isEmpty();
     }
   }
 
@@ -493,7 +592,10 @@ class SecretStoreConfigurationTest {
                     "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                     "tenantb")));
     final var clockService = new ControlledActorClockService(new ControlledActorClock());
-    final var registries = CONFIG.secretStoreRegistries(resolver, clockService).byPhysicalTenant();
+    final var registries =
+        CONFIG
+            .secretStoreRegistries(resolver, clockService, new SimpleMeterRegistry())
+            .byPhysicalTenant();
     final var tenanta =
         registries.get("tenanta").getStores().get(SecretStoreRegistry.DEFAULT_STORE_ID);
     final var tenantb =
@@ -628,7 +730,7 @@ class SecretStoreConfigurationTest {
   private static LocallyCachedSecretStore defaultTenantStore(
       final PhysicalTenantResolver resolver, final ActorClockService clockService) {
     return CONFIG
-        .secretStoreRegistries(resolver, clockService)
+        .secretStoreRegistries(resolver, clockService, new SimpleMeterRegistry())
         .byPhysicalTenant()
         .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .getStores()
@@ -647,7 +749,7 @@ class SecretStoreConfigurationTest {
   }
 
   private static SecretStoreRegistries registries(final PhysicalTenantResolver resolver) {
-    return CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE);
+    return CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, new SimpleMeterRegistry());
   }
 
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {

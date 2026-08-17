@@ -9,8 +9,10 @@ package io.camunda.secretstore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.secretstore.SecretCacheMetricsDoc.SecretCacheEvictionCause;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,6 +23,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class CachingSecretStoreTest {
+
+  private static final String STORE_ID = "default";
 
   private final RecordingSecretStore store = new RecordingSecretStore();
   private final InMemorySecretCache cache = new InMemorySecretCache();
@@ -308,6 +312,69 @@ class CachingSecretStoreTest {
     // restart required
     assertThat(ttlStore.resolve(Set.of("token")).get("token")).isEqualTo(new Resolved("v2"));
     assertThat(store.resolveCalls).containsExactly(Set.of("token"), Set.of("token"));
+  }
+
+  @Test
+  void shouldCountInvalidatingACachedValueAsAnEviction() {
+    // given a cached value that the store now fails authoritatively, held in a metered cache
+    // instead of the in-memory fake the other tests use
+    final var registry = new SimpleMeterRegistry();
+    final var meteredStore = new CachingSecretStore(store, meteredCache(registry));
+    store.holds("token", "cached-value");
+    meteredStore.resolve(Set.of("token"));
+    store.fails("token", SecretErrorCode.ACCESS_DENIED);
+
+    // when
+    meteredStore.resolveFromStore(Set.of("token"));
+
+    // then dropping a secret the store no longer serves is visible as an eviction, which is what
+    // tells that case apart from a cache that simply ran out of room
+    assertThat(evictions(registry, SecretCacheEvictionCause.EXPLICIT)).isOne();
+  }
+
+  @Test
+  void shouldNotCountAPermanentFailureForANameThatWasNotCached() {
+    // given a name that was never resolved, so nothing is held for it
+    final var registry = new SimpleMeterRegistry();
+    final var meteredStore = new CachingSecretStore(store, meteredCache(registry));
+    store.fails("token", SecretErrorCode.NOT_FOUND);
+
+    // when
+    meteredStore.resolveFromStore(Set.of("token"));
+
+    // then nothing was evicted: a permanent failure is attempted for every such name, and counting
+    // the attempts would turn the eviction series into a count of failing lookups
+    assertThat(evictions(registry, SecretCacheEvictionCause.EXPLICIT)).isZero();
+  }
+
+  @Test
+  void shouldNotCountATransientFailureAsAnEviction() {
+    // given a cached value the store can no longer read due to a transient error
+    final var registry = new SimpleMeterRegistry();
+    final var meteredStore = new CachingSecretStore(store, meteredCache(registry));
+    store.holds("token", "cached-value");
+    meteredStore.resolve(Set.of("token"));
+    store.fails("token", SecretErrorCode.UNREADABLE);
+
+    // when
+    meteredStore.resolveFromStore(Set.of("token"));
+
+    // then the stale value stays, so nothing left the cache to count
+    assertThat(meteredStore.lookupLocal("token")).contains("cached-value");
+    assertThat(evictions(registry, SecretCacheEvictionCause.EXPLICIT)).isZero();
+  }
+
+  private static CaffeineSecretCache meteredCache(final SimpleMeterRegistry registry) {
+    return CaffeineSecretCache.create(
+        CaffeineSecretCache.DEFAULT_MAX_SIZE,
+        Duration.ofMinutes(20),
+        new ControlledInstantSource(Instant.parse("2026-01-01T00:00:00Z")),
+        new SecretCacheMetrics(registry, STORE_ID));
+  }
+
+  private static double evictions(
+      final SimpleMeterRegistry registry, final SecretCacheEvictionCause cause) {
+    return SecretCacheMeters.evictions(registry, STORE_ID, cause);
   }
 
   private static final class RecordingSecretStore implements SecretStore {

@@ -35,6 +35,12 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>Eviction of expired or excess entries happens asynchronously; {@link #cleanUp()} forces it
  * synchronously, which is only useful in tests that need to observe the bound immediately.
+ *
+ * <p>What the cache does is published on {@link SecretCacheMetricsDoc}'s meters, tagged with the
+ * store the cache belongs to; the factories that take no {@link SecretCacheMetrics} publish
+ * nothing. {@link SecretCacheFactory#metered} is the entry point that builds one from a {@link
+ * io.micrometer.core.instrument.MeterRegistry}, so this class itself has no dependency on
+ * Micrometer's registry type.
  */
 public final class CaffeineSecretCache implements SecretCache {
 
@@ -42,31 +48,48 @@ public final class CaffeineSecretCache implements SecretCache {
   public static final int DEFAULT_MAX_SIZE = 1000;
 
   private final Cache<String, String> cache;
+  private final SecretCacheMetrics metrics;
 
-  private CaffeineSecretCache(final Cache<String, String> cache) {
+  private CaffeineSecretCache(final Cache<String, String> cache, final SecretCacheMetrics metrics) {
     this.cache = cache;
+    this.metrics = metrics;
   }
 
-  /**
-   * Creates a cache bounded by the given size and expiring entries the given duration after write.
-   */
+  /** Creates a cache as the four-argument factory does, but publishing nothing. */
   public static CaffeineSecretCache create(
       final int maxSize, final Duration ttl, final InstantSource timeSource) {
-    return new CaffeineSecretCache(
-        Caffeine.newBuilder()
-            .maximumSize(maxSize)
-            .expireAfterWrite(ttl)
-            .ticker(toTicker(timeSource))
-            .build());
+    return create(maxSize, ttl, timeSource, SecretCacheMetrics.none());
   }
 
   /**
-   * Creates a new cache with {@link #DEFAULT_MAX_SIZE} and {@link #DEFAULT_TTL}.
+   * Creates a new cache with {@link #DEFAULT_MAX_SIZE} and {@link #DEFAULT_TTL}, publishing
+   * nothing.
    *
    * @return a new cache
    */
   public static CaffeineSecretCache createDefault(final InstantSource timeSource) {
     return create(DEFAULT_MAX_SIZE, DEFAULT_TTL, timeSource);
+  }
+
+  /**
+   * Creates a cache bounded by the given size and expiring entries the given duration after write.
+   */
+  static CaffeineSecretCache create(
+      final int maxSize,
+      final Duration ttl,
+      final InstantSource timeSource,
+      final SecretCacheMetrics metrics) {
+    final Cache<String, String> cache =
+        Caffeine.newBuilder()
+            .maximumSize(maxSize)
+            .expireAfterWrite(ttl)
+            .ticker(toTicker(timeSource))
+            // hits, misses and the evictions Caffeine performs itself are reported from here, so
+            // they need no call site of their own
+            .recordStats(() -> metrics)
+            .build();
+    metrics.registerSizeGauge(cache);
+    return new CaffeineSecretCache(cache, metrics);
   }
 
   private static Ticker toTicker(final InstantSource timeSource) {
@@ -83,9 +106,21 @@ public final class CaffeineSecretCache implements SecretCache {
     cache.put(name, value);
   }
 
+  /**
+   * Removes the name from the cache, counting an eviction only if a value was actually removed —
+   * Caffeine reports the evictions it performs itself but never a removal by name.
+   *
+   * <p>Goes through the map view rather than {@code invalidate} because that reports whether a
+   * value was there, atomically and without recording the hit or miss a lookup would. Both matter:
+   * {@link CachingSecretStore} removes a name on every permanent failure from its store, so
+   * counting the calls rather than the removals would turn {@link
+   * SecretCacheMetricsDoc#CACHE_EVICTIONS} into a count of failing lookups.
+   */
   @Override
   public void remove(final String name) {
-    cache.invalidate(name);
+    if (cache.asMap().remove(name) != null) {
+      metrics.recordExplicitEviction();
+    }
   }
 
   /**
