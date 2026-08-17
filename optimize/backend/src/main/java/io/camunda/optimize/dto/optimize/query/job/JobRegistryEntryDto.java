@@ -15,19 +15,19 @@ public class JobRegistryEntryDto {
 
   private String id;
   private JobType jobType;
-  private TargetEntityType targetEntityType;
-  private String targetEntityId;
+  private EntityType entityType;
+  private String entityId;
   private JobStatus status;
   private String errorMessage;
   private OffsetDateTime createdAt;
   private OffsetDateTime updatedAt;
 
   public JobRegistryEntryDto(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
+      final JobType jobType, final EntityType entityType, final String entityId) {
     id = IdGenerator.getNextId();
     this.jobType = jobType;
-    this.targetEntityType = targetEntityType;
-    this.targetEntityId = targetEntityId;
+    this.entityType = entityType;
+    this.entityId = entityId;
     status = JobStatus.QUEUED;
     createdAt = LocalDateUtil.getCurrentDateTime();
   }
@@ -50,20 +50,20 @@ public class JobRegistryEntryDto {
     this.jobType = jobType;
   }
 
-  public TargetEntityType getTargetEntityType() {
-    return targetEntityType;
+  public EntityType getEntityType() {
+    return entityType;
   }
 
-  public void setTargetEntityType(final TargetEntityType targetEntityType) {
-    this.targetEntityType = targetEntityType;
+  public void setEntityType(final EntityType entityType) {
+    this.entityType = entityType;
   }
 
-  public String getTargetEntityId() {
-    return targetEntityId;
+  public String getEntityId() {
+    return entityId;
   }
 
-  public void setTargetEntityId(final String targetEntityId) {
-    this.targetEntityId = targetEntityId;
+  public void setEntityId(final String entityId) {
+    this.entityId = entityId;
   }
 
   public JobStatus getStatus() {

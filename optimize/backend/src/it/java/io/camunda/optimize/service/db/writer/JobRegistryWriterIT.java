@@ -11,10 +11,10 @@ import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDE
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
     // given
     final JobRegistryEntryDto created =
         jobRegistryWriter.createJobEntry(
-            JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "2251799813685251");
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, "2251799813685251");
 
     // when
     final List<JobRegistryEntryDto> stored =
@@ -47,9 +47,8 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
             jobRegistry -> {
               assertThat(jobRegistry.getId()).isEqualTo(created.getId());
               assertThat(jobRegistry.getJobType()).isEqualTo(JobType.DELETE);
-              assertThat(jobRegistry.getTargetEntityType())
-                  .isEqualTo(TargetEntityType.PROCESS_DEFINITION);
-              assertThat(jobRegistry.getTargetEntityId()).isEqualTo("2251799813685251");
+              assertThat(jobRegistry.getEntityType()).isEqualTo(EntityType.PROCESS_DEFINITION);
+              assertThat(jobRegistry.getEntityId()).isEqualTo("2251799813685251");
               assertThat(jobRegistry.getStatus()).isEqualTo(JobStatus.QUEUED);
               assertThat(jobRegistry.getUpdatedAt()).isNull();
             });
@@ -59,7 +58,7 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldUpdateJobStatusToCompletedWithCompletionTimestamp() {
     // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
 
     // when
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.COMPLETED, null);
@@ -82,7 +81,7 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldUpdateJobStatusToFailedWithErrorMessage() {
     // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
 
     // when
     jobRegistryWriter.updateJobStatus(created.getId(), JobStatus.FAILED, "boom");
@@ -105,7 +104,7 @@ public class JobRegistryWriterIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldClearErrorMessageWhenRetryCompletesSuccessfully() {
     // given
     final JobRegistryEntryDto created =
-        jobRegistryWriter.createJobEntry(JobType.DELETE, TargetEntityType.PROCESS_DEFINITION, "1");
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
 
     // Move the entry into a FAILED state first, so errorMessage is populated. A retry that
     // completes successfully must clear it back to null -- the JobRegistryEntryUpdateDto relies
