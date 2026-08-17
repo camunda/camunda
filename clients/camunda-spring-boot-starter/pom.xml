@@ -203,11 +203,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
       <scope>test</scope>
@@ -229,6 +224,10 @@
             <!-- test-only: present so the actuator @ConditionalOnClass matches in tests; it has no
                  compile-time reference, so dependency-analyze cannot see it is used -->
             <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
+            <!-- test-only: classpath-activated by ActuatorOpenApiGenerator's embedded web server
+                 and springdoc autoconfig, not referenced directly in compiled test sources -->
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
