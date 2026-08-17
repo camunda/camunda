@@ -274,10 +274,12 @@ export class IdentityAuthorizationsPage {
         if (attempt < maxRetries) {
           console.log(`Attempt ${attempt} failed selecting owner, retrying...`);
           await this.page.reload();
-          await this.page.waitForTimeout(1000);
+          await this.page.waitForLoadState('networkidle');
         } else {
           console.log('Error while selecting owner' + error);
-          await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+          await this.createAuthorizationOwnerComboBox.fill(
+            authorization.ownerId,
+          );
           await this.createAuthorizationOwnerComboBox.press('Tab');
         }
       }
