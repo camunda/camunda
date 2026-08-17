@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,10 +51,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
@@ -64,6 +67,8 @@ import org.slf4j.LoggerFactory;
 @NullMarked
 public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
+  private static final Duration PARTITION_RESTORE_TIMEOUT = Duration.ofMinutes(20);
+
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
   private final BackupMetadataSyncer metadataSyncer;
@@ -237,6 +242,7 @@ public class RestoreManager implements CloseableSilently {
 
     try {
       final var partitionsToRestore = collectPartitions();
+      final var inProgressPartitions = ConcurrentHashMap.<Integer>newKeySet();
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
         final var partitionId = partition.partition().id().id();
@@ -246,12 +252,27 @@ public class RestoreManager implements CloseableSilently {
         }
         tasks.add(
             () -> {
-              restorePartition(partition, backupIds, validateConfig);
+              inProgressPartitions.add(partitionId);
+              try {
+                restorePartition(partition, backupIds, validateConfig);
+              } finally {
+                inProgressPartitions.remove(partitionId);
+              }
               return null;
             });
       }
-      for (final var result : executor.invokeAll(tasks)) {
-        result.get(); // throw exception if any of the tasks failed
+
+      for (final var result :
+          executor.invokeAll(tasks, PARTITION_RESTORE_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+        if (!result.isCancelled()) {
+          result.get(); // throw exception if the task failed
+        }
+      }
+      if (!inProgressPartitions.isEmpty()) {
+        throw new ExecutionException(
+            "Restoring partition(s) %s did not complete within %s"
+                .formatted(inProgressPartitions, PARTITION_RESTORE_TIMEOUT),
+            new TimeoutException());
       }
 
       if (configuration.getCluster().getNodeId() == 0) {
