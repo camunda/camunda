@@ -450,7 +450,7 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 });

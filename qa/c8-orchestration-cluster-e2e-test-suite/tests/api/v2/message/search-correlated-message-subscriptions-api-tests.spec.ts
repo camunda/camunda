@@ -437,7 +437,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     });
   });
 
-  test('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
+  test('Search Message Subscriptions - Negative pagination - 400 Invalid Argument', async ({
     request,
   }) => {
     await expect(async () => {
@@ -452,7 +452,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(res, 400, "The value for page.limit is '-5' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 

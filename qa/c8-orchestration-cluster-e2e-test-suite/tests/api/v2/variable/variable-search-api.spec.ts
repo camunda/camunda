@@ -10,6 +10,7 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -264,12 +265,12 @@ test.describe.parallel('Search Variables API Tests', () => {
         headers: jsonHeaders(),
         data: {
           page: {
-            limit: 0,
+            limit: -1,
           },
         },
       });
 
-      await assertBadRequest(res, /page.from|page.limit/);
+      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 });
