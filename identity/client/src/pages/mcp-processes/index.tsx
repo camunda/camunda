@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
+
+const List = lazy(() => import("./List"));
 
 type McpProcessesProps = {
   isTenantsApiEnabled: boolean;
@@ -17,10 +19,9 @@ type McpProcessesProps = {
 const McpProcesses: FC<McpProcessesProps> = ({ isTenantsApiEnabled }) => (
   <PageRoutes
     indexElement={
-      <Lazy
-        load={() => import("./List")}
-        elementProps={{ isTenantsApiEnabled }}
-      />
+      <Suspense fallback={<ListPageFallback />}>
+        <List isTenantsApiEnabled={isTenantsApiEnabled} />
+      </Suspense>
     }
   />
 );

@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
 import Detail from "src/pages/tenants/detail";
+
+const List = lazy(() => import("./List"));
 
 type TenantsProps = {
   isOIDC: boolean;
@@ -19,7 +21,9 @@ type TenantsProps = {
 const Tenants: FC<TenantsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => (
   <PageRoutes
     indexElement={
-      <Lazy load={() => import("./List")} elementProps={{ isOIDC }} />
+      <Suspense fallback={<ListPageFallback />}>
+        <List isOIDC={isOIDC} />
+      </Suspense>
     }
     detailElement={
       <Detail isOIDC={isOIDC} isCamundaGroupsEnabled={isCamundaGroupsEnabled} />

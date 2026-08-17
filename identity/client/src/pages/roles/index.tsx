@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
 import Detail from "src/pages/roles/detail";
+
+const List = lazy(() => import("./List"));
 
 type RolesProps = {
   isOIDC: boolean;
@@ -24,7 +26,9 @@ const Roles: FC<RolesProps> = ({
 }) => (
   <PageRoutes
     indexElement={
-      <Lazy load={() => import("./List")} elementProps={{ defaultRoleIds }} />
+      <Suspense fallback={<ListPageFallback />}>
+        <List defaultRoleIds={defaultRoleIds} />
+      </Suspense>
     }
     detailElement={
       <Detail
