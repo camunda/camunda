@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPara
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -586,6 +587,21 @@ public record CurrentClusterConfiguration(
 
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
     return partitionGroups.get(groupId);
+  }
+
+  /**
+   * The subset of {@link #partitionGroups()} that are not disabled, keyed by physical tenant id. A
+   * disabled group (removed from local static configuration after being provisioned, see {@code
+   * PhysicalTenantAvailabilityInitializer}) is retained in {@link #partitionGroups()} — its data
+   * and partition assignment are not deleted — but excluded here, since it is not running on any
+   * broker: it must not be counted as load when placing a new tenant's partitions, nor shown in
+   * gateway routing topology, nor targeted by cluster-wide operations.
+   */
+  public Map<String, PartitionGroupConfiguration> activePartitionGroups() {
+    return Collections.unmodifiableMap(
+        partitionGroups.entrySet().stream()
+            .filter(entry -> !entry.getValue().isDisabled())
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
   }
 
   /**

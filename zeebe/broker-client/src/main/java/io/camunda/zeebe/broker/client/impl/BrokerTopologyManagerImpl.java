@@ -259,12 +259,16 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   private void applyClusterConfiguration(final CurrentClusterConfiguration clusterConfiguration) {
-    // For each known group, update the configured cluster state and notify listeners if anything
-    // changed.
-    final Set<String> groupIds = clusterConfiguration.partitionGroups().keySet();
+    // For each known, enabled group, update the configured cluster state and notify listeners if
+    // anything changed. A disabled tenant (removed from local static configuration, see
+    // PhysicalTenantAvailabilityInitializer) is deliberately excluded here even though it's still
+    // present in clusterConfiguration.partitionGroups() — its partitions aren't running on any
+    // broker, so it should not appear in gateway routing topology or the /cluster topology
+    // response.
+    final Set<String> activeGroupIds = clusterConfiguration.activePartitionGroups().keySet();
 
     final var allGroups =
-        groupIds.stream()
+        activeGroupIds.stream()
             .collect(
                 Collectors.toMap(
                     physicalTenantId -> physicalTenantId,
@@ -280,6 +284,13 @@ public final class BrokerTopologyManagerImpl extends Actor
                     }));
     final Map<String, BrokerClientTopologyImpl> updatedTopologyPerGroup =
         new HashMap<>(topologyPerGroup);
+    // drop a previously-visible group that just became disabled; leave alone any group not yet
+    // reflected in clusterConfiguration.partitionGroups() at all (e.g. mid-bootstrap, membership-
+    // driven entries from rebuildGroupTopology)
+    final Set<String> knownGroupIds = clusterConfiguration.partitionGroups().keySet();
+    updatedTopologyPerGroup
+        .keySet()
+        .removeIf(groupId -> knownGroupIds.contains(groupId) && !activeGroupIds.contains(groupId));
     updatedTopologyPerGroup.putAll(allGroups);
     topologyPerGroup = Map.copyOf(updatedTopologyPerGroup);
   }
