@@ -73,16 +73,24 @@ class TaskPanelPage {
         await expect(link).toBeVisible({timeout: 10000});
         await link.click();
 
-        const expectedSegment =
-          option === 'All open tasks'
-            ? 'all-open'
-            : option === 'Assigned to me'
+        if (option === 'All open tasks') {
+          // "All open tasks" is the default filter, so the router omits it
+          // from the URL — this tab lands on /tasklist with no `filter=`
+          // param and there is no `all-open` segment to wait for.
+          await expect(this.page).toHaveURL(
+            /\/tasklist(?:\?(?!.*\bfilter=).*)?$/,
+            {timeout: 15000},
+          );
+        } else {
+          const expectedSegment =
+            option === 'Assigned to me'
               ? 'assigned-to-me'
               : option.toLowerCase().replace(/\s+/g, '-');
 
-        await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
-          timeout: 15000,
-        });
+          await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
+            timeout: 15000,
+          });
+        }
         await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
