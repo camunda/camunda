@@ -172,6 +172,10 @@ class TaskPanelPage {
       await expect(this.getTaskCards(task)).toHaveCount(0);
     }
   }
+
+  async reloadPage(): Promise<void> {
+    await this.page.reload();
+  }
 }
 
 export {TaskPanelPage};

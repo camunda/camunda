@@ -119,7 +119,7 @@ export async function completeTaskWithRetry(
             console.log(
               `Task ${taskName} still visible, reloading page and retrying...`,
             );
-            await taskPanelPage.page.reload();
+            await taskPanelPage.reloadPage();
             await sleep(1000);
           },
           maxRetries: 3,
