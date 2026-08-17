@@ -110,8 +110,7 @@ public final class SegmentedJournal implements Journal {
           final var stamp = rwlock.writeLock();
           try {
             writer.deleteAfter(indexExclusive);
-            // Reset segment readers.
-            resetAdvancedReaders(indexExclusive + 1);
+            readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
           } finally {
             rwlock.unlockWrite(stamp);
           }
@@ -309,19 +308,6 @@ public final class SegmentedJournal implements Journal {
 
   void closeReader(final SegmentedJournalReader segmentedJournalReader) {
     readers.remove(segmentedJournalReader);
-  }
-
-  /**
-   * Resets journal readers to the given index, if they are at a larger index.
-   *
-   * @param index The index at which to reset readers.
-   */
-  private void resetAdvancedReaders(final long index) {
-    for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() > index) {
-        reader.unsafeSeek(index);
-      }
-    }
   }
 
   JournalIndex getJournalIndex() {

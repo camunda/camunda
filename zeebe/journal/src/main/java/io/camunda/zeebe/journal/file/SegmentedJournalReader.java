@@ -24,10 +24,19 @@ import java.util.NoSuchElementException;
 
 class SegmentedJournalReader implements JournalReader {
 
+  private static final long NO_TRUNCATION = Long.MIN_VALUE;
+
   private final SegmentedJournal journal;
   private Segment currentSegment;
   private SegmentReader currentReader;
   private final JournalMetrics metrics;
+
+  /**
+   * The index a truncation deleted after, set by the truncating thread and applied by this reader's
+   * own thread. Written while holding the journal's write lock and read while holding its read
+   * lock, so the lock orders the two threads.
+   */
+  private long pendingTruncationIndex = NO_TRUNCATION;
 
   SegmentedJournalReader(final SegmentedJournal journal, final JournalMetrics journalMetrics) {
     this.journal = journal;
@@ -189,6 +198,7 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   long unsafeSeek(final long index) {
+    discardPendingTruncation();
     if (!currentSegment.isOpen()) {
       unsafeSeekToFirst();
     }
@@ -205,8 +215,14 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private long unsafeSeekToFirst() {
+    discardPendingTruncation();
     replaceCurrentSegment(journal.getFirstSegment());
     return journal.getFirstIndex();
+  }
+
+  /** An explicit seek positions the reader itself, so there is nothing left to rewind. */
+  private void discardPendingTruncation() {
+    pendingTruncationIndex = NO_TRUNCATION;
   }
 
   private long unsafeSeekToLast() {
@@ -242,7 +258,36 @@ class SegmentedJournalReader implements JournalReader {
     currentReader.seek(index);
   }
 
+  /**
+   * Records that everything after the given index was deleted. The reader position is left
+   * untouched: it is only ever moved by the thread that reads, in {@link
+   * #applyPendingTruncation()}. Moving it here would close the segment reader that keeps the
+   * truncated records mapped, while the thread that reads may still be using them.
+   */
+  void onTruncatedAfter(final long index) {
+    pendingTruncationIndex = index;
+  }
+
+  /**
+   * Seeks this reader back to the truncation point if it is positioned after it. Records above that
+   * point are gone, so a reader that read past it must not continue where it was, and a reader that
+   * sits at the start of a segment the truncation deleted has to re-attach to a live segment.
+   */
+  private void applyPendingTruncation() {
+    final var truncationIndex = pendingTruncationIndex;
+    if (truncationIndex == NO_TRUNCATION) {
+      return;
+    }
+
+    pendingTruncationIndex = NO_TRUNCATION;
+    if (getNextIndex() > truncationIndex) {
+      unsafeSeek(truncationIndex + 1);
+    }
+  }
+
   private boolean unsafeHasNext() {
+    applyPendingTruncation();
+
     if (!currentReader.hasNext()) {
       if (!currentSegment.isOpen()) {
         // When the segment has been deleted concurrently, we do not want to allow the readers to
