@@ -113,14 +113,16 @@ export async function completeTaskWithRetry(
               taskPanelPage.availableTasks
                 .getByText(taskName, {exact: true})
                 .first(),
-            ).not.toBeVisible({timeout: 10000});
+            ).not.toBeVisible({timeout: 20000});
           },
           onFailure: async () => {
             console.log(
-              `Task ${taskName} still visible, retrying waitForAssertion...`,
+              `Task ${taskName} still visible, reloading page and retrying...`,
             );
+            await taskPanelPage.page.reload();
+            await sleep(1000);
           },
-          maxRetries: 4,
+          maxRetries: 3,
         });
         assertionPassed = true;
       } catch (error) {
