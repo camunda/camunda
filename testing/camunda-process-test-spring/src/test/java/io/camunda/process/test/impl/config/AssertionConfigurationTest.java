@@ -48,6 +48,7 @@ public class AssertionConfigurationTest {
       assertThat(assertionConfiguration).isNotNull();
       assertThat(assertionConfiguration.getTimeout()).isEmpty();
       assertThat(assertionConfiguration.getInterval()).isEmpty();
+      assertThat(assertionConfiguration.getQueryPageLimit()).isEmpty();
     }
   }
 
@@ -55,7 +56,8 @@ public class AssertionConfigurationTest {
   @TestPropertySource(
       properties = {
         "camunda.process-test.assertion.timeout=PT1M",
-        "camunda.process-test.assertion.interval=PT0.5S"
+        "camunda.process-test.assertion.interval=PT0.5S",
+        "camunda.process-test.assertion.query-page-limit=1000"
       })
   class ConfigureAssertion {
 
@@ -68,6 +70,7 @@ public class AssertionConfigurationTest {
       assertThat(assertionConfiguration).isNotNull();
       assertThat(assertionConfiguration.getTimeout()).hasValue(Duration.ofMinutes(1));
       assertThat(assertionConfiguration.getInterval()).hasValue(Duration.ofMillis(500));
+      assertThat(assertionConfiguration.getQueryPageLimit()).hasValue(1000);
     }
   }
 }

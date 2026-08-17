@@ -101,8 +101,13 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final List<String> COVERAGE_EXCLUDED_DECISIONS =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedDecisions();
 
+  public static final int DEFAULT_QUERY_PAGE_LIMIT = 100;
+
   public static final AssertionProperties ASSERTION_PROPERTIES =
       PROPERTIES_UTIL.getAssertionProperties();
+
+  public static final int QUERY_PAGE_LIMIT =
+      ASSERTION_PROPERTIES.getQueryPageLimit().orElse(DEFAULT_QUERY_PAGE_LIMIT);
 
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
   public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =
