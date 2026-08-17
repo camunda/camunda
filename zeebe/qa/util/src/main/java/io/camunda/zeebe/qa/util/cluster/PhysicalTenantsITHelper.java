@@ -113,7 +113,9 @@ public final class PhysicalTenantsITHelper {
                 // here when present; callers that configure their own generic exporters and
                 // exporters-assigned afterwards (e.g. PhysicalTenantExporterConfigIT) are left
                 // untouched, since setting an empty manifest here would collide with their later
-                // indexed exporters-assigned[n] properties.
+                // indexed exporters-assigned[n] properties. A caller that later toggles {@link
+                // TestStandaloneBroker#withRecordingExporter} off (e.g. before a restart) must call
+                // {@link #refreshExportersAssigned} to keep this from going stale.
                 if (broker
                     .unifiedConfig()
                     .getData()
@@ -123,6 +125,50 @@ public final class PhysicalTenantsITHelper {
                       "camunda.physical-tenants." + tenant + ".data.exporters-assigned[0]",
                       TestStandaloneBroker.RECORDING_EXPORTER_ID);
                 }
+              }
+            });
+    return broker;
+  }
+
+  /**
+   * Re-syncs each non-default physical tenant's {@code exporters-assigned} manifest with whether
+   * {@code recordingExporter} is currently present in the broker's root catalog — including
+   * clearing a manifest {@link #configureAdminRoles} previously assigned it into. Call this after
+   * toggling {@link TestStandaloneBroker#withRecordingExporter} on an already-{@link #configure}d
+   * broker (e.g. before a restart that removes the exporter from the root configuration): the
+   * manifest {@link #configureAdminRoles} set at initial setup only reflects the catalog as it
+   * stood then, and would otherwise keep assigning an id no longer in the root catalog, tripping
+   * {@code PhysicalTenantExporterAssignedValidation}'s unknown-id check on the next restart.
+   *
+   * <p>Unlike {@link #configureAdminRoles}, this always writes something — an empty manifest when
+   * {@code recordingExporter} is absent, to actively mask a previously-assigned entry (a bare-key
+   * entry takes precedence over indexed entries under Spring's relaxed {@code List<String>}
+   * binding). Only call this on a broker that {@link #configureAdminRoles} already set up; calling
+   * it standalone on a broker managing its own exporters-assigned (e.g. {@code
+   * PhysicalTenantExporterConfigIT}) would collide with its indexed {@code exporters-assigned[n]}
+   * properties the same way an unconditional write in {@link #configureAdminRoles} would.
+   */
+  public TestStandaloneBroker refreshExportersAssigned(final TestStandaloneBroker broker) {
+    final boolean recordingExporterPresent =
+        broker
+            .unifiedConfig()
+            .getData()
+            .getExporters()
+            .containsKey(TestStandaloneBroker.RECORDING_EXPORTER_ID);
+    tenants
+        .keySet()
+        .forEach(
+            tenant -> {
+              if (DEFAULT_TENANT_ID.equals(tenant)) {
+                return;
+              }
+              final String assignedExportersKey =
+                  "camunda.physical-tenants." + tenant + ".data.exporters-assigned";
+              if (recordingExporterPresent) {
+                broker.withProperty(
+                    assignedExportersKey + "[0]", TestStandaloneBroker.RECORDING_EXPORTER_ID);
+              } else {
+                broker.withProperty(assignedExportersKey, "");
               }
             });
     return broker;
