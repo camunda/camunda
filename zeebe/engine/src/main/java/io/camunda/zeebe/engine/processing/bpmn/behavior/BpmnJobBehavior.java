@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -130,6 +131,7 @@ public final class BpmnJobBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ResourceState resourceState;
   private final FormState formState;
+  private final AgentDefinitionState agentDefinitionState;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -145,6 +147,7 @@ public final class BpmnJobBehavior {
       final BpmnStateBehavior stateBehavior,
       final ResourceState resourceState,
       final FormState formState,
+      final AgentDefinitionState agentDefinitionState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
@@ -159,6 +162,7 @@ public final class BpmnJobBehavior {
     this.stateBehavior = stateBehavior;
     this.resourceState = resourceState;
     this.formState = formState;
+    this.agentDefinitionState = agentDefinitionState;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -634,7 +638,7 @@ public final class BpmnJobBehavior {
       final Map<String, String> taskHeaders,
       final Map<String, Set<SecretReference>> secretReferences) {
 
-    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+    final var encodedHeaders = encodeHeaders(context, taskHeaders, props);
 
     jobRecord
         .setType(props.getType())
@@ -696,7 +700,9 @@ public final class BpmnJobBehavior {
   }
 
   private DirectBuffer encodeHeaders(
-      final Map<String, String> taskHeaders, final JobProperties props) {
+      final BpmnElementContext context,
+      final Map<String, String> taskHeaders,
+      final JobProperties props) {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
@@ -732,6 +738,13 @@ public final class BpmnJobBehavior {
         throw new IllegalArgumentException(
             "Failed to convert linked resource headers to json object", e);
       }
+    }
+
+    final var agentDefinitionKey =
+        agentDefinitionState.getAgentDefinitionKey(
+            context.getProcessDefinitionKey(), context.getElementId());
+    if (agentDefinitionKey != null) {
+      headers.put(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey));
     }
     return headerEncoder.encode(headers);
   }
