@@ -60,6 +60,11 @@ import java.util.stream.Stream;
  *
  * <p>{@link PartitionReassignmentOperationsGenerator} turns the resulting distribution into
  * operations per group, emitting them only where a partition's placement actually changed.
+ *
+ * <p>Every group of the given configuration is planned for, disabled physical tenants included —
+ * the coordinator removes those before it calls {@code ConfigurationChangeRequest#phases} (see
+ * {@code ConfigurationChangeRequest#applyToDisabledTenants}), so a group that reaches this planner
+ * is one that runs on a broker and can apply an operation. No filter is needed here.
  */
 final class PartitionGroupScalingPhases {
 
@@ -90,36 +95,28 @@ final class PartitionGroupScalingPhases {
         distributionByGroup.getOrDefault(targetGroupId, Set.of()).size();
     final int targetPartitionCount = newPartitionCount.orElse(currentPartitionCount);
 
-    if (targetPartitionCount < currentPartitionCount) {
-      return Either.left(
-          new InvalidRequest(
-              "New partition count [%d] of physical tenant '%s' must be greater than or equal to its current partition count [%d]"
-                  .formatted(targetPartitionCount, targetGroupId, currentPartitionCount)));
-    }
     if (newReplicationFactor.isEmpty() && targetPartitionCount == currentPartitionCount) {
       // Nothing is asked for that the cluster does not already have. Returning before the
       // distributor runs is what keeps such a request a no-op: a placement that has drifted from
       // what the distributor would compute now — after a manual reassignment through
       // /partition-distribution, say — would otherwise be rebalanced by a request that asked for
-      // no change at all.
+      // no change at all. It also keeps a request that asks for nothing answerable while the
+      // cluster cannot satisfy its own replication factor, e.g. with a broker down.
       return Either.right(List.of());
     }
 
     final int replicationFactor =
         newReplicationFactor.orElseGet(() -> currentReplicationFactor(distributionByGroup));
     final var liveMembers = clusterConfiguration.liveMembers();
-    // Rejected here rather than left to the distributor so that the operator sees why the request
-    // is impossible, with the same wording PartitionReassignRequestTransformer answers with.
-    if (replicationFactor <= 0) {
-      return Either.left(
-          new InvalidRequest(
-              "Replication factor [%d] must be greater than 0".formatted(replicationFactor)));
-    }
-    if (liveMembers.size() < replicationFactor) {
-      return Either.left(
-          new InvalidRequest(
-              "Number of brokers [%d] is less than the replication factor [%d]"
-                  .formatted(liveMembers.size(), replicationFactor)));
+    final var rejection =
+        reject(
+            targetGroupId,
+            liveMembers,
+            currentPartitionCount,
+            targetPartitionCount,
+            replicationFactor);
+    if (rejection.isPresent()) {
+      return Either.left(rejection.get());
     }
 
     final var newPartitionIds =
@@ -168,6 +165,43 @@ final class PartitionGroupScalingPhases {
       return Either.right(List.of());
     }
     return Either.right(List.of(new PartitionGroupParallelPhase(operationsByGroup)));
+  }
+
+  /**
+   * The rejections that can be decided from the request and the current configuration alone, before
+   * a distribution is computed. What the distributor itself rejects — a placement it cannot produce
+   * for these members and zones — surfaces separately, as the {@code RuntimeException} it raises.
+   *
+   * <p>Both bounds on the replication factor are checked here rather than left to the distributor
+   * so that the operator sees why the request is impossible, with the same wording {@code
+   * PartitionReassignRequestTransformer} answers with.
+   *
+   * @return the rejection to answer with, or empty if the request can be planned
+   */
+  private static Optional<Exception> reject(
+      final String targetGroupId,
+      final Set<MemberId> liveMembers,
+      final int currentPartitionCount,
+      final int targetPartitionCount,
+      final int replicationFactor) {
+    if (targetPartitionCount < currentPartitionCount) {
+      return Optional.of(
+          new InvalidRequest(
+              "New partition count [%d] of physical tenant '%s' must be greater than or equal to its current partition count [%d]"
+                  .formatted(targetPartitionCount, targetGroupId, currentPartitionCount)));
+    }
+    if (replicationFactor <= 0) {
+      return Optional.of(
+          new InvalidRequest(
+              "Replication factor [%d] must be greater than 0".formatted(replicationFactor)));
+    }
+    if (liveMembers.size() < replicationFactor) {
+      return Optional.of(
+          new InvalidRequest(
+              "Number of brokers [%d] is less than the replication factor [%d]"
+                  .formatted(liveMembers.size(), replicationFactor)));
+    }
+    return Optional.empty();
   }
 
   private static Set<PartitionMetadata> targetDistribution(
