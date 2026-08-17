@@ -24,9 +24,11 @@ public class AssertionProperties {
 
   public static final String PROPERTY_NAME_ASSERTION_TIMEOUT = "assertion.timeout";
   public static final String PROPERTY_NAME_ASSERTION_INTERVAL = "assertion.interval";
+  public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "queryPageLimit";
 
   private final Duration assertionTimeout;
   private final Duration assertionInterval;
+  private final Integer queryPageLimit;
 
   public AssertionProperties(final Properties properties) {
     assertionTimeout =
@@ -36,6 +38,10 @@ public class AssertionProperties {
     assertionInterval =
         PropertiesUtil.getPropertyOrNull(
             properties, PROPERTY_NAME_ASSERTION_INTERVAL, Duration::parse);
+
+    queryPageLimit =
+        PropertiesUtil.getPropertyOrNull(
+            properties, PROPERTY_NAME_QUERY_PAGE_LIMIT, Integer::parseInt);
   }
 
   public Optional<Duration> getAssertionTimeout() {
@@ -44,5 +50,9 @@ public class AssertionProperties {
 
   public Optional<Duration> getAssertionInterval() {
     return Optional.ofNullable(assertionInterval);
+  }
+
+  public Optional<Integer> getQueryPageLimit() {
+    return Optional.ofNullable(queryPageLimit);
   }
 }

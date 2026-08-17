@@ -27,6 +27,9 @@ public class AssertionConfiguration {
   /** The duration between two assertion attempts until the expected state is reached. */
   private Duration interval;
 
+  /** The maximum number of results to return per paged query. */
+  private Integer queryPageLimit;
+
   public Optional<Duration> getTimeout() {
     return Optional.ofNullable(timeout);
   }
@@ -41,5 +44,13 @@ public class AssertionConfiguration {
 
   public void setInterval(final Duration interval) {
     this.interval = interval;
+  }
+
+  public Optional<Integer> getQueryPageLimit() {
+    return Optional.ofNullable(queryPageLimit);
+  }
+
+  public void setQueryPageLimit(final Integer queryPageLimit) {
+    this.queryPageLimit = queryPageLimit;
   }
 }
