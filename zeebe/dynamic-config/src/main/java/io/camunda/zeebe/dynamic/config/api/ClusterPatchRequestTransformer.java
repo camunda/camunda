@@ -80,7 +80,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
     // set directly. Checked here as well as in operations(), because the new-model coordinator
     // plans through phases() alone and never calls operations() at all.
-    if (newReplicationFactor.isPresent() && !clusterConfiguration.toLegacyDefault().isUnzoned()) {
+    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
       return Either.left(
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));
