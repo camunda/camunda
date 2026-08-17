@@ -14,10 +14,10 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
@@ -77,13 +77,13 @@ public class JobRegistryReaderES implements JobRegistryReader {
   }
 
   @Override
-  public Optional<JobRegistryEntryDto> findLastByJobTypeAndTargetEntityId(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
+  public Optional<JobRegistryEntryDto> findLastByJobTypeAndEntityId(
+      final JobType jobType, final EntityType entityType, final String entityId) {
     LOG.debug(
         "Fetching job registry entry for [{}] target type [{}] target [{}].",
         jobType,
-        targetEntityType,
-        targetEntityId);
+        entityType,
+        entityId);
     final Query query =
         Query.of(
             q ->
@@ -99,14 +99,13 @@ public class JobRegistryReaderES implements JobRegistryReader {
                                 m ->
                                     m.term(
                                         t ->
-                                            t.field(JobRegistryIndex.TARGET_ENTITY_TYPE)
-                                                .value(targetEntityType.name())))
+                                            t.field(JobRegistryIndex.ENTITY_TYPE)
+                                                .value(entityType.name())))
                             .must(
                                 m ->
                                     m.term(
                                         t ->
-                                            t.field(JobRegistryIndex.TARGET_ENTITY_ID)
-                                                .value(targetEntityId)))));
+                                            t.field(JobRegistryIndex.ENTITY_ID).value(entityId)))));
 
     final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
@@ -131,7 +130,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
       final String message =
           String.format(
               "Was not able to fetch job registry entry for [%s] target type [%s] target [%s].",
-              jobType, targetEntityType, targetEntityId);
+              jobType, entityType, entityId);
       LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }

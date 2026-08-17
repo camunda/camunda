@@ -10,11 +10,11 @@ package io.camunda.optimize.service.db.os.writer;
 import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryUpdateDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -43,14 +43,13 @@ public class JobRegistryWriterOS implements JobRegistryWriter {
 
   @Override
   public JobRegistryEntryDto createJobEntry(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
-    final JobRegistryEntryDto entry =
-        new JobRegistryEntryDto(jobType, targetEntityType, targetEntityId);
+      final JobType jobType, final EntityType entityType, final String entityId) {
+    final JobRegistryEntryDto entry = new JobRegistryEntryDto(jobType, entityType, entityId);
     LOG.debug(
         "Creating job registry entry with id [{}] for [{}] target [{}].",
         entry.getId(),
         jobType,
-        targetEntityId);
+        entityId);
 
     final IndexRequest.Builder<JobRegistryEntryDto> request =
         new IndexRequest.Builder<JobRegistryEntryDto>()
