@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -508,7 +509,8 @@ public class CamundaMultiDBExtension
               + "-"
               + UUID.randomUUID()
               + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
-      configurePtStorage = configureRdbmsStorage(ptUrl, "sa", "", testPrefix, null);
+      configurePtStorage =
+          configureRdbmsStorage(ptUrl, "sa", "", testPrefix.toUpperCase(Locale.ROOT), null);
     } else {
       // Per-PT isolated storage derived from the database type: a dedicated schema/database whose
       // namespace lives in the PT URL (Postgres/MySQL/MariaDB/SQL Server), or — on Oracle — a
