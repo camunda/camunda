@@ -16,6 +16,7 @@
 package io.camunda.client.spring.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.spring.CamundaClientPropertiesTestConfig;
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
@@ -105,6 +106,52 @@ public class CamundaClientPropertiesPostProcessorTest {
     void shouldMapEnvironmentVariables() {
       assertThat(camundaClientProperties.getWorker().getOverride().get("custom").getMaxJobsActive())
           .isEqualTo(8);
+    }
+  }
+
+  @SpringBootTest(
+      properties = {
+        "camunda.client.cluster-variables.global.propVar1=propValue1",
+        "camunda.client.cluster-variables.global.propVar2=propValue2",
+        "camunda.client.cluster-variables.tenant.my-tenant.tenantVar=tenantValue"
+      })
+  @Nested
+  class ClusterVariablesMappingTest {
+    @Autowired CamundaClientProperties camundaClientProperties;
+
+    @Test
+    void shouldMapGlobalVariables() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .filteredOn(v -> v.getTenantId() == null)
+          .extracting("name", "value")
+          .containsExactlyInAnyOrder(
+              tuple("propVar1", "propValue1"), tuple("propVar2", "propValue2"));
+    }
+
+    @Test
+    void shouldMapTenantScopedVariables() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .filteredOn(v -> "my-tenant".equals(v.getTenantId()))
+          .extracting("name", "value")
+          .containsExactly(tuple("tenantVar", "tenantValue"));
+    }
+  }
+
+  @SpringBootTest(
+      properties = {
+        "camunda.client.cluster-variables.variables[0].name=fromList",
+        "camunda.client.cluster-variables.variables[0].value=listValue",
+        "camunda.client.cluster-variables.global.fromGlobal=globalValue"
+      })
+  @Nested
+  class ClusterVariablesMappingPrecedenceTest {
+    @Autowired CamundaClientProperties camundaClientProperties;
+
+    @Test
+    void shouldIgnoreDeprecatedPropertiesWhenVariablesConfigured() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .extracting("name", "value")
+          .containsExactly(tuple("fromList", "listValue"));
     }
   }
 
