@@ -68,22 +68,39 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                     + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
       }
     }
-    if (changesMembership || (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty())) {
-      // Cluster membership has no tenant dimension, so a request carrying it is planned exactly the
-      // way it always was, against the default group. So is a request that changes neither
-      // membership nor a partition dimension, which has nothing to plan. That a membership change
-      // redistributes only the default tenant's partitions, rather than every tenant's, is a gap
-      // that predates physical tenants being scalable at all; closing it needs global and
-      // partition-group phases planned together, tracked in #60193.
-      return ConfigurationChangeRequest.super.phases(clusterConfiguration);
-    }
     // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
     // set directly. Checked here as well as in operations(), because the new-model coordinator
-    // plans through phases() alone and never calls operations() at all.
+    // plans through phases() alone and never calls operations() at all — and checked before
+    // anything else that could plan, in the same order operations() checks it, so that a request
+    // combining a replication factor with a membership change is still answered with this rather
+    // than with whatever the zone-aware distributor raises about the resulting replica sum.
     if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
       return Either.left(
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));
+    }
+    if (changesMembership) {
+      // Checked here as well as in operations(), because the new-model coordinator plans through
+      // phases() alone and would otherwise admit a self-contradicting request.
+      if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
+        return Either.left(
+            new InvalidRequest(
+                new IllegalArgumentException(
+                    "Cannot add and remove the same member in the same request")));
+      }
+      // Membership has no tenant dimension, but the partitions it moves do: every tenant's
+      // partitions have to be redistributed over the new member set, not just the default
+      // tenant's. ScaleRequestTransformer plans that, the same way operations() delegates to it.
+      final var newSetOfMembers =
+          new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
+      newSetOfMembers.addAll(membersToAdd);
+      newSetOfMembers.removeAll(membersToRemove);
+      return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+          .phases(clusterConfiguration);
+    }
+    if (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
+      // Changes neither membership nor a partition dimension, so there is nothing to plan.
+      return ConfigurationChangeRequest.super.phases(clusterConfiguration);
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);

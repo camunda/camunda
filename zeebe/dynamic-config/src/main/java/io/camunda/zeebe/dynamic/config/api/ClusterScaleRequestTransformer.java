@@ -71,18 +71,28 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
                     + "factor is a cluster-wide setting, so it has no tenant to scope it to"));
       }
     }
-    if (brokerCount.isPresent()
-        || (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty())) {
-      // brokerCount changes cluster membership, which has no tenant dimension, so a request
-      // carrying it is planned exactly the way it always was, against the default group. So is a
-      // request that changes neither membership nor a partition dimension, which has nothing to
-      // plan. That a membership change redistributes only the default tenant's partitions, rather
-      // than every tenant's, is a gap that predates physical tenants being scalable at all;
-      // closing it needs global and partition-group phases planned together, tracked in #60193.
+    if (brokerCount.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
+      // Changes neither membership nor a partition dimension, so there is nothing to plan.
       return ConfigurationChangeRequest.super.phases(clusterConfiguration);
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+    final var invalidZone = validateZone(clusterConfiguration.toLegacy(groupId));
+    if (invalidZone.isPresent()) {
+      return Either.left(invalidZone.get());
+    }
+    if (brokerCount.isPresent()) {
+      // brokerCount has no tenant dimension, but the partitions it moves do: every tenant's
+      // partitions have to be redistributed over the new member set, not just the default
+      // tenant's. ScaleRequestTransformer plans that, the same way operations() delegates to it.
+      return new ScaleRequestTransformer(
+              newSetOfMembers(clusterConfiguration.toLegacy(groupId)),
+              newReplicationFactor,
+              newPartitionCount,
+              zone)
+          .phases(clusterConfiguration);
+    }
+
     // Only the partition count targets a group; the replication factor spans every tenant, so a
     // request carrying it alone has no group that has to exist.
     if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
@@ -90,10 +100,6 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
           new NotFound(
               "Expected to scale physical tenant '%s', but there's no such tenant"
                   .formatted(groupId)));
-    }
-    final var invalidZone = validateZone(clusterConfiguration.toLegacy(groupId));
-    if (invalidZone.isPresent()) {
-      return Either.left(invalidZone.get());
     }
     return PartitionGroupScalingPhases.phases(
         groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
@@ -112,26 +118,32 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     }
 
     // replicationFactor and partitionCount is validated in the delegated transformer.
-    final Set<MemberId> newSetOfMembers;
-    if (zone.isPresent()) {
-      final var zoneName = zone.get();
-      newSetOfMembers =
-          clusterConfiguration.members().keySet().stream()
-              .filter(m -> !m.isInZone(zoneName))
-              .collect(Collectors.toSet());
-      final int currentZoneCount =
-          (int)
-              clusterConfiguration.members().keySet().stream()
-                  .filter(m -> m.isInZone(zoneName))
-                  .count();
-      final var targetZoneMembers = membersInZone(currentZoneCount);
-      newSetOfMembers.addAll(targetZoneMembers);
-    } else {
-      newSetOfMembers = membersInZone(clusterConfiguration.members().size());
-    }
     return new ScaleRequestTransformer(
-            newSetOfMembers, newReplicationFactor, newPartitionCount, zone)
+            newSetOfMembers(clusterConfiguration), newReplicationFactor, newPartitionCount, zone)
         .operations(clusterConfiguration);
+  }
+
+  /**
+   * The complete member set the cluster should have once this request is applied. A zoned request
+   * resizes only the named zone and leaves every other zone's members untouched; an unzoned one
+   * resizes the whole cluster.
+   */
+  private Set<MemberId> newSetOfMembers(final ClusterConfiguration clusterConfiguration) {
+    if (zone.isEmpty()) {
+      return membersInZone(clusterConfiguration.members().size());
+    }
+    final var zoneName = zone.get();
+    final Set<MemberId> newSetOfMembers =
+        clusterConfiguration.members().keySet().stream()
+            .filter(m -> !m.isInZone(zoneName))
+            .collect(Collectors.toSet());
+    final int currentZoneCount =
+        (int)
+            clusterConfiguration.members().keySet().stream()
+                .filter(m -> m.isInZone(zoneName))
+                .count();
+    newSetOfMembers.addAll(membersInZone(currentZoneCount));
+    return newSetOfMembers;
   }
 
   /**
