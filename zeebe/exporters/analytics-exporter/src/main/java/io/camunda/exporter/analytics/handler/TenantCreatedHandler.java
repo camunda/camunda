@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TENANT_CREATED;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -27,6 +28,11 @@ public final class TenantCreatedHandler implements AnalyticsHandler<TenantRecord
 
   public TenantCreatedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.CONTRACTUAL;
   }
 
   @Override

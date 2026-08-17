@@ -13,6 +13,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITI
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.VERSION;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -31,6 +32,11 @@ public final class ProcessDefinitionCreatedHandler implements AnalyticsHandler<P
 
   public ProcessDefinitionCreatedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.OPTIONAL;
   }
 
   @Override

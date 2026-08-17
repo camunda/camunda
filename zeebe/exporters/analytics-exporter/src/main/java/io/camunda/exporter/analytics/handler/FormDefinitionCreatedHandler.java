@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.FORM_DEFINITION_CREATED;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,6 +29,11 @@ public final class FormDefinitionCreatedHandler implements AnalyticsHandler<Form
 
   public FormDefinitionCreatedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+  }
+
+  @Override
+  public AnalyticsCategory category() {
+    return AnalyticsCategory.OPTIONAL;
   }
 
   @Override
