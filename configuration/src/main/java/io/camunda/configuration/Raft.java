@@ -109,9 +109,11 @@ public class Raft {
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
 
   /**
-   * Sets the timeout for all requests send by raft leaders and followers.When modifying the values
-   * for requestTimeout, it might also be useful to update snapshotTimeout. When not set, defaults
-   * to the configured electionTimeout.
+   * Sets the timeout for all requests sent by raft leaders and followers. When modifying the
+   * values for requestTimeout, it might also be useful to update snapshotTimeout.
+   *
+   * <p>When not set, the partition factory derives the value from the configured electionTimeout
+   * at startup.
    */
   private Duration requestTimeout = null;
 

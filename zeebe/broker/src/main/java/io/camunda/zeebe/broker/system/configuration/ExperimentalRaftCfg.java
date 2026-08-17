@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.journal.file.SegmentAllocator;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.unit.DataSize;
 
 public final class ExperimentalRaftCfg implements ConfigurationEntry {
@@ -24,7 +25,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
       PreAllocationStrategy.POSIX_OR_FILL;
   // null means "not explicitly configured" — the partition factory will derive it from the
   // election timeout at startup.
-  private Duration requestTimeout = null;
+  private @Nullable Duration requestTimeout = null;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
@@ -35,7 +36,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   private PreAllocationStrategy segmentPreallocationStrategy = DEFAULT_PREALLOCATE_SEGMENT_STRATEGY;
 
-  public Duration getRequestTimeout() {
+  public @Nullable Duration getRequestTimeout() {
     return requestTimeout;
   }
 
