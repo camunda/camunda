@@ -26,10 +26,10 @@ import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -792,7 +792,7 @@ public class AuditLogSearchClientIT {
       final CamundaClient client, final Consumer<AuditLogFilter> auditLogFilterConsumer) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var auditLogItems =

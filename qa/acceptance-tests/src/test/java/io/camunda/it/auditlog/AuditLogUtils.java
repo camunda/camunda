@@ -17,12 +17,12 @@ import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.response.TenantUser;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -118,6 +118,11 @@ public class AuditLogUtils {
   }
 
   public void assignUserToUserTask(final String username, final Long processInstanceKey) {
+    // The recording exporter runs behind the camunda and opensearch exporters in the exporter
+    // chain, so against a remote secondary storage it only sees a record once those have flushed.
+    // Its 5s default is a local-database budget; use the multi-db one instead.
+    RecordingExporter.setMaximumWaitTime(
+        CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY.toMillis());
     final var task =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -131,7 +136,7 @@ public class AuditLogUtils {
 
     Awaitility.await("Audit log entry is created for the assigned user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               // wait until user task is assigned and audit log entry is created
@@ -195,6 +200,7 @@ public class AuditLogUtils {
     // the admin client's authentication might not yet reflect the tenant assignments.
     Awaitility.await("User is assigned to tenant")
         .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var tenantMembers =
@@ -213,6 +219,7 @@ public class AuditLogUtils {
     // tenant assignment audit logs
     Awaitility.await("User is assigned to tenant")
         .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogs =
@@ -236,6 +243,7 @@ public class AuditLogUtils {
 
     Awaitility.await("Audit log entry is created for the process instance")
         .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var auditLogItems =
