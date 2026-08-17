@@ -13,14 +13,19 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import org.slf4j.Logger;
 
 public final class DbSuspensionState implements MutableSuspensionState {
+
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong processInstanceKey = new DbLong();
   private final SuspensionMarkerValue suspensionMarkerValue = new SuspensionMarkerValue();
@@ -96,18 +101,45 @@ public final class DbSuspensionState implements MutableSuspensionState {
               bufferedCommandColumnFamily.get(
                   bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
           if (stored == null) {
-            // the secondary index and the primary CF are written and deleted together in a single
-            // transaction (see #bufferCommand / #removeBufferedCommand), so a secondary-index entry
-            // with no matching primary record is a broken invariant. Fail loud rather than silently
-            // dropping a buffered command, which would lose forward progress on resume.
-            throw new IllegalStateException(
-                String.format(
-                    "Expected to find buffered command with key '%d' for process instance '%d', "
-                        + "but none was stored; the buffered-command index is inconsistent",
-                    bufferedKey, key));
+            LOG.error(
+                "Expected to find buffered command with key '{}' for process instance '{}', but "
+                    + "none was stored; the buffered-command index is inconsistent. Skipping this entry.",
+                bufferedKey,
+                key);
+            return;
           }
           visitor.visit(bufferedKey, stored.getRecord());
         });
+  }
+
+  @Override
+  public Optional<BufferedCommand> getOldestBufferedCommand(final long key) {
+    processInstanceKey.wrapLong(key);
+    final var oldest = new BufferedCommand[1];
+    bufferedCommandByProcessInstanceKeyColumnFamily.whileEqualPrefix(
+        processInstanceKey,
+        (compositeKey, nil) -> {
+          final long bufferedKey = compositeKey.second().getValue();
+          bufferedCommandKey.wrapLong(bufferedKey);
+          final var stored =
+              bufferedCommandColumnFamily.get(
+                  bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
+          if (stored == null) {
+            // broken invariant: secondary index and primary CF are always written/deleted together,
+            // so a secondary entry with no matching primary record signals index corruption
+            LOG.error(
+                "Expected to find buffered command with key '{}' for process instance '{}', but "
+                    + "none was stored; the buffered-command index is inconsistent. Treating the "
+                    + "buffer as unreadable for this instance.",
+                bufferedKey,
+                key);
+            return false;
+          }
+          // the secondary index is ordered by bufferedCommandKey, so the first hit is the oldest
+          oldest[0] = new BufferedCommand(bufferedKey, stored.getRecord());
+          return false;
+        });
+    return Optional.ofNullable(oldest[0]);
   }
 
   @Override
