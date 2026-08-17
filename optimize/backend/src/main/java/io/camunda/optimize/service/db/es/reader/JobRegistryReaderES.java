@@ -80,7 +80,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
   public Optional<JobRegistryEntryDto> findLastByJobTypeAndEntityId(
       final JobType jobType, final EntityType entityType, final String entityId) {
     LOG.debug(
-        "Fetching job registry entry for [{}] target type [{}] target [{}].",
+        "Fetching job registry entry for [{}] entity type [{}] entity [{}].",
         jobType,
         entityType,
         entityId);
@@ -129,7 +129,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
     } catch (final IOException e) {
       final String message =
           String.format(
-              "Was not able to fetch job registry entry for [%s] target type [%s] target [%s].",
+              "Was not able to fetch job registry entry for [%s] entity type [%s] entity [%s].",
               jobType, entityType, entityId);
       LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
