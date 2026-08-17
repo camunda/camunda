@@ -89,10 +89,7 @@ class TaskPanelPage {
 
           // Use regex to match the filter parameter to avoid matcher function issues
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
-          await expect(this.page).toHaveURL(
-            filterRegex,
-            {timeout: 15000},
-          );
+          await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
         await this.collapseSidePanelButton.click();
         return;
