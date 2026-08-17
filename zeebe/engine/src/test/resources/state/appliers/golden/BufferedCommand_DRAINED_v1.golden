@@ -14,8 +14,7 @@ import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 
 /** Applier for {@link BufferedCommandIntent#DRAINED}. */
 final class BufferedCommandDrainedApplier
-    implements TypedEventApplier<
-        BufferedCommandIntent, BufferedCommandRecord> {
+    implements TypedEventApplier<BufferedCommandIntent, BufferedCommandRecord> {
 
   private final MutableSuspensionState suspensionState;
 
