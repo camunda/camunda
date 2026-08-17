@@ -18,6 +18,7 @@ import {
   assertUnauthorizedRequest,
   encode,
   isForwardCompat,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {
   CORRELATE_MESSAGE,
@@ -473,7 +474,11 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-5' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

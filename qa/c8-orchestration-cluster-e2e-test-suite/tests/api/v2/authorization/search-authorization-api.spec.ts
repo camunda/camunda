@@ -15,6 +15,7 @@ import {
   encode,
   assertStatusCode,
   isForwardCompat,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -444,7 +445,7 @@ test.describe.parallel('Search Authorization API', () => {
     });
   });
 
-  test('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({
+  test('Search Authorization - Negative pagination values - 400 Invalid Argument', async ({
     request,
   }) => {
     await expect(async () => {
@@ -454,7 +455,11 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number. The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
