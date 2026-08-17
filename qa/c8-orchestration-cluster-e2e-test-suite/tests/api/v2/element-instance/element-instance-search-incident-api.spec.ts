@@ -263,6 +263,51 @@ test.describe('Element Instance Incident Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Search for incidents of a specific element instance - ascending order by errorType - Success', async ({
+    request,
+  }) => {
+    const sortedErrorTypes = ['IO_MAPPING_ERROR', 'JOB_NO_RETRIES'];
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(
+          `/element-instances/${state.elementInstanceKey}/incidents/search`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            sort: [
+              {
+                field: 'errorType',
+                order: 'ASC',
+              },
+            ],
+            filter: {
+              processDefinitionKey: state.processDefinitionKeyCalled,
+            },
+          },
+        },
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: `/element-instances/{elementInstanceKey}/incidents/search`,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const body = await res.json();
+      expect(body.page.totalItems).toEqual(2);
+      expect(body.items[0].errorType).toEqual(sortedErrorTypes[0]);
+      expect(body.items[1].errorType).toEqual(sortedErrorTypes[1]);
+      body.items.forEach((item: Record<string, string>) => {
+        expect(item.processDefinitionKey).toEqual(
+          state.processDefinitionKeyCalled,
+        );
+      });
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Search for incidents of a specific element instance - Empty Result - Success', async ({
     request,
   }) => {
