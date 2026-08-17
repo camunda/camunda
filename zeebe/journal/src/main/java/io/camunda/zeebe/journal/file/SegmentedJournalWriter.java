@@ -113,7 +113,18 @@ final class SegmentedJournalWriter {
     currentWriter = currentSegment.writer();
   }
 
-  void deleteAfter(final long index) {
+  /**
+   * Deletes all records after the given index.
+   *
+   * @param index the index to delete after, inclusive
+   * @param preserveDeletedRecords when true, the deleted records are left in place instead of being
+   *     overwritten by the records appended next. Deleting records only unmaps a segment once the
+   *     last reader let go of it, but the records deleted from the middle of a segment are unmapped
+   *     by nobody: the next append simply writes over them. Callers that hand out records to be
+   *     read straight from a segment have to preserve them, or a reader can end up reading memory
+   *     that was overwritten while it was reading.
+   */
+  void deleteAfter(final long index, final boolean preserveDeletedRecords) {
     // reset the last flushed index first to avoid corruption on restart in case of partial
     // truncation (e.g. the node crashed while deleting segments)
     lastFlushedIndex = index;
@@ -126,12 +137,34 @@ final class SegmentedJournalWriter {
       currentWriter = currentSegment.writer();
     }
 
+    // Only records in the middle of a segment are overwritten by the next append; if the segment
+    // already ends at the given index, everything after it was in the segments deleted above.
+    final var overwritesDeletedRecords = index < currentWriter.getLastIndex();
+
     // Reset last entry position in descriptor to 0, to ensure that after a restart it is not using
     // the old truncated entry.
     currentSegment.resetLastEntryInDescriptor();
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
     currentWriter.truncate(index);
+
+    if (overwritesDeletedRecords && preserveDeletedRecords) {
+      LOGGER.debug(
+          "Continuing in a new segment after deleting records after index {}, to keep the deleted records readable",
+          index);
+      if (currentWriter.getLastIndex() < currentSegment.index()) {
+        // Nothing is left of this segment, so replacing it is enough: a deleted segment is only
+        // unmapped once the last reader let go of it.
+        currentSegment = segments.resetSegments(index + 1);
+      } else {
+        // Recovery finds the end of a segment's records by the invalidated frame that truncating
+        // left behind. Flush it before the next segment exists, or a restart can find records after
+        // it and resurrect the records deleted here.
+        currentWriter.flushEndOfRecords();
+        journalMetrics.observeSegmentCreation(this::createNewSegment);
+      }
+      currentWriter = currentSegment.writer();
+    }
   }
 
   void flush() throws FlushException {
