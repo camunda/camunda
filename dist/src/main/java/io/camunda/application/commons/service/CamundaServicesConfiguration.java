@@ -31,6 +31,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
@@ -566,6 +567,10 @@ public class CamundaServicesConfiguration {
 
     builder.clusterRecoveryServices(
         new ClusterRecoveryServices(clusterConfigurationRequestSender, restoreEnvironmentByTenant));
+
+    builder.clusterExportingServices(
+        new ClusterExportingServices(
+            exportingRequestBroadcaster, physicalTenantResolver.getAll().keySet()));
 
     return builder.build();
   }

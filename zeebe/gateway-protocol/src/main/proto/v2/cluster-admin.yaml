@@ -127,6 +127,156 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+  /cluster/v2/exporting:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: getClusterExportingStatus
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get exporting status of the whole cluster
+      description: >-
+        Returns the exporting status of the whole cluster, folded over the exporting status of
+        every physical tenant. Only `PAUSED` and `SOFT_PAUSED` confirm that exporting is paused
+        cluster-wide; every other value means at least one physical tenant is not paused, so
+        callers should keep polling. A physical tenant that itself reports `MIXED` makes the
+        whole cluster `MIXED`.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      responses:
+        "200":
+          description: The aggregated exporting status of the whole cluster.
+          content:
+            application/json:
+              schema:
+                $ref: 'exporting.yaml#/components/schemas/ExportingStatusResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /cluster/v2/exporting/pause:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: pauseClusterExporting
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Pause exporting across the whole cluster
+      description: >-
+        Pauses exporting on every physical tenant of the cluster in one call. With `soft=true`,
+        every physical tenant is soft-paused instead.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      parameters:
+        - name: soft
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, soft-pauses exporting instead of a hard pause.
+      responses:
+        "204":
+          description: Exporting was successfully paused on every physical tenant.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /cluster/v2/exporting/resume:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Exporting
+      operationId: resumeClusterExporting
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Resume exporting across the whole cluster
+      description: >-
+        Resumes exporting on every physical tenant of the cluster in one call, after a pause or
+        soft pause.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials
+        are valid here.
+      responses:
+        "204":
+          description: Exporting was successfully resumed on every physical tenant.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
   /cluster/v2/mode:
     servers:
       - url: "{schema}://{host}:{port}"
