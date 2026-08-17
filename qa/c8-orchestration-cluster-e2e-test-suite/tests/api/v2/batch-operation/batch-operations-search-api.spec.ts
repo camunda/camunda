@@ -200,7 +200,11 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertInvalidArgument(res, 400, "The value for page.from is '-1' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
