@@ -115,6 +115,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -135,6 +136,9 @@ import java.util.function.BiConsumer;
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
   public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
 
+  /** The partition on which all process deployments and identity entities are published */
+  public static final int PROCESS_DEFINITION_PARTITION = 1;
+
   private IndexDescriptors indexDescriptors;
   private Set<ExportHandler<?, ?>> exportHandlers;
   private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
@@ -146,6 +150,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   public void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
+      final Context context,
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
@@ -153,6 +158,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
+    final var partitionId = context.getPartitionId();
 
     batchOperationCache =
         new ExporterEntityCacheImpl<>(
@@ -243,10 +249,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
-            new ProcessFullyDeletedHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
-            new ProcessDrainingHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -336,6 +338,17 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
+
+    // DRAINING is distributed to every partition, so register these on the deployment partition
+    // only: concurrent writes to the same process-definition document could otherwise race.
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
+      exportHandlers.add(
+          new ProcessDrainingHandler(
+              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+      exportHandlers.add(
+          new ProcessFullyDeletedHandler(
+              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+    }
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

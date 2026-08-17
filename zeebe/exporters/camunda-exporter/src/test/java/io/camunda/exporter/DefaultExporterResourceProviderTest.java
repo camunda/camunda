@@ -13,12 +13,14 @@ import static org.mockito.Mockito.mock;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ProcessDrainingHandler;
+import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +38,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -72,7 +74,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -95,7 +97,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -118,7 +120,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -130,6 +132,47 @@ public class DefaultExporterResourceProviderTest {
                     .map(ExportHandler::getClass)
                     .distinct()
                     .count());
+  }
+
+  @Test
+  void shouldRegisterProcessLifecycleHandlersOnlyOnDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext()
+            .setPartitionId(DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
+  }
+
+  @Test
+  void shouldNotRegisterProcessLifecycleHandlersOnNonDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
   }
 
   static Stream<ExporterConfiguration> configProvider() {
