@@ -11,14 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.management.cluster.ConfigurationChange.StatusEnum;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
+import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -39,6 +42,12 @@ import org.junit.jupiter.params.provider.MethodSource;
  * a fresh full-cluster bootstrap. This verifies the whole path end-to-end: a brand-new physical
  * tenant's partitions become visible via the client-facing (physical-tenant-scoped) topology
  * endpoint, and a process can be deployed to and instantiated within it.
+ *
+ * <p>Also covers the inverse: a physical tenant later removed from every broker's static
+ * configuration is disabled rather than deleted (see {@code
+ * PhysicalTenantAvailabilityInitializer}), and a cluster-wide operation that targets every physical
+ * tenant when none is explicitly given must not target it — otherwise the resulting change plan
+ * would stall forever waiting on an unreachable share of the plan that no broker runs any more.
  */
 @ZeebeIntegration
 final class PhysicalTenantProvisioningIT {
@@ -74,7 +83,7 @@ final class PhysicalTenantProvisioningIT {
           .build();
 
   @ParameterizedTest
-  @MethodSource("restartStrategies")
+  @MethodSource("restartStrategiesWithNewTenants")
   void shouldProvisionNewPhysicalTenantAddedAfterInitialBootstrapOnRestart(
       final Consumer<TestCluster> restarter) {
     // given - the cluster is up and running with only the default tenant and tenantA
@@ -143,10 +152,13 @@ final class PhysicalTenantProvisioningIT {
     }
   }
 
-  @Test
-  void shouldMarkPhysicalTenantDisabledOnActuatorWhenRemovedFromConfigAfterRestart() {
+  @ParameterizedTest
+  @MethodSource("restartStrategiesWithRemovingTenants")
+  void shouldMarkPhysicalTenantDisabledOnActuatorWhenRemovedFromConfigAfterRestart(
+      final Consumer<TestCluster> restarter) {
     // given - tenantB is provisioned by adding it to every broker's configuration and restarting
-    restartCluster(cluster);
+    restartClusterWithTenantB();
+
     try (final var tenantBClient =
         TENANTS_AFTER.newClientBuilder(cluster.availableGateway(), TENANT_B).build()) {
       await("tenantB's topology is complete after provisioning")
@@ -160,9 +172,8 @@ final class PhysicalTenantProvisioningIT {
 
     // when - tenantB is removed from every broker's local static configuration and the cluster is
     // restarted again
-    cluster.shutdown();
-    cluster.brokers().values().forEach(broker -> broker.removePtConfig(TENANT_B));
-    cluster.start().awaitCompleteTopology();
+
+    restarter.accept(cluster);
 
     // then - the physical-tenant-scoped actuator reports tenantB as disabled, with no routing
     // state or partitions: it is retained in the configuration, just not running anywhere
@@ -197,38 +208,100 @@ final class PhysicalTenantProvisioningIT {
             });
   }
 
-  public static Stream<Arguments> restartStrategies() {
+  private void restartClusterWithTenantB() {
+    restartCluster(
+        cluster,
+        broker -> {
+          TENANTS_AFTER.configure(broker);
+          broker.withPtConfig(
+              TENANT_B,
+              camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
+        });
+  }
+
+  @Test
+  void shouldCompleteClusterWideExporterDisableAfterTenantIsRemovedFromConfig() {
+    // given - tenantB is provisioned by adding it to every broker's configuration and restarting
+    restartClusterWithTenantB();
+    try (final var tenantBClient =
+        TENANTS_AFTER.newClientBuilder(cluster.availableGateway(), TENANT_B).build()) {
+      await("tenantB's topology is complete after provisioning")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(tenantBClient.newTopologyRequest().send().join())
+                      .isComplete(BROKERS_COUNT, TENANT_B_PARTITIONS_COUNT, BROKERS_COUNT));
+    }
+
+    // when - tenantB is removed from every broker's local static configuration and the cluster is
+    // restarted again, disabling it: its partition assignment is retained, but no broker runs its
+    // partitions any more
+    cluster.shutdown();
+    cluster.brokers().values().forEach(broker -> broker.removePtConfig(TENANT_B));
+    cluster.start().awaitCompleteTopology();
+
+    // then - a cluster-wide exporter-disable request (no physical tenant explicitly targeted)
+    // completes instead of stalling forever: if it were still generated for tenantB's retained
+    // (but now unreachable) partition assignment, the change plan would never observe an ack for
+    // that share and would stay IN_PROGRESS
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    final var response =
+        ExportersActuator.of(cluster.availableGateway())
+            .disableExporter(TestStandaloneBroker.RECORDING_EXPORTER_ID);
+    await("the cluster-wide exporter-disable change completes")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(actuator.getChange(response.getChangeId()).getStatus())
+                    .isEqualTo(StatusEnum.COMPLETED));
+  }
+
+  public static Stream<Arguments> restartStrategiesWithNewTenants() {
+    return restartStrategies(
+        broker -> {
+          TENANTS_AFTER.configure(broker);
+          broker.withPtConfig(
+              TENANT_B,
+              camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
+        });
+  }
+
+  public static Stream<Arguments> restartStrategiesWithRemovingTenants() {
+    return restartStrategies(broker -> broker.removePtConfig(TENANT_B));
+  }
+
+  private static Stream<Arguments> restartStrategies(
+      final Consumer<TestStandaloneBroker> brokerConfigurator) {
     return Stream.of(
         Arguments.of(
             Named.of(
                 "Full restart",
-                (Consumer<TestCluster>) PhysicalTenantProvisioningIT::restartCluster)),
+                (Consumer<TestCluster>) cluster -> restartCluster(cluster, brokerConfigurator))),
         Arguments.of(
             Named.of(
                 "Rolling restart (coordinator first)",
-                (Consumer<TestCluster>) cluster -> rollingRestart(cluster, true))),
+                (Consumer<TestCluster>)
+                    cluster -> rollingRestart(cluster, true, brokerConfigurator))),
         Arguments.of(
             Named.of(
                 "Rolling restart (coordinator last)",
-                (Consumer<TestCluster>) cluster -> rollingRestart(cluster, false))));
+                (Consumer<TestCluster>)
+                    cluster -> rollingRestart(cluster, false, brokerConfigurator))));
   }
 
-  private static void restartCluster(final TestCluster cluster) {
+  private static void restartCluster(
+      final TestCluster cluster, final Consumer<TestStandaloneBroker> brokerConfigurator) {
     cluster.shutdown();
-    cluster
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              TENANTS_AFTER.configure(broker);
-              broker.withPtConfig(
-                  TENANT_B,
-                  camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
-            });
+    cluster.brokers().values().forEach(brokerConfigurator);
     cluster.start().awaitCompleteTopology();
   }
 
-  private static void rollingRestart(final TestCluster cluster, final boolean ascending) {
+  private static void rollingRestart(
+      final TestCluster cluster,
+      final boolean ascending,
+      final Consumer<TestStandaloneBroker> brokerConfigurator) {
     cluster.brokers().values().stream()
         .sorted(
             ascending
@@ -237,10 +310,7 @@ final class PhysicalTenantProvisioningIT {
         .forEach(
             broker -> {
               broker.stop();
-              TENANTS_AFTER.configure(broker);
-              broker.withPtConfig(
-                  TENANT_B,
-                  camunda -> camunda.getCluster().setPartitionCount(TENANT_B_PARTITIONS_COUNT));
+              brokerConfigurator.accept(broker);
               broker.start();
               cluster.await(TestHealthProbe.READY, Duration.ofSeconds(30));
             });

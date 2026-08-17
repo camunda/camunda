@@ -187,7 +187,18 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                       // application — uses the new multi-group model directly, so supporting
                       // non-default groups in the future only requires changing what phases()
                       // returns, not this coordinator.
-                      final var generatedPhases = request.phases(currentConfiguration);
+                      //
+                      // Requests that don't opt into targeting disabled physical tenants only see
+                      // active partition groups here, so phases() can never generate a phase that
+                      // targets a disabled tenant. Validation and application below still use the
+                      // unfiltered configuration: the generated phases are already restricted to
+                      // active groups, so validating/applying them against the full configuration
+                      // is safe and lets a phase's post-condition still observe disabled groups.
+                      final var configurationForPhases =
+                          request.applyToDisabledTenants()
+                              ? currentConfiguration
+                              : currentConfiguration.withoutDisabledPartitionGroups();
+                      final var generatedPhases = request.phases(configurationForPhases);
                       if (generatedPhases.isLeft()) {
                         failFuture(future, generatedPhases.getLeft());
                         return;

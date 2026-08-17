@@ -803,6 +803,43 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class WithoutDisabledPartitionGroups {
+
+    @Test
+    void shouldExcludeADisabledGroupButKeepOtherFields() {
+      // given — "a" is enabled, "b" is disabled
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()), "b", group(1, Map.of()).disable()),
+              PhasedChangeState.empty());
+
+      // when
+      final var view = config.withoutDisabledPartitionGroups();
+
+      // then
+      assertThat(view.partitionGroups()).containsOnlyKeys("a");
+      assertThat(view.version()).isEqualTo(config.version());
+      assertThat(view.globalConfiguration()).isEqualTo(config.globalConfiguration());
+      assertThat(view.phasedChangeState()).isEqualTo(config.phasedChangeState());
+    }
+
+    @Test
+    void shouldReturnEveryGroupWhenNoneIsDisabled() {
+      // given
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+              PhasedChangeState.empty());
+
+      // when / then
+      assertThat(config.withoutDisabledPartitionGroups().partitionGroups())
+          .containsOnlyKeys("a", "b");
+    }
+  }
+
+  @Nested
   class PlanTransitions {
 
     private static GlobalPhase globalPhase() {
