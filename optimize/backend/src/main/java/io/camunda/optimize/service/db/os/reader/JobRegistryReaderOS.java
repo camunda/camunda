@@ -9,10 +9,10 @@ package io.camunda.optimize.service.db.os.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDEX_NAME;
 
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.JobRegistryReader;
@@ -70,18 +70,18 @@ public class JobRegistryReaderOS implements JobRegistryReader {
   }
 
   @Override
-  public Optional<JobRegistryEntryDto> findLastByJobTypeAndTargetEntityId(
-      final JobType jobType, final TargetEntityType targetEntityType, final String targetEntityId) {
+  public Optional<JobRegistryEntryDto> findLastByJobTypeAndEntityId(
+      final JobType jobType, final EntityType entityType, final String entityId) {
     LOG.debug(
         "Fetching job registry entry for [{}] target type [{}] target [{}].",
         jobType,
-        targetEntityType,
-        targetEntityId);
+        entityType,
+        entityId);
     final BoolQuery boolQuery =
         new BoolQuery.Builder()
             .must(QueryDSL.term(JobRegistryIndex.JOB_TYPE, jobType.name()))
-            .must(QueryDSL.term(JobRegistryIndex.TARGET_ENTITY_TYPE, targetEntityType.name()))
-            .must(QueryDSL.term(JobRegistryIndex.TARGET_ENTITY_ID, targetEntityId))
+            .must(QueryDSL.term(JobRegistryIndex.ENTITY_TYPE, entityType.name()))
+            .must(QueryDSL.term(JobRegistryIndex.ENTITY_ID, entityId))
             .build();
 
     final SearchRequest.Builder searchReqBuilder =
@@ -97,7 +97,7 @@ public class JobRegistryReaderOS implements JobRegistryReader {
     final String errorMessage =
         String.format(
             "Was not able to fetch job registry entry for [%s] target type [%s] target [%s].",
-            jobType, targetEntityType, targetEntityId);
+            jobType, entityType, entityId);
     final SearchResponse<JobRegistryEntryDto> searchResponse =
         osClient.search(searchReqBuilder, JobRegistryEntryDto.class, errorMessage);
 

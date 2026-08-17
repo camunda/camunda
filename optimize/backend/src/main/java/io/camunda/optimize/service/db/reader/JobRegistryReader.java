@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.service.db.reader;
 
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobType;
-import io.camunda.optimize.dto.optimize.query.job.TargetEntityType;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,9 +22,9 @@ public interface JobRegistryReader {
   List<JobRegistryEntryDto> findOldestQueuedJobs(int limit);
 
   /**
-   * Returns the most recent job registry entry for the given jobType, targetEntityType, and
-   * targetEntityId, if one exists (in any status).
+   * Returns the most recent job registry entry for the given jobType, entityType, and entityId, if
+   * one exists (in any status).
    */
-  Optional<JobRegistryEntryDto> findLastByJobTypeAndTargetEntityId(
-      JobType jobType, TargetEntityType targetEntityType, String targetEntityId);
+  Optional<JobRegistryEntryDto> findLastByJobTypeAndEntityId(
+      JobType jobType, EntityType entityType, String entityId);
 }
