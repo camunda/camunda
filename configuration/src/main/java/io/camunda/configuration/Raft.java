@@ -8,7 +8,6 @@
 
 package io.camunda.configuration;
 
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPEND_BATCH_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
@@ -111,9 +110,10 @@ public class Raft {
 
   /**
    * Sets the timeout for all requests send by raft leaders and followers.When modifying the values
-   * for requestTimeout, it might also be useful to update snapshotTimeout.
+   * for requestTimeout, it might also be useful to update snapshotTimeout. When not set, defaults
+   * to the configured electionTimeout.
    */
-  private Duration requestTimeout = DEFAULT_ELECTION_TIMEOUT;
+  private Duration requestTimeout = null;
 
   /**
    * Sets the timeout for all snapshot requests sent by raft leaders to the followers. If the
