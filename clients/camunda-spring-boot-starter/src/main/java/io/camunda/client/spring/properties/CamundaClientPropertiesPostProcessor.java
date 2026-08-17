@@ -171,12 +171,19 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
                       + CLUSTER_VARIABLES_TENANT
                       + "': tenant ID must not be null or blank");
             }
-            if (tenantVariables instanceof final Map<?, ?> variables) {
-              variables.forEach(
-                  (name, value) ->
-                      putClusterVariable(
-                          mapped, index[0]++, String.valueOf(name), value, tenantId));
+            if (!(tenantVariables instanceof Map<?, ?>)) {
+              throw new IllegalArgumentException(
+                  "Invalid value for tenant '"
+                      + tenantId
+                      + "' in '"
+                      + CLUSTER_VARIABLES_TENANT
+                      + "': expected a map of variable name to value");
             }
+            ((Map<?, ?>) tenantVariables)
+                .forEach(
+                    (name, value) ->
+                        putClusterVariable(
+                            mapped, index[0]++, String.valueOf(name), value, tenantId));
           });
     }
     addMapPropertySourceFirst("cluster-variables-legacy", mapped, environment);

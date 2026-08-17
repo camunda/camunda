@@ -16,6 +16,7 @@
 package io.camunda.client.spring.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.spring.CamundaClientPropertiesTestConfig;
@@ -23,10 +24,14 @@ import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.unit.DataSize;
 
@@ -152,6 +157,29 @@ public class CamundaClientPropertiesPostProcessorTest {
       assertThat(camundaClientProperties.getClusterVariables().getVariables())
           .extracting("name", "value")
           .containsExactly(tuple("fromList", "listValue"));
+    }
+  }
+
+  @Nested
+  class ClusterVariablesValidationTest {
+
+    @Test
+    void shouldRejectNonMapTenantValue() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.tenant.my-tenant", "not-a-map")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null))
+          .withMessageContaining("camunda.client.cluster-variables.tenant");
     }
   }
 
