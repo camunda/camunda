@@ -27,12 +27,72 @@ SUPPRESSED_IN_FLIGHT = "agent-already-running"
 SUPPRESSED_PR_COVERED = "open-pr-covers-all-specs"
 SUPPRESSED_PR_OPEN = "open-fix-pr-for-surface"
 SUPPRESSED_PRODUCT_BUG = "tracked-by-open-product-bug"
+SUPPRESSED_RECENT_NO_FIX = "no-fix-verdict-within-cooldown"
+SUPPRESSED_FIXED_UPSTREAM = "fixed-upstream-after-run-started"
+SUPPRESSED_UNSUPPORTED_REF = "base-ref-not-supported-by-fix-agent"
+#: Every spec was dropped, but by more than one of the sources above.
+SUPPRESSED_ALL_ACCOUNTED = "all-specs-already-accounted-for"
 SUPPRESSED_NO_EVIDENCE = "no-failing-specs-extracted"
 SUPPRESSED_CAP = "per-run-cap-reached"
 
 
+#: Branches the fix agent accepts. Must stay in sync with the `Validate inputs` case
+#: statement in alwaysgreen-fix.yml: dispatching anything else spends a runner only to
+#: fail on the agent's first step, which is what happened to run 31115770750 on
+#: `ci/alwaysgreen-helm-live-check`.
+SUPPORTED_BASE_REFS = frozenset({"main", "stable/8.7", "stable/8.8", "stable/8.9"})
+
+
+def spec_suite(spec_file: str) -> str | None:
+    """The version directory a spec lives in: `tests/SM-8.10/x.spec.ts` -> `SM-8.10`."""
+    parts = (spec_file or "").split("/")
+    if len(parts) >= 3 and parts[0] == "tests" and parts[1]:
+        return parts[1]
+    return None
+
+
 def dispatch_key(base_ref: str, surface: str) -> str:
     return f"{base_ref}:{surface}"
+
+
+def dedupe_specs(specs: list[classify.FailingSpec]) -> list[classify.FailingSpec]:
+    """Collapse repeats of the same (file, test_name), keeping the first.
+
+    A SaaS run on 8.8/8.9 publishes one Playwright report per Tasklist generation
+    (`json-report-v1` and `json-report-v2`), and discover concatenates every report
+    it downloads. A spec that fails in both generations therefore arrives twice, which
+    doubles the agent's spec list and the fingerprints it is told to claim — observed
+    on run 31016165246, where two failing tests were dispatched as four.
+    """
+    out: list[classify.FailingSpec] = []
+    seen: set[tuple[str, str]] = set()
+    for spec in specs:
+        identity = (spec.file, spec.test_name)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        out.append(spec)
+    return out
+
+
+def verdict_fingerprints(
+    fix_meta: object, fingerprints: object
+) -> set[str]:
+    """Fingerprints a finished agent run leaves suppressed, from its own artifacts.
+
+    Empty unless the run produced a manifest that opened nothing. A crashed agent
+    (no manifest, or one that will not parse) and a run that opened a PR must both
+    contribute nothing: the first is an infrastructure failure rather than a verdict,
+    and the second is already covered by the PR's own coverage block.
+    """
+    if not isinstance(fix_meta, dict):
+        return set()
+    prs = fix_meta.get("prs")
+    if not isinstance(prs, list) or prs:
+        return set()
+    if not isinstance(fingerprints, list):
+        return set()
+    return {str(fp)[:8] for fp in fingerprints if fp}
 
 
 @dataclass
@@ -95,6 +155,9 @@ def plan_dispatches(
     inflight_keys: set[str],
     open_pr_keys: set[str],
     product_bug_fingerprints: set[str],
+    recent_no_fix_fingerprints: set[str] | None = None,
+    fixed_upstream_fingerprints: set[str] | None = None,
+    supported_base_refs: frozenset[str] = SUPPORTED_BASE_REFS,
     max_dispatches: int = 2,
     dispatchable_surfaces: frozenset[str] = classify.DISPATCHABLE_SURFACES,
 ) -> Plan:
@@ -102,10 +165,29 @@ def plan_dispatches(
 
     Checks are ordered cheapest-and-most-decisive first so the summary reports the
     most useful reason when several apply.
+
+    `recent_no_fix_fingerprints` are those an agent investigated inside the cooldown
+    window and could not safely fix. Without them a `not-determined` verdict leaves no
+    state anywhere — no PR, so no coverage block and no key label — and the identical
+    forensic run is dispatched again on the next failure.
+
+    `fixed_upstream_fingerprints` are those whose test code changed in the e2e repo
+    after the failing run started, so the run executed source that is already superseded.
     """
     plan = Plan()
+    no_fix = recent_no_fix_fingerprints or set()
+    fixed_upstream = fixed_upstream_fingerprints or set()
 
     for cand in candidates:
+        # Before anything reads .specs or derives fingerprints from them.
+        cand.specs = dedupe_specs(cand.specs)
+
+        if cand.base_ref not in supported_base_refs:
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_UNSUPPORTED_REF, cand.base_ref)
+            )
+            continue
+
         if cand.surface not in dispatchable_surfaces:
             plan.suppressed.append(
                 Suppression(cand, SUPPRESSED_NOT_DISPATCHABLE, cand.surface)
@@ -135,16 +217,43 @@ def plan_dispatches(
             )
             continue
 
-        # Drop specs an open PR already covers; dispatch only what is left.
+        if fps and all(f in no_fix for f in fps):
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_RECENT_NO_FIX, ",".join(sorted(set(fps))))
+            )
+            continue
+
+        if fps and all(f in fixed_upstream for f in fps):
+            plan.suppressed.append(
+                Suppression(cand, SUPPRESSED_FIXED_UPSTREAM, ",".join(sorted(set(fps))))
+            )
+            continue
+
+        # Drop specs an open PR, a product bug, a recent no-fix verdict or an upstream
+        # fix already accounts for; dispatch only what is left. Which source dropped
+        # each one is tracked so the summary names the real blocker: reporting every
+        # empty remainder as "open-pr-covers-all-specs" hid the other three.
         if not cand.job_level:
-            remaining = [
-                s
-                for s, fp in zip(cand.specs, cand.spec_fingerprints)
-                if fp not in covered_fingerprints
-                and fp not in product_bug_fingerprints
-            ]
+            accounted: list[str] = []
+            remaining = []
+            for spec, fp in zip(cand.specs, cand.spec_fingerprints):
+                if fp in covered_fingerprints:
+                    accounted.append(SUPPRESSED_PR_COVERED)
+                elif fp in product_bug_fingerprints:
+                    accounted.append(SUPPRESSED_PRODUCT_BUG)
+                elif fp in no_fix:
+                    accounted.append(SUPPRESSED_RECENT_NO_FIX)
+                elif fp in fixed_upstream:
+                    accounted.append(SUPPRESSED_FIXED_UPSTREAM)
+                else:
+                    remaining.append(spec)
             if not remaining:
-                plan.suppressed.append(Suppression(cand, SUPPRESSED_PR_COVERED))
+                sources = sorted(set(accounted))
+                plan.suppressed.append(
+                    Suppression(cand, sources[0], "")
+                    if len(sources) == 1
+                    else Suppression(cand, SUPPRESSED_ALL_ACCOUNTED, ",".join(sources))
+                )
                 continue
             cand.specs = remaining
         elif fps and all(f in covered_fingerprints for f in fps):
