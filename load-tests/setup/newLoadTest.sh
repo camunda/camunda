@@ -59,7 +59,7 @@ case "$target_version" in
     ;;
   stable-89)
     # renovate: version=camunda-platform-8.9
-    camunda_platform_helm_chart_version="14.8.2"
+    camunda_platform_helm_chart_version="14.8.3"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
