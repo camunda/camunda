@@ -38,6 +38,8 @@ public interface BpmnElementContext {
    */
   long getRootProcessInstanceKey();
 
+  int getStorageOrdinalKey();
+
   int getProcessVersion();
 
   DirectBuffer getBpmnProcessId();
