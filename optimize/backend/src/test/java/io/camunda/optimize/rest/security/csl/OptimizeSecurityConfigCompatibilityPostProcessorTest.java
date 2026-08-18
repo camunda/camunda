@@ -69,6 +69,22 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldBridgeAndNotWarnFlagExplicitlyDisabledWhenValueIsNeitherTrueNorFalse() {
+    // given a typo (e.g. "flase") rather than a literal "false": Boolean.parseBoolean would treat
+    // it as false and wrongly log "set to false" for a value the operator never set to false
+    final Map<String, Object> legacy = new HashMap<>();
+    legacy.put("optimize.security.csl.enabled", "flase");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
+    logs.assertDoesNotContain(
+        entry -> entry.getLevel() == Level.WARN && entry.getMessage().contains("set to false"),
+        "expected no misleading 'set to false' warning for a value that isn't literally false");
+  }
+
+  @Test
   void shouldBridgeByDefaultWhenFlagAbsent() {
     // given the flag is not set at all — CSL is now the default (camunda/camunda#58483)
     final Map<String, Object> legacy = new HashMap<>();

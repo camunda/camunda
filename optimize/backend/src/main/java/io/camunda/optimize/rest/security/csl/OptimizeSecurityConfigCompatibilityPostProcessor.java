@@ -69,7 +69,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
-    if (!Boolean.parseBoolean(env.getProperty(CSL_ENABLED_PROPERTY, "true"))) {
+    if ("false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"))) {
       warnCslFlagExplicitlyDisabled();
       return;
     }
