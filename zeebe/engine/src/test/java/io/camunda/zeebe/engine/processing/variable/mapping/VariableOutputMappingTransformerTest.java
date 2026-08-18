@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -212,7 +213,8 @@ public final class VariableOutputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       assertThat(result.isFailure())
@@ -246,7 +248,8 @@ public final class VariableOutputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       if (result.isFailure()) {
@@ -286,7 +289,8 @@ public final class VariableOutputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
@@ -319,7 +323,8 @@ public final class VariableOutputMappingTransformerTest {
       final EvaluationContext context =
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());

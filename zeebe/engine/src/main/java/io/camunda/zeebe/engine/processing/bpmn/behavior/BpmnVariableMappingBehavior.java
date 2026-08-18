@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -99,7 +100,7 @@ public final class BpmnVariableMappingBehavior {
     // for input mappings, so a modeled reference survives evaluation instead of nulling
     final var processor =
         inputMappingExpressionProcessor.prependContext(
-            name -> Either.left(resultBuilder.getVariable(name)));
+            name -> Either.left(ContextValue.msgPack(resultBuilder.getVariable(name))));
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
       final var result =
@@ -172,7 +173,8 @@ public final class BpmnVariableMappingBehavior {
                       .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                       .orElse(null));
       final var processor =
-          expressionProcessor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
+          expressionProcessor.prependContext(
+              name -> Either.left(ContextValue.msgPack(resultBuilder.getVariable(name))));
 
       final var mappingsToEvaluate =
           evaluateDuplicateOutputMappingTargetsInOrder
