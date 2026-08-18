@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.api.mock.MockChildProcessBuilder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -33,11 +35,15 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
   private static final Logger LOGGER = LoggerFactory.getLogger(MockChildProcessBuilderImpl.class);
 
   private final CamundaClient client;
+  private final Consumer<DeploymentEvent> deploymentCallback;
+
   private String childProcessId;
   private String versionTag;
 
-  public MockChildProcessBuilderImpl(final CamundaClient client) {
+  public MockChildProcessBuilderImpl(
+      final CamundaClient client, final Consumer<DeploymentEvent> deploymentCallback) {
     this.client = client;
+    this.deploymentCallback = deploymentCallback;
   }
 
   @Override
@@ -152,6 +158,9 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
 
   private void deploy(final BpmnModelInstance processModel) {
     final String resourceName = childProcessId + ".bpmn";
-    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    final DeploymentEvent deploymentEvent =
+        client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+
+    deploymentCallback.accept(deploymentEvent);
   }
 }

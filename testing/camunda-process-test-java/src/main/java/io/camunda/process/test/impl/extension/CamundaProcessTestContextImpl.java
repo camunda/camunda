@@ -217,7 +217,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
-    return new MockChildProcessBuilderImpl(client);
+    return new MockChildProcessBuilderImpl(client, deploymentCallback);
   }
 
   @Override
