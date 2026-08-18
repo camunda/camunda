@@ -16,6 +16,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       runDockerfileChecks:
         description: "Set to true if optimize.Dockerfile was changed"
         type: boolean
@@ -36,6 +41,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       runDockerfileChecks:
         description: "Set to true if optimize.Dockerfile was changed"
         type: boolean
@@ -431,7 +441,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
-    if: inputs.runFeTests
+    if: inputs.runE2eTests
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 45
     permissions: { }
