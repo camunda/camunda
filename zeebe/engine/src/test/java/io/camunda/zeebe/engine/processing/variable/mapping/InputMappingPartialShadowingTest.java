@@ -69,26 +69,22 @@ public final class InputMappingPartialShadowingTest {
     // given: x is mapped as a whole, so there is no partial anything to fall through to. This is
     // the guard against an implementation that layers scalars and nulls over the ancestor too:
     // there is no "absent" state, an assigned target is authoritative.
-    final long processInstanceKey =
-        activate(
-            "{'x': 5}", b -> b.zeebeInputExpression("null", "x").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("x", "null"), variable("y", "null"));
+    assertInputMapping(
+        "{'x': 5}",
+        b -> b.zeebeInputExpression("null", "x").zeebeInputExpression("x", "y"),
+        variable("x", "null"),
+        variable("y", "null"));
   }
 
   @Test
   public void shouldTotallyShadowAncestorWhenTheWholeNameIsMappedToAnObject() {
     // given: the mapped value is an object, but it was assigned to x as a whole rather than to a
     // path inside it, so the ancestor's b is not reachable under x anymore
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("{a: 3}", "x").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':3}"), variable("y", "{'a':3}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("{a: 3}", "x").zeebeInputExpression("x", "y"),
+        variable("x", "{'a':3}"),
+        variable("y", "{'a':3}"));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -100,26 +96,20 @@ public final class InputMappingPartialShadowingTest {
     // given: the "keep only the fields this task needs, under the same name" idiom. The second
     // mapping's source must still resolve x against the ancestor for the key the first mapping did
     // not define.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("x.a", "x.a").zeebeInputExpression("x.b", "x.b"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("x", "{'a':1,'b':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("x.a", "x.a").zeebeInputExpression("x.b", "x.b"),
+        variable("x", "{'a':1,'b':2}"));
   }
 
   @Test
   public void shouldKeepSiblingFieldsWhenNarrowingAnObjectOntoItsOwnNameInReverseOrder() {
     // given: the same shape with the two mappings swapped — partial shadowing makes the result
     // order-independent, where total shadowing lets declaration order pick which field survives
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("x.b", "x.b").zeebeInputExpression("x.a", "x.a"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("x", "{'a':1,'b':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("x.b", "x.b").zeebeInputExpression("x.a", "x.a"),
+        variable("x", "{'a':1,'b':2}"));
   }
 
   @Test
@@ -127,26 +117,20 @@ public final class InputMappingPartialShadowingTest {
     // given: the same shape one level deeper. This is the case that separates a recursive merge
     // from a top-level-only one: a top-level-only merge sees x.a defined locally, takes the local
     // {b: 1} whole, and resolves x.a.c to null.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': {'b': 1, 'c': 2}}}",
-            b -> b.zeebeInputExpression("x.a.b", "x.a.b").zeebeInputExpression("x.a.c", "x.a.c"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("x", "{'a':{'b':1,'c':2}}"));
+    assertInputMapping(
+        "{'x': {'a': {'b': 1, 'c': 2}}}",
+        b -> b.zeebeInputExpression("x.a.b", "x.a.b").zeebeInputExpression("x.a.c", "x.a.c"),
+        variable("x", "{'a':{'b':1,'c':2}}"));
   }
 
   @Test
   public void shouldCopyEveryFieldWhenNarrowingAnObjectOntoADifferentName() {
     // given: the control for the three above — renaming the target root means no shadowing is
     // involved at all, and this has always worked
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("x.a", "y.a").zeebeInputExpression("x.b", "y.b"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("y", "{'a':1,'b':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("x.a", "y.a").zeebeInputExpression("x.b", "y.b"),
+        variable("y", "{'a':1,'b':2}"));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -157,40 +141,32 @@ public final class InputMappingPartialShadowingTest {
   public void shouldFallThroughToTheAncestorWhenReadingAnObjectAFieldWasAddedTo() {
     // given: a.b adds a field the ancestor's a does not have. The local a holds only b — nothing
     // seeds it from the ancestor — but reading a layers that b over the ancestor's a.
-    final long processInstanceKey =
-        activate(
-            "{'a': {'z': 99}}",
-            b -> b.zeebeInputExpression("1", "a.b").zeebeInputExpression("a", "c"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("a", "{'b':1}"), variable("c", "{'b':1,'z':99}"));
+    assertInputMapping(
+        "{'a': {'z': 99}}",
+        b -> b.zeebeInputExpression("1", "a.b").zeebeInputExpression("a", "c"),
+        variable("a", "{'b':1}"),
+        variable("c", "{'b':1,'z':99}"));
   }
 
   @Test
   public void shouldFallThroughToTheAncestorWhenReadingAnObjectAFieldWasOverriddenIn() {
     // given: x.a overrides a field the ancestor's x already has. The mapped key wins on the read,
     // the unmapped one falls through.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("3", "x.a").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':3}"), variable("y", "{'a':3,'b':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("3", "x.a").zeebeInputExpression("x", "y"),
+        variable("x", "{'a':3}"),
+        variable("y", "{'a':3,'b':2}"));
   }
 
   @Test
   public void shouldFallThroughToTheAncestorWhenReadingAFieldThatOnlyTheAncestorHas() {
     // given: the read digs straight into a key the mappings never defined
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b -> b.zeebeInputExpression("3", "x.a").zeebeInputExpression("x.b", "y"));
-
-    // then
-    assertMappedElementVariables(processInstanceKey, variable("x", "{'a':3}"), variable("y", "2"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b -> b.zeebeInputExpression("3", "x.a").zeebeInputExpression("x.b", "y"),
+        variable("x", "{'a':3}"),
+        variable("y", "2"));
   }
 
   @Test
@@ -198,17 +174,14 @@ public final class InputMappingPartialShadowingTest {
     // given: a read of x sits between two mappings that build it. The layered value the read sees
     // must not become part of what is written — x keeps only the keys the mappings targeted, so the
     // ancestor's b is in y but not in x.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b ->
-                b.zeebeInputExpression("3", "x.a")
-                    .zeebeInputExpression("x", "y")
-                    .zeebeInputExpression("9", "x.c"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':3,'c':9}"), variable("y", "{'a':3,'b':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b ->
+            b.zeebeInputExpression("3", "x.a")
+                .zeebeInputExpression("x", "y")
+                .zeebeInputExpression("9", "x.c"),
+        variable("x", "{'a':3,'c':9}"),
+        variable("y", "{'a':3,'b':2}"));
   }
 
   @Test
@@ -216,14 +189,11 @@ public final class InputMappingPartialShadowingTest {
     // given: x.a assigns the whole of a, so a's own nesting in the ancestor is gone — but x's
     // sibling key d, which no mapping touched, still falls through. Fall-through stops at the
     // level a mapping actually assigned.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': {'b': 1}, 'd': 4}}",
-            b -> b.zeebeInputExpression("5", "x.a").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':5}"), variable("y", "{'a':5,'d':4}"));
+    assertInputMapping(
+        "{'x': {'a': {'b': 1}, 'd': 4}}",
+        b -> b.zeebeInputExpression("5", "x.a").zeebeInputExpression("x", "y"),
+        variable("x", "{'a':5}"),
+        variable("y", "{'a':5,'d':4}"));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -233,24 +203,21 @@ public final class InputMappingPartialShadowingTest {
   @Test
   public void shouldNotFallThroughWhenTheAncestorValueIsNotAnObject() {
     // given: the ancestor's x is a scalar, so there are no keys to layer under the mapping
-    final long processInstanceKey =
-        activate(
-            "{'x': 5}", b -> b.zeebeInputExpression("1", "x.a").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':1}"), variable("y", "{'a':1}"));
+    assertInputMapping(
+        "{'x': 5}",
+        b -> b.zeebeInputExpression("1", "x.a").zeebeInputExpression("x", "y"),
+        variable("x", "{'a':1}"),
+        variable("y", "{'a':1}"));
   }
 
   @Test
   public void shouldNotFallThroughWhenNoAncestorScopeHasTheName() {
     // given: nothing anywhere up the chain is called x
-    final long processInstanceKey =
-        activate("{}", b -> b.zeebeInputExpression("1", "x.a").zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':1}"), variable("y", "{'a':1}"));
+    assertInputMapping(
+        "{}",
+        b -> b.zeebeInputExpression("1", "x.a").zeebeInputExpression("x", "y"),
+        variable("x", "{'a':1}"),
+        variable("y", "{'a':1}"));
   }
 
   @Test
@@ -262,17 +229,14 @@ public final class InputMappingPartialShadowingTest {
     // Derived: the artifact does not spell this shape out. It follows from rule 6.3's "fresh
     // object" plus rule 7.1's "an assigned target is authoritative" — a target that was once
     // assigned whole never becomes partially shadowed again.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': 1, 'b': 2}}",
-            b ->
-                b.zeebeInputExpression("1", "x")
-                    .zeebeInputExpression("2", "x.a")
-                    .zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':2}"), variable("y", "{'a':2}"));
+    assertInputMapping(
+        "{'x': {'a': 1, 'b': 2}}",
+        b ->
+            b.zeebeInputExpression("1", "x")
+                .zeebeInputExpression("2", "x.a")
+                .zeebeInputExpression("x", "y"),
+        variable("x", "{'a':2}"),
+        variable("y", "{'a':2}"));
   }
 
   @Test
@@ -283,17 +247,14 @@ public final class InputMappingPartialShadowingTest {
     //
     // Derived: the same reasoning as the test above, and the reason the total shadow has to be
     // tracked per path level rather than per root variable.
-    final long processInstanceKey =
-        activate(
-            "{'x': {'a': {'b': 1}, 'd': 4}}",
-            b ->
-                b.zeebeInputExpression("1", "x.a")
-                    .zeebeInputExpression("2", "x.a.c")
-                    .zeebeInputExpression("x", "y"));
-
-    // then
-    assertMappedElementVariables(
-        processInstanceKey, variable("x", "{'a':{'c':2}}"), variable("y", "{'a':{'c':2},'d':4}"));
+    assertInputMapping(
+        "{'x': {'a': {'b': 1}, 'd': 4}}",
+        b ->
+            b.zeebeInputExpression("1", "x.a")
+                .zeebeInputExpression("2", "x.a.c")
+                .zeebeInputExpression("x", "y"),
+        variable("x", "{'a':{'c':2}}"),
+        variable("y", "{'a':{'c':2},'d':4}"));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -402,6 +363,18 @@ public final class InputMappingPartialShadowingTest {
   }
 
   // ---------------------------------------------------------------------------------------------
+
+  /**
+   * Deploys a process whose single sub-process carries the given input mappings, runs an instance
+   * with the given scope variables, and asserts the local variables the element ends up with — and
+   * only those.
+   */
+  private void assertInputMapping(
+      final String scopeVariables,
+      final Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappings,
+      final VariableValue... expected) {
+    assertMappedElementVariables(activate(scopeVariables, mappings), expected);
+  }
 
   /**
    * Deploys a process whose single sub-process carries the given input mappings, starts an instance
