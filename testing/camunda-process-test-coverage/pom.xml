@@ -17,7 +17,6 @@
 
   <properties>
     <version.java>8</version.java>
-    <skip.fe.build>false</skip.fe.build>
     <!--
       Maven resource root – everything placed here becomes a classpath resource.
       The Webpack build writes to <fe.output.dir>/coverage/ so the JAR contains:
