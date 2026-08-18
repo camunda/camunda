@@ -7,13 +7,25 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
+import io.camunda.db.rdbms.sql.columns.AgentDefinitionSearchColumn;
 import io.camunda.search.clients.reader.AgentDefinitionReader;
 import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 
-public class AgentDefinitionDbReader implements AgentDefinitionReader {
+public class AgentDefinitionDbReader extends AbstractEntityReader<AgentDefinitionEntity>
+    implements AgentDefinitionReader {
+
+  private final AgentDefinitionMapper agentDefinitionMapper;
+
+  public AgentDefinitionDbReader(
+      final AgentDefinitionMapper agentDefinitionMapper, final RdbmsReaderConfig readerConfig) {
+    super(AgentDefinitionSearchColumn.values(), readerConfig);
+    this.agentDefinitionMapper = agentDefinitionMapper;
+  }
 
   @Override
   public SearchQueryResult<AgentDefinitionEntity> search(
