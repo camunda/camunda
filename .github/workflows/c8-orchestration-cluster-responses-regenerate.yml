@@ -154,11 +154,16 @@ jobs:
           # package.json), which must not be mistaken for a deliberate absence:
           # collapsing the two would silently disable path detection and
           # recreate the staleness #60109 exists to end, one level up.
+          #
+          # The `|| rc=$?` is load-bearing. The runner invokes this with
+          # `bash -e`, which `set -uo pipefail` above does not undo, so a bare
+          # call would abort the step the moment node exits non-zero — killing
+          # the very branch that reports a deliberate absence.
+          rc=0
           node -e "
             const pkg = require('./package.json');
             process.exit((pkg.scripts || {})['paths:regenerate'] ? 0 : 3);
-          "
-          rc=$?
+          " || rc=$?
           case "$rc" in
             0)
               echo "available=true" >> "$GITHUB_OUTPUT"
