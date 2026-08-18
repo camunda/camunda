@@ -460,7 +460,8 @@ final class JobStreamImplTest {
         ignored -> 10_000L,
         scheduler,
         virtualNanos::get,
-        metrics);
+        metrics,
+        false);
   }
 
   private void advanceTime(final long amount, final TimeUnit unit) {

@@ -55,6 +55,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final TenantFilter tenantFilter;
   private final Duration streamTimeout;
   private final Duration streamInactivityTimeout;
+  private final boolean withLease;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final LongSupplier nanoClock;
@@ -97,7 +98,8 @@ final class JobStreamerImpl implements JobStreamer {
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService executor,
       final LongSupplier nanoClock,
-      final JobWorkerMetrics metrics) {
+      final JobWorkerMetrics metrics,
+      final boolean withLease) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -107,6 +109,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.tenantFilter = tenantFilter;
     this.streamTimeout = streamTimeout;
     this.streamInactivityTimeout = streamInactivityTimeout;
+    this.withLease = withLease;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
     this.nanoClock = nanoClock;
