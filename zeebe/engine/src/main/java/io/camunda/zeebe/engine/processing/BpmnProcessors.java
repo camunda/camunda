@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModific
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeJobsProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -85,6 +86,7 @@ public final class BpmnProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -135,6 +137,7 @@ public final class BpmnProcessors {
         processingState,
         writers,
         bpmnBehaviors,
+        storageOrdinalKeyProvider,
         processEngineMetrics,
         config,
         cslCheck);
@@ -313,6 +316,7 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final ProcessEngineMetrics metrics,
       final EngineConfiguration config,
       final CslAuthorizationCheck cslCheck) {
@@ -327,6 +331,7 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             cslCheck,
             bpmnBehaviors,
+            storageOrdinalKeyProvider,
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(

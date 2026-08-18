@@ -669,6 +669,7 @@ public final class BpmnJobBehavior {
         .setTags(getTagsFromProcessInstance(context))
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinalKey(context.getStorageOrdinalKey())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
     setJobSecretReferences(secretReferences);
 

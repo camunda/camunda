@@ -91,6 +91,7 @@ public final class ProcessInstanceBatchTerminateProcessor
     final var nextBatchRecord =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setStorageOrdinalKey(recordValue.getStorageOrdinalKey())
             .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
             .setIndex(childInstance.getKey());
