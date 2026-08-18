@@ -48,6 +48,8 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
   private static final String OVERRIDE_PREFIX = "camunda.client.worker.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("camunda.client.zeebe.override.", "zeebe.client.worker.override.");
+  private static final String CLUSTER_VARIABLES_ENABLED =
+      "camunda.client.cluster-variables.enabled";
   private static final String CLUSTER_VARIABLES_GLOBAL = "camunda.client.cluster-variables.global";
   private static final String CLUSTER_VARIABLES_TENANT = "camunda.client.cluster-variables.tenant";
   private static final String CLUSTER_VARIABLES_VARIABLES =
@@ -124,6 +126,9 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
 
   private void mapLegacyClusterVariables(final ConfigurableEnvironment environment) {
     final Binder binder = Binder.get(environment);
+    if (!binder.bind(CLUSTER_VARIABLES_ENABLED, Boolean.class).orElse(true)) {
+      return;
+    }
     final Map<String, Object> global =
         binder
             .bind(CLUSTER_VARIABLES_GLOBAL, Bindable.mapOf(String.class, Object.class))

@@ -17,6 +17,7 @@ package io.camunda.client.spring.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.spring.CamundaClientPropertiesTestConfig;
@@ -180,6 +181,26 @@ public class CamundaClientPropertiesPostProcessorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null))
           .withMessageContaining("camunda.client.cluster-variables.tenant");
+    }
+
+    @Test
+    void shouldSkipLegacyMappingWhenDisabled() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of(
+                      "camunda.client.cluster-variables.enabled", "false",
+                      "camunda.client.cluster-variables.tenant.my-tenant", "not-a-map")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatNoException()
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null));
     }
   }
 
