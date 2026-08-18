@@ -82,6 +82,12 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   }
 
   @Override
+  public void deleteDefinition(final String definitionId) {
+    LOG.debug("Deleting process definition with ID {}", definitionId);
+    osClient.delete(PROCESS_DEFINITION_INDEX_NAME, definitionId);
+  }
+
+  @Override
   public boolean markRedeployedDefinitionsAsDeleted(
       final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);

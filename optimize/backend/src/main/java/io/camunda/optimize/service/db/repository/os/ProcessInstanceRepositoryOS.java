@@ -17,6 +17,7 @@ import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.sourceInclude;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
@@ -100,6 +101,25 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
             .toList();
 
     osClient.doBulkRequest(BulkRequest.Builder::new, bulkOperations, itemName, false);
+  }
+
+  @Override
+  public void deleteByDefinitionId(final String bpmnProcessId, final String definitionId) {
+    try {
+      osClient.deleteByQuery(
+          term(ProcessInstanceIndex.PROCESS_DEFINITION_ID, definitionId),
+          true,
+          getProcessInstanceIndexAliasName(bpmnProcessId));
+    } catch (final OpenSearchException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        LOG.info(
+            "Was not able to delete process instances for definitionId {} because instance index {} does not exist.",
+            definitionId,
+            getProcessInstanceIndexAliasName(bpmnProcessId));
+        return;
+      }
+      throw e;
+    }
   }
 
   @Override

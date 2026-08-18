@@ -19,11 +19,14 @@ import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotF
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 
+import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -61,19 +64,16 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
-  private final TaskRepositoryES taskRepositoryES;
 
   public ProcessInstanceRepositoryES(
       final ConfigurationService configurationService,
       final OptimizeElasticsearchClient esClient,
       final ObjectMapper objectMapper,
-      final DateTimeFormatter dateTimeFormatter,
-      final TaskRepositoryES taskRepositoryES) {
+      final DateTimeFormatter dateTimeFormatter) {
     this.configurationService = configurationService;
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
-    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override
@@ -97,6 +97,42 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                                                             .get(0)))))
                         .toList()));
     esClient.doBulkRequest(bulkRequest, index, false);
+  }
+
+  @Override
+  public void deleteByDefinitionId(final String bpmnProcessId, final String definitionId) {
+    final Query query =
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.filter(
+                            f ->
+                                f.term(
+                                    t ->
+                                        t.field(ProcessInstanceIndex.PROCESS_DEFINITION_ID)
+                                            .value(definitionId)))));
+    try {
+      esClient.deleteByQuery(
+          new DeleteByQueryRequest.Builder()
+              .query(query)
+              .refresh(true)
+              .conflicts(Conflicts.Proceed),
+          getProcessInstanceIndexAliasName(bpmnProcessId));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          String.format("Could not delete process instances with definitionId %s.", definitionId),
+          e);
+    } catch (final ElasticsearchException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        LOG.info(
+            "Was not able to delete process instances for definitionId {} because instance index {} does not exist.",
+            definitionId,
+            getProcessInstanceIndexAliasName(bpmnProcessId));
+        return;
+      }
+      throw e;
+    }
   }
 
   @Override

@@ -33,6 +33,8 @@ public interface ProcessDefinitionWriter {
 
   void markDefinitionAsDeleted(final String definitionId);
 
+  void deleteDefinition(final String definitionId);
+
   boolean markRedeployedDefinitionsAsDeleted(
       final List<ProcessDefinitionOptimizeDto> importedDefinitions);
 
