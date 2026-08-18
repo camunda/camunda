@@ -115,12 +115,14 @@ public final class CallActivityProcessor
               final var inputMappings = element.getInputMappings();
               final var callActivityInstanceKey = activated.getElementInstanceKey();
               final var rootProcessInstanceKey = context.getRootProcessInstanceKey();
+              final var storageOrdinalKey = context.getStorageOrdinalKey();
 
               if (propagateAllParentVariablesEnabled) {
                 stateBehavior.copyAllVariablesToProcessInstance(
                     callActivityInstanceKey,
                     childProcessInstanceKey,
                     rootProcessInstanceKey,
+                    storageOrdinalKey,
                     process);
               } else if (inputMappings.isPresent()) {
                 // when activating the call activity, the input mappings will be applied.
@@ -131,6 +133,7 @@ public final class CallActivityProcessor
                     callActivityInstanceKey,
                     childProcessInstanceKey,
                     rootProcessInstanceKey,
+                    storageOrdinalKey,
                     process);
               }
             });
