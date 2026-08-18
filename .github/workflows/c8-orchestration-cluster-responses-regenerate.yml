@@ -148,13 +148,37 @@ jobs:
         id: paths-feature
         working-directory: ${{ env.SUITE_DIR }}
         run: |
-          set -euo pipefail
-          if node -e "process.exit((require('./package.json').scripts || {})['paths:regenerate'] ? 0 : 1)"; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "No paths:regenerate script on ${TARGET_REF} — typed buildUrl is main-only, skipping apiPaths.ts regeneration."
-          fi
+          set -uo pipefail
+          # Exit 3 means "asked and answered: no such script". Anything else
+          # non-zero means the probe itself broke (unreadable or unparseable
+          # package.json), which must not be mistaken for a deliberate absence:
+          # collapsing the two would silently disable path detection and
+          # recreate the staleness #60109 exists to end, one level up.
+          node -e "
+            const pkg = require('./package.json');
+            process.exit((pkg.scripts || {})['paths:regenerate'] ? 0 : 3);
+          "
+          rc=$?
+          case "$rc" in
+            0)
+              echo "available=true" >> "$GITHUB_OUTPUT"
+              ;;
+            3)
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "No paths:regenerate script on ${TARGET_REF} — typed buildUrl is main-only, skipping apiPaths.ts regeneration."
+              ;;
+            *)
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              # On main the script is expected, so a broken probe is a real
+              # fault and should stop the paths half loudly. On stable refs the
+              # script is absent by design, so warn rather than fail the job.
+              if [ "$TARGET_REF" = "main" ]; then
+                echo "::error::Could not probe ${SUITE_DIR}/package.json on ${TARGET_REF} (node exit ${rc}). Path detection is disabled until this is fixed."
+                exit 1
+              fi
+              echo "::warning::Could not probe ${SUITE_DIR}/package.json on ${TARGET_REF} (node exit ${rc}). Skipping apiPaths.ts regeneration for this ref."
+              ;;
+          esac
 
       - name: Snapshot committed API paths (pre-regeneration)
         if: steps.paths-feature.outputs.available == 'true'
@@ -167,17 +191,31 @@ jobs:
             : > /tmp/apiPaths.before.ts
           fi
 
+      # The two artifacts share this job only for its setup. From here on they
+      # are independent pipelines, so each failure-capable step is marked
+      # continue-on-error and each downstream step is gated on its own
+      # pipeline's outcome. Without that, a generator throw on one side would
+      # abort the job before the other side ever reached its commit and PR
+      # steps, costing that ref an unrelated regeneration PR for the day.
+      # "Report stage failures" below turns any swallowed failure back into a
+      # red job, so continue-on-error never hides a broken pipeline.
       - name: Regenerate responses
+        id: regen-responses
+        continue-on-error: true
         working-directory: ${{ env.SUITE_DIR }}
         run: npm run responses:regenerate
 
       - name: Regenerate API paths
+        id: regen-paths
+        continue-on-error: true
         if: steps.paths-feature.outputs.available == 'true'
         working-directory: ${{ env.SUITE_DIR }}
         run: npm run paths:regenerate
 
       - name: Detect response changes (ignore metadata)
         id: diff
+        continue-on-error: true
+        if: steps.regen-responses.outcome == 'success'
         run: |
           set -euo pipefail
 
@@ -208,7 +246,8 @@ jobs:
 
       - name: Detect API path changes
         id: diff-paths
-        if: steps.paths-feature.outputs.available == 'true'
+        continue-on-error: true
+        if: steps.paths-feature.outputs.available == 'true' && steps.regen-paths.outcome == 'success'
         run: |
           set -euo pipefail
 
@@ -217,15 +256,24 @@ jobs:
             exit 1
           fi
 
-          # Unlike responses.json, apiPaths.ts carries no generatedAt/commit/
-          # specSha256 metadata fields — a plain byte-for-byte compare is
-          # sufficient, no normalization needed.
-          if cmp -s /tmp/apiPaths.before.ts "$PATHS_FILE"; then
-            echo "No API path changes. Nothing to do."
+          # Compare the union members, not the file bytes. The generated file
+          # is prettier-formatted, so a prettier version or config bump would
+          # otherwise register as a change and open a PR asserting an endpoint
+          # was added, renamed, or removed — a claim this job would be making
+          # falsely. The members are the only part carrying that meaning.
+          members() {
+            grep -oE "\| '[^']+'" "$1" | sed "s/^| '//; s/'$//" | sort || true
+          }
+
+          members /tmp/apiPaths.before.ts > /tmp/apiPaths.before.members
+          members "$PATHS_FILE"          > /tmp/apiPaths.after.members
+
+          if cmp -s /tmp/apiPaths.before.members /tmp/apiPaths.after.members; then
+            echo "No API path changes (formatting-only churn, if any). Nothing to do."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "API path changes detected:"
-            diff /tmp/apiPaths.before.ts "$PATHS_FILE" || true
+            diff /tmp/apiPaths.before.members /tmp/apiPaths.after.members || true
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -338,10 +386,30 @@ jobs:
               # remaining PRs are looked at. Treat unknown as "leave it alone".
               commits=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" \
                 --json commits --jq '.commits | length' 2>/dev/null || true)
-              if [ -z "$commits" ] || [ "$commits" -gt 1 ]; then
-                echo "PR #${number} (commits: ${commits:-unreadable}) — not the bot's single commit, leaving open."
-                gh pr comment "$number" --repo "$GITHUB_REPOSITORY" \
-                  --body "A newer regeneration run produced a different path set, but this PR does not look like an untouched bot commit — not closing it automatically. Please rebase or close it by hand." || true
+
+              if [ -z "$commits" ]; then
+                # No comment here: the PR is most likely an ordinary untouched
+                # bot PR, and telling its author to rebase would be wrong.
+                # Silence costs one day — the next run reconsiders it.
+                echo "PR #${number}: commit count unreadable — leaving open, will reconsider next run."
+                continue
+              fi
+
+              if [ "$commits" -gt 1 ]; then
+                echo "PR #${number} has ${commits} commits — follow-up work on top of the bot's commit, leaving open."
+                # These PRs stay open for days by design, and this step runs
+                # nightly, so post the notice once instead of re-posting the
+                # same request every run.
+                marker='<!-- regenerate-api-paths: follow-up-commits-notice -->'
+                seen=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json comments \
+                  --jq "[.comments[] | select(.body | contains(\"${marker}\"))] | length" 2>/dev/null || echo "")
+                if [ "${seen:-0}" = "0" ]; then
+                  gh pr comment "$number" --repo "$GITHUB_REPOSITORY" \
+                    --body "${marker}
+              A newer regeneration run produced a different path set, but this PR carries follow-up commits — not closing it automatically. Please rebase or close it by hand." || true
+                else
+                  echo "  notice already posted on #${number}, not repeating it."
+                fi
                 continue
               fi
               echo "Closing stale PR #${number} (branch: ${branch})"
@@ -414,6 +482,39 @@ jobs:
           number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
+
+      # continue-on-error above buys independence between the two artifacts,
+      # not permission to fail quietly. Both pipelines have finished by now, so
+      # each has had its chance to commit and open its PR; turning any
+      # swallowed failure back into a red job here reports the fault without
+      # having let it take the other artifact down.
+      - name: Report stage failures
+        if: always()
+        env:
+          REGEN_RESPONSES: ${{ steps.regen-responses.outcome }}
+          DIFF_RESPONSES:  ${{ steps.diff.outcome }}
+          REGEN_PATHS:     ${{ steps.regen-paths.outcome }}
+          DIFF_PATHS:      ${{ steps.diff-paths.outcome }}
+        run: |
+          set -uo pipefail
+          failed=0
+          for stage in \
+            "responses regeneration:${REGEN_RESPONSES}" \
+            "responses diff:${DIFF_RESPONSES}" \
+            "API paths regeneration:${REGEN_PATHS}" \
+            "API paths diff:${DIFF_PATHS}"; do
+            name="${stage%%:*}"
+            outcome="${stage##*:}"
+            if [ "$outcome" = "failure" ]; then
+              echo "::error::${name} failed on ${TARGET_REF}."
+              failed=1
+            fi
+          done
+          if [ "$failed" = "1" ]; then
+            echo "One pipeline failed; the other was allowed to finish independently. See the step logs above."
+            exit 1
+          fi
+          echo "No stage failures."
 
       - name: Job summary
         if: always()
