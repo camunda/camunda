@@ -271,6 +271,54 @@ describe('useDrillDownNavigation', () => {
     );
   });
 
+  it('should scope the called-decision lookup to the clicked business rule task, not the whole process instance', async () => {
+    mockResolvedBusinessRuleTaskElement();
+    const requestBodyResolverFn = vi.fn();
+    mockSearchDecisionInstances().withSuccess(
+      createDecisionSearchResult([
+        {
+          decisionEvaluationInstanceKey: 'dec-100',
+          decisionEvaluationKey: 'dec-eval-100',
+          state: 'EVALUATED',
+          evaluationDate: '2024-01-01T00:00:00.000+0000',
+          evaluationFailure: null,
+          decisionDefinitionId: 'risk-assessment',
+          decisionDefinitionName: 'Risk Assessment',
+          decisionDefinitionVersion: 1,
+          decisionDefinitionType: 'DECISION_TABLE',
+          decisionDefinitionKey: 'def-1',
+          result: '',
+          tenantId: '<default>',
+          processDefinitionKey: 'proc-def-1',
+          processInstanceKey: PROCESS_INSTANCE_KEY,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY,
+          rootDecisionDefinitionKey: 'def-1',
+          businessId: null,
+        },
+      ]),
+      {requestBodyResolverFn},
+    );
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(
+        BUSINESS_RULE_TASK_ID,
+        'bpmn:BusinessRuleTask',
+      );
+    });
+
+    expect(requestBodyResolverFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY},
+      }),
+    );
+  });
+
   it('should not navigate when there are multiple decision instances', async () => {
     mockResolvedBusinessRuleTaskElement();
     mockSearchDecisionInstances().withSuccess(
