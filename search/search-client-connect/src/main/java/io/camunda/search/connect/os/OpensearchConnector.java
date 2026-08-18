@@ -132,6 +132,7 @@ public final class OpensearchConnector {
 
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, osConfig);
     setupConnectionManager(httpAsyncClientBuilder, osConfig);
     return httpAsyncClientBuilder;
