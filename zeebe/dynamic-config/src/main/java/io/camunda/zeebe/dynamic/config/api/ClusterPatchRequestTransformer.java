@@ -67,19 +67,15 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       }
     }
     // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
-    // set directly. Checked here as well as in operations(), because the new-model coordinator
-    // plans through phases() alone and never calls operations() at all — and checked before
-    // anything else that could plan, in the same order operations() checks it, so that a request
-    // combining a replication factor with a membership change is still answered with this rather
-    // than with whatever the zone-aware distributor raises about the resulting replica sum.
+    // set directly. Checked before anything else that could plan, so that a request combining a
+    // replication factor with a membership change is answered with this rather than with whatever
+    // the zone-aware distributor raises about the resulting replica sum.
     if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
       return Either.left(
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));
     }
     if (changesMembership) {
-      // Checked here as well as in operations(), because the new-model coordinator plans through
-      // phases() alone and would otherwise admit a self-contradicting request.
       if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
         return Either.left(
             new InvalidRequest(
@@ -88,7 +84,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       }
       // Membership has no tenant dimension, but the partitions it moves do: every tenant's
       // partitions have to be redistributed over the new member set, not just the default
-      // tenant's. ScaleRequestTransformer plans that, the same way operations() delegates to it.
+      // tenant's, which is what ScaleRequestTransformer plans.
       final var newSetOfMembers =
           new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
       newSetOfMembers.addAll(membersToAdd);

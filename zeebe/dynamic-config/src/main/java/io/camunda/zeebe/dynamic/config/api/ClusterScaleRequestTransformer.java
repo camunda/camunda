@@ -83,7 +83,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     if (brokerCount.isPresent()) {
       // brokerCount has no tenant dimension, but the partitions it moves do: every tenant's
       // partitions have to be redistributed over the new member set, not just the default
-      // tenant's. ScaleRequestTransformer plans that, the same way operations() delegates to it.
+      // tenant's, which is what ScaleRequestTransformer plans.
       return new ScaleRequestTransformer(
               newSetOfMembers(clusterConfiguration.toLegacy(groupId)),
               newReplicationFactor,
