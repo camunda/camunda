@@ -40,7 +40,13 @@ public final class AnalyticsAttributes {
         AttributeKey.longKey("camunda.event.time_max");
 
     // Event name values
+
+    /**
+     * Shares its simple name with {@link Metric#PROCESS_INSTANCE_CREATED}, which holds a different
+     * string: a static import of the wrong one compiles. Import the qualified form.
+     */
     public static final String PROCESS_INSTANCE_CREATED = "process_instance_created";
+
     public static final String ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
     public static final String USAGE_METRIC_EXPORTED = "usage_metric_exported";
     public static final String HEARTBEAT = "heartbeat";
@@ -155,7 +161,12 @@ public final class AnalyticsAttributes {
   }
 
   public static final class Metric {
+    /**
+     * Shares its simple name with {@link Event#PROCESS_INSTANCE_CREATED}, which holds a different
+     * string: a static import of the wrong one compiles. Import the qualified form.
+     */
     public static final String PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
+
     public static final String DECISION_INSTANCE_EVALUATED = "camunda.decision.instance.evaluated";
     public static final String EXPORT_WINDOW = "camunda.metric.export_window";
     public static final AttributeKey<Long> SEQUENCE_NUMBER =

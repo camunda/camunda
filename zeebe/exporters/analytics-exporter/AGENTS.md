@@ -90,10 +90,13 @@ Replicated log
 ### Adding a New Event Handler
 
 1. Create handler class implementing `AnalyticsHandler`
-2. Register in `AnalyticsExporter.configure()` with `handlerRegistry.register(valueType, intent, handler)`
-3. Filter is auto-updated — HandlerRegistry builds the RecordFilter from registered handlers
-4. If pre-aggregated metric needed: call `otelSdkManager.incrementMetric()` from handler
-5. Run existing tests + add handler-specific test cases
+2. Add the event name to `AnalyticsAttributes.Event` (or the metric name to `AnalyticsAttributes.Metric`)
+3. Register in `AnalyticsHandlerCatalog.build()` with `.register(valueType, intent, handler)` —
+   `AnalyticsExporter` does not change
+4. Add the `(ValueType, Intent)` pair to the exact-set assertion in `AnalyticsHandlerCatalogTest`
+5. Filter is auto-updated — HandlerRegistry builds the RecordFilter from registered handlers
+6. If pre-aggregated metric needed: call `otelSdkManager.incrementMetric()` from handler
+7. Run existing tests + add handler-specific test cases
 
 ### Attribute Naming
 

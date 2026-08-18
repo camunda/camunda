@@ -37,6 +37,12 @@ class UserTaskAssignedHandlerTest {
   private static final String ASSIGNEE_SHA_256 =
       "836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f";
 
+  private static final String WHITESPACE_ASSIGNEE = "  ";
+
+  /** SHA-256 of two space characters, independently computed with {@code shasum -a 256}. */
+  private static final String WHITESPACE_ASSIGNEE_SHA_256 =
+      "6c179f21e6f62b629055d8ab40f454ed02e48b68563913473b857d3638e23b28";
+
   private InMemoryLogRecordExporter logExporter;
   private UserTaskAssignedHandler handler;
 
@@ -139,5 +145,29 @@ class UserTaskAssignedHandlerTest {
             logRecord ->
                 logRecord.getAttributes().asMap().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
         .containsExactly(ASSIGNEE_SHA_256, expectedSecondHash);
+  }
+
+  @Test
+  void shouldSkipWhenAssigneeIsNull() {
+    // when
+    handler.handle(typed(assignedRecord(null)));
+
+    // then
+    assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
+  }
+
+  @Test
+  void shouldEmitWhenAssigneeIsWhitespaceOnly() {
+    // when
+    handler.handle(typed(assignedRecord(WHITESPACE_ASSIGNEE)));
+
+    // then the guard is isEmpty, not isBlank, so this matches what the engine's TU metric counts
+    assertThat(logExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord ->
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(
+                        AnalyticsAttributes.UserTask.ASSIGNEE_HASH, WHITESPACE_ASSIGNEE_SHA_256));
   }
 }
