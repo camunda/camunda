@@ -8,12 +8,14 @@
 package io.camunda.configuration;
 
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
+import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -85,7 +87,7 @@ public final class ExporterArgsMergers {
       final @Nullable Map<String, Object> overlay,
       final String context) {
     try {
-      return merger.merge(immutableArgsCopy(base), immutableArgsCopy(overlay));
+      return merger.merge(immutableCopy(base), immutableCopy(overlay));
     } catch (final RuntimeException e) {
       // the cause carries the detail; the top-level message stays stable and never renders "null"
       throw new UnifiedConfigurationException(
@@ -93,13 +95,41 @@ public final class ExporterArgsMergers {
     }
   }
 
-  private static Map<String, Object> immutableArgsCopy(final @Nullable Map<String, Object> args) {
-    if (args == null) {
+  /**
+   * A recursively immutable copy of an args or claim-identity map, {@code Map.of()} for {@code
+   * null}. Callers use it to hand SPI code inputs it cannot mutate, and to freeze a map an SPI
+   * implementation returned before relying on its {@code hashCode} (a claim identity used as a map
+   * key).
+   */
+  public static Map<String, Object> immutableCopy(final @Nullable Map<String, Object> map) {
+    if (map == null) {
       return Map.of();
     }
-    final Map<String, Object> copy = new LinkedHashMap<>(args.size());
-    args.forEach((key, value) -> copy.put(key, immutableValueCopy(value)));
+    final Map<String, Object> copy = new LinkedHashMap<>(map.size());
+    map.forEach((key, value) -> copy.put(key, immutableValueCopy(value)));
     return Collections.unmodifiableMap(copy);
+  }
+
+  /**
+   * Asks {@code merger} which resources an exporter with these {@code args} would occupy.
+   *
+   * <p>Mirrors {@link #merge}'s handling of third-party SPI code: the merger is handed a
+   * recursively immutable copy of the args rather than the caller's live map — which here is the
+   * resolved configuration object graph itself — and any {@link RuntimeException} it throws becomes
+   * a configuration error naming the entry rather than an opaque failure during boot.
+   *
+   * @throws UnifiedConfigurationException wrapping any {@link RuntimeException} the merger throws
+   */
+  public static Set<ExporterIsolationClaim> isolationClaims(
+      final ExporterConfigMerger merger,
+      final @Nullable Map<String, Object> args,
+      final String context) {
+    try {
+      return merger.isolationClaims(immutableCopy(args));
+    } catch (final RuntimeException e) {
+      throw new UnifiedConfigurationException(
+          String.format("Failed to read exporter isolation claims for %s", context), e);
+    }
   }
 
   private static @Nullable Object immutableValueCopy(final @Nullable Object value) {

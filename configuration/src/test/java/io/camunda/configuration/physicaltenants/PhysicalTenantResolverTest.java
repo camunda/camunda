@@ -402,11 +402,12 @@ class PhysicalTenantResolverTest {
   }
 
   // --- exporter assignment wiring (ADR-0008 D1/D2/D5) --------------------------------------------
-  // PhysicalTenantExporterAssignedValidation and
-  // PhysicalTenantExporterConfigurations#narrowToAssigned
-  // are unit-tested standalone elsewhere; these tests instead pin that PhysicalTenantResolver#of
-  // actually wires them in, in the right order (validate against the pre-narrow universe, then
-  // narrow) — the two lines an unrelated refactor could most easily drop or reorder.
+  // PhysicalTenantExporterAssignedValidation, PhysicalTenantExporterConfigurations#narrowToAssigned
+  // and GenericExporterIsolationValidation are unit-tested standalone elsewhere; these tests
+  // instead
+  // pin that PhysicalTenantResolver#of wires them in, in the right order (validate against the
+  // pre-narrow universe, narrow, then check isolation on what survived) — the three lines an
+  // unrelated refactor could most easily drop or reorder.
 
   @Test
   void shouldRejectPhysicalTenantMissingExportersAssignedWhenGenericExporterExists() {
@@ -465,6 +466,65 @@ class PhysicalTenantResolverTest {
 
     // then narrowing keeps both the assigned generic entry and the unassigned autoconfigured one
     assertThat(tenantA.getData().getExporters()).containsOnlyKeys("custom", "camundaexporter");
+  }
+
+  @Test
+  void shouldRejectPhysicalTenantsWhoseAssignedGenericExportersShareATarget() {
+    // given a root-declared generic exporter both tenants assign, each overriding its target to the
+    // same value — the tenants' records would land in one place
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.claiming.class-name", TestExporterConfigMergers.CLAIMING_CLASS,
+            "camunda.data.exporters.claiming.args.target", "root-target",
+            "camunda.physical-tenants.tenanta.data.exporters.claiming.args.target", "shared-target",
+            "camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "claiming",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.data.exporters.claiming.args.target", "shared-target",
+            "camunda.physical-tenants.tenantb.data.exporters-assigned[0]", "claiming",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when / then resolution fails fast at boot — proves GenericExporterIsolationValidation is
+    // actually invoked from the resolver, not just independently unit-testable
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb")
+        .withMessageContaining("shared-target");
+  }
+
+  @Test
+  void shouldNotFlagGenericExporterTargetNarrowedAwayFromATenant() {
+    // given a root-declared generic exporter: tenantA assigns it under its own target, tenantB
+    // declares an explicit empty manifest and so runs none
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.claiming.class-name", TestExporterConfigMergers.CLAIMING_CLASS,
+            "camunda.data.exporters.claiming.args.target", "root-target",
+            "camunda.physical-tenants.tenanta.data.exporters.claiming.args.target",
+                "tenanta-target",
+            "camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "claiming",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.data.exporters-assigned", "",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when — resolution succeeds
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then the isolation rule saw tenantB without the root entry: had it run before narrowing,
+    // tenantB would still have carried the inherited entry on 'root-target' and collided with the
+    // synthesized default tenant, which runs the root catalog as declared
+    assertThat(resolver.forPhysicalTenant("tenantb").getData().getExporters())
+        .doesNotContainKey("claiming");
+    assertThat(resolver.forPhysicalTenant("tenanta").getData().getExporters())
+        .containsKey("claiming");
   }
 
   @Test

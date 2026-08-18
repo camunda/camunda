@@ -10,6 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Test-only {@link ExporterConfigMerger}s registered via {@code
@@ -29,6 +30,16 @@ final class TestExporterConfigMergers {
   /** Exporter class whose merger attempts to mutate nested input — inputs must reject it. */
   static final String NESTED_MUTATING_CLASS =
       "io.camunda.configuration.test.NestedMutatingMergeExporter";
+
+  /**
+   * Exporter class whose merger declares an isolation claim derived from its {@code target} arg —
+   * exercises {@link GenericExporterIsolationValidation} through the resolver. Kept apart from
+   * {@link #MERGEABLE_CLASS} so the merge tests are not also isolation tests.
+   */
+  static final String CLAIMING_CLASS = "io.camunda.configuration.test.ClaimingExporter";
+
+  /** Arg {@link ClaimingMerger} reads to build its claim; absent means "claims nothing". */
+  static final String TARGET_KEY = "target";
 
   /** Exporter class name claimed by two mergers — must fail startup. */
   static final String DUPLICATE_CLAIMED_CLASS =
@@ -57,6 +68,34 @@ final class TestExporterConfigMergers {
       merged.putAll(tenantArgs);
       merged.put(MERGED_BY_KEY, MERGED_BY_VALUE);
       return merged;
+    }
+  }
+
+  public static final class ClaimingMerger implements ExporterConfigMerger {
+
+    private static final String DOMAIN = "index-write-target";
+
+    @Override
+    public boolean supports(final String className) {
+      return CLAIMING_CLASS.equals(className);
+    }
+
+    @Override
+    public Map<String, Object> merge(
+        final Map<String, Object> rootArgs, final Map<String, Object> tenantArgs) {
+      final Map<String, Object> merged = new LinkedHashMap<>(rootArgs);
+      merged.putAll(tenantArgs);
+      return merged;
+    }
+
+    @Override
+    public Set<ExporterIsolationClaim> isolationClaims(final Map<String, Object> args) {
+      if (!(args.get(TARGET_KEY) instanceof final String target)) {
+        return Set.of();
+      }
+      return Set.of(
+          new ExporterIsolationClaim(
+              DOMAIN, Map.of("target", target), "write target [" + target + "]"));
     }
   }
 
