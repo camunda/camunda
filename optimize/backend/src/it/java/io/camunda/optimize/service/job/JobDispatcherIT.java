@@ -49,11 +49,8 @@ public class JobDispatcherIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
-  void shouldMarkQueuedJobAsFailedWhenNoHandlerIsRegistered() {
+  void shouldMarkQueuedJobAsCompletedWhenTargetEntityNoLongerExists() {
     // given
-    // No JobHandler bean exists yet for (DELETE, PROCESS_DEFINITION) in this test context -- the
-    // concrete handler is separate follow-up work, so this exercises the dispatcher's "unhandled
-    // job type" path against the real index.
     final JobRegistryEntryDto queued =
         jobRegistryWriter.createJobEntry(
             JobType.DELETE, EntityType.PROCESS_DEFINITION, "2251799813685251");
@@ -68,7 +65,7 @@ public class JobDispatcherIT extends AbstractBrokerlessZeebeCCSMIT {
             JobType.DELETE, EntityType.PROCESS_DEFINITION, "2251799813685251");
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(queued.getId());
-    assertThat(found.get().getStatus()).isEqualTo(JobStatus.FAILED);
+    assertThat(found.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
   }
 
   @Test

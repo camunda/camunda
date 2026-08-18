@@ -63,6 +63,10 @@ public class ProcessInstanceWriter {
     this.processInstanceRepository = processInstanceRepository;
   }
 
+  public void deleteInstancesByDefinitionId(final String bpmnProcessId, final String definitionId) {
+    processInstanceRepository.deleteByDefinitionId(bpmnProcessId, definitionId);
+  }
+
   public List<ImportRequestDto> generateProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
     final String importItemName = "zeebe process instances";
