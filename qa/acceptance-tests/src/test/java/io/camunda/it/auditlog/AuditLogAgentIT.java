@@ -20,6 +20,7 @@ import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -71,6 +72,7 @@ public class AuditLogAgentIT {
     // Wait for audit logs to be available
     Awaitility.await("job to be completed")
         .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var result =
