@@ -76,7 +76,7 @@ public class JwtDecoderIT {
 
   @Test
   public void shouldConfigureJwkSourceWithRefreshAheadCachingAndIncreasedTimeouts() {
-    // given the same configurer setup() already builds decoder from
+    // given a configurer built the same way setup() already builds one
 
     // when the JWK source is built the same way jwtDecoder() builds it internally
     @SuppressWarnings("unchecked")
