@@ -397,8 +397,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // then — metrics accumulate on top of the first update's totals: two more model calls (three
     // total), two more tool calls from the second item and none from the third (three total), and
     // token counts summed across all three items.
-    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(175L);
-    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(70L);
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L + 50L + 25L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(40L + 20L + 10L);
     assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(3);
     assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(3);
     assertThat(secondUpdate.getValue().getChangedAttributes()).contains("metrics");
