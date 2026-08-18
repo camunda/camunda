@@ -403,6 +403,12 @@ public class ClusterEndpoint {
         });
   }
 
+  /**
+   * Adds a broker to a partition's replication group, or changes the priority it replicates that
+   * partition with. Partition ids restart at 1 in every physical tenant, so without a {@code
+   * physicalTenant} query parameter the partition is resolved in the default physical tenant; with
+   * it, in that tenant's partition group.
+   */
   @PostMapping(
       path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
       consumes = "application/json")
@@ -412,10 +418,12 @@ public class ClusterEndpoint {
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final String subResourceId,
       @RequestBody final PartitionJoinRequest request,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
     // The generated body type makes priority nullable even though the schema requires it;
     // an omitted priority has always meant the lowest one, so keep answering that way.
     final int priority = Optional.ofNullable(request.getPriority()).orElse(0);
+    final Optional<String> tenant = nonBlank(physicalTenant);
     return switch (resource) {
       case brokers ->
           switch (subResource) {
@@ -428,7 +436,11 @@ public class ClusterEndpoint {
                             requestSender
                                 .joinPartition(
                                     new JoinPartitionRequest(
-                                        member, Integer.parseInt(subResourceId), priority, dryRun))
+                                        member,
+                                        Integer.parseInt(subResourceId),
+                                        priority,
+                                        tenant,
+                                        dryRun))
                                 .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -443,7 +455,11 @@ public class ClusterEndpoint {
                             requestSender
                                 .joinPartition(
                                     new JoinPartitionRequest(
-                                        member, Integer.parseInt(resourceId), priority, dryRun))
+                                        member,
+                                        Integer.parseInt(resourceId),
+                                        priority,
+                                        tenant,
+                                        dryRun))
                                 .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -451,6 +467,11 @@ public class ClusterEndpoint {
     };
   }
 
+  /**
+   * Removes a broker from a partition's replication group. Partition ids restart at 1 in every
+   * physical tenant, so without a {@code physicalTenant} query parameter the partition is resolved
+   * in the default physical tenant; with it, in that tenant's partition group.
+   */
   @DeleteMapping(
       path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
       consumes = "application/json")
@@ -459,7 +480,9 @@ public class ClusterEndpoint {
       @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final String subResourceId,
-      @RequestParam(defaultValue = "false") final boolean dryRun) {
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(required = false) final @Nullable String physicalTenant) {
+    final Optional<String> tenant = nonBlank(physicalTenant);
     return switch (resource) {
       case brokers ->
           switch (subResource) {
@@ -471,7 +494,7 @@ public class ClusterEndpoint {
                             requestSender
                                 .leavePartition(
                                     new LeavePartitionRequest(
-                                        member, Integer.parseInt(subResourceId), dryRun))
+                                        member, Integer.parseInt(subResourceId), tenant, dryRun))
                                 .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
@@ -485,7 +508,7 @@ public class ClusterEndpoint {
                             requestSender
                                 .leavePartition(
                                     new LeavePartitionRequest(
-                                        member, Integer.parseInt(resourceId), dryRun))
+                                        member, Integer.parseInt(resourceId), tenant, dryRun))
                                 .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };

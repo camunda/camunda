@@ -20,6 +20,9 @@ message JoinPartitionRequest {
   int32 partitionId = 2;
   int32 priority = 3;
   bool dryRun = 4;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 5;
 }
 
 message PurgeRequest {
@@ -33,6 +36,9 @@ message LeavePartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;
   bool dryRun = 3;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 4;
 }
 
 message BrokerScaleRequest {
