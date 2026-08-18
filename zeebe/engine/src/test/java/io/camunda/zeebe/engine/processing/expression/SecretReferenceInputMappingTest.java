@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -218,6 +219,66 @@ public final class SecretReferenceInputMappingTest {
             .serviceTask(
                 "task",
                 t -> t.zeebeJobType("job").zeebeProperty("authToken", "=\"camunda.secrets.token\""))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejected = ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    assertThat(rejected.getRejectionReason())
+        .contains("camunda.secrets.token")
+        .contains("must be used as an expression");
+  }
+
+  /**
+   * Regression for #59121: deploying a process whose input mapping embeds a multi-kilobyte escaped
+   * JSON string must complete without a {@link StackOverflowError}. A greedy FEEL string-literal
+   * regex overflowed the stream-processor stack on such payloads; the scanner now uses an unrolled
+   * possessive pattern.
+   */
+  @Test
+  public void shouldDeployProcessWithLongEscapedStringInInputMapping() {
+    // given - FEEL object with a nested JSON-as-string full of \" escapes (no secret reference)
+    final var escapedJson =
+        "{\\\"type\\\":\\\"AdaptiveCard\\\",\\\"body\\\":" + "\\\"x\\\"".repeat(2000) + "}";
+    final var process =
+        Bpmn.createExecutableProcess("long-escaped-input")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("long-escaped-job")
+                        .zeebeInputExpression(
+                            "{\"content\": \"" + escapedJson + "\"}", "data.attachments"))
+            .endEvent()
+            .done();
+
+    // when / then - deployment must succeed; a StackOverflowError would kill the engine thread
+    final var deployment = ENGINE.deployment().withXmlResource(process).deploy();
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(deployment.getValue().getProcessesMetadata()).hasSize(1);
+  }
+
+  /**
+   * Companion to {@link #shouldDeployProcessWithLongEscapedStringInInputMapping}: the same long
+   * escaped payload must still reject a secret reference embedded as a quoted literal, without
+   * crashing the broker.
+   */
+  @Test
+  public void shouldRejectSecretReferenceInsideLongEscapedStringInInputMapping() {
+    // given
+    final var escapedJson =
+        "{\\\"auth\\\":\\\"camunda.secrets.token\\\",\\\"pad\\\":" + "\\\"x\\\"".repeat(2000) + "}";
+    final var process =
+        Bpmn.createExecutableProcess("long-escaped-secret-literal")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("job")
+                        .zeebeInputExpression(
+                            "{\"content\": \"" + escapedJson + "\"}", "data.attachments"))
             .endEvent()
             .done();
 

@@ -47,14 +47,17 @@ final class SecretReferenceLiteralValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
 
   // Matches one whole double-quoted string literal, so only quoted text is scanned for a reference.
-  // As a regex (after Java unescaping): "(?:\\.|[^"\\])*"
-  //   "        an opening double quote
-  //   (?: )*   zero or more of, in order:
-  //     \\.      a backslash escape (backslash + any char), so \" does not end the literal
-  //     [^"\\]   any character that is not a double quote or a backslash
-  //   "        a closing double quote
+  // As a regex (after Java unescaping): "[^"\]*+(?:\\.[^"\]*+)*+"
+  //   "              opening double quote
+  //   [^"\]*+        a possessive run of non-quote, non-backslash chars
+  //   (?:\\.[^"\]*+)*+  zero or more: one escape (\\ + any char) then another safe run
+  //   "              closing double quote
+  // Unrolled + possessive: long safe runs avoid per-char alternation, and *+ / ++ prevent the
+  // recursive group-loop StackOverflowError that greedy * hit on multi-kilobyte escaped FEEL
+  // strings (e.g. embedded JSON with many \"). See #59121.
   // e.g. it matches "ab" and "a\"b".
-  private static final Pattern STRING_LITERAL = Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
+  private static final Pattern STRING_LITERAL =
+      Pattern.compile("\"[^\"\\\\]*+(?:\\\\.[^\"\\\\]*+)*+\"");
 
   private final Class<T> elementType;
   private final Function<T, @Nullable String> sourceExtractor;
@@ -130,6 +133,9 @@ final class SecretReferenceLiteralValidator<T extends ModelElementInstance>
    * Every double-quoted string literal in a FEEL expression body, joined by a separator so adjacent
    * literals cannot fuse into a spurious match. Text outside string literals (such as a {@code
    * camunda.secrets.token} path expression) is not matched, so only quoted usage is flagged.
+   *
+   * <p>Uses an unrolled possessive regex ({@link #STRING_LITERAL}) so multi-kilobyte escaped FEEL
+   * strings cannot overflow the stream-processor stack. See #59121.
    */
   private static String stringLiterals(final String feelBody) {
     return STRING_LITERAL
