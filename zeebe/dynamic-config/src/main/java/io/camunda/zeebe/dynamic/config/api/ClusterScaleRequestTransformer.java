@@ -11,8 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -75,8 +75,11 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       return Either.right(List.of());
     }
 
-    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
-    final var invalidZone = validateZone(clusterConfiguration.toLegacy(groupId));
+    final var invalidZone =
+        validateZone(
+            clusterConfiguration.isUnzoned(),
+            clusterConfiguration.isFullyZoneAware(),
+            clusterConfiguration.globalConfiguration().partitionDistributorConfig());
     if (invalidZone.isPresent()) {
       return Either.left(invalidZone.get());
     }
@@ -85,12 +88,14 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       // partitions have to be redistributed over the new member set, not just the default
       // tenant's, which is what ScaleRequestTransformer plans.
       return new ScaleRequestTransformer(
-              newSetOfMembers(clusterConfiguration.toLegacy(groupId)),
+              newSetOfMembers(clusterConfiguration.getMembers()),
               newReplicationFactor,
               newPartitionCount,
               zone)
           .phases(clusterConfiguration);
     }
+
+    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
 
     // Only the partition count targets a group; the replication factor spans every tenant, so a
     // request carrying it alone has no group that has to exist.
@@ -108,21 +113,19 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
    * The complete member set the cluster should have once this request is applied. A zoned request
    * resizes only the named zone and leaves every other zone's members untouched; an unzoned one
    * resizes the whole cluster.
+   *
+   * <p>Takes the member set rather than a configuration, because that is all the answer depends on:
+   * cluster membership is global, with no per-tenant dimension.
    */
-  private Set<MemberId> newSetOfMembers(final ClusterConfiguration clusterConfiguration) {
+  private Set<MemberId> newSetOfMembers(final Set<MemberId> currentMembers) {
     if (zone.isEmpty()) {
-      return membersInZone(clusterConfiguration.members().size());
+      return membersInZone(currentMembers.size());
     }
     final var zoneName = zone.get();
     final Set<MemberId> newSetOfMembers =
-        clusterConfiguration.members().keySet().stream()
-            .filter(m -> !m.isInZone(zoneName))
-            .collect(Collectors.toSet());
+        currentMembers.stream().filter(m -> !m.isInZone(zoneName)).collect(Collectors.toSet());
     final int currentZoneCount =
-        (int)
-            clusterConfiguration.members().keySet().stream()
-                .filter(m -> m.isInZone(zoneName))
-                .count();
+        (int) currentMembers.stream().filter(m -> m.isInZone(zoneName)).count();
     newSetOfMembers.addAll(membersInZone(currentZoneCount));
     return newSetOfMembers;
   }
@@ -133,11 +136,18 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
    * all, and the replication factor of a zone-aware cluster is derived from its zone specs rather
    * than set directly.
    *
+   * <p>Takes what it checks rather than a configuration, because none of it has a per-tenant
+   * dimension: how far the cluster has come in adopting zone-awareness and which zones it knows are
+   * global, the same for every physical tenant.
+   *
    * @return the rejection to answer with, or empty if the request is valid
    */
-  private Optional<InvalidRequest> validateZone(final ClusterConfiguration clusterConfiguration) {
+  private Optional<InvalidRequest> validateZone(
+      final boolean unzoned,
+      final boolean fullyZoneAware,
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     if (zone.isEmpty()) {
-      return clusterConfiguration.isUnzoned()
+      return unzoned
           ? Optional.empty()
           : Optional.of(
               new InvalidRequest(
@@ -148,15 +158,14 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
           new InvalidRequest(
               "Change of replication factor is not allowed when zone is set. To change replication factor use `/partition-distribution` endpoint"));
     }
-    if (!clusterConfiguration.isFullyZoneAware()) {
+    if (!fullyZoneAware) {
       return Optional.of(
           new InvalidRequest(
               "Scaling operation with zone is only allowed when cluster is zone-aware"));
     }
     final var zoneName = zone.get();
     final var knownZone =
-        clusterConfiguration
-            .partitionDistributorConfig()
+        partitionDistributorConfig
             .filter(ZoneAwareConfig.class::isInstance)
             .map(ZoneAwareConfig.class::cast)
             .map(cfg -> cfg.zones().stream().anyMatch(z -> z.name().equals(zoneName)))
