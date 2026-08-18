@@ -207,7 +207,9 @@ public final class EventAppliers implements EventApplier {
     register(
         AgentDefinitionIntent.CREATED,
         new AgentDefinitionCreatedApplier(state.getAgentDefinitionState()));
-    register(AgentDefinitionIntent.DELETED, NOOP_EVENT_APPLIER);
+    register(
+        AgentDefinitionIntent.DELETED,
+        new AgentDefinitionDeletedApplier(state.getAgentDefinitionState()));
   }
 
   private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {

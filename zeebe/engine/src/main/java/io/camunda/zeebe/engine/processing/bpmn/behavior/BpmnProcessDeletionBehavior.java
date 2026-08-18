@@ -12,10 +12,12 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class BpmnProcessDeletionBehavior {
 
   private final ProcessState processState;
+  private final AgentDefinitionState agentDefinitionState;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
   private final TypedCommandWriter commandWriter;
@@ -37,6 +40,7 @@ public final class BpmnProcessDeletionBehavior {
 
   public BpmnProcessDeletionBehavior(
       final ProcessState processState,
+      final AgentDefinitionState agentDefinitionState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final TypedCommandWriter commandWriter,
@@ -44,6 +48,7 @@ public final class BpmnProcessDeletionBehavior {
       final KeyGenerator keyGenerator,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     this.processState = processState;
+    this.agentDefinitionState = agentDefinitionState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
     this.commandWriter = commandWriter;
@@ -90,8 +95,24 @@ public final class BpmnProcessDeletionBehavior {
     // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
+    deleteAgentDefinitions(process.getKey());
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
     commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
     processDefinitionMetrics.processDefinitionDrainFinalized();
+  }
+
+  /**
+   * Emits {@code AgentDefinition:DELETED} for each agent definition owned by {@code
+   * processDefinitionKey}, so that none is left referencing an already-deleted process, even
+   * momentarily on the record stream.
+   */
+  private void deleteAgentDefinitions(final long processDefinitionKey) {
+    agentDefinitionState.forEachAgentDefinitionKey(
+        processDefinitionKey,
+        agentDefinitionKey ->
+            stateWriter.appendFollowUpEvent(
+                agentDefinitionKey,
+                AgentDefinitionIntent.DELETED,
+                agentDefinitionState.getAgentDefinition(agentDefinitionKey)));
   }
 }
