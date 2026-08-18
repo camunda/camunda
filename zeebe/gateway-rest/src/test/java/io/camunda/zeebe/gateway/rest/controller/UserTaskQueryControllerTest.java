@@ -508,6 +508,99 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchUserTasksWithOrFilter() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "filter":{
+                "assignee": "user1",
+                "$or": [
+                  { "candidateGroup": "groupA" },
+                  { "candidateUser": "user2" }
+                ]
+              }
+            }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .search(
+            eq(
+                new UserTaskQuery.Builder()
+                    .filter(
+                        new UserTaskFilter.Builder()
+                            .assigneeOperations(Operation.eq("user1"))
+                            .addOrOperation(
+                                new UserTaskFilter.Builder()
+                                    .candidateGroupOperations(Operation.eq("groupA"))
+                                    .build())
+                            .addOrOperation(
+                                new UserTaskFilter.Builder()
+                                    .candidateUserOperations(Operation.eq("user2"))
+                                    .build())
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldReturnBadRequestForInvalidRootFilterWithValidOrClause() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "userTaskKey": "abc",
+                "$or": [
+                  { "candidateGroup": "groupA" }
+                ]
+              }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The provided userTaskKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+  }
+
+  @Test
   void shouldSearchUserTasksWithSorting() {
     // given
     when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);

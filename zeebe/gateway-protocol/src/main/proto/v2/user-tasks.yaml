@@ -554,6 +554,49 @@ components:
 
     UserTaskFilter:
       description: User task filter request.
+      allOf:
+        - $ref: '#/components/schemas/UserTaskFilterFields'
+        - type: object
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.10"
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "assignee": "user1",
+                  "$or": [
+                    { "candidateGroup": "groupA" },
+                    { "candidateUser": "user2" }
+                  ]
+                }
+                ```
+                This matches user tasks that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">are assigned to <em>user1</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>candidateGroup</code> is <em>groupA</em>, or</li>
+                      <li style="list-style-type: circle;"><code>candidateUser</code> is <em>user2</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/UserTaskFilterFields'
+
+    UserTaskFilterFields:
+      description: User task filter fields.
       type: object
       properties:
         state:

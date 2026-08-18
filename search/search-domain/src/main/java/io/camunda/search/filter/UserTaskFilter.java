@@ -14,6 +14,7 @@ import static io.camunda.util.CollectionUtil.collectValuesAsList;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +42,8 @@ public record UserTaskFilter(
     List<Operation<OffsetDateTime>> followUpDateOperations,
     List<Operation<OffsetDateTime>> dueDateOperations,
     Set<String> tags,
-    String type)
+    String type,
+    List<UserTaskFilter> orFilters)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
@@ -68,6 +70,7 @@ public record UserTaskFilter(
     private List<Operation<OffsetDateTime>> dueDateOperations;
     private Set<String> tags;
     private String type;
+    private List<UserTaskFilter> orFilters;
 
     public Builder userTaskKeys(final Long... values) {
       return userTaskKeys(collectValuesAsList(values));
@@ -329,6 +332,19 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder addOrOperation(final UserTaskFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<UserTaskFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
@@ -353,7 +369,8 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
           tags,
-          type);
+          type,
+          orFilters);
     }
   }
 }

@@ -57,6 +57,20 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(exists("flowNodeInstanceId")); // Default to task
+    queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
+    return and(queries);
+  }
+
+  private List<SearchQuery> toSearchQueryFields(final UserTaskFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
     queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
@@ -100,10 +114,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
-    queries.add(exists("flowNodeInstanceId")); // Default to task
-    queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
-
-    return and(queries);
+    return queries;
   }
 
   @Override
