@@ -15,16 +15,19 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequest {
 
@@ -51,27 +54,16 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
       }
     }
 
-    final List<Integer> partitions =
-        clusterConfiguration.members().values().stream()
-            .map(MemberState::partitions)
-            .flatMap(p -> p.keySet().stream())
-            .distinct()
-            .toList();
-
     final SortedMap<Integer, SortedSet<MemberId>> partitionsWithNewMembers =
-        calculateNewConfiguration(clusterConfiguration, membersToRetain, partitions);
+        survivingReplicas(
+            clusterConfiguration.members().entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Entry::getKey, entry -> entry.getValue().partitions().keySet())));
 
-    final var partitionsWithNoReplicas =
-        partitions.stream()
-            .filter(
-                p ->
-                    !partitionsWithNewMembers.containsKey(p)
-                        || partitionsWithNewMembers.get(p).isEmpty())
-            .toList();
+    final var partitionsWithNoReplicas = orphanedPartitions(partitionsWithNewMembers);
 
-    final var hasReplicasForAllPartitions = partitionsWithNoReplicas.isEmpty();
-
-    if (!hasReplicasForAllPartitions) {
+    if (!partitionsWithNoReplicas.isEmpty()) {
       return Either.left(
           new InvalidRequest(
               String.format(
@@ -128,26 +120,37 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
         .toList();
   }
 
-  private SortedMap<Integer, SortedSet<MemberId>> calculateNewConfiguration(
-      final ClusterConfiguration currentTopology,
-      final Set<MemberId> membersToRetain,
-      final List<Integer> partitions) {
+  /**
+   * The partitions of one physical tenant paired with the replicas that survive the removal: every
+   * partition any broker of that tenant holds, mapped to the retained brokers among them.
+   *
+   * <p>A partition whose every replica is being removed maps to an empty set rather than dropping
+   * out of the map — that is the case {@link #orphanedPartitions(SortedMap)} has to find.
+   *
+   * @param partitionsByMember which partitions each broker holds, for one physical tenant
+   */
+  private SortedMap<Integer, SortedSet<MemberId>> survivingReplicas(
+      final Map<MemberId, ? extends Collection<Integer>> partitionsByMember) {
+    final SortedMap<Integer, SortedSet<MemberId>> survivingReplicas = new TreeMap<>();
+    partitionsByMember.forEach(
+        (member, partitions) ->
+            partitions.forEach(
+                partitionId -> {
+                  final var replicas =
+                      survivingReplicas.computeIfAbsent(partitionId, ignored -> new TreeSet<>());
+                  if (membersToRetain.contains(member)) {
+                    replicas.add(member);
+                  }
+                }));
+    return survivingReplicas;
+  }
 
-    final SortedMap<Integer, SortedSet<MemberId>> partitionToMembersMap = new TreeMap<>();
-    for (final var partitionId : partitions) {
-      partitionToMembersMap.put(partitionId, new TreeSet<>());
-      for (final var member : membersToRetain) {
-        if (currentTopology.getMember(member).hasPartition(partitionId)) {
-          partitionToMembersMap.computeIfPresent(
-              partitionId,
-              (ignore, members) -> {
-                members.add(member);
-                return members;
-              });
-        }
-      }
-    }
-
-    return partitionToMembersMap;
+  /** The partitions that the removal would leave without a single replica. */
+  private static List<Integer> orphanedPartitions(
+      final SortedMap<Integer, SortedSet<MemberId>> survivingReplicas) {
+    return survivingReplicas.entrySet().stream()
+        .filter(partition -> partition.getValue().isEmpty())
+        .map(Entry::getKey)
+        .toList();
   }
 }
