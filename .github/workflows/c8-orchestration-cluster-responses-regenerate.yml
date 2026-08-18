@@ -136,11 +136,11 @@ jobs:
             echo '{"responses":null}' > /tmp/responses.before.json
           fi
 
-      # The typed-buildUrl line (#59880, #60009, #60010, #59888) is main-only
-      # and deliberately so: a rename on a released stable branch would itself
-      # be a breaking change. Gating each apiPaths.ts step on the script being
-      # present lets those refs skip that half instead of failing, and starts
-      # working on its own if the line is ever backported.
+      # Only main has the typed buildUrl and its generator script, and that is
+      # deliberate: a rename on a released stable branch would itself be a
+      # breaking change. Gating each apiPaths.ts step on the script being
+      # present lets the other refs skip that half instead of failing, and
+      # starts working on its own if the script ever reaches them.
       - name: Check API paths feature availability
         id: paths-feature
         working-directory: ${{ env.SUITE_DIR }}
@@ -149,8 +149,8 @@ jobs:
           # Exit 3 means "asked and answered: no such script". Anything else
           # non-zero means the probe itself broke (unreadable or unparseable
           # package.json), which must not be mistaken for a deliberate absence:
-          # collapsing the two would silently disable path detection and
-          # recreate the staleness #60109 exists to end, one level up.
+          # collapsing the two would silently disable path detection and leave
+          # the union going stale unnoticed — the exact rot this job prevents.
           #
           # The `|| rc=$?` is load-bearing. The runner invokes this with
           # `bash -e`, which `set -uo pipefail` above does not undo, so a bare
