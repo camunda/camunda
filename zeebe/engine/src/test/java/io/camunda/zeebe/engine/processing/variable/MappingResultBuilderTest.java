@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 final class MappingResultBuilderTest {
 
-  private final MappingResultBuilder builder = new MappingResultBuilder();
+  private final MappingResultBuilder builder = MappingResultBuilder.forInputMappings(name -> null);
 
   @Test
   void shouldBuildEmptyDocument() {
@@ -141,7 +141,8 @@ final class MappingResultBuilderTest {
   void shouldSeedNestedTargetFromScopeValue() {
     // given: scope has a = {'c': 2}
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -157,7 +158,7 @@ final class MappingResultBuilderTest {
         Map.of(
             List.of("a"), asMsgPack("{'b': {'d': 2}, 'e': 3}"),
             List.of("a", "b"), asMsgPack("{'d': 2}"));
-    final var builder = new MappingResultBuilder(scope::get);
+    final var builder = MappingResultBuilder.forOutputMappings(scope::get);
 
     // when
     builder.put(List.of("a", "b", "c"), asMsgPack("1"));
@@ -170,7 +171,8 @@ final class MappingResultBuilderTest {
   void shouldPoisonLevelWhenScopeValueIsNotAMap() {
     // given: scope has a = 5
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -183,7 +185,8 @@ final class MappingResultBuilderTest {
   @Test
   void shouldDiscardFurtherPutsUnderPoisonedLevel() {
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -196,7 +199,8 @@ final class MappingResultBuilderTest {
   @Test
   void shouldReplacePoisonedLevelWithPlainTargetPut() {
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when: a nested put poisons 'a', then a plain put replaces it
     builder.put(List.of("a", "b"), asMsgPack("1"));
@@ -210,7 +214,8 @@ final class MappingResultBuilderTest {
   void shouldReseedFromScopeWhenNestedPutFollowsPlainPut() {
     // given: scope a = {'c': 2}; a plain put stored a value buffer for 'a'
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
     builder.put(List.of("a"), asMsgPack("{'z': 9}"));
 
     // when: the shape flips back to a map — the plain mapping's value is discarded and the fresh
@@ -225,7 +230,8 @@ final class MappingResultBuilderTest {
   void shouldSeedFreshMapWhenScopeValueIsNil() {
     // given: scope has a = null — FEEL's `if (a != null)` takes the else branch
     final var builder =
-        new MappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("null") : null);
+        MappingResultBuilder.forOutputMappings(
+            path -> path.equals(List.of("a")) ? asMsgPack("null") : null);
 
     // when
     builder.put(List.of("a", "b"), asMsgPack("1"));

@@ -203,7 +203,7 @@ public final class VariableOutputMappingTransformerTest {
     // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
     // shadow the scope variables, and nested targets merge with the scope value at every level
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -236,7 +236,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when: evaluate one by one, stopping at the first failure (mirrors runtime fail-fast)
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -277,7 +277,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -310,7 +310,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        new MappingResultBuilder(
+        MappingResultBuilder.forOutputMappings(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))

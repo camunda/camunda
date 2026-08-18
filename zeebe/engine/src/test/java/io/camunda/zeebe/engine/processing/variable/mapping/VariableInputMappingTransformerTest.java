@@ -200,7 +200,7 @@ final class VariableInputMappingTransformerTest {
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
     // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -233,7 +233,7 @@ final class VariableInputMappingTransformerTest {
                     .isTrue());
 
     // when
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -275,7 +275,7 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final ExpressionLanguage language) {
     final var inputMappings = transformer.transformInputMappings(mappings, language);
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {

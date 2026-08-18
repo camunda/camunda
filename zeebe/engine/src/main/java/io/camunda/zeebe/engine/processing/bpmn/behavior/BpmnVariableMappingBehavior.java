@@ -89,7 +89,7 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = MappingResultBuilder.forInputMappings(name -> null);
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling
     final var processor =
@@ -159,7 +159,7 @@ public final class BpmnVariableMappingBehavior {
       // it and keep the existing sibling properties: look up the top-level variable in the element
       // scope, then navigate into it along the remaining path segments (null when absent).
       final var resultBuilder =
-          new MappingResultBuilder(
+          MappingResultBuilder.forOutputMappings(
               path ->
                   Optional.ofNullable(
                           variablesState.getVariable(

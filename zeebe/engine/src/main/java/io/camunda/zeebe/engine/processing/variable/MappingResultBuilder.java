@@ -31,14 +31,14 @@ import org.jspecify.annotations.Nullable;
  * earlier mappings. {@link #toDocument()} returns the accumulated results as a single MsgPack
  * document to be merged into the element's local scope.
  *
- * <p>For input mappings (no-arg constructor), a mapping to a nested target descends into (or
+ * <p>For input mappings ({@link #forInputMappings}), a mapping to a nested target descends into (or
  * creates) intermediate objects; a mapping whose target collides structurally with an earlier one
  * (a value where an object is needed, or vice versa) replaces the earlier entry — last-wins.
  *
- * <p>For output mappings (constructor with a {@code scopeValueResolver}), a nested target instead
- * merges with the existing scope variable at every path level: a level that is absent or holds a
- * plain value is seeded from the current scope value at that path. A non-context scope value
- * poisons the level to null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
+ * <p>For output mappings ({@link #forOutputMappings}), a nested target instead merges with the
+ * existing scope variable at every path level: a level that is absent or holds a plain value is
+ * seeded from the current scope value at that path. A non-context scope value poisons the level to
+ * null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
  */
 @NullMarked
 public final class MappingResultBuilder {
@@ -52,32 +52,55 @@ public final class MappingResultBuilder {
   private static final DirectBuffer NIL = new UnsafeBuffer(new byte[] {MsgPackCodes.NIL});
 
   /**
-   * Values are either a nested {@code Map<String, Object>}, {@link #POISON}, or a MsgPack {@link
+   * Values are either a nested {@link NestedLevel}, {@link #POISON}, or a MsgPack {@link
    * DirectBuffer}.
    */
   private final Map<String, Object> entries = new LinkedHashMap<>();
 
   private final MsgPackWriter writer = new MsgPackWriter();
 
-  private final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver;
+  /**
+   * Output mappings only: resolves a target-path prefix to the scope value to seed a level from.
+   */
+  private final Function<List<String>, @Nullable DirectBuffer> seedValueResolver;
 
-  /** Builder for input mappings: nested targets never merge with existing scope values. */
-  public MappingResultBuilder() {
-    this(path -> null);
+  /**
+   * Input mappings only: resolves a top-level variable name to the value the element's scope chain
+   * gives it — the value a nested target partially shadows.
+   */
+  private final Function<String, @Nullable DirectBuffer> shadowedValueResolver;
+
+  private MappingResultBuilder(
+      final Function<List<String>, @Nullable DirectBuffer> seedValueResolver,
+      final Function<String, @Nullable DirectBuffer> shadowedValueResolver) {
+    this.seedValueResolver = seedValueResolver;
+    this.shadowedValueResolver = shadowedValueResolver;
+  }
+
+  /**
+   * Builder for input mappings: a nested target never merges with the existing scope value while
+   * accumulating.
+   *
+   * @param shadowedValueResolver resolves a top-level variable name to the value the scope chain
+   *     gives it, or {@code null} when there is none
+   */
+  public static MappingResultBuilder forInputMappings(
+      final Function<String, @Nullable DirectBuffer> shadowedValueResolver) {
+    return new MappingResultBuilder(path -> null, shadowedValueResolver);
   }
 
   /**
    * Builder for output mappings: when a nested target path needs a map at a level that is absent
    * (or currently holds a plain value), the level is seeded from the existing scope value at that
    * path. A non-context scope value poisons the level to null, matching FEEL's {@code context
-   * merge} behavior.
+   * merge(<non-context>, {...})} behavior.
    *
-   * @param scopeValueResolver resolves a target-path prefix to the current scope value at that
-   *     path, or {@code null} when there is none; invoked only when a level must be (re)created
+   * @param seedValueResolver resolves a target-path prefix to the current scope value at that path,
+   *     or {@code null} when there is none; invoked only when a level must be (re)created
    */
-  public MappingResultBuilder(
-      final Function<List<String>, @Nullable DirectBuffer> scopeValueResolver) {
-    this.scopeValueResolver = scopeValueResolver;
+  public static MappingResultBuilder forOutputMappings(
+      final Function<List<String>, @Nullable DirectBuffer> seedValueResolver) {
+    return new MappingResultBuilder(seedValueResolver, name -> null);
   }
 
   /**
@@ -91,7 +114,7 @@ public final class MappingResultBuilder {
       if (next == null) {
         return; // level is poisoned: the mapped value is discarded, the level stays null
       }
-      current = next;
+      current = next.children();
     }
     current.put(targetPath.getLast(), BufferUtil.cloneBuffer(value));
   }
@@ -111,7 +134,7 @@ public final class MappingResultBuilder {
     } else if (entry instanceof final DirectBuffer value) {
       return value;
     } else {
-      return serialize(asNestedMap(entry));
+      return serialize(((NestedLevel) entry).children());
     }
   }
 
@@ -121,26 +144,27 @@ public final class MappingResultBuilder {
   }
 
   /**
-   * Returns the map at the given path prefix, creating it if the current entry is absent or a plain
-   * value. A newly created map is seeded with the top-level entries of the existing scope value at
-   * that path (children stay opaque buffers); a non-context scope value poisons the level instead.
-   * Returns {@code null} when the level is (or becomes) poisoned.
+   * Returns the level at the given path prefix, creating it if the current entry is absent or a
+   * plain value. A newly created level is seeded with the top-level entries of the existing scope
+   * value at that path (children stay opaque buffers); a non-context scope value poisons the level
+   * instead. Returns {@code null} when the level is (or becomes) poisoned.
    */
-  private @Nullable Map<String, Object> getOrSeedNested(
+  private @Nullable NestedLevel getOrSeedNested(
       final Map<String, Object> parent, final List<String> pathPrefix) {
     final var key = pathPrefix.getLast();
     final var entry = parent.get(key);
     if (entry == POISON) {
       return null;
     }
-    if (entry instanceof Map<?, ?>) {
-      return asNestedMap(entry);
+    if (entry instanceof final NestedLevel level) {
+      return level;
     }
-    // absent, or a plain value from an earlier mapping: re-seed the (re)created level from the
-    // scope value at this path, dropping the earlier plain value
-    final var scopeValue = scopeValueResolver.apply(pathPrefix);
+    // Absent, or a plain value from an earlier mapping. A plain value means that mapping already
+    // replaced whatever this path resolved to, so the re-created level must not fall through to it.
+    final var totallyShadowed = entry != null;
+    final var scopeValue = seedValueResolver.apply(pathPrefix);
     if (scopeValue == null || isNil(scopeValue)) {
-      final var fresh = new LinkedHashMap<String, Object>();
+      final var fresh = NestedLevel.fresh(totallyShadowed);
       parent.put(key, fresh);
       return fresh;
     }
@@ -148,7 +172,7 @@ public final class MappingResultBuilder {
       parent.put(key, POISON);
       return null;
     }
-    final var seeded = deserializeTopLevel(scopeValue);
+    final var seeded = new NestedLevel(deserializeTopLevel(scopeValue), totallyShadowed);
     parent.put(key, seeded);
     return seeded;
   }
@@ -171,11 +195,6 @@ public final class MappingResultBuilder {
       result.put(key, BufferUtil.cloneBuffer(slice));
     }
     return result;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> asNestedMap(final Object entry) {
-    return (Map<String, Object>) entry;
   }
 
   private DirectBuffer serialize(final Map<String, Object> map) {
@@ -207,15 +226,30 @@ public final class MappingResultBuilder {
       final var entry = iterator.next();
       writer.writeString(BufferUtil.wrapString(entry.getKey()));
       final var value = entry.getValue();
-      if (value instanceof Map<?, ?>) {
-        final var nested = asNestedMap(value);
-        writer.writeMapHeader(nested.size());
-        pending.push(nested.entrySet().iterator());
+      if (value instanceof final NestedLevel level) {
+        writer.writeMapHeader(level.children().size());
+        pending.push(level.children().entrySet().iterator());
       } else if (value == POISON) {
         writer.writeNil();
       } else {
         writer.writeRaw((DirectBuffer) value);
       }
+    }
+  }
+
+  /**
+   * A nested level built by one or more dotted target paths.
+   *
+   * @param children the level's entries: a nested {@link NestedLevel}, {@link #POISON}, or a
+   *     MsgPack {@link DirectBuffer}
+   * @param totallyShadowed whether an earlier mapping assigned this whole path a value before this
+   *     level was created. Such a level never falls through to the value it shadows on a read: the
+   *     earlier assignment already replaced that value outright, and re-creating the level is a
+   *     fresh start (structural last-wins) rather than a merge into what it dropped.
+   */
+  private record NestedLevel(Map<String, Object> children, boolean totallyShadowed) {
+    static NestedLevel fresh(final boolean totallyShadowed) {
+      return new NestedLevel(new LinkedHashMap<>(), totallyShadowed);
     }
   }
 }
