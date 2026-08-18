@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.0.89
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `agentDefinitionKey` to agent instances, their search filter, and sort fields
+  - Add `CONFIGURATION` to the agent instance history role enum
+  - Add `historyItemId`, `tools`, `model`, `provider`, `limits`, and `systemPrompt` to agent instance history items
+  - Widen `AgentInstanceObjectContent.object` to accept any JSON value instead of only objects
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.88
 
 ### 🚀 Enhancements
