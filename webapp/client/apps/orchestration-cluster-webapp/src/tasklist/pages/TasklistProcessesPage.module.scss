@@ -45,8 +45,17 @@
 //
 // Must stay declared after `.page`: single-class selectors have equal
 // specificity, so source order decides.
+// DS-only. `.page`'s own `height: calc(100% - header-height)` was written
+// for a standalone layout with no ancestor already accounting for the
+// header — TasklistNavLayout.module.scss's `.content` (the DS-only nav-rail
+// wrapper this page now renders inside) already subtracts the same
+// header-height once. Doubling the subtraction here left an unpainted 48px
+// gap at the very bottom of the page, showing the real <body> background
+// (Carbon's grey `--cds-background` reset) through as a visible bar. `100%`
+// alone is correct once the ancestor has already made the room.
 .pageDS {
 	background: var(--background);
+	height: 100%;
 }
 
 // DS-only. The single padded, width-constrained container the DS PageLayout puts
