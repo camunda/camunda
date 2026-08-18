@@ -33,23 +33,28 @@ public class BackupControllerStandalone {
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> takeBackup(final long backupId) {
-    return backupController.takeBackup(backupId);
+  public WebEndpointResponse<?> takeBackup(
+      final long backupId, @Nullable final String physicalTenant) {
+    return backupController.takeBackup(backupId, physicalTenant);
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackupState(@Selector final long backupId) {
-    return backupController.getBackupState(backupId);
+  public WebEndpointResponse<?> getBackupState(
+      @Selector final long backupId, @Nullable final String physicalTenant) {
+    return backupController.getBackupState(backupId, physicalTenant);
   }
 
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
-      @Nullable final Boolean verbose, @Nullable final String pattern) {
-    return backupController.getBackups(verbose, pattern);
+      @Nullable final Boolean verbose,
+      @Nullable final String pattern,
+      @Nullable final String physicalTenant) {
+    return backupController.getBackups(verbose, pattern, physicalTenant);
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> deleteBackup(@Selector final long backupId) {
-    return backupController.deleteBackup(backupId);
+  public WebEndpointResponse<?> deleteBackup(
+      @Selector final long backupId, @Nullable final String physicalTenant) {
+    return backupController.deleteBackup(backupId, physicalTenant);
   }
 }

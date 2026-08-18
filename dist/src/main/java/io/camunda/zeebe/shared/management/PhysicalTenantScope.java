@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * their per-tenant output.
  */
 @NullMarked
-final class PhysicalTenantScope {
+public final class PhysicalTenantScope {
 
   private PhysicalTenantScope() {}
 
@@ -33,7 +33,7 @@ final class PhysicalTenantScope {
    *     scoping to a tenant that cannot exist would be a confusing way to reject it.
    * @throws UnknownPhysicalTenantException if the requested tenant is not configured
    */
-  static List<String> resolve(
+  public static List<String> resolve(
       final @Nullable String physicalTenant, final PhysicalTenantIds physicalTenantIds) {
     final Set<String> known = physicalTenantIds.known();
     if (physicalTenant == null || physicalTenant.isBlank()) {

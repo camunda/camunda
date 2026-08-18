@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Holds one fully-wired {@link BackupService} per physical tenant together with the repository
@@ -38,6 +39,15 @@ public final class BackupServiceRegistry {
   /** All configured physical-tenant backups, in configuration order. */
   public Collection<PhysicalTenantBackup> physicalTenantBackups() {
     return byPhysicalTenant.values();
+  }
+
+  /**
+   * The ids of every physical tenant that has a history backup service, for resolving an actuator's
+   * {@code physicalTenant} parameter. Narrower than the cluster's configured tenants when a tenant
+   * runs without secondary storage, and therefore the right set to reject an unknown id against.
+   */
+  public Set<String> physicalTenantIds() {
+    return byPhysicalTenant.keySet();
   }
 
   /** The backup wiring for a single physical tenant. */

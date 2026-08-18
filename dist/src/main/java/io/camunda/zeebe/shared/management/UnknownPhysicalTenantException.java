@@ -16,9 +16,9 @@ import org.jspecify.annotations.NullMarked;
  * them up on the actuator surface.
  */
 @NullMarked
-final class UnknownPhysicalTenantException extends IllegalArgumentException {
+public final class UnknownPhysicalTenantException extends IllegalArgumentException {
 
-  UnknownPhysicalTenantException(final String requested, final Collection<String> known) {
+  public UnknownPhysicalTenantException(final String requested, final Collection<String> known) {
     super(
         "Unknown physical tenant '%s'. Configured physical tenants: %s."
             .formatted(requested, known.stream().sorted().toList()));
