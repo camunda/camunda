@@ -16,9 +16,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +41,9 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
   private ElementInstanceState elementInstanceState;
   private SuspensionState suspensionState;
   private StateWriter stateWriter;
+  private SideEffectWriter sideEffectWriter;
   private TypedRejectionWriter rejectionWriter;
+  private DueDateTimerCheckScheduler timerChecker;
   private ProcessInstanceCompleteResumingProcessor processor;
 
   @BeforeEach
@@ -46,15 +51,18 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
     elementInstanceState = mock(ElementInstanceState.class);
     suspensionState = mock(SuspensionState.class);
     stateWriter = mock(StateWriter.class);
+    sideEffectWriter = mock(SideEffectWriter.class);
     rejectionWriter = mock(TypedRejectionWriter.class);
+    timerChecker = mock(DueDateTimerCheckScheduler.class);
 
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
+    when(writers.sideEffect()).thenReturn(sideEffectWriter);
     when(writers.rejection()).thenReturn(rejectionWriter);
 
     processor =
         new ProcessInstanceCompleteResumingProcessor(
-            elementInstanceState, suspensionState, writers);
+            elementInstanceState, suspensionState, writers, timerChecker);
 
     // default: the common case of an active instance still marked RESUMING
     when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
@@ -75,6 +83,23 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
         .appendFollowUpEvent(
             eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUMED), eq(record));
     verify(rejectionWriter, never()).appendRejection(any(), any(), any());
+  }
+
+  @Test
+  void shouldNudgeDueDateTimerCheckerWhenResumeCompletes() {
+    // given - resume must nudge the checker so a timer stranded during suspension fires promptly
+    // instead of waiting for the next unrelated timer
+    seedActiveInstance(new ProcessInstanceRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+
+    // when
+    processor.processRecord(continueResumingCommand());
+
+    // then
+    final var sideEffectCaptor = ArgumentCaptor.forClass(SideEffectProducer.class);
+    verify(sideEffectWriter).appendSideEffect(sideEffectCaptor.capture());
+    sideEffectCaptor.getValue().flush();
+
+    verify(timerChecker).scheduleTimer(-1);
   }
 
   @Test
