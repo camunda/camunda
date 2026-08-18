@@ -12,6 +12,7 @@ import {
   Navigate,
   RouterProvider,
   useLocation,
+  useNavigate,
 } from 'react-router';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -34,13 +35,27 @@ const RedirectToVariables: React.FC = () => {
   );
 };
 
+const SelectElement: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate({search: '?elementId=someElement'})}>
+      Select element
+    </button>
+  );
+};
+
 function getWrapper(initialPath?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const router = createMemoryRouter(
       [
         {
           path: Paths.processInstance(undefined, true),
-          element: children,
+          element: (
+            <>
+              <SelectElement />
+              {children}
+            </>
+          ),
           children: [
             {index: true, element: <RedirectToVariables />},
             {
@@ -547,7 +562,7 @@ describe('<BottomPanelTabs />', () => {
     expect(await screen.findByText('3')).toBeVisible();
   });
 
-  it('should redirect incidents tab when process instance has no incidents', async () => {
+  it('should redirect incidents tab to variables tab when process instance has no incidents', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -567,7 +582,28 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
-  it('should redirect incidents tab when selected element has no incidents', async () => {
+  it('should redirect incidents tab with a selection to details tab when process instance has no incidents', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=someElement`;
+    render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect incidents tab to details tab when selected element has no incidents', async () => {
     const elementInstanceKey = '456';
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -599,7 +635,7 @@ describe('<BottomPanelTabs />', () => {
     render(<BottomPanelTabs />, {wrapper: getWrapper(path)});
 
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceVariables({
+      Paths.processInstanceDetails({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );
@@ -660,6 +696,58 @@ describe('<BottomPanelTabs />', () => {
 
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
       Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should switch to details tab when an element gets selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should keep the current tab when switching between elements', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = `${Paths.processInstanceInputMappings({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=otherElement`;
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceInputMappings({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );

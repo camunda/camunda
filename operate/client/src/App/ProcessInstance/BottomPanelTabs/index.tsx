@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router';
+import {Navigate, Outlet, useLocation, useNavigate} from 'react-router';
+import {useLayoutEffect, useRef} from 'react';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -55,7 +56,25 @@ const BottomPanelTabs: React.FC = () => {
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
+
+  const prevHasSelectionRef = useRef(hasSelection);
+  useLayoutEffect(() => {
+    // Switches to the default element tab when users
+    // select an element without a previous selection.
+    const prevHasSelection = prevHasSelectionRef.current;
+    prevHasSelectionRef.current = hasSelection;
+    if (!hasSelection || prevHasSelection) {
+      return;
+    }
+
+    const pathname = hasIncident
+      ? Paths.processInstanceIncidents({processInstanceId})
+      : Paths.processInstanceDetails({processInstanceId});
+    navigate({pathname, search: location.search}, {replace: true});
+  }, [hasSelection, hasIncident, processInstanceId, location.search, navigate]);
+
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
     hasIncident,
@@ -136,7 +155,9 @@ const BottomPanelTabs: React.FC = () => {
         <Navigate
           to={{
             ...location,
-            pathname: Paths.processInstanceVariables({processInstanceId}),
+            pathname: hasSelection
+              ? Paths.processInstanceDetails({processInstanceId})
+              : Paths.processInstanceVariables({processInstanceId}),
           }}
           replace
         />
