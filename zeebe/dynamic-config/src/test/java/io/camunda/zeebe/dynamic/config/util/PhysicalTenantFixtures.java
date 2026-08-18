@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.config.util;
+
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import java.util.List;
+import java.util.Map;
+
+public final class PhysicalTenantFixtures {
+
+  public static final String TENANT_A = "tenant-a";
+
+  private PhysicalTenantFixtures() {}
+
+  /**
+   * The given single-group topology as a multi-group configuration whose two partition groups are
+   * mirror images: the default tenant and {@link #TENANT_A} run the same partitions over the same
+   * brokers.
+   *
+   * <p>Mirroring rather than varying the two is what makes a plan easy to read: whatever a request
+   * does to the default tenant it must do to the other one as well, so a plan that only ever saw
+   * the default group is distinguishable by the group it is missing, not by a placement difference
+   * that has to be derived.
+   */
+  public static CurrentClusterConfiguration withMirroredTenant(
+      final ClusterConfiguration topology) {
+    final var single = CurrentClusterConfiguration.fromLegacy(topology);
+    return new CurrentClusterConfiguration(
+        single.version(),
+        single.globalConfiguration(),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+            TENANT_A,
+            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
+        single.phasedChangeState());
+  }
+
+  /**
+   * The phase of a plan that carries the per-tenant work, which is where a plan that only ever saw
+   * the default partition group differs from one that saw every tenant's.
+   */
+  public static PartitionGroupParallelPhase partitionGroupPhase(final List<Phase> phases) {
+    return phases.stream()
+        .filter(PartitionGroupParallelPhase.class::isInstance)
+        .map(PartitionGroupParallelPhase.class::cast)
+        .findFirst()
+        .orElseThrow(
+            () -> new AssertionError("expected the plan to contain partition work: " + phases));
+  }
+}

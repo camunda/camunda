@@ -141,6 +141,60 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Whether the cluster is between the two modes: some but not all brokers are assigned to a zone,
+   * or every broker is but the partition distributor is not zone-aware yet.
+   *
+   * <p>Both are global state, so this reads the same fields {@link
+   * ClusterConfiguration#isPartiallyZoneAware()} does — the projection through {@link
+   * #toLegacyDefault()} that method needs is not.
+   */
+  public boolean isPartiallyZoneAware() {
+    final var members = globalConfiguration.members().keySet();
+    if (members.isEmpty()) {
+      return false;
+    }
+    final var zonedCount = members.stream().filter(member -> member.zone() != null).count();
+    final var distributorIsNotZoneAware =
+        globalConfiguration
+            .partitionDistributorConfig()
+            .filter(ZoneAwareConfig.class::isInstance)
+            .isEmpty();
+    return (zonedCount > 0 && zonedCount < members.size())
+        || (zonedCount == members.size() && distributorIsNotZoneAware);
+  }
+
+  /**
+   * The lowest number of replicas any partition of any physical tenant currently has. Taken across
+   * every group because the replication factor is a cluster-wide setting: a request that has to
+   * match what the cluster runs today has to match it for every tenant, not only the default one.
+   *
+   * <p>Read as the minimum rather than a configured value, mirroring {@link
+   * ClusterConfiguration#minReplicationFactor()}: during a configuration change a partition can
+   * temporarily hold more replicas than the cluster is configured for.
+   *
+   * <p>Answers 0 for a cluster that runs no partitions at all, which is what makes an equality
+   * check against it fail rather than pass. {@code PartitionGroupScalingPhases} asks a different
+   * question — the replication factor to plan with when the request names none — and defaults to 1
+   * there for the same reason.
+   */
+  public int minReplicationFactor() {
+    final var countingBrokers = liveMembers();
+    return partitionGroups.values().stream()
+        .flatMap(
+            group ->
+                group.members().entrySet().stream()
+                    .filter(member -> countingBrokers.contains(member.getKey()))
+                    .flatMap(member -> member.getValue().partitions().keySet().stream())
+                    .collect(
+                        Collectors.groupingBy(partitionId -> partitionId, Collectors.counting()))
+                    .values()
+                    .stream())
+        .mapToInt(Long::intValue)
+        .min()
+        .orElse(0);
+  }
+
+  /**
    * Creates an empty configuration with an initial global configuration and no partition groups.
    */
   public static CurrentClusterConfiguration init() {
