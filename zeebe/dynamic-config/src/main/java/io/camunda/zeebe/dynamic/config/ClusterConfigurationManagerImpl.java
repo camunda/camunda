@@ -79,9 +79,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final TopologyManagerMetrics topologyMetrics;
   private final boolean useNewConfig;
 
-  private final @Nullable PersistedCurrentClusterConfiguration persistedCurrentConfiguration;
+  private final PersistedCurrentClusterConfiguration persistedCurrentConfiguration;
   private @Nullable Consumer<CurrentClusterConfiguration> currentConfigurationGossiper;
-  private final @Nullable ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
+  private final ClusterConfigurationCoordinatorSupplier coordinatorSupplier;
   private @Nullable GlobalConfigurationChangeAppliers globalChangeAppliers;
   private final Map<String, PartitionGroupConfigurationChangeAppliers>
       partitionGroupChangeAppliers = new HashMap<>();
@@ -171,6 +171,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * Not supported on the multi-partition-group model — the legacy single-group configuration cannot
    * be mutated in isolation. Use {@link #updateMultiConfiguration} instead.
    */
+  @Deprecated
   @Override
   public ActorFuture<ClusterConfiguration> updateClusterConfiguration(
       final UnaryOperator<ClusterConfiguration> configUpdater) {
