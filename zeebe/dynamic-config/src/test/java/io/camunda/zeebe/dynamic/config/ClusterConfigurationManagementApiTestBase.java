@@ -410,7 +410,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of())));
-    final var request = new JoinPartitionRequest(memberFactory.apply(1), 1, 3, false);
+    final var request =
+        new JoinPartitionRequest(memberFactory.apply(1), 1, 3, Optional.empty(), false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
@@ -432,7 +433,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(1),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, partitionConfig)))));
-    final var request = new LeavePartitionRequest(memberFactory.apply(1), 1, false);
+    final var request =
+        new LeavePartitionRequest(memberFactory.apply(1), 1, Optional.empty(), false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();
@@ -1281,6 +1283,164 @@ abstract class ClusterConfigurationManagementApiTestBase {
         .satisfies(
             phase ->
                 assertThat(phase.operations()).contains(new MemberLeaveOperation(removedMember)));
+  }
+
+  /**
+   * Partition ids restart at 1 in every physical tenant, so before the request named a tenant this
+   * join was planned into the default tenant's group — the operator asked for one tenant's
+   * partition 1 and got another's.
+   */
+  @Test
+  void shouldJoinAPartitionOfANonDefaultPhysicalTenant() {
+    // given — both tenants run a partition numbered 1, held by the coordinator alone
+    final var joiningMember = memberFactory.apply(1);
+    wireTwoTenantsSharingPartitionOne(Set.of(coordinatorId), joiningMember);
+
+    // when — the member joins partition 1 of tenant-b
+    final var changeStatus =
+        clientApi
+            .joinPartition(
+                new JoinPartitionRequest(joiningMember, 1, 3, Optional.of(TENANT_B), false))
+            .join()
+            .get();
+
+    // then — it replicates tenant-b's partition 1, and the default tenant's identically numbered
+    // partition is left alone
+    final var expected = changeStatus.response().expectedConfiguration();
+    assertThat(expected.partitionGroup(TENANT_B).members()).containsKey(joiningMember);
+    assertThat(expected.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members())
+        .doesNotContainKey(joiningMember);
+  }
+
+  /**
+   * The counterpart of {@link #shouldJoinAPartitionOfANonDefaultPhysicalTenant()}: an unscoped
+   * leave used to be the only leave there was, so asking for another tenant's partition 1 removed
+   * the replica from the default tenant instead — data loss on a tenant the operator never named.
+   */
+  @Test
+  void shouldLeaveAPartitionOfANonDefaultPhysicalTenant() {
+    // given — both tenants run a partition numbered 1, replicated by both members
+    final var leavingMember = memberFactory.apply(1);
+    wireTwoTenantsSharingPartitionOne(Set.of(coordinatorId, leavingMember), memberFactory.apply(2));
+
+    // when — the member leaves partition 1 of tenant-b
+    final var changeStatus =
+        clientApi
+            .leavePartition(
+                new LeavePartitionRequest(leavingMember, 1, Optional.of(TENANT_B), false))
+            .join()
+            .get();
+
+    // then — it stops replicating tenant-b's partition 1 and keeps the default tenant's
+    final var expected = changeStatus.response().expectedConfiguration();
+    assertThat(expected.partitionGroup(TENANT_B).members()).doesNotContainKey(leavingMember);
+    assertThat(expected.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members())
+        .containsKey(leavingMember);
+  }
+
+  @Test
+  void shouldRejectAJoinForAnUnknownPhysicalTenant() {
+    // given
+    final var joiningMember = memberFactory.apply(1);
+    wireTwoTenantsSharingPartitionOne(Set.of(coordinatorId), joiningMember);
+
+    // when
+    final var changeStatus =
+        clientApi
+            .joinPartition(
+                new JoinPartitionRequest(joiningMember, 1, 3, Optional.of("does-not-exist"), false))
+            .join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.NOT_FOUND);
+  }
+
+  @Test
+  void shouldRejectALeaveForAnUnknownPhysicalTenant() {
+    // given
+    final var leavingMember = memberFactory.apply(1);
+    wireTwoTenantsSharingPartitionOne(Set.of(coordinatorId, leavingMember), memberFactory.apply(2));
+
+    // when
+    final var changeStatus =
+        clientApi
+            .leavePartition(
+                new LeavePartitionRequest(leavingMember, 1, Optional.of("does-not-exist"), false))
+            .join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.NOT_FOUND);
+  }
+
+  /**
+   * Wires a cluster where the default tenant and {@link #TENANT_B} each run a partition numbered 1,
+   * both replicated by exactly {@code replicas}. The two groups are deliberately identical: a
+   * request that resolves the partition in the wrong group would still find a partition 1 there, so
+   * only which group changed can tell the two apart.
+   *
+   * <p>{@code idleMember} joins the cluster without replicating anything, so it is available to
+   * join either partition.
+   *
+   * <p>Left without a zone-aware distributor config, unlike {@link #wireTwoPhysicalTenants()}:
+   * nothing here asks for a placement to be computed, and a zone spec sized for a single broker
+   * could not describe this cluster.
+   */
+  private void wireTwoTenantsSharingPartitionOne(
+      final Set<MemberId> replicas, final MemberId idleMember) {
+    var topology = initialTopology.addMember(idleMember, MemberState.initializeAsActive(Map.of()));
+    for (final var replica : replicas) {
+      topology =
+          topology.hasMember(replica)
+              ? topology.updateMember(
+                  replica, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+              : topology.addMember(
+                  replica,
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, partitionConfig))));
+    }
+    setCurrentTopology(topology);
+    manager.registerPartitionGroupChangeAppliers(
+        TENANT_B,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    manager
+        .updateMultiConfiguration(
+            current ->
+                new CurrentClusterConfiguration(
+                    current.version(),
+                    current.globalConfiguration(),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        current.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+                        TENANT_B,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            replicas.stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        replica -> replica,
+                                        replica ->
+                                            BrokerPartitionState.initialize(
+                                                Map.of(
+                                                    1,
+                                                    PartitionState.active(1, partitionConfig))))),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    current.phasedChangeState()))
+        .join();
   }
 
   /**

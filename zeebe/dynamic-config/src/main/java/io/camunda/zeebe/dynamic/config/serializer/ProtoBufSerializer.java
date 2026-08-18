@@ -1017,23 +1017,25 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeJoinPartitionRequest(final JoinPartitionRequest req) {
-    return Requests.JoinPartitionRequest.newBuilder()
-        .setMemberId(req.memberId().id())
-        .setPartitionId(req.partitionId())
-        .setPriority(req.priority())
-        .setDryRun(req.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.JoinPartitionRequest.newBuilder()
+            .setMemberId(req.memberId().id())
+            .setPartitionId(req.partitionId())
+            .setPriority(req.priority())
+            .setDryRun(req.dryRun());
+    req.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
   public byte[] encodeLeavePartitionRequest(final LeavePartitionRequest req) {
-    return Requests.LeavePartitionRequest.newBuilder()
-        .setMemberId(req.memberId().id())
-        .setPartitionId(req.partitionId())
-        .setDryRun(req.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.LeavePartitionRequest.newBuilder()
+            .setMemberId(req.memberId().id())
+            .setPartitionId(req.partitionId())
+            .setDryRun(req.dryRun());
+    req.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1251,6 +1253,9 @@ public class ProtoBufSerializer
           MemberId.from(joinPartitionRequest.getMemberId()),
           joinPartitionRequest.getPartitionId(),
           joinPartitionRequest.getPriority(),
+          joinPartitionRequest.hasPhysicalTenantId()
+              ? Optional.of(joinPartitionRequest.getPhysicalTenantId())
+              : Optional.empty(),
           joinPartitionRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
@@ -1264,6 +1269,9 @@ public class ProtoBufSerializer
       return new LeavePartitionRequest(
           MemberId.from(leavePartitionRequest.getMemberId()),
           leavePartitionRequest.getPartitionId(),
+          leavePartitionRequest.hasPhysicalTenantId()
+              ? Optional.of(leavePartitionRequest.getPhysicalTenantId())
+              : Optional.empty(),
           leavePartitionRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
