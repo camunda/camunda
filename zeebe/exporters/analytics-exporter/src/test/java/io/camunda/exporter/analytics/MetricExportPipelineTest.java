@@ -76,7 +76,8 @@ final class MetricExportPipelineTest {
     final var config =
         new AnalyticsExporterConfig()
             .setEndpoint("http://127.0.0.1:" + server.getAddress().getPort());
-    final var context = AnalyticsExporterContext.create("test-license", "e2e-test-cluster", 1, "");
+    final var context =
+        AnalyticsExporterContext.create("test-license", "e2e-test-cluster", 1, "", "");
     manager = new OtelSdkManager().initialize(config, context, new AnalyticsExporterMetadata());
   }
 
