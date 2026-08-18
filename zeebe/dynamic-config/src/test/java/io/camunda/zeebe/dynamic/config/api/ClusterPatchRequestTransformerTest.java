@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -29,8 +30,10 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -619,6 +622,64 @@ final class ClusterPatchRequestTransformerTest {
     // that may have drifted from what the distributor would compute now
     assertThat(result).isRight();
     Assertions.assertThat(result.get()).isEmpty();
+  }
+
+  @Test
+  void shouldRedistributeEveryPhysicalTenantWhenRemovingABroker() {
+    // given — id2 holds only tenant-b's partition, so the whole partition half of this plan is work
+    // the default-group projection could never have produced
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(id2), Optional.empty(), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get()).hasSize(3);
+    final var partitionPhase = (PartitionGroupParallelPhase) result.get().get(1);
+    Assertions.assertThat(partitionPhase.groupOperations()).containsOnlyKeys(TENANT_B);
+    Assertions.assertThat(partitionPhase.groupOperations().get(TENANT_B))
+        .describedAs("tenant-b gives up the partition on the departing broker")
+        .contains(new PartitionLeaveOperation(id2, 1, 1));
+    Assertions.assertThat(((GlobalPhase) result.get().get(2)).operations())
+        .describedAs("the broker leaves only after the partition work")
+        .contains(new MemberLeaveOperation(id2));
+  }
+
+  @Test
+  void shouldRejectReplicationFactorOnZoneAwareClusterEvenWhenChangingMembership() {
+    // given — a request that both adds a broker and raises the replication factor
+    final var transformer =
+        new ClusterPatchRequestTransformer(Set.of(id3), Set.of(), Optional.empty(), Optional.of(2));
+
+    // when
+    final var result = transformer.phases(zoneAwareTwoTenantCluster());
+
+    // then — answered with the zone-aware rejection, not with whatever the zone-aware distributor
+    // raises about the resulting replica sum once a placement is attempted
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("zone-aware");
+  }
+
+  @Test
+  void shouldRejectAddingAndRemovingTheSameMemberWhenPlanningPhases() {
+    // given
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(id3), Set.of(id3), Optional.empty(), Optional.empty());
+
+    // when — the new-model coordinator plans through phases() alone, so the check has to hold there
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("Cannot add and remove the same member");
   }
 
   /** {@link #twoTenantCluster()} with a zone-aware partition distributor. */
