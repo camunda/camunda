@@ -21,7 +21,9 @@ const getId = (role: Role) => role.roleId;
 const itemToString = (role: Role) => role.name || role.roleId;
 const itemSubTitle = (role: Role) => role.name;
 const search = (search: string) =>
-  roleQueries.search(search === "" ? {} : { filter: { name: search } });
+  roleQueries.search(
+    search === "" ? {} : { filter: { name: { $like: `*${search}*` } } },
+  );
 
 export const RoleMultiSelect: FC<EntitySearchMultiSelectProps<Role>> = (
   props,

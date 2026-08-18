@@ -16,7 +16,10 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import java.util.function.Consumer;
 
 public class RoleFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.RoleFilter>
@@ -36,7 +39,14 @@ public class RoleFilterImpl
 
   @Override
   public RoleFilter name(final String name) {
-    filter.setName(name);
+    return name(b -> b.eq(name));
+  }
+
+  @Override
+  public RoleFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 

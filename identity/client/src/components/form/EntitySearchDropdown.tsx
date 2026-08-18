@@ -29,6 +29,7 @@ type EntitySearchDropdownProps<Entity extends Record<string, unknown>> = {
   filter?: (entity: Entity) => boolean;
   placeholder: string;
   autoFocus?: boolean;
+  invalid?: boolean;
   errorTitle: string;
   retryLabel: string;
 };
@@ -45,6 +46,7 @@ const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
   filter,
   placeholder,
   autoFocus = false,
+  invalid = false,
   errorTitle,
   retryLabel,
 }: EntitySearchDropdownProps<Entity>) => {
@@ -55,7 +57,10 @@ const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
     isLoading: loading,
     refetch: reload,
     error,
-  } = useQuery<{ items: Entity[] }>(buildSearchQuery(search));
+  } = useQuery<{ items: Entity[] }>({
+    ...buildSearchQuery(search),
+    enabled: search !== "",
+  });
 
   return (
     <>
@@ -68,6 +73,7 @@ const EntitySearchDropdown = <Entity extends Record<string, unknown>>({
         onSelect={onSelect}
         onChange={setSearch}
         filter={filter}
+        invalid={invalid}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification

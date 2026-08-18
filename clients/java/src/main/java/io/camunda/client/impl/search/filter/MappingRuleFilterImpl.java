@@ -16,7 +16,10 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import java.util.function.Consumer;
 
 public class MappingRuleFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.MappingRuleFilter>
@@ -48,7 +51,14 @@ public class MappingRuleFilterImpl
 
   @Override
   public MappingRuleFilter name(final String name) {
-    filter.setName(name);
+    return name(b -> b.eq(name));
+  }
+
+  @Override
+  public MappingRuleFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 
