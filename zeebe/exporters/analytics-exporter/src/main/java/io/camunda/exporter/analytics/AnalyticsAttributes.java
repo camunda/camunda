@@ -62,6 +62,15 @@ public final class AnalyticsAttributes {
   public static final class Tenant {
     public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.tenant.id");
 
+    /**
+     * Physical-tenant id of the broker/exporter instance that produced the signal. Unlike {@link
+     * #ID} (the logical tenant of the specific record, which varies per event), this is static for
+     * the lifetime of the exporter instance and is attached to every signal automatically by {@link
+     * io.camunda.exporter.analytics.OtelSdkManager} rather than by individual handlers.
+     */
+    public static final AttributeKey<String> PHYSICAL_ID =
+        AttributeKey.stringKey("camunda.tenant.physical_id");
+
     private Tenant() {}
   }
 

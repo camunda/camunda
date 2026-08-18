@@ -57,6 +57,7 @@ public class AnalyticsExporter implements Exporter {
             resolveLicenseKey(context),
             resolveClusterId(context),
             context.getPartitionId(),
+            context.getPhysicalTenantId(),
             resolveDigest(handlers, config));
 
     LOG.info(

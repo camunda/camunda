@@ -56,7 +56,8 @@ class AnalyticsExporterHeartbeatTest {
                       AnalyticsAttributes.Heartbeat.BROKER_VERSION, VersionUtil.getVersion())
                   .containsEntry(
                       AnalyticsAttributes.Heartbeat.EXPORTER_VERSION,
-                      AnalyticsExporterVersion.get());
+                      AnalyticsExporterVersion.get())
+                  .containsEntry(AnalyticsAttributes.Tenant.PHYSICAL_ID, "test-physical-tenant");
             });
   }
 
@@ -103,6 +104,7 @@ class AnalyticsExporterHeartbeatTest {
             .setConfiguration(new ExporterTestConfiguration<>("analytics", config))
             .setClusterId("test-cluster")
             .setPartitionId(1)
+            .setPhysicalTenantId("test-physical-tenant")
             .setLicenseKey("test-license-key");
     final var exporter = new AnalyticsExporter(TestOtelSdkManager.inMemory(memoryExporter));
     exporter.configure(context);

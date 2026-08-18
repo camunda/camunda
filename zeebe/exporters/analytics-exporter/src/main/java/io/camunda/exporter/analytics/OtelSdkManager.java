@@ -19,6 +19,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.PHYSICAL_ID;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.util.VersionUtil;
@@ -69,6 +70,15 @@ public class OtelSdkManager implements AutoCloseable {
   private final Map<String, LongCounter> counters = new HashMap<>();
   private final MetricWindow metricWindow = new MetricWindow();
 
+  /**
+   * Physical-tenant id of the broker this exporter instance runs on. Captured once at {@link
+   * #initialize} time — like {@code clusterId}/{@code partitionId} on {@link
+   * AnalyticsExporterContext} — and applied internally to every emitted signal (log event, metric,
+   * heartbeat) so callers of {@link #logEvent}, {@link #incrementMetric}, and {@link
+   * #emitHeartbeat} never need to pass it explicitly.
+   */
+  private String physicalTenantId;
+
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
       final AnalyticsExporterContext context,
@@ -83,6 +93,7 @@ public class OtelSdkManager implements AutoCloseable {
       final MeterRegistry meterRegistry) {
     this.metadata = metadata;
     this.defaultSamplingRate = config.getSamplingRate();
+    physicalTenantId = context.physicalTenantId();
     counters.clear();
     metricWindow.reset();
 
@@ -126,7 +137,8 @@ public class OtelSdkManager implements AutoCloseable {
             .setSeverityText("INFO")
             .setAttribute(NAME, eventName)
             .setAttribute(POSITION, logPosition)
-            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber())
+            .setAttribute(PHYSICAL_ID, physicalTenantId);
     if (appliedRate < HashSampler.MAX_SAMPLE_RATE) {
       record.setAttribute(SAMPLE_RATE, appliedRate);
     }
@@ -142,6 +154,7 @@ public class OtelSdkManager implements AutoCloseable {
         .setAttribute(NAME, HEARTBEAT)
         .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
         .setAttribute(EXPORTER_VERSION, AnalyticsExporterVersion.get())
+        .setAttribute(PHYSICAL_ID, physicalTenantId)
         .emit();
   }
 
@@ -153,7 +166,7 @@ public class OtelSdkManager implements AutoCloseable {
       final Attributes dimensions) {
     counters
         .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
-        .add(1, dimensions);
+        .add(1, dimensions.toBuilder().put(PHYSICAL_ID, physicalTenantId).build());
     metricWindow.record(position, eventTimeMs);
   }
 
@@ -186,7 +199,11 @@ public class OtelSdkManager implements AutoCloseable {
                 return;
               }
               final long seq = metadata.incrementAndGetMetricSequenceNumber();
-              measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
+              measurement.record(
+                  metricWindow.eventCount(),
+                  metricWindow.toGaugeAttributes(seq).toBuilder()
+                      .put(PHYSICAL_ID, physicalTenantId)
+                      .build());
               metricWindow.reset();
             });
   }

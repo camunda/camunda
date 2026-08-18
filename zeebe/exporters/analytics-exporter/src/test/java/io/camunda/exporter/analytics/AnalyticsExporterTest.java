@@ -91,7 +91,8 @@ class AnalyticsExporterTest {
                       value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
-                  .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);
+                  .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L)
+                  .containsEntry(AnalyticsAttributes.Tenant.PHYSICAL_ID, "test-physical-tenant");
               assertThat(logRecord.getResource().getAttribute(AnalyticsAttributes.Exporter.DIGEST))
                   .isNotNull()
                   .isNotEmpty();
@@ -422,6 +423,7 @@ class AnalyticsExporterTest {
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
             .setClusterId("test-cluster")
             .setPartitionId(1)
+            .setPhysicalTenantId("test-physical-tenant")
             .setLicenseKey("test-license-key");
     final var exporter = new AnalyticsExporter(otelSdkManager);
     exporter.configure(context);

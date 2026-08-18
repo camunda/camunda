@@ -170,6 +170,7 @@ These attributes are set on every log record:
 | `event.name`                    | string | Event type identifier (one of the names in the table above).                                             |
 | `camunda.log.position`          | long   | Log stream position. Used as a deduplication key.                                                        |
 | `camunda.event.sequence_number` | long   | Monotonic per-partition counter incremented for each emitted event. Used for ordering and gap detection. |
+| `camunda.tenant.physical_id`    | string | Physical-tenant id of the broker/exporter instance that produced the record. Static for the lifetime of the exporter instance (one instance runs per physical-tenant per partition) — unlike `camunda.tenant.id` (below), which is the logical tenant of the specific record and varies per event. Also attached to the heartbeat event and to every emitted metric data point. |
 
 ### Per-event attributes
 
@@ -227,6 +228,7 @@ attributes (heartbeats are not tied to the log stream):
 | `event.name`                         | string | Always `heartbeat`.                                                      |
 | `camunda.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
 | `camunda.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
+| `camunda.tenant.physical_id`         | string | Physical-tenant id of the broker/exporter instance (see the common attributes section above). |
 
 The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
 the OTel instrumentation scope on every record, not as a per-record attribute.
