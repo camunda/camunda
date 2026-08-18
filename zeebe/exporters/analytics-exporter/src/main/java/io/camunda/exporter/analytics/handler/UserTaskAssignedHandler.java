@@ -35,8 +35,19 @@ public final class UserTaskAssignedHandler implements AnalyticsHandler<UserTaskR
 
   private final OtelSdkManager otelSdkManager;
 
+  // Handlers are only ever invoked from the single exporter/partition actor thread (see
+  // AGENTS.md), so one MessageDigest instance can safely be reused across handle() calls instead
+  // of paying a JCA provider lookup on every record. MessageDigest#digest() resets the digest's
+  // internal state after each call, so no explicit reset() is needed between records.
+  private final MessageDigest sha256;
+
   public UserTaskAssignedHandler(final OtelSdkManager otelSdkManager) {
     this.otelSdkManager = Objects.requireNonNull(otelSdkManager);
+    try {
+      sha256 = MessageDigest.getInstance(SHA_256);
+    } catch (final NoSuchAlgorithmException e) {
+      throw new IllegalStateException("JVM does not support SHA-256", e);
+    }
   }
 
   @Override
@@ -56,7 +67,8 @@ public final class UserTaskAssignedHandler implements AnalyticsHandler<UserTaskR
         AnalyticsAttributes.Event.USER_TASK_ASSIGNED,
         record.getPosition(),
         log ->
-            log.setAttribute(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, sha256Hex(assignee))
+            log.setAttribute(
+                    AnalyticsAttributes.UserTask.ASSIGNEE_HASH, sha256Hex(sha256, assignee))
                 .setAttribute(AnalyticsAttributes.UserTask.KEY, value.getUserTaskKey())
                 .setAttribute(
                     AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
@@ -64,12 +76,7 @@ public final class UserTaskAssignedHandler implements AnalyticsHandler<UserTaskR
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
-  private static String sha256Hex(final String value) {
-    try {
-      return HEX.formatHex(
-          MessageDigest.getInstance(SHA_256).digest(value.getBytes(StandardCharsets.UTF_8)));
-    } catch (final NoSuchAlgorithmException e) {
-      throw new IllegalStateException("JVM does not support SHA-256", e);
-    }
+  private static String sha256Hex(final MessageDigest digest, final String value) {
+    return HEX.formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
   }
 }

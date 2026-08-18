@@ -19,6 +19,9 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,5 +113,31 @@ class UserTaskAssignedHandlerTest {
 
     // then
     assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
+  }
+
+  @Test
+  void shouldProduceIndependentHashesAcrossReusedHandlerInstance() throws Exception {
+    // given — the handler caches a single MessageDigest field and reuses it on every handle()
+    // call (see AGENTS.md: handlers run on the single exporter/partition actor thread, so the
+    // non-thread-safe MessageDigest can be shared). This verifies reuse never leaks state
+    // between records: each hash is computed independently of the implementation's cached
+    // digest, using a fresh MessageDigest per expectation.
+    final var secondAssignee = "jane.roe@example.com";
+    final var expectedSecondHash =
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(secondAssignee.getBytes(StandardCharsets.UTF_8)));
+
+    // when
+    handler.handle(typed(assignedRecord(ASSIGNEE)));
+    handler.handle(typed(assignedRecord(secondAssignee)));
+
+    // then
+    assertThat(logExporter.getFinishedLogRecordItems())
+        .extracting(
+            logRecord ->
+                logRecord.getAttributes().asMap().get(AnalyticsAttributes.UserTask.ASSIGNEE_HASH))
+        .containsExactly(ASSIGNEE_SHA_256, expectedSecondHash);
   }
 }
