@@ -674,6 +674,30 @@ components:
             (no limit).
           allOf:
             - $ref: '#/components/schemas/AgentInstanceLimits'
+        jobKey:
+          description: |
+            The key of the job activation during which this creation is being made.
+            Required whenever history is provided.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        jobLease:
+          description: |
+            Opaque lease token received from the job activation response. Disambiguates
+            this activation from any other activation of the same job: if the job is
+            later retried, history items submitted under a superseded lease are discarded
+            rather than committed.
+          nullable: true
+          type: string
+        history:
+          description: |
+            A batch of history items to append to the agent instance's conversation
+            history, in request order. Each created item is echoed back in the
+            response's createdHistory, positionally correlated.
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryItem'
 
     AgentInstanceCreationResult:
       description: Response returned after successfully creating an agent instance.
@@ -682,11 +706,19 @@ components:
         - agentInstanceKey
       required:
         - agentInstanceKey
+        - createdHistory
       properties:
         agentInstanceKey:
           description: The system-generated key for the created agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+        createdHistory:
+          description: |
+            One entry per history item submitted in the request, in request order.
+            Empty when no history items were submitted.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
 
     AgentInstanceMetricsDelta:
       description: |
