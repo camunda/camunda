@@ -47,16 +47,21 @@ jobs:
           repositories: '!all'
 
       - name: Run urgency batch for Quality Board
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          bash .github/workflows/assign-urgency-to-issues.sh \
-            --project 187 \
-            --direct \
-            --updated-since 2h \
-            --skip-assigned \
-            --limit 100 \
-            --delay 1
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 10
+          command: |
+            bash .github/workflows/assign-urgency-to-issues.sh \
+              --project 187 \
+              --direct \
+              --updated-since 2h \
+              --skip-assigned \
+              --limit 100 \
+              --delay 1
       - name: Observe build status
         if: always()
         continue-on-error: true
