@@ -147,7 +147,7 @@ type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentS
 
 const agentInstanceObjectContentSchema = z.object({
 	contentType: z.literal('OBJECT'),
-	object: z.json(),
+	object: z.unknown(),
 });
 type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
 
