@@ -81,17 +81,29 @@ class PhysicalTenantOverridePolicyValidationTest {
   }
 
   @Test
-  void shouldAllowTenantOverridingPartitionCountAndReplicationFactor() {
-    // given a tenant overriding the cluster carve-outs that remain overridable per tenant
+  void shouldAllowTenantOverridingPartitionCount() {
+    // given a tenant overriding the cluster carve-out that remains overridable per tenant
     final MockEnvironment environment =
-        environmentWith(
-            Map.of(
-                "camunda.physical-tenants.tenanta.cluster.partition-count", 7,
-                "camunda.physical-tenants.tenanta.cluster.replication-factor", 3));
+        environmentWith(Map.of("camunda.physical-tenants.tenanta.cluster.partition-count", 7));
 
-    // when / then the carve-outs are permitted
+    // when / then the carve-out is permitted
     assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectTenantOverridingReplicationFactor() {
+    // given a tenant overriding replication-factor, which #56648 moved to the deny-list because
+    // StaticConfigurationGenerator resolves it from the root BrokerCfg only, silently ignoring any
+    // per-tenant value
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta.cluster.replication-factor", 3));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("cluster.replication-factor");
   }
 
   @Test
