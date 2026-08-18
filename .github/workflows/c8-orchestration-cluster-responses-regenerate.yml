@@ -407,8 +407,14 @@ jobs:
                 # same request every run.
                 marker='<!-- regenerate-api-paths: follow-up-commits-notice -->'
                 seen=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json comments \
-                  --jq "[.comments[] | select(.body | contains(\"${marker}\"))] | length" 2>/dev/null || echo "")
-                if [ "${seen:-0}" = "0" ]; then
+                  --jq "[.comments[] | select(.body | contains(\"${marker}\"))] | length" 2>/dev/null || true)
+                if [ -z "$seen" ]; then
+                  # Unreadable means we cannot tell whether the notice is
+                  # already there. Staying quiet risks one missed courtesy
+                  # comment that the next run posts anyway; assuming it is
+                  # absent risks duplicating it on every blip.
+                  echo "  could not check for an existing notice on #${number} — not posting, to avoid a duplicate."
+                elif [ "$seen" = "0" ]; then
                   gh pr comment "$number" --repo "$GITHUB_REPOSITORY" \
                     --body "${marker}
               A newer regeneration run produced a different path set, but this PR carries follow-up commits — not closing it automatically. Please rebase or close it by hand." || true
@@ -496,6 +502,7 @@ jobs:
       - name: Report stage failures
         if: always()
         env:
+          PATHS_FEATURE:   ${{ steps.paths-feature.outcome }}
           REGEN_RESPONSES: ${{ steps.regen-responses.outcome }}
           DIFF_RESPONSES:  ${{ steps.diff.outcome }}
           REGEN_PATHS:     ${{ steps.regen-paths.outcome }}
@@ -503,7 +510,13 @@ jobs:
         run: |
           set -uo pipefail
           failed=0
+          # The availability probe is tracked here too. It is not one of the
+          # continue-on-error stages, so a failure there aborts the job before
+          # the rest run — but this step still executes under if: always(), and
+          # reporting "no stage failures" directly beneath its error would send
+          # whoever triages it looking in the wrong place.
           for stage in \
+            "API paths availability probe:${PATHS_FEATURE}" \
             "responses regeneration:${REGEN_RESPONSES}" \
             "responses diff:${DIFF_RESPONSES}" \
             "API paths regeneration:${REGEN_PATHS}" \
