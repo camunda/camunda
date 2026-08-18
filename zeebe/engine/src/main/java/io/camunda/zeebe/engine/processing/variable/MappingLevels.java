@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -24,9 +25,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The msgpack representation shared by {@link InputMappingResultBuilder} and {@link
- * OutputMappingResultBuilder}: an accumulated level and the (optionally layered) serializer.
- * Package-private and mode-agnostic — neither builder's notion of what a level means belongs here,
- * only the structure both of them accumulate.
+ * OutputMappingResultBuilder}: an accumulated level, its snapshot read, and the writer. Package-
+ * private and mode-agnostic — neither builder's notion of what a level means belongs here, only the
+ * structure both of them accumulate.
  */
 @NullMarked
 final class MappingLevels {
@@ -37,9 +38,9 @@ final class MappingLevels {
     return value.capacity() == 1 && value.getByte(0) == MsgPackCodes.NIL;
   }
 
-  /** Reads the top level of a msgpack map into a builder map; values stay opaque cloned slices. */
-  static Map<String, Object> deserializeTopLevel(final DirectBuffer map) {
-    final var result = new LinkedHashMap<String, Object>();
+  /** Reads the top level of a msgpack map; values stay opaque cloned slices. */
+  static Map<String, DirectBuffer> deserializeTopLevel(final DirectBuffer map) {
+    final var result = new LinkedHashMap<String, DirectBuffer>();
     final var reader = new MsgPackReader();
     reader.wrap(map, 0, map.capacity());
     final int entryCount = reader.readMapHeader();
@@ -54,15 +55,78 @@ final class MappingLevels {
   }
 
   /**
-   * Serializes a (possibly deeply nested) level, layering it over the given shadowed value. Pass
-   * {@code null} to serialize the level as-is.
+   * The top level of a msgpack map as accumulated level entries, for seeding a level from scope.
    */
-  static DirectBuffer serialize(
-      final Map<String, Object> children, final @Nullable DirectBuffer shadowed) {
+  static Map<String, Object> seedFrom(final DirectBuffer map) {
+    final Map<String, Object> seeded = new LinkedHashMap<>();
+    deserializeTopLevel(map)
+        .forEach((key, value) -> seeded.put(key, new ContextValue.MsgPack(value)));
+    return seeded;
+  }
+
+  /**
+   * Materialises a level as a snapshot: the level's own entries layered over the top level of the
+   * value it shadows, so a key no mapping defined resolves to the shadowed value's key. A level an
+   * earlier mapping assigned whole shadows totally and stops the fall-through for its whole
+   * subtree.
+   *
+   * <p>The copy is deep, and it has to be: a later mapping may still write into this level, and a
+   * snapshot an earlier mapping already read must not see that write. It is iterative for the same
+   * reason the serializer is — a {@code zeebe:input} target path can have an unbounded number of
+   * '.'-separated segments (ZeebeExpressionValidator's path pattern doesn't cap it), and plain
+   * recursion here previously let a deeply-nested target throw an uncaught StackOverflowError
+   * before NestingDepthValidator ever got a chance to reject the document gracefully.
+   */
+  static ContextValue.Structure materialize(
+      final Map<String, Object> rootChildren, final @Nullable DirectBuffer rootShadowed) {
+    final Map<String, ContextValue> rootEntries = new LinkedHashMap<>();
+    final Deque<Frame> pending = new ArrayDeque<>();
+    pending.push(new Frame(rootChildren, rootShadowed, rootEntries));
+
+    while (!pending.isEmpty()) {
+      final var frame = pending.pop();
+      final var shadowedChildren = topLevelOf(frame.shadowed());
+      // the shadowed value's keys first: a key the level also defines then overwrites it in place,
+      // keeping the shadowed key's position, exactly as the layered serializer did
+      shadowedChildren.forEach(
+          (key, value) -> frame.entries().put(key, new ContextValue.MsgPack(value)));
+
+      for (final var entry : frame.children().entrySet()) {
+        final var key = entry.getKey();
+        if (entry.getValue() instanceof final Level level) {
+          final Map<String, ContextValue> nested = new LinkedHashMap<>();
+          frame.entries().put(key, new ContextValue.Structure(nested));
+          pending.push(
+              new Frame(
+                  level.children(),
+                  level.replacedExistingValue() ? null : shadowedChildren.get(key),
+                  nested));
+        } else {
+          frame.entries().put(key, (ContextValue) entry.getValue());
+        }
+      }
+    }
+    return new ContextValue.Structure(rootEntries);
+  }
+
+  private static Map<String, DirectBuffer> topLevelOf(final @Nullable DirectBuffer shadowed) {
+    return shadowed != null && !isNil(shadowed) && MsgPackCodes.isMap(shadowed.getByte(0))
+        ? deserializeTopLevel(shadowed)
+        : Map.of();
+  }
+
+  /** One level of the iterative traversal: what to copy, what it shadows, where it lands. */
+  private record Frame(
+      Map<String, Object> children,
+      @Nullable DirectBuffer shadowed,
+      Map<String, ContextValue> entries) {}
+
+  /** Serializes a (possibly deeply nested) level to msgpack. */
+  static DirectBuffer serialize(final Map<String, Object> children) {
     final var writer = new MsgPackWriter();
     final var buffer = new ExpandableArrayBuffer();
     writer.wrap(buffer, 0);
-    writeLayered(writer, children, shadowed);
+    write(writer, children);
     return new UnsafeBuffer(buffer, 0, writer.getOffset());
   }
 
@@ -73,79 +137,49 @@ final class MappingLevels {
    * activation — plain recursion here previously let a deeply-nested target throw an uncaught
    * StackOverflowError before NestingDepthValidator ever got a chance to reject the document
    * gracefully.
-   *
-   * <p>At each level the accumulated entries are written over the top level of the value that level
-   * shadows, so a key no mapping defined resolves to the shadowed value's key. A level that an
-   * earlier mapping assigned whole shadows totally and stops the fall-through for its whole
-   * subtree.
    */
-  private static void writeLayered(
-      final MsgPackWriter writer,
-      final Map<String, Object> rootChildren,
-      final @Nullable DirectBuffer rootShadowed) {
-    final Deque<LevelFrame> pending = new ArrayDeque<>();
-    pending.push(openLevel(writer, rootChildren, rootShadowed));
+  private static void write(final MsgPackWriter writer, final Map<String, Object> rootChildren) {
+    final Deque<Iterator<Map.Entry<String, Object>>> pending = new ArrayDeque<>();
+    writer.writeMapHeader(rootChildren.size());
+    pending.push(rootChildren.entrySet().iterator());
 
     while (!pending.isEmpty()) {
-      final var frame = pending.peek();
-      if (!frame.entries().hasNext()) {
+      final var entries = pending.peek();
+      if (!entries.hasNext()) {
         pending.pop();
         continue;
       }
-      final var entry = frame.entries().next();
+      final var entry = entries.next();
       writer.writeString(BufferUtil.wrapString(entry.getKey()));
-      final var value = entry.getValue();
-      if (value instanceof final Level level) {
-        pending.push(
-            openLevel(writer, level.children(), shadowedChildOf(frame, entry.getKey(), level)));
-      } else {
-        writer.writeRaw((DirectBuffer) value);
+      switch (entry.getValue()) {
+        case final Level level -> {
+          writer.writeMapHeader(level.children().size());
+          pending.push(level.children().entrySet().iterator());
+        }
+        case ContextValue.MsgPack(final var buffer) -> writer.writeRaw(buffer);
+        case ContextValue.Evaluated(final var result) ->
+            // toBuffer() returns a view over the expression language's shared, reused write
+            // buffer; that is safe only because writeRaw copies immediately and nothing runs
+            // between the two calls.
+            writer.writeRaw(result.toBuffer());
+        default ->
+            throw new IllegalStateException(
+                "Unexpected accumulated mapping value: " + entry.getValue());
       }
     }
   }
 
-  /**
-   * Writes the map header for one level and returns the frame to iterate it: the level's own
-   * entries written over the top level of the value it shadows.
-   */
-  private static LevelFrame openLevel(
-      final MsgPackWriter writer,
-      final Map<String, Object> children,
-      final @Nullable DirectBuffer shadowed) {
-    final Map<String, Object> shadowedChildren =
-        shadowed != null && !isNil(shadowed) && MsgPackCodes.isMap(shadowed.getByte(0))
-            ? deserializeTopLevel(shadowed)
-            : Map.of();
-    final Map<String, Object> merged;
-    if (shadowedChildren.isEmpty()) {
-      merged = children;
-    } else {
-      // a fresh map: the accumulated level must not gain the shadowed value's keys
-      merged = new LinkedHashMap<>(shadowedChildren);
-      merged.putAll(children);
-    }
-    writer.writeMapHeader(merged.size());
-    return new LevelFrame(merged.entrySet().iterator(), shadowedChildren);
+  /** Copies a {@link ContextValue.MsgPack}'s buffer; any other value is already immutable. */
+  static ContextValue copyIfMsgPack(final ContextValue value) {
+    return value instanceof ContextValue.MsgPack(final var buffer)
+        ? new ContextValue.MsgPack(BufferUtil.cloneBuffer(buffer))
+        : value;
   }
-
-  private static @Nullable DirectBuffer shadowedChildOf(
-      final LevelFrame frame, final String key, final Level level) {
-    if (level.replacedExistingValue()) {
-      return null;
-    }
-    return frame.shadowedChildren().get(key) instanceof final DirectBuffer shadowed
-        ? shadowed
-        : null;
-  }
-
-  /** One level of the iterative traversal: the entries to write, and what they shadow. */
-  private record LevelFrame(
-      Iterator<Map.Entry<String, Object>> entries, Map<String, Object> shadowedChildren) {}
 
   /**
    * A nested level built by one or more dotted target paths.
    *
-   * @param children the level's entries: a nested {@link Level} or a MsgPack {@link DirectBuffer}
+   * @param children the level's entries: a nested {@link Level} or a {@link ContextValue}
    * @param replacedExistingValue whether this level replaced a plain value rather than being
    *     created from nothing — a neutral structural fact both builders compute. {@link
    *     InputMappingResultBuilder} is the only one that acts on it: such a level never falls
