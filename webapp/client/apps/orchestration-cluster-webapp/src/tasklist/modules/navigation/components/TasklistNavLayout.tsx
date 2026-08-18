@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {AppSidebar, TooltipProvider, type SidebarNode} from '@camunda/design-system';
@@ -22,8 +21,13 @@ const NAV_ITEMS = [
 	{key: 'processes', labelKey: 'tasklist.headerNavItemProcesses', to: '/tasklist/processes', icon: Workflow},
 ] as const;
 
-const COLLAPSED_WIDTH = '3.5rem';
-const EXPANDED_WIDTH = '12.25rem';
+// Shared with the <SidebarProvider> that wraps this layout (see
+// routes/_auth/route.tsx) — its `collapsedWidth`/`defaultWidth` must match
+// these, since once a provider is present AppSidebar sources its expanded
+// width from the provider's own state, not from the `expandedWidth` prop
+// below (see AppSidebar's `resizedWidth` — `ctx ? ctx.width : ...`).
+export const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
+export const SIDEBAR_EXPANDED_WIDTH = '12.25rem';
 
 type Props = {
 	children: React.ReactNode;
@@ -38,7 +42,6 @@ type Props = {
  */
 const TasklistNavLayout: React.FC<Props> = ({children}) => {
 	const {t} = useTranslation();
-	const [isExpanded, setIsExpanded] = useState(false);
 	const hasRouteMatch = useHasRouteMatch();
 
 	const items: SidebarNode[] = NAV_ITEMS.map(({key, labelKey, to, icon}): SidebarNode => ({
@@ -74,30 +77,31 @@ const TasklistNavLayout: React.FC<Props> = ({children}) => {
 		// design-system-compat/IconButton.tsx). Self-contained per-instance provider
 		// as a stopgap, same precedent as IconButton.tsx.
 		<TooltipProvider>
+			{/* Expand/collapse and mobile-overlay state come from the
+			    <SidebarProvider> wrapping this layout (routes/_auth/route.tsx) —
+			    no `expanded`/`onExpandedChange` here, so AppSidebar falls back to
+			    the provider's own state instead of a locally-controlled one. Below
+			    `md` the provider's `isMobile` flips AppSidebar into a Sheet overlay
+			    opened by AppHeader's hamburger, in place of the fixed rail. */}
 			<AppSidebar
 				ariaLabel={t('tasklist.taskPanelNavAria')}
 				items={items}
 				linkComponent={Link}
-				expanded={isExpanded}
-				onExpandedChange={setIsExpanded}
 				resizable={false}
-				expandedWidth={EXPANDED_WIDTH}
+				expandedWidth={SIDEBAR_EXPANDED_WIDTH}
 				// 3.5rem, not 2.5rem: AppSidebar's inner content div has its own px-2
 				// (16px) padding, and its collapsed nav buttons are min-h-10 (40px). At
 				// 2.5rem (40px) rail width, the buttons only get 24px of width after
 				// that padding — squashed, not square. 3.5rem gives them the full 40px
 				// back, matching height.
-				collapsedWidth={COLLAPSED_WIDTH}
+				collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
 				className={styles.sidebar}
 			/>
 			{/* The rail is fixed, so it is out of flow: the pages need an equal inset
-			    to sit beside it rather than under it. */}
-			<div
-				className={styles.content}
-				style={{'--tasklist-nav-width': isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH} as React.CSSProperties}
-			>
-				{children}
-			</div>
+			    to sit beside it rather than under it. Reads `--app-sidebar-width`,
+			    published by the wrapping <SidebarProvider> — 0px on mobile, where
+			    the rail is a Sheet overlay instead of an in-flow column. */}
+			<div className={styles.content}>{children}</div>
 		</TooltipProvider>
 	);
 };

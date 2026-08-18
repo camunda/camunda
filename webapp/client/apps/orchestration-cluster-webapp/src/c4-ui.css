@@ -95,3 +95,21 @@
 :where(.c4-ui) [data-slot='select-content'] {
   max-height: 23rem;
 }
+
+/* SidebarProvider layout-transparency.
+ *
+ * SidebarProvider's own wrapping <div data-slot="sidebar-provider"> exists
+ * only to publish `--app-sidebar-width` and hold context state — it isn't
+ * meant to participate in layout. Without `display: contents` it renders as
+ * a plain height:auto block between the app shell and TasklistNavLayout's
+ * `.content` (which depends on an unbroken `height: 100%` chain for its own
+ * `calc(100% - ...)`, see TasklistNavLayout.module.scss), collapsing that
+ * chain: the whole page grows to its content's intrinsic height instead of
+ * the viewport, pushing everything below the fold (discovered via the task
+ * list's "Welcome to Tasklist" empty state rendering thousands of pixels
+ * down). `display: contents` removes the box from layout while custom
+ * properties set on it still inherit to children normally.
+ */
+:where(.c4-ui) [data-slot='sidebar-provider'] {
+  display: contents;
+}

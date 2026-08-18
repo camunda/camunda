@@ -8,7 +8,7 @@
 
 import {Building, Briefcase} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import {AppHeader, NavBreadcrumb, NavBreadcrumbItem} from '@camunda/design-system';
+import {AppHeader, NavBreadcrumb, NavBreadcrumbItem, useMediaQuery} from '@camunda/design-system';
 import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notify} from '#/shared/notifications/toast';
@@ -32,6 +32,11 @@ const TasklistDSHeader: React.FC<Props> = ({currentUser, license}) => {
 	const {t} = useTranslation();
 	const {canLogout} = getClientConfig().authentication;
 	const {displayName} = currentUser;
+	// Below `sm` (--breakpoint-sm, 40rem/640px) — narrower than the `md`
+	// breakpoint that flips the sidebar into its mobile overlay — there isn't
+	// room for the full org/workspace chain or the license tags: only the
+	// current (last) breadcrumb segment stays, and the tags drop entirely.
+	const isLowMobile = useMediaQuery('(width < 40rem)');
 
 	const logoutWithNotification = () => {
 		notify({
@@ -51,11 +56,13 @@ const TasklistDSHeader: React.FC<Props> = ({currentUser, license}) => {
 					{/* TODO(hub): placeholders until Tasklist runs inside Hub, where
 					    organization/workspace context — and something to switch
 					    between — actually exists. See docs/migration/human-follow-up.md. */}
-					<NavBreadcrumbItem icon={<Building aria-hidden />} label={t('tasklist.headerOrganizationPlaceholder')} />
+					{!isLowMobile && (
+						<NavBreadcrumbItem icon={<Building aria-hidden />} label={t('tasklist.headerOrganizationPlaceholder')} />
+					)}
 					<NavBreadcrumbItem icon={<Briefcase aria-hidden />} label={t('tasklist.headerWorkspacePlaceholder')} />
 				</NavBreadcrumb>
 			}
-			trailing={<LicenseBadges license={license} />}
+			trailing={isLowMobile ? undefined : <LicenseBadges license={license} />}
 			actions={
 				<>
 					<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />

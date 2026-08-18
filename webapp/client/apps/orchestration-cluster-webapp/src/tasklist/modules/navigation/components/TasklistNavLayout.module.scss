@@ -28,6 +28,10 @@
 	// growing the document past the viewport and making it scrollable.
 	display: flow-root;
 	height: calc(100% - var(--cds-spacing-09));
-	padding-left: var(--tasklist-nav-width);
+	// Published by the <SidebarProvider> wrapping this layout (routes/_auth/route.tsx)
+	// on a common ancestor of both the rail and this content — 0px on mobile,
+	// where the rail is a Sheet overlay instead of an in-flow column. The
+	// fallback only matters if that provider is ever missing.
+	padding-left: var(--app-sidebar-width, 0px);
 	box-sizing: border-box;
 }
