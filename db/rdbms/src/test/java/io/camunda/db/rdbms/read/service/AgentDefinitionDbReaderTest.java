@@ -11,17 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.read.domain.AgentDefinitionDbQuery;
 import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.write.domain.AgentDefinitionDbModel.AgentDefinitionDbModelBuilder;
 import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentDefinitionEntity.AgentType;
+import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class AgentDefinitionDbReaderTest {
 
@@ -120,5 +124,67 @@ class AgentDefinitionDbReaderTest {
 
     // then
     assertThat(entity).isNull();
+  }
+
+  // ===== Filter pass-through =====
+
+  @Test
+  void shouldPassFullFilterToQueryIntact() {
+    // given
+    when(agentDefinitionMapper.count(any())).thenReturn(1L);
+    when(agentDefinitionMapper.search(any()))
+        .thenReturn(
+            List.of(
+                new AgentDefinitionDbModelBuilder()
+                    .agentDefinitionKey(1L)
+                    .agentType(AgentType.AI_AGENT_TASK)
+                    .name("agent-1")
+                    .elementId("element-1")
+                    .processDefinitionId("myProcess")
+                    .processDefinitionKey(10L)
+                    .processDefinitionVersion(1)
+                    .processDefinitionVersionTag("v1")
+                    .tenantId("<default>")
+                    .build()));
+
+    final var filter =
+        AgentDefinitionFilter.of(
+            f ->
+                f.agentDefinitionKeys(1L)
+                    .agentTypes("AI_AGENT_TASK")
+                    .names("agent-name")
+                    .elementIds("element-id")
+                    .processDefinitionIds("process-definition-id")
+                    .processDefinitionKeys(2L)
+                    .processDefinitionVersions(3)
+                    .processDefinitionVersionTags("version-tag")
+                    .tenantIds("tenant-id"));
+
+    // when
+    agentDefinitionDbReader.search(
+        AgentDefinitionQuery.of(b -> b.filter(filter)), ResourceAccessChecks.disabled());
+
+    // then
+    final var queryCaptor = ArgumentCaptor.forClass(AgentDefinitionDbQuery.class);
+    verify(agentDefinitionMapper).search(queryCaptor.capture());
+    assertThat(queryCaptor.getValue().filter()).isEqualTo(filter);
+  }
+
+  // ===== Page-size edge case =====
+
+  @Test
+  void shouldReturnEmptyItemsButCorrectTotalWhenPageSizeIsZero() {
+    // given
+    when(agentDefinitionMapper.count(any())).thenReturn(42L);
+
+    // when
+    final var result =
+        agentDefinitionDbReader.search(
+            AgentDefinitionQuery.of(b -> b.page(p -> p.size(0))), ResourceAccessChecks.disabled());
+
+    // then
+    assertThat(result.total()).isEqualTo(42L);
+    assertThat(result.items()).isEmpty();
+    verify(agentDefinitionMapper, times(0)).search(any());
   }
 }
