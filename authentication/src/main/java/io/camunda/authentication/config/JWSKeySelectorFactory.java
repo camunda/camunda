@@ -13,6 +13,7 @@ import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -44,6 +45,15 @@ public class JWSKeySelectorFactory {
           JWSAlgorithm.ES256,
           JWSAlgorithm.ES384,
           JWSAlgorithm.ES512);
+
+  // Nimbus's own default is 500ms for both, tuned for fast, responsive IdPs; this tolerates a
+  // realistically slower external IdP while still failing fast on genuine unavailability.
+  private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
+  private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
+
+  // Nimbus's own default is 15,000ms; this still gives one full retry's worth of slack (roughly
+  // 2x the connect+read timeout above) while failing much faster when the IdP is genuinely down.
+  private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
 
   private final Set<JWSAlgorithm> jwsAlgorithms;
 
@@ -127,10 +137,19 @@ public class JWSKeySelectorFactory {
    * @return a {@link JWKSource} for use in verifying JWT signatures
    */
   protected JWKSource<SecurityContext> createJWKSource(final URL jwkSetUri) {
-    return JWKSourceBuilder.create(jwkSetUri)
-        .refreshAheadCache(false)
+    final var retriever =
+        new DefaultResourceRetriever(
+            JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS,
+            JWK_SOURCE_HTTP_READ_TIMEOUT_MS,
+            JWKSourceBuilder.DEFAULT_HTTP_SIZE_LIMIT);
+    // refreshAheadCache(true): refresh happens ahead of expiry, off the request path, so
+    // concurrent lookups are served the still-valid cached keys instead of blocking on a
+    // synchronous refetch. outageTolerant is deliberately left at Nimbus's default (false): a
+    // cache that is genuinely expired with no successful refresh still fails closed.
+    return JWKSourceBuilder.create(jwkSetUri, retriever)
+        .refreshAheadCache(true)
         .rateLimited(false)
-        .cache(true)
+        .cache(JWKSourceBuilder.DEFAULT_CACHE_TIME_TO_LIVE, JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS)
         .build();
   }
 
