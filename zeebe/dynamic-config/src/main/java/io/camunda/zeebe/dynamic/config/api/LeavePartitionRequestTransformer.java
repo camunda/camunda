@@ -57,21 +57,16 @@ public final class LeavePartitionRequestTransformer implements ConfigurationChan
   @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
-    if (physicalTenantId.isPresent()
-        && !clusterConfiguration.hasPartitionGroup(physicalTenantId.get())) {
+    final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+    if (!clusterConfiguration.hasPartitionGroup(groupId)) {
       return Either.left(
           new NotFound(
               "Expected to leave partition %d of physical tenant '%s', but the physical tenant does not exist"
-                  .formatted(partitionId, physicalTenantId.get())));
+                  .formatted(partitionId, groupId)));
     }
 
     final List<PartitionGroupOperation> operations =
         List.of(new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS));
-    return Either.right(
-        List.of(
-            new PartitionGroupParallelPhase(
-                Map.of(
-                    physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP),
-                    operations))));
+    return Either.right(List.of(new PartitionGroupParallelPhase(Map.of(groupId, operations))));
   }
 }
