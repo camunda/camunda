@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbe
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -29,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -46,9 +46,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
-  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldRejectHistoryBatchWithoutJobKeyOnCreate() {
@@ -247,10 +247,10 @@ public class AgentInstanceHistoryBatchProcessingTest {
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withType(jobType(processInstanceKey))
+            .withType(helper.getJobType())
             .getFirst()
             .getKey();
-    ENGINE.jobs().withType(jobType(processInstanceKey)).withLease().activate();
+    ENGINE.jobs().withType(helper.getJobType()).withLease().activate();
 
     // when — carries no lease even though the job has one
     final var rejection =
@@ -705,7 +705,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
 
   // --- helpers ---
 
-  private static Context deployCreateAgentInstanceAndActivateJob() {
+  private Context deployCreateAgentInstanceAndActivateJob() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
@@ -714,12 +714,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
     return new Context(agentInstanceKey, elementInstanceKey, jobKey);
   }
 
-  // Each process instance gets its own job type, resolved at runtime from its own
-  // processInstanceKey via a job-type expression rather than baked in at deploy time (the
-  // process instance doesn't exist yet when this BPMN model is deployed). This keeps
-  // ENGINE.jobs().withType(...).activate() — which isn't scoped by process instance — from ever
-  // picking up a job left over from a different test case in this class's shared @ClassRule.
-  private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
+  private Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
     ENGINE
         .deployment()
         .withXmlResource(
@@ -727,10 +722,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
                 .startEvent()
                 .serviceTask(
                     SERVICE_TASK_ID,
-                    t ->
-                        t.zeebeJobTypeExpression(
-                                "\"" + JOB_TYPE + "\" + string(camunda.processInstance.key)")
-                            .zeebeAiAgentTaskDefinition())
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
                 .endEvent()
                 .done())
         .deploy();
@@ -742,15 +734,11 @@ public class AgentInstanceHistoryBatchProcessingTest {
         .getFirst();
   }
 
-  private static String jobType(final long processInstanceKey) {
-    return JOB_TYPE + processInstanceKey;
-  }
-
-  private static long activateJobForProcessInstance(final long processInstanceKey) {
-    ENGINE.jobs().withType(jobType(processInstanceKey)).activate();
+  private long activateJobForProcessInstance(final long processInstanceKey) {
+    ENGINE.jobs().withType(helper.getJobType()).activate();
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withType(jobType(processInstanceKey))
+        .withType(helper.getJobType())
         .getFirst()
         .getKey();
   }
