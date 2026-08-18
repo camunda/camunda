@@ -9,16 +9,18 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -31,11 +33,11 @@ import org.jspecify.annotations.NullMarked;
  * guard the autoconfigured exporters' secondary storage and its policy.
  *
  * <p>The rule is <em>domain-agnostic</em>: an exporter declares which resources it occupies via
- * {@link ExporterConfigMerger#isolationClaims(Map)} (discovered with {@link ServiceLoader}, matched
- * to the entry's {@code className}), and this rule just groups every claim by {@code (domain, key)}
- * and rejects any resource claimed by more than one tenant. It therefore covers the index and
- * lifecycle-policy domains today, and any future domain, with no change here. An exporter whose
- * class ships no merger — or whose merger declares no claims — is silently skipped, the same
+ * {@link ExporterConfigMerger#isolationClaims(Map)} (discovered with {@link ExporterArgsMergers},
+ * matched to the entry's {@code className}), and this rule just groups every claim by {@code
+ * (domain, key)} and rejects any resource claimed by more than one tenant. It therefore covers the
+ * index and lifecycle-policy domains today, and any future domain, with no change here. An exporter
+ * whose class ships no merger — or whose merger declares no claims — is silently skipped, the same
  * best-effort stance {@link StorageIdentity} documents for what it cannot statically compare.
  *
  * <p>"Generic" excludes the autoconfigured {@code camundaexporter}/{@code rdbms} ({@link
@@ -49,27 +51,28 @@ import org.jspecify.annotations.NullMarked;
  * single-tenant deployments are a no-op. The synthesized {@code default} tenant participates like
  * any other.
  *
- * <p><b>Dormant:</b> not yet invoked from {@link PhysicalTenantResolver} — like {@link
- * PhysicalTenantExporterAssignedValidation} it is gated on <a
- * href="https://github.com/camunda/camunda/issues/56652">#56652</a> and must run only
- * <em>after</em> {@link PhysicalTenantExporterConfigurations#narrowToAssigned}. Before narrowing,
- * every tenant inherits the whole root catalog, so a single root-declared generic exporter claims
- * the same resource in every tenant and this rule would false-positive on the interim inherit-all
- * behavior. See {@link PhysicalTenantExporterConfigurations} for the full activation recipe.
+ * <p><b>Ordering:</b> this rule reads each tenant's resolved exporter map, so {@link
+ * PhysicalTenantResolver} must run it only <em>after</em> {@link
+ * PhysicalTenantExporterConfigurations#narrowToAssigned}. Before narrowing, a tenant still carries
+ * every root catalog entry — including the ones it never assigned — so a single root-declared
+ * generic exporter would appear to be claimed by every tenant at once and this rule would reject a
+ * perfectly isolated deployment.
  */
 @NullMarked
 final class GenericExporterIsolationValidation implements CrossTenantValidation {
 
-  private final List<ExporterConfigMerger> mergers;
+  private final Supplier<List<ExporterConfigMerger>> mergers;
 
   GenericExporterIsolationValidation() {
-    this(
-        ServiceLoader.load(ExporterConfigMerger.class).stream()
-            .map(ServiceLoader.Provider::get)
-            .toList());
+    // discovery is deferred to validate(): this rule sits in a static rule list, and resolving the
+    // SPI while that list is class-initialized would surface a classpath problem as an
+    // ExceptionInInitializerError instead of the boot error the resolver reports for everything
+    // else
+    this(ExporterArgsMergers::load);
   }
 
-  GenericExporterIsolationValidation(final List<ExporterConfigMerger> mergers) {
+  @VisibleForTesting
+  GenericExporterIsolationValidation(final Supplier<List<ExporterConfigMerger>> mergers) {
     this.mergers = mergers;
   }
 
@@ -79,6 +82,8 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
       // a single tenant cannot collide with anything
       return;
     }
+
+    final List<ExporterConfigMerger> loadedMergers = mergers.get();
 
     final Map<ResourceIdentity, ClaimedResource> tenantsByResource = new LinkedHashMap<>();
     resolvedByTenant.forEach(
@@ -94,7 +99,7 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
                         // already checked in other classes
                         return;
                       }
-                      claimsOf(exporter)
+                      claimsOf(loadedMergers, tenantId, exporterId, exporter)
                           .forEach(
                               claim ->
                                   tenantsByResource
@@ -125,19 +130,22 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
     }
   }
 
-  private Set<ExporterIsolationClaim> claimsOf(final Exporter exporter) {
-    final String className = exporter.getClassName();
-    if (className == null) {
-      // tenant-private entries without a class cannot be introspected — skip, do not guess
+  private static Set<ExporterIsolationClaim> claimsOf(
+      final List<ExporterConfigMerger> mergers,
+      final String tenantId,
+      final String exporterId,
+      final Exporter exporter) {
+    final String context =
+        String.format("exporter '%s' of physical tenant '%s'", exporterId, tenantId);
+    // the shared lookup also enforces the exactly-one-claimant rule, so an ambiguous exporter class
+    // fails here too rather than silently having one of its two mergers decide its claims
+    final ExporterConfigMerger merger =
+        ExporterArgsMergers.find(mergers, exporter.getClassName(), context);
+    if (merger == null) {
+      // no class name, or a class shipping no merger: nothing to introspect — skip, do not guess
       return Set.of();
     }
-    // a class with two claimant mergers already fails startup in
-    // PhysicalTenantExporterConfigurations#apply (which runs first), so first-match is safe here
-    return mergers.stream()
-        .filter(m -> m.supports(className))
-        .findFirst()
-        .map(m -> m.isolationClaims(exporter.getArgs() == null ? Map.of() : exporter.getArgs()))
-        .orElseGet(Set::of);
+    return merger.isolationClaims(exporter.getArgs() == null ? Map.of() : exporter.getArgs());
   }
 
   /** The collision identity of a claimed resource: exporters collide iff both fields are equal. */

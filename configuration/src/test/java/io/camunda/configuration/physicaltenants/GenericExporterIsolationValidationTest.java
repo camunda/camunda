@@ -35,6 +35,9 @@ import org.springframework.mock.env.MockEnvironment;
  * on the configuration module's test classpath, and the grouping logic under test is
  * domain-agnostic anyway. Two representative domains are exercised: an index write target and a
  * lifecycle policy.
+ *
+ * <p>That {@link PhysicalTenantResolver} actually runs this rule, and runs it after narrowing, is
+ * pinned separately in {@code PhysicalTenantResolverTest}.
  */
 class GenericExporterIsolationValidationTest {
 
@@ -44,7 +47,7 @@ class GenericExporterIsolationValidationTest {
   private static final String UNMERGED_CLASS = "com.acme.CustomExporter";
 
   private final GenericExporterIsolationValidation validation =
-      new GenericExporterIsolationValidation(List.of(fakeMerger(MERGED_CLASS)));
+      new GenericExporterIsolationValidation(() -> List.of(fakeMerger(MERGED_CLASS)));
 
   @BeforeEach
   void setUp() {
