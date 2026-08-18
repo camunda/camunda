@@ -41,6 +41,11 @@ class OpensearchSearchClientAdapter
     final var transport =
         ApacheHttpClient5TransportBuilder.builder(host)
             .setMapper(new JacksonJsonpMapper(objectMapper))
+            .setHttpClientConfigCallback(
+                httpClientBuilder -> {
+                  httpClientBuilder.disableContentCompression();
+                  return httpClientBuilder;
+                })
             .build();
     client = new OpenSearchClient(transport);
     extendedClient = new ExtendedOpenSearchClient(transport);
