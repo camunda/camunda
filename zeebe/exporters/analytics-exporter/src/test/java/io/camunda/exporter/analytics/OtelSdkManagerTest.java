@@ -343,7 +343,7 @@ class OtelSdkManagerTest {
     try {
       // when — otel.sdk.log.created increments synchronously on emit(), no flush needed
       manager.logEvent(
-          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
+          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED,
           1L,
           b -> {});
 

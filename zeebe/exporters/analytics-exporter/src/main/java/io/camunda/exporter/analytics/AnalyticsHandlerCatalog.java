@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.analytics;
 
-import io.camunda.exporter.analytics.handler.AdHocSubProcessHandler;
 import io.camunda.exporter.analytics.handler.AgentInstanceCompletedHandler;
 import io.camunda.exporter.analytics.handler.AgentInstanceCreatedHandler;
 import io.camunda.exporter.analytics.handler.DecisionDefinitionCreatedHandler;
@@ -19,10 +18,9 @@ import io.camunda.exporter.analytics.handler.IncidentCreatedHandler;
 import io.camunda.exporter.analytics.handler.IncidentResolvedHandler;
 import io.camunda.exporter.analytics.handler.ProcessDefinitionCreatedHandler;
 import io.camunda.exporter.analytics.handler.ProcessDefinitionDeletedHandler;
-import io.camunda.exporter.analytics.handler.ProcessInstanceCreationHandler;
+import io.camunda.exporter.analytics.handler.ProcessInstanceElementActivatedHandler;
 import io.camunda.exporter.analytics.handler.TenantCreatedHandler;
 import io.camunda.exporter.analytics.handler.TenantDeletedHandler;
-import io.camunda.exporter.analytics.handler.UsageMetricHandler;
 import io.camunda.exporter.analytics.handler.UserTaskAssignedHandler;
 import io.camunda.exporter.analytics.handler.UserTaskCreatedHandler;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,11 +29,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Set;
 
@@ -54,17 +50,9 @@ final class AnalyticsHandlerCatalog {
       final OtelSdkManager otelSdkManager, final Set<AnalyticsCategory> activeCategories) {
     return new HandlerRegistry(activeCategories)
         .register(
-            ValueType.PROCESS_INSTANCE_CREATION,
-            ProcessInstanceCreationIntent.CREATED,
-            new ProcessInstanceCreationHandler(otelSdkManager))
-        .register(
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            new AdHocSubProcessHandler(otelSdkManager))
-        .register(
-            ValueType.USAGE_METRIC,
-            UsageMetricIntent.EXPORTED,
-            new UsageMetricHandler(otelSdkManager))
+            new ProcessInstanceElementActivatedHandler(otelSdkManager))
         .register(
             ValueType.USER_TASK, UserTaskIntent.CREATED, new UserTaskCreatedHandler(otelSdkManager))
         .register(

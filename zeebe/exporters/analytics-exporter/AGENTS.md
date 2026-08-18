@@ -65,27 +65,25 @@ Replicated log
 
 ### Current Event Handlers
 
-|         ValueType         |      Intent       |             Handler              |              event.name               |                       Extra filter                        |
-|---------------------------|-------------------|----------------------------------|---------------------------------------|-----------------------------------------------------------|
-| PROCESS_INSTANCE_CREATION | CREATED           | ProcessInstanceCreationHandler   | `process_instance_created`            | —                                                         |
-| PROCESS_INSTANCE          | ELEMENT_ACTIVATED | AdHocSubProcessHandler           | `adhoc_subprocess_activated`          | bpmnElementType == AD_HOC_SUB_PROCESS                     |
-| USAGE_METRIC              | EXPORTED          | UsageMetricHandler               | `usage_metric_exported`               | skips EventType.NONE resets                               |
-| USER_TASK                 | CREATED           | UserTaskCreatedHandler           | `user_task_created`                   | —                                                         |
-| USER_TASK                 | ASSIGNED          | UserTaskAssignedHandler          | `camunda.user_task.assigned`          | skips empty assignee                                      |
-| TENANT                    | CREATED           | TenantCreatedHandler             | `camunda.tenant.created`              | —                                                         |
-| TENANT                    | DELETED           | TenantDeletedHandler             | `camunda.tenant.deleted`              | —                                                         |
-| INCIDENT                  | CREATED           | IncidentCreatedHandler           | `camunda.process.incident.created`    | —                                                         |
-| INCIDENT                  | RESOLVED          | IncidentResolvedHandler          | `camunda.process.incident.resolved`   | —                                                         |
-| PROCESS                   | CREATED           | ProcessDefinitionCreatedHandler  | `camunda.process.definition.created`  | —                                                         |
-| PROCESS                   | DELETED           | ProcessDefinitionDeletedHandler  | `camunda.process.definition.deleted`  | —                                                         |
-| DECISION                  | CREATED           | DecisionDefinitionCreatedHandler | `camunda.decision.definition.created` | —                                                         |
-| DECISION                  | DELETED           | DecisionDefinitionDeletedHandler | `camunda.decision.definition.deleted` | —                                                         |
-| FORM                      | CREATED           | FormDefinitionCreatedHandler     | `camunda.form.definition.created`     | —                                                         |
-| FORM                      | DELETED           | FormDefinitionDeletedHandler     | `camunda.form.definition.deleted`     | —                                                         |
-| AGENT_INSTANCE            | CREATED           | AgentInstanceCreatedHandler      | `camunda.agent.instance.created`      | —                                                         |
-| AGENT_INSTANCE            | COMPLETED         | AgentInstanceCompletedHandler    | `camunda.agent.instance.completed`    | —                                                         |
-| DECISION_EVALUATION       | EVALUATED         | DecisionInstanceEvaluatedHandler | (counter only, no event)              | —                                                         |
-| —                         | —                 | (scheduled)                      | `heartbeat`                           | every heartbeatInterval, carries broker/exporter versions |
+|      ValueType      |      Intent       |                Handler                 |              event.name               |                         Extra filter                         |
+|---------------------|-------------------|----------------------------------------|---------------------------------------|--------------------------------------------------------------|
+| PROCESS_INSTANCE    | ELEMENT_ACTIVATED | ProcessInstanceElementActivatedHandler | `camunda.process.instance.activated`  | bpmnElementType == PROCESS && parentProcessInstanceKey == -1 |
+| USER_TASK           | CREATED           | UserTaskCreatedHandler                 | `user_task_created`                   | —                                                            |
+| USER_TASK           | ASSIGNED          | UserTaskAssignedHandler                | `camunda.user_task.assigned`          | skips empty assignee                                         |
+| TENANT              | CREATED           | TenantCreatedHandler                   | `camunda.tenant.created`              | —                                                            |
+| TENANT              | DELETED           | TenantDeletedHandler                   | `camunda.tenant.deleted`              | —                                                            |
+| INCIDENT            | CREATED           | IncidentCreatedHandler                 | `camunda.process.incident.created`    | —                                                            |
+| INCIDENT            | RESOLVED          | IncidentResolvedHandler                | `camunda.process.incident.resolved`   | —                                                            |
+| PROCESS             | CREATED           | ProcessDefinitionCreatedHandler        | `camunda.process.definition.created`  | —                                                            |
+| PROCESS             | DELETED           | ProcessDefinitionDeletedHandler        | `camunda.process.definition.deleted`  | —                                                            |
+| DECISION            | CREATED           | DecisionDefinitionCreatedHandler       | `camunda.decision.definition.created` | —                                                            |
+| DECISION            | DELETED           | DecisionDefinitionDeletedHandler       | `camunda.decision.definition.deleted` | —                                                            |
+| FORM                | CREATED           | FormDefinitionCreatedHandler           | `camunda.form.definition.created`     | —                                                            |
+| FORM                | DELETED           | FormDefinitionDeletedHandler           | `camunda.form.definition.deleted`     | —                                                            |
+| AGENT_INSTANCE      | CREATED           | AgentInstanceCreatedHandler            | `camunda.agent.instance.created`      | —                                                            |
+| AGENT_INSTANCE      | COMPLETED         | AgentInstanceCompletedHandler          | `camunda.agent.instance.completed`    | —                                                            |
+| DECISION_EVALUATION | EVALUATED         | DecisionInstanceEvaluatedHandler       | (counter only, no event)              | —                                                            |
+| —                   | —                 | (scheduled)                            | `heartbeat`                           | every heartbeatInterval, carries broker/exporter versions    |
 
 ### Adding a New Event Handler
 
@@ -121,9 +119,10 @@ Signature: HMAC-SHA256(licenseKey, `fingerprint|clusterId|timestamp`)
 
 ### Pre-Aggregated Metrics
 
-- Counter `camunda.process_instance.created` with delta temporality (resets each flush)
-- Counter `camunda.decision.instance.evaluated`, one increment per DECISION_EVALUATION/EVALUATED
-  record (never per sub-decision), dimension `camunda.tenant.id` — mirrors the EDI usage metric
+- Counter `camunda.decision.instance.evaluated` with delta temporality (resets each flush), one
+  increment per DECISION_EVALUATION/EVALUATED record (never per sub-decision), dimension
+  `camunda.tenant.id`. This is the authoritative per-tenant EDI source; the engine's aggregated
+  usage metric is not forwarded.
 - Companion gauge `camunda.metric.export_window` per flush carries:
   - `camunda.metric.sequence_number` — contiguous per flush, gap = lost push
   - `camunda.log.position_start/end` — for replay/overlap detection
@@ -173,7 +172,9 @@ Hash-based deterministic sampling in `OtelSdkManager.logEvent()`. See `docs/samp
 
 - **Unit tests** (`AnalyticsExporterTest`) — handler routing, attributes, config validation, error resilience
 - **SDK tests** (`OtelSdkManagerTest`) — OTel pipeline contract: non-blocking queue, failure recovery
-- **Integration tests** (`AnalyticsExporterOtelIT`) — real OTel Collector in Docker, end-to-end
+- **Metric pipeline test** (`MetricExportPipelineTest`) — production `OtelSdkManager` against an in-JVM HTTP server, asserting the metric OTLP POST reaches `/v1/metrics` independent of any business counter (a synthetic counter name, so dropping a real counter cannot silently delete this coverage)
+- **Integration tests** (`AnalyticsExporterOtelIT`) — real OTel Collector in Docker, end-to-end. Developer-run only: this module is not in any CI IT group, so this suite is not CI-gated
 - **Benchmarks** (`AnalyticsExporterBenchmark`, `HashSamplerBenchmark`) — JMH, manual only, not in CI
 
-Always run unit + integration tests before submitting changes to this module.
+The surefire tests above (unit, SDK, metric pipeline) run in CI. Run `AnalyticsExporterOtelIT`
+locally with Docker before submitting changes that touch the OTLP transport or collector wiring.

@@ -47,6 +47,7 @@ class AgentInstanceCreatedHandlerTest {
             .withBpmnProcessId("support-agent-process")
             .withProcessDefinitionKey(11L)
             .withProcessInstanceKey(22L)
+            .withRootProcessInstanceKey(9L)
             .withTenantId("acme")
             .withVersionTag("release-2026-q1")
             .withDefinition(
@@ -93,6 +94,7 @@ class AgentInstanceCreatedHandlerTest {
                       AnalyticsAttributes.Process.BPMN_PROCESS_ID, "support-agent-process")
                   .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 11L)
                   .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 22L)
+                  .containsEntry(AnalyticsAttributes.Process.ROOT_INSTANCE_KEY, 9L)
                   .containsEntry(AnalyticsAttributes.Tenant.ID, "acme");
 
               assertThat(logRecord.getTimestampEpochNanos())

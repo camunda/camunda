@@ -8,7 +8,7 @@
 package io.camunda.exporter.analytics;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_ACTIVATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -16,7 +16,10 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
 import java.util.List;
@@ -92,12 +95,12 @@ class AnalyticsExporterOtelIT {
     final var exporter = createExporter();
 
     // when
-    exporter.export(piCreatedEvent());
+    exporter.export(piActivatedEvent());
     exporter.close();
 
     // then
     awaitCollectorLogs(
-        PROCESS_INSTANCE_CREATED,
+        PROCESS_INSTANCE_ACTIVATED,
         AnalyticsAttributes.CLUSTER_ID.getKey(),
         "test-cluster",
         AnalyticsAttributes.Process.BPMN_PROCESS_ID.getKey());
@@ -122,7 +125,7 @@ class AnalyticsExporterOtelIT {
 
     // when — send 500 events (should produce ~5 batches of 100)
     for (int i = 0; i < 500; i++) {
-      exporter.export(piCreatedEvent());
+      exporter.export(piActivatedEvent());
     }
     exporter.close();
 
@@ -131,12 +134,12 @@ class AnalyticsExporterOtelIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              // Count the PI-created records specifically to avoid coupling to other event types.
-              final var piCreatedCount =
+              // Count the PI-activated records specifically to avoid coupling to other event types.
+              final var piActivatedCount =
                   COLLECTOR_LOGS.stream()
-                      .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_CREATED + ")"))
+                      .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_ACTIVATED + ")"))
                       .count();
-              assertThat(piCreatedCount).isEqualTo(500);
+              assertThat(piActivatedCount).isEqualTo(500);
 
               // Count export calls (each starts a "ScopeLogs" block)
               final var exportCount =
@@ -184,9 +187,19 @@ class AnalyticsExporterOtelIT {
             });
   }
 
-  private io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
+  /** Activation of a root process element — the record the process-instance count is taken from. */
+  private io.camunda.zeebe.protocol.record.Record<?> piActivatedEvent() {
+    final var value =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(-1L)
+            .build();
     return factory.generateRecord(
-        ValueType.PROCESS_INSTANCE_CREATION,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+        ValueType.PROCESS_INSTANCE,
+        r ->
+            r.withRecordType(RecordType.EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withValue(value));
   }
 }
