@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import {
 	Button,
 	ComposedModal,
@@ -17,7 +17,7 @@ import {
 	ShareIcon,
 } from '#/shared/design-system-compat';
 import {Button as DSButton} from '@camunda/design-system';
-import {Loader2} from 'lucide-react';
+import {Check, Link as LinkIcon, Loader2} from 'lucide-react';
 // FLAG: TextInputSkeleton has no carbon-compat adapter (no shadcn Skeleton
 // component shipped yet) — no DS equivalent exists, so it stays on
 // @carbon/react until the DS team ships one. See
@@ -91,9 +91,27 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 	const {t} = useTranslation();
 	const title = t('tasklist.processesStartProcessWithForm', {processDisplayName});
 	const shareLabel = t('tasklist.processesStartProcessWithFormShareURLAriaLabel');
+	// DS-only: the footer button swaps to a "Copied" confirmation (icon +
+	// label) for a couple seconds after a successful copy, then reverts —
+	// per explicit request. Carbon's icon-only header button is unaffected,
+	// it never reads `isCopied`.
+	const [isCopied, setIsCopied] = useState(false);
+	const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+	useEffect(() => {
+		return () => {
+			clearTimeout(copiedTimeoutRef.current);
+		};
+	}, []);
+
 	const handleShareButtonClick = useCallback(async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
+			setIsCopied(true);
+			clearTimeout(copiedTimeoutRef.current);
+			copiedTimeoutRef.current = setTimeout(() => {
+				setIsCopied(false);
+			}, 2000);
 		} catch (error) {
 			console.error('Failed to copy URL to clipboard', error);
 		}
@@ -128,8 +146,10 @@ const StartProcessFormModalShell: React.FC<ShellProps> = ({
 	const footerShareButton =
 		isShareButtonVisible && featureFlags.dsTasklistUI ? (
 			<DSButton key="share" variant="ghost" size="sm" title={shareLabel} onClick={handleShareButtonClick}>
-				<ShareIcon aria-hidden />
-				{t('tasklist.processesStartProcessWithFormShareButtonLabel')}
+				{isCopied ? <Check aria-hidden /> : <LinkIcon aria-hidden />}
+				{isCopied
+					? t('tasklist.processesStartProcessWithFormCopyURLButtonLabel')
+					: t('tasklist.processesStartProcessWithFormShareButtonLabel')}
 			</DSButton>
 		) : null;
 

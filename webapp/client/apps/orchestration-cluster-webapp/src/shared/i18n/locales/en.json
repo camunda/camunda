@@ -184,7 +184,7 @@
 			"processesStartProcessWithForm": "Start process {{processDisplayName}}",
 			"processesStartProcessWithFormCopyURLButtonLabel": "Copied",
 			"processesStartProcessWithFormShareURLAriaLabel": "Share process URL",
-			"processesStartProcessWithFormShareButtonLabel": "Share",
+			"processesStartProcessWithFormShareButtonLabel": "Copy link",
 			"processesTileStartProcessButtonLabel": "Start process",
 			"processesStartProcessWithFormStartButtonLabel": "Start process",
 			"processesFetchErrorMissingTenant": "You must first select a tenant to start a process.",
