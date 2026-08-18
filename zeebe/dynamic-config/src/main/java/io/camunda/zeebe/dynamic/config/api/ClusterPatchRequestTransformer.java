@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -114,33 +112,5 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     }
     return PartitionGroupScalingPhases.phases(
         groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    // Changing the replication factor on a zone-aware cluster requires adjusting zone specs,
-    // which is not yet supported.
-    // !isNotZoneAware is required as not a single broker can be zoned.
-    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
-      return Either.left(
-          new InvalidRequest(
-              "Changing the replication factor is not supported on zone-aware clusters."));
-    }
-
-    // if membersToAdd and membersToRemove have common items, reject the request
-    if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
-      return Either.left(
-          new ClusterConfigurationRequestFailedException.InvalidRequest(
-              new IllegalArgumentException(
-                  "Cannot add and remove the same member in the same request")));
-    }
-
-    final var newSetOfMembers = new HashSet<>(clusterConfiguration.members().keySet());
-    newSetOfMembers.addAll(membersToAdd);
-    newSetOfMembers.removeAll(membersToRemove);
-
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
-        .operations(clusterConfiguration);
   }
 }

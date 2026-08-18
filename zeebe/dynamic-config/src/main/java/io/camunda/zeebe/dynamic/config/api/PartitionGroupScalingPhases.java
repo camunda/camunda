@@ -45,11 +45,10 @@ import java.util.stream.Stream;
  * <p>Partitions are distributed across brokers considering every physical tenant's partitions at
  * once, not just those of the tenant being scaled: a tenant scaled on its own would be placed as if
  * the brokers held nothing else, and would pile onto brokers that are already busy with another
- * tenant's partitions. This is why the change cannot be planned through {@code
- * ConfigurationChangeRequest#operations(ClusterConfiguration)} — the legacy configuration that
- * takes projects a single partition group, so a distribution computed from it can only ever see the
- * partitions of the group being scaled. The replication factor is why this matters even when no
- * partition count changes: it is a cluster-wide setting, so it has to reach every group's
+ * tenant's partitions. This is why the placement is computed from the whole {@link
+ * CurrentClusterConfiguration} rather than from one group: a distribution computed from a single
+ * group can only ever see that group's partitions. The replication factor is why this matters even
+ * when no partition count changes: it is a cluster-wide setting, so it has to reach every group's
  * partitions rather than only the default group's.
  *
  * <p>The distribution itself is the cluster's configured {@link

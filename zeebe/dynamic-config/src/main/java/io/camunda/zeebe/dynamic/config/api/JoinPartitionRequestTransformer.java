@@ -10,8 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -42,15 +40,6 @@ public final class JoinPartitionRequestTransformer implements ConfigurationChang
     this.partitionId = partitionId;
     this.priority = priority;
     this.physicalTenantId = physicalTenantId;
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    throw new UnsupportedOperationException(
-        "JoinPartitionRequestTransformer builds its change plan via "
-            + "phases(CurrentClusterConfiguration); the new-model coordinator path never calls "
-            + "operations(ClusterConfiguration)");
   }
 
   @Override

@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -51,10 +49,9 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
    *
    * <p>A stage replaces every broker of one zone, so a tenant left out does not merely miss out on
    * capacity: its partitions stay on member ids the stage removes, and the member leave is then
-   * refused because the broker still holds partitions. Planning the default group alone — what
-   * {@link #operations(ClusterConfiguration)} does, and what this transformer inherited before —
-   * therefore made a zone migration impossible on a cluster with more than one tenant rather than
-   * only incomplete.
+   * refused because the broker still holds partitions. Planning the default group alone, as this
+   * transformer once did, therefore made a zone migration impossible on a cluster with more than
+   * one tenant rather than only incomplete.
    */
   @Override
   public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
@@ -62,20 +59,6 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
             configuration.getMembers(),
             configuration.globalConfiguration().partitionDistributorConfig())
         .flatMap(targetMembers -> scaleRequest(targetMembers).phases(configuration));
-  }
-
-  /**
-   * Plans the same stage as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Kept because the tests around this transformer assert on the flat
-   * operation list; nothing in production plans through here anymore.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    return stageTargetMembers(
-            currentConfiguration.members().keySet(),
-            currentConfiguration.partitionDistributorConfig())
-        .flatMap(targetMembers -> scaleRequest(targetMembers).operations(currentConfiguration));
   }
 
   private ScaleRequestTransformer scaleRequest(final Set<MemberId> stageTargetMembers) {

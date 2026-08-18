@@ -10,8 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
@@ -23,7 +21,6 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -77,21 +74,6 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
         .flatMap(zoneAwareConfig -> phases(configuration, zoneAwareConfig));
   }
 
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer and the two that delegate to it assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    return validatedZoneAwareConfig(
-            currentConfiguration.minReplicationFactor(),
-            currentConfiguration.isFullyZoneAware(),
-            currentConfiguration.isPartiallyZoneAware())
-        .flatMap(zoneAwareConfig -> operations(currentConfiguration, zoneAwareConfig));
-  }
-
   private Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration configuration, final ZoneAwareConfig zoneAwareConfig) {
     final List<GlobalChangeOperation> persistConfig =
@@ -115,31 +97,6 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
             partitionPhases ->
                 Stream.concat(Stream.of(new GlobalPhase(persistConfig)), partitionPhases.stream())
                     .toList());
-  }
-
-  private Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration, final ZoneAwareConfig zoneAwareConfig) {
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
-            .getDefaultCoordinator();
-
-    // Apply the new config to produce a temporary configuration whose partitionDistributor()
-    // returns the new ZoneAwarePartitionDistributor. This is only used for distribution
-    // computation; the real version bump happens when the config-set operation is applied.
-    final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
-
-    return new PartitionReassignRequestTransformer(
-            targetMembers(currentConfiguration.members().keySet()),
-            Optional.of(zoneAwareConfig.replicationFactor()),
-            Optional.empty())
-        .operations(updatedConfiguration)
-        .map(
-            ops -> {
-              final var allOps = new ArrayList<ClusterConfigurationChangeOperation>(ops.size() + 1);
-              allOps.add(new UpdatePartitionDistributorConfigOperation(coordinator, newConfig));
-              allOps.addAll(ops);
-              return allOps;
-            });
   }
 
   private Set<MemberId> targetMembers(final Set<MemberId> currentMembers) {

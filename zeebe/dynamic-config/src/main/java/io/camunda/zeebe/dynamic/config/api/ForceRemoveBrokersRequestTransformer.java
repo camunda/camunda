@@ -9,8 +9,6 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -42,21 +40,6 @@ public final class ForceRemoveBrokersRequestTransformer implements Configuration
     membersToRetain.removeAll(membersToRemove);
 
     return new ForceScaleDownRequestTransformer(membersToRetain, coordinator).phases(configuration);
-  }
-
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    final var membersToRetain = new HashSet<>(clusterConfiguration.members().keySet());
-    membersToRetain.removeAll(membersToRemove);
-
-    return new ForceScaleDownRequestTransformer(membersToRetain, coordinator)
-        .operations(clusterConfiguration);
   }
 
   @Override

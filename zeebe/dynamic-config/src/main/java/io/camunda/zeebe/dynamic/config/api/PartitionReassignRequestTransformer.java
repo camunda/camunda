@@ -14,11 +14,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport;
 import io.camunda.zeebe.util.Either;
@@ -35,6 +37,12 @@ import java.util.stream.Stream;
 /**
  * Add new partitions and reassign all partitions to the given members based on round-robin
  * strategy.
+ *
+ * <p>Plans the default physical tenant's partition group and no other. Unlike the requests that
+ * reach every tenant, the placement is computed from that group alone, so on a cluster with more
+ * than one tenant it both ignores the other tenants' partitions and leaves them where they are.
+ * Reassigning every tenant is what {@code PartitionGroupScalingPhases} does for the scale and patch
+ * requests; this endpoint has not been given the same treatment.
  */
 public class PartitionReassignRequestTransformer implements ConfigurationChangeRequest {
   final Set<MemberId> members;
@@ -55,7 +63,11 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
   }
 
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return operations(configuration.toLegacyDefault()).map(CurrentClusterConfiguration::toPhases);
+  }
+
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
     if (members.isEmpty()) {
       return Either.left(

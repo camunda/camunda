@@ -12,7 +12,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -105,24 +104,6 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
         groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
   }
 
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    if (brokerCount.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
-      // Nothing to change
-      return Either.right(List.of());
-    }
-    final var invalidZone = validateZone(clusterConfiguration);
-    if (invalidZone.isPresent()) {
-      return Either.left(invalidZone.get());
-    }
-
-    // replicationFactor and partitionCount is validated in the delegated transformer.
-    return new ScaleRequestTransformer(
-            newSetOfMembers(clusterConfiguration), newReplicationFactor, newPartitionCount, zone)
-        .operations(clusterConfiguration);
-  }
-
   /**
    * The complete member set the cluster should have once this request is applied. A zoned request
    * resizes only the named zone and leaves every other zone's members untouched; an unzoned one
@@ -147,10 +128,10 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
   }
 
   /**
-   * The zone rules this request has to satisfy, shared by {@link #operations} and the {@link
-   * #phases} path: a zone may only be named on a zone-aware cluster and must be one the cluster
-   * knows, an unzoned request is only valid while no broker is zoned at all, and the replication
-   * factor of a zone-aware cluster is derived from its zone specs rather than set directly.
+   * The zone rules this request has to satisfy: a zone may only be named on a zone-aware cluster
+   * and must be one the cluster knows, an unzoned request is only valid while no broker is zoned at
+   * all, and the replication factor of a zone-aware cluster is derived from its zone specs rather
+   * than set directly.
    *
    * @return the rejection to answer with, or empty if the request is valid
    */

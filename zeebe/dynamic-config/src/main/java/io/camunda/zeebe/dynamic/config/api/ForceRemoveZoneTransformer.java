@@ -10,8 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
@@ -59,32 +57,6 @@ public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequ
                         removal.membersToRetain(), removal.coordinator())
                     .phases(configuration)
                     .map(phases -> withLayoutUpdateLast(phases, removal.updateLayout())));
-  }
-
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    return zoneRemoval(
-            currentConfiguration.partitionDistributorConfig(),
-            currentConfiguration.members().keySet())
-        .flatMap(
-            removal ->
-                new ForceScaleDownRequestTransformer(
-                        removal.membersToRetain(), removal.coordinator())
-                    .operations(currentConfiguration)
-                    .map(
-                        ops -> {
-                          final var allOps =
-                              new ArrayList<ClusterConfigurationChangeOperation>(ops.size() + 1);
-                          allOps.addAll(ops);
-                          allOps.add(removal.updateLayout());
-                          return allOps;
-                        }));
   }
 
   @Override

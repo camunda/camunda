@@ -540,11 +540,10 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   /**
-   * Flattens a phase list back into the flat operation list expected by {@link
-   * ConfigurationChangeResult#operations()}, preserving phase order. Within a {@link
-   * PartitionGroupParallelPhase} the operations of each group are concatenated; the order between
-   * groups is unspecified (they apply concurrently), but is irrelevant while only the default group
-   * is used.
+   * Flattens a phase list back into the flat operation list the management API answers a request
+   * with, preserving phase order. Within a {@link PartitionGroupParallelPhase} the operations of
+   * each group are concatenated; the order between groups is unspecified (they apply concurrently),
+   * but is irrelevant while only the default group is used.
    */
   private static List<ClusterConfigurationChangeOperation> flattenPhases(final List<Phase> phases) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();

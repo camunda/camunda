@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -46,10 +45,9 @@ import java.util.TreeSet;
  * Validates a {@link RestoreRequest} against the current cluster configuration and produces the
  * change plan for the restore of the request's physical tenant.
  *
- * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the new-model coordinator
- * drives: the plan is built from the request's own {@link PartitionGroupConfiguration}, where
- * recovery is tracked per broker within the group. {@link #operations(ClusterConfiguration)} is the
- * legacy single-group entry point, which only ever has one, ungrouped configuration to work with.
+ * <p>The plan is built from the request's own {@link PartitionGroupConfiguration}, where recovery
+ * is tracked per broker within the group: only a broker holding a partition of that tenant takes
+ * part, since a broker holding none was never transitioned into recovery for it.
  *
  * <p>Validation failures are returned as an {@link Either#left(Object)} carrying a {@link
  * ClusterConfigurationRequestFailedException}, which the coordinator surfaces as an error response.
@@ -63,18 +61,6 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
       final RestoreRequest request, final RequestValidatorRegistry registry) {
     this.request = request;
     this.registry = registry;
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    if (!isClusterRecovering(clusterConfiguration)) {
-      return Either.left(
-          new ConcurrentModificationException(
-              "Restore is only allowed while the cluster is in recovery mode."));
-    }
-    final var members = recoveringMembers(clusterConfiguration);
-    return restorePlan(members).map(List::copyOf);
   }
 
   @Override
