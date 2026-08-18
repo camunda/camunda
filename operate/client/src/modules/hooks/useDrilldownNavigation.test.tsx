@@ -9,13 +9,40 @@
 import {renderHook, act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {http, HttpResponse, type DefaultBodyType} from 'msw';
 import {useDrillDownNavigation} from './useDrilldownNavigation';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import {mockServer} from 'modules/mock-server/node';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Paths} from 'modules/Routes';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
-import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {
+  endpoints,
+  type ElementInstance,
+  type QueryDecisionInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+
+// The 8.9 mockPostRequest helper doesn't expose the request body the way
+// main's does; capture it directly via msw instead.
+function mockCapturedRequestBody<T extends DefaultBodyType>(
+  url: string,
+  responseData: T,
+) {
+  let capturedBody: unknown;
+  mockServer.use(
+    http.post(
+      url,
+      async ({request}) => {
+        capturedBody = await request.json();
+        return HttpResponse.json(responseData);
+      },
+      {once: true},
+    ),
+  );
+  return () => capturedBody;
+}
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -37,6 +64,8 @@ vi.mock('react-router', async () => {
 const PROCESS_INSTANCE_KEY = '2251799813685249';
 const CALL_ACTIVITY_ID = 'confirmDelivery';
 const BUSINESS_RULE_TASK_ID = 'evaluateRisk';
+const CALL_ACTIVITY_ELEMENT_INSTANCE_KEY = 'element-instance-100';
+const BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY = 'element-instance-200';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -50,11 +79,54 @@ function createWrapper() {
   );
 }
 
+function createElementInstance(
+  options: Partial<ElementInstance> = {},
+): ElementInstance {
+  return {
+    processDefinitionId: 'process',
+    startDate: '2024-01-01T00:00:00.000+0000',
+    endDate: null,
+    elementId: CALL_ACTIVITY_ID,
+    elementName: null,
+    type: 'CALL_ACTIVITY',
+    state: 'ACTIVE',
+    hasIncident: false,
+    tenantId: '<default>',
+    elementInstanceKey: CALL_ACTIVITY_ELEMENT_INSTANCE_KEY,
+    processInstanceKey: PROCESS_INSTANCE_KEY,
+    rootProcessInstanceKey: null,
+    processDefinitionKey: 'process-def-1',
+    incidentKey: null,
+    ...options,
+  };
+}
+
 function createDecisionSearchResult(
   items: QueryDecisionInstancesResponseBody['items'],
   totalItems = items.length,
 ) {
   return searchResult(items, totalItems);
+}
+
+function mockResolvedCallActivityElement() {
+  mockSearchElementInstances().withSuccess(
+    searchResult([createElementInstance()], 1),
+  );
+}
+
+function mockResolvedBusinessRuleTaskElement() {
+  mockSearchElementInstances().withSuccess(
+    searchResult(
+      [
+        createElementInstance({
+          elementId: BUSINESS_RULE_TASK_ID,
+          type: 'BUSINESS_RULE_TASK',
+          elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY,
+        }),
+      ],
+      1,
+    ),
+  );
 }
 
 describe('useDrillDownNavigation', () => {
@@ -63,6 +135,7 @@ describe('useDrillDownNavigation', () => {
       processInstanceKey: 'called-200',
     });
 
+    mockResolvedCallActivityElement();
     mockSearchProcessInstances().withSuccess(searchResult([calledInstance], 1));
 
     const {result} = renderHook(
@@ -75,16 +148,17 @@ describe('useDrillDownNavigation', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      Paths.processInstance('called-200'),
+      Paths.processInstanceDetails({processInstanceId: 'called-200'}),
     );
   });
 
-  it('should not navigate when there are multiple called instances', async () => {
+  it('should not navigate when the clicked element has multiple called instances', async () => {
     const calledInstances = [
       createProcessInstance({processInstanceKey: 'called-200'}),
       createProcessInstance({processInstanceKey: 'called-201'}),
     ];
 
+    mockResolvedCallActivityElement();
     mockSearchProcessInstances().withSuccess(searchResult(calledInstances, 2));
 
     const {result} = renderHook(
@@ -99,7 +173,59 @@ describe('useDrillDownNavigation', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it('should not navigate when the clicked element itself is ambiguous (e.g. multi-instance)', async () => {
+    mockSearchElementInstances().withSuccess(
+      searchResult(
+        [
+          createElementInstance({elementInstanceKey: 'element-instance-a'}),
+          createElementInstance({elementInstanceKey: 'element-instance-b'}),
+        ],
+        2,
+      ),
+    );
+    // No handler registered for the process-instances search: if the hook
+    // incorrectly fell through to it, the request would fail and surface as
+    // an error toast instead of a silent no-navigate.
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
+  });
+
+  it('should scope the called-instance lookup to the clicked call activity, not the whole process instance', async () => {
+    mockResolvedCallActivityElement();
+    const getRequestBody = mockCapturedRequestBody(
+      endpoints.queryProcessInstances.getUrl(),
+      searchResult(
+        [createProcessInstance({processInstanceKey: 'called-200'})],
+        1,
+      ),
+    );
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
+    });
+
+    expect(getRequestBody()).toMatchObject({
+      filter: {parentElementInstanceKey: CALL_ACTIVITY_ELEMENT_INSTANCE_KEY},
+    });
+  });
+
   it('should show error toast when process API call fails', async () => {
+    mockResolvedCallActivityElement();
     mockSearchProcessInstances().withServerError();
 
     const {result} = renderHook(
@@ -120,6 +246,7 @@ describe('useDrillDownNavigation', () => {
   });
 
   it('should navigate to the decision instance when there is exactly one', async () => {
+    mockResolvedBusinessRuleTaskElement();
     mockSearchDecisionInstances().withSuccess(
       createDecisionSearchResult([
         {
@@ -138,7 +265,7 @@ describe('useDrillDownNavigation', () => {
           processDefinitionKey: 'proc-def-1',
           processInstanceKey: PROCESS_INSTANCE_KEY,
           rootProcessInstanceKey: null,
-          elementInstanceKey: 'el-inst-1',
+          elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY,
           rootDecisionDefinitionKey: 'def-1',
         },
       ]),
@@ -161,7 +288,52 @@ describe('useDrillDownNavigation', () => {
     );
   });
 
+  it('should scope the called-decision lookup to the clicked business rule task, not the whole process instance', async () => {
+    mockResolvedBusinessRuleTaskElement();
+    const getRequestBody = mockCapturedRequestBody(
+      endpoints.queryDecisionInstances.getUrl(),
+      createDecisionSearchResult([
+        {
+          decisionEvaluationInstanceKey: 'dec-100',
+          decisionEvaluationKey: 'dec-eval-100',
+          state: 'EVALUATED',
+          evaluationDate: '2024-01-01T00:00:00.000+0000',
+          evaluationFailure: null,
+          decisionDefinitionId: 'risk-assessment',
+          decisionDefinitionName: 'Risk Assessment',
+          decisionDefinitionVersion: 1,
+          decisionDefinitionType: 'DECISION_TABLE',
+          decisionDefinitionKey: 'def-1',
+          result: '',
+          tenantId: '<default>',
+          processDefinitionKey: 'proc-def-1',
+          processInstanceKey: PROCESS_INSTANCE_KEY,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY,
+          rootDecisionDefinitionKey: 'def-1',
+        },
+      ]),
+    );
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(
+        BUSINESS_RULE_TASK_ID,
+        'bpmn:BusinessRuleTask',
+      );
+    });
+
+    expect(getRequestBody()).toMatchObject({
+      filter: {elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY},
+    });
+  });
+
   it('should not navigate when there are multiple decision instances', async () => {
+    mockResolvedBusinessRuleTaskElement();
     mockSearchDecisionInstances().withSuccess(
       createDecisionSearchResult(
         [
@@ -181,7 +353,7 @@ describe('useDrillDownNavigation', () => {
             processDefinitionKey: 'proc-def-1',
             processInstanceKey: PROCESS_INSTANCE_KEY,
             rootProcessInstanceKey: null,
-            elementInstanceKey: 'el-inst-1',
+            elementInstanceKey: BUSINESS_RULE_TASK_ELEMENT_INSTANCE_KEY,
             rootDecisionDefinitionKey: 'def-1',
           },
         ],
@@ -205,6 +377,7 @@ describe('useDrillDownNavigation', () => {
   });
 
   it('should show error toast when decision API call fails', async () => {
+    mockResolvedBusinessRuleTaskElement();
     mockSearchDecisionInstances().withServerError();
 
     const {result} = renderHook(
