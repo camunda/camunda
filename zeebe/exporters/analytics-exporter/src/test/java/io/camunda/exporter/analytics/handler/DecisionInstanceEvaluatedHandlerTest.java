@@ -11,6 +11,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.TestOtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -142,5 +143,10 @@ class DecisionInstanceEvaluatedHandlerTest {
                     .allSatisfy(point -> assertThat(point.getValue()).isEqualTo(1))
                     .extracting(point -> point.getAttributes().get(ID))
                     .containsExactlyInAnyOrder("tenant-a", "tenant-b"));
+  }
+
+  @Test
+  void shouldReturnCorrectCategory() {
+    assertThat(handler.category()).isEqualTo(AnalyticsCategory.CONTRACTUAL);
   }
 }

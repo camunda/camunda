@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.TestOtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -81,5 +82,13 @@ class TenantDeletedHandlerTest {
                   .doesNotContain("Tenant for the ACME account")
                   .doesNotContain("john.doe@example.com");
             });
+  }
+
+  @Test
+  void shouldReturnCorrectCategory() {
+    final var handler =
+        new TenantDeletedHandler(TestOtelSdkManager.inMemory(InMemoryLogRecordExporter.create()));
+
+    assertThat(handler.category()).isEqualTo(AnalyticsCategory.CONTRACTUAL);
   }
 }
