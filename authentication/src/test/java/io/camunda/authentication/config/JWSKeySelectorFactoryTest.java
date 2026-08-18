@@ -294,7 +294,9 @@ final class JWSKeySelectorFactoryTest {
     // when
     final JWKSource<SecurityContext> jwkSource = factory.createJWKSource(jwkSetUri);
 
-    // then the outer source refreshes ahead of expiry instead of Nimbus's default blocking cache
+    // then the outer source refreshes ahead of expiry, matching Nimbus's own default (the
+    // removed .refreshAheadCache(false) override, copied from Spring's
+    // NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder, was what had disabled it)
     assertThat(jwkSource).isInstanceOf(JWKSetBasedJWKSource.class);
     final JWKSetSource<SecurityContext> outer =
         ((JWKSetBasedJWKSource<SecurityContext>) jwkSource).getJWKSetSource();

@@ -143,10 +143,13 @@ public class JWSKeySelectorFactory {
             JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS,
             JWK_SOURCE_HTTP_READ_TIMEOUT_MS,
             JWKSourceBuilder.DEFAULT_HTTP_SIZE_LIMIT);
-    // refreshAheadCache(true): refresh happens ahead of expiry, off the request path, so
-    // concurrent lookups are served the still-valid cached keys instead of blocking on a
-    // synchronous refetch. outageTolerant is deliberately left at Nimbus's default (false): a
-    // cache that is genuinely expired with no successful refresh still fails closed.
+    // refreshAheadCache(true) matches Nimbus's own default (true); the previous
+    // refreshAheadCache(false) here was an explicit override copied from Spring's
+    // NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder#jwkSource, and that override — not a Nimbus
+    // default — is what made refresh run synchronously on the request path. Restoring the
+    // default means concurrent lookups are served the still-valid cached keys instead of
+    // blocking on a synchronous refetch. outageTolerant is deliberately left at Nimbus's default
+    // (false): a cache that is genuinely expired with no successful refresh still fails closed.
     return JWKSourceBuilder.create(jwkSetUri, retriever)
         .refreshAheadCache(true)
         .rateLimited(false)
