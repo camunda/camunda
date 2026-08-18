@@ -16,6 +16,8 @@ import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
+import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -211,6 +213,109 @@ class GenericExporterIsolationValidationTest {
         .satisfies(e -> assertThat(countOccurrences(e.getMessage(), "es|shared")).isEqualTo(1));
   }
 
+  @Test
+  void shouldRejectAMergerThatMutatesTheArgsItIsGiven() {
+    // given a merger that writes into the args map it is handed — which is the resolved
+    // configuration object graph itself
+    final GenericExporterIsolationValidation mutating =
+        new GenericExporterIsolationValidation(
+            () ->
+                List.of(
+                    new ExporterConfigMerger() {
+                      @Override
+                      public boolean supports(final String c) {
+                        return MERGED_CLASS.equals(c);
+                      }
+
+                      @Override
+                      public Map<String, Object> merge(
+                          final Map<String, Object> rootArgs,
+                          final Map<String, Object> tenantArgs) {
+                        return tenantArgs;
+                      }
+
+                      @Override
+                      public Set<ExporterIsolationClaim> isolationClaims(
+                          final Map<String, Object> args) {
+                        args.put("indexKey", "hijacked");
+                        return Set.of();
+                      }
+                    }));
+    final IdentifiedExporter entry = exporter("esaudit", MERGED_CLASS, "es|a", null);
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+            camunda(entry),
+            "tenantb",
+            camunda(exporter("esaudit", MERGED_CLASS, "es|b", null)));
+
+    // when / then the write is refused and reported as a configuration error naming the entry,
+    // and the tenant's resolved args are left exactly as configured
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> mutating.validate(resolved))
+        .withMessageContaining("esaudit")
+        .withMessageContaining("tenanta");
+    assertThat(entry.exporter().getArgs()).containsEntry("indexKey", "es|a");
+  }
+
+  @Test
+  void shouldNotBeAffectedByAMergerMutatingTheIdentityItReturned() {
+    // given a merger that hands out a mutable identity map and later edits the one it already
+    // returned — the identity is used as a grouping key, so an unfrozen map would move the entry
+    // out from under its own hash and the collision would go unreported
+    final GenericExporterIsolationValidation leaky =
+        new GenericExporterIsolationValidation(() -> List.of(new IdentityMutatingMerger()));
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", camunda(exporter("esaudit", MERGED_CLASS, "es|shared", null)),
+            "tenantb", camunda(exporter("esaudit", MERGED_CLASS, "es|shared", null)));
+
+    // when / then the collision is still detected
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> leaky.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldReportAMergerThatFailsWhileDeclaringItsClaims() {
+    // given a merger whose isolationClaims throws
+    final GenericExporterIsolationValidation failing =
+        new GenericExporterIsolationValidation(
+            () ->
+                List.of(
+                    new ExporterConfigMerger() {
+                      @Override
+                      public boolean supports(final String c) {
+                        return MERGED_CLASS.equals(c);
+                      }
+
+                      @Override
+                      public Map<String, Object> merge(
+                          final Map<String, Object> rootArgs,
+                          final Map<String, Object> tenantArgs) {
+                        return tenantArgs;
+                      }
+
+                      @Override
+                      public Set<ExporterIsolationClaim> isolationClaims(
+                          final Map<String, Object> args) {
+                        throw new IllegalStateException("intentional test claim failure");
+                      }
+                    }));
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", camunda(exporter("esaudit", MERGED_CLASS, "es|a", null)),
+            "tenantb", camunda(exporter("esaudit", MERGED_CLASS, "es|b", null)));
+
+    // when / then the failure surfaces as a configuration error naming the offending entry
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> failing.validate(resolved))
+        .withMessageContaining("esaudit")
+        .withMessageContaining("tenanta")
+        .withCauseInstanceOf(IllegalStateException.class);
+  }
+
   // --- helpers -----------------------------------------------------------------------------------
 
   /**
@@ -298,4 +403,32 @@ class GenericExporterIsolationValidationTest {
 
   /** An {@link Exporter} paired with the id it should occupy in a tenant's exporter map. */
   private record IdentifiedExporter(String id, Exporter exporter) {}
+
+  /**
+   * Returns a fresh <em>mutable</em> identity per call and, from the second call on, edits the map
+   * it returned previously — the worst case a defensive copy of the identity has to survive.
+   */
+  private static final class IdentityMutatingMerger implements ExporterConfigMerger {
+
+    private final List<Map<String, Object>> handedOut = new ArrayList<>();
+
+    @Override
+    public boolean supports(final String className) {
+      return MERGED_CLASS.equals(className);
+    }
+
+    @Override
+    public Map<String, Object> merge(
+        final Map<String, Object> rootArgs, final Map<String, Object> tenantArgs) {
+      return tenantArgs;
+    }
+
+    @Override
+    public Set<ExporterIsolationClaim> isolationClaims(final Map<String, Object> args) {
+      handedOut.forEach(identity -> identity.put("id", "mutated-after-the-fact"));
+      final Map<String, Object> identity = new HashMap<>(Map.of("id", args.get("indexKey")));
+      handedOut.add(identity);
+      return Set.of(new ExporterIsolationClaim(INDEX, identity, "index write target"));
+    }
+  }
 }

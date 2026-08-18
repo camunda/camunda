@@ -22,11 +22,11 @@ import org.jspecify.annotations.NullMarked;
  * ExporterIsolationClaim}s directly.
  *
  * <p>Each key is a structured map of already-normalized fields (no fragile delimiter join): urls
- * are stripped of a trailing slash, lowercased and sorted; the index prefix is taken as-is; the
- * lifecycle-policy name is taken as-is (policy names are case-sensitive on both engines). Values
- * are used verbatim otherwise — the application consumes them unmodified, so the identity must too.
- * Normalization mirrors {@code StorageIdentity} so every physical-tenant isolation rule agrees on
- * what "the same cluster" means.
+ * are trimmed, stripped of a trailing slash, lowercased and sorted; the index prefix is taken
+ * as-is; the lifecycle-policy name is taken as-is (policy names are case-sensitive on both
+ * engines). Values are used verbatim otherwise — the application consumes them unmodified, so the
+ * identity must too. Normalization mirrors {@code StorageIdentity} so every physical-tenant
+ * isolation rule agrees on what "the same cluster" means.
  */
 @NullMarked
 public final class ExporterIsolationClaims {
@@ -81,7 +81,9 @@ public final class ExporterIsolationClaims {
   }
 
   private static String normalizeUrl(final String url) {
-    String normalized = url;
+    // trim first, exactly as StorageIdentity does: a stray space around a url must not make two
+    // exporters look like they point at different clusters
+    String normalized = url.trim();
     if (normalized.endsWith("/")) {
       normalized = normalized.substring(0, normalized.length() - 1);
     }

@@ -104,7 +104,7 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
                               claim ->
                                   tenantsByResource
                                       .computeIfAbsent(
-                                          new ResourceIdentity(claim.domain(), claim.identity()),
+                                          ResourceIdentity.of(claim),
                                           k -> new ClaimedResource(claim.description()))
                                       .tenants()
                                       .add(tenantId));
@@ -145,11 +145,22 @@ final class GenericExporterIsolationValidation implements CrossTenantValidation 
       // no class name, or a class shipping no merger: nothing to introspect — skip, do not guess
       return Set.of();
     }
-    return merger.isolationClaims(exporter.getArgs() == null ? Map.of() : exporter.getArgs());
+    return ExporterArgsMergers.isolationClaims(merger, exporter.getArgs(), context);
   }
 
   /** The collision identity of a claimed resource: exporters collide iff both fields are equal. */
-  private record ResourceIdentity(String domain, Map<String, Object> identity) {}
+  private record ResourceIdentity(String domain, Map<String, Object> identity) {
+
+    /**
+     * Freezes the identity a merger returned: it becomes part of a map key here, and the SPI does
+     * not promise an immutable map, so a merger holding on to what it returned could otherwise
+     * change this key's {@code hashCode} out from under the grouping.
+     */
+    static ResourceIdentity of(final ExporterIsolationClaim claim) {
+      return new ResourceIdentity(
+          claim.domain(), ExporterArgsMergers.immutableCopy(claim.identity()));
+    }
+  }
 
   /** The tenants claiming one resource, plus a human rendering of it for the error message. */
   private record ClaimedResource(String description, Set<String> tenants) {

@@ -96,6 +96,37 @@ final class CamundaExporterConfigMergerTest {
   }
 
   @Test
+  void shouldFallBackToSingleUrlWhenConnectUrlsHasNoUsableEntry() {
+    // given — a urls list that yields nothing usable (blank entries); without a fallback the claim
+    // would carry an empty connection and every such exporter would look like it shares a cluster
+    final Map<String, Object> args =
+        Map.of("connect", Map.of("urls", List.of("", "   "), "url", "http://es-fallback:9200"));
+
+    // when
+    final ExporterIsolationClaim index =
+        only(merger.isolationClaims(args), ExporterIsolationClaims.INDEX_WRITE_TARGET_DOMAIN);
+
+    // then the single url is used instead
+    assertThat(index.description()).contains("http://es-fallback:9200");
+  }
+
+  @Test
+  void shouldClaimTheSameTargetRegardlessOfSurroundingWhitespaceInAUrl() {
+    // given — the same cluster written with and without stray whitespace and a trailing slash
+    final ExporterIsolationClaim padded =
+        only(
+            merger.isolationClaims(Map.of("connect", Map.of("url", "  http://es-a:9200/  "))),
+            ExporterIsolationClaims.INDEX_WRITE_TARGET_DOMAIN);
+    final ExporterIsolationClaim plain =
+        only(
+            merger.isolationClaims(Map.of("connect", Map.of("url", "http://es-a:9200"))),
+            ExporterIsolationClaims.INDEX_WRITE_TARGET_DOMAIN);
+
+    // when / then the identities are equal, so the two collide
+    assertThat(padded.identity()).isEqualTo(plain.identity());
+  }
+
+  @Test
   void shouldClaimIndexWriteTargetWithConnectDefaultsWhenArgsOmitThem() {
     // given — empty args: the destination must come from ConnectConfiguration's own defaults
     // when

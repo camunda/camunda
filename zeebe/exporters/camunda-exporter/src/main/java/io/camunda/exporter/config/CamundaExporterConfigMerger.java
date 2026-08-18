@@ -65,10 +65,20 @@ public final class CamundaExporterConfigMerger implements ExporterConfigMerger {
   }
 
   private static List<String> urls(final Map<?, ?> connect, final String defaultUrl) {
-    // connect carries both a `urls` list and a single `url`; prefer the list when set (mirroring
-    // StorageIdentity.connectionOf), otherwise fall back to the single url or its default
-    if (connect.get("urls") instanceof final List<?> list && !list.isEmpty()) {
-      return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+    // connect carries both a `urls` list and a single `url`; prefer the list, but only when it
+    // actually yields a usable url — an empty or blank-only list must fall back to `url` rather
+    // than collapse the claim's connection to nothing, which would make unrelated exporters look
+    // like they share a cluster (mirroring StorageIdentity.connectionOf)
+    if (connect.get("urls") instanceof final List<?> list) {
+      final List<String> usable =
+          list.stream()
+              .filter(String.class::isInstance)
+              .map(String.class::cast)
+              .filter(url -> !url.isBlank())
+              .toList();
+      if (!usable.isEmpty()) {
+        return usable;
+      }
     }
     return List.of(stringOrDefault(connect.get("url"), defaultUrl));
   }
