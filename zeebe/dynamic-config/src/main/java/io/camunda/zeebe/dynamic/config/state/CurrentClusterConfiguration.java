@@ -124,6 +124,23 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Whether the cluster uses zone awareness throughout: every broker is assigned to a zone and the
+   * partition distributor is zone-aware. A cluster where only one of the two holds is mid-migration
+   * between the two modes rather than fully zone-aware.
+   *
+   * <p>Both are global state, so this reads the same fields {@link
+   * ClusterConfiguration#isFullyZoneAware()} does — the projection through {@link
+   * #toLegacyDefault()} that method needs is not.
+   */
+  public boolean isFullyZoneAware() {
+    return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() != null)
+        && globalConfiguration
+            .partitionDistributorConfig()
+            .filter(ZoneAwareConfig.class::isInstance)
+            .isPresent();
+  }
+
+  /**
    * Creates an empty configuration with an initial global configuration and no partition groups.
    */
   public static CurrentClusterConfiguration init() {

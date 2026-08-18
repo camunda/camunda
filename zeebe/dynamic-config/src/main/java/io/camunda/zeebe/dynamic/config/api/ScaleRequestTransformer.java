@@ -86,18 +86,17 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
               new IllegalArgumentException(
                   "Cannot reassign partitions if no brokers are provided")));
     }
-    final var legacy = configuration.toLegacyDefault();
-    if (legacy.isFullyZoneAware() && members.stream().anyMatch(MemberId::isBare)) {
+    if (configuration.isFullyZoneAware() && members.stream().anyMatch(MemberId::isBare)) {
       return Either.left(
           new InvalidRequest(
               "Members without a zone cannot be added to a zone-aware cluster: "
                   + members.stream().filter(MemberId::isBare).sorted().toList()));
     }
 
-    final var currentMembers = legacy.members().keySet();
+    final var currentMembers = configuration.getMembers();
     final var joining =
         members.stream()
-            .filter(member -> !legacy.hasMember(member))
+            .filter(member -> !currentMembers.contains(member))
             .sorted()
             .map(member -> (GlobalChangeOperation) new MemberJoinOperation(member))
             .toList();
@@ -113,7 +112,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     final var scalingExecutor =
         currentMembers.equals(members)
             ? Optional.<MemberId>empty()
-            : selectPrePostScalingExecutor(legacy);
+            : selectPrePostScalingExecutor(currentMembers);
 
     final var before = new ArrayList<GlobalChangeOperation>();
     scalingExecutor.ifPresent(id -> before.add(new PreScalingOperation(id, members)));
@@ -152,6 +151,13 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     return phases;
   }
 
+  /**
+   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
+   * partition group alone. Every caller has moved to {@code phases} except {@link
+   * ZoneMigrationRequestTransformer}, which still plans through here, so this cannot be dropped
+   * until <a href="https://github.com/camunda/camunda/issues/60341">zone migration</a> is planned
+   * across every physical tenant too.
+   */
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
@@ -206,17 +212,19 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   private Optional<MemberId> selectPrePostScalingExecutor(
       final ClusterConfiguration clusterConfiguration) {
+    return selectPrePostScalingExecutor(clusterConfiguration.members().keySet());
+  }
+
+  private Optional<MemberId> selectPrePostScalingExecutor(final Set<MemberId> currentMembers) {
     final var coordinatorSupplier =
-        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
+        ClusterConfigurationCoordinatorSupplier.ofMembers(currentMembers);
     if (zone.isEmpty()) {
       return Optional.of(coordinatorSupplier.getDefaultCoordinator());
     }
     final var zoneName = zone.get();
     final var membersInZone =
         // pick a member from the current set of members
-        clusterConfiguration.members().keySet().stream()
-            .filter(m -> m.isInZone(zoneName))
-            .collect(Collectors.toSet());
+        currentMembers.stream().filter(m -> m.isInZone(zoneName)).collect(Collectors.toSet());
     if (membersInZone.isEmpty()) {
       // New zone with no existing brokers: the callbacks cannot run in the correct zone and the
       // new zone's brokers create their node-id leases on startup, so skip pre/post scaling.
