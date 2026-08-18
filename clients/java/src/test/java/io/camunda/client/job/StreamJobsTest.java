@@ -138,6 +138,23 @@ public final class StreamJobsTest extends ClientTest {
   }
 
   @Test
+  public void shouldSurfaceLeaseTokenOnStreamedJob() {
+    // given - a leased job pushed over the stream, as a gateway would send when the stream was
+    // opened with withLease(true)
+    final List<io.camunda.client.api.response.ActivatedJob> receivedJobs = new ArrayList<>();
+    final ActivatedJob activatedJob =
+        ActivatedJob.newBuilder().setKey(12).setType("foo").setLeaseToken("lease-token-1").build();
+    gatewayService.onStreamJobsRequest(activatedJob);
+
+    // when
+    client.newStreamJobsCommand().jobType("foo").consumer(receivedJobs::add).send().join();
+
+    // then
+    assertThat(receivedJobs).hasSize(1);
+    assertThat(receivedJobs.get(0).getLeaseToken()).isEqualTo("lease-token-1");
+  }
+
+  @Test
   public void shouldSetTimeoutFromDuration() {
     // given
     final Duration timeout = Duration.ofMinutes(2);
