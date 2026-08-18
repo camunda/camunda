@@ -54,6 +54,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
   private static final String CLUSTER_VARIABLES_TENANT = "camunda.client.cluster-variables.tenant";
   private static final String CLUSTER_VARIABLES_VARIABLES =
       "camunda.client.cluster-variables.variables";
+  private static final String CLUSTER_VARIABLES_LEGACY_SOURCE = "cluster-variables-legacy";
   private static final Map<AuthMethod, Set<String>> IMPLICIT_AUTH_METHOD_INDICATORS;
 
   static {
@@ -125,6 +126,11 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
   }
 
   private void mapLegacyClusterVariables(final ConfigurableEnvironment environment) {
+    if (environment.getPropertySources().contains(CLUSTER_VARIABLES_LEGACY_SOURCE)) {
+      // Spring Cloud bootstrap runs EnvironmentPostProcessors twice; the legacy source added on
+      // the first pass would otherwise be mistaken for a user-configured 'variables' property.
+      return;
+    }
     final Binder binder = Binder.get(environment);
     if (!binder.bind(CLUSTER_VARIABLES_ENABLED, Boolean.class).orElse(true)) {
       return;
@@ -191,7 +197,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
                             mapped, index[0]++, String.valueOf(name), value, tenantId));
           });
     }
-    addMapPropertySourceFirst("cluster-variables-legacy", mapped, environment);
+    addMapPropertySourceFirst(CLUSTER_VARIABLES_LEGACY_SOURCE, mapped, environment);
   }
 
   private static void putClusterVariable(

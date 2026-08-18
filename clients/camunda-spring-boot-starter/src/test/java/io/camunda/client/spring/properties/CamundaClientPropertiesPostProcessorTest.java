@@ -184,6 +184,30 @@ public class CamundaClientPropertiesPostProcessorTest {
     }
 
     @Test
+    void shouldBeIdempotentAcrossRepeatedPostProcessing() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.global.propVar1", "propValue1")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.cluster-variables.variables[0].name"))
+          .isEqualTo("propVar1");
+      assertThat(environment.getProperty("camunda.client.cluster-variables.variables[1].name"))
+          .isNull();
+    }
+
+    @Test
     void shouldSkipLegacyMappingWhenDisabled() {
       // given
       final StandardEnvironment environment = new StandardEnvironment();
