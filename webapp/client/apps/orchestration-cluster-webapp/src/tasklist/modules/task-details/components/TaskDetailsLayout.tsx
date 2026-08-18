@@ -92,63 +92,70 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 		/>
 	);
 
+	// DS-only: the "Task details" trigger used to sit in the tabs row, next to
+	// the tab list. Moved into TaskDetailsHeader's right-hand container so it
+	// can sit beside the assignee tag instead — see TaskDetailsHeader's
+	// `detailsButton` prop for where it actually renders. <Sheet> itself has
+	// to wrap this trigger AND <SheetContent> below from a common ancestor
+	// (Radix context), even though they now render in different places; it
+	// renders no DOM of its own, so wrapping the whole layout in it is free.
+	const detailsButton = showAsideInSheet ? (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<SheetTrigger asChild>
+						<Button variant="ghost" size="icon-sm" aria-label={t('tasklist.taskDetailsPanelTooltip')}>
+							<Info aria-hidden />
+						</Button>
+					</SheetTrigger>
+				</TooltipTrigger>
+				<TooltipContent>{t('tasklist.taskDetailsPanelTooltip')}</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	) : null;
+
 	return (
 		<div
 			className={cn(layoutStyles.container, showAsideInSheet && layoutStyles.containerNoAsideColumnDS)}
 			data-testid="details-info"
 		>
-			<Section className={layoutStyles.content} level={2}>
-				<TurnOnNotificationPermission />
-				<TaskDetailsHeader
-					taskName={task.name ?? task.elementId}
-					processName={task.processName ?? task.processDefinitionId}
-					assignee={task.assignee ?? null}
-					taskState={task.state}
-					user={currentUser}
-					assignButton={assignButton}
-				/>
-				{featureFlags.dsTasklistUI ? (
-					<div className={layoutStyles.tabsRowDS}>
+			<Sheet>
+				<Section className={layoutStyles.content} level={2}>
+					<TurnOnNotificationPermission />
+					<TaskDetailsHeader
+						taskName={task.name ?? task.elementId}
+						processName={task.processName ?? task.processDefinitionId}
+						assignee={task.assignee ?? null}
+						taskState={task.state}
+						user={currentUser}
+						assignButton={assignButton}
+						detailsButton={detailsButton}
+					/>
+					{featureFlags.dsTasklistUI ? (
+						<div className={layoutStyles.tabsRowDS}>
+							<TabListNav label={t('tasklist.taskDetailsNavLabel')} items={tabs} />
+						</div>
+					) : (
 						<TabListNav label={t('tasklist.taskDetailsNavLabel')} items={tabs} />
-						{showAsideInSheet ? (
-							<Sheet>
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<SheetTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon-sm"
-													aria-label={t('tasklist.taskDetailsPanelTooltip')}
-												>
-													<Info aria-hidden />
-												</Button>
-											</SheetTrigger>
-										</TooltipTrigger>
-										<TooltipContent>{t('tasklist.taskDetailsPanelTooltip')}</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-								<SheetContent side="right" showCloseButton={false}>
-									<SheetHeader className="flex-row items-center justify-between">
-										<SheetTitle>{t('tasklist.taskDetailsDetailsLabel')}</SheetTitle>
-										<SheetClose asChild>
-											<Button variant="ghost" size="icon-sm">
-												<XIcon aria-hidden />
-												<span className="sr-only">{t('tasklist.optionsModalCloseButton')}</span>
-											</Button>
-										</SheetClose>
-									</SheetHeader>
-									{aside}
-								</SheetContent>
-							</Sheet>
-						) : null}
-					</div>
-				) : (
-					<TabListNav label={t('tasklist.taskDetailsNavLabel')} items={tabs} />
-				)}
-				{children}
-			</Section>
-			{showAsideInSheet ? null : aside}
+					)}
+					{showAsideInSheet ? (
+						<SheetContent side="right" showCloseButton={false}>
+							<SheetHeader className="flex-row items-center justify-between">
+								<SheetTitle>{t('tasklist.taskDetailsDetailsLabel')}</SheetTitle>
+								<SheetClose asChild>
+									<Button variant="ghost" size="icon-sm">
+										<XIcon aria-hidden />
+										<span className="sr-only">{t('tasklist.optionsModalCloseButton')}</span>
+									</Button>
+								</SheetClose>
+							</SheetHeader>
+							{aside}
+						</SheetContent>
+					) : null}
+					{children}
+				</Section>
+				{showAsideInSheet ? null : aside}
+			</Sheet>
 		</div>
 	);
 };

@@ -98,6 +98,25 @@
 	align-items: center;
 }
 
+// DS-only (see TaskDetailsHeader.tsx's detailsButton prop). Rendered first in
+// DOM, ahead of the assignee tag/assign button, so it sits to the tag's left
+// by default (no order override needed above `lg` — plain DOM order). Below
+// `lg` (see .taskAssigneeDS/.assignButtonContainerDS above — same
+// breakpoint), the tag and assign button flip to order 2/1; this pushes the
+// details button to order 3 so it lands on the tag's right instead, per
+// explicit request.
+.detailsButtonContainer {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+
+	&.detailsButtonContainerDS {
+		@media (width < 64rem) {
+			order: 3;
+		}
+	}
+}
+
 // DS-only (see TaskDetailsHeader.tsx). Below `md` the task list and task
 // detail are separate single-pane views (TasksLayoutPage.tsx); this is the
 // way back. Negative margin-left cancels the button's own horizontal

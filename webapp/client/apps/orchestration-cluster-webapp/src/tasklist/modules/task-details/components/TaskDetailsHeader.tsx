@@ -34,10 +34,26 @@ type Props = {
 		| 'CANCELING'
 		| 'CREATING';
 	assignButton: React.ReactNode;
+	/**
+	 * DS-only: the "Task details" trigger (opens the Aside panel below `xl`,
+	 * see TaskDetailsLayout.tsx). Rendered ahead of the assignee tag/assign
+	 * button so it sits to their left by default, and to the assignee tag's
+	 * right once they drop to their own row below `lg` — see
+	 * .detailsButtonContainerDS in TaskDetailsHeader.module.scss.
+	 */
+	detailsButton?: React.ReactNode;
 	user: CurrentUser;
 };
 
-const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, taskState, user, assignButton}) => {
+const TaskDetailsHeader: React.FC<Props> = ({
+	taskName,
+	processName,
+	assignee,
+	taskState,
+	user,
+	assignButton,
+	detailsButton,
+}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	// DS-only: below `md` (--breakpoint-md, 48rem/768px) the task list and
@@ -151,6 +167,11 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 					featureFlags.dsTasklistUI && layoutStyles.headerRightContainerResponsiveDS,
 				)}
 			>
+				{detailsButton ? (
+					<span className={cn(styles.detailsButtonContainer, featureFlags.dsTasklistUI && styles.detailsButtonContainerDS)}>
+						{detailsButton}
+					</span>
+				) : null}
 				{renderRightContent()}
 			</div>
 		</header>
