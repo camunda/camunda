@@ -76,6 +76,20 @@ public class AgentInstanceMapper {
             fillLimits(request.getLimits(), record.getLimits());
           }
 
+          if (request.getJobKey() != null) {
+            record.setJobKey(Long.parseLong(request.getJobKey()));
+          }
+
+          if (request.getJobLease() != null) {
+            record.setJobLease(request.getJobLease());
+          }
+
+          if (request.getHistory() != null) {
+            for (final AgentInstanceHistoryItem historyItem : request.getHistory()) {
+              record.addHistoryItem(mapHistoryItem(historyItem));
+            }
+          }
+
           return record;
         });
   }
@@ -140,21 +154,26 @@ public class AgentInstanceMapper {
       final AgentInstanceRecord record) {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
+        .createdHistory(toCreatedHistory(record))
         .build();
   }
 
   public AgentInstanceUpdateResult toAgentInstanceUpdateResult(final AgentInstanceRecord record) {
-    final List<AgentInstanceCreatedHistoryItem> createdHistory =
-        record.getHistory().stream()
-            .map(
-                item ->
-                    AgentInstanceCreatedHistoryItem.Builder.create()
-                        .historyItemId(item.getHistoryItemId())
-                        .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
-                        .isDuplicate(item.isDuplicate())
-                        .build())
-            .collect(Collectors.toList());
-    return AgentInstanceUpdateResult.Builder.create().createdHistory(createdHistory).build();
+    return AgentInstanceUpdateResult.Builder.create()
+        .createdHistory(toCreatedHistory(record))
+        .build();
+  }
+
+  private List<AgentInstanceCreatedHistoryItem> toCreatedHistory(final AgentInstanceRecord record) {
+    return record.getHistory().stream()
+        .map(
+            item ->
+                AgentInstanceCreatedHistoryItem.Builder.create()
+                    .historyItemId(item.getHistoryItemId())
+                    .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
+                    .isDuplicate(item.isDuplicate())
+                    .build())
+        .collect(Collectors.toList());
   }
 
   public Either<ProblemDetail, AgentHistoryRecord> toCreateAgentHistoryRecord(

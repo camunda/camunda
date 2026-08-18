@@ -71,6 +71,20 @@ public class AgentInstanceRequestValidator {
             violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
           }
 
+          if (request.getJobKey() != null) {
+            validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
+          }
+
+          if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+            if (request.getJobKey() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+            }
+
+            for (int i = 0; i < request.getHistory().size(); i++) {
+              validateHistoryItem(i, request.getHistory().get(i), violations);
+            }
+          }
+
           return violations;
         });
   }
