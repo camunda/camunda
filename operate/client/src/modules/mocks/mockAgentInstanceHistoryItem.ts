@@ -24,6 +24,12 @@ function mockAgentInstanceHistoryItem(
     metrics: null,
     commitStatus: 'COMMITTED',
     producedAt: '2025-01-15T10:00:00.000Z',
+    historyItemId: 'history-item-id-1',
+    limits: {maxModelCalls: -1, maxToolCalls: -1, maxTokens: -1},
+    model: null,
+    provider: null,
+    systemPrompt: [],
+    tools: [],
     ...overwrites,
   };
 }

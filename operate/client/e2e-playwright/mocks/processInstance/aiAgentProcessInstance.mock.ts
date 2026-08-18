@@ -11,6 +11,7 @@ import type {InstanceMock} from '.';
 const PROCESS_INSTANCE_KEY = '2251799813700001';
 const PROCESS_DEFINITION_KEY = '2251799813700000';
 
+const AGENT_DEFINITION_KEY = '2251799813700030';
 const AGENT_INSTANCE_KEY_1 = '2251799813700020';
 const AGENT_INSTANCE_KEY_2 = '2251799813700021';
 const AI_AGENT_ELEMENT_INSTANCE_KEY_1 = '2251799813700010';
@@ -231,6 +232,7 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
     items: [
       {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
+        agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'THINKING',
         definition: agentDefinition,
         metrics: {
@@ -289,6 +291,12 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         },
         commitStatus: 'COMMITTED',
         producedAt: '2025-01-15T10:03:47.000Z',
+        historyItemId: 'history-item-id-3',
+        limits: {maxModelCalls: -1, maxTokens: -1, maxToolCalls: -1},
+        model: null,
+        provider: null,
+        systemPrompt: [],
+        tools: [],
       },
       {
         historyItemKey: '2251799813700032',
@@ -341,6 +349,12 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         metrics: null,
         commitStatus: 'COMMITTED',
         producedAt: '2025-01-15T10:02:47.000Z',
+        historyItemId: 'history-item-id-2',
+        limits: {maxModelCalls: -1, maxTokens: -1, maxToolCalls: -1},
+        model: null,
+        provider: null,
+        systemPrompt: [],
+        tools: [],
       },
       {
         historyItemKey: '2251799813700031',
@@ -378,6 +392,12 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         },
         commitStatus: 'COMMITTED',
         producedAt: '2025-01-15T10:02:45.000Z',
+        historyItemId: 'history-item-id-1',
+        limits: {maxModelCalls: -1, maxTokens: -1, maxToolCalls: -1},
+        model: null,
+        provider: null,
+        systemPrompt: [],
+        tools: [],
       },
       {
         historyItemKey: '2251799813700030',
@@ -470,6 +490,12 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         metrics: null,
         commitStatus: 'COMMITTED',
         producedAt: '2025-01-15T10:00:01.000Z',
+        historyItemId: 'history-item-id-0',
+        limits: {maxModelCalls: -1, maxTokens: -1, maxToolCalls: -1},
+        model: null,
+        provider: null,
+        systemPrompt: [],
+        tools: [],
       },
     ],
     page: {
@@ -591,6 +617,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
     items: [
       {
         agentInstanceKey: AGENT_INSTANCE_KEY_1,
+        agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'INITIALIZING',
         definition: agentDefinition,
         metrics: {
@@ -616,6 +643,7 @@ const agentProcessWithTwoActiveInstances: InstanceMock = {
       },
       {
         agentInstanceKey: AGENT_INSTANCE_KEY_2,
+        agentDefinitionKey: AGENT_DEFINITION_KEY,
         status: 'INITIALIZING',
         definition: agentDefinition,
         metrics: {

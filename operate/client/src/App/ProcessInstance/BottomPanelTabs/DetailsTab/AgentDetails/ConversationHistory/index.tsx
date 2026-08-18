@@ -135,7 +135,8 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               <Fragment key={iteration}>
                 {sortOrder === 'asc' && loopIterationNode}
                 {items.map((item) =>
-                  item.role === 'TOOL_RESULT' ? (
+                  item.role === 'CONFIGURATION' ? null : item.role ===
+                    'TOOL_RESULT' ? (
                     <ToolResultMessage
                       key={item.historyItemKey}
                       availableTools={availableTools}
