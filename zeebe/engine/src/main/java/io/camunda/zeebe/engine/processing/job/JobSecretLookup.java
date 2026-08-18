@@ -205,26 +205,35 @@ public final class JobSecretLookup {
    * what makes tracking both possible in one pass, at a cost of one key lookup per segment.
    */
   private static Walked deepestExisting(final JsonNode document, final JsonPointer pointer) {
-    JsonNode current = document;
-    ObjectNode parentIfObject = null;
+    JsonNode node = document;
+    // the object directly above `node`, or null when `node` sits under a scalar or array and so
+    // can't be written back to by key; recomputed on each descent
+    ObjectNode writableParent = null;
     for (JsonPointer remaining = pointer; !remaining.matches(); remaining = remaining.tail()) {
-      if (!current.isContainerNode()) {
+      if (!node.isContainerNode()) {
         // a scalar occupies this path already; the remaining segments have nothing to descend into
-        return new Walked(current, null);
+        return new Walked(node, null);
       }
-      parentIfObject = current.isObject() ? (ObjectNode) current : null;
-      final JsonNode next =
-          current.isArray()
-              ? current.get(remaining.getMatchingIndex())
-              : current.get(remaining.getMatchingProperty());
-      if (next == null) {
+      writableParent = node.isObject() ? (ObjectNode) node : null;
+      final JsonNode child = childOf(node, remaining);
+      if (child == null) {
         // an object missing the key is unset; an array is never writable, whether or not the
         // index exists - fail closed by scanning the array itself instead of treating it as absent
-        return new Walked(current.isArray() ? current : null, null);
+        return new Walked(node.isArray() ? node : null, null);
       }
-      current = next;
+      node = child;
     }
-    return new Walked(current, parentIfObject);
+    return new Walked(node, writableParent);
+  }
+
+  /**
+   * The child the pointer's leading segment selects from {@code container}: by index when it is an
+   * array, by property name when it is an object. {@code null} when no such child exists.
+   */
+  private static @Nullable JsonNode childOf(final JsonNode container, final JsonPointer segment) {
+    return container.isArray()
+        ? container.get(segment.getMatchingIndex())
+        : container.get(segment.getMatchingProperty());
   }
 
   /**
