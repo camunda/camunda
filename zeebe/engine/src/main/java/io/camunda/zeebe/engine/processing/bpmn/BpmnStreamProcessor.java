@@ -260,7 +260,7 @@ public final class BpmnStreamProcessor
       final List<ExecutionListener> beforeAllListeners =
           multiInstanceBody.getBeforeAllExecutionListeners();
       if (!beforeAllListeners.isEmpty()) {
-        return createExecutionListenerJob(context, beforeAllListeners.getFirst());
+        return createExecutionListenerJob(context, element, beforeAllListeners.getFirst());
       }
     }
 
@@ -316,16 +316,19 @@ public final class BpmnStreamProcessor
       return finalizer.apply(element, context);
     }
 
-    return createExecutionListenerJob(context, listeners.getFirst());
+    return createExecutionListenerJob(context, element, listeners.getFirst());
   }
 
   private Either<Failure, ?> createExecutionListenerJob(
-      final BpmnElementContext context, final ExecutionListener listener) {
+      final BpmnElementContext context,
+      final ExecutableFlowElement element,
+      final ExecutionListener listener) {
     return jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .thenDo(
             elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(context, elJobProperties, listener));
+                jobBehavior.createNewExecutionListenerJob(
+                    context, elJobProperties, listener, element));
   }
 
   /**
@@ -395,7 +398,7 @@ public final class BpmnStreamProcessor
     final Optional<ExecutionListener> nextListener =
         findNextExecutionListener(listeners, currentListenerIndex);
     return nextListener.isPresent()
-        ? createExecutionListenerJob(context, nextListener.get())
+        ? createExecutionListenerJob(context, element, nextListener.get())
         : finalizer.apply(element, context);
   }
 

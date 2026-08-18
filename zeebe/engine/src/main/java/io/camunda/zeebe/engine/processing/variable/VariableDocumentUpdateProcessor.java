@@ -182,7 +182,11 @@ public final class VariableDocumentUpdateProcessor
       if (firstTaskListener.isPresent()) {
         final var listener = firstTaskListener.get();
         jobBehavior.createNewTaskListenerJob(
-            buildContext(scope), userTaskRecord, listener, userTaskRecord.getChangedAttributes());
+            buildContext(scope),
+            userTaskRecord,
+            userTaskElement,
+            listener,
+            userTaskRecord.getChangedAttributes());
         return;
       }
 
