@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prom-els-exporter
+  namespace: c8-golden-stable-89-opensearch-stable
   labels:
 
     app.kubernetes.io/name: prometheus-elasticsearch-exporter
@@ -45,7 +46,7 @@ spec:
       containers:
         - name: exporter
           env:
-          image: "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter:v1.10.0"
+          image: "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter:v1.11.0"
           imagePullPolicy: IfNotPresent
           command: ["elasticsearch_exporter",
                     "--log.format=json",
