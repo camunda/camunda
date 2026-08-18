@@ -57,12 +57,19 @@ final class VariableInputMappingTransformerTest {
         "{'a':{'b':1, 'c':2}}"
       },
       {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
-      // a mapping reads the PARTIAL object an earlier a.* mapping built so far, not the outer
-      // scope's "a"
+      // a nested target shadows the outer scope's "a" only for the key it defines; the mapping that
+      // reads "a" gets that key layered over the outer scope's value, not instead of it
       {
         List.of(mapping("x", "a.b"), mapping("a", "c")),
         Map.of("x", asMsgPack("1"), "a", asMsgPack("{'z':99}")),
-        "{'a':{'b':1}, 'c':{'b':1}}"
+        "{'a':{'b':1}, 'c':{'b':1, 'z':99}}"
+      },
+      // narrowing an object onto its own name is an identity copy for the fields it names, not a
+      // last-one-wins race between them — issue #59646
+      {
+        List.of(mapping("x.a", "x.a"), mapping("x.b", "x.b")),
+        Map.of("x", asMsgPack("{'a':1, 'b':2}")),
+        "{'x':{'a':1, 'b':2}}"
       },
       // nested source
       {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
