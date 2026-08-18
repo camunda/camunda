@@ -135,6 +135,7 @@ public class ConfigurationService {
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
   private String digestCronTrigger;
   private EntityConfiguration entityConfiguration;
+  private BusinessValueConfiguration businessValueConfiguration;
   private CsvConfiguration csvConfiguration;
   private Properties quartzProperties;
   // history cleanup
@@ -997,6 +998,21 @@ public class ConfigurationService {
 
   public void setEntityConfiguration(final EntityConfiguration entityConfiguration) {
     this.entityConfiguration = entityConfiguration;
+  }
+
+  public BusinessValueConfiguration getBusinessValueConfiguration() {
+    if (businessValueConfiguration == null) {
+      businessValueConfiguration =
+          configJsonContext.read(
+              ConfigurationServiceConstants.BUSINESS_VALUE_CONFIGURATION,
+              BusinessValueConfiguration.class);
+    }
+    return businessValueConfiguration;
+  }
+
+  public void setBusinessValueConfiguration(
+      final BusinessValueConfiguration businessValueConfiguration) {
+    this.businessValueConfiguration = businessValueConfiguration;
   }
 
   public CsvConfiguration getCsvConfiguration() {

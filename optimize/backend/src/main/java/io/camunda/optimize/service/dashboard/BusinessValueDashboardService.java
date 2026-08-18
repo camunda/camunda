@@ -45,6 +45,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -190,6 +192,7 @@ public class BusinessValueDashboardService {
   }
 
   @EventListener(ApplicationReadyEvent.class)
+  @Order(Ordered.HIGHEST_PRECEDENCE)
   public void init() {
     if (configurationService.getEntityConfiguration().getCreateOnStartup()) {
       LOG.info("Reconciling Business Value dashboard");
