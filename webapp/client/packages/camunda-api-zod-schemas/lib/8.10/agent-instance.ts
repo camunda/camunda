@@ -61,6 +61,7 @@ type AgentTool = z.infer<typeof agentToolSchema>;
 
 const agentInstanceSchema = z.object({
 	agentInstanceKey: z.string(),
+	agentDefinitionKey: z.string(),
 	status: agentInstanceStatusSchema,
 	definition: agentInstanceDefinitionSchema,
 	metrics: agentInstanceMetricsSchema,
@@ -84,6 +85,7 @@ type AgentInstance = z.infer<typeof agentInstanceSchema>;
 const agentInstanceFilterSchema = z
 	.object({
 		agentInstanceKey: basicStringFilterSchema,
+		agentDefinitionKey: basicStringFilterSchema,
 		status: getEnumFilterSchema(agentInstanceStatusSchema),
 		elementId: basicStringFilterSchema,
 		processInstanceKey: basicStringFilterSchema,
@@ -104,6 +106,7 @@ type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
 const queryAgentInstancesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
 		'agentInstanceKey',
+		'agentDefinitionKey',
 		'status',
 		'elementId',
 		'processInstanceKey',
@@ -124,7 +127,7 @@ type QueryAgentInstancesResponseBody = z.infer<typeof queryAgentInstancesRespons
 const getAgentInstanceResponseBodySchema = agentInstanceSchema;
 type GetAgentInstanceResponseBody = z.infer<typeof getAgentInstanceResponseBodySchema>;
 
-const agentInstanceHistoryRoleSchema = z.enum(['USER', 'ASSISTANT', 'TOOL_RESULT']);
+const agentInstanceHistoryRoleSchema = z.enum(['USER', 'ASSISTANT', 'TOOL_RESULT', 'CONFIGURATION']);
 type AgentInstanceHistoryRole = z.infer<typeof agentInstanceHistoryRoleSchema>;
 
 const agentInstanceHistoryCommitStatusSchema = z.enum(['COMMITTED', 'PENDING', 'DISCARDED']);
@@ -144,7 +147,7 @@ type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentS
 
 const agentInstanceObjectContentSchema = z.object({
 	contentType: z.literal('OBJECT'),
-	object: z.record(z.string(), z.unknown()),
+	object: z.unknown(),
 });
 type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
 
@@ -172,6 +175,7 @@ type AgentInstanceHistoryItemMetrics = z.infer<typeof agentInstanceHistoryItemMe
 
 const agentInstanceHistoryItemSchema = z.object({
 	historyItemKey: z.string(),
+	historyItemId: z.string(),
 	agentInstanceKey: z.string(),
 	elementInstanceKey: z.string(),
 	jobKey: z.string(),
@@ -183,6 +187,11 @@ const agentInstanceHistoryItemSchema = z.object({
 	metrics: agentInstanceHistoryItemMetricsSchema.nullable(),
 	commitStatus: agentInstanceHistoryCommitStatusSchema,
 	producedAt: z.string(),
+	tools: z.array(agentToolSchema),
+	model: z.string().nullable(),
+	provider: z.string().nullable(),
+	limits: agentInstanceLimitsSchema,
+	systemPrompt: z.array(agentInstanceMessageContentSchema),
 });
 type AgentInstanceHistoryItem = z.infer<typeof agentInstanceHistoryItemSchema>;
 
