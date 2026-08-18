@@ -39,11 +39,48 @@ public sealed interface ClusterConfigurationManagementRequest {
   record RemoveMembersRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record JoinPartitionRequest(MemberId memberId, int partitionId, int priority, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+  /**
+   * Adds a member to one partition's replication group, or changes the priority it already
+   * replicates that partition with.
+   *
+   * @param partitionId the partition within {@code physicalTenantId}'s partition group. Partition
+   *     ids restart at 1 in every physical tenant, so this identifies a partition only together
+   *     with the tenant.
+   * @param physicalTenantId the physical tenant whose partition to join, or empty for the default
+   *     physical tenant. A single partition belongs to exactly one tenant, so an absent id cannot
+   *     mean "every tenant" here, unlike the requests that address a whole cluster.
+   */
+  record JoinPartitionRequest(
+      MemberId memberId,
+      int partitionId,
+      int priority,
+      Optional<String> physicalTenantId,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
 
-  record LeavePartitionRequest(MemberId memberId, int partitionId, boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+    public JoinPartitionRequest {
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
+    }
+  }
+
+  /**
+   * Removes a member from one partition's replication group.
+   *
+   * @param partitionId the partition within {@code physicalTenantId}'s partition group. Partition
+   *     ids restart at 1 in every physical tenant, so this identifies a partition only together
+   *     with the tenant.
+   * @param physicalTenantId the physical tenant whose partition to leave, or empty for the default
+   *     physical tenant. A single partition belongs to exactly one tenant, so an absent id cannot
+   *     mean "every tenant" here, unlike the requests that address a whole cluster.
+   */
+  record LeavePartitionRequest(
+      MemberId memberId, int partitionId, Optional<String> physicalTenantId, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+
+    public LeavePartitionRequest {
+      physicalTenantId.ifPresent(assertNonEmpty("physicalTenantId"));
+    }
+  }
 
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

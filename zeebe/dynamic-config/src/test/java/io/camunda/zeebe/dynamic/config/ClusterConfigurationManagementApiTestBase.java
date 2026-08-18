@@ -410,7 +410,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of())));
-    final var request = new JoinPartitionRequest(memberFactory.apply(1), 1, 3, false);
+    final var request =
+        new JoinPartitionRequest(memberFactory.apply(1), 1, 3, Optional.empty(), false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
@@ -432,7 +433,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 memberFactory.apply(1),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, partitionConfig)))));
-    final var request = new LeavePartitionRequest(memberFactory.apply(1), 1, false);
+    final var request =
+        new LeavePartitionRequest(memberFactory.apply(1), 1, Optional.empty(), false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();

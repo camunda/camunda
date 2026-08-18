@@ -63,10 +63,14 @@ paths:
       description: Adds the broker to the replication group of the given partition, replicating it
         with the requested priority. If the broker already replicates the partition, only its
         priority is changed. The broker must be running to complete the operation.
+        Partition ids restart at 1 in every physical tenant, so the partition is resolved within
+        the physical tenant named by physicalTenant, or within the default physical tenant when
+        the parameter is absent.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
         - $ref: '#/components/parameters/PartitionId'
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
       requestBody:
         required: true
         content:
@@ -78,6 +82,8 @@ paths:
           $ref: '#/components/responses/JoinPartitionResponse'
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
         '409':
           $ref: 'components.yaml#/responses/ConcurrentChangeError'
         '500':
@@ -91,15 +97,21 @@ paths:
       description: Removes the broker from the replication group of the given partition. The
         partition must keep at least one replica, so the last remaining replica cannot be removed.
         The broker must be running to complete the operation.
+        Partition ids restart at 1 in every physical tenant, so the partition is resolved within
+        the physical tenant named by physicalTenant, or within the default physical tenant when
+        the parameter is absent.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
         - $ref: '#/components/parameters/PartitionId'
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
       responses:
         '202':
           $ref: '#/components/responses/LeavePartitionResponse'
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
         '409':
           $ref: 'components.yaml#/responses/ConcurrentChangeError'
         '500':
@@ -279,7 +291,7 @@ paths:
               $ref: "components.yaml#/schemas/RoutingState"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
-        - $ref: '#/components/parameters/RoutingStatePhysicalTenantParameter'
+        - $ref: '#/components/parameters/DefaultingPhysicalTenantParameter'
       responses:
         '202':
           description: Accepted
@@ -480,7 +492,7 @@ components:
       required: false
       schema:
         $ref: 'components.yaml#/schemas/PhysicalTenantId'
-    RoutingStatePhysicalTenantParameter:
+    DefaultingPhysicalTenantParameter:
       name: physicalTenant
       description: Id of the physical tenant to target. If not specified, the default physical tenant is targeted,
         not every physical tenant - unlike the other operations taking this parameter.

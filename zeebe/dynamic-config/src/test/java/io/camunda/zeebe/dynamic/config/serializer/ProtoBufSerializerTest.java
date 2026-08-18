@@ -231,7 +231,8 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodeJoinPartitionRequest() {
     // given
-    final var joinPartitionRequest = new JoinPartitionRequest(MemberId.from("2"), 3, 5, false);
+    final var joinPartitionRequest =
+        new JoinPartitionRequest(MemberId.from("2"), 3, 5, Optional.empty(), false);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeJoinPartitionRequest(joinPartitionRequest);
@@ -244,7 +245,8 @@ final class ProtoBufSerializerTest {
   @Test
   void shouldEncodeAndDecodeLeavePartitionRequest() {
     // given
-    final var leavePartitionRequest = new LeavePartitionRequest(MemberId.from("6"), 2, false);
+    final var leavePartitionRequest =
+        new LeavePartitionRequest(MemberId.from("6"), 2, Optional.empty(), false);
 
     // when
     final var encodedRequest =

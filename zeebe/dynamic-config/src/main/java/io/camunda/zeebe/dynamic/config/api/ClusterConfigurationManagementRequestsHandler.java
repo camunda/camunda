@@ -88,7 +88,8 @@ public final class ClusterConfigurationManagementRequestsHandler
         new JoinPartitionRequestTransformer(
             joinPartitionRequest.memberId(),
             joinPartitionRequest.partitionId(),
-            joinPartitionRequest.priority()));
+            joinPartitionRequest.priority(),
+            joinPartitionRequest.physicalTenantId()));
   }
 
   @Override
@@ -97,7 +98,9 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         leavePartitionRequest.dryRun(),
         new LeavePartitionRequestTransformer(
-            leavePartitionRequest.memberId(), leavePartitionRequest.partitionId()));
+            leavePartitionRequest.memberId(),
+            leavePartitionRequest.partitionId(),
+            leavePartitionRequest.physicalTenantId()));
   }
 
   @Override

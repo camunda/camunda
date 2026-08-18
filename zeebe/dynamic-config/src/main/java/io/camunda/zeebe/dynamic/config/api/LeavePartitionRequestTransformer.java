@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -19,8 +20,12 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-/** Removes a broker from one partition's replication group. */
+/**
+ * Removes a broker from one partition's replication group, in a single physical tenant's partition
+ * group.
+ */
 public final class LeavePartitionRequestTransformer implements ConfigurationChangeRequest {
 
   /**
@@ -31,10 +36,13 @@ public final class LeavePartitionRequestTransformer implements ConfigurationChan
 
   private final MemberId memberId;
   private final int partitionId;
+  private final Optional<String> physicalTenantId;
 
-  public LeavePartitionRequestTransformer(final MemberId memberId, final int partitionId) {
+  public LeavePartitionRequestTransformer(
+      final MemberId memberId, final int partitionId, final Optional<String> physicalTenantId) {
     this.memberId = memberId;
     this.partitionId = partitionId;
+    this.physicalTenantId = physicalTenantId;
   }
 
   @Override
@@ -49,11 +57,21 @@ public final class LeavePartitionRequestTransformer implements ConfigurationChan
   @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
+    if (physicalTenantId.isPresent()
+        && !clusterConfiguration.hasPartitionGroup(physicalTenantId.get())) {
+      return Either.left(
+          new NotFound(
+              "Expected to leave partition %d of physical tenant '%s', but the physical tenant does not exist"
+                  .formatted(partitionId, physicalTenantId.get())));
+    }
+
     final List<PartitionGroupOperation> operations =
         List.of(new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS));
     return Either.right(
         List.of(
             new PartitionGroupParallelPhase(
-                Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, operations))));
+                Map.of(
+                    physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP),
+                    operations))));
   }
 }
