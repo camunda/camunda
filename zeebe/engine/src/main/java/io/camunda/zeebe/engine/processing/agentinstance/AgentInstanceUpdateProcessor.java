@@ -200,8 +200,10 @@ public final class AgentInstanceUpdateProcessor
 
     final var validJob =
         historyBatchHelper.validateJobContext(
-            commandValue.getJobKey(), commandValue.getJobLease(),
-            commandValue.getElementInstanceKey(), commandValue.getHistory());
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(),
+            commandValue.getHistory());
     if (validJob.isLeft()) {
       final var rejection = validJob.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());

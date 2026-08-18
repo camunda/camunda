@@ -48,21 +48,22 @@ public final class AgentHistoryBatchBehavior {
           AgentInstanceRecord.ATTR_MAX_TOOL_CALLS);
 
   static final String ERROR_MSG_HISTORY_ITEM_ID_MISSING =
-      "Expected to process history item at index %d, but historyItemId is missing (got empty "
-          + "string). Every history item must have a non-empty historyItemId.";
+      "Expected to add history item at index %d to agent instance, but historyItemId is missing "
+          + "(got empty string). Each history item must have a non-empty historyItemId.";
   static final String ERROR_MSG_ROLE_UNSPECIFIED =
-      "Expected to process history item with historyItemId '%s', but its role is UNSPECIFIED. "
-          + "Every history item must declare a role.";
+      "Expected to add history item with historyItemId '%s' to agent instance, but its role is "
+          + "UNSPECIFIED. Each history item must declare a role.";
   static final String ERROR_MSG_LOOP_ITERATION_MISSING =
-      "Expected to process history item with historyItemId '%s', but loopIteration is missing "
-          + "(got %d). Every history item must declare a positive loopIteration.";
+      "Expected to add history item with historyItemId '%s' to agent instance, but loopIteration "
+          + "is missing (got %d). Each history item must declare a positive loopIteration.";
   static final String ERROR_MSG_JOB_NOT_ACTIVE =
-      "Expected job with key '%d' to be active, but it was not.";
+      "Expected to update agent instance related to job with key '%d', but job was not active.";
   static final String ERROR_MSG_JOB_LEASE_MISMATCH =
-      "Expected job with key '%d' to hold the supplied lease, but it did not match. The job may "
-          + "have been re-activated.";
+      "Expected to update agent instance related to job with key '%d', but job did not hold the "
+          + "supplied lease. The job may have been re-activated.";
   static final String ERROR_MSG_JOB_ELEMENT_MISMATCH =
-      "Expected job '%d' to be associated with element instance '%d', but it is associated with element instance '%d'";
+      "Expected to update agent instance related to job with key '%d', but job belongs to element "
+          + "instance '%d' instead of the requested element instance '%d'.";
   static final String ERROR_MSG_JOB_REQUIRED_FOR_HISTORY =
       "Expected a job to be provided for the embedded history batch, but no jobKey was set."
           + " A history batch must be attributed to the active job that produced it.";
@@ -123,7 +124,7 @@ public final class AgentHistoryBatchBehavior {
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
               ERROR_MSG_JOB_ELEMENT_MISMATCH.formatted(
-                  jobKey, elementInstanceKey, jobElementInstanceKey)));
+                  jobKey, jobElementInstanceKey, elementInstanceKey)));
     }
 
     return Either.right(job);

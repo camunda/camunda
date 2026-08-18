@@ -230,8 +230,8 @@ public class AgentHistoryCreateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            ("Expected job with key '%d' to hold the supplied lease, but it did not match. The job "
-                    + "may have been re-activated.")
+            ("Expected to update agent instance related to job with key '%d', but job did "
+                    + "not hold the supplied lease. The job may have been re-activated.")
                 .formatted(job.key()));
   }
 
@@ -261,8 +261,8 @@ public class AgentHistoryCreateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            ("Expected job with key '%d' to hold the supplied lease, but it did not match. The job "
-                    + "may have been re-activated.")
+            ("Expected to update agent instance related to job with key '%d', but job did "
+                    + "not hold the supplied lease. The job may have been re-activated.")
                 .formatted(job.key()));
   }
 

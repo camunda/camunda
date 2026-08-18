@@ -98,8 +98,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to process history item at index 1, but historyItemId is missing (got "
-                + "empty string). Every history item must have a non-empty historyItemId.");
+            "Expected to add history item at index 1 to agent instance, but historyItemId is "
+                + "missing (got empty string). Each history item must have a non-empty "
+                + "historyItemId.");
   }
 
   @Test
@@ -123,8 +124,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to process history item with historyItemId 'item-1', but its role is "
-                + "UNSPECIFIED. Every history item must declare a role.");
+            "Expected to add history item with historyItemId 'item-1' to agent instance, but its "
+                + "role is UNSPECIFIED. Each history item must declare a role.");
   }
 
   @Test
@@ -150,8 +151,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to process history item with historyItemId 'item-1', but loopIteration is "
-                + "missing (got 0). Every history item must declare a positive loopIteration.");
+            "Expected to add history item with historyItemId 'item-1' to agent instance, but "
+                + "loopIteration is missing (got 0). Each history item must declare a positive "
+                + "loopIteration.");
   }
 
   @Test
@@ -206,7 +208,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
-        .isEqualTo("Expected job with key '999999999' to be active, but it was not.");
+        .isEqualTo(
+            "Expected to update agent instance related to job with key '999999999', but job was "
+                + "not active.");
   }
 
   @Test
@@ -263,9 +267,9 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected job with key '"
+            "Expected to update agent instance related to job with key '"
                 + jobKey
-                + "' to hold the supplied lease, but it did not match. The job may have been "
+                + "', but job did not hold the supplied lease. The job may have been "
                 + "re-activated.");
   }
 
