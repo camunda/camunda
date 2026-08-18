@@ -70,6 +70,15 @@ class AnalyticsExporterContextTest {
   }
 
   @Test
+  void shouldNormalizeNullPhysicalTenantIdToEmptyString() {
+    // given / when — a broker context that (unexpectedly) supplies no physical tenant id
+    final var ctx = AnalyticsExporterContext.create("test-license", "cluster-1", 1, null, "");
+
+    // then — never null, so OTel attribute setters always receive a valid String
+    assertThat(ctx.physicalTenantId()).isEmpty();
+  }
+
+  @Test
   void shouldRejectMissingLicenseKey() {
     // when / then
     assertThatThrownBy(

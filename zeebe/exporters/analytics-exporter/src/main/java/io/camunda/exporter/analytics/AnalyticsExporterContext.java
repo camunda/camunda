@@ -71,7 +71,12 @@ public final class AnalyticsExporterContext {
       final var signer = Mac.getInstance(HMAC_SHA_256);
       signer.init(new SecretKeySpec(keyBytes, HMAC_SHA_256));
       return new AnalyticsExporterContext(
-          fingerprint, clusterId, partitionId, physicalTenantId, signer, exporterDigest);
+          fingerprint,
+          clusterId,
+          partitionId,
+          physicalTenantId == null ? "" : physicalTenantId,
+          signer,
+          exporterDigest);
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(
           "JVM does not support required crypto algorithms (SHA-256 or HmacSHA256)", e);
@@ -95,7 +100,8 @@ public final class AnalyticsExporterContext {
   /**
    * Returns the physical-tenant id of the broker this exporter instance runs on. Static for the
    * lifetime of the exporter instance (one exporter instance is started per physical-tenant per
-   * partition), unlike the logical tenant id which varies per record.
+   * partition), unlike the logical tenant id which varies per record. Never {@code null} —
+   * normalized to an empty string in {@link #create} if the broker context ever supplies one.
    */
   String physicalTenantId() {
     return physicalTenantId;

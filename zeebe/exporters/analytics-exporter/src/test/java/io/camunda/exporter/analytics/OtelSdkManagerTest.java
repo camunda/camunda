@@ -569,6 +569,27 @@ class OtelSdkManagerTest {
     }
 
     @Test
+    void shouldNotDuplicatePhysicalTenantIdWhenCallerAlreadySetIt() {
+      // given — dimensions that (defensively, or via a future refactor) already carry the
+      // attribute with the same value OtelSdkManager would stamp itself
+      final var dimensions = Attributes.of(PHYSICAL_ID, "test-physical-tenant");
+
+      // when
+      manager.incrementMetric("test.counter", 100L, 1000L, dimensions);
+
+      // then — the value is preserved, not overwritten or duplicated
+      assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
+          .hasValueSatisfying(
+              metric ->
+                  assertThat(metric.getLongSumData().getPoints())
+                      .first()
+                      .satisfies(
+                          point ->
+                              assertThat(point.getAttributes().get(PHYSICAL_ID))
+                                  .isEqualTo("test-physical-tenant")));
+    }
+
+    @Test
     void shouldEmitExportWindowGaugeWithMetadata() {
       // given
       manager.incrementMetric("test.counter", 100L, 5000L, Attributes.empty());

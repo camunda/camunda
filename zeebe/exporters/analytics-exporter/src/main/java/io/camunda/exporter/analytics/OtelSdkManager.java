@@ -166,8 +166,20 @@ public class OtelSdkManager implements AutoCloseable {
       final Attributes dimensions) {
     counters
         .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
-        .add(1, dimensions.toBuilder().put(PHYSICAL_ID, physicalTenantId).build());
+        .add(1, withPhysicalTenantId(dimensions));
     metricWindow.record(position, eventTimeMs);
+  }
+
+  /**
+   * Merges {@link AnalyticsAttributes.Tenant#PHYSICAL_ID} into the given attributes. Skips the
+   * copy-on-write rebuild if it's already present with the current value, so a caller that already
+   * stamped it (defensively, or via a future refactor) doesn't pay for a redundant copy.
+   */
+  private Attributes withPhysicalTenantId(final Attributes attributes) {
+    if (physicalTenantId.equals(attributes.get(PHYSICAL_ID))) {
+      return attributes;
+    }
+    return attributes.toBuilder().put(PHYSICAL_ID, physicalTenantId).build();
   }
 
   // Performance: collectAndExport() runs on the partition thread. Benchmarked at ~0.2ms for 50
@@ -201,9 +213,7 @@ public class OtelSdkManager implements AutoCloseable {
               final long seq = metadata.incrementAndGetMetricSequenceNumber();
               measurement.record(
                   metricWindow.eventCount(),
-                  metricWindow.toGaugeAttributes(seq).toBuilder()
-                      .put(PHYSICAL_ID, physicalTenantId)
-                      .build());
+                  withPhysicalTenantId(metricWindow.toGaugeAttributes(seq)));
               metricWindow.reset();
             });
   }
