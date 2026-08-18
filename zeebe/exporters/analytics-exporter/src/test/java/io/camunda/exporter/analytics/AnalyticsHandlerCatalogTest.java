@@ -70,12 +70,12 @@ class AnalyticsHandlerCatalogTest {
     assertThat(registry.registrations())
         .contains(
             Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
             Map.entry(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
             Map.entry(ValueType.TENANT, TenantIntent.CREATED),
             Map.entry(ValueType.TENANT, TenantIntent.DELETED),
             Map.entry(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED))
         .doesNotContain(
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
             Map.entry(ValueType.INCIDENT, IncidentIntent.CREATED),
             Map.entry(ValueType.PROCESS, ProcessIntent.CREATED),
             Map.entry(ValueType.DECISION, DecisionIntent.CREATED),
@@ -96,6 +96,7 @@ class AnalyticsHandlerCatalogTest {
     // then — optional handlers present, contractual handlers absent
     assertThat(registry.registrations())
         .contains(
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
             Map.entry(ValueType.INCIDENT, IncidentIntent.CREATED),
             Map.entry(ValueType.INCIDENT, IncidentIntent.RESOLVED),
             Map.entry(ValueType.PROCESS, ProcessIntent.CREATED),
@@ -108,7 +109,6 @@ class AnalyticsHandlerCatalogTest {
             Map.entry(ValueType.AGENT_INSTANCE, AgentInstanceIntent.COMPLETED))
         .doesNotContain(
             Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED),
             Map.entry(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
             Map.entry(ValueType.TENANT, TenantIntent.CREATED),
             Map.entry(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED));

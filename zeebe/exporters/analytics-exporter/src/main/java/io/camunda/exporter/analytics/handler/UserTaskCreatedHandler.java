@@ -35,7 +35,7 @@ public final class UserTaskCreatedHandler implements AnalyticsHandler<UserTaskRe
 
   @Override
   public AnalyticsCategory category() {
-    return AnalyticsCategory.CONTRACTUAL;
+    return AnalyticsCategory.OPTIONAL;
   }
 
   @Override
