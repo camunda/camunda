@@ -8,6 +8,7 @@
 
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +57,7 @@ final class ZoneMigrationRequestTransformerTest {
 
     // when
     final var result =
-        new ZoneMigrationRequestTransformer(ZONE_A).operations(configUpdatedTopology);
+        plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), configUpdatedTopology);
     assertThat(result).isRight();
     assertThat(result.get())
         // check is unordered because member ordering between runs is not stable
@@ -102,7 +103,7 @@ final class ZoneMigrationRequestTransformerTest {
     final var oldTopology = setZoneAwareConfig(unzonedTopology(4, 2, 4), DUAL_REGION);
 
     // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_B).operations(oldTopology);
+    final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_B), oldTopology);
 
     // then
     assertThat(result).isRight();
@@ -178,7 +179,7 @@ final class ZoneMigrationRequestTransformerTest {
     final var alreadyZoned = migrate(setZoneAwareConfig(unzonedTopology(3, 3, 3), zones), ZONE_A);
 
     // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_A).operations(alreadyZoned);
+    final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), alreadyZoned);
 
     // then
     assertThat(result)
@@ -198,7 +199,7 @@ final class ZoneMigrationRequestTransformerTest {
     final var oldTopology = unzonedTopology(3, 3, 3);
 
     // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_A).operations(oldTopology);
+    final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), oldTopology);
 
     // then
     assertThat(result)
@@ -219,7 +220,7 @@ final class ZoneMigrationRequestTransformerTest {
         unzonedTopology(3, 3, 3).setPartitionDistributorConfig(new RoundRobinConfig());
 
     // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_A).operations(oldTopology);
+    final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), oldTopology);
 
     // then
     assertThat(result)
@@ -241,7 +242,7 @@ final class ZoneMigrationRequestTransformerTest {
 
     // when
     final var result =
-        new ZoneMigrationRequestTransformer(ZONE_B).operations(afterSecondaryMigration);
+        plannedOperations(new ZoneMigrationRequestTransformer(ZONE_B), afterSecondaryMigration);
 
     // then
     assertThat(result)
@@ -261,7 +262,7 @@ final class ZoneMigrationRequestTransformerTest {
     final var topology = setZoneAwareConfig(unzonedTopology(4, 2, 4), DUAL_REGION);
 
     // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_A).operations(topology);
+    final var result = plannedOperations(new ZoneMigrationRequestTransformer(ZONE_A), topology);
 
     // then
     assertThat(result)
@@ -282,7 +283,8 @@ final class ZoneMigrationRequestTransformerTest {
     final var topology = setZoneAwareConfig(unzonedTopology(4, 2, 4), DUAL_REGION);
 
     // when
-    final var result = new ZoneMigrationRequestTransformer("unknown-zone").operations(topology);
+    final var result =
+        plannedOperations(new ZoneMigrationRequestTransformer("unknown-zone"), topology);
 
     // then
     assertThat(result)
@@ -298,7 +300,8 @@ final class ZoneMigrationRequestTransformerTest {
 
   private ClusterConfiguration migrate(
       final ClusterConfiguration oldTopology, final String zoneName) {
-    final var result = new ZoneMigrationRequestTransformer(zoneName).operations(oldTopology);
+    final var result =
+        plannedOperations(new ZoneMigrationRequestTransformer(zoneName), oldTopology);
     assertThat(result).isRight();
     return TestTopologyChangeSimulator.apply(oldTopology, result.get());
   }
@@ -324,7 +327,8 @@ final class ZoneMigrationRequestTransformerTest {
   private ClusterConfiguration setZoneAwareConfig(
       final ClusterConfiguration topology, final List<ZoneSpec> zones) {
     final var result =
-        new UpdatePartitionDistributionTransformer(new ZoneAwareConfig(zones)).operations(topology);
+        plannedOperations(
+            new UpdatePartitionDistributionTransformer(new ZoneAwareConfig(zones)), topology);
     assertThat(result).isRight();
     return TestTopologyChangeSimulator.apply(topology, result.get());
   }
@@ -412,40 +416,6 @@ final class ZoneMigrationRequestTransformerTest {
 
   @Nested
   class Phases {
-
-    /**
-     * A single-tenant cluster must plan exactly the migration it planned before {@code phases()}
-     * existed, so this compares the two directly rather than re-deriving an expected plan: the
-     * phases the multi-group path builds against the phases {@code toPhases} derives from the
-     * legacy flat operation list. Any divergence in operation content, ordering, or phase
-     * boundaries fails it.
-     */
-    @Test
-    void shouldPlanTheSameSingleRegionMigrationAsTheLegacyPath() {
-      shouldPlanTheSameMigrationAsTheLegacyPath(unzonedTopology(3, 3, 3), SINGLE_REGION, ZONE_A);
-    }
-
-    @Test
-    void shouldPlanTheSameDualRegionStageAsTheLegacyPath() {
-      shouldPlanTheSameMigrationAsTheLegacyPath(unzonedTopology(4, 2, 4), DUAL_REGION, ZONE_B);
-    }
-
-    private void shouldPlanTheSameMigrationAsTheLegacyPath(
-        final ClusterConfiguration topology,
-        final List<ZoneSpec> zones,
-        final String migratedZone) {
-      // given
-      final var legacy = setZoneAwareConfig(topology, zones);
-      final var transformer = new ZoneMigrationRequestTransformer(migratedZone);
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(legacy));
-
-      // then
-      assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(legacy).get()));
-    }
 
     /**
      * A stage replaces every broker of one zone, so leaving a tenant out does not merely deny it

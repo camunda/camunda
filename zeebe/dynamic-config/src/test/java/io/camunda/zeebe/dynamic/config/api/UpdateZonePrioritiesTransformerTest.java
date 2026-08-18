@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -63,7 +64,7 @@ final class UpdateZonePrioritiesTransformerTest {
 
     // when requesting order [zone-b, zone-a]  (zone-b should now be leader)
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A)), config);
 
     // then the persisted config keeps the SAME priority values {3,1} but re-assigned
     EitherAssert.assertThat(result).isRight();
@@ -91,7 +92,7 @@ final class UpdateZonePrioritiesTransformerTest {
 
     // when a zone is unknown / set mismatch
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_C)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_C)), config);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -105,7 +106,7 @@ final class UpdateZonePrioritiesTransformerTest {
   void shouldRejectDuplicateZoneInRequest() {
     final var config = zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1));
     final var result =
-        new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_A)).operations(config);
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A, ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
@@ -115,7 +116,8 @@ final class UpdateZonePrioritiesTransformerTest {
   @Test
   void shouldRejectIncompleteZoneList() {
     final var config = zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1));
-    final var result = new UpdateZonePrioritiesTransformer(List.of(ZONE_A)).operations(config);
+    final var result =
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
@@ -127,7 +129,8 @@ final class UpdateZonePrioritiesTransformerTest {
   void shouldRejectWhenNotZoneAware() {
     // given a non-zone-aware cluster (no PartitionDistributorConfig persisted)
     final var config = ClusterConfiguration.init();
-    final var result = new UpdateZonePrioritiesTransformer(List.of(ZONE_A)).operations(config);
+    final var result =
+        plannedOperations(new UpdateZonePrioritiesTransformer(List.of(ZONE_A)), config);
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(InvalidRequest.class)
@@ -137,25 +140,6 @@ final class UpdateZonePrioritiesTransformerTest {
 
   @Nested
   class Phases {
-
-    /**
-     * A single-tenant cluster must plan exactly the change it planned before {@code phases()}
-     * existed, so this compares the two directly rather than re-deriving an expected plan.
-     */
-    @Test
-    void shouldPlanTheSameChangeAsTheLegacyPath() {
-      // given
-      final var topology = zoneAwareCluster(new ZoneSpec(ZONE_A, 1, 3), new ZoneSpec(ZONE_B, 1, 1));
-      final var transformer = new UpdateZonePrioritiesTransformer(List.of(ZONE_B, ZONE_A));
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(topology));
-
-      // then
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(topology).get()));
-    }
 
     /**
      * Leadership follows the Raft priorities of each partition, so moving it to another zone means

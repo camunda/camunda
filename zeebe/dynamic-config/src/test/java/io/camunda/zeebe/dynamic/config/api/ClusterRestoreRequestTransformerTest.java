@@ -16,7 +16,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
@@ -52,56 +51,6 @@ final class ClusterRestoreRequestTransformerTest {
   private static final MemberId MEMBER = MemberId.from("0");
   private static final String TENANT_B = "tenant-b";
   private static final String TENANT_C = "tenant-c";
-
-  @Test
-  void shouldRestoreTheRequestedPhysicalTenantFromItsOwnParameters() {
-    // given — a request naming exactly one physical tenant
-    final var request =
-        new ClusterRestoreRequest(
-            Map.of(
-                TENANT_B,
-                new TenantRestoreArguments(
-                    new RestoreParameters(List.of(55L), null, null), "elasticsearch", false)),
-            false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then
-    EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .contains(new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(List.of(55L))));
-  }
-
-  @Test
-  void shouldRejectARestoreOfEveryPhysicalTenant() {
-    // given a request naming no physical tenant
-    final var request = new ClusterRestoreRequest(Map.of(), false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then — the legacy single-group entry point has no per-tenant view to fall back to
-    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-  }
-
-  @Test
-  void shouldRejectARestoreNamingMoreThanOnePhysicalTenant() {
-    // given a request naming two physical tenants at once
-    final var args =
-        new TenantRestoreArguments(
-            new RestoreParameters(List.of(55L), null, null), "elasticsearch", false);
-    final var request = new ClusterRestoreRequest(Map.of(TENANT_B, args, TENANT_C, args), false);
-    final var transformer = new ClusterRestoreRequestTransformer(request, registry());
-
-    // when
-    final var result = transformer.operations(recoveringConfiguration());
-
-    // then — same as above: the legacy entry point only ever supports one physical tenant
-    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-  }
 
   @Test
   void shouldRestoreOnlyTheNamedPhysicalTenantOnTheMultiGroupModel() {

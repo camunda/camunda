@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static java.lang.Math.max;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -132,8 +133,9 @@ class PartitionReassignRequestTransformerTest {
 
     //  when
     final var operationsEither =
-        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
-            .operations(oldClusterTopology);
+        plannedOperations(
+            new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize)),
+            oldClusterTopology);
 
     // then
     EitherAssert.assertThat(operationsEither)
@@ -204,7 +206,7 @@ class PartitionReassignRequestTransformerTest {
             getClusterMembers(newClusterSize),
             Optional.of(newReplicationFactor),
             Optional.of(newPartitionCount));
-    final var operations = request.operations(oldClusterTopology).get();
+    final var operations = plannedOperations(request, oldClusterTopology).get();
 
     // apply operations to generate new topology
     final ClusterConfiguration newTopology =

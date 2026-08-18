@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -42,7 +43,7 @@ class AddMembersTransformerTest {
     final var addRequest = new AddMembersTransformer(Set.of(newMember));
 
     // when
-    final var result = addRequest.operations(currentTopology);
+    final var result = plannedOperations(addRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -57,7 +58,7 @@ class AddMembersTransformerTest {
     final var addRequest = new AddMembersTransformer(Set.of(existingMember, newMember));
 
     // when
-    final var result = addRequest.operations(currentTopology);
+    final var result = plannedOperations(addRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -70,7 +71,7 @@ class AddMembersTransformerTest {
     final var addRequest = new AddMembersTransformer(Set.of(existingMember));
 
     // when
-    final var result = addRequest.operations(currentTopology);
+    final var result = plannedOperations(addRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -85,7 +86,7 @@ class AddMembersTransformerTest {
     final var addRequest = new AddMembersTransformer(candidateMembers);
 
     // when
-    final var result = addRequest.operations(currentTopology);
+    final var result = plannedOperations(addRequest, currentTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -109,7 +110,7 @@ class AddMembersTransformerTest {
             .build();
 
     // when
-    final var result = addRequest.operations(zonedConfiguration);
+    final var result = plannedOperations(addRequest, zonedConfiguration);
 
     // then
     EitherAssert.assertThat(result)

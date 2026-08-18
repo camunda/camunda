@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -276,12 +277,13 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
                 patchRequest.brokerCount(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor(),
-                zone)
-            .operations(oldClusterTopology);
+                zone),
+            oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();
 
@@ -320,9 +322,10 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(3), Optional.empty(), Optional.of(3), Optional.of(ZONE_A))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(3), Optional.empty(), Optional.of(3), Optional.of(ZONE_A)),
+            topology);
 
     // then
     assertThat(result)
@@ -338,9 +341,10 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(3), Optional.empty(), Optional.empty(), Optional.of("zoneX"))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(3), Optional.empty(), Optional.empty(), Optional.of("zoneX")),
+            topology);
 
     // then
     assertThat(result)
@@ -363,9 +367,10 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterScaleRequestTransformer(
-                Optional.of(4), Optional.empty(), Optional.empty(), Optional.of(ZONE_A))
-            .operations(topology);
+        plannedOperations(
+            new ClusterScaleRequestTransformer(
+                Optional.of(4), Optional.empty(), Optional.empty(), Optional.of(ZONE_A)),
+            topology);
 
     // then
     assertThat(result)

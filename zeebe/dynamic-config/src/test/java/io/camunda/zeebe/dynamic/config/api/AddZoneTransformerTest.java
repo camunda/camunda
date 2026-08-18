@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -68,7 +69,8 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(currentTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -96,7 +98,8 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_1)).operations(currentTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_1)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -121,7 +124,8 @@ final class AddZoneTransformerTest {
 
     // when / then: config present but not ZoneAware
     final var roundRobinResult =
-        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(roundRobinTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)), roundRobinTopology);
     EitherAssert.assertThat(roundRobinResult).isLeft();
     assertThat(roundRobinResult.getLeft())
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
@@ -129,7 +133,8 @@ final class AddZoneTransformerTest {
 
     // when / then: config absent
     final var noConfigResult =
-        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(noConfigTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)), noConfigTopology);
     EitherAssert.assertThat(noConfigResult).isLeft();
     assertThat(noConfigResult.getLeft())
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
@@ -142,7 +147,8 @@ final class AddZoneTransformerTest {
     final var currentTopology = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
 
     // when
-    final var result = new AddZoneTransformer(ZONE_B, 1, 500, Set.of()).operations(currentTopology);
+    final var result =
+        plannedOperations(new AddZoneTransformer(ZONE_B, 1, 500, Set.of()), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -158,7 +164,8 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_A_1)).operations(currentTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_A_1)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -174,7 +181,8 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, 2, 500, Set.of(ZONE_B_0)).operations(currentTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, 2, 500, Set.of(ZONE_B_0)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -190,7 +198,8 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, -1, 500, Set.of(ZONE_B_0)).operations(currentTopology);
+        plannedOperations(
+            new AddZoneTransformer(ZONE_B, -1, 500, Set.of(ZONE_B_0)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -206,7 +215,7 @@ final class AddZoneTransformerTest {
 
     // when
     final var result =
-        new AddZoneTransformer(ZONE_B, 1, -1, Set.of(ZONE_B_0)).operations(currentTopology);
+        plannedOperations(new AddZoneTransformer(ZONE_B, 1, -1, Set.of(ZONE_B_0)), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -220,27 +229,6 @@ final class AddZoneTransformerTest {
 
     private static final ZoneAwareConfig RESTORED_CONFIG =
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
-
-    /**
-     * A single-tenant cluster must plan exactly the change it planned before {@code phases()}
-     * existed, so this compares the two directly rather than re-deriving an expected plan. It is
-     * also what pins the phase boundary: the returning broker's join and the layout it comes back
-     * into are one uninterrupted run of global operations, so they belong in one phase.
-     */
-    @Test
-    void shouldPlanTheSameChangeAsTheLegacyPath() {
-      // given
-      final var topology = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
-      final var transformer = new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0));
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(topology));
-
-      // then
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(topology).get()));
-    }
 
     /**
      * A zone comes back to serve the whole cluster, so its brokers have to take partitions of every

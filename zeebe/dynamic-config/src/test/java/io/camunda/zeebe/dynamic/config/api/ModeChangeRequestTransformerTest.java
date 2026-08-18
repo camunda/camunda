@@ -15,11 +15,9 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
@@ -42,46 +40,6 @@ final class ModeChangeRequestTransformerTest {
   private final MemberId id0 = MemberId.from("0");
   private final MemberId id1 = MemberId.from("1");
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
-
-  @Test
-  void shouldTargetOnlyMembersNotAlreadyInTheTargetModeOnTheLegacySingleGroupModel() {
-    // given — a legacy single-group configuration (the mode lives on the member and is shared by
-    // all of its partitions) where one member is active and one is already recovering
-    final var transformer = recoveringTransformer(Optional.empty());
-    final var clusterConfiguration =
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()).toRecovering());
-
-    // when
-    final var result = transformer.operations(clusterConfiguration);
-
-    // then — only the active member is transitioned, so re-sending the request is idempotent
-    EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            new ModeChangeOperation(id0, Mode.RECOVERING),
-            new AwaitModeChangeOperation(id0, Mode.RECOVERING));
-  }
-
-  @Test
-  void shouldIgnoreTheRequestedPhysicalTenantOnTheLegacySingleGroupModel() {
-    // given — the same cluster planned twice: once scoped to a physical tenant, once unscoped
-    final var clusterConfiguration =
-        ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
-
-    // when
-    final var scoped =
-        recoveringTransformer(Optional.of(TENANT_B)).operations(clusterConfiguration);
-    final var unscoped = recoveringTransformer(Optional.empty()).operations(clusterConfiguration);
-
-    // then — the scope makes no difference: the legacy model has no per-tenant mode, so the whole
-    // cluster transitions either way. Scoping to one tenant is only expressible on the multi-group
-    // model, via phases(), which is the only method the coordinator calls.
-    EitherAssert.assertThat(scoped).isRight();
-    EitherAssert.assertThat(unscoped).isRight();
-    assertThat(scoped.get()).isNotEmpty().isEqualTo(unscoped.get());
-  }
 
   @Test
   void shouldNotTransitionABrokerThatHostsNoPartitionOfTheGroup() {

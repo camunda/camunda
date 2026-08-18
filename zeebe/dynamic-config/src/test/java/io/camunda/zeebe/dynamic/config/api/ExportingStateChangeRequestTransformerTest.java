@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -45,7 +46,7 @@ final class ExportingStateChangeRequestTransformerTest {
             .addMember(id1, memberWith(ExportingState.EXPORTING, 2));
 
     // when
-    final var result = transformer.operations(clusterConfiguration);
+    final var result = plannedOperations(transformer, clusterConfiguration);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -65,7 +66,7 @@ final class ExportingStateChangeRequestTransformerTest {
             .addMember(id1, memberWith(ExportingState.PAUSED, 2));
 
     // when
-    final var result = transformer.operations(clusterConfiguration);
+    final var result = plannedOperations(transformer, clusterConfiguration);
 
     // then — only the member not yet in the target state gets an operation
     EitherAssert.assertThat(result).isRight();
@@ -89,7 +90,7 @@ final class ExportingStateChangeRequestTransformerTest {
     final var clusterConfiguration = ClusterConfiguration.init().addMember(id0, member);
 
     // when
-    final var result = transformer.operations(clusterConfiguration);
+    final var result = plannedOperations(transformer, clusterConfiguration);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -107,7 +108,7 @@ final class ExportingStateChangeRequestTransformerTest {
             .addMember(id1, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = transformer.operations(clusterConfiguration);
+    final var result = plannedOperations(transformer, clusterConfiguration);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -125,7 +126,7 @@ final class ExportingStateChangeRequestTransformerTest {
             .addMember(id1, memberWith(ExportingState.PAUSED, 2));
 
     // when
-    final var result = transformer.operations(clusterConfiguration);
+    final var result = plannedOperations(transformer, clusterConfiguration);
 
     // then — idempotent no-op yields an empty plan
     EitherAssert.assertThat(result).isRight();

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +45,9 @@ class UpdateRoutingStateTransformerTest {
 
   private final ClusterConfiguration currentTopology =
       ClusterConfiguration.init()
-          .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+          .addMember(id1, MemberState.initializeAsActive(Map.of()))
+          .updateMember(
+              id1, member -> member.addPartition(1, PartitionState.active(1, partitionConfig)));
 
   @Test
   void shouldGenerateUpdateRoutingStateOperationWhenEnabled() {
@@ -58,7 +61,7 @@ class UpdateRoutingStateTransformerTest {
     final var transformer = new UpdateRoutingStateTransformer(routingState);
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -74,7 +77,7 @@ class UpdateRoutingStateTransformerTest {
     final var transformer = new UpdateRoutingStateTransformer(Optional.empty());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
