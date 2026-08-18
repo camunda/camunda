@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.el.ContextValue;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
@@ -26,14 +27,14 @@ import org.jspecify.annotations.Nullable;
 public sealed interface MappingResultBuilder
     permits InputMappingResultBuilder, OutputMappingResultBuilder {
 
-  /** Puts a copy of the given MsgPack value at the nested target path. */
-  void put(List<String> targetPath, DirectBuffer value);
+  /** Puts the given value at the nested target path. */
+  void put(List<String> targetPath, ContextValue value);
 
   /**
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
    * has produced it yet — {@code null} tells the caller to fall back to the scope lookup.
    */
-  @Nullable DirectBuffer getVariable(String name);
+  @Nullable ContextValue getVariable(String name);
 
   /** Returns all accumulated results as a single MsgPack document (a map). */
   DirectBuffer toDocument();

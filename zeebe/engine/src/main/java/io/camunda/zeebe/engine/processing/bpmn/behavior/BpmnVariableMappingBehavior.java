@@ -100,7 +100,7 @@ public final class BpmnVariableMappingBehavior {
     // for input mappings, so a modeled reference survives evaluation instead of nulling
     final var processor =
         inputMappingExpressionProcessor.prependContext(
-            name -> Either.left(ContextValue.msgPack(resultBuilder.getVariable(name))));
+            name -> Either.left(resultBuilder.getVariable(name)));
 
     for (final InputMapping mapping : inputMappings.get().mappings()) {
       final var result =
@@ -108,7 +108,7 @@ public final class BpmnVariableMappingBehavior {
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
-      resultBuilder.put(mapping.targetPath(), result.get());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.get()));
     }
     return mapLocalVariables(context, element, resultBuilder.toDocument());
   }
@@ -173,8 +173,7 @@ public final class BpmnVariableMappingBehavior {
                       .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                       .orElse(null));
       final var processor =
-          expressionProcessor.prependContext(
-              name -> Either.left(ContextValue.msgPack(resultBuilder.getVariable(name))));
+          expressionProcessor.prependContext(name -> Either.left(resultBuilder.getVariable(name)));
 
       final var mappingsToEvaluate =
           evaluateDuplicateOutputMappingTargetsInOrder
@@ -188,7 +187,7 @@ public final class BpmnVariableMappingBehavior {
         if (result.isLeft()) {
           return Either.left(result.getLeft());
         }
-        resultBuilder.put(mapping.targetPath(), result.get());
+        resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.get()));
       }
       return mapVariables(
           context, element, getVariableScopeKey(context), resultBuilder.toDocument());

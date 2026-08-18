@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.el.ContextValue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +29,9 @@ import org.jspecify.annotations.Nullable;
 public final class InputMappingResultBuilder implements MappingResultBuilder {
 
   /**
-   * Values are either a MsgPack {@link DirectBuffer} — a value assigned to that whole name — or a
-   * {@link MappingLevels.Level} built by one or more dotted targets. Never a poisoned level: only
-   * output mappings can produce one.
+   * Values are either a {@link ContextValue} — a value assigned to that whole name — or a {@link
+   * MappingLevels.Level} built by one or more dotted targets. Never a poisoned level: only output
+   * mappings can produce one.
    *
    * <p>Insertion-ordered deliberately. This order becomes the order the VARIABLE records are
    * written in when the document is merged into the scope, and the key order inside the MsgPack
@@ -56,41 +56,42 @@ public final class InputMappingResultBuilder implements MappingResultBuilder {
   }
 
   /**
-   * Puts a copy of the given MsgPack value at the nested target path. The value buffer is copied
-   * because evaluation result buffers are transient and may be reused by the next evaluation.
+   * Puts the given value at the nested target path. A MessagePack value is copied, because
+   * evaluation result buffers are transient and may be reused by the next evaluation; an evaluated
+   * result is an immutable FEEL value and needs no copy.
    */
   @Override
-  public void put(final List<String> targetPath, final DirectBuffer value) {
+  public void put(final List<String> targetPath, final ContextValue value) {
     Map<String, Object> current = entries;
     for (int i = 0; i < targetPath.size() - 1; i++) {
       current = getOrCreate(current, targetPath.get(i)).children();
     }
-    current.put(targetPath.getLast(), BufferUtil.cloneBuffer(value));
+    current.put(targetPath.getLast(), MappingLevels.copyIfMsgPack(value));
   }
 
   /**
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
-   * has produced it yet. A nested structure is serialized on lookup, layered over the value its
+   * has produced it yet. A nested structure is materialized on lookup, layered over the value its
    * name resolves to in the scope chain, unless an earlier mapping assigned that name whole.
    */
   @Override
-  public @Nullable DirectBuffer getVariable(final String name) {
+  public @Nullable ContextValue getVariable(final String name) {
     final var entry = entries.get(name);
     if (entry == null) {
       return null;
-    } else if (entry instanceof final DirectBuffer value) {
+    } else if (entry instanceof final ContextValue value) {
       return value;
     } else {
       final var level = (MappingLevels.Level) entry;
       final var shadowed = level.replacedExistingValue() ? null : scopeValueResolver.apply(name);
-      return MappingLevels.serialize(level.children(), shadowed);
+      return MappingLevels.materialize(level.children(), shadowed);
     }
   }
 
   /** Returns all accumulated results as a single MsgPack document (a map). */
   @Override
   public DirectBuffer toDocument() {
-    return MappingLevels.serialize(entries, null);
+    return MappingLevels.serialize(entries);
   }
 
   /**

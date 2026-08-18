@@ -214,10 +214,10 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -248,10 +248,10 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
 
     // then
@@ -291,10 +291,10 @@ final class VariableInputMappingTransformerTest {
           name -> {
             final var accumulated = resultBuilder.getVariable(name);
             return Either.left(
-                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
+                accumulated != null ? accumulated : ContextValue.msgPack(variables.get(name)));
           };
       final var result = language.evaluateExpression(mapping.source(), context);
-      resultBuilder.put(mapping.targetPath(), result.toBuffer());
+      resultBuilder.put(mapping.targetPath(), new ContextValue.MsgPack(result.toBuffer()));
     }
     return resultBuilder.toDocument();
   }

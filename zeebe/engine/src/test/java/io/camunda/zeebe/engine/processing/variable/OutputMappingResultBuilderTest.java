@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 
+import io.camunda.zeebe.el.ContextValue;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ final class OutputMappingResultBuilderTest {
             path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
 
     // when
-    builder.put(List.of("a", "b"), asMsgPack("1"));
+    builder.put(List.of("a", "b"), msgPack("1"));
 
     // then: existing sibling 'c' survives the merge
     assertEquality(builder.toDocument(), "{'a': {'b': 1, 'c': 2}}");
@@ -40,7 +41,7 @@ final class OutputMappingResultBuilderTest {
     final var builder = new OutputMappingResultBuilder(scope::get);
 
     // when
-    builder.put(List.of("a", "b", "c"), asMsgPack("1"));
+    builder.put(List.of("a", "b", "c"), msgPack("1"));
 
     // then: siblings survive at both levels
     assertEquality(builder.toDocument(), "{'a': {'b': {'c': 1, 'd': 2}, 'e': 3}}");
@@ -53,11 +54,11 @@ final class OutputMappingResultBuilderTest {
         new OutputMappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
-    builder.put(List.of("a", "b"), asMsgPack("1"));
+    builder.put(List.of("a", "b"), msgPack("1"));
 
     // then: the level is null, like FEEL's context merge(5, {...})
     assertEquality(builder.toDocument(), "{'a': null}");
-    assertEquality(builder.getVariable("a"), "null");
+    assertEquality(((ContextValue.MsgPack) builder.getVariable("a")).buffer(), "null");
   }
 
   @Test
@@ -66,8 +67,8 @@ final class OutputMappingResultBuilderTest {
         new OutputMappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when
-    builder.put(List.of("a", "b"), asMsgPack("1"));
-    builder.put(List.of("a", "c"), asMsgPack("2"));
+    builder.put(List.of("a", "b"), msgPack("1"));
+    builder.put(List.of("a", "c"), msgPack("2"));
 
     // then
     assertEquality(builder.toDocument(), "{'a': null}");
@@ -79,8 +80,8 @@ final class OutputMappingResultBuilderTest {
         new OutputMappingResultBuilder(path -> path.equals(List.of("a")) ? asMsgPack("5") : null);
 
     // when: a nested put poisons 'a', then a plain put replaces it
-    builder.put(List.of("a", "b"), asMsgPack("1"));
-    builder.put(List.of("a"), asMsgPack("7"));
+    builder.put(List.of("a", "b"), msgPack("1"));
+    builder.put(List.of("a"), msgPack("7"));
 
     // then
     assertEquality(builder.toDocument(), "{'a': 7}");
@@ -92,11 +93,11 @@ final class OutputMappingResultBuilderTest {
     final var builder =
         new OutputMappingResultBuilder(
             path -> path.equals(List.of("a")) ? asMsgPack("{'c': 2}") : null);
-    builder.put(List.of("a"), asMsgPack("{'z': 9}"));
+    builder.put(List.of("a"), msgPack("{'z': 9}"));
 
     // when: the shape flips back to a map — the plain mapping's value is discarded and the fresh
     // level is seeded from the SCOPE value, not the previously mapped value
-    builder.put(List.of("a", "b"), asMsgPack("1"));
+    builder.put(List.of("a", "b"), msgPack("1"));
 
     // then
     assertEquality(builder.toDocument(), "{'a': {'b': 1, 'c': 2}}");
@@ -110,9 +111,13 @@ final class OutputMappingResultBuilderTest {
             path -> path.equals(List.of("a")) ? asMsgPack("null") : null);
 
     // when
-    builder.put(List.of("a", "b"), asMsgPack("1"));
+    builder.put(List.of("a", "b"), msgPack("1"));
 
     // then
     assertEquality(builder.toDocument(), "{'a': {'b': 1}}");
+  }
+
+  private static ContextValue msgPack(final String json) {
+    return new ContextValue.MsgPack(asMsgPack(json));
   }
 }
