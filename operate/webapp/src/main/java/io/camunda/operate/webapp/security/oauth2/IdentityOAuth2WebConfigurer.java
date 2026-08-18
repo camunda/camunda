@@ -59,8 +59,9 @@ public class IdentityOAuth2WebConfigurer {
   private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
   private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
 
-  // Nimbus's own default is 15,000ms; this still gives one full retry's worth of slack (roughly
-  // 2x the connect+read timeout above) while failing much faster when the IdP is genuinely down.
+  // How long a caller blocks waiting for another thread's in-flight synchronous refresh before
+  // giving up. Nimbus's own default is 15,000ms; this still leaves comfortable headroom over the
+  // connect+read timeouts above while failing much faster when the IdP is genuinely down.
   private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
 
   private static final Set<JWSAlgorithm> SUPPORTED_JWS_ALGORITHMS =
