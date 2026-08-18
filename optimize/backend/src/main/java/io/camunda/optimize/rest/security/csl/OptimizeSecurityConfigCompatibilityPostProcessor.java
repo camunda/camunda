@@ -36,6 +36,11 @@ import org.springframework.core.env.MapPropertySource;
  * operator who explicitly sets the flag to {@code false} gets a startup warning naming the 8.11
  * removal instead (camunda/camunda#58484, camunda/camunda#58485).
  *
+ * <p>Also canonicalizes {@code optimize.security.csl.enabled} itself to a literal {@code "true"} or
+ * {@code "false"}, overriding any other value (e.g. a typo). The CSL and legacy security beans are
+ * gated by {@code @ConditionalOnProperty} on this same flag with exact-match {@code havingValue}s,
+ * so without this, an unrecognised value would leave neither security stack active.
+ *
  * <p>Bridges the CCSM (Identity) and CCSaaS (Auth0) OIDC registrations from their {@code
  * CAMUNDA_OPTIMIZE_IDENTITY_*} / {@code CAMUNDA_OPTIMIZE_AUTH0_*} / {@code
  * CAMUNDA_OPTIMIZE_CLIENT_*} env-var interface (the {@code ${...}} placeholders in {@code
@@ -53,6 +58,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
 
   static final String CSL_ENABLED_PROPERTY = "optimize.security.csl.enabled";
   static final String COMPATIBILITY_PROPERTY_SOURCE_NAME = "optimizeCslCompatibility";
+  static final String CANONICAL_FLAG_PROPERTY_SOURCE_NAME = "optimizeCslFlagCanonical";
 
   private static final String OIDC_PREFIX = "camunda.security.authentication.oidc.";
   private static final String LEGACY_KEY_REMOVAL_VERSION = "8.11";
@@ -69,7 +75,20 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
-    if ("false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"))) {
+    final boolean cslEnabled =
+        !"false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"));
+    // Canonicalize to a literal "true"/"false" so every @ConditionalOnProperty on this flag (CSL
+    // config, legacy adapters) and every direct Environment read of it agree on the same outcome,
+    // even given a value that is neither, e.g. a typo. Those conditions match the value verbatim,
+    // so left unnormalized a typo would leave neither the CSL nor the legacy security stack active.
+    // Added first (highest precedence) so it wins over whatever the operator actually set.
+    env.getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                CANONICAL_FLAG_PROPERTY_SOURCE_NAME,
+                Map.of(CSL_ENABLED_PROPERTY, Boolean.toString(cslEnabled))));
+
+    if (!cslEnabled) {
       warnCslFlagExplicitlyDisabled();
       return;
     }

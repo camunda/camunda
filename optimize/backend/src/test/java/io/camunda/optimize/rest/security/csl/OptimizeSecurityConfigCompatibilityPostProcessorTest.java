@@ -66,6 +66,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
                 && entry.getMessage().contains("optimize.security.csl.enabled")
                 && entry.getMessage().contains("8.11"),
         "expected a deprecation warning naming the flag and the 8.11 removal");
+    assertThat(env.getProperty("optimize.security.csl.enabled")).isEqualTo("false");
   }
 
   @Test
@@ -82,6 +83,9 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     logs.assertDoesNotContain(
         entry -> entry.getLevel() == Level.WARN && entry.getMessage().contains("set to false"),
         "expected no misleading 'set to false' warning for a value that isn't literally false");
+    // canonicalized so the CSL config bean's @ConditionalOnProperty(havingValue = "true") and the
+    // legacy adapters' @ConditionalOnProperty(havingValue = "false") agree with this outcome too
+    assertThat(env.getProperty("optimize.security.csl.enabled")).isEqualTo("true");
   }
 
   @Test
