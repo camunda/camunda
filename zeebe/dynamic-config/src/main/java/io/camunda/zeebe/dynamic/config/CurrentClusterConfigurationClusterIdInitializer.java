@@ -52,14 +52,6 @@ public class CurrentClusterConfigurationClusterIdInitializer
     }
 
     return CompletableActorFuture.completed(
-        configuration.updateGlobalConfiguration(
-            global ->
-                new GlobalConfiguration(
-                    global.version(),
-                    Optional.of(clusterId),
-                    global.members(),
-                    global.partitionDistributorConfig(),
-                    global.pendingChanges(),
-                    global.lastChange())));
+        configuration.updateGlobalConfiguration(global -> global.setClusterId(clusterId)));
   }
 }
