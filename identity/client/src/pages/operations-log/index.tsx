@@ -6,12 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
 
+const List = lazy(() => import("./List"));
+
 const OperationsLog: FC = () => (
-  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+  <PageRoutes
+    indexElement={
+      <Suspense fallback={<ListPageFallback />}>
+        <List />
+      </Suspense>
+    }
+  />
 );
 
 export default OperationsLog;

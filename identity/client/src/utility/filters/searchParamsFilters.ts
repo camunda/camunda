@@ -24,8 +24,9 @@ type FieldParser<V> = {
 export function createSearchParamsSync<T>(config: {
   [K in keyof T]: FieldParser<T[K]>;
 }) {
-  function parse(search: string): T {
-    const params = new URLSearchParams(search);
+  function parse(search: string | URLSearchParams): T {
+    const params =
+      typeof search === "string" ? new URLSearchParams(search) : search;
     const result = {} as T;
 
     for (const key in config) {
