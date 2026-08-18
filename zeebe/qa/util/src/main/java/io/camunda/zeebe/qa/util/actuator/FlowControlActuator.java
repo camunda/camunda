@@ -57,6 +57,11 @@ public interface FlowControlActuator {
     return setFlowControlConfiguration(deserialize(request), physicalTenant);
   }
 
+  public default Map<String, Map<Integer, JsonNode>> setFlowControlConfigurationByPhysicalTenant(
+      final String request) {
+    return setFlowControlConfigurationByPhysicalTenant(deserialize(request));
+  }
+
   private static FlowControlCfg deserialize(final String request) {
     try {
       return FlowControlCfg.deserialize(request);
@@ -73,6 +78,20 @@ public interface FlowControlActuator {
   @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, JsonNode> setFlowControlConfiguration(@RequestBody FlowControlCfg flowControlCfg);
+
+  /**
+   * Same as {@link #setFlowControlConfiguration(FlowControlCfg)}, but decodes the response as the
+   * shape returned when more than one physical tenant is known: a map keyed by physical tenant id,
+   * whose values are the usual per-partition configuration map. Use this from a multi-tenant test —
+   * the flat method would apply the configuration and only then fail to decode the tenant ids as
+   * partition ids.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<String, Map<Integer, JsonNode>> setFlowControlConfigurationByPhysicalTenant(
+      @RequestBody FlowControlCfg flowControlCfg);
 
   /**
    * Sets the flow control configuration of the given physical tenant only.

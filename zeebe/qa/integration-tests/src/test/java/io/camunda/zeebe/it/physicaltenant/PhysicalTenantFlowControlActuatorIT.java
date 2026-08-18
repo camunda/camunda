@@ -88,6 +88,30 @@ final class PhysicalTenantFlowControlActuatorIT {
   }
 
   @Test
+  void shouldApplyConfigurationToEveryPhysicalTenantWithoutParameter() {
+    // given - the tenants start out with limits of their own, so a write that reaches only one of
+    // them cannot be mistaken for one that reached both
+    awaitFlowControlReadable();
+    actuator.setFlowControlConfiguration(writeRateLimitOf(111), TENANT_A);
+    actuator.setFlowControlConfiguration(writeRateLimitOf(222), DEFAULT_TENANT);
+
+    // when - writing without a physicalTenant parameter
+    final var response =
+        actuator.setFlowControlConfigurationByPhysicalTenant(writeRateLimitOf(333));
+
+    // then - the write kept its whole-cluster meaning, and the response reports the result per
+    // tenant rather than aliasing the two partition 1s
+    assertThat(response).containsOnlyKeys(DEFAULT_TENANT, TENANT_A);
+    assertThat(writeRateLimitIn(response.get(TENANT_A))).isEqualTo(333);
+    assertThat(writeRateLimitIn(response.get(DEFAULT_TENANT))).isEqualTo(333);
+
+    // and - a subsequent read agrees, so the response was not merely echoing the request
+    assertThat(writeRateLimitIn(actuator.getFlowControlConfiguration(TENANT_A))).isEqualTo(333);
+    assertThat(writeRateLimitIn(actuator.getFlowControlConfiguration(DEFAULT_TENANT)))
+        .isEqualTo(333);
+  }
+
+  @Test
   void shouldRejectUnknownPhysicalTenant() {
     // given
     awaitFlowControlReadable();
