@@ -485,6 +485,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- CSL's session filter is Spring Session-backed (MapSessionRepository by default); chain
+           integration tests mint sessions through it directly instead of a raw servlet HttpSession -->
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this is necessary. Dependency:analyze error suppressed -->
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
