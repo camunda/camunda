@@ -51,7 +51,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   // named distinctly from BpmnIncidentBehavior#SECRET_INJECTION_FAILED_MESSAGE: same error type,
   // different cause-neutral fallback text, because that one is shared with the job-push path and
-  // this one is reached only when this path's own FailedInjectionJob carries no path/placeholder
+  // this one is reached only when this path's own FailedInjectionJob carries no path/placeholder.
+  // Once the job-push path also names the mismatch (#60404), the two fallbacks - and this path's
+  // named-mismatch message alongside the job-push one - become candidates to merge (#60405)
   private static final String SECRET_INJECTION_UNKNOWN_CAUSE_MESSAGE =
       "The job with key '%s' can not be activated, because injecting its secret values "
           + "failed. Resolve the incident, or use process instance modification to "

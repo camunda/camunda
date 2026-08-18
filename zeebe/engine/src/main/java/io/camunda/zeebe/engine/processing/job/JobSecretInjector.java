@@ -57,7 +57,8 @@ import org.slf4j.LoggerFactory;
  * <p>The job-push path injects the same values into the job it streams, see {@code
  * BpmnJobActivationBehavior#publishWork}; it shares {@link JobSecretLookup}, so it tolerates the
  * same shapes, but reports a failed injection with a generic incident message rather than naming
- * the mismatched pointer (tracked separately).
+ * the mismatched pointer (tracked in <a
+ * href="https://github.com/camunda/camunda/issues/60404">#60404</a>).
  */
 public final class JobSecretInjector {
 

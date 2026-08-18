@@ -50,7 +50,9 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
  * replaced, including text that merely spells out the placeholder next to a real reference at the
  * same path. This can only surface a secret in a leaf that already receives that secret. The
  * residual scan for a surviving placeholder reads the injected result rather than the original
- * text, so a secret value that itself contains placeholder-shaped text would fail closed too.
+ * text, so a secret value that itself contains placeholder-shaped text would fail closed when
+ * another reference at the same path triggers the check - a lone reference that replaces its own
+ * placeholder cleanly is never rescanned.
  */
 public final class JobSecretLookup {
 
