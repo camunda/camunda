@@ -148,8 +148,7 @@ test.describe('Dashboard', () => {
     });
   });
 
-  //Skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
-  test.skip('Navigate to processes view (same truncated error message)', async ({
+  test('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
@@ -161,6 +160,7 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variableCellByName(/incident type a/i),
       ).toBeVisible();
@@ -174,6 +174,7 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variableCellByName(/incident type b/i),
       ).toBeVisible();
