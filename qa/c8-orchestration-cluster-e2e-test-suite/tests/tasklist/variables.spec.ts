@@ -154,7 +154,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('usertask_with_variables');
 
-    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.addVariableButton).toBeDisabled();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -223,7 +223,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('usertask_with_variables2');
 
-    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.addVariableButton).toBeDisabled();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
     });
