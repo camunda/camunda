@@ -296,15 +296,16 @@ public final class JobSecretLookup {
   public record CachedSecret(Secret secret, String value) {}
 
   /**
-   * Thrown by {@link #injectedVariablesOf} when a secret reference's JSON pointer exists but
-   * doesn't address a text leaf of an object, or addresses one whose content doesn't contain the
-   * expected placeholder, and no sibling reference at the same path resolved it either.
-   * Package-private: only {@link JobSecretInjector} inspects {@link #path()} and {@link
-   * #placeholder()} to name the mismatch in a {@code SECRET_RESOLUTION_ERROR} incident; the
-   * job-push path catches it as a plain failure and falls back to a generic incident message, since
-   * this exception's own message is log-only and never persisted.
+   * Thrown by {@link JobSecretLookup#injectedVariablesOf} when a secret reference's JSON pointer
+   * exists but doesn't address a text leaf of an object, or addresses one whose content doesn't
+   * contain the expected placeholder, and no sibling reference at the same path resolved it either.
+   * Both activation paths inspect {@link #path()} and {@link #placeholder()} to name the mismatch
+   * in a {@code SECRET_RESOLUTION_ERROR} incident: the batch path via {@link JobSecretInjector},
+   * the job-push path in {@code BpmnJobActivationBehavior}, which is why this is public. Only the
+   * placeholder and JSON pointer are ever read out; this exception's own message is log-only and
+   * never persisted, since it may quote the variables document.
    */
-  static final class SecretPointerMismatchException extends RuntimeException {
+  public static final class SecretPointerMismatchException extends RuntimeException {
     private final String path;
     private final String placeholder;
 
@@ -324,11 +325,11 @@ public final class JobSecretLookup {
       this.placeholder = placeholder;
     }
 
-    String path() {
+    public String path() {
       return path;
     }
 
-    String placeholder() {
+    public String placeholder() {
       return placeholder;
     }
   }
