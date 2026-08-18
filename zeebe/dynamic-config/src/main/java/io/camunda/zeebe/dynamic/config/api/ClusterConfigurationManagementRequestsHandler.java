@@ -36,14 +36,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -89,13 +85,10 @@ public final class ClusterConfigurationManagementRequestsHandler
       final JoinPartitionRequest joinPartitionRequest) {
     return handleRequest(
         joinPartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionJoinOperation(
-                        joinPartitionRequest.memberId(),
-                        joinPartitionRequest.partitionId(),
-                        joinPartitionRequest.priority()))));
+        new JoinPartitionRequestTransformer(
+            joinPartitionRequest.memberId(),
+            joinPartitionRequest.partitionId(),
+            joinPartitionRequest.priority()));
   }
 
   @Override
@@ -103,13 +96,8 @@ public final class ClusterConfigurationManagementRequestsHandler
       final LeavePartitionRequest leavePartitionRequest) {
     return handleRequest(
         leavePartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(),
-                        leavePartitionRequest.partitionId(),
-                        1))));
+        new LeavePartitionRequestTransformer(
+            leavePartitionRequest.memberId(), leavePartitionRequest.partitionId()));
   }
 
   @Override
