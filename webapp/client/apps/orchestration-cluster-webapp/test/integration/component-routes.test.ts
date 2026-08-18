@@ -27,7 +27,7 @@ test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(createCurrentUser()),
+				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
@@ -51,7 +51,7 @@ test.describe('component routes', () => {
 	test('should render Tasklist when component is active', async ({network, page, tasklistIndexPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(createCurrentUser()),
+				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['tasklist']})),
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
@@ -72,7 +72,7 @@ test.describe('component routes', () => {
 	test('should render Admin when component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(createCurrentUser()),
+				successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['admin']})),
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['admin']}})),
@@ -85,6 +85,66 @@ test.describe('component routes', () => {
 		await page.goto('/admin');
 
 		await expect(page.getByRole('heading', {name: 'Admin'})).toBeVisible();
+	});
+
+	test('should show the forbidden page at the original URL when component access is denied', async ({
+		network,
+		page,
+		componentAccessDeniedPage,
+	}) => {
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['tasklist', 'operate', 'admin']}}),
+				),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		await test.step('Tasklist', async () => {
+			network.use(
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate', 'admin']})),
+				}),
+			);
+
+			await page.goto('/tasklist');
+
+			await expect(page).toHaveURL('/tasklist');
+			await expect(componentAccessDeniedPage.heading).toBeVisible();
+			await expect(componentAccessDeniedPage.description).toBeVisible();
+			await expect(componentAccessDeniedPage.documentationLink).toBeVisible();
+		});
+
+		await test.step('Operate', async () => {
+			network.use(
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['tasklist', 'admin']})),
+				}),
+			);
+
+			await page.goto('/operate');
+
+			await expect(page).toHaveURL('/operate');
+			await expect(componentAccessDeniedPage.heading).toBeVisible();
+			await expect(componentAccessDeniedPage.description).toBeVisible();
+			await expect(componentAccessDeniedPage.documentationLink).toBeVisible();
+		});
+
+		await test.step('Admin', async () => {
+			network.use(
+				mockCurrentUserEndpoint({
+					successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['tasklist', 'operate']})),
+				}),
+			);
+
+			await page.goto('/admin');
+
+			await expect(page).toHaveURL('/admin');
+			await expect(componentAccessDeniedPage.heading).toBeVisible();
+			await expect(componentAccessDeniedPage.description).toBeVisible();
+			await expect(componentAccessDeniedPage.documentationLink).toBeVisible();
+		});
 	});
 
 	test('should show error page when Tasklist is not active', async ({network, page, forbiddenPage}) => {

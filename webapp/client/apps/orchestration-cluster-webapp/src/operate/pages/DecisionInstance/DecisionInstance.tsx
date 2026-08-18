@@ -10,6 +10,7 @@ import {useEffect, useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {ForbiddenError} from '#/shared/errors';
 import {requestErrorSchema} from '#/shared/http/request';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstanceDetail} from '#/operate/shared/InstanceDetail/InstanceDetail';
@@ -30,7 +31,7 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {error} = useDecisionInstance(decisionInstanceId);
 
 	const requestError = requestErrorSchema.safeParse(error);
-	const isUnauthorized = requestError.success && requestError.data.response?.status === 403;
+	const isUnauthorized = error instanceof ForbiddenError;
 	const isNotFound = requestError.success && requestError.data.response?.status === 404;
 
 	useEffect(() => {

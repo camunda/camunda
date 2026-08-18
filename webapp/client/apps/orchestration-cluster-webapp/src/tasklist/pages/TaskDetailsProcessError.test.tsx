@@ -10,6 +10,7 @@ import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
+import {ForbiddenError} from '#/shared/errors';
 import {TaskDetailsProcessRouteError} from './TaskDetailsProcessError';
 
 function failedResponseError(status: number) {
@@ -19,7 +20,7 @@ function failedResponseError(status: number) {
 describe('<TaskDetailsProcessError />', () => {
 	it('should explain when the user does not have permission to view the process', async () => {
 		const screen = await render(
-			<TaskDetailsProcessRouteError error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />,
+			<TaskDetailsProcessRouteError error={new ForbiddenError()} info={{componentStack: ''}} reset={vi.fn()} />,
 		);
 
 		await expect.element(screen.getByText("You don't have permission to view the process")).toBeVisible();

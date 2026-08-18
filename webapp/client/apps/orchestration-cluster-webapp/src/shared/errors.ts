@@ -7,12 +7,23 @@
  */
 
 type CamundaComponent = 'operate' | 'tasklist' | 'admin';
+
 class ComponentNotAvailableError extends Error {
 	readonly component: CamundaComponent;
 
 	constructor(component: CamundaComponent) {
 		super(`Component "${component}" is not available`);
 		this.name = 'ComponentNotAvailableError';
+		this.component = component;
+	}
+}
+
+class ComponentAccessDeniedError extends Error {
+	readonly component: CamundaComponent;
+
+	constructor(component: CamundaComponent) {
+		super(`Access to component "${component}" is denied`);
+		this.name = 'ComponentAccessDeniedError';
 		this.component = component;
 	}
 }
@@ -53,6 +64,8 @@ class ProcessStartFormImportError extends Error {
 }
 
 export {
+	type CamundaComponent,
+	ComponentAccessDeniedError,
 	ComponentNotAvailableError,
 	EmptyProcessXmlError,
 	ForbiddenError,

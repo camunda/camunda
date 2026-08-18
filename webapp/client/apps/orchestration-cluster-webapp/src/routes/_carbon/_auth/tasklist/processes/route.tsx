@@ -14,11 +14,9 @@ import {processesSearchSchema} from '#/tasklist/modules/processes/searchSchema';
 import {getProcessDefinitionsRequestBody} from '#/tasklist/modules/processes/getProcessDefinitionsRequestBody';
 import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
 import {queries} from '#/shared/http/queries';
-import {requestErrorSchema} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
-
-const HTTP_STATUS_FORBIDDEN = 403;
 
 export const Route = createFileRoute('/_carbon/_auth/tasklist/processes')({
 	validateSearch: processesSearchSchema,
@@ -30,13 +28,7 @@ export const Route = createFileRoute('/_carbon/_auth/tasklist/processes')({
 		);
 	},
 	errorComponent: function ProcessesErrorPage({error, reset}: ErrorComponentProps) {
-		const result = requestErrorSchema.safeParse(error);
-
-		if (
-			result.success &&
-			result.data.variant === 'failed-response' &&
-			result.data.response.status === HTTP_STATUS_FORBIDDEN
-		) {
+		if (error instanceof ForbiddenError) {
 			return (
 				<main id="main-content" className="cds--content">
 					<ForbiddenPage />

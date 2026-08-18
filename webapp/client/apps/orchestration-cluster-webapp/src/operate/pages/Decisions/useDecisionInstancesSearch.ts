@@ -9,6 +9,7 @@
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {mapDecisionInstancesFilter, mapDecisionInstancesSort, type DecisionsSearch} from './decisionsFilter';
 
@@ -32,7 +33,7 @@ function useDecisionInstancesSearch(search: DecisionsSearch) {
 				endpoints.queryDecisionInstances({filter, sort, page: {from: pageParam, limit: PAGE_LIMIT}}),
 			);
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},

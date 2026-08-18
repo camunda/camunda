@@ -168,8 +168,9 @@ function Profile() {
 Set `defaultErrorComponent` on `createRouter` for a global fallback.
 Reach for a component-level `<ErrorBoundary>` only when the rest of
 the page should keep rendering. 401s are handled centrally by the
-`request()` wrapper (cache clear + login redirect), so `errorComponent`
-covers everything else.
+`request()` wrapper (cache clear + login redirect). Query functions normalize
+403 responses to `ForbiddenError`, so route error boundaries can render a
+forbidden state consistently. `errorComponent` covers everything else.
 
 ## References
 

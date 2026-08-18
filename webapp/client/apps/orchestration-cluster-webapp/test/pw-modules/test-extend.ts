@@ -20,6 +20,7 @@ import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
+import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
 import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
 
 type Fixtures = {
@@ -37,6 +38,7 @@ type Fixtures = {
 	adminIndexPage: AdminIndexPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
+	componentAccessDeniedPage: ComponentAccessDeniedPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -76,6 +78,9 @@ const test = base.extend<Fixtures>({
 	},
 	forbiddenPage: async ({page}, use) => {
 		await use(new ForbiddenPage(page));
+	},
+	componentAccessDeniedPage: async ({page}, use) => {
+		await use(new ComponentAccessDeniedPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [
