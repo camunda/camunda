@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
  * Elasticsearch and OpenSearch implementations are selected by the configured database. Active by
  * default since {@code optimize.security.csl.enabled} defaults to {@code true}
  * (camunda/camunda#58483); an operator can still opt back into the legacy stack with {@code
- * optimize.security.csl.enabled=false} through 8.11 (camunda/camunda#58484). CSL routes sessions
+ * optimize.security.csl.enabled=false} through 8.10 (camunda/camunda#58484). CSL routes sessions
  * here only while {@code camunda.security.session.persistent.enabled=true}, which {@link
  * OptimizeSecurityConfigCompatibilityPostProcessor} sets for both editions.
  *

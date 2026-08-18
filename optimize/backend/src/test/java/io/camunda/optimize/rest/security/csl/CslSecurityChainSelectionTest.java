@@ -35,7 +35,7 @@ import org.springframework.core.Ordered;
  * state, for both the CCSM and CCSaaS editions (ADR-0038). Default (property absent or {@code
  * true}, since camunda/camunda#58483) activates {@link OptimizeCamundaSecurityConfig} with the
  * legacy adapters (and, for CCSaaS, the Auth0 client-registration publisher) backed off; explicit
- * {@code false} is the escape hatch that flips this back to the legacy stack through 8.11
+ * {@code false} is the escape hatch that flips this back to the legacy stack through 8.10
  * (camunda/camunda#58484).
  */
 class CslSecurityChainSelectionTest {

@@ -28,7 +28,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 /**
  * CCSaaS security wiring for the CSL adoption, active under the cloud profile whenever CSL is
  * active — the default since 8.10 (camunda/camunda#58483), or opted out of with {@code
- * optimize.security.csl.enabled=false} through 8.11. Restores the SaaS org/cluster validation the
+ * optimize.security.csl.enabled=false} through 8.10. Restores the SaaS org/cluster validation the
  * legacy {@code CCSaaSSecurityConfigurerAdapter} performed, using CSL's host extension points. See
  * <a
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
