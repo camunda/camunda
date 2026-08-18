@@ -243,10 +243,39 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldEncodeAndDecodeJoinPartitionRequestWithPhysicalTenant() {
+    // given
+    final var joinPartitionRequest =
+        new JoinPartitionRequest(MemberId.from("2"), 3, 5, Optional.of("tenant-a"), false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeJoinPartitionRequest(joinPartitionRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeJoinPartitionRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(joinPartitionRequest);
+  }
+
+  @Test
   void shouldEncodeAndDecodeLeavePartitionRequest() {
     // given
     final var leavePartitionRequest =
         new LeavePartitionRequest(MemberId.from("6"), 2, Optional.empty(), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeLeavePartitionRequest(leavePartitionRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeLeavePartitionRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(leavePartitionRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeLeavePartitionRequestWithPhysicalTenant() {
+    // given
+    final var leavePartitionRequest =
+        new LeavePartitionRequest(MemberId.from("6"), 2, Optional.of("tenant-a"), false);
 
     // when
     final var encodedRequest =

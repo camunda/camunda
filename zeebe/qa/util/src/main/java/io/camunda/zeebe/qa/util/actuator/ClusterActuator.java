@@ -146,6 +146,23 @@ public interface ClusterActuator {
       @Param boolean dryRun);
 
   /**
+   * Request that the broker joins the given physical tenant's partition with the given priority.
+   * Partition ids restart at 1 in every physical tenant, so the partition is only identified by the
+   * two together.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Body("%7B\"priority\": {priority}%7D")
+  PlannedOperationsResponse joinPartition(
+      @Param final int brokerId,
+      @Param final int partitionId,
+      @Param final int priority,
+      @Param final String physicalTenant);
+
+  /**
    * Request that the broker leaves the partition.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
@@ -163,6 +180,19 @@ public interface ClusterActuator {
   @RequestLine("DELETE /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse leavePartition(@Param final int brokerId, @Param final int partitionId);
+
+  /**
+   * Request that the broker leaves the given physical tenant's partition. Partition ids restart at
+   * 1 in every physical tenant, so the partition is only identified by the two together.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine(
+      "DELETE /brokers/{brokerId}/partitions/{partitionId}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse leavePartition(
+      @Param final int brokerId, @Param final int partitionId, @Param final String physicalTenant);
 
   /**
    * Queries the current cluster topology
