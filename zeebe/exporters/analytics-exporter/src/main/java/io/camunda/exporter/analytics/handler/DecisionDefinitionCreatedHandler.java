@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.DECISION_DEFINITION_CREATED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -42,7 +40,7 @@ public final class DecisionDefinitionCreatedHandler
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        DECISION_DEFINITION_CREATED,
+        AnalyticsAttributes.Event.DECISION_DEFINITION_CREATED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Decision.ID, value.getDecisionId())

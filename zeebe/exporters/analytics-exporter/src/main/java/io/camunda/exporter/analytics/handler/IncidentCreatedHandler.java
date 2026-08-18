@@ -7,11 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INCIDENT_CREATED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITION_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -47,13 +42,15 @@ public final class IncidentCreatedHandler implements AnalyticsHandler<IncidentRe
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        PROCESS_INCIDENT_CREATED,
+        AnalyticsAttributes.Event.PROCESS_INCIDENT_CREATED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Incident.KEY, record.getKey())
-                .setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
+                .setAttribute(AnalyticsAttributes.Process.BPMN_PROCESS_ID, value.getBpmnProcessId())
+                .setAttribute(
+                    AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
+                .setAttribute(
+                    AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }

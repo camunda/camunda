@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.DECISION_DEFINITION_DELETED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -41,7 +39,7 @@ public final class DecisionDefinitionDeletedHandler
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        DECISION_DEFINITION_DELETED,
+        AnalyticsAttributes.Event.DECISION_DEFINITION_DELETED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Decision.ID, value.getDecisionId())

@@ -708,6 +708,71 @@ class AnalyticsExporterTest {
     assertThatCode(unopenedExporter::close).doesNotThrowAnyException();
   }
 
+  @Test
+  void shouldOnlyExportContractualSignalsWhenConfiguredWithContractualOnly() {
+    // given — exporter configured with only CONTRACTUAL category
+    final var contractualOnlyConfig =
+        new AnalyticsExporterConfig().setCategories(java.util.List.of("contractual"));
+    final var logExporter = InMemoryLogRecordExporter.create();
+    final var metricReader = InMemoryMetricReader.create();
+    final var otel =
+        TestOtelSdkManager.inMemoryWithMetrics(logExporter, metricReader, contractualOnlyConfig);
+    final var ctrl = new ExporterTestController();
+    final var contractualExporter = newExporter(otel, ctrl, contractualOnlyConfig);
+
+    // when — export a CONTRACTUAL event (tenant.created) and an OPTIONAL event (incident.created)
+    contractualExporter.export(
+        FACTORY.generateRecord(
+            ValueType.TENANT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(TenantIntent.CREATED)));
+    contractualExporter.export(
+        FACTORY.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(IncidentIntent.CREATED)));
+
+    // then — only the contractual event is emitted
+    assertThat(logExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord ->
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(
+                        AnalyticsAttributes.Event.NAME, AnalyticsAttributes.Event.TENANT_CREATED));
+  }
+
+  @Test
+  void shouldOnlyExportOptionalSignalsWhenConfiguredWithOptionalOnly() {
+    // given — exporter configured with only OPTIONAL category
+    final var optionalOnlyConfig =
+        new AnalyticsExporterConfig().setCategories(java.util.List.of("optional"));
+    final var logExporter = InMemoryLogRecordExporter.create();
+    final var metricReader = InMemoryMetricReader.create();
+    final var otel =
+        TestOtelSdkManager.inMemoryWithMetrics(logExporter, metricReader, optionalOnlyConfig);
+    final var ctrl = new ExporterTestController();
+    final var optionalExporter = newExporter(otel, ctrl, optionalOnlyConfig);
+
+    // when — export a CONTRACTUAL event (tenant.created) and an OPTIONAL event (incident.created)
+    optionalExporter.export(
+        FACTORY.generateRecord(
+            ValueType.TENANT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(TenantIntent.CREATED)));
+    optionalExporter.export(
+        FACTORY.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(IncidentIntent.CREATED)));
+
+    // then — only the optional event is emitted
+    assertThat(logExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord ->
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(
+                        AnalyticsAttributes.Event.NAME,
+                        AnalyticsAttributes.Event.PROCESS_INCIDENT_CREATED));
+  }
+
   // -- helpers --
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
@@ -779,10 +844,16 @@ class AnalyticsExporterTest {
 
   private static AnalyticsExporter newExporter(
       final OtelSdkManager otelSdkManager, final ExporterTestController controller) {
+    return newExporter(otelSdkManager, controller, new AnalyticsExporterConfig());
+  }
+
+  private static AnalyticsExporter newExporter(
+      final OtelSdkManager otelSdkManager,
+      final ExporterTestController controller,
+      final AnalyticsExporterConfig config) {
     final var context =
         new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setConfiguration(new ExporterTestConfiguration<>("analytics", config))
             .setClusterId("test-cluster")
             .setPartitionId(1)
             .setLicenseKey("test-license-key");

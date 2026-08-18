@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.FORM_DEFINITION_DELETED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -40,7 +38,7 @@ public final class FormDefinitionDeletedHandler implements AnalyticsHandler<Form
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        FORM_DEFINITION_DELETED,
+        AnalyticsAttributes.Event.FORM_DEFINITION_DELETED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Form.ID, value.getFormId())

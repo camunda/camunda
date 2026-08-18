@@ -7,11 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.USER_TASK_ASSIGNED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.UserTask.ASSIGNEE_HASH;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.UserTask.KEY;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -58,12 +53,13 @@ public final class UserTaskAssignedHandler implements AnalyticsHandler<UserTaskR
     }
 
     otelSdkManager.logEvent(
-        USER_TASK_ASSIGNED,
+        AnalyticsAttributes.Event.USER_TASK_ASSIGNED,
         record.getPosition(),
         log ->
-            log.setAttribute(ASSIGNEE_HASH, sha256Hex(assignee))
-                .setAttribute(KEY, value.getUserTaskKey())
-                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
+            log.setAttribute(AnalyticsAttributes.UserTask.ASSIGNEE_HASH, sha256Hex(assignee))
+                .setAttribute(AnalyticsAttributes.UserTask.KEY, value.getUserTaskKey())
+                .setAttribute(
+                    AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }

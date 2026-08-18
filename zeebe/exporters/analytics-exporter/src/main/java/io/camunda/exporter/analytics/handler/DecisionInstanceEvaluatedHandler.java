@@ -7,9 +7,7 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.DECISION_INSTANCE_EVALUATED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.ID;
-
+import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
@@ -42,9 +40,9 @@ public final class DecisionInstanceEvaluatedHandler
     final var value = record.getValue();
 
     otelSdkManager.incrementMetric(
-        DECISION_INSTANCE_EVALUATED,
+        AnalyticsAttributes.Metric.DECISION_INSTANCE_EVALUATED,
         record.getPosition(),
         record.getTimestamp(),
-        Attributes.of(ID, value.getTenantId()));
+        Attributes.of(AnalyticsAttributes.Tenant.ID, value.getTenantId()));
   }
 }

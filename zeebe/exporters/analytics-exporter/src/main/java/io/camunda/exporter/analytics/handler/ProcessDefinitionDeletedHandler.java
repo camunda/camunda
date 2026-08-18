@@ -7,11 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_DEFINITION_DELETED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITION_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.VERSION;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -43,12 +38,13 @@ public final class ProcessDefinitionDeletedHandler implements AnalyticsHandler<P
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        PROCESS_DEFINITION_DELETED,
+        AnalyticsAttributes.Event.PROCESS_DEFINITION_DELETED,
         record.getPosition(),
         log ->
-            log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(VERSION, (long) value.getVersion())
+            log.setAttribute(AnalyticsAttributes.Process.BPMN_PROCESS_ID, value.getBpmnProcessId())
+                .setAttribute(
+                    AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
+                .setAttribute(AnalyticsAttributes.Process.VERSION, (long) value.getVersion())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }

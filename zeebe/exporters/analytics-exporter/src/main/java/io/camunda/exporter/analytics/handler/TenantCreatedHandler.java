@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TENANT_CREATED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -40,7 +38,7 @@ public final class TenantCreatedHandler implements AnalyticsHandler<TenantRecord
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        TENANT_CREATED,
+        AnalyticsAttributes.Event.TENANT_CREATED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())

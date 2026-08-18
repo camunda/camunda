@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.FORM_DEFINITION_CREATED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -41,7 +39,7 @@ public final class FormDefinitionCreatedHandler implements AnalyticsHandler<Form
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        FORM_DEFINITION_CREATED,
+        AnalyticsAttributes.Event.FORM_DEFINITION_CREATED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Form.ID, value.getFormId())

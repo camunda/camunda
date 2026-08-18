@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TENANT_DELETED;
-
 import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -40,7 +38,7 @@ public final class TenantDeletedHandler implements AnalyticsHandler<TenantRecord
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        TENANT_DELETED,
+        AnalyticsAttributes.Event.TENANT_DELETED,
         record.getPosition(),
         log ->
             log.setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
