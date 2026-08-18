@@ -447,6 +447,8 @@ jobs:
           compose_file: optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile self-managed"
+        env:
+          CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
