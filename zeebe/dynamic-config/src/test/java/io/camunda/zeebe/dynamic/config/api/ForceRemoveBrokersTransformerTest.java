@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.Map;
@@ -57,6 +62,38 @@ final class ForceRemoveBrokersTransformerTest {
     // then
     applyRequestAndVerifyResultingTopology(
         2, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
+  }
+
+  /**
+   * The request names the brokers that are gone, so the brokers to keep are everything else — and
+   * every physical tenant's partitions have to be handed to them, not only the default tenant's.
+   */
+  @Test
+  void shouldForceRemoveBrokersFromEveryPhysicalTenant() {
+    // given
+    final var configuration =
+        withMirroredTenant(
+            ClusterConfiguration.init()
+                .addMember(id0, MemberState.initializeAsActive(Map.of()))
+                .addMember(id1, MemberState.initializeAsActive(Map.of()))
+                .updateMember(
+                    id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+                .updateMember(
+                    id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig))));
+
+    // when — broker 1 is gone
+    final var phases =
+        new ForceRemoveBrokersRequestTransformer(Set.of(id1), id0).phases(configuration);
+
+    // then
+    assertThat(phases).isRight();
+    Assertions.assertThat(partitionGroupPhase(phases.get()).groupOperations())
+        .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)
+        .allSatisfy(
+            (physicalTenantId, operations) ->
+                Assertions.assertThat(operations)
+                    .describedAs("partitions of physical tenant '%s'", physicalTenantId)
+                    .containsExactly(new PartitionForceReconfigureOperation(id0, 1, Set.of(id0))));
   }
 
   private void applyRequestAndVerifyResultingTopology(

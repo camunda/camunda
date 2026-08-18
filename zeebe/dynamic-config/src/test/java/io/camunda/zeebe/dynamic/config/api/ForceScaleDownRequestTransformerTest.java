@@ -7,19 +7,25 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ForceScaleDownRequestTransformerTest {
@@ -90,5 +96,135 @@ class ForceScaleDownRequestTransformerTest {
     // then
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
+  }
+
+  @Nested
+  class Phases {
+
+    @Test
+    void shouldPlanTheSameChangeAsTheLegacyPath() {
+      // given — a cluster with a single physical tenant, which is what the legacy path can express
+      final var transformer = new ForceScaleDownRequestTransformer(Set.of(id0, id2), id0);
+
+      // when
+      final var phases =
+          transformer.phases(CurrentClusterConfiguration.fromLegacy(currentTopology));
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get())
+          .isEqualTo(
+              CurrentClusterConfiguration.toPhases(transformer.operations(currentTopology).get()));
+    }
+
+    /**
+     * The brokers are gone for every tenant at once, so every tenant's partitions have to be handed
+     * to the brokers that survive. A tenant left out keeps replicas on brokers that no longer exist
+     * — and the member removal that follows refuses the whole plan over it.
+     */
+    @Test
+    void shouldForceReconfigureEveryPhysicalTenantsPartitions() {
+      // given
+      final var configuration = withMirroredTenant(currentTopology);
+
+      // when — brokers 1 and 3 are gone
+      final var phases =
+          new ForceScaleDownRequestTransformer(Set.of(id0, id2), id0).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(partitionGroupPhase(phases.get()).groupOperations())
+          .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)
+          .allSatisfy(
+              (physicalTenantId, operations) ->
+                  assertThat(operations)
+                      .describedAs("partitions of physical tenant '%s'", physicalTenantId)
+                      .containsExactly(
+                          new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
+                          new PartitionForceReconfigureOperation(id2, 2, Set.of(id2))));
+    }
+
+    /**
+     * A broker may only leave the member set once nothing replicates on it any more, so the removal
+     * is a phase of its own after the one that reconfigures every tenant.
+     */
+    @Test
+    void shouldRemoveTheBrokersOnlyAfterEveryTenantIsReconfigured() {
+      // given
+      final var configuration = withMirroredTenant(currentTopology);
+
+      // when
+      final var phases =
+          new ForceScaleDownRequestTransformer(Set.of(id0, id2), id0).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get()).hasSize(2);
+      assertThat(((GlobalPhase) phases.get().getLast()).operations())
+          .containsExactly(
+              new MemberRemoveOperation(id0, id1), new MemberRemoveOperation(id0, id3));
+    }
+
+    /**
+     * Rejecting is what the default tenant's path already does, and the recoverable answer of the
+     * two: the operator can retain one more broker and ask again, where a removal that proceeded
+     * cannot be undone. The tenants that would lose a partition are named, because the request that
+     * triggers this does not mention them — it names brokers.
+     */
+    @Test
+    void shouldRejectWhenAnyPhysicalTenantsPartitionWouldLoseEveryReplica() {
+      // given — the default tenant's partition 1 survives on broker 0, tenant A's does not survive
+      // at all
+      final var configuration = twoTenants(partitionOne(id0, id1), partitionOne(id1));
+
+      // when — broker 1 is gone
+      final var phases =
+          new ForceScaleDownRequestTransformer(Set.of(id0, id2, id3), id0).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases)
+          .isLeft()
+          .left()
+          .isInstanceOf(InvalidRequest.class)
+          .satisfies(
+              error ->
+                  assertThat(error)
+                      .hasMessageContaining("having no replicas")
+                      .hasMessageContaining("{%s=[1]}".formatted(TENANT_A)));
+    }
+
+    /** A cluster of the four members, where only the given brokers replicate partition 1. */
+    private ClusterConfiguration partitionOne(final MemberId... replicas) {
+      var topology = ClusterConfiguration.init();
+      for (final var member : Set.of(id0, id1, id2, id3)) {
+        topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
+      }
+      var priority = 1;
+      for (final var replica : replicas) {
+        final var partition = PartitionState.active(priority++, partitionConfig);
+        topology = topology.updateMember(replica, member -> member.addPartition(1, partition));
+      }
+      return topology;
+    }
+
+    /**
+     * Two physical tenants whose partitions are placed differently, unlike the mirrored pair the
+     * other tests use: only a tenant that can lose a partition the other one keeps shows that each
+     * tenant is judged on its own replicas.
+     */
+    private CurrentClusterConfiguration twoTenants(
+        final ClusterConfiguration defaultTenant, final ClusterConfiguration otherTenant) {
+      final var defaultGroup = CurrentClusterConfiguration.DEFAULT_GROUP;
+      final var base = CurrentClusterConfiguration.fromLegacy(defaultTenant);
+      return new CurrentClusterConfiguration(
+          base.version(),
+          base.globalConfiguration(),
+          Map.of(
+              defaultGroup,
+              base.partitionGroup(defaultGroup),
+              TENANT_A,
+              CurrentClusterConfiguration.fromLegacy(otherTenant).partitionGroup(defaultGroup)),
+          base.phasedChangeState());
+    }
   }
 }
