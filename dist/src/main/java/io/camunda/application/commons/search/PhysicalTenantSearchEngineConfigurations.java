@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
@@ -20,11 +19,7 @@ import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.search.connect.configuration.DatabaseConfig;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,32 +38,8 @@ public class PhysicalTenantSearchEngineConfigurations {
 
   @Bean
   public Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant(
-      final PhysicalTenantResolver physicalTenantResolver,
-      final SearchEngineConnectProperties searchEngineConnectProperties,
-      final SearchEngineIndexProperties searchEngineIndexProperties,
-      final SearchEngineRetentionProperties searchEngineRetentionProperties,
-      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
-    final var byTenant = new LinkedHashMap<String, SearchEngineConfiguration>();
-    for (final String tenantId : physicalTenantResolver.known()) {
-      byTenant.put(
-          tenantId,
-          // The default tenant must keep resolving from the root properties beans rather than
-          // through convert(physicalTenantResolver.forPhysicalTenant(tenantId)) like other
-          // tenants: those beans are still bound from the legacy `camunda.database.*` prefix,
-          // which several call sites (e.g. test infra injecting a dynamic ES/OS URL) still rely
-          // on, and which isn't mirrored into the unified `camunda.data.secondary-storage.*` tree
-          // that PhysicalTenantResolver/Converter read from. Dropping this fell back to a
-          // non-existent local Elasticsearch and hung schema initialization at startup. See
-          // https://github.com/camunda/camunda/issues/57950 before removing this special case.
-          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
-              ? buildConfiguration(
-                  searchEngineConnectProperties,
-                  searchEngineIndexProperties,
-                  searchEngineRetentionProperties,
-                  searchEngineSchemaManagerProperties)
-              : convert(physicalTenantResolver.forPhysicalTenant(tenantId)));
-    }
-    return Collections.unmodifiableMap(byTenant);
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return physicalTenantResolver.mapValues(PhysicalTenantSearchEngineConfigurations::convert);
   }
 
   private static SearchEngineConfiguration convert(final Camunda tenantCamunda) {
@@ -82,18 +53,11 @@ public class PhysicalTenantSearchEngineConfigurations {
         new Converter(tenantCamunda).convert(), index, retention, schemaManager);
   }
 
-  static SearchEngineConfiguration buildConfiguration(
+  private static SearchEngineConfiguration buildConfiguration(
       final SearchEngineConnectProperties connect,
       final SearchEngineIndexProperties index,
       final SearchEngineRetentionProperties retention,
       final SearchEngineSchemaManagerProperties schemaManager) {
-
-    // Override schema creation if database type is "none"
-    final DatabaseType databaseType = connect.getTypeEnum();
-    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType.name())) {
-      schemaManager.setCreateSchema(false);
-    }
-
     return SearchEngineConfiguration.of(
         b -> b.connect(connect).index(index).retention(retention).schemaManager(schemaManager));
   }
