@@ -26,10 +26,12 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +83,23 @@ final class PartitionDisableExporterApplierTest {
   }
 
   @Test
+  void shouldRejectIfMemberDoesNotHavePartition() {
+    // given
+    final var group = groupWithMembers(Map.of(memberId, brokerWith(Map.of())));
+
+    // when
+    final var result =
+        new PartitionDisableExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor)
+            .init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not have the partition");
+  }
+
+  @Test
   void shouldRejectIfPartitionDoesNotHaveExporter() {
     // given
     final var config = DynamicPartitionConfig.init();
@@ -127,5 +146,42 @@ final class PartitionDisableExporterApplierTest {
             .exporters()
             .get("exporterA");
     Assertions.assertThat(exporterState.state()).isEqualTo(State.DISABLED);
+  }
+
+  @Test
+  void shouldNotChangeGroupConfigurationInInit() {
+    // given
+    final var config =
+        DynamicPartitionConfig.init().updateExporting(c -> c.addExporters(Set.of("exporterA")));
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+    final var applier =
+        new PartitionDisableExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor);
+
+    // when
+    final var initResult = applier.init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(initResult).isRight();
+    Assertions.assertThat(initResult.get().apply(group)).isEqualTo(group);
+  }
+
+  @Test
+  void shouldFailApplyIfExecutorFails() {
+    // given
+    final var applier =
+        new PartitionDisableExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor);
+    when(partitionChangeExecutor.disableExporter(1, "exporterA"))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
+
+    // when
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("force fail");
   }
 }

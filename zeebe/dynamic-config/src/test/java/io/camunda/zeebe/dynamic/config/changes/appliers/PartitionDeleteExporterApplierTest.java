@@ -19,10 +19,12 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -75,6 +77,23 @@ final class PartitionDeleteExporterApplierTest {
   }
 
   @Test
+  void shouldRejectIfPartitionDoesNotExist() {
+    // given — member exists in the group, but does not replicate the requested partition
+    final var group = groupWithMembers(Map.of(memberId, brokerWith(Map.of())));
+
+    // when
+    final var result =
+        new PartitionDeleteExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor)
+            .init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not have the partition");
+  }
+
+  @Test
   void shouldRejectIfPartitionDoesNotHaveExporter() {
     // given
     final var config = DynamicPartitionConfig.init();
@@ -111,6 +130,45 @@ final class PartitionDeleteExporterApplierTest {
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("instead of");
+  }
+
+  @Test
+  void shouldNotChangeGroupConfigurationInInit() {
+    // given
+    final var config =
+        DynamicPartitionConfig.init()
+            .updateExporting(c -> c.addExporters(Set.of("exporterA")))
+            .updateExporting(c -> c.withConfigNotFoundFor(Set.of("exporterA")));
+    final var group =
+        groupWithMembers(Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, config)))));
+
+    // when
+    final var result =
+        new PartitionDeleteExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor)
+            .init(globalConfigurationWithMember, group);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(group)).isEqualTo(group);
+  }
+
+  @Test
+  void shouldFailApplyFutureIfDeleteExporterFails() {
+    // given
+    Mockito.when(partitionChangeExecutor.deleteExporter(1, "exporterA"))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
+    final var applier =
+        new PartitionDeleteExporterApplier(memberId, 1, "exporterA", partitionChangeExecutor);
+
+    // when
+    final var result = applier.apply();
+
+    // then
+    Assertions.assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("force fail");
   }
 
   @Test

@@ -24,9 +24,11 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -139,5 +141,47 @@ final class PartitionReconfigurePriorityApplierTest {
     final var localPartition = resultingGroup.getMember(localMemberId).getPartition(1);
     Assertions.assertThat(localPartition.priority()).isEqualTo(5);
     Assertions.assertThat(localPartition.state()).isEqualTo(PartitionState.State.ACTIVE);
+  }
+
+  @Test
+  void shouldNotChangeGroupConfigurationOnSuccessfulInit() {
+    // given
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId, brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+
+    // when
+    final var result =
+        new PartitionReconfigurePriorityApplier(localMemberId, 1, 3, partitionChangeExecutor)
+            .init(globalConfigurationWithLocalMemberActive, initialGroup);
+
+    // then
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get().apply(initialGroup)).isEqualTo(initialGroup);
+  }
+
+  @Test
+  void shouldFailApplyResultIfPartitionChangeExecutorFails() {
+    // given
+    final var initialGroup =
+        groupWithMembers(
+            Map.of(
+                localMemberId, brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))));
+    final var applier =
+        new PartitionReconfigurePriorityApplier(localMemberId, 1, 5, partitionChangeExecutor);
+    applier.init(globalConfigurationWithLocalMemberActive, initialGroup);
+    when(partitionChangeExecutor.reconfigurePriority(anyInt(), anyInt()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("force failed")));
+
+    // when
+    final var resultFuture = applier.apply();
+
+    // then
+    Assertions.assertThat(resultFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("force failed");
   }
 }
