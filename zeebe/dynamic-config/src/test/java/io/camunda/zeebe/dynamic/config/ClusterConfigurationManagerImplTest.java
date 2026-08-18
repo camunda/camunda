@@ -1015,6 +1015,44 @@ final class ClusterConfigurationManagerImplTest {
             });
   }
 
+  /**
+   * A fresh cluster with no configured cluster id must still come up with one, and it must be
+   * visible through the legacy projection: consumers such as the Hub ping read {@code
+   * BrokerTopologyManager#getClusterConfiguration().clusterId()} and block until it is present.
+   */
+  @Test
+  void shouldStartFromStaticInitializerWithGeneratedClusterId() {
+    // given — a fresh manager bootstrapping without a configured cluster id
+    final var manager = newManager(MEMBER_0);
+    final var partition =
+        new PartitionMetadata(
+            new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, 1),
+            Set.of(MEMBER_0, MEMBER_1),
+            Map.of(MEMBER_0, 1, MEMBER_1, 1),
+            1,
+            MEMBER_0);
+    final var staticConfiguration =
+        new StaticConfiguration(
+            new ControllablePartitionDistributor().withPartitions(Set.of(partition)),
+            Set.of(MEMBER_0, MEMBER_1),
+            MEMBER_0,
+            List.of(new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1)),
+            1,
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionConfig),
+            null);
+
+    // when
+    manager
+        .start(new StaticInitializer<>(staticConfiguration::generateCurrentClusterConfiguration))
+        .join();
+
+    // then — the id is generated once and surfaces in the view the Hub ping waits on
+    final var config = configuration(manager);
+    assertThat(config.globalConfiguration().clusterId()).isPresent();
+    assertThat(config.toLegacyDefault().clusterId())
+        .isEqualTo(config.globalConfiguration().clusterId());
+  }
+
   private static final class FailingExecutor
       implements ClusterMembershipChangeExecutor, PartitionChangeExecutor {
 
