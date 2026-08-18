@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -26,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -195,14 +194,11 @@ public final class VariableOutputMappingTransformerTest {
       final String expectedOutput) {
     // given
     final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-    outputMappings
-        .mappings()
-        .forEach(
-            mapping ->
-                assertThat(mapping.source().isValid())
-                    .describedAs(
-                        "Expected valid expression: %s", mapping.source().getFailureMessage())
-                    .isTrue());
+    outputMappings.forEach(
+        mapping ->
+            assertThat(mapping.source().isValid())
+                .describedAs("Expected valid expression: %s", mapping.source().getFailureMessage())
+                .isTrue());
 
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
@@ -213,11 +209,12 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings.mappings()) {
+    for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       assertThat(result.isFailure())
@@ -247,11 +244,12 @@ public final class VariableOutputMappingTransformerTest {
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
     EvaluationResult failure = null;
-    for (final var mapping : outputMappings.mappings()) {
+    for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       if (result.isFailure()) {
@@ -287,11 +285,12 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings.mappings()) {
+    for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
@@ -320,11 +319,12 @@ public final class VariableOutputMappingTransformerTest {
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
                     .orElse(null));
-    for (final var mapping : outputMappings.mappings()) {
+    for (final var mapping : outputMappings) {
       final EvaluationContext context =
           name -> {
-            final var accumulated = resultBuilder.get(name);
-            return Either.left(accumulated != null ? accumulated : variables.get(name));
+            final var accumulated = resultBuilder.getVariable(name);
+            return Either.left(
+                ContextValue.msgPack(accumulated != null ? accumulated : variables.get(name)));
           };
       final var result = expressionLanguage.evaluateExpression(mapping.source(), context);
       resultBuilder.put(mapping.targetPath(), result.toBuffer());
@@ -332,66 +332,6 @@ public final class VariableOutputMappingTransformerTest {
 
     // then
     MsgPackUtil.assertEquality(resultBuilder.toDocument(), "{'a':{'b':1}, 'd':{'p':0}}");
-  }
-
-  // ── combinedExpression tests ──────────────────────────────────────────────
-
-  @Test
-  void shouldBuildValidCombinedExpression() {
-    // given: simple non-overlapping mappings
-    final var mappings = List.of(mapping("x", "a"), mapping("y", "b"));
-
-    // when
-    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-
-    // then: combinedExpression is parseable (transformer would have thrown if not)
-    assertThat(outputMappings.combinedExpression().isValid()).isTrue();
-  }
-
-  @Test
-  void shouldEvaluateCombinedExpressionForSimpleTargets() {
-    // given: [x→a, y→b] with job scope {x:1, y:2}
-    final var mappings = List.of(mapping("x", "a"), mapping("y", "b"));
-    final var scope = Map.of("x", asMsgPack("1"), "y", asMsgPack("2"));
-    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-
-    // when: evaluate combinedExpression against job scope (no accumulated context)
-    final var result =
-        expressionLanguage.evaluateExpression(
-            outputMappings.combinedExpression(), name -> Either.left(scope.get(name)));
-
-    // then: same result as ORDERED for non-overlapping targets
-    assertThat(result.isFailure()).isFalse();
-    MsgPackUtil.assertEquality(new UnsafeBuffer(result.toBuffer()), "{'a':1,'b':2}");
-  }
-
-  @Test
-  void shouldEvaluateCombinedExpressionForDuplicateTargetWithIntermediateRead() {
-    // given: [1→x, x→y, 2→x] — duplicate target x, with y reading x between the two x writes.
-    // CombinedOutputMappingResolver evaluates one expression; duplicate x is resolved at
-    // expression-build time to the last value (2), so y sees x=2, not x=1.
-    final var mappings = List.of(mapping("1", "x"), mapping("x", "y"), mapping("2", "x"));
-    final var outputMappings = transformer.transformOutputMappings(mappings, expressionLanguage);
-
-    // when: no job scope needed — sources are literals
-    final var result =
-        expressionLanguage.evaluateExpression(
-            outputMappings.combinedExpression(), name -> Either.left(null));
-
-    // then: COMBINED gives x=2, y=2 (differs from ORDERED which gives y=1)
-    assertThat(result.isFailure()).isFalse();
-    MsgPackUtil.assertEquality(new UnsafeBuffer(result.toBuffer()), "{'x':2,'y':2}");
-  }
-
-  @Test
-  void shouldThrowWhenTargetCreatesUnparseableCombinedExpression() {
-    // a..b splits to ["a","","b"] — empty segment is not a valid FEEL identifier
-    Assertions.assertThatThrownBy(
-            () ->
-                transformer.transformOutputMappings(
-                    List.of(mapping("x", "a..b")), expressionLanguage))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageStartingWith("Failed to build variable mapping expression:");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {

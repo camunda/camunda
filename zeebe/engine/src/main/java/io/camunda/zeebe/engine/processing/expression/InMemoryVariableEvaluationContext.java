@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
-import org.agrona.DirectBuffer;
 
 public final class InMemoryVariableEvaluationContext implements ScopedEvaluationContext {
   private final Map<String, Object> variables;
@@ -22,11 +22,11 @@ public final class InMemoryVariableEvaluationContext implements ScopedEvaluation
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     if (variables.containsKey(variableName)) {
       final var value = variables.get(variableName);
       final var msgPackBytes = MsgPackConverter.convertToMsgPack(value);
-      return Either.left(BufferUtil.wrapArray(msgPackBytes));
+      return Either.left(new ContextValue.MsgPack(BufferUtil.wrapArray(msgPackBytes)));
     }
     return Either.left(null);
   }
