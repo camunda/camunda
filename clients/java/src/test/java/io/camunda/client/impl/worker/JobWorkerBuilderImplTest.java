@@ -420,6 +420,57 @@ class JobWorkerBuilderImplTest {
         () -> assertThat(tenantIdCaptor.getValue()).containsExactlyInAnyOrder("1", "2", "3", "4"));
   }
 
+  @Test
+  void shouldForwardWithLeaseOnStream() {
+    // given
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
+    Mockito.when(lastStep.withLease(anyBoolean())).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(true)
+        .withLease(true)
+        .open();
+
+    // then
+    await(() -> verify(lastStep).withLease(true));
+  }
+
+  @Test
+  void shouldNotForwardWithLeaseOnStreamByDefault() {
+    // given - a streaming worker that never opts into withLease
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(true)
+        .open();
+
+    // then - withLease must never be called at all, mirroring the poll-path contract: the field
+    // stays absent on the wire rather than an explicit false that older gateways would reject
+    await(() -> verify(lastStep, never()).withLease(anyBoolean()));
+  }
+
   private void await(final ThrowingRunnable throwingRunnable) {
     Awaitility.await()
         .ignoreExceptions()
