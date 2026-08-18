@@ -17,8 +17,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
-import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
+import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -71,8 +72,10 @@ public final class BpmnVariableMappingBehavior {
    * Apply the input mappings for a BPMN element. Generally called on activating of the element.
    *
    * <p>The mappings are evaluated one by one in modeling order. Each mapping's source expression
-   * sees the results of the earlier mappings (they take priority over same-named scope variables)
-   * and falls back to the element's variable scope otherwise. Evaluation stops at the first failing
+   * sees the results of the earlier mappings and falls back to the element's variable scope
+   * otherwise. An earlier result at a nested target shadows a same-named scope variable only
+   * partially: the keys it defined win, and the rest fall through to the scope value. An earlier
+   * result assigned to a whole name shadows it totally. Evaluation stops at the first failing
    * mapping and no variables are applied in that case.
    *
    * @param context The current bpmn element context
@@ -89,7 +92,9 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder =
+        new InputMappingResultBuilder(
+            name -> variablesState.getVariable(scopeKey, BufferUtil.wrapString(name)));
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling
     final var processor =
@@ -159,7 +164,7 @@ public final class BpmnVariableMappingBehavior {
       // it and keep the existing sibling properties: look up the top-level variable in the element
       // scope, then navigate into it along the remaining path segments (null when absent).
       final var resultBuilder =
-          new MappingResultBuilder(
+          new OutputMappingResultBuilder(
               path ->
                   Optional.ofNullable(
                           variablesState.getVariable(

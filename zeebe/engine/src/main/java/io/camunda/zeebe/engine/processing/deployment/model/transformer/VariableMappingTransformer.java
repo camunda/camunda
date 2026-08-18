@@ -38,10 +38,14 @@ import java.util.stream.Collectors;
  * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
  * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
  *
- * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
- * result must be merged with the existing scope variable if that variable is a JSON object, at
- * every nesting level. This merging is done by {@code MappingResultBuilder} while accumulating
- * results.
+ * <p>Input and output mappings differ in how a nested target relates to the existing scope variable
+ * at runtime, and each difference is handled by its own {@code MappingResultBuilder}
+ * implementation. An output mapping's result is merged into that variable if it is a JSON object,
+ * at every nesting level, so the merged value is what gets written ({@code
+ * OutputMappingResultBuilder}). An input mapping's result is not merged — it is written as-is — but
+ * when a later mapping in the same list reads that root name in its own source, it sees the mapped
+ * keys layered over the value the scope chain resolves, so a mapping shadows only the keys it
+ * defines ({@code InputMappingResultBuilder}).
  */
 public final class VariableMappingTransformer {
 
@@ -90,7 +94,7 @@ public final class VariableMappingTransformer {
    * Transforms the output mappings, keeping each mapping as its own source expression plus target
    * path so they can be evaluated one by one in modeling order at runtime. A nested target merges
    * with the existing scope value at every path level at runtime (see {@code
-   * MappingResultBuilder}).
+   * OutputMappingResultBuilder}).
    */
   public List<OutputMapping> transformOutputMappings(
       final Collection<? extends ZeebeMapping> outputMappings,

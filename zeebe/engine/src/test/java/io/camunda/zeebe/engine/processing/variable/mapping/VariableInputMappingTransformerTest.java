@@ -15,7 +15,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
@@ -57,12 +57,19 @@ final class VariableInputMappingTransformerTest {
         "{'a':{'b':1, 'c':2}}"
       },
       {List.of(mapping("x", "a.b.c")), Map.of("x", asMsgPack("1")), "{'a':{'b':{'c':1}}}"},
-      // a mapping reads the PARTIAL object an earlier a.* mapping built so far, not the outer
-      // scope's "a"
+      // a nested target shadows the outer scope's "a" only for the key it defines; the mapping that
+      // reads "a" gets that key layered over the outer scope's value, not instead of it
       {
         List.of(mapping("x", "a.b"), mapping("a", "c")),
         Map.of("x", asMsgPack("1"), "a", asMsgPack("{'z':99}")),
-        "{'a':{'b':1}, 'c':{'b':1}}"
+        "{'a':{'b':1}, 'c':{'b':1, 'z':99}}"
+      },
+      // narrowing an object onto its own name is an identity copy for the fields it names, not a
+      // last-one-wins race between them — issue #59646
+      {
+        List.of(mapping("x.a", "x.a"), mapping("x.b", "x.b")),
+        Map.of("x", asMsgPack("{'a':1, 'b':2}")),
+        "{'x':{'a':1, 'b':2}}"
       },
       // nested source
       {List.of(mapping("x.y", "a")), Map.of("x", asMsgPack("{'y':1}")), "{'a':1}"},
@@ -200,7 +207,7 @@ final class VariableInputMappingTransformerTest {
     // when: evaluate the mappings one by one in modeling order, same as
     // BpmnVariableMappingBehavior.applyInputMappings does at runtime — accumulated results shadow
     // the base variables, which fall back for anything not mapped yet
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = new InputMappingResultBuilder(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -233,7 +240,7 @@ final class VariableInputMappingTransformerTest {
                     .isTrue());
 
     // when
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = new InputMappingResultBuilder(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
@@ -275,7 +282,7 @@ final class VariableInputMappingTransformerTest {
       final Map<String, DirectBuffer> variables,
       final ExpressionLanguage language) {
     final var inputMappings = transformer.transformInputMappings(mappings, language);
-    final var resultBuilder = new MappingResultBuilder();
+    final var resultBuilder = new InputMappingResultBuilder(variables::get);
     for (final var mapping : inputMappings.mappings()) {
       final EvaluationContext context =
           name -> {
