@@ -317,9 +317,13 @@ public final class BackupEndpoint {
           response.getStatus());
     }
 
-    // the default tenant's id keeps the meaning backupId always had; the others are in backupIds
+    // the default tenant's id keeps the meaning backupId always had; the others are in backupIds.
+    // A request narrowed to another tenant reports that tenant's id, since that is the only backup
+    // the caller asked for.
     final var reportedId =
-        backupIds.getOrDefault(DEFAULT_PHYSICAL_TENANT_ID, backupIds.values().iterator().next());
+        backupIds.containsKey(DEFAULT_PHYSICAL_TENANT_ID)
+            ? backupIds.get(DEFAULT_PHYSICAL_TENANT_ID)
+            : backupIds.values().iterator().next();
     return new WebEndpointResponse<>(
         new TakeBackupRuntimeResponse()
             .backupId(reportedId)
