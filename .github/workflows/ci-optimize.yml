@@ -16,6 +16,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -31,6 +36,11 @@ on:
         description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
+      runE2eTests:
+        description: "Set to true if Optimize front-end or back-end code was changed"
+        type: boolean
+        required: false
+        default: true
       use-shared-distball:
         description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
         type: boolean
@@ -358,7 +368,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
-    if: inputs.runFeTests
+    if: inputs.runE2eTests
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     permissions: { }

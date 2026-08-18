@@ -1867,6 +1867,7 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      runE2eTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   zeebe-ci:
