@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.admin.ExportingStatus;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,8 +72,38 @@ public final class ClusterExportingServices {
   }
 
   private CompletableFuture<Void> fanOut(final Function<String, CompletableFuture<Void>> action) {
-    final var futures = physicalTenantIds.stream().map(action).toArray(CompletableFuture[]::new);
+    final var futures =
+        physicalTenantIds.stream()
+            .map(tenantId -> fanOutOne(tenantId, action))
+            .toArray(CompletableFuture[]::new);
     return CompletableFuture.allOf(futures);
+  }
+
+  /**
+   * Attaches the physical tenant id to a failure, both for a future that completes exceptionally
+   * and for a synchronous throw ({@code validateTopology()} rejects before returning a future).
+   * Without this, an {@code IncompleteTopologyException} on a 10-tenant cluster tells the operator
+   * only "one tenant had an incomplete topology", not which one — the exact toil this endpoint
+   * exists to remove.
+   */
+  private static CompletableFuture<Void> fanOutOne(
+      final String physicalTenantId, final Function<String, CompletableFuture<Void>> action) {
+    try {
+      return action
+          .apply(physicalTenantId)
+          .exceptionallyCompose(
+              e -> CompletableFuture.failedFuture(withTenantId(physicalTenantId, e)));
+    } catch (final IncompleteTopologyException e) {
+      return CompletableFuture.failedFuture(withTenantId(physicalTenantId, e));
+    }
+  }
+
+  private static Throwable withTenantId(final String physicalTenantId, final Throwable error) {
+    if (error instanceof final IncompleteTopologyException e) {
+      return new IncompleteTopologyException(
+          "Physical tenant '%s': %s".formatted(physicalTenantId, e.getMessage()));
+    }
+    return error;
   }
 
   private static ExportingStatus fold(final List<ExportingStatus> perTenantStatuses) {

@@ -243,6 +243,31 @@ class ClusterExportingServicesTest {
   }
 
   @Test
+  void shouldIncludeFailingTenantIdInPauseFailureDetail() {
+    // given
+    final var broadcaster = mock(ExportingRequestBroadcaster.class);
+    when(broadcaster.pauseExporting(TENANT_A)).thenReturn(CompletableFuture.completedFuture(null));
+    when(broadcaster.pauseExporting(TENANT_B))
+        .thenReturn(
+            CompletableFuture.failedFuture(new IncompleteTopologyException("no topology yet")));
+    final var services = new ClusterExportingServices(broadcaster, Set.of(TENANT_A, TENANT_B));
+
+    // when
+    final var future = services.pauseExporting(false);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ZERO)
+        .withThrowableThat()
+        .withCauseInstanceOf(ServiceException.class)
+        .satisfies(
+            e ->
+                assertThat(((ServiceException) e.getCause()).getMessage())
+                    .contains(TENANT_B)
+                    .contains("no topology yet"));
+  }
+
+  @Test
   void shouldResumeEveryTenant() {
     // given
     final var broadcaster = mock(ExportingRequestBroadcaster.class);
