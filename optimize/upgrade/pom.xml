@@ -309,24 +309,36 @@
   </build>
 
   <profiles>
-    <!--
-      AbstractUpgradeIT (src/test/java, not src/it/java) depends on
-      optimize-backend's src/it/java helpers (DatabaseIntegrationTestExtension,
-      MockServerUtil), which backend only compiles when skipQaBuild != true.
-      Without this profile, test-compile fails in the same reactor build
-      whenever skipQaBuild=true is passed (e.g. the UT CI job).
-    -->
     <profile>
-      <id>skip-upgrade-tests-without-it-support</id>
+      <id>optimize-zeebe-it-support</id>
       <activation>
         <property>
           <name>skipQaBuild</name>
-          <value>true</value>
+          <value>!true</value>
         </property>
       </activation>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-it-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <phase>generate-test-sources</phase>
+                <configuration>
+                  <sources>
+                    <source>src/it/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
