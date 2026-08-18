@@ -311,10 +311,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
                 processCache,
                 configuration.getExtensionProperties()),
-            new ProcessFullyDeletedHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
-            new ProcessDrainingHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -445,6 +441,17 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName()),
             new ResourceDeletedHandler(
                 indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName())));
+
+    // DRAINING is distributed to every partition, so register these on the deployment partition
+    // only: concurrent writes to the same process-definition document could otherwise race.
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
+      exportHandlers.add(
+          new ProcessDrainingHandler(
+              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+      exportHandlers.add(
+          new ProcessFullyDeletedHandler(
+              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+    }
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
