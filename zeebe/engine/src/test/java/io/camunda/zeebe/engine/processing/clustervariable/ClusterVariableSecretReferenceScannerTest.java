@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Pure unit tests for {@link ClusterVariableSecretReferenceScanner}, covering the same transferable
@@ -128,13 +130,41 @@ final class ClusterVariableSecretReferenceScannerTest {
   }
 
   @Test
-  void shouldStopNameAtFirstNonAlphanumericCharacter() {
-    // given a name containing a hyphen, which is not \p{Alnum}
+  void shouldCaptureHyphenatedNameInFull() {
+    // given a name containing a hyphen, as the backing stores routinely hold
     final var references = scan("\"camunda.secrets.my-name\"");
 
-    // then only the alphanumeric run up to the hyphen is captured, documenting the charset
-    // boundary of the shared reference pattern (SecretReference.REFERENCE_PATTERN)
-    assertThat(references).extracting(DetectedReference::name).containsExactly("my");
+    // then the whole name is captured. Truncating at the hyphen used to resolve the unrelated
+    // secret 'my' whenever one existed, which is the failure this charset closes
+    assertThat(references).extracting(DetectedReference::name).containsExactly("my-name");
+  }
+
+  @ParameterizedTest(name = "camunda.secrets.{0} captures {1}")
+  @CsvSource({"my.name, my", "my name, my", "my*name, my"})
+  void shouldStopNameAtFirstCharacterOutsideTheNameCharset(
+      final String written, final String captured) {
+    // given a name carrying a character the reference charset excludes: a dot would make the
+    // reference a fourth FEEL segment, and whitespace and glob characters are no FEEL identifier
+    final var references = scan("\"camunda.secrets." + written + "\"");
+
+    // then the name ends where the charset does, documenting the boundary of the shared reference
+    // pattern (SecretReference.REFERENCE_PATTERN)
+    assertThat(references).extracting(DetectedReference::name).containsExactly(captured);
+  }
+
+  @ParameterizedTest(name = "camunda.secrets.{0} captures {1}")
+  @CsvSource({"token-, token-", "token-v2, token-v2", "token-camunda.secrets.other, token-camunda"})
+  void shouldReadAHyphenAsPartOfTheNameRatherThanEndingIt(
+      final String written, final String captured) {
+    // given a reference followed by a hyphen: trailing, suffixed, and with a second reference
+    // joined on. The pattern is not anchored, so the hyphen never ends a name
+    final var references = scan("\"camunda.secrets." + written + "\"");
+
+    // then the whole run is one name. A composed value that meant 'camunda.secrets.token' plus
+    // literal text after the hyphen therefore stops resolving: the store answers NOT_FOUND and the
+    // incident names the captured string. That is the deliberate trade — the narrower charset
+    // instead resolved the unrelated secret 'token' silently, which is what #60364 is about
+    assertThat(references).extracting(DetectedReference::name).containsExactly(captured);
   }
 
   @Test

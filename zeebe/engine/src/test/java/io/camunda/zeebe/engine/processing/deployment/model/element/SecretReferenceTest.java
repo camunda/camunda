@@ -358,6 +358,15 @@ class SecretReferenceTest {
         arguments("=camunda.secrets.tokén", refs("tokén")),
         // backtick-escaped names allow special characters
         arguments("=camunda.secrets.`my-secret`", refs("my-secret")),
+        // backticks escape a dot too, so this is a three-segment name 'tls.crt' rather than the
+        // four-segment path the unquoted camunda.secrets.tls.crt is. The detector reports it and
+        // the engine resolves it from the store, while SecretServices' charset rejects the same
+        // name on /v2/secrets/resolve — the #60364 mismatch, one charset over
+        arguments("=camunda.secrets.`tls.crt`", refs("tls.crt")),
+        // written bare, a dash is FEEL's minus operator, so the source parses as
+        // camunda.secrets.my - secret and only 'my' is reported. Backticks are the way to write a
+        // dashed name, and the evaluation of the subtraction fails afterwards
+        arguments("=camunda.secrets.my-secret", refs("my")),
         // a reference used inside a comment is not part of the expression
         arguments("=camunda.secrets.token // camunda.secrets.other", refs("token")),
         // a literal reference is ignored

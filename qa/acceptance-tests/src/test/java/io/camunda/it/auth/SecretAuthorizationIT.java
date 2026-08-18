@@ -60,8 +60,8 @@ class SecretAuthorizationIT {
 
   /**
    * The broker reads a real file-based store. {@code tls.crt} is deliberately among the secrets:
-   * the file store accepts that name but it cannot form a {@code camunda.secrets.<name>} reference,
-   * so the listing has to leave it out.
+   * the file store accepts a dot in a name but the reference charset the endpoints accept does not
+   * (see {@code SecretServices.REFERENCE_NAME_PATTERN}), so the listing has to leave it out.
    */
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =

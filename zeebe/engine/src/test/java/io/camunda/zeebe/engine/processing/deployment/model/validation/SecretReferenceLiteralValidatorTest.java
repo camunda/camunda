@@ -254,6 +254,31 @@ final class SecretReferenceLiteralValidatorTest {
     verify(collector).addError(eq(0), contains("camunda.secrets.token"));
   }
 
+  @ParameterizedTest(
+      name = "[{0}] rejects static value that is a hyphenated secret reference, naming it in full")
+  @MethodSource("validators")
+  void shouldRejectStaticValueThatIsAHyphenatedSecretReference(
+      final String name, final BiConsumer<String, ValidationResultCollector> validate) {
+    // when - a static value, so what is rejected is the literal use, not the hyphen: a hyphenated
+    // name is perfectly valid when written as an expression (see the test below)
+    final var collector = validate("camunda.secrets.db-password", validate);
+
+    // then - the whole name is named back to the author, not the 'camunda.secrets.db' prefix the
+    // narrower charset used to report
+    verify(collector).addError(eq(0), contains("camunda.secrets.db-password"));
+  }
+
+  @ParameterizedTest(name = "[{0}] allows backtick-escaped hyphenated reference as an expression")
+  @MethodSource("validators")
+  void shouldAllowBacktickedHyphenatedSecretReferenceUsedAsAnExpression(
+      final String name, final BiConsumer<String, ValidationResultCollector> validate) {
+    // when - the only way to write a dashed name in FEEL, since a bare dash is the minus operator
+    final var collector = validate("=camunda.secrets.`db-password`", validate);
+
+    // then - backticks are not string quotes, so the reference is an expression and passes
+    verifyNoInteractions(collector);
+  }
+
   private ValidationResultCollector validate(
       final String source, final BiConsumer<String, ValidationResultCollector> validate) {
     final var collector = mock(ValidationResultCollector.class);

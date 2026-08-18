@@ -55,6 +55,20 @@ class FlowNodeSecretReferenceTest {
   }
 
   @Test
+  void shouldStoreBacktickedHyphenatedSecretReference() {
+    // given - a dashed store name, which FEEL only accepts backtick-escaped
+    final var task =
+        transform(t -> t.zeebeInputExpression("camunda.secrets.`db-password`", "auth.password"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - the dash survives into the reference the job record carries to the store
+    assertThat(secretReferences)
+        .containsExactly(entry("/auth/password", Set.of(new SecretReference("db-password"))));
+  }
+
+  @Test
   void shouldStoreMultipleReferencesForSingleInputMapping() {
     // given
     final var task =

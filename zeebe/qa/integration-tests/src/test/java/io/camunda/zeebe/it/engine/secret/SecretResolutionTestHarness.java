@@ -119,15 +119,32 @@ public final class SecretResolutionTestHarness {
   /**
    * A name no other test uses. The secret cache is per broker and shared with the gateway's secret
    * endpoints, so a name reused across tests runs against a warm cache and never exercises the
-   * cache-miss path. A reference is a FEEL path, so the name has to be a single alphanumeric
-   * segment.
+   * cache-miss path. A reference is a FEEL path, so the name is kept to a bare identifier that
+   * needs no escaping; see {@link #uniqueHyphenatedSecretName()} for the escaped variant.
    */
   public static String uniqueSecretName() {
     return "s" + UUID.randomUUID().toString().replace("-", "");
   }
 
+  /**
+   * The same, with a dash in it — the shape the backing stores routinely hold ({@code db-password},
+   * {@code tls-key}). Only usable through {@link #backtickedSecretReference(String)}, since FEEL
+   * reads a bare dash as the minus operator.
+   */
+  public static String uniqueHyphenatedSecretName() {
+    return uniqueSecretName() + "-dashed";
+  }
+
   public static String secretReference(final String secretName) {
     return "camunda.secrets." + secretName;
+  }
+
+  /**
+   * A reference whose name is backtick-escaped, which is how a name FEEL does not accept as a bare
+   * identifier — a dashed one above all — is written in an expression.
+   */
+  public static String backtickedSecretReference(final String secretName) {
+    return secretReference("`" + secretName + "`");
   }
 
   /** Writes one secret of the broker's file-based store, creating or replacing its file. */

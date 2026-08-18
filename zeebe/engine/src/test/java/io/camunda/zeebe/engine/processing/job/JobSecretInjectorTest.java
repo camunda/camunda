@@ -581,6 +581,25 @@ final class JobSecretInjectorTest {
     }
 
     @Test
+    void shouldNotCorruptDashedPlaceholderThatIsPrefixOfAnother() {
+      // given - the same collision with dashed names, which is the shape that actually occurs:
+      // 'db-password' next to 'db-password-old' is an ordinary naming convention, 'token' next to
+      // 'token2' is not
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("h", "camunda.secrets.db-password camunda.secrets.db-password-old"),
+                  ref("db-password", "/h"),
+                  ref("db-password-old", "/h")));
+
+      // when
+      inject(batch, Map.of("db-password", "A", "db-password-old", "BB"));
+
+      // then - neither value is mangled
+      assertThat(variablesOf(batch, 0)).isEqualTo(Map.of("h", "A BB"));
+    }
+
+    @Test
     void shouldInjectAtDeeplyNestedPathAndPreserveSiblings() {
       // given - siblings of every type around the addressed leaf
       final var variables =
