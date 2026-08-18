@@ -47,6 +47,7 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,12 +155,25 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+    final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
             wrappedJobRecord.getTypeBuffer(),
-            jobActivationProperties -> isAuthorized(jobActivationProperties, wrappedJobRecord));
+            jobActivationProperties ->
+                isAuthorized(jobActivationProperties, wrappedJobRecord)
+                    && leaseAwarePredicate.test(jobActivationProperties));
 
     if (optionalJobStream.isEmpty()) {
+      if (leaseAwarePredicate.isLeasedJobSkipped()) {
+        // push-side counterpart of the skip JobBatchCollector counts when a poll request without
+        // withLease encounters an already-leased job: here, a stream matched the type but not the
+        // lease, so the job is demoted to waiting for a poller instead
+        sideEffectWriter.appendSideEffect(
+            () -> {
+              jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
+              return true;
+            });
+      }
       // the job stays activatable; a long poll checks its secret references when it collects it
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
       return true;
@@ -412,5 +426,35 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  }
+
+  /**
+   * Matches streams that are lease-compatible for the given job, tracking whether an already-leased
+   * job was skipped because an otherwise-authorized candidate does not request leases. That
+   * distinction is what {@link #publishWork} needs to decide whether falling back to a notification
+   * is a plain "no stream registered" case or a skip due to lease incompatibility. Authorization is
+   * a separate concern with no state to track, so it stays a plain method composed alongside this
+   * predicate at the call site rather than folded into it.
+   */
+  private static final class LeaseAwarePredicate implements Predicate<JobActivationProperties> {
+    private final JobRecord jobRecord;
+    private boolean leasedJobSkipped;
+
+    private LeaseAwarePredicate(final JobRecord jobRecord) {
+      this.jobRecord = jobRecord;
+    }
+
+    @Override
+    public boolean test(final JobActivationProperties jobActivationProperties) {
+      if (jobActivationProperties.withLease() || !jobRecord.hasLeaseToken()) {
+        return true;
+      }
+      leasedJobSkipped = true;
+      return false;
+    }
+
+    private boolean isLeasedJobSkipped() {
+      return leasedJobSkipped;
+    }
   }
 }
