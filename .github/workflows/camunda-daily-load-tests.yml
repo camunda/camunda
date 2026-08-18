@@ -82,7 +82,9 @@ jobs:
       fail-fast: false
       matrix:
         # Each entry fully describes one variant. Adding a variant (e.g. a future RDBMS leg) is
-        # a new entry here — no other job in this workflow needs to change.
+        # a new entry here — also add its key to VARIANT_ORDER in the aggregate-metrics job
+        # below (in matrix order), or its metrics will be silently dropped from the Slack
+        # summary and the combined artifact.
         variant:
           - key: grpc
             label: gRPC
