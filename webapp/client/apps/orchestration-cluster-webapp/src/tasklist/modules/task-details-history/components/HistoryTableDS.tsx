@@ -117,6 +117,12 @@ const HistoryTableDS: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 				id: 'date',
 				accessorKey: 'date',
 				header: t('tasklist.taskDetailsHistoryDateHeader'),
+				// TableCell wraps long content by default (see table.tsx) — for a
+				// fixed-format timestamp that's squashed text instead of a useful
+				// wrap, so opt this column out. The table container already scrolls
+				// horizontally (DataTable's own table-container), so a narrow
+				// viewport scrolls instead of wrapping.
+				cell: ({row}) => <span className="whitespace-nowrap">{row.original.date}</span>,
 			},
 			{
 				id: 'actions',
