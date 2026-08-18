@@ -309,15 +309,13 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>optimize-zeebe-it-support</id>
-      <activation>
-        <property>
-          <name>skipQaBuild</name>
-          <value>!true</value>
-        </property>
-      </activation>
-    </profile>
+    <!--
+      AbstractUpgradeIT (src/test/java, not src/it/java) depends on
+      optimize-backend's src/it/java helpers (DatabaseIntegrationTestExtension,
+      MockServerUtil), which backend only compiles when skipQaBuild != true.
+      Without this profile, test-compile fails in the same reactor build
+      whenever skipQaBuild=true is passed (e.g. the UT CI job).
+    -->
     <profile>
       <id>skip-upgrade-tests-without-it-support</id>
       <activation>
