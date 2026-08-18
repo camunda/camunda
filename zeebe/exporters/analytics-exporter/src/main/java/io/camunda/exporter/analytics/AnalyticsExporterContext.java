@@ -37,6 +37,7 @@ public final class AnalyticsExporterContext {
   private final String fingerprint;
   private final String clusterId;
   private final int partitionId;
+  private final String physicalTenantId;
   private final Mac signer;
   private final String exporterDigest;
 
@@ -44,11 +45,13 @@ public final class AnalyticsExporterContext {
       final String fingerprint,
       final String clusterId,
       final int partitionId,
+      final String physicalTenantId,
       final Mac signer,
       final String exporterDigest) {
     this.fingerprint = fingerprint;
     this.clusterId = clusterId;
     this.partitionId = partitionId;
+    this.physicalTenantId = physicalTenantId;
     this.signer = signer;
     this.exporterDigest = exporterDigest;
   }
@@ -57,6 +60,7 @@ public final class AnalyticsExporterContext {
       final String licenseKey,
       final String clusterId,
       final int partitionId,
+      final String physicalTenantId,
       final String exporterDigest) {
     if (licenseKey == null || licenseKey.isBlank()) {
       throw new IllegalArgumentException("licenseKey must not be null or blank");
@@ -67,7 +71,12 @@ public final class AnalyticsExporterContext {
       final var signer = Mac.getInstance(HMAC_SHA_256);
       signer.init(new SecretKeySpec(keyBytes, HMAC_SHA_256));
       return new AnalyticsExporterContext(
-          fingerprint, clusterId, partitionId, signer, exporterDigest);
+          fingerprint,
+          clusterId,
+          partitionId,
+          physicalTenantId == null ? "" : physicalTenantId,
+          signer,
+          exporterDigest);
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(
           "JVM does not support required crypto algorithms (SHA-256 or HmacSHA256)", e);
@@ -86,6 +95,16 @@ public final class AnalyticsExporterContext {
 
   int partitionId() {
     return partitionId;
+  }
+
+  /**
+   * Returns the physical-tenant id of the broker this exporter instance runs on. Static for the
+   * lifetime of the exporter instance (one exporter instance is started per physical-tenant per
+   * partition), unlike the logical tenant id which varies per record. Never {@code null} —
+   * normalized to an empty string in {@link #create} if the broker context ever supplies one.
+   */
+  String physicalTenantId() {
+    return physicalTenantId;
   }
 
   String exporterDigest() {

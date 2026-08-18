@@ -95,6 +95,11 @@ class AnalyticsExporterTest {
               assertThat(logRecord.getResource().getAttribute(AnalyticsAttributes.Exporter.DIGEST))
                   .isNotNull()
                   .isNotEmpty();
+              // physical-tenant id is a Resource attribute, not a per-record attribute — see
+              // OtelSdkManager#buildResource.
+              assertThat(
+                      logRecord.getResource().getAttribute(AnalyticsAttributes.Tenant.PHYSICAL_ID))
+                  .isEqualTo("test-physical-tenant");
             });
   }
 
@@ -422,6 +427,7 @@ class AnalyticsExporterTest {
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
             .setClusterId("test-cluster")
             .setPartitionId(1)
+            .setPhysicalTenantId("test-physical-tenant")
             .setLicenseKey("test-license-key");
     final var exporter = new AnalyticsExporter(otelSdkManager);
     exporter.configure(context);

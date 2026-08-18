@@ -18,11 +18,15 @@ import org.junit.jupiter.api.Test;
 
 class AnalyticsExporterContextTest {
 
+  private static final String DEFAULT_LICENSE = "test-license";
+  private static final String DEFAULT_CLUSTER = "cluster-1";
+  private static final String DEFAULT_PHYSICAL_TENANT = "test-physical-tenant";
+
   @Test
   void shouldComputeDeterministicFingerprint() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-1", 1, "");
-    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-1", 1, "");
+    final var ctx1 = context();
+    final var ctx2 = context();
 
     // then
     assertThat(ctx1.fingerprint())
@@ -34,8 +38,8 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldProduceDifferentFingerprintsForDifferentLicenses() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("license-a", "cluster-1", 1, "");
-    final var ctx2 = AnalyticsExporterContext.create("license-b", "cluster-1", 1, "");
+    final var ctx1 = context("license-a");
+    final var ctx2 = context("license-b");
 
     // then
     assertThat(ctx1.fingerprint()).isNotEqualTo(ctx2.fingerprint());
@@ -44,8 +48,8 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldProduceDifferentFingerprintsForDifferentClusters() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-a", 1, "");
-    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-b", 1, "");
+    final var ctx1 = contextForCluster("cluster-a");
+    final var ctx2 = contextForCluster("cluster-b");
 
     // then — fingerprint is derived from license only, not cluster
     // but these are different contexts, verify they are independent
@@ -54,25 +58,39 @@ class AnalyticsExporterContextTest {
   }
 
   @Test
+  void shouldExposePhysicalTenantId() {
+    // given / when
+    final var ctx = contextForPhysicalTenant("physical-tenant-a");
+
+    // then
+    assertThat(ctx.physicalTenantId()).isEqualTo("physical-tenant-a");
+  }
+
+  @Test
+  void shouldNormalizeNullPhysicalTenantIdToEmptyString() {
+    // given / when — a broker context that (unexpectedly) supplies no physical tenant id
+    final var ctx = contextForPhysicalTenant(null);
+
+    // then — never null, so OTel attribute setters always receive a valid String
+    assertThat(ctx.physicalTenantId()).isEmpty();
+  }
+
+  @Test
   void shouldRejectMissingLicenseKey() {
     // when / then
-    assertThatThrownBy(() -> AnalyticsExporterContext.create(null, "cluster-1", 1, ""))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> context(null)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldRejectBlankLicenseKey() {
     // when / then
-    assertThatThrownBy(() -> AnalyticsExporterContext.create("  ", "cluster-1", 1, ""))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> context("  ")).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldComputeVerifiableSignature() {
     // given
-    final var licenseKey = "test-license";
-    final var clusterId = "cluster-1";
-    final var ctx = AnalyticsExporterContext.create(licenseKey, clusterId, 1, "");
+    final var ctx = context();
 
     // when
     final var headers = ctx.computeSignatureHeaders();
@@ -83,8 +101,8 @@ class AnalyticsExporterContextTest {
     assertThat(timestamp).matches("\\d+");
     assertThat(signature).matches("[0-9a-f]{64}");
 
-    final var canonical = ctx.fingerprint() + "|" + clusterId + "|" + timestamp;
-    final var expected = hmacSha256(licenseKey, canonical);
+    final var canonical = ctx.fingerprint() + "|" + DEFAULT_CLUSTER + "|" + timestamp;
+    final var expected = hmacSha256(DEFAULT_LICENSE, canonical);
     assertThat(signature).isEqualTo(expected);
   }
 
@@ -93,15 +111,14 @@ class AnalyticsExporterContextTest {
     // given — same cluster, same timestamp input via canonical string
     final var licenseA = "license-a";
     final var licenseB = "license-b";
-    final var clusterId = "cluster-1";
     final var timestamp = "1234567890";
 
-    final var ctxA = AnalyticsExporterContext.create(licenseA, clusterId, 1, "");
-    final var ctxB = AnalyticsExporterContext.create(licenseB, clusterId, 1, "");
+    final var ctxA = context(licenseA);
+    final var ctxB = context(licenseB);
 
     // when — compute HMAC with identical canonical structure but different keys
-    final var canonicalA = ctxA.fingerprint() + "|" + clusterId + "|" + timestamp;
-    final var canonicalB = ctxB.fingerprint() + "|" + clusterId + "|" + timestamp;
+    final var canonicalA = ctxA.fingerprint() + "|" + DEFAULT_CLUSTER + "|" + timestamp;
+    final var canonicalB = ctxB.fingerprint() + "|" + DEFAULT_CLUSTER + "|" + timestamp;
 
     final var sigA = hmacSha256(licenseA, canonicalA);
     final var sigB = hmacSha256(licenseB, canonicalB);
@@ -113,11 +130,11 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldRedactSensitiveFieldsInToString() {
     // given
-    final var ctx = AnalyticsExporterContext.create("secret-license", "cluster-1", 1, "");
+    final var ctx = context("secret-license");
 
     // then
     assertThat(ctx.toString())
-        .contains("cluster-1")
+        .contains(DEFAULT_CLUSTER)
         .doesNotContain(ctx.fingerprint())
         .doesNotContain("secret-license");
   }
@@ -131,5 +148,32 @@ class AnalyticsExporterContextTest {
     } catch (final Exception e) {
       throw new AssertionError("HMAC computation failed", e);
     }
+  }
+
+  // -- helpers --
+
+  /** Context with all-default fields — license, cluster, partition, and physical-tenant id. */
+  private static AnalyticsExporterContext context() {
+    return context(DEFAULT_LICENSE, DEFAULT_CLUSTER, DEFAULT_PHYSICAL_TENANT);
+  }
+
+  /** Context with only {@code licenseKey} overridden; other fields keep their defaults. */
+  private static AnalyticsExporterContext context(final String licenseKey) {
+    return context(licenseKey, DEFAULT_CLUSTER, DEFAULT_PHYSICAL_TENANT);
+  }
+
+  /** Context with only {@code clusterId} overridden; other fields keep their defaults. */
+  private static AnalyticsExporterContext contextForCluster(final String clusterId) {
+    return context(DEFAULT_LICENSE, clusterId, DEFAULT_PHYSICAL_TENANT);
+  }
+
+  /** Context with only {@code physicalTenantId} overridden; other fields keep their defaults. */
+  private static AnalyticsExporterContext contextForPhysicalTenant(final String physicalTenantId) {
+    return context(DEFAULT_LICENSE, DEFAULT_CLUSTER, physicalTenantId);
+  }
+
+  private static AnalyticsExporterContext context(
+      final String licenseKey, final String clusterId, final String physicalTenantId) {
+    return AnalyticsExporterContext.create(licenseKey, clusterId, 1, physicalTenantId, "");
   }
 }

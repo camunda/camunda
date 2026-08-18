@@ -233,13 +233,15 @@ the OTel instrumentation scope on every record, not as a per-record attribute.
 
 ### Resource attributes
 
-Cluster-wide attributes attached to every log record:
+Attached once per exporter instance to every log record, metric point, and heartbeat — not
+per-record fields:
 
-|       Attribute        |  Type  |       Description       |
-|------------------------|--------|-------------------------|
-| `camunda.cluster.id`   | string | Cluster identifier.     |
-| `camunda.partition.id` | long   | Partition ID.           |
-| `service.name`         | string | Always `camunda-zeebe`. |
+|          Attribute           |  Type  |                                                                                                                                                         Description                                                                                                                                                         |
+|------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda.cluster.id`         | string | Cluster identifier.                                                                                                                                                                                                                                                                                                         |
+| `camunda.partition.id`       | long   | Partition ID.                                                                                                                                                                                                                                                                                                               |
+| `service.name`               | string | Always `camunda-zeebe`.                                                                                                                                                                                                                                                                                                     |
+| `camunda.tenant.physical_id` | string | Physical-tenant id of the broker/exporter instance that produced the signal. Static for the lifetime of the exporter instance (one instance runs per physical-tenant per partition) — unlike `camunda.tenant.id` (see per-event attributes below), which is the logical tenant of the specific record and varies per event. |
 
 ## Failure behavior
 
