@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -38,14 +41,18 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * and fail.
  *
  * <p>Wires the real converter and the real propagator; only {@link MembershipPort} is a stub, so
- * removing the propagation makes this test fail.
+ * removing the propagation makes these tests fail.
  */
 class LazyMembershipResolutionScopeTeardownTest {
 
   private static final String USERNAME_CLAIM = "preferred_username";
   private static final String CLIENT_ID_CLAIM = "client_id";
 
-  /** Physical tenant observed on each membership lookup, in call order. */
+  /**
+   * Physical tenant observed on each membership lookup, in call order. Unsynchronised on purpose:
+   * only one thread ever writes it per test, and in the worker-thread case the task's writes
+   * happen-before the {@code Future#get} that precedes the assertions.
+   */
   private final List<String> observedPhysicalTenants = new ArrayList<>();
 
   /**
@@ -98,16 +105,7 @@ class LazyMembershipResolutionScopeTeardownTest {
   void shouldResolveMembershipsAgainstOriginatingTenantAfterScopeTeardown() throws IOException {
     // given an authentication built while a request for this physical tenant is in scope
     final String physicalTenantId = "tenant-" + UUID.randomUUID();
-    bindRequestWithPhysicalTenant(physicalTenantId);
-    final var converter =
-        new LazyTokenClaimsConverter(
-            USERNAME_CLAIM,
-            CLIENT_ID_CLAIM,
-            true,
-            recordingMembershipPort,
-            new PhysicalTenantMembershipContextPropagator());
-    final CamundaAuthentication authentication =
-        converter.convert(Map.of(USERNAME_CLAIM, "alice-" + physicalTenantId));
+    final CamundaAuthentication authentication = buildAuthenticationForTenant(physicalTenantId);
 
     // and the request scope torn down before any membership list is read, as happens when a
     // persistent web session is committed after the request has been dispatched
@@ -120,6 +118,80 @@ class LazyMembershipResolutionScopeTeardownTest {
     // then every lookup ran against the tenant captured at build time — never the default, never
     // unresolved. 4 = one per lazy membership field: mapping rules, groups, roles, tenants.
     assertThat(observedPhysicalTenants).hasSize(4).containsOnly(physicalTenantId);
+  }
+
+  /**
+   * Covers the one decoration the serialisation case above cannot: serialisation resolves groups
+   * before mapping rules, and {@code groupIds} reads {@code resolvedMappingRuleIds()}, so mapping
+   * rules always materialise nested inside the groups scope and would inherit the tenant even
+   * undecorated. Reading them first makes theirs the only scope in play.
+   */
+  @Test
+  void shouldResolveMappingRuleIdsAgainstOriginatingTenantWhenReadFirst() {
+    // given an authentication built while a request for this physical tenant is in scope
+    final String physicalTenantId = "tenant-" + UUID.randomUUID();
+    final CamundaAuthentication authentication = buildAuthenticationForTenant(physicalTenantId);
+
+    // and the request scope torn down before any membership list is read
+    RequestContextHolder.resetRequestAttributes();
+
+    // when mapping rules are the first list read, so no other lookup holds an open propagated
+    // scope for this one to inherit
+    assertThat(authentication.authenticatedMappingRuleIds()).containsExactly("mapping-rule-1");
+
+    // then that lookup ran against the tenant captured at build time, on its own decoration alone
+    assertThat(observedPhysicalTenants).containsExactly(physicalTenantId);
+  }
+
+  /**
+   * Covers what the teardown test above cannot: resolution on a worker thread, which never had a
+   * request scope of its own. A propagator that captured the tenant eagerly, instead of binding it
+   * inside the deferred supplier, would still pass that test but strand this thread.
+   */
+  @Test
+  void shouldResolveMembershipsAgainstOriginatingTenantOnWorkerThread() throws Exception {
+    // given an authentication built while a request for this physical tenant is in scope
+    final String physicalTenantId = "tenant-" + UUID.randomUUID();
+    final CamundaAuthentication authentication = buildAuthenticationForTenant(physicalTenantId);
+
+    // and that request still in flight on this thread, unlike the teardown case above
+    assertThat(RequestContextHolder.getRequestAttributes())
+        .as("origin thread still holds the request scope")
+        .isNotNull();
+
+    // when a lazy list materialises on a worker thread, which never had a request scope — as when
+    // resolution is handed to an async executor mid-request
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    final List<String> groupIds;
+    try {
+      groupIds =
+          executor
+              .submit(() -> List.copyOf(authentication.authenticatedGroupIds()))
+              .get(10, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+    }
+
+    // then the worker resolved against the tenant captured at build time. 2 = groups plus the
+    // mapping rules groupIds forces, both on the worker.
+    assertThat(groupIds).containsExactly("group-1");
+    assertThat(observedPhysicalTenants).hasSize(2).containsOnly(physicalTenantId);
+  }
+
+  /**
+   * Builds an authentication the way the OIDC login flow does: real converter, real propagator, run
+   * while a request for {@code physicalTenantId} is in scope.
+   */
+  private CamundaAuthentication buildAuthenticationForTenant(final String physicalTenantId) {
+    bindRequestWithPhysicalTenant(physicalTenantId);
+    final var converter =
+        new LazyTokenClaimsConverter(
+            USERNAME_CLAIM,
+            CLIENT_ID_CLAIM,
+            true,
+            recordingMembershipPort,
+            new PhysicalTenantMembershipContextPropagator());
+    return converter.convert(Map.of(USERNAME_CLAIM, "alice-" + physicalTenantId));
   }
 
   private void bindRequestWithPhysicalTenant(final String physicalTenantId) {
