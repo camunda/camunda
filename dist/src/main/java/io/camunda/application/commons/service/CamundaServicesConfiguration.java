@@ -32,6 +32,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
+import io.camunda.service.ClusterHistoryBackupServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
@@ -553,6 +554,14 @@ public class CamundaServicesConfiguration {
                               tenantSecurity.getAuthorizations(),
                               executor)));
             });
+
+    // Outside the per-tenant loop on purpose: one cluster-wide service fans out over every tenant,
+    // so building it per tenant would construct N of them and keep only the last.
+    historyBackupApi.ifAvailable(
+        historyBackup ->
+            builder.clusterHistoryBackupServices(
+                new ClusterHistoryBackupServices(
+                    historyBackup, physicalTenantResolver.getAll().keySet(), executor)));
 
     // The readiness bean must be resolved lazily, not injected directly: on Elasticsearch and
     // OpenSearch it depends on the search schema initializer, which depends on

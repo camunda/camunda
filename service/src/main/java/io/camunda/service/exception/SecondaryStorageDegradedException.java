@@ -13,11 +13,27 @@ package io.camunda.service.exception;
  * SecondaryStorageUnavailableException}, which is HTTP 403 for secondary storage not being
  * configured at all.
  */
-public class SecondaryStorageDegradedException extends ServiceException {
+public final class SecondaryStorageDegradedException extends ServiceException {
   public static final String SECONDARY_STORAGE_DEGRADED_MESSAGE =
       "Physical tenant '%s' is degraded: its secondary storage is not ready. Requests are rejected until it recovers.";
+  public static final String CLUSTER_SECONDARY_STORAGE_DEGRADED_MESSAGE =
+      "No physical tenant of this cluster has ready secondary storage. Requests are rejected until at least one recovers.";
 
-  public SecondaryStorageDegradedException(final String physicalTenantId) {
-    super(SECONDARY_STORAGE_DEGRADED_MESSAGE.formatted(physicalTenantId), Status.UNAVAILABLE);
+  private SecondaryStorageDegradedException(final String message) {
+    super(message, Status.UNAVAILABLE);
+  }
+
+  /** The request's own physical tenant is degraded. */
+  public static SecondaryStorageDegradedException forPhysicalTenant(final String physicalTenantId) {
+    return new SecondaryStorageDegradedException(
+        SECONDARY_STORAGE_DEGRADED_MESSAGE.formatted(physicalTenantId));
+  }
+
+  /**
+   * Names no physical tenant, because a cluster-wide endpoint is not served on behalf of one: it is
+   * rejected only when no tenant at all can be served.
+   */
+  public static SecondaryStorageDegradedException forCluster() {
+    return new SecondaryStorageDegradedException(CLUSTER_SECONDARY_STORAGE_DEGRADED_MESSAGE);
   }
 }
