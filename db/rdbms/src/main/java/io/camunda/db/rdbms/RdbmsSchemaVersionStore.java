@@ -145,11 +145,13 @@ public class RdbmsSchemaVersionStore {
    */
   public CurrentSchemaVersion getCurrentSchemaVersion() {
     if (applicationVersion == null) {
-      throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
+      return CurrentSchemaVersion.readFailure(
+          prefix, new IllegalStateException("applicationVersion is not configured."));
     }
     if (dataSource == null) {
-      throw new IllegalStateException(
-          "[RDBMS Schema] dataSource is not configured for prefix '" + prefix + "'.");
+      return CurrentSchemaVersion.readFailure(
+          prefix,
+          new IllegalStateException("dataSource is not configured for prefix '" + prefix + "'."));
     }
 
     try (final var connection = dataSource.getConnection()) {
