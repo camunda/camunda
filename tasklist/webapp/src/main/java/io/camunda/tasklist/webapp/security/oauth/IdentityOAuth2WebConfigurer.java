@@ -142,7 +142,7 @@ public class IdentityOAuth2WebConfigurer {
   private URL toURL(final String jwkSetUri) {
     try {
       return URI.create(jwkSetUri).toURL();
-    } catch (final MalformedURLException e) {
+    } catch (final MalformedURLException | IllegalArgumentException e) {
       throw new IllegalArgumentException(
           "Invalid JWK Set URI '%s': %s".formatted(jwkSetUri, e.getMessage()), e);
     }
