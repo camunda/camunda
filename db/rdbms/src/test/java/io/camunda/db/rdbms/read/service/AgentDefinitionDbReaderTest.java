@@ -22,7 +22,10 @@ import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentDefinitionEntity.AgentType;
 import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.query.AgentDefinitionQuery;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -186,5 +189,109 @@ class AgentDefinitionDbReaderTest {
     assertThat(result.total()).isEqualTo(42L);
     assertThat(result.items()).isEmpty();
     verify(agentDefinitionMapper, times(0)).search(any());
+  }
+
+  // ===== Authorization early-exit =====
+
+  @Test
+  void shouldReturnEmptyResultWhenNoAuthorizedProcessDefinitionIds() {
+    // given
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition())),
+            TenantCheck.disabled());
+
+    // when
+    final var result =
+        agentDefinitionDbReader.search(AgentDefinitionQuery.of(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(result.items()).isEmpty();
+    assertThat(result.total()).isZero();
+    verify(agentDefinitionMapper, times(0)).search(any());
+    verify(agentDefinitionMapper, times(0)).count(any());
+  }
+
+  @Test
+  void shouldReturnEmptyResultWhenNoAuthorizedTenantIds() {
+    // given
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    // when
+    final var result =
+        agentDefinitionDbReader.search(AgentDefinitionQuery.of(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(result.items()).isEmpty();
+    assertThat(result.total()).isZero();
+    verify(agentDefinitionMapper, times(0)).search(any());
+    verify(agentDefinitionMapper, times(0)).count(any());
+  }
+
+  // ===== Authorized ids reach the query =====
+
+  @Test
+  void shouldPassAuthorizedProcessDefinitionIdsToQuery() {
+    // given
+    final var authorizedIds = List.of("process-a", "process-b");
+    when(agentDefinitionMapper.count(any())).thenReturn(1L);
+    when(agentDefinitionMapper.search(any()))
+        .thenReturn(
+            List.of(
+                new AgentDefinitionDbModelBuilder()
+                    .agentDefinitionKey(1L)
+                    .agentType(AgentType.AI_AGENT_TASK)
+                    .name("agent-1")
+                    .elementId("element-1")
+                    .processDefinitionId("myProcess")
+                    .processDefinitionKey(10L)
+                    .processDefinitionVersion(1)
+                    .processDefinitionVersionTag("v1")
+                    .tenantId("<default>")
+                    .build()));
+
+    // when
+    agentDefinitionDbReader.search(
+        AgentDefinitionQuery.of(b -> b),
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(
+                    a -> a.processDefinition().readProcessDefinition().resourceIds(authorizedIds))),
+            TenantCheck.disabled()));
+
+    // then
+    verify(agentDefinitionMapper)
+        .search(argThat(q -> q.authorizedResourceIds().equals(authorizedIds)));
+  }
+
+  @Test
+  void shouldPassAuthorizedTenantIdsToQuery() {
+    // given
+    final var tenantIds = List.of("tenant-1", "tenant-2");
+    when(agentDefinitionMapper.count(any())).thenReturn(1L);
+    when(agentDefinitionMapper.search(any()))
+        .thenReturn(
+            List.of(
+                new AgentDefinitionDbModelBuilder()
+                    .agentDefinitionKey(1L)
+                    .agentType(AgentType.AI_AGENT_TASK)
+                    .name("agent-1")
+                    .elementId("element-1")
+                    .processDefinitionId("myProcess")
+                    .processDefinitionKey(10L)
+                    .processDefinitionVersion(1)
+                    .processDefinitionVersionTag("v1")
+                    .tenantId("<default>")
+                    .build()));
+
+    // when
+    agentDefinitionDbReader.search(
+        AgentDefinitionQuery.of(b -> b),
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(tenantIds)));
+
+    // then
+    verify(agentDefinitionMapper).search(argThat(q -> q.authorizedTenantIds().equals(tenantIds)));
   }
 }
