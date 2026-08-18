@@ -275,6 +275,11 @@ public class BrokerBasedPropertiesOverride {
         .getFeatures()
         .setEvaluateDuplicateOutputMappingTargetsInOrder(
             camunda.getProcessing().getEngine().isEvaluateDuplicateOutputMappingTargetsInOrder());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEvaluateInputMappingsOneByOne(
+            camunda.getProcessing().getEngine().isEvaluateInputMappingsOneByOne());
 
     override
         .getExperimental()

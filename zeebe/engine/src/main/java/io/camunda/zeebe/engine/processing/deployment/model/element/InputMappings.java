@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The transformed input mappings of a flow node: one entry per {@code zeebe:input} element, in
@@ -21,9 +23,16 @@ import org.jspecify.annotations.NullMarked;
  * <p>{@code clusterVariableReferences} mirrors {@code secretReferences} for cluster-variable
  * references ({@code camunda.vars.<scope>.<name>}) detected in the input mappings, keyed by the
  * same RFC-6901 leaf JSON pointer; empty when no input mapping references a cluster variable.
+ *
+ * <p>{@code combinedExpression} is the single FEEL context expression these mappings used to
+ * compile into before they were evaluated one by one, kept only for the {@code
+ * evaluateInputMappingsOneByOne} kill-switch. It is {@code null} when that expression does not
+ * parse — see {@code VariableMappingTransformer#combinedExpression} for why that is not a
+ * deployment failure.
  */
 @NullMarked
 public record InputMappings(
     List<InputMapping> mappings,
     Map<String, Set<SecretReference>> secretReferences,
-    Map<String, Set<ClusterVariableReference>> clusterVariableReferences) {}
+    Map<String, Set<ClusterVariableReference>> clusterVariableReferences,
+    @Nullable Expression combinedExpression) {}

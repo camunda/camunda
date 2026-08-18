@@ -92,6 +92,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean evaluateInputMappingsOneByOne,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -201,7 +202,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            evaluateDuplicateOutputMappingTargetsInOrder,
+            evaluateInputMappingsOneByOne);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(

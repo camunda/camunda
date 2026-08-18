@@ -455,6 +455,28 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Evaluates the combined FEEL context expression of a set of variable mappings and returns the
+   * result as buffer. Unlike {@link #evaluateVariableMappingExpression(Expression, long, String)},
+   * the result must be a context, because it is the whole mapping document at once.
+   *
+   * <p>Only used by the {@code evaluateInputMappingsOneByOne} kill-switch; mappings are otherwise
+   * evaluated one source at a time.
+   *
+   * @param expression the combined context expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as buffer, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
+   */
+  public Either<Failure, DirectBuffer> evaluateVariableMappingContextExpression(
+      final Expression expression, final long scopeKey, final String tenantId) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+        .flatMap(result -> typeCheck(result, ResultType.OBJECT, scopeKey))
+        .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
+        .map(EvaluationResult::toBuffer);
+  }
+
+  /**
    * Evaluates the source expression of a single variable mapping and returns the result as buffer.
    * A single mapping's source may produce a value of any type, which is then stored under the
    * mapping's target path.

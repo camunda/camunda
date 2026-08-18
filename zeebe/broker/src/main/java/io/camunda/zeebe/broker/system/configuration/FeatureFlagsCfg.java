@@ -42,6 +42,7 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.evaluateBoundaryEventCorrelationKeyInActivityScope();
   private boolean evaluateDuplicateOutputMappingTargetsInOrder =
       DEFAULT_SETTINGS.evaluateDuplicateOutputMappingTargetsInOrder();
+  private boolean evaluateInputMappingsOneByOne = DEFAULT_SETTINGS.evaluateInputMappingsOneByOne();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -106,6 +107,14 @@ public final class FeatureFlagsCfg {
     return evaluateDuplicateOutputMappingTargetsInOrder;
   }
 
+  public boolean isEvaluateInputMappingsOneByOne() {
+    return evaluateInputMappingsOneByOne;
+  }
+
+  public void setEvaluateInputMappingsOneByOne(final boolean evaluateInputMappingsOneByOne) {
+    this.evaluateInputMappingsOneByOne = evaluateInputMappingsOneByOne;
+  }
+
   public void setEvaluateDuplicateOutputMappingTargetsInOrder(
       final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
@@ -121,7 +130,8 @@ public final class FeatureFlagsCfg {
         enableStraightThroughProcessingLoopDetector,
         enableMessageBodyOnExpired,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        evaluateDuplicateOutputMappingTargetsInOrder
+        evaluateDuplicateOutputMappingTargetsInOrder,
+        evaluateInputMappingsOneByOne
         /*, enableFoo*/ );
   }
 
