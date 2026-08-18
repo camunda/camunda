@@ -1086,10 +1086,20 @@ class OperateProcessInstancePage {
   }
 
   async verifyIncidents(errorTypes: string[], elementId?: string) {
+    // Activate the Incidents tab BEFORE selecting the diagram element, so the
+    // element selection is the last navigation. Operate's bottom-panel tab nav
+    // navigates with a `location` captured by useLocation(), so clicking the
+    // (already active) Incidents tab shortly after a selection change
+    // re-navigates with the stale search string and reverts ?elementId to the
+    // previously selected element. The incidents table then stays scoped to
+    // that element and this method asserts against its rows -- which
+    // verifyIncidentCount cannot catch, being a `>=` check that one stale row
+    // already satisfies.
+    await this.clickIncidentsTab();
     if (elementId) {
       await this.clickOnElementInDiagram(elementId);
+      await expect(this.page).toHaveURL(new RegExp(`elementId=${elementId}`));
     }
-    await this.clickIncidentsTab();
     await this.verifyIncidentCount(errorTypes.length);
     for (const errorType of errorTypes) {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);

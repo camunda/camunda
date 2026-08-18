@@ -173,6 +173,14 @@ test.describe('Process Instances - Business ID', () => {
 
       await waitForAssertion({
         assertion: async () => {
+          // Wait for the filter to reach the URL before trusting the list. The
+          // Business ID field auto-submits on a 750ms debounce, so it is not
+          // committed when applyBusinessIdFilter returns -- the row assertion
+          // below would otherwise pass against the still-unfiltered list, and
+          // the debounced navigate() would then land on top of the row click in
+          // the next step, leaving the app on the list so the detail header
+          // never renders.
+          await expect(page).toHaveURL(/businessId=eq_/);
           await expect(
             OperateProcessesPage.getRowByProcessInstanceKey(page, instanceKeyA),
           ).toBeVisible();
