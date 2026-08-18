@@ -24,6 +24,8 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -359,6 +361,14 @@ final class ClusterPatchRequestTransformerTest {
         .toList();
   }
 
+  private static List<PartitionJoinOperation> joins(
+      final PartitionGroupParallelPhase phase, final String groupId) {
+    return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
+        .filter(PartitionJoinOperation.class::isInstance)
+        .map(PartitionJoinOperation.class::cast)
+        .toList();
+  }
+
   @Test
   void shouldTargetOnlyTheRequestedPhysicalTenantsPartitionGroup() {
     // given — tenant-b currently has 1 partition; scale it to 2
@@ -493,5 +503,138 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+  }
+
+  // -- cluster-wide replication factor (phases()) --
+
+  @Test
+  void shouldApplyReplicationFactorToEveryPhysicalTenant() {
+    // given — every partition of both tenants is currently held by a single broker
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.empty(), Optional.of(2), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — every partition of every tenant gains a second replica. Planning this against the
+    // default group's projection alone, as an unscoped request used to, would have left tenant-b
+    // at a replication factor nobody chose for it.
+    final var phase = singlePhase(result);
+    Assertions.assertThat(phase.groupOperations()).containsOnlyKeys(DEFAULT_GROUP, TENANT_B);
+    Assertions.assertThat(joins(phase, DEFAULT_GROUP))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactlyInAnyOrder(1, 2);
+    Assertions.assertThat(joins(phase, TENANT_B))
+        .extracting(PartitionJoinOperation::partitionId)
+        .containsExactly(1);
+  }
+
+  @Test
+  void shouldNotRunScaleUpOperationsForAReplicationFactorChange() {
+    // given
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.empty(), Optional.of(2), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — no partition is added, so the engine never has to be told about a new partition count
+    // nor awaited for redistribution and relocation
+    Assertions.assertThat(singlePhase(result).groupOperations().values())
+        .allSatisfy(
+            operations ->
+                Assertions.assertThat(operations).noneMatch(ScaleUpOperation.class::isInstance));
+  }
+
+  @Test
+  void shouldApplyReplicationFactorAndPartitionCountTogether() {
+    // given — the default tenant is scaled from 2 partitions to 3 and the replication factor from
+    // 1 to 2 in one request
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.of(3), Optional.of(2), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — only the default tenant gains a partition, but both tenants reach the new replication
+    // factor: the partition count targets one group, the replication factor spans all of them
+    final var phase = singlePhase(result);
+    Assertions.assertThat(bootstraps(phase, DEFAULT_GROUP))
+        .singleElement()
+        .satisfies(op -> Assertions.assertThat(op.partitionId()).isEqualTo(3));
+    Assertions.assertThat(bootstraps(phase, TENANT_B)).isEmpty();
+    Assertions.assertThat(joins(phase, TENANT_B)).isNotEmpty();
+  }
+
+  @Test
+  void shouldRejectReplicationFactorAboveTheNumberOfBrokers() {
+    // given — three brokers cannot hold four replicas of a partition
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.empty(), Optional.of(4), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("Number of brokers [3] is less than the replication factor [4]");
+  }
+
+  @Test
+  void shouldRejectReplicationFactorOnZoneAwareCluster() {
+    // given — a zone-aware cluster derives its replication factor from its zone specs, so it
+    // cannot be set directly
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.empty(), Optional.of(2), Optional.empty());
+
+    // when
+    final var result = transformer.phases(zoneAwareTwoTenantCluster());
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("not supported on zone-aware clusters");
+  }
+
+  @Test
+  void shouldPlanNothingWhenOnlyThePartitionCountIsGivenAndUnchanged() {
+    // given — the default tenant already has the requested 2 partitions, and no replication factor
+    // is requested
+    final var transformer =
+        new ClusterPatchRequestTransformer(
+            Set.of(), Set.of(), Optional.of(2), Optional.empty(), Optional.empty());
+
+    // when
+    final var result = transformer.phases(twoTenantCluster());
+
+    // then — a request that asks for nothing plans nothing, rather than rebalancing a placement
+    // that may have drifted from what the distributor would compute now
+    assertThat(result).isRight();
+    Assertions.assertThat(result.get()).isEmpty();
+  }
+
+  /** {@link #twoTenantCluster()} with a zone-aware partition distributor. */
+  private CurrentClusterConfiguration zoneAwareTwoTenantCluster() {
+    final var cluster = twoTenantCluster();
+    final var global = cluster.globalConfiguration();
+    return new CurrentClusterConfiguration(
+        cluster.version(),
+        new GlobalConfiguration(
+            global.version(),
+            global.clusterId(),
+            global.members(),
+            Optional.of(new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1)))),
+            global.pendingChanges(),
+            global.lastChange()),
+        cluster.partitionGroups(),
+        cluster.phasedChangeState());
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -103,6 +104,23 @@ public record CurrentClusterConfiguration(
 
   public Optional<String> clusterId() {
     return globalConfiguration.clusterId();
+  }
+
+  /**
+   * Whether the cluster does not use zone awareness at all: no broker is assigned to a zone and the
+   * partition distributor is not zone-aware. A cluster where only some of the two holds is
+   * mid-migration between the two modes rather than unzoned.
+   *
+   * <p>Both are global state, so this reads the same fields {@link
+   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacyDefault()} that
+   * method needs is not.
+   */
+  public boolean isUnzoned() {
+    return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() == null)
+        && globalConfiguration
+            .partitionDistributorConfig()
+            .filter(ZoneAwareConfig.class::isInstance)
+            .isEmpty();
   }
 
   /**

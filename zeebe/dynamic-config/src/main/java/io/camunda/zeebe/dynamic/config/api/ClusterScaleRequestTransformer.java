@@ -72,19 +72,20 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       }
     }
     if (brokerCount.isPresent()
-        || newReplicationFactor.isPresent()
-        || newPartitionCount.isEmpty()) {
-      // Cluster membership and the replication factor have no tenant dimension, so a request
-      // carrying either is planned exactly the way it always was, against the default group. So is
-      // a request that changes neither those nor the partition count, which has nothing to plan.
-      // That such a change redistributes only the default tenant's partitions, rather than every
-      // tenant's, is a gap that predates physical tenants being scalable at all; closing it needs
-      // global and partition-group phases planned together, tracked in #60192 and #60193.
+        || (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty())) {
+      // brokerCount changes cluster membership, which has no tenant dimension, so a request
+      // carrying it is planned exactly the way it always was, against the default group. So is a
+      // request that changes neither membership nor a partition dimension, which has nothing to
+      // plan. That a membership change redistributes only the default tenant's partitions, rather
+      // than every tenant's, is a gap that predates physical tenants being scalable at all;
+      // closing it needs global and partition-group phases planned together, tracked in #60193.
       return ConfigurationChangeRequest.super.phases(clusterConfiguration);
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
-    if (!clusterConfiguration.hasPartitionGroup(groupId)) {
+    // Only the partition count targets a group; the replication factor spans every tenant, so a
+    // request carrying it alone has no group that has to exist.
+    if (newPartitionCount.isPresent() && !clusterConfiguration.hasPartitionGroup(groupId)) {
       return Either.left(
           new NotFound(
               "Expected to scale physical tenant '%s', but there's no such tenant"
@@ -95,7 +96,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       return Either.left(invalidZone.get());
     }
     return PartitionGroupScalingPhases.phases(
-        groupId, clusterConfiguration, newPartitionCount.get());
+        groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
   }
 
   @Override
@@ -134,11 +135,10 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
   }
 
   /**
-   * The zone rules this request has to satisfy, shared by {@link #operations} and the tenant-scoped
-   * {@link #phases} path: a zone may only be named on a zone-aware cluster and must be one the
-   * cluster knows, an unzoned request is only valid while no broker is zoned at all, and the
-   * replication factor of a zone-aware cluster is derived from its zone specs rather than set
-   * directly.
+   * The zone rules this request has to satisfy, shared by {@link #operations} and the {@link
+   * #phases} path: a zone may only be named on a zone-aware cluster and must be one the cluster
+   * knows, an unzoned request is only valid while no broker is zoned at all, and the replication
+   * factor of a zone-aware cluster is derived from its zone specs rather than set directly.
    *
    * @return the rejection to answer with, or empty if the request is valid
    */
