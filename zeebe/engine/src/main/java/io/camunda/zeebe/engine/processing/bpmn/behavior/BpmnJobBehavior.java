@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
@@ -411,13 +412,15 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        mergedSecretReferences(context, element));
+        mergedSecretReferences(context, element),
+        element);
   }
 
   public void createNewExecutionListenerJob(
       final BpmnElementContext context,
       final JobProperties jobProperties,
-      final ExecutionListener executionListener) {
+      final ExecutionListener executionListener,
+      final ExecutableFlowElement element) {
 
     final var jobListenerEventType =
         fromExecutionListenerEventType(executionListener.getEventType());
@@ -427,12 +430,14 @@ public final class BpmnJobBehavior {
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
         executionListener.getJobWorkerProperties().getTaskHeaders(),
-        Map.of());
+        Map.of(),
+        element);
   }
 
   public void createNewTaskListenerJob(
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue,
+      final ExecutableFlowElement element,
       final TaskListener listener,
       final List<String> changedAttributes) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
@@ -445,7 +450,8 @@ public final class BpmnJobBehavior {
                     fromTaskListenerEventType(listener.getEventType()),
                     extractUserTaskHeaders(
                         taskRecordValue, changedAttributes, listener.getJobWorkerProperties()),
-                    Map.of()))
+                    Map.of(),
+                    element))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -459,7 +465,8 @@ public final class BpmnJobBehavior {
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        mergedSecretReferences(context, element));
+        mergedSecretReferences(context, element),
+        element);
   }
 
   /**
@@ -636,9 +643,10 @@ public final class BpmnJobBehavior {
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
       final Map<String, String> taskHeaders,
-      final Map<String, Set<SecretReference>> secretReferences) {
+      final Map<String, Set<SecretReference>> secretReferences,
+      final ExecutableFlowElement element) {
 
-    final var encodedHeaders = encodeHeaders(context, taskHeaders, props);
+    final var encodedHeaders = encodeHeaders(context, taskHeaders, props, element);
 
     jobRecord
         .setType(props.getType())
@@ -702,7 +710,8 @@ public final class BpmnJobBehavior {
   private DirectBuffer encodeHeaders(
       final BpmnElementContext context,
       final Map<String, String> taskHeaders,
-      final JobProperties props) {
+      final JobProperties props,
+      final ExecutableFlowElement element) {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
@@ -740,11 +749,14 @@ public final class BpmnJobBehavior {
       }
     }
 
-    final var agentDefinitionKey =
-        agentDefinitionState.getAgentDefinitionKey(
-            context.getProcessDefinitionKey(), context.getElementId());
-    if (agentDefinitionKey != null) {
-      headers.put(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey));
+    if (element instanceof final ExecutableJobWorkerElement jobWorkerElement
+        && jobWorkerElement.isAgentDefinition()) {
+      final var agentDefinitionKey =
+          agentDefinitionState.getAgentDefinitionKey(
+              context.getProcessDefinitionKey(), context.getElementId());
+      if (agentDefinitionKey != null) {
+        headers.put(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey));
+      }
     }
     return headerEncoder.encode(headers);
   }
