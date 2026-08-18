@@ -17,7 +17,13 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "")
 WORKFLOW = "camunda-daily-load-tests.yml"
 ARTIFACT_PREFIX = "daily-load-test-metrics-"
 ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
-SOAK_JOB_NAME = "Soak"
+# GitHub renders a matrixed reusable-workflow call's inner jobs as
+# "<outer job name> / <inner job name>" (confirmed against a real run of
+# zeebe-search-integration-tests.yml via `gh api .../jobs`). camunda-daily-load-tests.yml's
+# gRPC matrix leg is named "gRPC" and load-test-variant.yml's soak job is always named "Soak",
+# so the composite name is "gRPC / Soak". startswith() (not ==) keeps this resilient if the
+# inner workflow ever nests one level deeper.
+SOAK_JOB_NAME = "gRPC / Soak"
 WARMUP_SECONDS = 900           # mirrors sleep 900 in await-benchmark (PR side)
 METRICS_WINDOW_SECONDS = 1800  # PromQL [1800s] @ at evaluates [at-1800, at]
 TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 3h soak → ~05:30
