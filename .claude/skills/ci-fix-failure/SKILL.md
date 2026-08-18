@@ -18,6 +18,8 @@ User shares a GHA URL (`actions/runs/<id>`, `actions/runs/<id>/job/<id>`, or `pu
 
 - `gh auth status` works against `camunda/camunda`.
 - CWD is the repo root.
+- **incident.io MCP** — tools are deferred behind `ToolSearch`; load them before deciding the
+  server is unavailable. Only skip Step 4 if loading genuinely fails.
 
 ## Hard rules — read first
 
@@ -25,12 +27,6 @@ User shares a GHA URL (`actions/runs/<id>`, `actions/runs/<id>/job/<id>`, or `pu
 2. **NEVER propose workflow/cache/retry/sizing changes without reading and quoting [`ci.md`](../../../docs/monorepo-docs/ci.md).** Silent or contradicts → drop. Use the prescribed composite actions (`setup-maven-cache`, `setup-yarn-cache`); cache writes only from `main`/`stable*`.
 
 ## Procedure
-
-### 0. Search similar incidents
-
-Check for existing CI incidents for the same workflow and job.
-
-In case of prior open incidents, suggest merging for the same workflow and job.
 
 ### 1. Parse URL → `run_id` (required), `job_id` (optional), `attempt` (optional)
 
@@ -43,18 +39,40 @@ gh run view <run-id> --repo camunda/camunda [--attempt <n>] --json \
   status,conclusion,name,headBranch,headSha,event,workflowName,jobs,url,attempt
 ```
 
-Default returns the **latest** attempt — a successful rerun masks the original failure. Always pass `--attempt <n>` if the URL had one; thread it through Step 5's `--log-failed` too.
+Default returns the **latest** attempt — a successful rerun masks the original failure. Always pass `--attempt <n>` if the URL had one; thread it through Step 7's `--log-failed` too.
 
 - `in_progress` → tell user, stop.
 - `success` → tell user, ask what they actually want.
 
-### 3. Identify failing jobs and steps
+### 3. Search GitHub issues (once per distinct failing job)
+
+```bash
+gh issue list --repo camunda/camunda --search "<job or workflow name>"
+```
+
+Show any candidate to the user, ask if it's the same problem.
+
+### 4. Search incident.io (once per distinct failing job)
+
+Call `incident_list` with `query: "<job's YAML key>"` — use the job's key from
+`.github/workflows/*.yml` (the `<job-key>:` line), not its display `name:`; they can differ, and
+incident titles follow `Unsuccessful job CI: <job-key> on <branch>`. Retry with the key if a
+display-name query returns nothing.
+
+For a matrix job (one YAML key fanned out via `strategy.matrix`), the shared key won't disambiguate
+legs — query with each failing leg's matrix value instead (e.g. `matrix.group`); incident titles are
+keyed on that value, not the job key.
+
+If either this or Step 3 hits, surface it and suggest merging/linking instead of opening something
+new.
+
+### 5. Identify failing jobs and steps
 
 From `jobs[]` where `conclusion ∈ {failure, cancelled}`, find the failing step (`steps[].conclusion`). If `job_id` given, restrict to it.
 
 **Matrix / cascade**: find the upstream root cause first (usually `Java Checks`, `build-*`, `Unit - Back End`). Group identical step failures. Tell user the shortlist before pulling logs.
 
-### 4. Fetch annotations (mandatory, before logs)
+### 6. Fetch annotations (mandatory, before logs)
 
 ```bash
 gh api --paginate "/repos/camunda/camunda/check-runs/<job-id>/annotations?per_page=100" \
@@ -67,9 +85,9 @@ Watch `level: failure`:
 - `"<TestClass.method> -- Time elapsed: …s <<< ERROR!"` → the specific test that hung/errored.
 - `"The operation was canceled."` → cascade noise; ignore alone.
 
-If annotations name a test/file, often enough to skip Step 5.
+If annotations name a test/file, often enough to skip Step 7.
 
-### 5. Pull logs for failing step
+### 7. Pull logs for failing step
 
 ```bash
 gh run view <run-id> --repo camunda/camunda --log-failed --job <job-id>
@@ -79,7 +97,7 @@ Extract: the error line, ±few lines of context, the step + action that ran it.
 
 `headSha == HEAD` (`git rev-parse HEAD`) → `Read` source files locally; skip `gh api`.
 
-### 6. Classify
+### 8. Classify
 
 Pick **one** primary category per failing job.
 
@@ -90,7 +108,7 @@ Pick **one** primary category per failing job.
 
 **`cancelled` is NOT automatically D.** In this repo it's usually a per-job timeout triggered by a slow/hung test (Category A). For `push` / `merge_group`, every non-success is a real failure — no "transient" merge-queue or base-branch failures exist.
 
-Decide by Step 4 annotations:
+Decide by Step 6 annotations:
 
 - timeout + names a test/step → A
 - timeout + step is non-deterministic by history → B
@@ -99,7 +117,7 @@ Decide by Step 4 annotations:
 
 Suggest to lower severity to L2 for category **B** and **D**.
 
-### 7. Find root cause
+### 9. Find root cause
 
 Per category:
 
@@ -110,7 +128,7 @@ Per category:
 
 Drill until you can name the **smallest change** that makes the job pass (file, function, line, or workflow key).
 
-### 8. Gate: read `ci.md` before any workflow/cache/retry/sizing change
+### 10. Gate: read `ci.md` before any workflow/cache/retry/sizing change
 
 This is a **gate**, not a suggestion (see Hard Rule 2). Before proposing any change to `.github/workflows/`, `.github/actions/`, caching, retries, runner sizing, or timeouts:
 
@@ -123,7 +141,7 @@ Common contradictions to watch for:
 - "add `cache-from: type=gha` for Docker" — `ci.md` §caching forbids this.
 - Hand-rolled cache steps when a composite action (`setup-maven-cache`, `setup-yarn-cache`) already exists.
 
-### 9. Apply branch sensitivity (Cat D only)
+### 11. Apply branch sensitivity (Cat D only)
 
 | `event` / `headBranch`            | Bar          | Cat D disposition                                                            |
 |-----------------------------------|--------------|------------------------------------------------------------------------------|
@@ -136,13 +154,14 @@ A/B/C: branch only changes the brief framing.
 
 On strict-bar branches, **never close with "rerun" alone** — name the smallest hardening change in `.github/workflows/` or `.github/actions/` as primary fix.
 
-### 10. Brief
+### 12. Brief
 
 ```
 **Run**: <workflow> · <branch> · <event> · <url>
 **Failed jobs**: <n> (<grouped if matrix>)
 **Category**: A | B | C | D
 **Reliability bar**: strict (main/stable/*/merge_group) | looser (pull_request)
+**Prior reports**: issues=<none found | #123> · incidents=<none found | INC-xxx>
 
 **Root cause**
 <1–3 sentences, specific file/line/condition>
