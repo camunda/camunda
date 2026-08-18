@@ -50,8 +50,8 @@ final class PhysicalTenantBrokerScalingIT {
   private static final int PARTITIONS_PER_TENANT = 3;
   private static final int REPLICATION_FACTOR = 1;
   // TestClusterBuilder sizes the actor threads as (partitions * replicationFactor) / brokers, which
-  // counts one tenant's partitions only and rounds down to 0 at replication factor 1 — and a
-  // scheduler with no threads cannot start a broker. Size them for every partition of both tenants.
+  // counts one tenant's partitions only: here that is a single thread, for the partitions of both
+  // tenants a broker ends up hosting. Size them for every partition of both tenants instead.
   private static final int ACTOR_THREAD_COUNT = 2 * PARTITIONS_PER_TENANT;
 
   // Routing through PhysicalTenantsITHelper both supplies a real config diff (secondary storage =
