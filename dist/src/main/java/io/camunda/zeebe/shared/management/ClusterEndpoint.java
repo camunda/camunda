@@ -40,6 +40,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.PartitionJoinRequest;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -410,9 +411,11 @@ public class ClusterEndpoint {
       @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final String subResourceId,
-      @RequestBody final PartitionAddRequest request,
+      @RequestBody final PartitionJoinRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
-    final int priority = request.priority();
+    // The generated body type makes priority nullable even though the schema requires it;
+    // an omitted priority has always meant the lowest one, so keep answering that way.
+    final int priority = Optional.ofNullable(request.getPriority()).orElse(0);
     return switch (resource) {
       case brokers ->
           switch (subResource) {
@@ -677,8 +680,6 @@ public class ClusterEndpoint {
   private static Optional<String> nonBlank(final @Nullable String value) {
     return Optional.ofNullable(value).filter(v -> !v.isBlank());
   }
-
-  public record PartitionAddRequest(int priority) {}
 
   private static final class UnknownRequestParameterException extends RuntimeException {
     private UnknownRequestParameterException(final String message) {
