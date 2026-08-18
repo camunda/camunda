@@ -45,6 +45,19 @@ public final class AnalyticsAttributes {
     public static final String USAGE_METRIC_EXPORTED = "usage_metric_exported";
     public static final String HEARTBEAT = "heartbeat";
     public static final String USER_TASK_CREATED = "user_task_created";
+    public static final String TENANT_CREATED = "camunda.tenant.created";
+    public static final String TENANT_DELETED = "camunda.tenant.deleted";
+    public static final String PROCESS_INCIDENT_CREATED = "camunda.process.incident.created";
+    public static final String PROCESS_INCIDENT_RESOLVED = "camunda.process.incident.resolved";
+    public static final String PROCESS_DEFINITION_CREATED = "camunda.process.definition.created";
+    public static final String PROCESS_DEFINITION_DELETED = "camunda.process.definition.deleted";
+    public static final String DECISION_DEFINITION_CREATED = "camunda.decision.definition.created";
+    public static final String DECISION_DEFINITION_DELETED = "camunda.decision.definition.deleted";
+    public static final String FORM_DEFINITION_CREATED = "camunda.form.definition.created";
+    public static final String FORM_DEFINITION_DELETED = "camunda.form.definition.deleted";
+    public static final String AGENT_INSTANCE_CREATED = "camunda.agent.instance.created";
+    public static final String AGENT_INSTANCE_COMPLETED = "camunda.agent.instance.completed";
+    public static final String USER_TASK_ASSIGNED = "camunda.user_task.assigned";
 
     private Event() {}
   }
@@ -97,8 +110,53 @@ public final class AnalyticsAttributes {
     private Element() {}
   }
 
+  public static final class UserTask {
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.user_task.key");
+
+    /** SHA-256 hex of the assignee. The raw assignee is PII and must never be emitted. */
+    public static final AttributeKey<String> ASSIGNEE_HASH =
+        AttributeKey.stringKey("camunda.user_task.assignee_hash");
+
+    private UserTask() {}
+  }
+
+  public static final class Incident {
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.incident.key");
+
+    private Incident() {}
+  }
+
+  public static final class Decision {
+    public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.decision.id");
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.decision.key");
+    public static final AttributeKey<Long> VERSION =
+        AttributeKey.longKey("camunda.decision.version");
+
+    private Decision() {}
+  }
+
+  public static final class Form {
+    public static final AttributeKey<String> ID = AttributeKey.stringKey("camunda.form.id");
+    public static final AttributeKey<Long> KEY = AttributeKey.longKey("camunda.form.key");
+    public static final AttributeKey<Long> VERSION = AttributeKey.longKey("camunda.form.version");
+
+    private Form() {}
+  }
+
+  public static final class Agent {
+    public static final AttributeKey<Long> INSTANCE_KEY =
+        AttributeKey.longKey("camunda.agent.instance_key");
+    public static final AttributeKey<Long> DEFINITION_KEY =
+        AttributeKey.longKey("camunda.agent.definition_key");
+    public static final AttributeKey<String> STATUS =
+        AttributeKey.stringKey("camunda.agent.status");
+
+    private Agent() {}
+  }
+
   public static final class Metric {
     public static final String PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
+    public static final String DECISION_INSTANCE_EVALUATED = "camunda.decision.instance.evaluated";
     public static final String EXPORT_WINDOW = "camunda.metric.export_window";
     public static final AttributeKey<Long> SEQUENCE_NUMBER =
         AttributeKey.longKey("camunda.metric.sequence_number");
