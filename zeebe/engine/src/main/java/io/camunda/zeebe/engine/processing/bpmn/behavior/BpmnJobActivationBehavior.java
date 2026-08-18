@@ -164,9 +164,18 @@ public class BpmnJobActivationBehavior {
                     && leaseAwarePredicate.test(jobActivationProperties));
 
     if (optionalJobStream.isEmpty()) {
+      if (leaseAwarePredicate.isLeasedJobSkipped()) {
+        // push-side counterpart of the skip JobBatchCollector counts when a poll request without
+        // withLease encounters an already-leased job: here, a stream matched the type but not the
+        // lease, so the job is demoted to waiting for a poller instead
+        sideEffectWriter.appendSideEffect(
+            () -> {
+              jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
+              return true;
+            });
+      }
       // the job stays activatable; a long poll checks its secret references when it collects it
-      notifyJobAvailableOnce(
-          jobType, jobKind, notifiedJobTypes, leaseAwarePredicate.isLeasedJobSkipped());
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
       return true;
     }
 
@@ -202,7 +211,7 @@ public class BpmnJobActivationBehavior {
         jobBatchRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
       // the job is not activated, so it stays available; the notification lets a long poll collect
       // it, and the caller stops handing out jobs this batch can no longer take
-      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes, false);
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
       return false;
     }
     final var jobBatchKey = keyGenerator.nextKey();
@@ -267,32 +276,14 @@ public class BpmnJobActivationBehavior {
     if (parked) {
       jobMetrics.countJobEvent(JobAction.SKIPPED_UNCACHED_SECRET, jobKind, jobType);
     } else {
-      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes, false);
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
     }
     return batchHadRoom;
   }
 
-  /**
-   * Notifies the workers of the job type unless this batch of jobs already did. The lease-skip
-   * metric is counted independently of that dedup: several same-type jobs demoted within one
-   * shared-notification batch must each be counted, even though the batch notifies workers only
-   * once for all of them.
-   */
+  /** Notifies the workers of the job type unless this batch of jobs already did. */
   private void notifyJobAvailableOnce(
-      final String jobType,
-      final JobKind jobKind,
-      final Set<String> notifiedJobTypes,
-      final boolean leasedJobSkipped) {
-    if (leasedJobSkipped) {
-      // push-side counterpart of the skip JobBatchCollector counts when a poll request without
-      // withLease encounters an already-leased job: here, a stream matched the type but not the
-      // lease, so the job is demoted to waiting for a poller instead
-      sideEffectWriter.appendSideEffect(
-          () -> {
-            jobMetrics.countJobEvent(JobAction.SKIPPED_LEASED, jobKind, jobType);
-            return true;
-          });
-    }
+      final String jobType, final JobKind jobKind, final Set<String> notifiedJobTypes) {
     if (notifiedJobTypes.add(jobType)) {
       notifyJobAvailable(jobType, jobKind);
     }
