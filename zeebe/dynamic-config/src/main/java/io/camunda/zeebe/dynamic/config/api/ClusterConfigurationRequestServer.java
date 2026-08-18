@@ -39,7 +39,6 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerRemoveMemberRequestsHandler();
     registerJoinPartitionRequestsHandler();
     registerLeavePartitionRequestsHandler();
-    registerReassignPartitionRequestHandler();
     registerScaleRequestHandler();
     registerGetTopologyQueryHandler();
     registerTopologyCancelHandler();
@@ -115,14 +114,6 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.LEAVE_PARTITION.topic(),
         serializer::decodeLeavePartitionRequest,
         request -> mapResponse(clusterConfigurationManagementApi.leavePartition(request)),
-        this::encodeResponse);
-  }
-
-  private void registerReassignPartitionRequestHandler() {
-    communicationService.replyTo(
-        ClusterConfigurationRequestTopics.REASSIGN_PARTITIONS.topic(),
-        serializer::decodeReassignPartitionsRequest,
-        request -> mapResponse(clusterConfigurationManagementApi.reassignPartitions(request)),
         this::encodeResponse);
   }
 

@@ -28,7 +28,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
@@ -211,21 +210,6 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeRemoveMembersRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(removeMembersRequest);
-  }
-
-  @Test
-  void shouldEncodeAndDecodeReassignAllPartitionsRequest() {
-    // given
-    final var reassignPartitionsRequest =
-        new ReassignPartitionsRequest(Set.of(MemberId.from("1"), MemberId.from("2")), false);
-
-    // when
-    final var encodedRequest =
-        protoBufSerializer.encodeReassignPartitionsRequest(reassignPartitionsRequest);
-
-    // then
-    final var decodedRequest = protoBufSerializer.decodeReassignPartitionsRequest(encodedRequest);
-    assertThat(decodedRequest).isEqualTo(reassignPartitionsRequest);
   }
 
   @Test

@@ -29,7 +29,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -1039,16 +1038,6 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeReassignPartitionsRequest(
-      final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return Requests.ReassignAllPartitionsRequest.newBuilder()
-        .addAllMemberIds(reassignPartitionsRequest.members().stream().map(MemberId::id).toList())
-        .setDryRun(reassignPartitionsRequest.dryRun())
-        .build()
-        .toByteArray();
-  }
-
-  @Override
   public byte[] encodeScaleRequest(final BrokerScaleRequest scaleRequest) {
     final var builder =
         Requests.BrokerScaleRequest.newBuilder()
@@ -1273,21 +1262,6 @@ public class ProtoBufSerializer
               ? Optional.of(leavePartitionRequest.getPhysicalTenantId())
               : Optional.empty(),
           leavePartitionRequest.getDryRun());
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
-  }
-
-  @Override
-  public ReassignPartitionsRequest decodeReassignPartitionsRequest(final byte[] encodedState) {
-    try {
-      final var reassignPartitionsRequest =
-          Requests.ReassignAllPartitionsRequest.parseFrom(encodedState);
-      return new ReassignPartitionsRequest(
-          reassignPartitionsRequest.getMemberIdsList().stream()
-              .map(MemberId::from)
-              .collect(Collectors.toSet()),
-          reassignPartitionsRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

@@ -112,12 +112,6 @@ message UpdateZonePrioritiesRequest {
   bool dryRun = 2;
 }
 
-message ReassignAllPartitionsRequest {
-  // The ids of the brokers to which all partitions should be re-distributed
-  repeated string memberIds = 1;
-  bool dryRun = 2;
-}
-
 message ExporterDisableRequest {
   string exporterId = 1;
   bool dryRun = 2;

@@ -24,7 +24,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
@@ -103,17 +102,6 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.LEAVE_PARTITION.topic(),
         leavePartitionRequest,
         serializer::encodeLeavePartitionRequest,
-        serializer::decodeTopologyChangeResponse,
-        coordinatorSupplier.getDefaultCoordinator(),
-        TIMEOUT);
-  }
-
-  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
-      reassignPartitions(final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return communicationService.send(
-        ClusterConfigurationRequestTopics.REASSIGN_PARTITIONS.topic(),
-        reassignPartitionsRequest,
-        serializer::encodeReassignPartitionsRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

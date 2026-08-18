@@ -12,7 +12,6 @@ public enum ClusterConfigurationRequestTopics {
   REMOVE_MEMBER("topology-member-remove"),
   JOIN_PARTITION("topology-partition-join"),
   LEAVE_PARTITION("topology-partition-leave"),
-  REASSIGN_PARTITIONS("topology-partition-reassign"),
   SCALE_MEMBERS("topology-member-scale"),
   QUERY_TOPOLOGY("topology-query"),
   CANCEL_CHANGE("topology-change-cancel"),

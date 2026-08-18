@@ -36,9 +36,6 @@ public interface ClusterConfigurationRequestsSerializer {
   byte[] encodeLeavePartitionRequest(
       ClusterConfigurationManagementRequest.LeavePartitionRequest req);
 
-  byte[] encodeReassignPartitionsRequest(
-      ClusterConfigurationManagementRequest.ReassignPartitionsRequest reassignPartitionsRequest);
-
   byte[] encodeScaleRequest(BrokerScaleRequest scaleRequest);
 
   byte[] encodePurgeRequest(PurgeRequest purgeRequest);
@@ -87,9 +84,6 @@ public interface ClusterConfigurationRequestsSerializer {
       byte[] encodedState);
 
   ClusterConfigurationManagementRequest.LeavePartitionRequest decodeLeavePartitionRequest(
-      byte[] encodedState);
-
-  ClusterConfigurationManagementRequest.ReassignPartitionsRequest decodeReassignPartitionsRequest(
       byte[] encodedState);
 
   BrokerScaleRequest decodeScaleRequest(byte[] encodedState);

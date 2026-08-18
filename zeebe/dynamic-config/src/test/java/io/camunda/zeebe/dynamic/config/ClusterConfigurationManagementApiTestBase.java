@@ -33,7 +33,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -442,35 +441,6 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // then
     assertThat(changeStatus.legacyResponse().plannedChanges())
         .containsExactly(new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
-  }
-
-  @Test
-  void shouldReassignPartitions() {
-    // given
-    final var request =
-        new ReassignPartitionsRequest(
-            Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
-    final ClusterConfiguration currentTopology =
-        initialTopology
-            .addMember(
-                memberFactory.apply(1),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, partitionConfig),
-                        2,
-                        PartitionState.active(1, partitionConfig))))
-            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()));
-    setCurrentTopology(currentTopology);
-
-    // when
-    final var changeStatus = clientApi.reassignPartitions(request).join().get();
-
-    // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
-        .containsExactly(
-            new PartitionJoinOperation(memberFactory.apply(2), 2, 1),
-            new PartitionLeaveOperation(memberFactory.apply(1), 2, 1));
   }
 
   @Test
