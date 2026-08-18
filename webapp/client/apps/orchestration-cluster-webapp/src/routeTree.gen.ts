@@ -15,6 +15,7 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
+import { Route as DevPreviewGenericErrorRouteImport } from './routes/dev-preview.generic-error'
 import { Route as TasklistLoginRouteImport } from './routes/tasklist.login'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
@@ -62,6 +63,11 @@ const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
   id: '/tasklist',
   path: '/tasklist',
   getParentRoute: () => AuthRouteRoute,
+} as any)
+const DevPreviewGenericErrorRoute = DevPreviewGenericErrorRouteImport.update({
+  id: '/dev-preview/generic-error',
+  path: '/dev-preview/generic-error',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const TasklistLoginRoute = TasklistLoginRouteImport.update({
   id: '/tasklist/login',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/tasklist': typeof AuthTasklistTasksIndexRoute
+  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/': typeof AuthIndexRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/_auth/': typeof AuthIndexRoute
   '/_auth/tasklist/_tasks': typeof AuthTasklistTasksRouteRouteWithChildren
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/tasklist/processes'
     | '/operate/batch-operations'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/tasklist'
+    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/'
     | '/tasklist/processes'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/_auth/admin'
     | '/_auth/operate'
     | '/_auth/tasklist'
+    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/_auth/'
     | '/_auth/tasklist/_tasks'
@@ -309,6 +321,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
+  DevPreviewGenericErrorRoute: typeof DevPreviewGenericErrorRoute
   TasklistLoginRoute: typeof TasklistLoginRoute
 }
 
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist'
       preLoaderRoute: typeof AuthTasklistRouteRouteImport
       parentRoute: typeof AuthRouteRoute
+    }
+    '/dev-preview/generic-error': {
+      id: '/dev-preview/generic-error'
+      path: '/dev-preview/generic-error'
+      fullPath: '/dev-preview/generic-error'
+      preLoaderRoute: typeof DevPreviewGenericErrorRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/tasklist/login': {
       id: '/tasklist/login'
@@ -632,6 +652,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   LoginRoute: LoginRoute,
+  DevPreviewGenericErrorRoute: DevPreviewGenericErrorRoute,
   TasklistLoginRoute: TasklistLoginRoute,
 }
 export const routeTree = rootRouteImport
