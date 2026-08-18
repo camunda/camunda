@@ -101,7 +101,7 @@ jobs:
 
       - name: Wait for import to complete
         run: |
-          expected=${{ matrix.branch == 'stable/8.8' && '49' || '17' }}
+          expected=${{ matrix.branch == 'stable/8.8' && '49' || '60' }}
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
             if [[ $count -eq $expected ]]; then
