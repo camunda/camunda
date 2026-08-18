@@ -19,6 +19,7 @@ import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -127,10 +128,14 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
       final var settings = SecretManagerServiceSettings.newBuilder();
       if (config.withoutAuthentication()) {
         // Emulator/testing only: no credentials and a plaintext gRPC channel to a local endpoint.
+        final var endpoint =
+            Objects.requireNonNull(
+                config.endpoint(),
+                "endpoint must be set when authentication is disabled (emulator testing only)");
         settings.setCredentialsProvider(NoCredentialsProvider.create());
         settings.setTransportChannelProvider(
             SecretManagerServiceSettings.defaultGrpcTransportProviderBuilder()
-                .setEndpoint(config.endpoint())
+                .setEndpoint(endpoint)
                 .setChannelConfigurator(ManagedChannelBuilder::usePlaintext)
                 .build());
       } else if (config.endpoint() != null && !config.endpoint().isBlank()) {
