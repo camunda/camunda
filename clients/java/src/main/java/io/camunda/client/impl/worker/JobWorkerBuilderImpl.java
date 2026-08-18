@@ -270,7 +270,7 @@ public final class JobWorkerBuilderImpl
               scheduledExecutor,
               System::nanoTime,
               metrics,
-              false);
+              withLease);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
