@@ -24,21 +24,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The msgpack representation shared by {@link InputMappingResultBuilder} and {@link
- * OutputMappingResultBuilder}: an accumulated level, the poison sentinel, and the (optionally
- * layered) serializer. Package-private and mode-agnostic — neither builder's notion of what a level
- * means belongs here, only the structure both of them accumulate.
+ * OutputMappingResultBuilder}: an accumulated level and the (optionally layered) serializer.
+ * Package-private and mode-agnostic — neither builder's notion of what a level means belongs here,
+ * only the structure both of them accumulate.
  */
 @NullMarked
 final class MappingLevels {
-
-  /**
-   * Marks a nested level whose existing scope value was not a context: the level evaluates to null,
-   * matching FEEL's {@code context merge(<non-context>, {...})}. Serialized as NIL. Only {@link
-   * OutputMappingResultBuilder} ever produces one.
-   */
-  static final Object POISON = new Object();
-
-  static final DirectBuffer NIL = new UnsafeBuffer(new byte[] {MsgPackCodes.NIL});
 
   private MappingLevels() {}
 
@@ -107,8 +98,6 @@ final class MappingLevels {
       if (value instanceof final Level level) {
         pending.push(
             openLevel(writer, level.children(), shadowedChildOf(frame, entry.getKey(), level)));
-      } else if (value == POISON) {
-        writer.writeNil();
       } else {
         writer.writeRaw((DirectBuffer) value);
       }
@@ -156,8 +145,7 @@ final class MappingLevels {
   /**
    * A nested level built by one or more dotted target paths.
    *
-   * @param children the level's entries: a nested {@link Level}, {@link #POISON}, or a MsgPack
-   *     {@link DirectBuffer}
+   * @param children the level's entries: a nested {@link Level} or a MsgPack {@link DirectBuffer}
    * @param replacedExistingValue whether this level replaced a plain value rather than being
    *     created from nothing — a neutral structural fact both builders compute. {@link
    *     InputMappingResultBuilder} is the only one that acts on it: such a level never falls

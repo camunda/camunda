@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -26,6 +27,15 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public final class OutputMappingResultBuilder implements MappingResultBuilder {
+
+  /**
+   * A level whose scope value was not a context: it evaluates to null, matching FEEL's {@code
+   * context merge(<non-context>, {...})}. Held as a pre-serialized msgpack nil so the shared
+   * serializer needs no knowledge of it — it is written like any other value buffer. Compared by
+   * identity, which is what distinguishes a poisoned level from a mapping that assigned null (a
+   * distinct, cloned buffer).
+   */
+  private static final DirectBuffer POISONED = new UnsafeBuffer(new byte[] {MsgPackCodes.NIL});
 
   private final Map<String, Object> entries = new LinkedHashMap<>();
 
@@ -69,8 +79,6 @@ public final class OutputMappingResultBuilder implements MappingResultBuilder {
     final var entry = entries.get(name);
     if (entry == null) {
       return null;
-    } else if (entry == MappingLevels.POISON) {
-      return MappingLevels.NIL;
     } else if (entry instanceof final DirectBuffer value) {
       return value;
     } else {
@@ -95,7 +103,7 @@ public final class OutputMappingResultBuilder implements MappingResultBuilder {
       final Map<String, Object> parent, final List<String> pathPrefix) {
     final var key = pathPrefix.getLast();
     final var entry = parent.get(key);
-    if (entry == MappingLevels.POISON) {
+    if (entry == POISONED) {
       return null;
     }
     if (entry instanceof final MappingLevels.Level level) {
@@ -111,7 +119,7 @@ public final class OutputMappingResultBuilder implements MappingResultBuilder {
       return fresh;
     }
     if (!MsgPackCodes.isMap(scopeValue.getByte(0))) {
-      parent.put(key, MappingLevels.POISON);
+      parent.put(key, POISONED);
       return null;
     }
     final var seeded =
