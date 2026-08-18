@@ -18,6 +18,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
@@ -27,6 +28,9 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwar
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.HashMap;
 import java.util.List;
@@ -34,9 +38,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class ZoneMigrationRequestTransformerTest {
+
+  private static final String TENANT_A = "tenant-a";
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
@@ -296,6 +303,24 @@ final class ZoneMigrationRequestTransformerTest {
     return TestTopologyChangeSimulator.apply(oldTopology, result.get());
   }
 
+  /**
+   * The given topology with its single partition group mirrored under a second physical tenant, so
+   * every broker holds partitions of both tenants. Enough to tell a plan that saw every tenant's
+   * partition group from one that only ever saw the default group.
+   */
+  private CurrentClusterConfiguration twoTenantCluster(final ClusterConfiguration topology) {
+    final var single = CurrentClusterConfiguration.fromLegacy(topology);
+    return new CurrentClusterConfiguration(
+        single.version(),
+        single.globalConfiguration(),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+            TENANT_A,
+            single.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)),
+        single.phasedChangeState());
+  }
+
   private ClusterConfiguration setZoneAwareConfig(
       final ClusterConfiguration topology, final List<ZoneSpec> zones) {
     final var result =
@@ -383,5 +408,134 @@ final class ZoneMigrationRequestTransformerTest {
           MemberId.from(zones.get(zoneIdx), ZoneLayout.localNodeIdxForBareNodeIdx(i, 2)));
     }
     return nodeMapping;
+  }
+
+  @Nested
+  class Phases {
+
+    /**
+     * A single-tenant cluster must plan exactly the migration it planned before {@code phases()}
+     * existed, so this compares the two directly rather than re-deriving an expected plan: the
+     * phases the multi-group path builds against the phases {@code toPhases} derives from the
+     * legacy flat operation list. Any divergence in operation content, ordering, or phase
+     * boundaries fails it.
+     */
+    @Test
+    void shouldPlanTheSameSingleRegionMigrationAsTheLegacyPath() {
+      shouldPlanTheSameMigrationAsTheLegacyPath(unzonedTopology(3, 3, 3), SINGLE_REGION, ZONE_A);
+    }
+
+    @Test
+    void shouldPlanTheSameDualRegionStageAsTheLegacyPath() {
+      shouldPlanTheSameMigrationAsTheLegacyPath(unzonedTopology(4, 2, 4), DUAL_REGION, ZONE_B);
+    }
+
+    private void shouldPlanTheSameMigrationAsTheLegacyPath(
+        final ClusterConfiguration topology,
+        final List<ZoneSpec> zones,
+        final String migratedZone) {
+      // given
+      final var legacy = setZoneAwareConfig(topology, zones);
+      final var transformer = new ZoneMigrationRequestTransformer(migratedZone);
+
+      // when
+      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(legacy));
+
+      // then
+      assertThat(phases).isRight();
+      assertThat(phases.get())
+          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(legacy).get()));
+    }
+
+    /**
+     * A stage replaces every broker of one zone, so leaving a tenant out does not merely deny it
+     * the new brokers: its partitions stay on the member ids the stage removes. Both tenants
+     * therefore have to move off both replaced brokers.
+     */
+    @Test
+    void shouldMoveEveryTenantsPartitionsOffTheStagesBrokers() {
+      // given — two tenants on a four-broker cluster staged for a dual-region migration, where
+      // brokers 1 and 3 are the ones zone-b replaces
+      final var configuration =
+          twoTenantCluster(setZoneAwareConfig(unzonedTopology(4, 2, 4), DUAL_REGION));
+
+      // when
+      final var phases = new ZoneMigrationRequestTransformer(ZONE_B).phases(configuration);
+
+      // then
+      assertThat(phases).isRight();
+      final var groupOperations = partitionPhase(phases.get()).groupOperations();
+      assertThat(groupOperations)
+          .describedAs("every tenant's partitions are replanned, not only the default tenant's")
+          .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A);
+      assertThat(groupOperations)
+          .allSatisfy(
+              (groupId, operations) -> {
+                assertThat(operations)
+                    .describedAs("tenant '%s' leaves both brokers zone-b replaces", groupId)
+                    .filteredOn(PartitionLeaveOperation.class::isInstance)
+                    .extracting(operation -> ((PartitionLeaveOperation) operation).memberId())
+                    .contains(BARE_1, BARE_3)
+                    .doesNotContain(BARE_0, BARE_2);
+                assertThat(operations)
+                    .describedAs("tenant '%s' places partitions on zone-b's new brokers", groupId)
+                    .filteredOn(PartitionJoinOperation.class::isInstance)
+                    .extracting(operation -> ((PartitionJoinOperation) operation).memberId())
+                    .containsOnly(ZONE_B_0, ZONE_B_1);
+              });
+    }
+
+    /**
+     * The zoned ids a stage introduces are global state, so a plan that covers every tenant must
+     * still join and leave each broker exactly once, around the partition work rather than
+     * interleaved with it — a partition can only move onto a broker that has joined, and a broker
+     * can only leave once it holds nothing.
+     */
+    @Test
+    void shouldJoinAndLeaveEachBrokerOnceAroundThePartitionWork() {
+      // given
+      final var configuration =
+          twoTenantCluster(setZoneAwareConfig(unzonedTopology(4, 2, 4), DUAL_REGION));
+
+      // when
+      final var phases = new ZoneMigrationRequestTransformer(ZONE_B).phases(configuration);
+
+      // then
+      assertThat(phases).isRight();
+      assertThat(phases.get()).hasSize(3);
+      assertThat(((GlobalPhase) phases.get().getFirst()).operations())
+          .containsExactly(new MemberJoinOperation(ZONE_B_0), new MemberJoinOperation(ZONE_B_1));
+      assertThat(((GlobalPhase) phases.get().getLast()).operations())
+          .containsExactly(new MemberLeaveOperation(BARE_1), new MemberLeaveOperation(BARE_3));
+    }
+
+    @Test
+    void shouldRejectAnInvalidRequestBeforePlanningAnyTenant() {
+      // given — no zone-aware config persisted, so no stage can be derived
+      final var configuration = twoTenantCluster(unzonedTopology(4, 2, 4));
+
+      // when
+      final var phases = new ZoneMigrationRequestTransformer(ZONE_B).phases(configuration);
+
+      // then
+      assertThat(phases)
+          .isLeft()
+          .left()
+          .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+          .satisfies(
+              e ->
+                  assertThat(e)
+                      .hasMessageContaining(
+                          "Zone migration requires a persisted zone-aware partition distribution config, but was not set."));
+    }
+
+    private PartitionGroupParallelPhase partitionPhase(final List<Phase> phases) {
+      return phases.stream()
+          .filter(PartitionGroupParallelPhase.class::isInstance)
+          .map(PartitionGroupParallelPhase.class::cast)
+          .findFirst()
+          .orElseThrow(
+              () -> new AssertionError("expected the plan to contain partition work: " + phases));
+    }
   }
 }
