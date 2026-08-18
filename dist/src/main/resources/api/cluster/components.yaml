@@ -303,6 +303,19 @@ schemas:
         items:
           $ref: "components.yaml#/schemas/BrokerId"
 
+  PartitionJoinRequest:
+    description: Request body for adding a broker to a partition's replication group. The broker
+      and the partition are given in the path.
+    type: object
+    required:
+      - priority
+    properties:
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking of the broker within the partition; higher value wins
+        example: 1
+
   ClusterZoneMigrationRequest:
     description: >
       Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
