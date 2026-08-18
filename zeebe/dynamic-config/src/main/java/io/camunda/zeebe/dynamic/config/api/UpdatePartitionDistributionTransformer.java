@@ -57,7 +57,59 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
+    return validatedZoneAwareConfig(
+            currentConfiguration.minReplicationFactor(),
+            currentConfiguration.isFullyZoneAware(),
+            currentConfiguration.isPartiallyZoneAware())
+        .flatMap(zoneAwareConfig -> operations(currentConfiguration, zoneAwareConfig));
+  }
 
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentConfiguration, final ZoneAwareConfig zoneAwareConfig) {
+    final var coordinator =
+        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
+            .getDefaultCoordinator();
+
+    // Apply the new config to produce a temporary configuration whose partitionDistributor()
+    // returns the new ZoneAwarePartitionDistributor. This is only used for distribution
+    // computation; the real version bump happens when the config-set operation is applied.
+    final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
+
+    return new PartitionReassignRequestTransformer(
+            targetMembers(currentConfiguration.members().keySet()),
+            Optional.of(zoneAwareConfig.replicationFactor()),
+            Optional.empty())
+        .operations(updatedConfiguration)
+        .map(
+            ops -> {
+              final var allOps = new ArrayList<ClusterConfigurationChangeOperation>(ops.size() + 1);
+              allOps.add(new UpdatePartitionDistributorConfigOperation(coordinator, newConfig));
+              allOps.addAll(ops);
+              return allOps;
+            });
+  }
+
+  private Set<MemberId> targetMembers(final Set<MemberId> currentMembers) {
+    final var members = new HashSet<>(currentMembers);
+    members.addAll(extraMembers);
+    return members;
+  }
+
+  /**
+   * Checks the request against the cluster it would apply to and answers with the requested config
+   * once it is known to be applicable.
+   *
+   * <p>Takes what it checks rather than a configuration, because the answer does not depend on
+   * which partition groups the cluster runs: whether a zone layout can be adopted follows from the
+   * layout itself, from how far the cluster has come in adopting zone-awareness, and from the
+   * replication factor it runs today.
+   *
+   * @param currentReplicationFactor the lowest replication factor any partition currently has
+   */
+  private Either<Exception, ZoneAwareConfig> validatedZoneAwareConfig(
+      final int currentReplicationFactor,
+      final boolean fullyZoneAware,
+      final boolean partiallyZoneAware) {
     if (!(newConfig instanceof final ZoneAwareConfig zoneAwareConfig)) {
       return Either.left(
           new InvalidRequest(
@@ -80,9 +132,7 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
     }
 
     final int targetReplicationFactor = zoneAwareConfig.replicationFactor();
-    final int currentReplicationFactor = currentConfiguration.minReplicationFactor();
-    if (!currentConfiguration.isFullyZoneAware()
-        && targetReplicationFactor != currentReplicationFactor) {
+    if (!fullyZoneAware && targetReplicationFactor != currentReplicationFactor) {
       return Either.left(
           new InvalidRequest(
               String.format(
@@ -91,36 +141,13 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
                   targetReplicationFactor, currentReplicationFactor)));
     }
 
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
-            .getDefaultCoordinator();
-
-    if (currentConfiguration.isPartiallyZoneAware()) {
+    if (partiallyZoneAware) {
       return Either.left(
           new InvalidRequest(
               "Partition distribution changes are only supported on fully zone-aware clusters or "
                   + "on fully bare clusters before zone migration starts."));
     }
 
-    // Apply the new config to produce a temporary configuration whose partitionDistributor()
-    // returns the new ZoneAwarePartitionDistributor. This is only used for distribution
-    // computation; the real version bump happens when the config-set operation is applied.
-    final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
-
-    final var members = new HashSet<>(currentConfiguration.members().keySet());
-    members.addAll(extraMembers);
-
-    return new PartitionReassignRequestTransformer(
-            members, Optional.of(zoneAwareConfig.replicationFactor()), Optional.empty())
-        .operations(updatedConfiguration)
-        .map(
-            ops -> {
-              final var allOps = new ArrayList<ClusterConfigurationChangeOperation>(ops.size() + 1);
-              final var updateConfigOperation =
-                  new UpdatePartitionDistributorConfigOperation(coordinator, newConfig);
-              allOps.add(updateConfigOperation);
-              allOps.addAll(ops);
-              return allOps;
-            });
+    return Either.right(zoneAwareConfig);
   }
 }

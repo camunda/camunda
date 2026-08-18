@@ -12,11 +12,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -45,7 +47,38 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
-    final var partitionDistributorConfig = currentConfiguration.partitionDistributorConfig();
+    return zoneAddedConfig(currentConfiguration.partitionDistributorConfig())
+        .flatMap(
+            newConfig ->
+                // Join the returning brokers, then reuse the shared distribution transformer to
+                // persist the new config and reassign partitions over the current members plus the
+                // returning brokers.
+                new AddMembersTransformer(brokers)
+                    .operations(currentConfiguration)
+                    .flatMap(
+                        addMembersOps ->
+                            new UpdatePartitionDistributionTransformer(newConfig, brokers)
+                                .operations(currentConfiguration)
+                                .map(
+                                    distributionOps -> {
+                                      final var allOps =
+                                          new ArrayList<ClusterConfigurationChangeOperation>(
+                                              addMembersOps.size() + distributionOps.size());
+                                      allOps.addAll(addMembersOps);
+                                      allOps.addAll(distributionOps);
+                                      return allOps;
+                                    })));
+  }
+
+  /**
+   * Validates the request and answers with the zone layout it implies: the persisted one with the
+   * returning zone added back.
+   *
+   * <p>Takes the persisted layout rather than a configuration because that is all the answer
+   * depends on — the zone layout and the member set are global, with no per-tenant dimension.
+   */
+  private Either<Exception, ZoneAwareConfig> zoneAddedConfig(
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     final List<ZoneSpec> currentZones;
     if (partitionDistributorConfig.isPresent()
         && partitionDistributorConfig.get() instanceof final ZoneAwareConfig cfg) {
@@ -99,24 +132,6 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
       return Either.left(new InvalidRequest(e));
     }
     newZones.add(newZone);
-    final var newConfig = new ZoneAwareConfig(newZones);
-
-    // Join the returning brokers, then reuse the shared distribution transformer to persist the new
-    // config and reassign partitions over the current members plus the returning brokers.
-    return new AddMembersTransformer(brokers)
-        .operations(currentConfiguration)
-        .flatMap(
-            addMembersOps ->
-                new UpdatePartitionDistributionTransformer(newConfig, brokers)
-                    .operations(currentConfiguration)
-                    .map(
-                        distributionOps -> {
-                          final var allOps =
-                              new ArrayList<ClusterConfigurationChangeOperation>(
-                                  addMembersOps.size() + distributionOps.size());
-                          allOps.addAll(addMembersOps);
-                          allOps.addAll(distributionOps);
-                          return allOps;
-                        }));
+    return Either.right(new ZoneAwareConfig(newZones));
   }
 }
