@@ -17,8 +17,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
-import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
+import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
+import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -92,7 +93,7 @@ public final class BpmnVariableMappingBehavior {
     }
 
     final var resultBuilder =
-        MappingResultBuilder.forInputMappings(
+        new InputMappingResultBuilder(
             // the value a nested target partially shadows: resolved from the element's own scope
             // key, walking up the chain exactly as an unmapped name does, so a partially mapped
             // name falls through to the same value a never-mapped read of it would have seen
@@ -166,7 +167,7 @@ public final class BpmnVariableMappingBehavior {
       // it and keep the existing sibling properties: look up the top-level variable in the element
       // scope, then navigate into it along the remaining path segments (null when absent).
       final var resultBuilder =
-          MappingResultBuilder.forOutputMappings(
+          new OutputMappingResultBuilder(
               path ->
                   Optional.ofNullable(
                           variablesState.getVariable(

@@ -16,8 +16,8 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.camunda.zeebe.engine.processing.variable.MappingResultBuilder;
 import io.camunda.zeebe.engine.processing.variable.MsgPackPath;
+import io.camunda.zeebe.engine.processing.variable.OutputMappingResultBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
@@ -203,7 +203,7 @@ public final class VariableOutputMappingTransformerTest {
     // BpmnVariableMappingBehavior.applyOutputMappings does at runtime — accumulated results
     // shadow the scope variables, and nested targets merge with the scope value at every level
     final var resultBuilder =
-        MappingResultBuilder.forOutputMappings(
+        new OutputMappingResultBuilder(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -236,7 +236,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when: evaluate one by one, stopping at the first failure (mirrors runtime fail-fast)
     final var resultBuilder =
-        MappingResultBuilder.forOutputMappings(
+        new OutputMappingResultBuilder(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -277,7 +277,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        MappingResultBuilder.forOutputMappings(
+        new OutputMappingResultBuilder(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
@@ -310,7 +310,7 @@ public final class VariableOutputMappingTransformerTest {
 
     // when
     final var resultBuilder =
-        MappingResultBuilder.forOutputMappings(
+        new OutputMappingResultBuilder(
             path ->
                 Optional.ofNullable(variables.get(path.getFirst()))
                     .map(rootValue -> MsgPackPath.navigate(rootValue, path, 1))
