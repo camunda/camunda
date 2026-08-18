@@ -156,6 +156,21 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
   }
 
   @Test
+  public void shouldRejectUnauthenticatedRequestToClusterExportingResume() {
+    // when — no Authorization header at all, against the real cluster-wide exporting resume path
+    final MvcTestResult result =
+        mockMvcTester
+            .post()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result)
+        .as("cluster-wide exporting resume must require cluster-admin credentials")
+        .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
   public void shouldAllowClusterExportingStatusWithClusterAdminCredentials() {
     // when
     final MvcTestResult result =

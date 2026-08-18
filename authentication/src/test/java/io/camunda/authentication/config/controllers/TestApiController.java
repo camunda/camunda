@@ -48,6 +48,8 @@ public class TestApiController {
   public static final String DUMMY_CLUSTER_EXPORTING_STATUS_ENDPOINT = "/cluster/v2/exporting";
 
   public static final String DUMMY_CLUSTER_EXPORTING_PAUSE_ENDPOINT = "/cluster/v2/exporting/pause";
+  public static final String DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT =
+      "/cluster/v2/exporting/resume";
 
   /**
    * Isolated, additive endpoint used only by {@code SessionAuthenticationRefreshTest} to force a
@@ -162,6 +164,11 @@ public class TestApiController {
 
   @PostMapping(DUMMY_CLUSTER_EXPORTING_PAUSE_ENDPOINT)
   public @ResponseBody String dummyClusterExportingPauseEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @PostMapping(DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT)
+  public @ResponseBody String dummyClusterExportingResumeEndpoint() {
     return DEFAULT_RESPONSE;
   }
 }
