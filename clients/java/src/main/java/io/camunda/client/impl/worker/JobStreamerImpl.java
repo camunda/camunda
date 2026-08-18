@@ -202,6 +202,11 @@ final class JobStreamerImpl implements JobStreamer {
     if (fetchVariables != null) {
       command = command.fetchVariables(fetchVariables);
     }
+    // only set when true: an explicit false is still sent over the wire, which would break
+    // rolling upgrades against a gateway that doesn't yet know this field
+    if (withLease) {
+      command.withLease(true);
+    }
 
     return command;
   }
