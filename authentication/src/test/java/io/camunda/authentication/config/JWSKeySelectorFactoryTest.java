@@ -20,10 +20,19 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.jwk.source.CachingJWKSetSource;
+import com.nimbusds.jose.jwk.source.JWKSetBasedJWKSource;
+import com.nimbusds.jose.jwk.source.JWKSetSource;
+import com.nimbusds.jose.jwk.source.JWKSetSourceWrapper;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.RefreshAheadCachingJWKSetSource;
+import com.nimbusds.jose.jwk.source.URLBasedJWKSetSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -275,6 +284,36 @@ final class JWSKeySelectorFactoryTest {
 
     // then
     assertThat(m2mKeys).isNotEmpty();
+  }
+
+  @Test
+  void shouldConfigureJwkSourceWithRefreshAheadCachingAndIncreasedTimeouts() throws Exception {
+    // given
+    final var jwkSetUri = URI.create(baseUrl() + "/refresh-ahead/.well-known/jwks.json").toURL();
+
+    // when
+    final JWKSource<SecurityContext> jwkSource = factory.createJWKSource(jwkSetUri);
+
+    // then the outer source refreshes ahead of expiry instead of Nimbus's default blocking cache
+    assertThat(jwkSource).isInstanceOf(JWKSetBasedJWKSource.class);
+    final JWKSetSource<SecurityContext> outer =
+        ((JWKSetBasedJWKSource<SecurityContext>) jwkSource).getJWKSetSource();
+    assertThat(outer).isInstanceOf(RefreshAheadCachingJWKSetSource.class);
+
+    // and the blocking cache-refresh wait is reduced from Nimbus's 15s default
+    final CachingJWKSetSource<SecurityContext> cachingSource =
+        (CachingJWKSetSource<SecurityContext>) outer;
+    assertThat(cachingSource.getCacheRefreshTimeout()).isEqualTo(5000L);
+
+    // and the underlying HTTP retriever uses a real, bounded timeout — today there is none at all
+    final JWKSetSource<SecurityContext> inner =
+        ((JWKSetSourceWrapper<SecurityContext>) outer).getSource();
+    assertThat(inner).isInstanceOf(URLBasedJWKSetSource.class);
+    final var retriever = ((URLBasedJWKSetSource<SecurityContext>) inner).getResourceRetriever();
+    assertThat(retriever).isInstanceOf(DefaultResourceRetriever.class);
+    final DefaultResourceRetriever defaultRetriever = (DefaultResourceRetriever) retriever;
+    assertThat(defaultRetriever.getConnectTimeout()).isEqualTo(2000);
+    assertThat(defaultRetriever.getReadTimeout()).isEqualTo(2000);
   }
 
   private static String baseUrl() {
