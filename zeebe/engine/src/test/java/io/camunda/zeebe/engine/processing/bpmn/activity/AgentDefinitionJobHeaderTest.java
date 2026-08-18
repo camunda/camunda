@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -202,6 +203,58 @@ public class AgentDefinitionJobHeaderTest {
             .getFirst();
 
     assertThat(listenerJobCreated.getValue().getCustomHeaders())
+        .contains(
+            entry(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey)));
+  }
+
+  @Test
+  public void
+      shouldIncludeAgentDefinitionKeyHeaderForBeforeAllListenerOnMultiInstanceAgentServiceTask() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("jobType")
+                            .zeebeAiAgentTaskDefinition()
+                            .zeebeBeforeAllExecutionListener("beforeAllJobType")
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("items", List.of(1))
+            .create();
+
+    // then
+    final var agentDefinitionKey =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withBpmnProcessId(processId)
+            .getFirst()
+            .getValue()
+            .getAgentDefinitionKey();
+
+    final var beforeAllJobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("beforeAllJobType")
+            .getFirst();
+
+    assertThat(beforeAllJobCreated.getValue().getCustomHeaders())
         .contains(
             entry(Protocol.AGENT_DEFINITION_KEY_HEADER_NAME, String.valueOf(agentDefinitionKey)));
   }
