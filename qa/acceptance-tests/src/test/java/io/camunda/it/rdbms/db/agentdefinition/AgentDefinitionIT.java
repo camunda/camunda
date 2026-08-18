@@ -11,6 +11,8 @@ import static io.camunda.it.rdbms.db.fixtures.AgentDefinitionFixtures.createAndS
 import static io.camunda.it.rdbms.db.fixtures.AgentDefinitionFixtures.createAndSaveRandomAgentDefinitions;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AgentDefinitionDbModel;
@@ -21,6 +23,7 @@ import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.sort.AgentDefinitionSort;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -94,6 +97,51 @@ public class AgentDefinitionIT {
     assertThat(result).isNotNull();
     assertThat(result.total()).isEqualTo(20);
     assertThat(result.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindAgentDefinitionByAuthorizedResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final AgentDefinitionDbModel model =
+        createAndSaveRandomAgentDefinition(testApplication, b -> b);
+    createAndSaveRandomAgentDefinition(testApplication, b -> b);
+
+    final var result =
+        testApplication
+            .getRdbmsService()
+            .getAgentDefinitionDbReader()
+            .search(
+                AgentDefinitionQuery.of(b -> b),
+                resourceAccessChecksFromResourceIds(
+                    AuthorizationResourceType.PROCESS_DEFINITION, model.processDefinitionId()));
+
+    assertThat(result).isNotNull();
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().agentDefinitionKey())
+        .isEqualTo(model.agentDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFindAgentDefinitionByAuthorizedTenantId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final AgentDefinitionDbModel model =
+        createAndSaveRandomAgentDefinition(testApplication, b -> b);
+    createAndSaveRandomAgentDefinition(testApplication, b -> b);
+
+    final var result =
+        testApplication
+            .getRdbmsService()
+            .getAgentDefinitionDbReader()
+            .search(
+                AgentDefinitionQuery.of(b -> b),
+                resourceAccessChecksFromTenantIds(model.tenantId()));
+
+    assertThat(result).isNotNull();
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().agentDefinitionKey())
+        .isEqualTo(model.agentDefinitionKey());
   }
 
   private void assertFieldsMatch(
