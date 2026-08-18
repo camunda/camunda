@@ -10,20 +10,25 @@ package io.camunda.operate.webapp.security.oauth2;
 import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -79,22 +84,68 @@ public class IdentityOAuth2WebConfigurer {
     }
   }
 
+  // No timeout is applied at all today (Spring's default RestTemplate has none); this bounds
+  // the connect/read phases to a realistic external IdP latency instead of hanging indefinitely.
+  private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
+  private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
+
+  // Nimbus's own default is 15,000ms; this still gives one full retry's worth of slack (roughly
+  // 2x the connect+read timeout above) while failing much faster when the IdP is genuinely down.
+  private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
+
+  private static final Set<JWSAlgorithm> SUPPORTED_JWS_ALGORITHMS =
+      Set.of(
+          JWSAlgorithm.RS256,
+          JWSAlgorithm.RS384,
+          JWSAlgorithm.RS512,
+          JWSAlgorithm.ES256,
+          JWSAlgorithm.ES384,
+          JWSAlgorithm.ES512);
+
   /**
    * JwtDecoder that supports both the "jwt" (standard JWT) and "at+jwt" (Access Token JWT) JOSE
    * types for token validation.
    */
   private JwtDecoder jwtDecoder() {
-    return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
-        .jwsAlgorithms(
-            algorithms -> {
-              algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512));
-            })
-        .jwtProcessorCustomizer(
-            processor -> {
-              processor.setJWSTypeVerifier(
-                  new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"), null));
-            })
+    final JWKSource<SecurityContext> jwkSource = createJwkSource();
+    final ConfigurableJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
+    jwtProcessor.setJWSTypeVerifier(
+        new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"), null));
+    jwtProcessor.setJWSKeySelector(
+        new JWSVerificationKeySelector<>(SUPPORTED_JWS_ALGORITHMS, jwkSource));
+    // Spring Security validates the claim set independently of Nimbus (see
+    // NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder#processor for the equivalent).
+    jwtProcessor.setJWTClaimsSetVerifier((claims, context) -> {});
+    return new NimbusJwtDecoder(jwtProcessor);
+  }
+
+  private JWKSource<SecurityContext> createJwkSource() {
+    final URL jwkSetUri = toURL(getJwkSetUriProperty());
+    final DefaultResourceRetriever retriever =
+        new DefaultResourceRetriever(
+            JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS,
+            JWK_SOURCE_HTTP_READ_TIMEOUT_MS,
+            JWKSourceBuilder.DEFAULT_HTTP_SIZE_LIMIT);
+    // refreshAheadCache(true): refresh happens ahead of expiry, off the request path, so
+    // concurrent requests are served the still-valid cached keys instead of blocking on a
+    // synchronous refetch. outageTolerant is deliberately left at Nimbus's default (false): a
+    // cache that is genuinely expired with no successful refresh still fails closed.
+    // rateLimited(false): matches what the Spring-internal builder this replaces already set
+    // (Nimbus's own default for this flag is true — omitting the call would silently enable it).
+    return JWKSourceBuilder.create(jwkSetUri, retriever)
+        .refreshAheadCache(true)
+        .rateLimited(false)
+        .cache(JWKSourceBuilder.DEFAULT_CACHE_TIME_TO_LIVE, JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS)
         .build();
+  }
+
+  private URL toURL(final String jwkSetUri) {
+    try {
+      return URI.create(jwkSetUri).toURL();
+    } catch (final MalformedURLException e) {
+      throw new IllegalArgumentException(
+          "Invalid JWK Set URI '%s': %s".formatted(jwkSetUri, e.getMessage()), e);
+    }
   }
 
   private String getJwkSetUriProperty() {
