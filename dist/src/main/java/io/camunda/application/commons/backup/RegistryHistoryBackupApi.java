@@ -95,8 +95,9 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
   }
 
   /**
-   * Resolves the tenant's backup wiring and rejects a tenant with no snapshot repository, which the
-   * actuator equally treats as a bad request rather than a server error.
+   * Resolves the tenant's backup wiring and rejects a tenant with no snapshot repository. Reported
+   * as a server error, alongside a repository the store does not have: both are deployment faults
+   * the caller cannot correct by changing its request.
    */
   private PhysicalTenantBackup backupFor(final String physicalTenantId) {
     final PhysicalTenantBackup backup;
@@ -109,7 +110,7 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
     if (repositoryName == null || repositoryName.isBlank()) {
       throw new ServiceException(
           "No backup repository configured for physical tenant '%s'".formatted(physicalTenantId),
-          Status.INVALID_ARGUMENT);
+          Status.INTERNAL);
     }
     return backup;
   }
@@ -128,7 +129,12 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
       case final BackupAlreadyRunningException ignored -> Status.INVALID_STATE;
       case final InvalidRequestException ignored -> Status.INVALID_ARGUMENT;
       case final ResourceNotFoundException ignored -> Status.NOT_FOUND;
-      case final MissingRepositoryException ignored -> Status.NOT_FOUND;
+      // Not NOT_FOUND: an absent repository is a deployment fault, not an absent backup. The
+      // cluster-wide endpoints fan out over every physical tenant and read NOT_FOUND as "this
+      // tenant was reached and holds nothing", so conflating the two would let them report an
+      // unusable tenant as ordinary absence. Not a 4xx either — nothing about the request is
+      // wrong, so there is nothing the caller could change to make it succeed.
+      case final MissingRepositoryException ignored -> Status.INTERNAL;
       case final BackupRepositoryConnectionException ignored -> Status.UNAVAILABLE;
       case final IndexNotFoundException ignored -> Status.INTERNAL;
       default -> Status.INTERNAL;
