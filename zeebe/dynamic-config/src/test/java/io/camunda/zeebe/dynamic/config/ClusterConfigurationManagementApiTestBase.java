@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
@@ -93,6 +94,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -1223,6 +1225,109 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 .getMember(coordinatorId)
                 .mode())
         .isEqualTo(Mode.PROCESSING);
+  }
+
+  /**
+   * Before every physical tenant was considered when planning a membership change, this request was
+   * rejected during validation: the plan moved only the default tenant's partitions, so {@code
+   * MemberLeaveApplier} — which checks every partition group — refused to let the departing member
+   * leave while it still held the other tenant's partition. The whole request failed with "the
+   * member still has partitions assigned", leaving the operator no way to remove the broker at all.
+   */
+  @Test
+  void shouldMoveANonDefaultTenantsPartitionOffARemovedBroker() {
+    // given — a third member that holds nothing but tenant-b's partition
+    final var removedMember = memberFactory.apply(2);
+    wireNonDefaultTenantOnLastMember(removedMember);
+
+    // when — that member is removed from the cluster
+    final var changeStatus =
+        clientApi
+            .patchCluster(
+                new ClusterPatchRequest(
+                    Set.of(), Set.of(removedMember), Optional.empty(), Optional.empty(), false))
+            .join()
+            .get();
+
+    // then — the request is answered with a plan at all, which is the regression: validation
+    // simulates every phase through the same appliers the manager uses, so a plan means
+    // MemberLeaveApplier no longer refuses the leave
+    final var expected = changeStatus.response().expectedConfiguration();
+    assertThat(expected.getMembers()).doesNotContain(removedMember);
+    assertThat(expected.partitionGroup(TENANT_B).members())
+        .describedAs("tenant-b's partition is reassigned to a retained broker, not dropped")
+        .isNotEmpty()
+        .doesNotContainKey(removedMember);
+
+    // and the partitions move before the member leaves, not after
+    final var phases = changeStatus.response().phases();
+    assertThat(phases).hasSize(3);
+    assertThat(phases.get(1))
+        .asInstanceOf(type(PartitionGroupParallelPhase.class))
+        .satisfies(
+            phase -> {
+              assertThat(phase.groupOperations()).containsKey(TENANT_B);
+              assertThat(phase.groupOperations().get(TENANT_B))
+                  .contains(new PartitionLeaveOperation(removedMember, 1, 1))
+                  .anySatisfy(
+                      operation ->
+                          assertThat(operation)
+                              .asInstanceOf(type(PartitionJoinOperation.class))
+                              .extracting(PartitionJoinOperation::memberId)
+                              .isNotEqualTo(removedMember));
+            });
+    assertThat(phases.get(2))
+        .asInstanceOf(type(GlobalPhase.class))
+        .satisfies(
+            phase ->
+                assertThat(phase.operations()).contains(new MemberLeaveOperation(removedMember)));
+  }
+
+  /**
+   * Wires a three-member cluster where the default tenant's only partition sits on {@link
+   * #coordinatorId} and {@link #TENANT_B}'s only partition on {@code lastMember}, so that member
+   * holds nothing but a non-default tenant's partition.
+   *
+   * <p>Deliberately left without a zone-aware distributor config, unlike {@link
+   * #wireTwoPhysicalTenants()}: round robin places three members in either variant of this suite,
+   * where a zone spec written for a single broker could not.
+   */
+  private void wireNonDefaultTenantOnLastMember(final MemberId lastMember) {
+    setCurrentTopology(
+        initialTopology
+            .updateMember(
+                coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(lastMember, MemberState.initializeAsActive(Map.of())));
+    manager.registerPartitionGroupChangeAppliers(
+        TENANT_B,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    manager
+        .updateMultiConfiguration(
+            current ->
+                new CurrentClusterConfiguration(
+                    current.version(),
+                    current.globalConfiguration(),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        current.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP),
+                        TENANT_B,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(
+                                lastMember,
+                                BrokerPartitionState.initialize(
+                                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    current.phasedChangeState()))
+        .join();
   }
 
   /**
