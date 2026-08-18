@@ -28,6 +28,16 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class InputMappingResultBuilder implements MappingResultBuilder {
 
+  /**
+   * Values are either a MsgPack {@link DirectBuffer} — a value assigned to that whole name — or a
+   * {@link MappingLevels.Level} built by one or more dotted targets. Never a poisoned level: only
+   * output mappings can produce one.
+   *
+   * <p>Insertion-ordered deliberately. This order becomes the order the VARIABLE records are
+   * written in when the document is merged into the scope, and the key order inside the MsgPack
+   * bytes of a stored nested value. Both must come out identical on every replica, so it cannot be
+   * left to {@link java.util.HashMap}'s iteration order.
+   */
   private final Map<String, Object> entries = new LinkedHashMap<>();
 
   /**

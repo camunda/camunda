@@ -94,9 +94,6 @@ public final class BpmnVariableMappingBehavior {
 
     final var resultBuilder =
         new InputMappingResultBuilder(
-            // the value a nested target partially shadows: resolved from the element's own scope
-            // key, walking up the chain exactly as an unmapped name does, so a partially mapped
-            // name falls through to the same value a never-mapped read of it would have seen
             name -> variablesState.getVariable(scopeKey, BufferUtil.wrapString(name)));
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling

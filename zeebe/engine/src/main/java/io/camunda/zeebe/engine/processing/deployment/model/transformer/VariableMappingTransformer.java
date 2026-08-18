@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
  * implementation. An output mapping's result is merged into that variable if it is a JSON object,
  * at every nesting level, so the merged value is what gets written ({@code
  * OutputMappingResultBuilder}). An input mapping's result is not merged — it is written as-is — but
- * a later source reading the target's root name sees the mapped keys layered over the value the
- * scope chain resolves, so a mapping shadows only the keys it defines ({@code
- * InputMappingResultBuilder}).
+ * when a later mapping in the same list reads that root name in its own source, it sees the mapped
+ * keys layered over the value the scope chain resolves, so a mapping shadows only the keys it
+ * defines ({@code InputMappingResultBuilder}).
  */
 public final class VariableMappingTransformer {
 
