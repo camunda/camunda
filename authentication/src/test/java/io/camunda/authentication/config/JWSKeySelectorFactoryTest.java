@@ -305,7 +305,7 @@ final class JWSKeySelectorFactoryTest {
         (CachingJWKSetSource<SecurityContext>) outer;
     assertThat(cachingSource.getCacheRefreshTimeout()).isEqualTo(5000L);
 
-    // and the underlying HTTP retriever uses a real, bounded timeout — today there is none at all
+    // and the underlying HTTP retriever's timeouts are raised from Nimbus's 500ms default
     final JWKSetSource<SecurityContext> inner =
         ((JWKSetSourceWrapper<SecurityContext>) outer).getSource();
     assertThat(inner).isInstanceOf(URLBasedJWKSetSource.class);
