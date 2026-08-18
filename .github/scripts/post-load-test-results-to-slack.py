@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Build and post the daily load-test results table to Slack.
 
-Renders a side-by-side gRPC vs REST metrics table from the end-of-soak metric
-snapshots and posts it to the reliability-testing Slack channel via an incoming
-webhook. Invoked by the `notify-results` job of
-`.github/workflows/camunda-daily-load-tests.yml`.
+Renders a side-by-side metrics table — one column per variant — from the end-of-soak metric
+snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
+by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml`.
 
-Metric names, descriptions, and display formats are sourced from `queries.yaml`
-(the single source of truth shared with `loadTestMetrics.sh`), so adding a metric
-there automatically adds a row here.
+Metric names, descriptions, and display formats are sourced from `queries.yaml` (the single
+source of truth shared with `loadTestMetrics.sh`), so adding a metric there automatically adds a
+row here. Metrics tied to secondary storage (e.g. importer/exporter lag) naturally render as n/a
+for a no-secondary-storage variant.
+
+The table has one column per entry in VARIANTS_JSON — adding a daily variant (a new matrix entry
+in camunda-daily-load-tests.yml) needs no change here.
 
 Required environment variables:
-  GRPC_RESULTS_JSON   JSON object of {metric_name: value} for the gRPC run.
-  REST_RESULTS_JSON   JSON object of {metric_name: value} for the REST run.
+  VARIANTS_JSON       JSON array of {key, label, namespace, soakEndEpoch, results} objects, one
+                      per variant, in display order. `results` is {metric_name: value}.
   BENCHMARK           Benchmark name, e.g. medic-daily-YYYY-MM-DD-<sha>-test.
   SLACK_WEBHOOK_URL   Incoming-webhook URL to post to.
   REPO                GitHub repo slug, e.g. camunda/camunda.
@@ -37,14 +40,11 @@ import urllib.request
 
 import yaml
 
-grpc    = json.loads(os.environ.get('GRPC_RESULTS_JSON') or '{}')
-rest    = json.loads(os.environ.get('REST_RESULTS_JSON') or '{}')
-bench   = os.environ['BENCHMARK']
-grpc_ns = f'c8-{bench}'
-rest_ns = f'c8-{bench}-rest'
-repo    = os.environ['REPO']
-run_id  = os.environ['RUN_ID']
-webhook = os.environ['SLACK_WEBHOOK_URL']
+variants = json.loads(os.environ.get('VARIANTS_JSON') or '[]')
+bench    = os.environ['BENCHMARK']
+repo     = os.environ['REPO']
+run_id   = os.environ['RUN_ID']
+webhook  = os.environ['SLACK_WEBHOOK_URL']
 flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
 
 queries_yaml = os.environ.get('QUERIES_YAML', 'load-tests/docs/scripts/queries.yaml')
@@ -78,23 +78,32 @@ def fmt(v, q):
 
 
 lw = max(len('Metric'), *(len(q['description']) for q in queries))
-gw = max(len('gRPC'),   *(len(fmt(grpc.get(q['name']), q)) for q in queries))
-rw = max(len('REST'),   *(len(fmt(rest.get(q['name']), q)) for q in queries))
+col_widths = {
+    v['label']: max(len(v['label']), *(len(fmt(v['results'].get(q['name']), q)) for q in queries))
+    for v in variants
+}
 
-header = f"{'Metric':<{lw}}  {'gRPC':<{gw}}  {'REST':<{rw}}"
-sep    = '-' * (lw + 2 + gw + 2 + rw)
+header = f"{'Metric':<{lw}}" + ''.join(f"  {label:<{w}}" for label, w in col_widths.items())
+sep    = '-' * (lw + sum(2 + w for w in col_widths.values()))
 rows   = [
-    f"{q['description']:<{lw}}  {fmt(grpc.get(q['name']), q):<{gw}}  {fmt(rest.get(q['name']), q):<{rw}}"
+    f"{q['description']:<{lw}}" + ''.join(
+        f"  {fmt(v['results'].get(q['name']), q):<{col_widths[v['label']]}}" for v in variants
+    )
     for q in queries
 ]
 table  = '\n'.join([header, sep] + rows)
 
-soak_end  = int(os.environ.get('SOAK_END_EPOCH') or time.time())
-from_ms   = (soak_end - 10800) * 1000
-to_ms     = soak_end * 1000
-grpc_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={grpc_ns}&from={from_ms}&to={to_ms}'
-rest_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={rest_ns}&from={from_ms}&to={to_ms}'
-run_url   = f'https://github.com/{repo}/actions/runs/{run_id}'
+# All variants' Grafana links share one time range, anchored to the first (primary) variant's
+# soak end — mirrors prior behavior, which always anchored the range on gRPC's soak end.
+soak_end = int(variants[0]['soakEndEpoch']) if variants else int(time.time())
+from_ms  = (soak_end - 10800) * 1000
+to_ms    = soak_end * 1000
+run_url  = f'https://github.com/{repo}/actions/runs/{run_id}'
+
+dash_links = ' · '.join(
+    f"<https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={v['namespace']}&from={from_ms}&to={to_ms}|Grafana {v['label']}>"
+    for v in variants
+)
 
 blocks = [
     {
@@ -108,7 +117,7 @@ blocks = [
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f'<{grpc_dash}|Grafana gRPC> · <{rest_dash}|Grafana REST>',
+            'text': dash_links,
         },
     },
     {
