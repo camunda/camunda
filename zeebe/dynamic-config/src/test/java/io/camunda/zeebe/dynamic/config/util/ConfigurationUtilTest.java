@@ -331,7 +331,7 @@ class ConfigurationUtilTest {
   }
 
   @Test
-  void shouldGenerateCurrentClusterConfigurationWithoutClusterId() {
+  void shouldGenerateClusterIdWhenNoneIsConfigured() {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
@@ -343,7 +343,27 @@ class ConfigurationUtilTest {
             Set.of(member(0)), Set.of(partitionOne), Map.of(GROUP_NAME, partitionConfig), null);
 
     // then
-    assertThat(configuration.globalConfiguration().clusterId()).isEmpty();
+    assertThat(configuration.globalConfiguration().clusterId()).isPresent().get().isNotEqualTo("");
+  }
+
+  @Test
+  void shouldGenerateDistinctClusterIdPerConfiguration() {
+    // given
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            new PartitionId(GROUP_NAME, 1), Set.of(member(0)), Map.of(member(0), 1), 1, member(0));
+
+    // when
+    final var first =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            Set.of(member(0)), Set.of(partitionOne), Map.of(GROUP_NAME, partitionConfig), null);
+    final var second =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            Set.of(member(0)), Set.of(partitionOne), Map.of(GROUP_NAME, partitionConfig), null);
+
+    // then
+    assertThat(first.globalConfiguration().clusterId())
+        .isNotEqualTo(second.globalConfiguration().clusterId());
   }
 
   private MemberId member(final int id) {
