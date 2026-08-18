@@ -2249,6 +2249,7 @@ jobs:
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      runE2eTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
       runDockerfileChecks: ${{ needs.detect-changes.outputs.optimize-dockerfile-changes == 'true' }}
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
