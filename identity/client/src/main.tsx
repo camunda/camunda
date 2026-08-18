@@ -10,9 +10,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.scss";
+import "@camunda/design-system/styles.css";
+import { C4Provider } from "@camunda/design-system";
+import "./c4-ui.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <C4Provider>
+      <App />
+    </C4Provider>
   </React.StrictMode>,
 );
