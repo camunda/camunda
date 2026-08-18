@@ -127,10 +127,17 @@ public class IdentityOAuth2WebConfigurer {
             JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS,
             JWK_SOURCE_HTTP_READ_TIMEOUT_MS,
             JWKSourceBuilder.DEFAULT_HTTP_SIZE_LIMIT);
-    // refreshAheadCache(true): refresh happens ahead of expiry, off the request path, so
-    // concurrent requests are served the still-valid cached keys instead of blocking on a
-    // synchronous refetch. outageTolerant is deliberately left at Nimbus's default (false): a
-    // cache that is genuinely expired with no successful refresh still fails closed.
+    // refreshAheadCache(true) matches Nimbus's own default (true); Spring's internal
+    // JwkSetUriJwtDecoderBuilder#jwkSource hardcoded it to false, and that override — not a
+    // Nimbus default — is what made refresh run synchronously on the request path. Restoring
+    // the default means concurrent requests are served the still-valid cached keys instead of
+    // blocking on a synchronous refetch. This is non-scheduled (refreshAheadScheduled stays
+    // false): the ahead-of-expiry refresh only fires when a request lands inside the last 30s
+    // before expiry, so the guarantee holds under continuous traffic but a sparse-traffic
+    // instance can still hit a synchronous refresh at full expiry, now bounded by the timeouts
+    // below instead of an unbounded fetch. outageTolerant is deliberately left at Nimbus's
+    // default (false): a cache that is genuinely expired with no successful refresh still
+    // fails closed.
     // rateLimited(false): matches what the Spring-internal builder this replaces already set
     // (Nimbus's own default for this flag is true — omitting the call would silently enable it).
     return JWKSourceBuilder.create(jwkSetUri, retriever)
