@@ -250,13 +250,21 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         </AccordionItem>
         <AccordionItem
           data-testid="agent-model-section"
-          title={<SectionTitle icon={<Chip size={16} />}>Model</SectionTitle>}
+          title={
+            <SectionTitle icon={<Chip size={16} />}>
+              Model &amp; Agent definition
+            </SectionTitle>
+          }
         >
           <ModelInfo>
             <ModelInfoLabel>Provider:</ModelInfoLabel> {definition.provider}
           </ModelInfo>
           <ModelInfo>
             <ModelInfoLabel>Model:</ModelInfoLabel> {definition.model}
+          </ModelInfo>
+          <ModelInfo>
+            <ModelInfoLabel>Agent definition key:</ModelInfoLabel>{' '}
+            {agentInstance.agentDefinitionKey}
           </ModelInfo>
         </AccordionItem>
       </Accordion>
