@@ -125,6 +125,12 @@ export class OperateOperationPanelPage {
       .filter({hasText: `${successCount} ${operationText} succeeded`});
   }
 
+  getOperationEntryById(operationId: string): Locator {
+    return this.getAllOperationEntries().filter({
+      has: this.page.getByTestId('operation-id').filter({hasText: operationId}),
+    });
+  }
+
   async clickOperationLink(operationEntry: Locator): Promise<void> {
     await OperateOperationPanelPage.getOperationID(operationEntry)
       .first()

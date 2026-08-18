@@ -15,6 +15,7 @@ import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {createDemoOperations} from 'utils/operations.helper';
+import {getNewOperationIds} from 'utils/getNewOperationIds';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -131,6 +132,17 @@ test.describe('Operations', () => {
           instance.processInstanceKey,
         ),
       ).toBeEnabled({timeout: 120000});
+
+      // Snapshot the operations panel before triggering this test's retry. The
+      // panel is a global, time-ordered list shared across instances and
+      // parallel tests, and is polluted by the 51 demo retry operations from
+      // beforeAll, so this test's retry cannot be matched by the generic
+      // "1 retry succeeded" text. Diffing the panel by operation id below
+      // isolates the entry this test created.
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+      await operateOperationPanelPage.collapseOperationsPanel();
+
       await operateProcessesPage.clickRetryInstanceButton(
         instance.processInstanceKey,
       );
@@ -161,17 +173,44 @@ test.describe('Operations', () => {
       await expect(operateOperationPanelPage.operationList).toBeVisible();
 
       // The operations panel is a global, time-ordered list shared across all
-      // instances and parallel tests. It is polluted by the 51 demo
-      // "no incidents to retry" operations created in beforeAll (on
-      // demoOperationsInstance) and by other tests' operations, so picking the
-      // newest "Retry" entry can select a foreign operation and filter to the
-      // wrong instance. Match this test's own retry by its unique success text.
-      const retryEntry = operateOperationPanelPage.getRetryOperationEntry(1);
+      // instances and parallel tests. It is polluted by the 51 demo retry
+      // operations created in beforeAll (on demoOperationsInstance) and by
+      // other tests' operations, all of which render an identical
+      // "1 retry succeeded" entry, so picking the newest such entry can select
+      // a foreign operation and filter to the wrong instance. Instead, diff the
+      // panel against the pre-retry snapshot to isolate the retry this test
+      // triggered by its own operation id.
+      operateOperationPanelPage.afterOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+      let newRetryIds = getNewOperationIds(
+        operateOperationPanelPage.beforeOperationOperationPanelEntries,
+        operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Retry',
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          expect(newRetryIds.length).toBeGreaterThan(0);
+        },
+        onFailure: async () => {
+          await sleep(1_000);
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          newRetryIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Retry',
+          );
+        },
+        maxRetries: 60,
+      });
+
+      const operationId = newRetryIds[0];
+      const retryEntry =
+        operateOperationPanelPage.getOperationEntryById(operationId);
 
       await expect(retryEntry).toBeVisible();
       await expect(retryEntry.getByText(DATE_REGEX)).toBeVisible();
-
-      const operationId = await retryEntry.getByRole('link').innerText();
 
       await operateOperationPanelPage.clickOperationLink(retryEntry);
       await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(

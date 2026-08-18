@@ -325,12 +325,19 @@ test.describe('Process Instance History', () => {
     operateProcessModificationModePage,
     operateDiagramPage,
   }) => {
+    // The variable value must be unique per run. This step later asserts the
+    // filter returns exactly "1 result", but the instance created here persists
+    // in the search index, so a retry (which re-runs beforeAll and this body) or
+    // a parallel run reusing a fixed value would leave two instances sharing it
+    // and make the assertion flap. A per-run random value keeps the filter to a
+    // single match.
+    const uniqueTestValue = Math.floor(Math.random() * 1_000_000_000);
     const embeddedSubprocesModificationInstance = {
       processInstanceKey: Number(
         (
           await createSingleInstance('Process_EmbeddedSubprocess', 1, {
             meow: 0,
-            test: 101,
+            test: uniqueTestValue,
           })
         ).processInstanceKey,
       ),
@@ -365,7 +372,9 @@ test.describe('Process Instance History', () => {
         assertion: async () => {
           await operateFiltersPanelPage.displayOptionalFilter('Variable');
           await operateFiltersPanelPage.fillVariableNameFilter('test');
-          await operateFiltersPanelPage.fillVariableValueFilter('101');
+          await operateFiltersPanelPage.fillVariableValueFilter(
+            `${uniqueTestValue}`,
+          );
           await expect(page.getByText('1 result')).toBeVisible({timeout: 5000});
         },
         onFailure: async () => {
