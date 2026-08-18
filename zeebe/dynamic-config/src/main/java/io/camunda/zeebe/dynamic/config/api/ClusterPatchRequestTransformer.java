@@ -100,7 +100,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     }
     if (newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Changes neither membership nor a partition dimension, so there is nothing to plan.
-      return ConfigurationChangeRequest.super.phases(clusterConfiguration);
+      return Either.right(List.of());
     }
 
     final var groupId = physicalTenantId.orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
