@@ -9,6 +9,7 @@
 import {useState, useTransition} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useQueryClient} from '@tanstack/react-query';
+import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';
 import {Paths} from 'modules/Routes';
@@ -36,19 +37,52 @@ const useDrillDownNavigation = (processInstanceKey: string) => {
     }
   }
 
+  // Resolves the elementId (a static BPMN node) to the runtime element
+  // instance it produced in this process instance. Returns null when the
+  // element has no instance yet, or more than one (e.g. a multi-instance
+  // call activity) — both cases are treated as unresolvable rather than
+  // guessed at.
+  async function resolveElementInstanceKey(elementId: string) {
+    const response = await queryClient.fetchQuery({
+      queryKey: queryKeys.elementInstances.search({
+        elementId,
+        processInstanceKey,
+      }),
+      queryFn: async () => {
+        const {response, error} = await searchElementInstances({
+          filter: {elementId, processInstanceKey},
+          page: {limit: 1},
+        });
+        if (response !== null) {
+          return response;
+        }
+        throw error;
+      },
+    });
+
+    return response.page.totalItems === 1
+      ? response.items[0]!.elementInstanceKey
+      : null;
+  }
+
   function drillDownToCalledProcess(elementId: string) {
     startTransition(async () => {
       setPendingDrillDownElementId(elementId);
 
       try {
+        const elementInstanceKey = await resolveElementInstanceKey(elementId);
+        if (elementInstanceKey === null) {
+          return;
+        }
+
         const response = await queryClient.fetchQuery({
           queryKey: queryKeys.processInstances.search({
-            filter: {parentProcessInstanceKey: processInstanceKey},
+            filter: {parentElementInstanceKey: elementInstanceKey},
             page: {limit: 1},
           }),
           queryFn: async () => {
             const {response, error} = await searchProcessInstances({
-              filter: {parentProcessInstanceKey: processInstanceKey},
+              filter: {parentElementInstanceKey: elementInstanceKey},
               page: {limit: 1},
             });
             if (response !== null) {
@@ -60,7 +94,9 @@ const useDrillDownNavigation = (processInstanceKey: string) => {
 
         if (response.page.totalItems === 1) {
           navigate(
-            Paths.processInstance(response.items[0]!.processInstanceKey),
+            Paths.processInstanceDetails({
+              processInstanceId: response.items[0]!.processInstanceKey,
+            }),
           );
         }
       } catch {
@@ -80,14 +116,19 @@ const useDrillDownNavigation = (processInstanceKey: string) => {
       setPendingDrillDownElementId(elementId);
 
       try {
+        const elementInstanceKey = await resolveElementInstanceKey(elementId);
+        if (elementInstanceKey === null) {
+          return;
+        }
+
         const response = await queryClient.fetchQuery({
           queryKey: queryKeys.decisionInstances.search({
-            filter: {processInstanceKey},
+            filter: {elementInstanceKey},
             page: {limit: 1},
           }),
           queryFn: async () => {
             const {response, error} = await searchDecisionInstances({
-              filter: {processInstanceKey},
+              filter: {elementInstanceKey},
               page: {limit: 1},
             });
             if (response !== null) {

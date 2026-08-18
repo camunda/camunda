@@ -140,21 +140,20 @@ const TopPanel: React.FC = observer(() => {
   const customElementClasses = useMemo<
     [elementId: string, className: string][]
   >(() => {
-    if (
-      isModificationModeEnabled ||
-      !businessObjects ||
-      !totalRunningInstancesByElement
-    ) {
+    if (isModificationModeEnabled || !businessObjects) {
       return [];
     }
 
+    // customElementClasses isn't just styling: BpmnJS only invokes
+    // onElementDoubleClick for elements listed here (see
+    // #handleElementDoubleClick), so this array gates drill-down, not just
+    // its cosmetic affordance. Every call activity/business rule task is
+    // included regardless of instance state - a completed one still has a
+    // called instance worth navigating to, and one that never ran resolves
+    // to nothing and silently no-ops in useDrillDownNavigation.
     const DRILLDOWN_TYPES = ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'];
     const drilldownClasses: [string, string][] = Object.entries(businessObjects)
-      .filter(
-        ([elementId, bo]) =>
-          DRILLDOWN_TYPES.includes(bo.$type) &&
-          (totalRunningInstancesByElement[elementId] ?? 0) > 0,
-      )
+      .filter(([, bo]) => DRILLDOWN_TYPES.includes(bo.$type))
       .map(([elementId]) => [elementId, 'op-drilldown'] as const);
 
     if (pendingDrillDownElementId !== null) {
@@ -165,12 +164,7 @@ const TopPanel: React.FC = observer(() => {
     }
 
     return drilldownClasses;
-  }, [
-    businessObjects,
-    totalRunningInstancesByElement,
-    isModificationModeEnabled,
-    pendingDrillDownElementId,
-  ]);
+  }, [businessObjects, isModificationModeEnabled, pendingDrillDownElementId]);
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
