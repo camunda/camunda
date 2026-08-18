@@ -260,6 +260,33 @@ final class InputMappingResultBuilderTest {
   }
 
   @Test
+  void shouldNotLetALaterWriteLeakIntoAnEarlierRead() {
+    // given
+    builder.put(List.of("x", "a"), msgPack("1"));
+
+    // when: a later mapping reads x, then another mapping writes into the same level
+    final var read = builder.getVariable("x");
+    builder.put(List.of("x", "b"), msgPack("2"));
+
+    // then: the read is a snapshot of the level as it stood at that position
+    assertThat(((ContextValue.Structure) read).entries()).containsOnlyKeys("a");
+  }
+
+  @Test
+  void shouldNotLetALaterWriteLeakIntoAnEarlierNestedRead() {
+    // given: the case above one level down, since the snapshot has to be deep to hold
+    builder.put(List.of("x", "a", "b"), msgPack("1"));
+
+    // when: a later mapping reads x, then another mapping writes into the nested level x.a
+    final var read = builder.getVariable("x");
+    builder.put(List.of("x", "a", "c"), msgPack("2"));
+
+    // then: the read's nested a is a snapshot too — it must not gain c
+    final var nestedA = (ContextValue.Structure) ((ContextValue.Structure) read).entries().get("a");
+    assertThat(nestedA.entries()).containsOnlyKeys("b");
+  }
+
+  @Test
   void shouldNotThrowStackOverflowWhenLayeringADeeplyNestedLevel() {
     // given — a 50 000-segment target path whose shadowed value is a map at the top level, so the
     // layering traversal descends the whole structure
