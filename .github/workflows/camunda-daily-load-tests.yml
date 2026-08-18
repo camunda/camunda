@@ -129,18 +129,24 @@ jobs:
           merge-multiple: true
       - name: Merge into the legacy combined artifact + variants-json manifest
         id: merge
+        env:
+          # Keep in sync with the `run-variant` matrix above — this determines the
+          # Slack summary table's column order, which is not guaranteed by artifact
+          # download order.
+          VARIANT_ORDER: 'grpc rest'
         run: |
-          shopt -s nullglob
-          files=(variant-metrics/variant-*.json)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "::warning::No variant metrics artifacts found; Slack summary and legacy artifact will be empty"
-          fi
           manifest='[]'
-          for f in "${files[@]}"; do
-            key=$(jq -r '.key' "$f")
+          for key in $VARIANT_ORDER; do
+            f="variant-metrics/variant-${key}.json"
+            if [ ! -f "$f" ]; then
+              continue
+            fi
             jq '.results' "$f" > "metrics-${key}.json"
             manifest=$(jq --slurpfile v "$f" '. + $v' <<<"$manifest")
           done
+          if [ "$manifest" = '[]' ]; then
+            echo "::warning::No variant metrics artifacts found; Slack summary and legacy artifact will be empty"
+          fi
           {
             echo "variants-json<<__VQ_EOF__"
             echo "$manifest"
