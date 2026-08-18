@@ -153,10 +153,11 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   /**
    * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Every caller has moved to {@code phases} except {@link
-   * ZoneMigrationRequestTransformer}, which still plans through here, so this cannot be dropped
-   * until <a href="https://github.com/camunda/camunda/issues/60341">zone migration</a> is planned
-   * across every physical tenant too.
+   * partition group alone. Nothing in production plans through here anymore: what remains are the
+   * {@code operations} overrides of {@link ClusterScaleRequestTransformer}, {@link
+   * ClusterPatchRequestTransformer} and {@link ZoneMigrationRequestTransformer}, which exist for
+   * the tests that assert on the flat operation list. Retiring all four needs a test simulator that
+   * applies phases.
    */
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(

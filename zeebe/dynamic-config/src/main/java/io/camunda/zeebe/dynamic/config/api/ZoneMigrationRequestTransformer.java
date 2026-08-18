@@ -13,9 +13,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -43,17 +45,42 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     this.zoneName = zoneName;
   }
 
+  /**
+   * Plans the stage across every physical tenant's partition group, by handing the stage's target
+   * members to {@link ScaleRequestTransformer#phases(CurrentClusterConfiguration)}.
+   *
+   * <p>A stage replaces every broker of one zone, so a tenant left out does not merely miss out on
+   * capacity: its partitions stay on member ids the stage removes, and the member leave is then
+   * refused because the broker still holds partitions. Planning the default group alone — what
+   * {@link #operations(ClusterConfiguration)} does, and what this transformer inherited before —
+   * therefore made a zone migration impossible on a cluster with more than one tenant rather than
+   * only incomplete.
+   */
+  @Override
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return stageTargetMembers(
+            configuration.getMembers(),
+            configuration.globalConfiguration().partitionDistributorConfig())
+        .flatMap(targetMembers -> scaleRequest(targetMembers).phases(configuration));
+  }
+
+  /**
+   * Plans the same stage as {@link #phases(CurrentClusterConfiguration)}, but for the default
+   * partition group alone. Kept because the tests around this transformer assert on the flat
+   * operation list; nothing in production plans through here anymore.
+   */
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
     return stageTargetMembers(
             currentConfiguration.members().keySet(),
             currentConfiguration.partitionDistributorConfig())
-        .flatMap(
-            targetMembers ->
-                new ScaleRequestTransformer(
-                        targetMembers, Optional.empty(), Optional.empty(), Optional.of(zoneName))
-                    .operations(currentConfiguration));
+        .flatMap(targetMembers -> scaleRequest(targetMembers).operations(currentConfiguration));
+  }
+
+  private ScaleRequestTransformer scaleRequest(final Set<MemberId> stageTargetMembers) {
+    return new ScaleRequestTransformer(
+        stageTargetMembers, Optional.empty(), Optional.empty(), Optional.of(zoneName));
   }
 
   /**
@@ -61,9 +88,9 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
    * stage: the current members with the bare ids belonging to this stage's zone replaced by their
    * zoned ids.
    *
-   * <p>Reads nothing but the two pieces of global state it takes, rather than the whole
-   * configuration: which bare id becomes which zoned id, and in which order the zones migrate, is
-   * decided by the member set and the persisted zone plan alone.
+   * <p>Reads nothing but the two pieces of global state it takes, so the same validation and the
+   * same target member set serve both {@code phases} and {@code operations} — which bare id becomes
+   * which zoned id, and in which order the zones migrate, has no per-tenant dimension.
    */
   private Either<Exception, Set<MemberId>> stageTargetMembers(
       final Set<MemberId> currentMembers,
