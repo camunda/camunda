@@ -121,9 +121,10 @@ public final class MappingResultBuilder {
 
   /**
    * Returns the accumulated value of the given top-level variable, or {@code null} if no mapping
-   * has produced it yet. Nested structures are serialized to a MsgPack document on lookup. A
-   * poisoned top-level entry returns a NIL buffer (not Java {@code null}, which would let the
-   * caller fall back to the scope lookup instead of seeing the poisoned null).
+   * has produced it yet. A nested structure is serialized on lookup, layered over the value its
+   * name resolves to in the scope chain (input mappings only) unless an earlier mapping assigned
+   * that name whole. A poisoned top-level entry returns a NIL buffer (not Java {@code null}, which
+   * would let the caller fall back to the scope lookup instead of seeing the poisoned null).
    */
   public @Nullable DirectBuffer getVariable(final String name) {
     final var entry = entries.get(name);
@@ -134,13 +135,15 @@ public final class MappingResultBuilder {
     } else if (entry instanceof final DirectBuffer value) {
       return value;
     } else {
-      return serialize(((NestedLevel) entry).children());
+      final var level = (NestedLevel) entry;
+      final var shadowed = level.totallyShadowed() ? null : shadowedValueResolver.apply(name);
+      return serializeLayered(level.children(), shadowed);
     }
   }
 
   /** Returns all accumulated results as a single MsgPack document (a map). */
   public DirectBuffer toDocument() {
-    return serialize(entries);
+    return serializeLayered(entries, null);
   }
 
   /**
@@ -197,38 +200,47 @@ public final class MappingResultBuilder {
     return result;
   }
 
-  private DirectBuffer serialize(final Map<String, Object> map) {
+  /**
+   * Serializes a (possibly deeply nested) level, layering it over the given shadowed value. Pass
+   * {@code null} to serialize the level as-is.
+   */
+  private DirectBuffer serializeLayered(
+      final Map<String, Object> children, final @Nullable DirectBuffer shadowed) {
     final var buffer = new ExpandableArrayBuffer();
     writer.wrap(buffer, 0);
-    writeMap(map);
+    writeLayered(children, shadowed);
     return new UnsafeBuffer(buffer, 0, writer.getOffset());
   }
 
   /**
-   * Writes a (possibly deeply nested) result map to msgpack using an iterative depth-first
-   * traversal instead of recursion. A {@code zeebe:input} target path can have an unbounded number
-   * of '.'-separated segments (ZeebeExpressionValidator's path pattern doesn't cap it), and this
-   * runs on every element activation — plain recursion here previously let a deeply-nested target
-   * throw an uncaught StackOverflowError before NestingDepthValidator ever got a chance to reject
-   * the document gracefully.
+   * Writes a level to msgpack using an iterative depth-first traversal instead of recursion. A
+   * {@code zeebe:input} target path can have an unbounded number of '.'-separated segments
+   * (ZeebeExpressionValidator's path pattern doesn't cap it), and this runs on every element
+   * activation — plain recursion here previously let a deeply-nested target throw an uncaught
+   * StackOverflowError before NestingDepthValidator ever got a chance to reject the document
+   * gracefully.
+   *
+   * <p>At each level the accumulated entries are written over the top level of the value that level
+   * shadows, so a key no mapping defined resolves to the shadowed value's key. A level that an
+   * earlier mapping assigned whole shadows totally and stops the fall-through for its whole
+   * subtree.
    */
-  private void writeMap(final Map<String, Object> root) {
-    final Deque<Iterator<Map.Entry<String, Object>>> pending = new ArrayDeque<>();
-    writer.writeMapHeader(root.size());
-    pending.push(root.entrySet().iterator());
+  private void writeLayered(
+      final Map<String, Object> rootChildren, final @Nullable DirectBuffer rootShadowed) {
+    final Deque<LevelFrame> pending = new ArrayDeque<>();
+    pending.push(openLevel(rootChildren, rootShadowed));
 
     while (!pending.isEmpty()) {
-      final var iterator = pending.peek();
-      if (!iterator.hasNext()) {
+      final var frame = pending.peek();
+      if (!frame.entries().hasNext()) {
         pending.pop();
         continue;
       }
-      final var entry = iterator.next();
+      final var entry = frame.entries().next();
       writer.writeString(BufferUtil.wrapString(entry.getKey()));
       final var value = entry.getValue();
       if (value instanceof final NestedLevel level) {
-        writer.writeMapHeader(level.children().size());
-        pending.push(level.children().entrySet().iterator());
+        pending.push(openLevel(level.children(), shadowedChildOf(frame, entry.getKey(), level)));
       } else if (value == POISON) {
         writer.writeNil();
       } else {
@@ -236,6 +248,42 @@ public final class MappingResultBuilder {
       }
     }
   }
+
+  /**
+   * Writes the map header for one level and returns the frame to iterate it: the level's own
+   * entries written over the top level of the value it shadows.
+   */
+  private LevelFrame openLevel(
+      final Map<String, Object> children, final @Nullable DirectBuffer shadowed) {
+    final Map<String, Object> shadowedChildren =
+        shadowed != null && !isNil(shadowed) && MsgPackCodes.isMap(shadowed.getByte(0))
+            ? deserializeTopLevel(shadowed)
+            : Map.of();
+    final Map<String, Object> merged;
+    if (shadowedChildren.isEmpty()) {
+      merged = children;
+    } else {
+      // a fresh map: the accumulated level must not gain the shadowed value's keys
+      merged = new LinkedHashMap<>(shadowedChildren);
+      merged.putAll(children);
+    }
+    writer.writeMapHeader(merged.size());
+    return new LevelFrame(merged.entrySet().iterator(), shadowedChildren);
+  }
+
+  private static @Nullable DirectBuffer shadowedChildOf(
+      final LevelFrame frame, final String key, final NestedLevel level) {
+    if (level.totallyShadowed()) {
+      return null;
+    }
+    return frame.shadowedChildren().get(key) instanceof final DirectBuffer shadowed
+        ? shadowed
+        : null;
+  }
+
+  /** One level of the iterative traversal: the entries to write, and what they shadow. */
+  private record LevelFrame(
+      Iterator<Map.Entry<String, Object>> entries, Map<String, Object> shadowedChildren) {}
 
   /**
    * A nested level built by one or more dotted target paths.
