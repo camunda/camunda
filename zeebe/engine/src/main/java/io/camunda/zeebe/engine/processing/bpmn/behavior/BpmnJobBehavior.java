@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
@@ -749,7 +750,15 @@ public final class BpmnJobBehavior {
       }
     }
 
-    if (element instanceof final ExecutableJobWorkerElement jobWorkerElement
+    // A multi-instance body is never itself agent-marked -- only the inner activity it
+    // wraps can be. Resolve to the inner activity here, or a `beforeAll` listener job on
+    // a multi-instance element would silently miss the agentDefinitionKey header.
+    final ExecutableFlowElement agentDefinitionElement =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+
+    if (agentDefinitionElement instanceof final ExecutableJobWorkerElement jobWorkerElement
         && jobWorkerElement.isAgentDefinition()) {
       final var agentDefinitionKey =
           agentDefinitionState.getAgentDefinitionKey(
