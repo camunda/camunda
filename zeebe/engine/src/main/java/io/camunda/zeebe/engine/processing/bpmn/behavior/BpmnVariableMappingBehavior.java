@@ -71,8 +71,10 @@ public final class BpmnVariableMappingBehavior {
    * Apply the input mappings for a BPMN element. Generally called on activating of the element.
    *
    * <p>The mappings are evaluated one by one in modeling order. Each mapping's source expression
-   * sees the results of the earlier mappings (they take priority over same-named scope variables)
-   * and falls back to the element's variable scope otherwise. Evaluation stops at the first failing
+   * sees the results of the earlier mappings and falls back to the element's variable scope
+   * otherwise. An earlier result at a nested target shadows a same-named scope variable only
+   * partially: the keys it defined win, and the rest fall through to the scope value. An earlier
+   * result assigned to a whole name shadows it totally. Evaluation stops at the first failing
    * mapping and no variables are applied in that case.
    *
    * @param context The current bpmn element context
@@ -89,7 +91,12 @@ public final class BpmnVariableMappingBehavior {
       return Either.right(null);
     }
 
-    final var resultBuilder = MappingResultBuilder.forInputMappings(name -> null);
+    final var resultBuilder =
+        MappingResultBuilder.forInputMappings(
+            // the value a nested target partially shadows: resolved from the element's own scope
+            // key, walking up the chain exactly as an unmapped name does, so a partially mapped
+            // name falls through to the same value a never-mapped read of it would have seen
+            name -> variablesState.getVariable(scopeKey, BufferUtil.wrapString(name)));
     // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
     // for input mappings, so a modeled reference survives evaluation instead of nulling
     final var processor =
