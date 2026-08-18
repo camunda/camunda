@@ -91,6 +91,13 @@
       ],
       enabled: false,
     },
+
+    {
+      // Run "go mod tidy" on Golang updates
+      matchFileNames: ["load-tests/**"],
+      matchManagers: ["gomod"],
+      postUpdateOptions: ["gomodTidy"],
+    },
   ],
 
   ignorePaths: [
