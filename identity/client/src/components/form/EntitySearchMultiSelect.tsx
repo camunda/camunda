@@ -34,15 +34,22 @@ type AbstractEntitySearchMultiSelectProps<
 
 /**
  * Public props for a concrete per-entity multi-select (e.g. UserMultiSelect):
- * everything technical (search, getId, itemSubTitle, placeholder, errorTitle)
- * is bound by the concrete implementation, leaving only the business props.
+ * everything technical (search, getId, errorTitle) is bound by the concrete
+ * implementation. itemSubTitle/placeholder get concrete defaults but remain
+ * overridable per call site, since some consumers need different copy.
  */
 export type EntitySearchMultiSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchMultiSelectProps<Entity>,
   "search" | "getId" | "itemSubTitle" | "placeholder" | "errorTitle"
->;
+> &
+  Partial<
+    Pick<
+      AbstractEntitySearchMultiSelectProps<Entity>,
+      "itemSubTitle" | "placeholder"
+    >
+  >;
 
 const EntitySearchMultiSelect = <Entity extends Record<string, unknown>>({
   search,

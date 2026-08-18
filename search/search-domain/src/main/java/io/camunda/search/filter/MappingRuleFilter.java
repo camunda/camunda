@@ -8,8 +8,11 @@
 package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -18,7 +21,7 @@ public record MappingRuleFilter(
     String claimName,
     List<String> claimNames,
     String claimValue,
-    String name,
+    List<Operation<String>> nameOperations,
     List<Claim> claims,
     String tenantId,
     Set<String> mappingRuleIds,
@@ -32,7 +35,7 @@ public record MappingRuleFilter(
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
-        .name(name)
+        .nameOperations(nameOperations)
         .claims(claims)
         .tenantId(tenantId)
         .mappingRuleIds(mappingRuleIds)
@@ -46,7 +49,7 @@ public record MappingRuleFilter(
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
-    private String name;
+    private List<Operation<String>> nameOperations;
     private List<Claim> claims;
     private String tenantId;
     private String groupId;
@@ -72,9 +75,33 @@ public record MappingRuleFilter(
       return this;
     }
 
-    public Builder name(final String value) {
-      name = value;
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        nameOperations = addValuesToList(nameOperations, operations);
+      }
       return this;
+    }
+
+    public Builder names(final Set<String> value) {
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    public Builder names(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
     }
 
     public Builder claims(final List<Claim> claims) {
@@ -109,7 +136,7 @@ public record MappingRuleFilter(
           claimName,
           claimNames,
           claimValue,
-          name,
+          nameOperations,
           claims,
           tenantId,
           mappingRuleIds,

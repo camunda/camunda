@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface MappingRuleFilter extends SearchRequestFilter {
 
@@ -50,4 +52,6 @@ public interface MappingRuleFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MappingRuleFilter name(final String name);
+
+  MappingRuleFilter name(Consumer<StringProperty> fn);
 }

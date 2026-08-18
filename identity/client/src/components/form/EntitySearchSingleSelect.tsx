@@ -31,15 +31,17 @@ type AbstractEntitySearchSingleSelectProps<
 
 /**
  * Public props for a concrete per-entity single-select (e.g. UserSingleSelect):
- * everything technical (search, getId, itemToString, itemSubTitle, errorTitle)
- * is bound by the concrete implementation, leaving only the business props.
+ * everything technical (search, getId, itemToString, errorTitle) is bound by
+ * the concrete implementation. itemSubTitle gets a concrete default but
+ * remains overridable per call site, since some consumers need different copy.
  */
 export type EntitySearchSingleSelectProps<
   Entity extends Record<string, unknown>,
 > = Omit<
   AbstractEntitySearchSingleSelectProps<Entity>,
   "search" | "getId" | "itemToString" | "itemSubTitle" | "errorTitle"
->;
+> &
+  Partial<Pick<AbstractEntitySearchSingleSelectProps<Entity>, "itemSubTitle">>;
 
 const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   search,
@@ -58,10 +60,10 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
 
   useEffect(() => {
-    if (!value) {
-      setSelectedEntity(null);
-    }
-  }, [value]);
+    setSelectedEntity((current) =>
+      current && value && getId(current) === value ? current : null,
+    );
+  }, [value, getId]);
 
   const handleSelect = (entity: Entity) => {
     setSelectedEntity(entity);
@@ -91,6 +93,7 @@ const EntitySearchSingleSelect = <Entity extends Record<string, unknown>>({
           onSelect={handleSelect}
           errorTitle={errorTitle}
           retryLabel={t("retry")}
+          invalid={isEmpty}
         />
       )}
       {isEmpty && (

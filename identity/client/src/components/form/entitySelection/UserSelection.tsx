@@ -34,7 +34,7 @@ export const UserMultiSelect: FC<EntitySearchMultiSelectProps<User>> = (
       search={search}
       getId={getId}
       itemSubTitle={itemSubTitle}
-      placeholder={t("searchByUsernameOrEmail")}
+      placeholder={t("searchByUsername")}
       errorTitle={t("usersCouldNotLoad")}
       {...props}
     />

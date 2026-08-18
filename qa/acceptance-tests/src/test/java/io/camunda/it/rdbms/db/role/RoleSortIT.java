@@ -65,7 +65,7 @@ public class RoleSortIT {
         reader
             .search(
                 new RoleQuery(
-                    new RoleFilter.Builder().name(name).build(),
+                    new RoleFilter.Builder().names(name).build(),
                     RoleSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
             .items();
