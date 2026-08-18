@@ -94,7 +94,9 @@ const useDrillDownNavigation = (processInstanceKey: string) => {
 
         if (response.page.totalItems === 1) {
           navigate(
-            Paths.processInstance(response.items[0]!.processInstanceKey),
+            Paths.processInstanceDetails({
+              processInstanceId: response.items[0]!.processInstanceKey,
+            }),
           );
         }
       } catch {

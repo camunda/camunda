@@ -127,7 +127,7 @@ describe('useDrillDownNavigation', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      Paths.processInstance('called-200'),
+      Paths.processInstanceDetails({processInstanceId: 'called-200'}),
     );
   });
 
