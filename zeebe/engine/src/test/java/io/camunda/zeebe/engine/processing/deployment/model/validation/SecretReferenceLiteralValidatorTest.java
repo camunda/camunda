@@ -200,6 +200,60 @@ final class SecretReferenceLiteralValidatorTest {
     verify(collector).addError(eq(0), contains("camunda.secrets.token_2"));
   }
 
+  /**
+   * Regression for #59121: a multi-kilobyte FEEL string with many {@code \"} escapes (as in
+   * connector payloads that embed JSON) must not StackOverflow while scanning for secret-reference
+   * literals. A greedy string-literal regex recursed on the group loop and crashed the broker.
+   */
+  @ParameterizedTest(name = "[{0}] tolerates a long escaped FEEL string literal")
+  @MethodSource("validators")
+  void shouldTolerateLongEscapedFeelStringLiteral(
+      final String name, final BiConsumer<String, ValidationResultCollector> validate) {
+    // given - nested JSON-as-string with thousands of escaped quotes, no secret reference
+    final var escapedJson =
+        "{\\\"type\\\":\\\"AdaptiveCard\\\",\\\"body\\\":" + "\\\"x\\\"".repeat(2000) + "}";
+    final var source = "={\"content\": \"" + escapedJson + "\"}";
+
+    // when / then - must complete without StackOverflowError and accept the mapping
+    final var collector = validate(source, validate);
+    verifyNoInteractions(collector);
+  }
+
+  /**
+   * Escape sequences must not be collapsed (e.g. {@code \t} → {@code t}), or a string such as
+   * {@code camunda.secrets.\token} would be misread as the reference {@code camunda.secrets.token}.
+   */
+  @ParameterizedTest(name = "[{0}] does not treat FEEL escape as part of a secret reference name")
+  @MethodSource("validators")
+  void shouldNotRejectWhenEscapeBreaksSecretReferenceName(
+      final String name, final BiConsumer<String, ValidationResultCollector> validate) {
+    // when - \t is a FEEL tab escape, not the letter t in "token"
+    final var collector = validate("=\"camunda.secrets.\\token\"", validate);
+
+    // then
+    verifyNoInteractions(collector);
+  }
+
+  /**
+   * Companion to {@link #shouldTolerateLongEscapedFeelStringLiteral}: the same long escaped payload
+   * must still reject a secret reference embedded as a quoted literal.
+   */
+  @ParameterizedTest(name = "[{0}] rejects secret reference inside a long escaped FEEL string")
+  @MethodSource("validators")
+  void shouldRejectSecretReferenceInsideLongEscapedFeelStringLiteral(
+      final String name, final BiConsumer<String, ValidationResultCollector> validate) {
+    // given
+    final var escapedJson =
+        "{\\\"auth\\\":\\\"camunda.secrets.token\\\",\\\"pad\\\":" + "\\\"x\\\"".repeat(2000) + "}";
+    final var source = "={\"content\": \"" + escapedJson + "\"}";
+
+    // when
+    final var collector = validate(source, validate);
+
+    // then
+    verify(collector).addError(eq(0), contains("camunda.secrets.token"));
+  }
+
   private ValidationResultCollector validate(
       final String source, final BiConsumer<String, ValidationResultCollector> validate) {
     final var collector = mock(ValidationResultCollector.class);
