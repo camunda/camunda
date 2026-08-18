@@ -15,6 +15,7 @@ import {
   encode,
   assertStatusCode,
   isForwardCompat,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -53,11 +54,11 @@ test.describe.parallel('Search Authorization API', () => {
     description: string;
   };
   let roleAuthorizationKey: string;
-  let userForRoleAuthorization: { 
+  let userForRoleAuthorization: {
     username: string;
-    name: string; 
+    name: string;
     email: string;
-    password: string; 
+    password: string;
   };
 
   let originalMappingRule: {
@@ -444,8 +445,9 @@ test.describe.parallel('Search Authorization API', () => {
     });
   });
 
-  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({request}) => {
+  test('Search Authorization - Negative pagination values - 400 Invalid Argument', async ({
+    request,
+  }) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
@@ -453,7 +455,11 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number. The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
