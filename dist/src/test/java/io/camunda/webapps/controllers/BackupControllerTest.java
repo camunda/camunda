@@ -55,12 +55,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith({SpringExtension.class, MockitoExtension.class})
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
-public abstract sealed class BackupControllerTest {
+public abstract class BackupControllerTest {
 
   private static final OffsetDateTime START_TIME =
       OffsetDateTime.of(2024, 12, 1, 8, 29, 13, 0, ZoneOffset.UTC);
@@ -440,12 +439,6 @@ public abstract sealed class BackupControllerTest {
       assertThat(mapped).isEqualTo(COMPLETED);
     }
   }
-
-  @ActiveProfiles("operate")
-  public static final class BackupControllerOperateTest extends BackupControllerTest {}
-
-  @ActiveProfiles("tasklist")
-  public static final class BackupControllerTasklistTest extends BackupControllerTest {}
 
   @Nested
   class ESConnectionError extends ErrorTest {
