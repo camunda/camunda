@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link ScopedEvaluationContext} that resolves a {@code camunda.secrets.<name>} reference used
@@ -35,9 +37,17 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
   static final String NAMESPACE = "secrets";
 
   private final ScopedEvaluationContext delegate;
+  private final @Nullable ReferencedSecretCollector referencedSecretCollector;
 
   public SecretReferenceEvaluationContext(final ScopedEvaluationContext delegate) {
+    this(delegate, null);
+  }
+
+  public SecretReferenceEvaluationContext(
+      final ScopedEvaluationContext delegate,
+      final @Nullable ReferencedSecretCollector referencedSecretCollector) {
     this.delegate = delegate;
+    this.referencedSecretCollector = referencedSecretCollector;
   }
 
   @Override
@@ -53,30 +63,34 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
     }
     // wrap the delegate's `camunda` context (or absence) so `secrets` resolves while every other
     // key — e.g. cluster variables under `vars` — keeps forwarding to the delegate
-    return Either.right(new CamundaNamespaceContext(camunda));
+    return Either.right(new CamundaNamespaceContext(camunda, referencedSecretCollector));
   }
 
   @Override
   public ScopedEvaluationContext processScoped(final long scopeKey) {
-    return new SecretReferenceEvaluationContext(delegate.processScoped(scopeKey));
+    return new SecretReferenceEvaluationContext(
+        delegate.processScoped(scopeKey), referencedSecretCollector);
   }
 
   @Override
   public ScopedEvaluationContext tenantScoped(final String tenantId) {
-    return new SecretReferenceEvaluationContext(delegate.tenantScoped(tenantId));
+    return new SecretReferenceEvaluationContext(
+        delegate.tenantScoped(tenantId), referencedSecretCollector);
   }
 
   /**
    * The {@code camunda} namespace: resolves {@code secrets} to the secret-reference leaf and
    * forwards every other key to the delegate's {@code camunda} content (e.g. {@code vars}).
    */
-  private record CamundaNamespaceContext(Either<DirectBuffer, EvaluationContext> delegateCamunda)
+  private record CamundaNamespaceContext(
+      Either<DirectBuffer, EvaluationContext> delegateCamunda,
+      @Nullable ReferencedSecretCollector referencedSecretCollector)
       implements EvaluationContext {
 
     @Override
     public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
       if (NAMESPACE.equals(variableName)) {
-        return Either.right(SecretLeafContext.INSTANCE);
+        return Either.right(new SecretLeafContext(referencedSecretCollector));
       }
       final var camunda = delegateCamunda.isRight() ? delegateCamunda.get() : null;
       return camunda != null ? camunda.getVariable(variableName) : notFound();
@@ -90,14 +104,19 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
 
   /**
    * The {@code camunda.secrets} namespace: every name resolves to its own reference string literal
-   * {@code "camunda.secrets.<name>"}.
+   * {@code "camunda.secrets.<name>"} and, when a collector is present, is recorded as a referenced
+   * secret so the expression endpoint can report it.
    */
-  private static final class SecretLeafContext implements EvaluationContext {
-
-    private static final SecretLeafContext INSTANCE = new SecretLeafContext();
+  private record SecretLeafContext(@Nullable ReferencedSecretCollector referencedSecretCollector)
+      implements EvaluationContext {
 
     @Override
     public Either<DirectBuffer, EvaluationContext> getVariable(final String name) {
+      if (referencedSecretCollector != null) {
+        // a reference used directly in the expression names no store, so it resolves against the
+        // default one
+        referencedSecretCollector.add(SecretStoreRegistry.DEFAULT_STORE_ID, name);
+      }
       final String reference = ROOT + "." + NAMESPACE + "." + name;
       // cast to Object to serialize the string as a MessagePack string value, not parse it as JSON
       return Either.left(

@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue.ExpressionSecretReferenceValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
+  private static final StringValue REFERENCED_SECRETS_KEY = new StringValue("referencedSecrets");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -47,14 +49,18 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
 
+  private final ArrayProperty<ExpressionSecretReference> referencedSecretsProp =
+      new ArrayProperty<>(REFERENCED_SECRETS_KEY, ExpressionSecretReference::new);
+
   public ExpressionRecord() {
-    super(6);
+    super(7);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(scopeKeyProp);
+        .declareProperty(scopeKeyProp)
+        .declareProperty(referencedSecretsProp);
   }
 
   @Override
@@ -125,6 +131,25 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setScopeKey(final long scopeKey) {
     scopeKeyProp.setValue(scopeKey);
+    return this;
+  }
+
+  @Override
+  public List<ExpressionSecretReferenceValue> getReferencedSecrets() {
+    // copy each element out of the reusable backing array so the returned list stays valid after
+    // the record is reset or another element is added
+    return referencedSecretsProp.stream()
+        .map(
+            reference ->
+                (ExpressionSecretReferenceValue)
+                    new ExpressionSecretReference()
+                        .setStoreId(reference.getStoreId())
+                        .setSecretReference(reference.getSecretReference()))
+        .collect(Collectors.toList());
+  }
+
+  public ExpressionRecord addReferencedSecret(final String storeId, final String secretReference) {
+    referencedSecretsProp.add().setStoreId(storeId).setSecretReference(secretReference);
     return this;
   }
 }

@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ReferencedSecretCollector;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import java.time.InstantSource;
+import org.jspecify.annotations.Nullable;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -96,35 +98,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
 
-    final var tenantClusterScope =
-        new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
-    final var globalClusterScope =
-        new GlobalScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
-    final var mergedClusterScope =
-        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
-
-    final var namespacedTenantClusterScope =
-        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
-    final var namespacedGlobalClusterScope =
-        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
-    final var namespacedMergedClusterScope =
-        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
-
-    final var processInstanceContext =
-        new ProcessInstanceContextEvaluationContext(processingState.getElementInstanceState());
-
-    final var namespaceFullClusterContext =
-        NamespacedEvaluationContext.create()
-            .register(
-                "camunda",
-                NamespacedEvaluationContext.create()
-                    .register(
-                        "vars",
-                        CombinedEvaluationContext.withContexts(
-                            namespacedMergedClusterScope,
-                            namespacedTenantClusterScope,
-                            namespacedGlobalClusterScope))
-                    .register("processInstance", processInstanceContext));
+    // The expression endpoint reports which trusted secrets an evaluation touched; only its
+    // contexts record into the collector. The BPMN path uses collector-free contexts, so its
+    // (much more frequent) evaluations never accumulate anything.
+    final var referencedSecretCollector = new ReferencedSecretCollector();
+    final var bpmnClusterContext = buildClusterEvaluationContext(processingState, null);
+    final var endpointClusterContext =
+        buildClusterEvaluationContext(processingState, referencedSecretCollector);
 
     final var processVariableContext =
         new VariableEvaluationContext(processingState.getVariableState());
@@ -136,16 +116,16 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     expressionProcessor =
         new ExpressionProcessor(
             expressionLanguage,
-            CombinedEvaluationContext.withContexts(
-                processVariableContext, namespaceFullClusterContext),
+            CombinedEvaluationContext.withContexts(processVariableContext, bpmnClusterContext),
             config.getExpressionEvaluationTimeout());
 
     expressionBehavior =
         new ExpressionBehavior(
-            namespaceFullClusterContext,
+            endpointClusterContext,
             expressionLanguage,
             config.getExpressionEvaluationTimeout(),
-            processingState.getVariableState());
+            processingState.getVariableState(),
+            referencedSecretCollector);
 
     conditionalBehavior =
         new BpmnConditionalBehavior(
@@ -327,6 +307,47 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             processingState.getKeyGenerator(),
             processDefinitionMetrics);
+  }
+
+  /**
+   * Builds the {@code camunda.vars.*} / {@code camunda.processInstance} cluster evaluation context
+   * tree. Passing a non-null {@code collector} makes the cluster-variable contexts record the
+   * trusted secret references they resolve (used by the expression endpoint); passing {@code null}
+   * yields collector-free contexts for the BPMN path, which must not accumulate references.
+   */
+  private static NamespacedEvaluationContext buildClusterEvaluationContext(
+      final MutableProcessingState processingState,
+      final @Nullable ReferencedSecretCollector collector) {
+    final var tenantClusterScope =
+        new TenantScopeClusterVariableEvaluationContext(
+            processingState.getClusterVariableState(), collector);
+    final var globalClusterScope =
+        new GlobalScopeClusterVariableEvaluationContext(
+            processingState.getClusterVariableState(), collector);
+    final var mergedClusterScope =
+        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
+
+    final var namespacedTenantClusterScope =
+        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
+    final var namespacedGlobalClusterScope =
+        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
+    final var namespacedMergedClusterScope =
+        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
+
+    final var processInstanceContext =
+        new ProcessInstanceContextEvaluationContext(processingState.getElementInstanceState());
+
+    return NamespacedEvaluationContext.create()
+        .register(
+            "camunda",
+            NamespacedEvaluationContext.create()
+                .register(
+                    "vars",
+                    CombinedEvaluationContext.withContexts(
+                        namespacedMergedClusterScope,
+                        namespacedTenantClusterScope,
+                        namespacedGlobalClusterScope))
+                .register("processInstance", processInstanceContext));
   }
 
   @Override

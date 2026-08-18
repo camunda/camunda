@@ -74,4 +74,37 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordV
    * @return the scope key, or {@code -1} if not set
    */
   long getScopeKey();
+
+  /**
+   * Returns the secret references that were resolved from trusted sources while evaluating the
+   * expression: a {@code camunda.secrets.<name>} reference used directly in the expression, or a
+   * reference carried by a {@code SECRET_REFERENCE}-kind cluster variable the expression read.
+   *
+   * <p>References that merely appear in request-body variables or in plain (JSON-kind) cluster
+   * variables are deliberately excluded — they are untrusted input and resolving them would
+   * reintroduce a secret-injection vector. Callers (e.g. the connector runtime) use this list to
+   * know which {@code camunda.secrets.<name>} occurrences in the result they may safely resolve.
+   *
+   * @return the referenced secrets (never {@code null}, but can be empty)
+   */
+  List<ExpressionSecretReferenceValue> getReferencedSecrets();
+
+  /**
+   * A secret reference resolved from a trusted source during expression evaluation. Carries the
+   * reference identifier only, never the resolved secret value.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableExpressionSecretReferenceValue.Builder.class)
+  interface ExpressionSecretReferenceValue {
+
+    /**
+     * @return the identifier of the secret store that holds the referenced secret
+     */
+    String getStoreId();
+
+    /**
+     * @return the secret name, e.g. {@code token} for {@code camunda.secrets.token}; not the value
+     */
+    String getSecretReference();
+  }
 }

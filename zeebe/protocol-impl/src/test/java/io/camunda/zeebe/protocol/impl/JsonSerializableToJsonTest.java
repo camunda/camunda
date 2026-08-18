@@ -682,7 +682,8 @@ final class JsonSerializableToJsonTest {
                   .setScopeKey(1)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .addReferencedSecret("default", "token");
               return record;
             },
         """
@@ -694,7 +695,13 @@ final class JsonSerializableToJsonTest {
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
-                  }
+                  },
+                  "referencedSecrets":[
+                    {
+                      "storeId":"default",
+                      "secretReference":"token"
+                    }
+                  ]
                 }
                 """
       },

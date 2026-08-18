@@ -9,12 +9,15 @@ package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.response.SecretReference;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -326,6 +329,65 @@ public class ExpressionEvaluationIT {
     assertThat(response).isNotNull();
     assertThat(response.getResult()).isEqualTo("camunda.secrets.TEST");
     assertThat(response.getWarnings()).isEmpty();
+    // a reference used directly in the expression is trusted, so the endpoint reports it, letting
+    // an inbound connector safely resolve it in the result
+    assertThat(response.getReferencedSecrets())
+        .extracting(SecretReference::getStoreId, SecretReference::getSecretName)
+        .containsExactly(tuple("default", "TEST"));
+  }
+
+  @Test
+  void shouldReportReferencedSecretFromSecretReferenceClusterVariable() {
+    // given a SECRET_REFERENCE-kind cluster variable whose value carries a secret reference
+    final String variableName = "secretRefVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String secretName = "clusterToken_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, Map.of("apiToken", "camunda.secrets." + secretName))
+        .kind(ClusterVariableKind.SECRET_REFERENCE)
+        .send()
+        .join();
+
+    // when the expression reads the reference through the cluster variable
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + ".apiToken")
+            .send()
+            .join();
+
+    // then the reference is resolved to its placeholder and reported as trusted
+    assertThat(response.getResult()).isEqualTo("camunda.secrets." + secretName);
+    assertThat(response.getReferencedSecrets())
+        .extracting(SecretReference::getStoreId, SecretReference::getSecretName)
+        .containsExactly(tuple("default", secretName));
+  }
+
+  @Test
+  void shouldNotReportSecretLookingValueFromJsonClusterVariable() {
+    // given a plain JSON cluster variable whose value merely looks like a secret reference
+    final String variableName = "jsonSecretVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String injected =
+        "camunda.secrets.INJECTED_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, injected)
+        .kind(ClusterVariableKind.JSON)
+        .send()
+        .join();
+
+    // when the expression reads it
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName)
+            .send()
+            .join();
+
+    // then the reference-looking value is not treated as a trusted secret: resolving it would
+    // reintroduce the secret-injection vulnerability, so it must not be reported
+    assertThat(response.getResult()).isEqualTo(injected);
+    assertThat(response.getReferencedSecrets()).isEmpty();
   }
 
   @Test

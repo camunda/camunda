@@ -18,13 +18,16 @@ package io.camunda.client.expression;
 import static io.camunda.client.util.assertions.LoggedRequestAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.response.SecretReference;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.protocol.rest.ExpressionEvaluationWarningItem;
+import io.camunda.client.protocol.rest.ExpressionSecretReferenceItem;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
@@ -211,6 +214,33 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     assertThat(response.getExpression()).isEqualTo(expression);
     assertThat(response.getResult()).isEqualTo(resultValue);
     assertThat(response.getWarnings()).isEmpty();
+    assertThat(response.getReferencedSecrets()).isEmpty();
+  }
+
+  @Test
+  void shouldReceiveExpressionEvaluationResultWithReferencedSecrets() {
+    // given
+    final String expression = "=camunda.secrets.token";
+    final Object resultValue = "camunda.secrets.token";
+    final List<ExpressionSecretReferenceItem> referencedSecrets =
+        Arrays.asList(
+            new ExpressionSecretReferenceItem().storeId("default").secretName("token"),
+            new ExpressionSecretReferenceItem().storeId("vault").secretName("apiKey"));
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult()
+            .expression(expression)
+            .result(resultValue)
+            .warnings(Collections.emptyList())
+            .referencedSecrets(referencedSecrets));
+
+    // when
+    final EvaluateExpressionResponse response =
+        client.newEvaluateExpressionCommand().expression(expression).send().join();
+
+    // then
+    assertThat(response.getReferencedSecrets())
+        .extracting(SecretReference::getStoreId, SecretReference::getSecretName)
+        .containsExactly(tuple("default", "token"), tuple("vault", "apiKey"));
   }
 
   @Test
