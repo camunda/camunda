@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment} from 'react';
+import {Fragment, useCallback} from 'react';
 import {
   Button,
   DatePicker,
@@ -28,6 +28,7 @@ import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import set from 'lodash/set';
 import {MultitenancySelect} from 'common/multitenancy/MultitenancySelect';
+import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {useIsMultitenancyEnabled} from 'common/multitenancy/useIsMultitenancyEnabled';
 import {
@@ -39,6 +40,7 @@ import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
 import {Modal} from 'common/components/Modal';
 import {useTranslation} from 'react-i18next';
+import {getClientConfig} from 'common/config/getClientConfig';
 
 type FormValues = NamedCustomFilters & {
   areAdvancedFiltersEnabled: boolean;
@@ -88,9 +90,37 @@ const FieldsModal: React.FC<Props> = ({
 }) => {
   const {t, i18n} = useTranslation();
   const label = t('customFiltersModalAdvancedFiltersLabel');
-  const {isMultitenancyEnabled} = useIsMultitenancyEnabled();
+  const {isMultitenancyEnabled: isTenantSelectEnabled} =
+    useIsMultitenancyEnabled();
   const {data: currentUser} = useCurrentUser();
+  const {clientMode, isMultiTenancyEnabled} = getClientConfig();
   const groups = currentUser?.groups ?? [];
+  const getTenantId = useCallback(
+    (formTenant: string | undefined) => {
+      if (!isMultiTenancyEnabled) {
+        return undefined;
+      }
+
+      if (clientMode === 'v1') {
+        return DEFAULT_TENANT_ID;
+      }
+
+      if (formTenant !== undefined && formTenant !== '') {
+        return formTenant;
+      }
+
+      if (formTenant === '') {
+        return undefined;
+      }
+
+      if (currentUser?.tenants.length === 1) {
+        return currentUser.tenants[0]?.tenantId;
+      }
+
+      return undefined;
+    },
+    [clientMode, currentUser, isMultiTenancyEnabled],
+  );
 
   return (
     <Modal
@@ -283,15 +313,18 @@ const FieldsModal: React.FC<Props> = ({
                       <ProcessesSelect
                         {...input}
                         id={input.name}
-                        tenantId={values?.tenant}
-                        disabled={!isOpen}
+                        tenantId={getTenantId(values?.tenant)}
+                        disabled={
+                          !isOpen ||
+                          (isMultiTenancyEnabled && currentUser === undefined)
+                        }
                         labelText={t(
                           'customFiltersModalLatestProcessVersionLabel',
                         )}
                       />
                     )}
                   </Field>
-                  {isMultitenancyEnabled ? (
+                  {isTenantSelectEnabled ? (
                     <Field name="tenant">
                       {({input}) => (
                         <MultitenancySelect
