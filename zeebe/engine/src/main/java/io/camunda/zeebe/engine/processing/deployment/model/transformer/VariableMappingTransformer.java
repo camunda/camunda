@@ -38,10 +38,12 @@ import java.util.stream.Collectors;
  * runtime, with each mapping's result visible to subsequent mappings (see {@link InputMapping},
  * {@link OutputMapping} and {@code BpmnVariableMappingBehavior}).
  *
- * <p>Output mappings differ from input mappings in how a nested target is merged at runtime: the
- * result must be merged with the existing scope variable if that variable is a JSON object, at
- * every nesting level. This merging is done by {@code MappingResultBuilder} while accumulating
- * results.
+ * <p>Input and output mappings differ in how a nested target relates to the existing scope variable
+ * at runtime, and both differences are handled by {@code MappingResultBuilder}. An output mapping's
+ * result is merged into that variable if it is a JSON object, at every nesting level, so the merged
+ * value is what gets written. An input mapping's result is not merged — it is written as-is — but a
+ * later source reading the target's root name sees the mapped keys layered over the value the scope
+ * chain resolves, so a mapping shadows only the keys it defines.
  */
 public final class VariableMappingTransformer {
 

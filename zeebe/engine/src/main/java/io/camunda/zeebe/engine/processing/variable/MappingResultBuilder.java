@@ -32,13 +32,18 @@ import org.jspecify.annotations.Nullable;
  * document to be merged into the element's local scope.
  *
  * <p>For input mappings ({@link #forInputMappings}), a mapping to a nested target descends into (or
- * creates) intermediate objects; a mapping whose target collides structurally with an earlier one
- * (a value where an object is needed, or vice versa) replaces the earlier entry — last-wins.
+ * creates) intermediate objects and never merges into the accumulated document; a mapping whose
+ * target collides structurally with an earlier one (a value where an object is needed, or vice
+ * versa) replaces the earlier entry — last-wins. A <em>read</em> of a name a nested target built is
+ * layered over the value that name resolves to in the element's scope chain, so keys no mapping
+ * defined fall through instead of disappearing. A level an earlier mapping assigned whole shadows
+ * that value totally and stops the fall-through for its whole subtree.
  *
  * <p>For output mappings ({@link #forOutputMappings}), a nested target instead merges with the
- * existing scope variable at every path level: a level that is absent or holds a plain value is
- * seeded from the current scope value at that path. A non-context scope value poisons the level to
- * null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
+ * existing scope variable at every path level while accumulating: a level that is absent or holds a
+ * plain value is seeded from the current scope value at that path. A non-context scope value
+ * poisons the level to null, matching FEEL's {@code context merge(<non-context>, {...})} behavior.
+ * Reads are not layered — the merge is already in the document.
  */
 @NullMarked
 public final class MappingResultBuilder {
