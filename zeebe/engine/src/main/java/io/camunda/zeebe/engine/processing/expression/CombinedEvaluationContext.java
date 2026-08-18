@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
 
 public final class CombinedEvaluationContext implements ScopedEvaluationContext {
   private final List<ScopedEvaluationContext> contexts = new ArrayList<>();
@@ -47,7 +47,7 @@ public final class CombinedEvaluationContext implements ScopedEvaluationContext 
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     return contexts.stream()
         .map(context -> context.getVariable(variableName))
         .filter(Objects::nonNull)
@@ -56,14 +56,11 @@ public final class CombinedEvaluationContext implements ScopedEvaluationContext 
         .orElse(Either.left(null));
   }
 
-  private boolean filterEmptyScopeAndValue(
-      final Either<DirectBuffer, EvaluationContext> directBufferEvaluationContextEither) {
-    if (directBufferEvaluationContextEither.isLeft()) {
-      final var buffer = directBufferEvaluationContextEither.getLeft();
-      return buffer != null;
-    } else if (directBufferEvaluationContextEither.isRight()) {
-      final var value = directBufferEvaluationContextEither.get();
-      return value != null;
+  private boolean filterEmptyScopeAndValue(final Either<ContextValue, EvaluationContext> resolved) {
+    if (resolved.isLeft()) {
+      return resolved.getLeft() != null;
+    } else if (resolved.isRight()) {
+      return resolved.get() != null;
     }
     throw new IllegalStateException("Either is neither left nor right");
   }

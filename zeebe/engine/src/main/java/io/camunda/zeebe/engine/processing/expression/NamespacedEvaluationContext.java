@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.zeebe.el.ContextValue;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public final class NamespacedEvaluationContext implements ScopedEvaluationContext {
 
@@ -29,9 +29,9 @@ public final class NamespacedEvaluationContext implements ScopedEvaluationContex
   }
 
   @Override
-  public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
+  public Either<ContextValue, EvaluationContext> getVariable(final String variableName) {
     return Optional.ofNullable(namespaces.get(variableName))
-        .<Either<DirectBuffer, EvaluationContext>>map(Either::right)
+        .<Either<ContextValue, EvaluationContext>>map(Either::right)
         .orElse(Either.left(null));
   }
 
