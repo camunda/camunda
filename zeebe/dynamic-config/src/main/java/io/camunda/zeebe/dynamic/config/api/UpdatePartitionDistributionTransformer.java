@@ -12,11 +12,15 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -24,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Computes the operations needed to apply a new {@link ZoneAwareConfig}. It persists the new config
@@ -54,6 +59,29 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
     this.extraMembers = Set.copyOf(extraMembers);
   }
 
+  /**
+   * Plans the redistribution over every physical tenant's partition group, rather than the default
+   * one only: the new config is persisted by a leading global phase, and the placement it implies
+   * is then planned for every group at once.
+   *
+   * <p>On a zone-aware cluster the replication factor is derived from the zone layout, so this is
+   * also how a layout change reaches each tenant's replication factor — planning the default group
+   * alone left every other tenant at the replication factor of the layout it replaced.
+   */
+  @Override
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return validatedZoneAwareConfig(
+            configuration.minReplicationFactor(),
+            configuration.isFullyZoneAware(),
+            configuration.isPartiallyZoneAware())
+        .flatMap(zoneAwareConfig -> phases(configuration, zoneAwareConfig));
+  }
+
+  /**
+   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
+   * partition group alone. Nothing in production plans through here anymore; it is what the tests
+   * around this transformer and the two that delegate to it assert on.
+   */
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
@@ -62,6 +90,31 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
             currentConfiguration.isFullyZoneAware(),
             currentConfiguration.isPartiallyZoneAware())
         .flatMap(zoneAwareConfig -> operations(currentConfiguration, zoneAwareConfig));
+  }
+
+  private Either<Exception, List<Phase>> phases(
+      final CurrentClusterConfiguration configuration, final ZoneAwareConfig zoneAwareConfig) {
+    final List<GlobalChangeOperation> persistConfig =
+        List.of(
+            new UpdatePartitionDistributorConfigOperation(
+                ClusterConfigurationCoordinatorSupplier.from(() -> configuration)
+                    .getDefaultCoordinator(),
+                newConfig));
+
+    // The placement must be computed with the new distributor, and the planner resolves it from the
+    // configuration it is handed — so hand it a copy that already carries the new config. Only the
+    // operation above really persists it.
+    return PartitionGroupScalingPhases.phases(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            configuration.updateGlobalConfiguration(
+                global -> global.setPartitionDistributorConfig(newConfig)),
+            targetMembers(configuration.getMembers()),
+            Optional.empty(),
+            Optional.of(zoneAwareConfig.replicationFactor()))
+        .map(
+            partitionPhases ->
+                Stream.concat(Stream.of(new GlobalPhase(persistConfig)), partitionPhases.stream())
+                    .toList());
   }
 
   private Either<Exception, List<ClusterConfigurationChangeOperation>> operations(

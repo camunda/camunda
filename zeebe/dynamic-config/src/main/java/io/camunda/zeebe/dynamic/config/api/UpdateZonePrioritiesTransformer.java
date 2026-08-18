@@ -11,9 +11,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
@@ -39,6 +41,25 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
     this.sortedZoneNames = List.copyOf(sortedZoneNames);
   }
 
+  /**
+   * Re-prioritizes every physical tenant's partitions, by handing the re-prioritized layout to
+   * {@link UpdatePartitionDistributionTransformer#phases(CurrentClusterConfiguration)}. Which zone
+   * is preferred for leadership is global, so the layout is computed once and applied to every
+   * group.
+   */
+  @Override
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return reprioritized(configuration.globalConfiguration().partitionDistributorConfig())
+        .flatMap(
+            newConfig ->
+                new UpdatePartitionDistributionTransformer(newConfig).phases(configuration));
+  }
+
+  /**
+   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
+   * partition group alone. Nothing in production plans through here anymore; it is what the tests
+   * around this transformer assert on.
+   */
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
