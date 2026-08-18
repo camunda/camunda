@@ -65,8 +65,10 @@ public final class AnalyticsAttributes {
     /**
      * Physical-tenant id of the broker/exporter instance that produced the signal. Unlike {@link
      * #ID} (the logical tenant of the specific record, which varies per event), this is static for
-     * the lifetime of the exporter instance and is attached to every signal automatically by {@link
-     * io.camunda.exporter.analytics.OtelSdkManager} rather than by individual handlers.
+     * the lifetime of the exporter instance, so it is set once as an OTel {@code Resource}
+     * attribute in {@link io.camunda.exporter.analytics.OtelSdkManager#buildResource} and applies
+     * automatically to every log record, metric point, and heartbeat emitted through that Resource
+     * — individual handlers and call sites never set it.
      */
     public static final AttributeKey<String> PHYSICAL_ID =
         AttributeKey.stringKey("camunda.tenant.physical_id");

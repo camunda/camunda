@@ -91,11 +91,15 @@ class AnalyticsExporterTest {
                       value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
-                  .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L)
-                  .containsEntry(AnalyticsAttributes.Tenant.PHYSICAL_ID, "test-physical-tenant");
+                  .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);
               assertThat(logRecord.getResource().getAttribute(AnalyticsAttributes.Exporter.DIGEST))
                   .isNotNull()
                   .isNotEmpty();
+              // physical-tenant id is a Resource attribute, not a per-record attribute — see
+              // OtelSdkManager#buildResource.
+              assertThat(
+                      logRecord.getResource().getAttribute(AnalyticsAttributes.Tenant.PHYSICAL_ID))
+                  .isEqualTo("test-physical-tenant");
             });
   }
 

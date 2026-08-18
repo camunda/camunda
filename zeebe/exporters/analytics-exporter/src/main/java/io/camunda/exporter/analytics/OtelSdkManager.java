@@ -70,15 +70,6 @@ public class OtelSdkManager implements AutoCloseable {
   private final Map<String, LongCounter> counters = new HashMap<>();
   private final MetricWindow metricWindow = new MetricWindow();
 
-  /**
-   * Physical-tenant id of the broker this exporter instance runs on. Captured once at {@link
-   * #initialize} time — like {@code clusterId}/{@code partitionId} on {@link
-   * AnalyticsExporterContext} — and applied internally to every emitted signal (log event, metric,
-   * heartbeat) so callers of {@link #logEvent}, {@link #incrementMetric}, and {@link
-   * #emitHeartbeat} never need to pass it explicitly.
-   */
-  private String physicalTenantId;
-
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
       final AnalyticsExporterContext context,
@@ -93,7 +84,6 @@ public class OtelSdkManager implements AutoCloseable {
       final MeterRegistry meterRegistry) {
     this.metadata = metadata;
     this.defaultSamplingRate = config.getSamplingRate();
-    physicalTenantId = context.physicalTenantId();
     counters.clear();
     metricWindow.reset();
 
@@ -137,8 +127,7 @@ public class OtelSdkManager implements AutoCloseable {
             .setSeverityText("INFO")
             .setAttribute(NAME, eventName)
             .setAttribute(POSITION, logPosition)
-            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber())
-            .setAttribute(PHYSICAL_ID, physicalTenantId);
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
     if (appliedRate < HashSampler.MAX_SAMPLE_RATE) {
       record.setAttribute(SAMPLE_RATE, appliedRate);
     }
@@ -154,7 +143,6 @@ public class OtelSdkManager implements AutoCloseable {
         .setAttribute(NAME, HEARTBEAT)
         .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
         .setAttribute(EXPORTER_VERSION, AnalyticsExporterVersion.get())
-        .setAttribute(PHYSICAL_ID, physicalTenantId)
         .emit();
   }
 
@@ -166,20 +154,8 @@ public class OtelSdkManager implements AutoCloseable {
       final Attributes dimensions) {
     counters
         .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
-        .add(1, withPhysicalTenantId(dimensions));
+        .add(1, dimensions);
     metricWindow.record(position, eventTimeMs);
-  }
-
-  /**
-   * Merges {@link AnalyticsAttributes.Tenant#PHYSICAL_ID} into the given attributes. Skips the
-   * copy-on-write rebuild if it's already present with the current value, so a caller that already
-   * stamped it (defensively, or via a future refactor) doesn't pay for a redundant copy.
-   */
-  private Attributes withPhysicalTenantId(final Attributes attributes) {
-    if (physicalTenantId.equals(attributes.get(PHYSICAL_ID))) {
-      return attributes;
-    }
-    return attributes.toBuilder().put(PHYSICAL_ID, physicalTenantId).build();
   }
 
   // Performance: collectAndExport() runs on the partition thread. Benchmarked at ~0.2ms for 50
@@ -211,9 +187,7 @@ public class OtelSdkManager implements AutoCloseable {
                 return;
               }
               final long seq = metadata.incrementAndGetMetricSequenceNumber();
-              measurement.record(
-                  metricWindow.eventCount(),
-                  withPhysicalTenantId(metricWindow.toGaugeAttributes(seq)));
+              measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
               metricWindow.reset();
             });
   }
@@ -305,6 +279,7 @@ public class OtelSdkManager implements AutoCloseable {
                 .put(CLUSTER_ID, context.clusterId())
                 .put(PARTITION_ID, context.partitionId())
                 .put(DIGEST, context.exporterDigest())
+                .put(PHYSICAL_ID, context.physicalTenantId())
                 .build());
   }
 }

@@ -552,41 +552,17 @@ class OtelSdkManagerTest {
     }
 
     @Test
-    void shouldAttachPhysicalTenantIdToMetricDimensions() {
-      // when — physicalTenantId is captured at initialize() time, not passed by the caller
+    void shouldAttachPhysicalTenantIdToMetricResource() {
+      // when — physicalTenantId is a Resource attribute, set once at initialize() time, not
+      // passed by the caller and not a per-point dimension
       manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
 
       // then
       assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
           .hasValueSatisfying(
               metric ->
-                  assertThat(metric.getLongSumData().getPoints())
-                      .first()
-                      .satisfies(
-                          point ->
-                              assertThat(point.getAttributes().get(PHYSICAL_ID))
-                                  .isEqualTo("test-physical-tenant")));
-    }
-
-    @Test
-    void shouldNotDuplicatePhysicalTenantIdWhenCallerAlreadySetIt() {
-      // given — dimensions that (defensively, or via a future refactor) already carry the
-      // attribute with the same value OtelSdkManager would stamp itself
-      final var dimensions = Attributes.of(PHYSICAL_ID, "test-physical-tenant");
-
-      // when
-      manager.incrementMetric("test.counter", 100L, 1000L, dimensions);
-
-      // then — the value is preserved, not overwritten or duplicated
-      assertThat(findMetric(metricReader.collectAllMetrics(), "test.counter"))
-          .hasValueSatisfying(
-              metric ->
-                  assertThat(metric.getLongSumData().getPoints())
-                      .first()
-                      .satisfies(
-                          point ->
-                              assertThat(point.getAttributes().get(PHYSICAL_ID))
-                                  .isEqualTo("test-physical-tenant")));
+                  assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
+                      .isEqualTo("test-physical-tenant"));
     }
 
     @Test
@@ -602,21 +578,22 @@ class OtelSdkManagerTest {
       assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
-              metric ->
-                  assertThat(metric.getLongGaugeData().getPoints())
-                      .first()
-                      .satisfies(
-                          point -> {
-                            assertThat(point.getValue()).isEqualTo(2);
-                            final var pointAttrs = point.getAttributes();
-                            assertThat(pointAttrs.get(SEQUENCE_NUMBER)).isEqualTo(1L);
-                            assertThat(pointAttrs.get(POSITION_START)).isEqualTo(100L);
-                            assertThat(pointAttrs.get(POSITION_END)).isEqualTo(200L);
-                            assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(5000L);
-                            assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(6000L);
-                            assertThat(pointAttrs.get(PHYSICAL_ID))
-                                .isEqualTo("test-physical-tenant");
-                          }));
+              metric -> {
+                assertThat(metric.getResource().getAttribute(PHYSICAL_ID))
+                    .isEqualTo("test-physical-tenant");
+                assertThat(metric.getLongGaugeData().getPoints())
+                    .first()
+                    .satisfies(
+                        point -> {
+                          assertThat(point.getValue()).isEqualTo(2);
+                          final var pointAttrs = point.getAttributes();
+                          assertThat(pointAttrs.get(SEQUENCE_NUMBER)).isEqualTo(1L);
+                          assertThat(pointAttrs.get(POSITION_START)).isEqualTo(100L);
+                          assertThat(pointAttrs.get(POSITION_END)).isEqualTo(200L);
+                          assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(5000L);
+                          assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(6000L);
+                        });
+              });
     }
 
     @Test

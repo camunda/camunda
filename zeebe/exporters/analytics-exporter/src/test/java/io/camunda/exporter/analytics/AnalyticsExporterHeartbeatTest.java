@@ -49,15 +49,17 @@ class AnalyticsExporterHeartbeatTest {
         .singleElement()
         .satisfies(
             log -> {
-              final var attrs = log.getAttributes().asMap();
-              assertThat(attrs)
+              assertThat(log.getAttributes().asMap())
                   .containsEntry(AnalyticsAttributes.Event.NAME, HEARTBEAT)
                   .containsEntry(
                       AnalyticsAttributes.Heartbeat.BROKER_VERSION, VersionUtil.getVersion())
                   .containsEntry(
                       AnalyticsAttributes.Heartbeat.EXPORTER_VERSION,
-                      AnalyticsExporterVersion.get())
-                  .containsEntry(AnalyticsAttributes.Tenant.PHYSICAL_ID, "test-physical-tenant");
+                      AnalyticsExporterVersion.get());
+              // physical-tenant id is a Resource attribute (static for the exporter instance's
+              // lifetime), not a per-record attribute — see OtelSdkManager#buildResource.
+              assertThat(log.getResource().getAttribute(AnalyticsAttributes.Tenant.PHYSICAL_ID))
+                  .isEqualTo("test-physical-tenant");
             });
   }
 
