@@ -335,6 +335,32 @@ public final class StreamJobsTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetWithLease() {
+    // when
+    client
+        .newStreamJobsCommand()
+        .jobType("foo")
+        .consumer(ignored -> {})
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSetWithLeaseByDefault() {
+    // when
+    client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {}).send().join();
+
+    // then
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isFalse();
+  }
+
+  @Test
   public void shouldSetAssignedTenantFilter() {
     // given
     client
