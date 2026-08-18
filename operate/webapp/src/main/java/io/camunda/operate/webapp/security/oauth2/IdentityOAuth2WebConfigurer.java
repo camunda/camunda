@@ -54,6 +54,24 @@ public class IdentityOAuth2WebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
+  // No timeout is applied at all today (Spring's default RestTemplate has none); this bounds
+  // the connect/read phases to a realistic external IdP latency instead of hanging indefinitely.
+  private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
+  private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
+
+  // Nimbus's own default is 15,000ms; this still gives one full retry's worth of slack (roughly
+  // 2x the connect+read timeout above) while failing much faster when the IdP is genuinely down.
+  private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
+
+  private static final Set<JWSAlgorithm> SUPPORTED_JWS_ALGORITHMS =
+      Set.of(
+          JWSAlgorithm.RS256,
+          JWSAlgorithm.RS384,
+          JWSAlgorithm.RS512,
+          JWSAlgorithm.ES256,
+          JWSAlgorithm.ES384,
+          JWSAlgorithm.ES512);
+
   private final Environment env;
 
   private final IdentityConfiguration identityConfiguration;
@@ -83,24 +101,6 @@ public class IdentityOAuth2WebConfigurer {
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
   }
-
-  // No timeout is applied at all today (Spring's default RestTemplate has none); this bounds
-  // the connect/read phases to a realistic external IdP latency instead of hanging indefinitely.
-  private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
-  private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
-
-  // Nimbus's own default is 15,000ms; this still gives one full retry's worth of slack (roughly
-  // 2x the connect+read timeout above) while failing much faster when the IdP is genuinely down.
-  private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
-
-  private static final Set<JWSAlgorithm> SUPPORTED_JWS_ALGORITHMS =
-      Set.of(
-          JWSAlgorithm.RS256,
-          JWSAlgorithm.RS384,
-          JWSAlgorithm.RS512,
-          JWSAlgorithm.ES256,
-          JWSAlgorithm.ES384,
-          JWSAlgorithm.ES512);
 
   /**
    * JwtDecoder that supports both the "jwt" (standard JWT) and "at+jwt" (Access Token JWT) JOSE
