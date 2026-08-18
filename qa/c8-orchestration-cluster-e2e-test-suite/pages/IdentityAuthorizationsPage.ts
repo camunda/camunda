@@ -16,9 +16,7 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationButton: Locator;
   readonly authorizationsList: Locator;
   readonly createAuthorizationModal: Locator;
-  readonly createAuthorizationOwnerComboBox: Locator;
   readonly createAuthorizationOwnerSearchInput: Locator;
-  readonly createAuthorizationOwnerOption: (name: string) => Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
   readonly accessPermissionCheckbox: (name: string) => Locator;
@@ -52,14 +50,8 @@ export class IdentityAuthorizationsPage {
     this.createAuthorizationModal = page.getByRole('dialog', {
       name: 'Create authorization',
     });
-    this.createAuthorizationOwnerComboBox =
-      this.createAuthorizationModal.getByPlaceholder('Select an owner');
     this.createAuthorizationOwnerSearchInput =
       this.createAuthorizationModal.getByPlaceholder('Search by owner ID');
-    this.createAuthorizationOwnerOption = (name) =>
-      this.createAuthorizationModal.getByRole('option', {
-        name,
-      });
     this.createAuthorizationResourceIdField =
       this.createAuthorizationModal.getByRole('textbox', {
         name: 'Resource ID',
@@ -118,13 +110,6 @@ export class IdentityAuthorizationsPage {
 
   async clickCreateAuthorizationButton() {
     await this.createAuthorizationButton.click();
-  }
-
-  async clickOwnerDropdown() {
-    await this.createAuthorizationOwnerComboBox.click();
-  }
-  async selectOwnerFromDropdown(name: string) {
-    await this.createAuthorizationOwnerOption(name).click();
   }
 
   async clickOwnerTypeDropdown() {
@@ -239,7 +224,7 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
-    await this.createAuthorizationOwnerComboBox.waitFor({
+    await this.createAuthorizationOwnerSearchInput.waitFor({
       state: 'visible',
       timeout: 10000,
     });
@@ -249,24 +234,15 @@ export class IdentityAuthorizationsPage {
     const maxRetries = 2;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
-          await this.createAuthorizationOwnerSearchInput.fill(
-            authorization.ownerId,
-          );
-          const ownerOption = this.createAuthorizationModal
-            .locator('.cds--list-box__menu-item')
-            .filter({hasText: authorization.ownerId})
-            .first();
-          await expect(ownerOption).toBeVisible({timeout: 60000});
-          await ownerOption.click({timeout: 20000, force: true});
-          return;
-        }
-
-        await this.createAuthorizationOwnerComboBox.click();
-        await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-          timeout: 60000,
-          force: true,
-        });
+        await this.createAuthorizationOwnerSearchInput.fill(
+          authorization.ownerId,
+        );
+        const ownerOption = this.createAuthorizationModal
+          .locator('.cds--list-box__menu-item')
+          .filter({hasText: authorization.ownerId})
+          .first();
+        await expect(ownerOption).toBeVisible({timeout: 60000});
+        await ownerOption.click({timeout: 20000, force: true});
         return;
       } catch (error) {
         if (attempt < maxRetries) {
@@ -274,10 +250,10 @@ export class IdentityAuthorizationsPage {
           await this.page.reload();
         } else {
           console.log('Error while selecting owner' + error);
-          await this.createAuthorizationOwnerComboBox.fill(
+          await this.createAuthorizationOwnerSearchInput.fill(
             authorization.ownerId,
           );
-          await this.createAuthorizationOwnerComboBox.press('Tab');
+          await this.createAuthorizationOwnerSearchInput.press('Tab');
         }
       }
     }

@@ -99,7 +99,7 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             new RoleQuery(
-                new RoleFilter.Builder().name(role.name()).build(),
+                new RoleFilter.Builder().names(role.name()).build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
 
@@ -125,7 +125,7 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             new RoleQuery(
-                new RoleFilter.Builder().name("John Doe").build(),
+                new RoleFilter.Builder().names("John Doe").build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -145,7 +145,7 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             new RoleQuery(
-                new RoleFilter.Builder().name("Jane More").build(),
+                new RoleFilter.Builder().names("Jane More").build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -168,7 +168,7 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             new RoleQuery(
-                new RoleFilter.Builder().roleId(role.roleId()).name(role.name()).build(),
+                new RoleFilter.Builder().roleId(role.roleId()).names(role.name()).build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -188,17 +188,18 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             RoleQuery.of(
-                b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
+                b -> b.filter(f -> f.names("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
 
     final var firstPage =
         roleReader.search(
-            RoleQuery.of(b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.size(15))));
+            RoleQuery.of(
+                b -> b.filter(f -> f.names("Alice Doe")).sort(sort).page(p -> p.size(15))));
 
     final var nextPage =
         roleReader.search(
             RoleQuery.of(
                 b ->
-                    b.filter(f -> f.name("Alice Doe"))
+                    b.filter(f -> f.names("Alice Doe"))
                         .sort(sort)
                         .page(p -> p.size(5).after(firstPage.endCursor()))));
 

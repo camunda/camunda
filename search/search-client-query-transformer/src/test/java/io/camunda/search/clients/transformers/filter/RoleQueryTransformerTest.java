@@ -17,6 +17,7 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
@@ -47,7 +48,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByRoleName() {
     // given
-    final var filter = FilterBuilders.role((f) -> f.name("roleName"));
+    final var filter = FilterBuilders.role((f) -> f.names("roleName"));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
@@ -58,6 +59,23 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
     assertThat(query.must())
         .containsExactlyInAnyOrder(
             SearchQuery.of(q1 -> q1.term(t -> t.field("name").value("roleName"))),
+            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
+  }
+
+  @Test
+  void shouldQueryByRoleNameLike() {
+    // given
+    final var filter = FilterBuilders.role((f) -> f.nameOperations(Operation.like("*roleName*")));
+
+    // when
+    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
+
+    // then
+    assertThat(query.filter()).isEmpty();
+    assertThat(query.should()).isEmpty();
+    assertThat(query.must())
+        .containsExactlyInAnyOrder(
+            SearchQuery.of(q1 -> q1.wildcard(w -> w.field("name").value("*roleName*"))),
             SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
   }
 
@@ -108,7 +126,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByMultipleRoleFields() {
     // given
-    final var filter = FilterBuilders.role((f) -> f.roleId("role1").name("TestRole"));
+    final var filter = FilterBuilders.role((f) -> f.roleId("role1").names("TestRole"));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();

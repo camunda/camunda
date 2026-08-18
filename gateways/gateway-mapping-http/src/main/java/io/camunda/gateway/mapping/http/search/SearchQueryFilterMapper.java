@@ -818,7 +818,7 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.role();
     if (filter != null) {
       ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
     return builder.build();
   }
@@ -829,7 +829,7 @@ public class SearchQueryFilterMapper {
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
       ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
     }
     return builder.build();

@@ -7,15 +7,21 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
 public record RoleFilter(
     String roleId,
-    String name,
+    List<Operation<String>> nameOperations,
     String description,
     Set<String> memberIds,
     Set<String> roleIds,
@@ -32,7 +38,7 @@ public record RoleFilter(
   public Builder toBuilder() {
     return new Builder()
         .roleId(roleId)
-        .name(name)
+        .nameOperations(nameOperations)
         .description(description)
         .memberIds(memberIds)
         .roleIds(roleIds)
@@ -43,7 +49,7 @@ public record RoleFilter(
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
     private String roleId;
-    private String name;
+    private List<Operation<String>> nameOperations;
     private String description;
     private Set<String> memberIds;
     private Set<String> roleIds;
@@ -56,9 +62,33 @@ public record RoleFilter(
       return this;
     }
 
-    public Builder name(final String value) {
-      name = value;
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        nameOperations = addValuesToList(nameOperations, operations);
+      }
       return this;
+    }
+
+    public Builder names(final Set<String> value) {
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    public Builder names(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return nameOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
     }
 
     public Builder description(final String value) {
@@ -102,7 +132,7 @@ public record RoleFilter(
       }
       return new RoleFilter(
           roleId,
-          name,
+          nameOperations,
           description,
           memberIds,
           roleIds,

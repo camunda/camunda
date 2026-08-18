@@ -83,7 +83,12 @@ FROM (
   <sql id="searchFilter">
     <where>
       <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
-      <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND r.NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.description != null">AND r.DESCRIPTION = #{filter.description}</if>
       <if
         test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">

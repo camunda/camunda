@@ -7,7 +7,13 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {
+	API_VERSION,
+	advancedStringFilterSchema,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	type Endpoint,
+} from './common';
 import {roleSchema, type Group, type Role} from './group-role';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
@@ -29,12 +35,10 @@ type UpdateRoleResponseBody = z.infer<typeof updateRoleResponseBodySchema>;
 
 const queryRolesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'roleId'] as const,
-	filter: roleSchema
-		.pick({
-			roleId: true,
-			name: true,
-		})
-		.partial(),
+	filter: z.object({
+		roleId: z.string().optional(),
+		name: advancedStringFilterSchema.optional(),
+	}),
 });
 type QueryRolesRequestBody = z.infer<typeof queryRolesRequestBodySchema>;
 
