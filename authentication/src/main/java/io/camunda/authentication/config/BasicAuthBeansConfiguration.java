@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -22,7 +21,6 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -65,21 +63,6 @@ public class BasicAuthBeansConfiguration {
         .map(Map::values)
         .map(values -> values.stream().anyMatch(OidcConfiguration::isAnyPropertySet))
         .orElse(false);
-  }
-
-  /**
-   * Carries the physical tenant into the lazy membership lists built during BASIC-auth login, so
-   * they still work after the request that created them has ended.
-   *
-   * <p>This looks redundant next to CSL's bean of the same type, but it is not: CSL's does nothing
-   * ({@code identity()}). This one is used only because this configuration is a plain
-   * {@code @Import} while CSL is loaded later, via {@code @ImportAutoConfiguration}. Delete it and
-   * the no-op quietly takes over.
-   */
-  @Bean
-  @ConditionalOnMissingBean
-  public MembershipResolutionContextPropagator membershipResolutionContextPropagator() {
-    return new PhysicalTenantMembershipContextPropagator();
   }
 
   @Bean

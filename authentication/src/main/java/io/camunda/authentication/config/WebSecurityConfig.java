@@ -61,6 +61,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @Import({
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,
+  MembershipResolutionContextPropagatorConfiguration.class,
   SaasCspModeCompatibility.class,
   PhysicalTenantSecurityConfiguration.class,
   ClusterAdminBasicSecurityConfiguration.class,

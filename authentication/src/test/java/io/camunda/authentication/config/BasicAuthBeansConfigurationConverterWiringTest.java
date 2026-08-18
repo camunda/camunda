@@ -61,7 +61,7 @@ class BasicAuthBeansConfigurationConverterWiringTest {
     // when this configuration is added the same way WebSecurityConfig adds it
     // then Spring picks ours and the library's steps aside
     libraryContext()
-        .withUserConfiguration(BasicAuthBeansConfiguration.class)
+        .withUserConfiguration(MembershipResolutionContextPropagatorConfiguration.class)
         .run(
             context ->
                 assertThat(context.getBean(MembershipResolutionContextPropagator.class))
@@ -99,7 +99,7 @@ class BasicAuthBeansConfigurationConverterWiringTest {
     final var authentication =
         configuration
             .usernamePasswordAuthenticationConverter(
-                membershipPort, configuration.membershipResolutionContextPropagator())
+                membershipPort, new PhysicalTenantMembershipContextPropagator())
             .convert(new UsernamePasswordAuthenticationToken("alice", "pw"));
 
     // when the request has ended before any list is read, as happens when a stored session writes
