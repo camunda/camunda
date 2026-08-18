@@ -15,6 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.HotSpotDiagnosticMXBean.ThreadDumpFormat;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateGroupResponse;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -53,7 +56,10 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -84,6 +90,9 @@ public class ScaleUpPartitionsTest {
   private static final String JOB_TYPE = "job";
   private static final String PROCESS_ID = DEFAULT_PROCESS_ID;
   private static final MemberId MEMBER_0 = MemberId.from("0");
+  // Restoring the three brokers takes seconds; keep the bound well inside the method timeout so a
+  // broker that hangs is reported with a thread dump instead of the method timing out first.
+  private static final Duration RESTORE_TIMEOUT = Duration.ofMinutes(2);
   @AutoClose CamundaClient camundaClient;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
@@ -614,9 +623,53 @@ public class ScaleUpPartitionsTest {
       try (final var restoreApp =
           new TestRestoreApp(getRestoreConfig(broker.unifiedConfig(), workingDirectory))
               .withBackupId(backupId)) {
-        assertThatNoException().isThrownBy(restoreApp::start);
+        awaitRestored(restoreApp, broker.nodeId());
       }
       FileUtil.flushDirectory(dataFolder);
+    }
+  }
+
+  /**
+   * Restoring is unbounded, so a partition that never finishes leaves the caller blocked forever.
+   * The class-level {@link Timeout} does not help: it only compares elapsed time once the test
+   * method returns, so a blocked restore takes down the whole CI job without a single test result.
+   * Run the restore on its own thread instead, and report where it got stuck if it overruns.
+   */
+  private void awaitRestored(final TestRestoreApp restoreApp, final MemberId nodeId) {
+    final var restoreExecutor =
+        Executors.newSingleThreadExecutor(
+            command -> Thread.ofPlatform().daemon().name("restore-" + nodeId).unstarted(command));
+    try {
+      CompletableFuture.runAsync(restoreApp::start, restoreExecutor)
+          .get(RESTORE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final TimeoutException e) {
+      fail(
+          "Expected broker %s to be restored within %s, but it is still restoring. Thread dump:%n%s"
+              .formatted(nodeId, RESTORE_TIMEOUT, threadDump()));
+    } catch (final ExecutionException e) {
+      fail("Failed to restore broker %s".formatted(nodeId), e.getCause());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      fail("Interrupted while restoring broker %s".formatted(nodeId), e);
+    } finally {
+      restoreExecutor.shutdownNow();
+    }
+  }
+
+  /**
+   * Partitions are restored on virtual threads, which {@link Thread#getAllStackTraces()} does not
+   * report, so take a JVM thread dump that covers them.
+   */
+  private static String threadDump() {
+    try {
+      final var dumpFile = Files.createTempFile("restore-thread-dump", ".txt");
+      // dumpThreads refuses to write to a file that already exists
+      Files.delete(dumpFile);
+      ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
+          .dumpThreads(dumpFile.toAbsolutePath().toString(), ThreadDumpFormat.TEXT_PLAIN);
+      return Files.readString(dumpFile);
+    } catch (final IOException e) {
+      return "Failed to capture a thread dump: " + e;
     }
   }
 
