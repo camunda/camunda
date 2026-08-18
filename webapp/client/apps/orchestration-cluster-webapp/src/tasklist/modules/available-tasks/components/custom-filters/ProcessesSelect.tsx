@@ -11,18 +11,16 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
 
-const DEFAULT_TENANT_ID = '<default>';
-
 type Props = {
 	tenantId?: string;
 } & Omit<React.ComponentProps<typeof Select>, 'disabled'>;
 
-const ProcessesSelect: React.FC<Props> = ({tenantId = DEFAULT_TENANT_ID, ...props}) => {
+const ProcessesSelect: React.FC<Props> = ({tenantId, ...props}) => {
 	const {t} = useTranslation();
 
 	const {data: processes} = useSuspenseQuery({
 		...queries.queryProcessDefinitions({
-			filter: {isLatestVersion: true, tenantId},
+			filter: {isLatestVersion: true, ...(tenantId === undefined ? {} : {tenantId})},
 			page: {limit: 1000},
 		}),
 		select({items}) {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment, Suspense} from 'react';
+import {Fragment, Suspense, useCallback} from 'react';
 import {
 	Button,
 	ComposedModal,
@@ -90,7 +90,30 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 	const {t, i18n} = useTranslation();
 	const label = t('tasklist.customFiltersModalAdvancedFiltersLabel');
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
+	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const groups = currentUser?.groups ?? [];
+	const getTenantId = useCallback(
+		(formTenant: string | undefined) => {
+			if (!isMultiTenancyEnabled) {
+				return undefined;
+			}
+
+			if (formTenant !== undefined && formTenant !== '') {
+				return formTenant;
+			}
+
+			if (formTenant === '') {
+				return undefined;
+			}
+
+			if (currentUser.tenants.length === 1) {
+				return currentUser.tenants[0]?.tenantId;
+			}
+
+			return undefined;
+		},
+		[currentUser, isMultiTenancyEnabled],
+	);
 
 	return (
 		<ComposedModal
@@ -256,14 +279,14 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 													<ProcessesSelect
 														{...input}
 														id={input.name}
-														tenantId={values?.tenant}
+														tenantId={getTenantId(values?.tenant)}
 														labelText={t('tasklist.customFiltersModalLatestProcessVersionLabel')}
 													/>
 												</Suspense>
 											</ErrorBoundary>
 										)}
 									</Field>
-									{getClientConfig().deployment.isMultiTenancyEnabled ? (
+									{isMultiTenancyEnabled ? (
 										<Field name="tenant">
 											{({input}) => (
 												<MultitenancySelect

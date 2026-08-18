@@ -9,6 +9,7 @@
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {mockCurrentUserEndpoint, mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -22,6 +23,18 @@ import {FieldsModal} from './FieldsModal';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 
 const DEFAULT_VALUES: NamedCustomFilters = {assignee: 'all', status: 'all'};
+
+const allTenantsRequestSchema = z.object({
+	filter: z.object({isLatestVersion: z.literal(true)}).strict(),
+	page: z.object({limit: z.literal(1000)}),
+});
+
+function getTenantRequestSchema(tenantId: string) {
+	return z.object({
+		filter: z.object({isLatestVersion: z.literal(true), tenantId: z.literal(tenantId)}).strict(),
+		page: z.object({limit: z.literal(1000)}),
+	});
+}
 
 function getMocks(overrides?: {groups?: string[]}) {
 	return [
@@ -283,6 +296,154 @@ describe('<FieldsModal />', () => {
 		);
 
 		await expect.element(screen.getByRole('dialog', {name: /custom filters modal/i})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
+	});
+
+	it('should load processes from the only accessible tenant', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+		);
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [{tenantId: 'staging', name: 'Staging', description: null}],
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: getTenantRequestSchema('staging'),
+				failureResponse: HttpResponse.json(null, {status: 400}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={DEFAULT_VALUES}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
+	});
+
+	it('should load processes from all accessible tenants', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+		);
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: 'staging', name: 'Staging', description: null},
+							{tenantId: 'production', name: 'Production', description: null},
+						],
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: allTenantsRequestSchema,
+				failureResponse: HttpResponse.json(null, {status: 400}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{...DEFAULT_VALUES, tenant: ''}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
+	});
+
+	it('should load processes from the explicitly selected tenant', async ({worker}) => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({deployment: {isMultiTenancyEnabled: true, maxRequestSize: 0}})),
+		);
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json(
+					createCurrentUser({
+						tenants: [
+							{tenantId: 'staging', name: 'Staging', description: null},
+							{tenantId: 'production', name: 'Production', description: null},
+						],
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: getTenantRequestSchema('staging'),
+				failureResponse: HttpResponse.json(null, {status: 400}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={{...DEFAULT_VALUES, tenant: 'staging'}}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
+		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
+	});
+
+	it('should load processes without a tenant when multi-tenancy is disabled', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: allTenantsRequestSchema,
+				failureResponse: HttpResponse.json(null, {status: 400}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: []})),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<FieldsModal
+					isOpen
+					initialValues={DEFAULT_VALUES}
+					onClose={() => {}}
+					onApply={() => {}}
+					onSave={() => {}}
+					onEdit={() => {}}
+					onDelete={() => {}}
+				/>
+			),
+			{path: '/tasklist'},
+		);
+
 		await expect.element(screen.getByRole('combobox', {name: /process/i})).toBeVisible();
 	});
 
