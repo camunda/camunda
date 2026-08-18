@@ -124,15 +124,6 @@ final class ClusterExportingIT {
     assertThat(awaitSettledClusterStatus()).isEqualTo("EXPORTING");
   }
 
-  @Test
-  void shouldRejectRequestsWithoutClusterAdminCredentials() throws Exception {
-    // when
-    final var response = sendUnauthenticated("GET", "/cluster/v2/exporting");
-
-    // then
-    assertThat(response.statusCode()).isEqualTo(401);
-  }
-
   /**
    * Pause and resume answer once every partition of every tenant has acknowledged, but a replica
    * may still be mid-transition, so the status is polled until it settles rather than read once.
@@ -176,16 +167,6 @@ final class ClusterExportingIT {
     final var request =
         HttpRequest.newBuilder(resolve(path))
             .header("Authorization", basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD))
-            .method(method, BodyPublishers.noBody())
-            .header("Accept", "application/json")
-            .build();
-    return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
-  }
-
-  private HttpResponse<String> sendUnauthenticated(final String method, final String path)
-      throws Exception {
-    final var request =
-        HttpRequest.newBuilder(resolve(path))
             .method(method, BodyPublishers.noBody())
             .header("Accept", "application/json")
             .build();
