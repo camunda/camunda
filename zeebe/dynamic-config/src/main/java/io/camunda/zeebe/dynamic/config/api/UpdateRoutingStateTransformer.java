@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -71,12 +72,13 @@ public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest
         Objects.requireNonNull(
             clusterConfiguration.partitionGroup(groupId),
             () -> "Expected partition group '%s' to exist".formatted(groupId));
-    final var memberId = lowestMemberWithPartitions(group, groupId);
 
-    return Either.right(
-        List.of(
-            new PartitionGroupParallelPhase(
-                Map.of(groupId, List.of(new UpdateRoutingState(memberId, routingState))))));
+    return lowestMemberWithPartitions(group, groupId)
+        .map(
+            memberId ->
+                List.<Phase>of(
+                    new PartitionGroupParallelPhase(
+                        Map.of(groupId, List.of(new UpdateRoutingState(memberId, routingState))))));
   }
 
   /**
@@ -86,17 +88,23 @@ public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest
    * ClusterConfigurationManagerImpl#applyPartitionGroupConfigurationChangeOperation}, which
    * dispatches via {@code group.pendingChangesFor(localMemberId)}), so a member with no partitions
    * in the group would never pick up the operation and the change would stall.
+   *
+   * <p>Answers a request failure rather than throwing when the group has no such member: the
+   * coordinator calls this while planning, and an exception thrown there escapes the request
+   * instead of failing it.
    */
-  private MemberId lowestMemberWithPartitions(
+  private Either<Exception, MemberId> lowestMemberWithPartitions(
       final PartitionGroupConfiguration group, final String groupId) {
     return group.members().entrySet().stream()
         .filter(member -> !member.getValue().partitions().isEmpty())
         .map(Entry::getKey)
         .min(MemberId.ID_COMPARATOR)
-        .orElseThrow(
+        .<Either<Exception, MemberId>>map(Either::right)
+        .orElseGet(
             () ->
-                new IllegalStateException(
-                    "Cannot update the routing state of physical tenant '%s': none of its members hold any partitions"
-                        .formatted(groupId)));
+                Either.left(
+                    new InvalidState(
+                        "Cannot update the routing state of physical tenant '%s': none of its members hold any partitions"
+                            .formatted(groupId))));
   }
 }

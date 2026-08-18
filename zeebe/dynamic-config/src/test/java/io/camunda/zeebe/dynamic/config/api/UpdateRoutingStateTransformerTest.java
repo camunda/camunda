@@ -11,6 +11,7 @@ import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
@@ -132,6 +133,29 @@ class UpdateRoutingStateTransformerTest {
                 Map.of(DEFAULT_GROUP, List.of(new UpdateRoutingState(id0, routingState)))));
   }
 
+  @Test
+  void shouldRejectWhenNoBrokerOfThePhysicalTenantHoldsAPartition() {
+    // given — a tenant whose only broker holds none of its partitions, which is the one broker the
+    // operation could be dispatched to
+    final var configuration = cluster(Map.of(DEFAULT_GROUP, group(Map.of(id0, holdingNothing()))));
+    final var transformer =
+        new UpdateRoutingStateTransformer(
+            Optional.of(RoutingState.initializeWithPartitionCount(1)));
+
+    // when
+    final var result = transformer.phases(configuration);
+
+    // then — the request fails rather than the planning throwing, which would escape the request
+    // instead of answering it
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidState.class)
+        .satisfies(
+            error ->
+                assertThat(error).hasMessageContaining("none of its members hold any partitions"));
+  }
+
   private CurrentClusterConfiguration twoTenantCluster() {
     return cluster(
         Map.of(
@@ -160,6 +184,10 @@ class UpdateRoutingStateTransformerTest {
   private PartitionGroupConfiguration group(final Map<MemberId, BrokerPartitionState> members) {
     return new PartitionGroupConfiguration(
         1, 0, members, Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  private BrokerPartitionState holdingNothing() {
+    return BrokerPartitionState.initialize(Map.of());
   }
 
   private BrokerPartitionState hostingAPartition() {
