@@ -94,7 +94,9 @@ final class PartitionGroupScalingPhases {
       final CurrentClusterConfiguration clusterConfiguration,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
-    final var currentPartitionCount = currentPartitionCount(clusterConfiguration, targetGroupId);
+    final var distributionByGroup =
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration);
+    final var currentPartitionCount = currentPartitionCount(distributionByGroup, targetGroupId);
     if (newReplicationFactor.isEmpty()
         && newPartitionCount.orElse(currentPartitionCount) == currentPartitionCount) {
       // Nothing is asked for that the cluster does not already have. Returning before the
@@ -112,6 +114,7 @@ final class PartitionGroupScalingPhases {
     return phases(
         targetGroupId,
         clusterConfiguration,
+        distributionByGroup,
         clusterConfiguration.liveMembers(),
         newPartitionCount,
         newReplicationFactor);
@@ -131,10 +134,28 @@ final class PartitionGroupScalingPhases {
       final Set<MemberId> targetMembers,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
-    final var distributionByGroup =
-        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration);
-    final var currentPartitionCount =
-        distributionByGroup.getOrDefault(targetGroupId, Set.of()).size();
+    return phases(
+        targetGroupId,
+        clusterConfiguration,
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration),
+        targetMembers,
+        newPartitionCount,
+        newReplicationFactor);
+  }
+
+  /**
+   * Takes the current per-tenant distribution rather than scanning it out of {@code
+   * clusterConfiguration}: the entry point above needs it to decide whether the request asks for
+   * anything at all, and passes on what it already scanned.
+   */
+  private static Either<Exception, List<Phase>> phases(
+      final String targetGroupId,
+      final CurrentClusterConfiguration clusterConfiguration,
+      final Map<String, Set<PartitionMetadata>> distributionByGroup,
+      final Set<MemberId> targetMembers,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor) {
+    final var currentPartitionCount = currentPartitionCount(distributionByGroup, targetGroupId);
     final int targetPartitionCount = newPartitionCount.orElse(currentPartitionCount);
 
     final int replicationFactor =
@@ -236,10 +257,8 @@ final class PartitionGroupScalingPhases {
   }
 
   private static int currentPartitionCount(
-      final CurrentClusterConfiguration clusterConfiguration, final String groupId) {
-    return ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(clusterConfiguration)
-        .getOrDefault(groupId, Set.of())
-        .size();
+      final Map<String, Set<PartitionMetadata>> distributionByGroup, final String groupId) {
+    return distributionByGroup.getOrDefault(groupId, Set.of()).size();
   }
 
   private static Set<PartitionMetadata> targetDistribution(
