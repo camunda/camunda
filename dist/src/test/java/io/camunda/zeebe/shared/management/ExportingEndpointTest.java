@@ -10,13 +10,21 @@ package io.camunda.zeebe.shared.management;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,7 +44,7 @@ final class ExportingEndpointTest {
     when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
 
     // then
-    assertThat(endpoint.post(operation, false))
+    assertThat(endpoint.post(operation, false, null))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
@@ -55,7 +63,7 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
-    assertThat(endpoint.post(operation, false))
+    assertThat(endpoint.post(operation, false, null))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
@@ -74,7 +82,7 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // then
-    assertThat(endpoint.post(operation, false))
+    assertThat(endpoint.post(operation, false, null))
         .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
   }
 
@@ -94,7 +102,7 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.failedFuture(new CompletionException(exception)));
 
     // then
-    assertThat(endpoint.post(operation, false))
+    assertThat(endpoint.post(operation, false, null))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus))
         .satisfies(
@@ -108,6 +116,104 @@ final class ExportingEndpointTest {
                 assertThat(resp.getBody()).isNull();
               }
             });
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
+  void shouldApplyToEveryPhysicalTenantWithoutParameter(final String operation) {
+    // given
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenantb", "tenanta"));
+    when(service.pauseExporting(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(service.resumeExporting(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(operation, false, null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    final var inOrder = inOrder(service);
+    for (final var tenant : List.of("tenanta", "tenantb")) {
+      if (ExportingEndpoint.PAUSE.equals(operation)) {
+        inOrder.verify(service).pauseExporting(tenant);
+      } else {
+        inOrder.verify(service).resumeExporting(tenant);
+      }
+    }
+    verifyNoMoreInteractions(service);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
+  void shouldApplyOnlyToRequestedPhysicalTenant(final String operation) {
+    // given
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenanta", "tenantb"));
+    when(service.pauseExporting(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(service.resumeExporting(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(operation, false, "tenantb");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    if (ExportingEndpoint.PAUSE.equals(operation)) {
+      verify(service).pauseExporting("tenantb");
+    } else {
+      verify(service).resumeExporting("tenantb");
+    }
+    verifyNoMoreInteractions(service);
+  }
+
+  @Test
+  void shouldAttemptEveryPhysicalTenantEvenWhenOneFails() {
+    // given
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenanta", "tenantb"));
+    when(service.pauseExporting("tenanta"))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenanta is down")));
+    when(service.pauseExporting("tenantb")).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(ExportingEndpoint.PAUSE, false, null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    assertThat(response.getBody()).asString().contains("tenanta is down");
+    verify(service).pauseExporting("tenantb");
+  }
+
+  @Test
+  void shouldRejectUnknownPhysicalTenant() {
+    // given
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenanta"));
+
+    // when
+    final var response = endpoint.post(ExportingEndpoint.PAUSE, false, "tenantz");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_BAD_REQUEST);
+    assertThat(response.getBody())
+        .asString()
+        .isEqualTo("Unknown physical tenant 'tenantz'. Configured physical tenants: [tenanta].");
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void shouldTreatBlankPhysicalTenantAsEveryTenant() {
+    // given
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenanta", "tenantb"));
+    when(service.pauseExporting(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(ExportingEndpoint.PAUSE, false, "  ");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    verify(service).pauseExporting("tenanta");
+    verify(service).pauseExporting("tenantb");
   }
 
   private static Stream<Arguments> exceptionSource() {
