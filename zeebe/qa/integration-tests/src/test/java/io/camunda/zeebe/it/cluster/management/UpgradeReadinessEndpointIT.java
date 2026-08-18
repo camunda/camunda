@@ -26,13 +26,6 @@ import org.junit.jupiter.api.Test;
  * broker — no chained-upgrade or migration scenario involved — every registered condition must
  * settle on {@code MIGRATED} for the default physical tenant, and the endpoint must report the
  * cluster as upgradeable.
- *
- * <p>Covers both providers wired for a single-node RDBMS broker today: {@code
- * RdbmsSchemaMigrationStatusProvider} (schema-version check against the shared RDBMS store) and
- * {@code ClusterRocksDbMigrationStatusProvider} (per-partition-replica broadcast over the admin
- * API). Three partitions are configured because the RocksDB condition folds over every partition's
- * replicas — with a single partition, an aggregation that dropped every partition but the first
- * would still pass.
  */
 @ZeebeIntegration
 final class UpgradeReadinessEndpointIT {

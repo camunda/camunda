@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.admin;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.migration.MigrationConditionStatus;
-import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
@@ -26,28 +25,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Reports whether every partition replica's RocksDB state has migrated to the current application
- * version and been captured in a snapshot, per physical tenant, for the upgrade-readiness endpoint
- * (camunda/product-hub#3067).
+ * version and been captured in a snapshot, per physical tenant.
  *
  * <p>Every replica of every partition, of every known physical tenant, is queried — leader,
  * followers, and inactive members — not just the leader: migration runs independently on every
  * replica, so a follower that has not yet migrated could still be promoted to leader after a
  * fail-over.
- *
- * <p>Talks to brokers using {@link PartitionMigrationStatus}/{@link MigrationStatusCode} — the
- * wire-level protocol types, kept deliberately separate from {@link MigrationConditionStatus}/
- * {@link MigrationState}, which are the upgrade-readiness API/SPI types. This class is the boundary
- * between the two: it aggregates every replica's wire-level status internally, per tenant, then
- * maps each tenant's final result to the API type only in {@link #getMigrationStatus()}, so the
- * broker/gateway RPC layer never needs to depend on the {@code cluster} API module for this.
- *
- * <p>Unlike {@link ExportingRequestBroadcaster}, which callers invoke asynchronously with an
- * explicit physical tenant, this implements the synchronous {@link MigrationStatusProvider} SPI so
- * it can be collected alongside every other upgrade-readiness condition. All known physical tenants
- * are fetched concurrently under one shared timeout budget; a tenant whose fan-out does not finish
- * within that budget is reported as {@link MigrationState#UNKNOWN} on its own, without holding back
- * tenants that did finish in time — per the distributed-condition contract described in {@code
- * docs/adr/management/004-upgrade-readiness-actuator-solution-proposal.md}.
  */
 @NullMarked
 public class ClusterRocksDbMigrationStatusProvider implements MigrationStatusProvider {

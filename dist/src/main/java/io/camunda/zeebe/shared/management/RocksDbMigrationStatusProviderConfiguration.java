@@ -16,12 +16,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Registers the RocksDB {@link MigrationStatusProvider} for the upgrade-readiness endpoint
- * (camunda/product-hub#3067), collected by {@link UpgradeReadinessEndpoint} alongside every other
- * provider bean.
- *
- * <p>{@link PhysicalTenantIds} is injected as the interface, not the concrete {@code
- * PhysicalTenantResolver} (which implements it) — this keeps {@code zeebe/gateway} from depending
- * on the {@code configuration} module, mirroring how {@code db/rdbms} stays decoupled from it too.
+ * (camunda/product-hub#3067).
  */
 @Configuration(proxyBeanMethods = false)
 public class RocksDbMigrationStatusProviderConfiguration {

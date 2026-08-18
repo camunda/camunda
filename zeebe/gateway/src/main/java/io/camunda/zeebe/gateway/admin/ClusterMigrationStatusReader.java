@@ -23,15 +23,6 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
-/**
- * The tenant-fan-out-with-shared-timeout skeleton for a distributed {@link
- * io.camunda.cluster.migration.MigrationStatusProvider} (e.g. {@link
- * ClusterRocksDbMigrationStatusProvider}), kept separate from that provider so a future,
- * differently-distributed migration-status condition can reuse the same shape: resolve every known
- * physical tenant concurrently, under one shared timeout budget, and report each tenant's best
- * available answer independently — a tenant whose fan-out doesn't finish in time reports {@code
- * UNKNOWN} on its own, without holding back tenants that did finish.
- */
 @NullMarked
 final class ClusterMigrationStatusReader {
 
@@ -105,12 +96,6 @@ final class ClusterMigrationStatusReader {
    * Combines every queried replica/partition's status with {@code UNKNOWN > MIGRATION_IN_PROGRESS >
    * MIGRATED} precedence: any one we can't confidently assess makes the whole tenant's condition
    * {@code UNKNOWN} rather than silently reporting a partial answer as though it were complete.
-   *
-   * <p>The combined detail only ever names the ones still behind -- on a cluster with many
-   * partitions (or, for a condition that queries every replica, many partition-replica pairs),
-   * echoing every single one's detail back, migrated or not, would make this unreadable. Once every
-   * one is confidently {@code MIGRATED}, this reports one summary line instead of {@code
-   * statuses.size()} near-identical ones.
    */
   static PartitionMigrationStatus aggregate(final List<PartitionMigrationStatus> statuses) {
     if (statuses.isEmpty()) {

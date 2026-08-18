@@ -58,10 +58,7 @@ public interface PartitionAdminAccess {
 
   /**
    * Whether this replica's RocksDB state is migrated to the current application version and a
-   * snapshot capturing that migrated state has been taken, for the upgrade-readiness endpoint
-   * (camunda/product-hub#3067). Every replica answers from its own local state — migration and
-   * migration-snapshotting run independently on every replica, leader or follower, so a caller must
-   * ask every replica to be sure a fail-over cannot promote an unmigrated one.
+   * snapshot capturing that migrated state has been taken, for the upgrade-readiness endpoint.
    */
   ActorFuture<PartitionMigrationStatus> getMigrationStatus();
 }

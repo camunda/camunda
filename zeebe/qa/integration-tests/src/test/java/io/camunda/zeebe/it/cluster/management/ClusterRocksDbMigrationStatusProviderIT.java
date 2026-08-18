@@ -25,16 +25,6 @@ import org.junit.jupiter.api.Test;
  * Real multi-broker coverage for {@link ClusterRocksDbMigrationStatusProvider}
  * (camunda/product-hub#3067), constructed directly against a live {@link BrokerClient} rather than
  * through the {@code upgradeReadiness} actuator endpoint.
- *
- * <p>{@link io.camunda.zeebe.it.cluster.management.UpgradeReadinessEndpointIT} already covers the
- * endpoint end-to-end, but on a single broker every partition has only a leader — it never
- * exercises the part of this provider that broadcasts to every partition *replica*, including
- * followers, over the real network. A replication factor equal to the broker count spreads leader
- * and follower roles for every partition across all three brokers, so this test genuinely forces
- * the fan-out to cross real broker process boundaries, hitting the real wire encoding ({@code
- * io.camunda.zeebe.protocol.impl.encoding.MigrationStatusPayload}) and the real broker-side handler
- * ({@code AdminApiRequestHandler.getMigrationStatus}) — none of which the provider's own unit test
- * (fully mocked {@code BrokerClient}/{@code BrokerTopologyManager}) can exercise.
  */
 @ZeebeIntegration
 final class ClusterRocksDbMigrationStatusProviderIT {

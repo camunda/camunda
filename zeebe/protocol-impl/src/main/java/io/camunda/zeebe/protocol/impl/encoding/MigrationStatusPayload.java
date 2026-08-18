@@ -11,12 +11,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Encodes/decodes a {@link PartitionMigrationStatus} into the {@code payload} byte blob of an
- * {@code AdminRequest}/{@code AdminResponse} ({@code GET_MIGRATION_STATUS}), the same way {@code
- * GET_EXPORTING_STATE} stuffs an {@code ExporterPhase} name into the same field — no dedicated SBE
- * message is needed for a value this small.
- *
- * <p>Wire format: {@code <code name>\n<detail>}, UTF-8. The detail is everything after the first
- * newline, so it may itself contain newlines.
+ * {@code AdminRequest}/{@code AdminResponse} ({@code GET_MIGRATION_STATUS}).
  */
 public final class MigrationStatusPayload {
 
