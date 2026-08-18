@@ -21,13 +21,6 @@
 	align-items: center;
 }
 
-// DS-only (see TaskDetailsForm.tsx). Left-aligns the (still 900px-capped)
-// form/footer instead of centering them, per explicit request — any extra
-// space at wide viewports grows on the right only, not split on both sides.
-.contentDS {
-	align-items: flex-start;
-}
-
 .form {
 	width: 100%;
 	max-width: 900px;
@@ -57,6 +50,9 @@
 	// contributes, for 32px total between the tabs and the Card.
 	padding-top: 0;
 	margin-top: var(--cds-spacing-05);
+	// Overrides .form's own 900px cap (shared with Carbon, above) — full
+	// width, per explicit request.
+	max-width: none;
 
 	:global(.cds--layer-two) {
 		background: transparent;
@@ -87,11 +83,6 @@
 // equal specificity, so source order decides.
 .footerDS {
 	border-top-color: var(--border);
-
-	// Left-aligns the (still 900px-capped) footer content, matching .contentDS
-	// above — the Complete-task button's row stays flush with the form's left
-	// edge instead of centering.
-	justify-content: flex-start;
 }
 
 .footerContent {
@@ -99,4 +90,10 @@
 	max-width: 900px;
 	display: flex;
 	justify-content: flex-end;
+}
+
+// DS-only (see TaskDetailsForm.tsx). Overrides .footerContent's 900px cap
+// (shared with Carbon, above) — full width, per explicit request.
+.footerContentDS {
+	max-width: none;
 }

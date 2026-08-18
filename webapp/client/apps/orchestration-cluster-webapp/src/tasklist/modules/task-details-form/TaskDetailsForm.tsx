@@ -93,16 +93,10 @@ const TaskDetailsForm: React.FC<Props> = ({
 
 	return (
 		<div className={styles.container} data-testid="task-tab-content">
-			<div
-				className={cn(styles.content, featureFlags.dsTasklistUI && styles.contentDS)}
-				data-testid="embedded-form"
-				tabIndex={-1}
-			>
+			<div className={styles.content} data-testid="embedded-form" tabIndex={-1}>
 				{/* DS-only: the form-js output sits on the panel background with nothing
 				    separating it. Wrapping it in the DS Card gives it the same raised
-				    surface the task cards and the history table already have. The .form
-				    wrapper keeps its max-width and padding either way, so the card is
-				    inset from the panel edge rather than flush. */}
+				    surface the task cards and the history table already have. */}
 				<div className={cn(styles.form, featureFlags.dsTasklistUI && styles.formDS)}>
 					{featureFlags.dsTasklistUI ? (
 						<Card className={styles.formCardDS}>
@@ -113,7 +107,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 					)}
 				</div>
 				<div className={cn(styles.footer, featureFlags.dsTasklistUI && styles.footerDS)}>
-					<div className={styles.footerContent}>
+					<div className={cn(styles.footerContent, featureFlags.dsTasklistUI && styles.footerContentDS)}>
 						<CompleteTaskButton
 							status={submissionStatus}
 							onClick={() => {
