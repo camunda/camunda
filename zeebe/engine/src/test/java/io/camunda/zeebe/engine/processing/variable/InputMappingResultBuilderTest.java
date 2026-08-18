@@ -13,14 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.el.ContextValue;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class InputMappingResultBuilderTest {
@@ -100,7 +95,7 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x"), msgPack("1"));
 
     // when + then
-    assertEquality(toBuffer(builder.getVariable("x")), "1");
+    assertEquality(((ContextValue.MsgPack) builder.getVariable("x")).buffer(), "1");
   }
 
   @Test
@@ -109,7 +104,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("a", "b"), msgPack("1"));
 
     // when + then
-    assertEquality(toBuffer(builder.getVariable("a")), "{'b': 1}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("a")),
+        "{'b': 1}");
   }
 
   @Test
@@ -153,7 +150,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a"), msgPack("3"));
 
     // then: the read layers the mapped key over the shadowed value ...
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 3, 'b': 2}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': 3, 'b': 2}");
     // ... but the document keeps only what was mapped
     assertEquality(builder.toDocument(), "{'x': {'a': 3}}");
   }
@@ -169,7 +168,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a", "b"), msgPack("9"));
 
     // then: unmapped keys survive at every level, which a top-level-only merge would not do
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': {'b': 9, 'c': 2}, 'd': 4}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': {'b': 9, 'c': 2}, 'd': 4}");
     assertEquality(builder.toDocument(), "{'x': {'a': {'b': 9}}}");
   }
 
@@ -184,7 +185,7 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x"), msgPack("{'a': 3}"));
 
     // then: shadowing is total
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 3}");
+    assertEquality(((ContextValue.MsgPack) builder.getVariable("x")).buffer(), "{'a': 3}");
   }
 
   @Test
@@ -199,7 +200,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a"), msgPack("2"));
 
     // then: the total shadow persists — b does not come back
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 2}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': 2}");
   }
 
   @Test
@@ -214,7 +217,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a", "c"), msgPack("2"));
 
     // then: a stays totally shadowed, but x's untouched sibling d still falls through
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': {'c': 2}, 'd': 4}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': {'c': 2}, 'd': 4}");
   }
 
   @Test
@@ -227,7 +232,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a"), msgPack("1"));
 
     // then: nothing to fall through to — and no POISON either, that is output-mapping-only
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 1}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': 1}");
     assertEquality(builder.toDocument(), "{'x': {'a': 1}}");
   }
 
@@ -240,7 +247,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a"), msgPack("1"));
 
     // then
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 1}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': 1}");
   }
 
   @Test
@@ -252,7 +261,9 @@ final class InputMappingResultBuilderTest {
     builder.put(List.of("x", "a"), msgPack("3"));
 
     // when: the layered read happens between two puts that build x
-    assertEquality(toBuffer(builder.getVariable("x")), "{'a': 3, 'b': 2}");
+    assertEquality(
+        MappingResultBuilder.toMsgPack((ContextValue.Structure) builder.getVariable("x")),
+        "{'a': 3, 'b': 2}");
     builder.put(List.of("x", "c"), msgPack("9"));
 
     // then: the read did not add b to the accumulator
@@ -302,29 +313,5 @@ final class InputMappingResultBuilderTest {
 
   private static ContextValue msgPack(final String json) {
     return new ContextValue.MsgPack(asMsgPack(json));
-  }
-
-  /**
-   * Serializes a materialized {@link ContextValue} back to msgpack, so a snapshot read can be
-   * compared with {@link io.camunda.zeebe.test.util.MsgPackUtil#assertEquality} exactly like a
-   * plain value.
-   */
-  private static DirectBuffer toBuffer(final ContextValue value) {
-    return switch (value) {
-      case ContextValue.MsgPack(final var buffer) -> buffer;
-      case ContextValue.Structure(final var entries) -> {
-        final var writer = new MsgPackWriter();
-        final var out = new ExpandableArrayBuffer();
-        writer.wrap(out, 0);
-        writer.writeMapHeader(entries.size());
-        entries.forEach(
-            (key, nested) -> {
-              writer.writeString(BufferUtil.wrapString(key));
-              writer.writeRaw(toBuffer(nested));
-            });
-        yield new UnsafeBuffer(out, 0, writer.getOffset());
-      }
-      case ContextValue.Evaluated evaluated -> evaluated.result().toBuffer();
-    };
   }
 }
