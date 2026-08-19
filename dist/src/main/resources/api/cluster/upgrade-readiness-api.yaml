@@ -1,0 +1,103 @@
+openapi: "3.0.2"
+info:
+  title: Upgrade Readiness API
+  version: "1.0"
+  description: >
+    Management endpoint reporting whether this cluster has completed every condition required
+    before the next minor-version upgrade can safely be triggered (see camunda/product-hub#3067).
+servers:
+  - url: "{schema}://{host}:{port}/actuator/upgradeReadiness"
+    variables:
+      host:
+        default: localhost
+        description: Management server hostname
+      port:
+        default: "9600"
+        description: Management server port
+      schema:
+        default: http
+        description: Management server schema
+paths:
+  /:
+    get:
+      summary: Get the upgrade-readiness status of this cluster
+      description: >
+        Reports the state of every registered upgrade-readiness condition (e.g. RDBMS schema
+        migration, Elasticsearch/OpenSearch schema migration, RocksDB snapshot migration, exporter
+        flush), grouped by physical tenant. The set of conditions in the response reflects which
+        provider beans are currently registered in this process — not every condition is
+        necessarily present yet, so `upgradeable` should not be treated as meaningful until every
+        planned condition is registered.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeReadinessResponse"
+components:
+  schemas:
+    UpgradeReadinessResponse:
+      title: Upgrade Readiness Response
+      description: >
+        Grouped by physical tenant first, condition name second — not "tenants" alone, since
+        Camunda already has an unrelated multi-tenancy concept (process-engine tenants on process
+        instances); a physical tenant is an independent engine inside one orchestration cluster
+        (its own partition group, its own secondary storage).
+      type: object
+      properties:
+        upgradeable:
+          description: >
+            `true` only once every registered condition reports `MIGRATED` for every known
+            physical tenant. `false` whenever nothing is known at all, since an empty response
+            must never be mistaken for readiness.
+          type: boolean
+          example: false
+        physicalTenants:
+          description: >
+            Every known physical tenant's condition breakdown, keyed by physical tenant ID, then
+            by condition name (e.g. `rdbmsSchemaMigrated`). A physical tenant only appears once at
+            least one provider has reported it; a condition a provider does not report for a
+            tenant it does know about (e.g. a lookup gap, not "does not apply") is filled in as
+            `UNKNOWN` rather than omitted, so a gap can never be silently read as readiness.
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/MigrationConditionStatus"
+          example:
+            default:
+              rdbmsSchemaMigrated:
+                state: MIGRATED
+                detail: schema version 8.10.0 matches the application version
+      required:
+        - upgradeable
+        - physicalTenants
+
+    MigrationConditionStatus:
+      title: Migration Condition Status
+      description: The status of a single upgrade-readiness condition, as reported by a provider.
+      type: object
+      properties:
+        state:
+          allOf:
+            - $ref: "#/components/schemas/MigrationState"
+        detail:
+          description: >
+            A short, human-readable explanation, surfaced as-is from the reporting provider (e.g.
+            "schema version 8.9.0 has not yet migrated to 8.10.0").
+          type: string
+          example: schema version 8.10.0 matches the application version
+      required:
+        - state
+        - detail
+
+    MigrationState:
+      title: Migration State
+      description: The state of a single upgrade-readiness condition.
+      type: string
+      enum:
+        - MIGRATED
+        - MIGRATION_IN_PROGRESS
+        - UNKNOWN
+      example: MIGRATED

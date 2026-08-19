@@ -1228,6 +1228,21 @@
               </configOptions>
             </configuration>
           </execution>
+          <execution>
+            <id>upgrade-readiness</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/upgrade-readiness-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <ignoreFileOverride>${project.basedir}/src/main/resources/api/cluster/.openapi-generator-ignore</ignoreFileOverride>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
