@@ -485,11 +485,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- CSL's session filter is Spring Session-backed (MapSessionRepository by default); chain
-           integration tests mint sessions through it directly instead of a raw servlet HttpSession -->
+      <!-- Runtime requirement of CSL's WebSessionConfiguration, which OptimizeCamundaSecurityConfig
+           imports whenever optimize.security.csl.enabled is set; chain integration tests also mint
+           sessions through the Spring Session-backed filter instead of a raw servlet HttpSession -->
       <groupId>org.springframework.session</groupId>
       <artifactId>spring-session-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -842,6 +842,33 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-scoped-spring-session</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>org.springframework.session:spring-session-core:*:*:test</exclude>
+                  </excludes>
+                  <message>spring-session-core must stay non-test scoped: CSL's WebSessionConfiguration
+                    needs it at runtime, and no test can catch its absence because the test classpath
+                    always has it. Test scope silently packages it out of the distribution, which then
+                    fails to start with optimize.security.csl.enabled=true (see #60518).</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
@@ -850,6 +877,13 @@
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!-- No production class references it: CSL's WebSessionConfiguration is what needs it
+                 at runtime, and only the chain integration tests reference it from Optimize's own
+                 sources. It must stay non-test scoped so the distribution can start with
+                 optimize.security.csl.enabled=true. -->
+            <ignoredNonTestScopedDependency>org.springframework.session:spring-session-core</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
         <executions>
           <execution>
