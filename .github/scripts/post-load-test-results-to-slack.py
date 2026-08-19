@@ -111,21 +111,27 @@ blocks = [
             'text': f':bar_chart: *Daily Load Test Results — {date}*\nDuration: 3 h · <{run_url}|Workflow run>',
         },
     },
-    {
+]
+
+# Slack rejects a section block with empty text — dash_links is empty only when variants is
+# empty, which the calling workflow already gates on, but keep this defensive at the script
+# level too (e.g. against direct/manual invocation with an empty VARIANTS_JSON).
+if dash_links:
+    blocks.append({
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
             'text': dash_links,
         },
+    })
+
+blocks.append({
+    'type': 'section',
+    'text': {
+        'type': 'mrkdwn',
+        'text': '```\n' + table + '\n```',
     },
-    {
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': '```\n' + table + '\n```',
-        },
-    },
-]
+})
 
 if flamegraph_links:
     blocks.append({
