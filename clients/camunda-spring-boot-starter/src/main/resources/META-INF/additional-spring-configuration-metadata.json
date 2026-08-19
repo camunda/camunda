@@ -29,16 +29,6 @@
       "description": "Properties for setting cluster variables at startup."
     },
     {
-      "name": "camunda.client.cluster-variables.global",
-      "type": "java.util.Map",
-      "description": "Deprecated globally-scoped cluster variables to set at startup as key-value pairs. Replaced by <code>camunda.client.cluster-variables.variables</code>, which also supports metadata."
-    },
-    {
-      "name": "camunda.client.cluster-variables.tenant",
-      "type": "java.util.Map",
-      "description": "Deprecated tenant-scoped cluster variables to set at startup, keyed by tenant ID. Replaced by <code>camunda.client.cluster-variables.variables</code>, which also supports metadata."
-    },
-    {
       "name": "camunda.client.worker.defaults",
       "description": "Global default properties for job workers registered to the Camunda client."
     },
@@ -282,6 +272,22 @@
     {
       "name": "camunda.client.auth.token-fetch-non-retryable-cooldown",
       "defaultValue": "PT5M"
+    },
+    {
+      "name": "camunda.client.cluster-variables.global",
+      "type": "java.util.Map",
+      "description": "Deprecated globally-scoped cluster variables to set at startup as key-value pairs.",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables"
+      }
+    },
+    {
+      "name": "camunda.client.cluster-variables.tenant",
+      "type": "java.util.Map",
+      "description": "Deprecated tenant-scoped cluster variables to set at startup, keyed by tenant ID.",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables"
+      }
     },
     {
       "name": "common.auth-url",
