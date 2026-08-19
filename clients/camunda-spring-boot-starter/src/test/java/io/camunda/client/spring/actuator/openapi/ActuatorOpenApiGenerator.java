@@ -24,6 +24,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -61,12 +62,17 @@ public final class ActuatorOpenApiGenerator {
             .run();
     try {
       final Integer port = context.getEnvironment().getProperty("local.server.port", Integer.class);
+      if (port == null) {
+        throw new IllegalStateException("Embedded server did not report a local.server.port");
+      }
+      final HttpClient client =
+          HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
       final HttpRequest request =
           HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v3/api-docs.yaml"))
+              .timeout(Duration.ofSeconds(10))
               .GET()
               .build();
-      final HttpResponse<String> response =
-          HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+      final HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
       final String spec = response.body();
 
       if (response.statusCode() != 200 || spec == null || spec.isBlank()) {
