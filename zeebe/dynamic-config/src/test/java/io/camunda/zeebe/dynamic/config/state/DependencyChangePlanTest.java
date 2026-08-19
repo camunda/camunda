@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.PlannedOperation;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
@@ -46,11 +46,11 @@ final class DependencyChangePlanTest {
     @Test
     void shouldMakeEveryUnblockedOperationRunnableAtOnce() {
       // given — three brokers with nothing depending on anything
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       builder.add(op(0, 1));
       builder.add(op(1, 1));
       builder.add(op(2, 1));
-      final var plan = builder.build(PLAN_ID);
+      final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // when / then — every broker is eligible immediately; that is broker parallelism, with no
       // container expressing it
@@ -62,11 +62,11 @@ final class DependencyChangePlanTest {
     @Test
     void shouldOfferSeveralPartitionsOfOneBrokerAtOnce() {
       // given — one broker, three partitions, no edges between them
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       builder.add(op(0, 1));
       builder.add(op(0, 2));
       builder.add(op(0, 3));
-      final var plan = builder.build(PLAN_ID);
+      final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // when / then — partition parallelism falls out of the same absence of edges, with no extra
       // level of nesting and no second eligibility tier
@@ -77,10 +77,10 @@ final class DependencyChangePlanTest {
     void shouldNotOfferAnOperationUntilItsDependencyCompletes() {
       // given — the shape of bootstrap-then-join: different members, so disjoint write sets, but a
       // real ordering requirement that only the declared edge captures
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var bootstrap = builder.add(op(0, 1));
       final var join = builder.add(op(1, 1), Set.of(bootstrap));
-      var plan = builder.build(PLAN_ID);
+      var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // then — member 1 waits
       assertThat(plan.runnableFor(member(0))).containsOnlyKeys(bootstrap);
@@ -100,11 +100,11 @@ final class DependencyChangePlanTest {
     void shouldWaitForEveryDependencyNotJustOne() {
       // given — a join-point: one operation gathering several predecessors, which is how a barrier
       // is expressed without a barrier primitive
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var first = builder.add(op(0, 1));
       final var second = builder.add(op(1, 1));
       final var after = builder.add(op(2, 1), Set.of(first, second));
-      var plan = builder.build(PLAN_ID);
+      var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // when — only one predecessor completes
       plan = plan.completeOperation(first);
@@ -123,10 +123,10 @@ final class DependencyChangePlanTest {
     @Test
     void shouldRefuseToCompleteAnOperationThatIsStillBlocked() {
       // given
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var first = builder.add(op(0, 1));
       final var second = builder.add(op(1, 1), Set.of(first));
-      final var plan = builder.build(PLAN_ID);
+      final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // when / then — a broker must never be able to record work it was not yet allowed to start
       assertThatThrownBy(() -> plan.completeOperation(second))
@@ -137,9 +137,9 @@ final class DependencyChangePlanTest {
     @Test
     void shouldTreatCompletingTwiceAsANoOp() {
       // given — appliers are idempotent and may be retried, so a repeat completion must not throw
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var only = builder.add(op(0, 1));
-      final var plan = builder.build(PLAN_ID).completeOperation(only);
+      final var plan = DependencyChangePlan.init(PLAN_ID, builder.build()).completeOperation(only);
 
       // when / then
       assertThat(plan.completeOperation(only)).isEqualTo(plan);
@@ -193,7 +193,7 @@ final class DependencyChangePlanTest {
           new PlannedOperation(op(1, 1), new java.util.TreeSet<>(Set.of(OperationId.of(0)))));
 
       // when / then
-      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, operations))
+      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, OperationGraph.of(operations)))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("cycle");
     }
@@ -207,9 +207,9 @@ final class DependencyChangePlanTest {
           new PlannedOperation(op(0, 1), new java.util.TreeSet<>(Set.of(OperationId.of(99)))));
 
       // when / then
-      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, operations))
+      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, OperationGraph.of(operations)))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("not part of the plan");
+          .hasMessageContaining("not part of the graph");
     }
   }
 
@@ -219,10 +219,10 @@ final class DependencyChangePlanTest {
     @Test
     void shouldStayPendingUntilEveryOperationIsDone() {
       // given
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var first = builder.add(op(0, 1));
       final var second = builder.add(op(1, 1));
-      var plan = builder.build(PLAN_ID);
+      var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
 
       // when / then
       assertThat(plan.hasPendingChanges()).isTrue();
@@ -237,10 +237,13 @@ final class DependencyChangePlanTest {
       // given — any broker may observe the plan complete, so the timestamp has to be a function of
       // converged state. A wall-clock read would give two brokers values that never reconcile,
       // because neither sub-configuration merge reconciles lastChange at equal versions.
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var first = builder.add(op(0, 1));
       final var second = builder.add(op(1, 1));
-      final var plan = builder.build(PLAN_ID).completeOperation(first).completeOperation(second);
+      final var plan =
+          DependencyChangePlan.init(PLAN_ID, builder.build())
+              .completeOperation(first)
+              .completeOperation(second);
 
       // when — two brokers each derive the completed change independently
       final var byOne = plan.toCompletedChange();
@@ -258,10 +261,10 @@ final class DependencyChangePlanTest {
     @Test
     void shouldKeepBothBrokersCompletionsWhenTheyMeet() {
       // given — two brokers that each ran their own operation and know nothing of the other's
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var mine = builder.add(op(0, 1));
       final var theirs = builder.add(op(1, 1));
-      final var base = builder.build(PLAN_ID);
+      final var base = DependencyChangePlan.init(PLAN_ID, builder.build());
       final var byOne = base.completeOperation(mine);
       final var byAnother = base.completeOperation(theirs);
 
@@ -277,10 +280,10 @@ final class DependencyChangePlanTest {
     @Test
     void shouldBeCommutativeAndIdempotent() {
       // given
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var mine = builder.add(op(0, 1));
       final var theirs = builder.add(op(1, 1));
-      final var base = builder.build(PLAN_ID);
+      final var base = DependencyChangePlan.init(PLAN_ID, builder.build());
       final var byOne = base.completeOperation(mine);
       final var byAnother = base.completeOperation(theirs);
 
@@ -293,9 +296,9 @@ final class DependencyChangePlanTest {
     @Test
     void shouldKeepTheEarliestTimestampForTheSameOperation() {
       // given — the same operation completed twice, as happens when a broker retries or restarts
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var only = builder.add(op(0, 1));
-      final var base = builder.build(PLAN_ID);
+      final var base = DependencyChangePlan.init(PLAN_ID, builder.build());
       final var first = base.completeOperation(only);
       final var second = base.completeOperation(only);
 
@@ -317,7 +320,7 @@ final class DependencyChangePlanTest {
 
     /** preRestore(m,p) → restore(m,p); modeChange(m) after all of m's restores. */
     private DependencyChangePlan restorePlan(final int brokers, final int partitionsPerBroker) {
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       for (int m = 0; m < brokers; m++) {
         final var restoresOfMember = new java.util.HashSet<OperationId>();
         for (int p = 1; p <= partitionsPerBroker; p++) {
@@ -329,7 +332,7 @@ final class DependencyChangePlanTest {
         }
         builder.add(new DeleteHistoryOperation(member(m)), restoresOfMember);
       }
-      return builder.build(PLAN_ID);
+      return DependencyChangePlan.init(PLAN_ID, builder.build());
     }
 
     @Test
@@ -384,12 +387,12 @@ final class DependencyChangePlanTest {
     @Test
     void shouldRejectTwoUnorderedOperationsThatWriteTheSameState() {
       // given — two brokers both force-reconfiguring, which conflicts with everything in the group
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       builder.add(new UpdateIncarnationNumberOperation(member(0)));
       builder.add(new UpdateIncarnationNumberOperation(member(1)));
 
       // when / then — no edge between them, and both write sub-configuration state
-      assertThatThrownBy(() -> builder.build(PLAN_ID))
+      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, builder.build()))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("write overlapping state");
     }
@@ -397,12 +400,12 @@ final class DependencyChangePlanTest {
     @Test
     void shouldAllowThemOnceADependencyOrdersThem() {
       // given — the same pair, now explicitly sequenced
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       final var first = builder.add(new UpdateIncarnationNumberOperation(member(0)));
       builder.add(new UpdateIncarnationNumberOperation(member(1)), Set.of(first));
 
       // when / then
-      assertThat(builder.build(PLAN_ID).operations()).hasSize(2);
+      assertThat(DependencyChangePlan.init(PLAN_ID, builder.build()).operations()).hasSize(2);
     }
 
     @Test
@@ -410,12 +413,12 @@ final class DependencyChangePlanTest {
       // given — two write-nothing operations on the same member. Disjointness permits them, which
       // is correct: the check cannot see their real ordering, so declaring an edge is the
       // transformer's job. This pins the documented limit of the safety net.
-      final var builder = DependencyChangePlan.builder();
+      final var builder = OperationGraph.builder();
       builder.add(new DeleteHistoryOperation(member(0)));
       builder.add(new DeleteHistoryOperation(member(0)));
 
       // when / then — accepted, and both runnable at once
-      final var plan = builder.build(PLAN_ID);
+      final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
       assertThat(plan.runnableFor(member(0))).hasSize(2);
     }
   }

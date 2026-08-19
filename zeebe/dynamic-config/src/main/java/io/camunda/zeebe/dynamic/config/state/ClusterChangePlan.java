@@ -28,7 +28,8 @@ public record ClusterChangePlan(
     Status status,
     Instant startedAt,
     List<CompletedOperation> completedOperations,
-    List<ClusterConfigurationChangeOperation> pendingOperations) {
+    List<ClusterConfigurationChangeOperation> pendingOperations)
+    implements ChangePlan {
 
   private static final long RESTORE_CHANGE_ID = -2L;
 

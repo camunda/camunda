@@ -101,6 +101,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
   private final Map<Scope, ScopeReconciler> scopeReconcilers = new HashMap<>();
+  // Separate from scopeReconcilers: a graph runs several of a group's operations at once, so it
+  // cannot share ScopeReconciler's single-in-flight-operation contract. Keyed by group id, since a
+  // graph change only ever belongs to a partition group.
+  private final Map<String, GraphScopeReconciler> graphReconcilers = new HashMap<>();
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
   private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
   private final int completedChangeHistoryLimit;
@@ -354,6 +358,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           scopeReconcilers.clear();
+          graphReconcilers.clear();
           planAdvancers.clear();
         });
   }
@@ -380,6 +385,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           partitionGroupChangeAppliers.put(groupId, appliers);
           scopeReconcilers.computeIfAbsent(
               new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
+          graphReconcilers.computeIfAbsent(groupId, ignored -> newGraphScopeReconciler(groupId));
           reconcile(persistedCurrentConfiguration.getConfiguration());
         });
   }
@@ -440,6 +446,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                               "Failed to process cluster configuration received via gossip. '{}'",
                               receivedConfiguration,
                               error));
+            } else {
+              // The merge changed nothing locally, so reconcile() is not reached — but a graph
+              // change may still be drained and unfinished, most plausibly because an earlier
+              // attempt to finish it failed to persist. Retrying on every gossip round rides the
+              // existing sync cadence and needs no timer of its own.
+              maybeCompleteGraphChanges(merged);
             }
           } catch (final Exception e) {
             LOG.warn(
@@ -498,6 +510,46 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       planAdvancers.keySet().retainAll(pendingIds);
     }
     scopeReconcilers.values().forEach(ScopeReconciler::reconcile);
+    graphReconcilers.values().forEach(GraphScopeReconciler::reconcile);
+    maybeCompleteGraphChanges(config);
+  }
+
+  /**
+   * Finishes any graph change whose operations have all completed.
+   *
+   * <p>Runs on every broker with no coordinator check: completion is a pure function of converged
+   * state, so several brokers computing it agree. It must also run when a gossip merge changes
+   * nothing locally (see {@link #onGossipReceivedCurrent}) — otherwise a completion whose persist
+   * failed is never retried once the cluster converges, and the change sits drained but unfinished
+   * with nothing left to perturb it.
+   */
+  private void maybeCompleteGraphChanges(final CurrentClusterConfiguration config) {
+    final var drained =
+        config.partitionGroups().values().stream()
+            .anyMatch(
+                group ->
+                    group.pendingGraphChanges().filter(plan -> !plan.hasPendingChanges()).isPresent());
+    if (!drained) {
+      return;
+    }
+    updateMultiConfiguration(ClusterConfigurationManagerImpl::completeDrainedGraphChanges)
+        .onComplete(
+            (ignore, completionError) -> {
+              if (completionError != null) {
+                LOG.warn("Failed to complete a drained configuration change", completionError);
+              }
+            });
+  }
+
+  private static CurrentClusterConfiguration completeDrainedGraphChanges(
+      final CurrentClusterConfiguration config) {
+    var result = config;
+    for (final String groupId : List.copyOf(config.partitionGroups().keySet())) {
+      result =
+          result.updatePartitionGroupConfig(
+              groupId, PartitionGroupConfiguration::completeGraphChangeIfDrained);
+    }
+    return result;
   }
 
   private PlanAdvancer newPlanAdvancer(final long planId) {
@@ -527,6 +579,19 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return new ScopeReconciler(
         new GroupScopeOperations(groupId),
         () -> persistedCurrentConfiguration.getConfiguration(),
+        this::updateLocalCurrentConfiguration,
+        executor,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay);
+  }
+
+  private GraphScopeReconciler newGraphScopeReconciler(final String groupId) {
+    return new GraphScopeReconciler(
+        groupId,
+        localMemberId,
+        () -> persistedCurrentConfiguration.getConfiguration(),
+        () -> partitionGroupChangeAppliers.get(groupId),
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
