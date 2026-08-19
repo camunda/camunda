@@ -138,52 +138,6 @@ public interface UpdateAgentInstanceCommandStep1 {
     UpdateAgentInstanceCommandStep2 history(List<HistoryItem> history);
   }
 
-  /** Represents a tool available to the agent instance. */
-  interface AgentTool {
-    String getName();
-
-    String getDescription();
-
-    String getElementId();
-
-    /**
-     * Creates a tool with the given name and no description or element ID.
-     *
-     * @param name the tool name. Must not be blank.
-     * @return a new {@link AgentTool}
-     */
-    static AgentTool of(final String name) {
-      return of(name, null, null);
-    }
-
-    /**
-     * Creates a tool with the given name, description, and element ID.
-     *
-     * @param name the tool name. Must not be blank.
-     * @param description optional description of the tool
-     * @param elementId optional ID of the BPMN element providing this tool
-     * @return a new {@link AgentTool}
-     */
-    static AgentTool of(final String name, final String description, final String elementId) {
-      return new AgentTool() {
-        @Override
-        public String getName() {
-          return name;
-        }
-
-        @Override
-        public String getDescription() {
-          return description;
-        }
-
-        @Override
-        public String getElementId() {
-          return elementId;
-        }
-      };
-    }
-  }
-
   /**
    * A snapshot of the agent instance's operational limits, as recorded on a CONFIGURATION history
    * item.
