@@ -216,14 +216,10 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
   }
 
-  // Bridges a legacy issuer source into issuer-uri. The key is deprecated either way, so the
-  // warning
-  // is emitted whenever it is set, but the value only feeds issuer-uri when the host has not
-  // configured the OIDC endpoints itself. An issuer-uri makes CSL resolve the endpoints through
-  // discovery, dialing the browser-facing issuer from inside the pod; explicit
-  // authorization-uri/jwk-set-uri/token-uri exist precisely to avoid that, for instance to keep the
-  // back-channel on an in-cluster URL, or where the pod's truststore cannot validate the public
-  // certificate. Deriving an issuer-uri on top would silently override that choice.
+  // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
+  // to CSL: an issuer-uri makes CSL discover them by dialing the browser-facing issuer from inside
+  // the pod, which is what explicit endpoints exist to avoid. The key is deprecated either way, so
+  // the warning is emitted whenever it is set.
   private void mapIssuerUri(
       final ConfigurableEnvironment env,
       final Map<String, Object> derived,
@@ -238,10 +234,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     }
   }
 
-  // True when the host configured the OIDC endpoints directly instead of leaving CSL to discover
-  // them from an issuer-uri. All three are required: CSL accepts either an issuer-uri or the
-  // complete trio, so withholding the derived issuer-uri from a partial set would turn a working
-  // startup into a ClientRegistration failure.
+  // All three are required: CSL accepts an issuer-uri or the complete trio, so withholding the
+  // derived issuer-uri from a partial set would turn a working startup into a registration failure.
   private static boolean hasExplicitOidcEndpoints(final ConfigurableEnvironment env) {
     return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
         && !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
