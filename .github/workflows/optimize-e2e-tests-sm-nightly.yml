@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      branches:
+        description: 'JSON array of branches to run against, e.g. ["main"] or ["my-feature-branch"]'
+        required: false
+        default: '["main", "stable/8.8", "stable/8.9"]'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [main, stable/8.8, stable/8.9]
+        branch: ${{ fromJSON(inputs.branches || '["main", "stable/8.8", "stable/8.9"]') }}
     permissions:
       contents: read
       id-token: write # for authenticating with GCP
