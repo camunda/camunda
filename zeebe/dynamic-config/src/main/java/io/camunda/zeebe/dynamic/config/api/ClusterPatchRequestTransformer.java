@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
@@ -69,19 +67,15 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       }
     }
     // The replication factor of a zone-aware cluster follows from its zone specs, so it cannot be
-    // set directly. Checked here as well as in operations(), because the new-model coordinator
-    // plans through phases() alone and never calls operations() at all — and checked before
-    // anything else that could plan, in the same order operations() checks it, so that a request
-    // combining a replication factor with a membership change is still answered with this rather
-    // than with whatever the zone-aware distributor raises about the resulting replica sum.
+    // set directly. Checked before anything else that could plan, so that a request combining a
+    // replication factor with a membership change is answered with this rather than with whatever
+    // the zone-aware distributor raises about the resulting replica sum.
     if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
       return Either.left(
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));
     }
     if (changesMembership) {
-      // Checked here as well as in operations(), because the new-model coordinator plans through
-      // phases() alone and would otherwise admit a self-contradicting request.
       if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
         return Either.left(
             new InvalidRequest(
@@ -90,7 +84,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       }
       // Membership has no tenant dimension, but the partitions it moves do: every tenant's
       // partitions have to be redistributed over the new member set, not just the default
-      // tenant's. ScaleRequestTransformer plans that, the same way operations() delegates to it.
+      // tenant's, which is what ScaleRequestTransformer plans.
       final var newSetOfMembers =
           new HashSet<>(clusterConfiguration.globalConfiguration().members().keySet());
       newSetOfMembers.addAll(membersToAdd);
@@ -114,33 +108,5 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     }
     return PartitionGroupScalingPhases.phases(
         groupId, clusterConfiguration, newPartitionCount, newReplicationFactor);
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    // Changing the replication factor on a zone-aware cluster requires adjusting zone specs,
-    // which is not yet supported.
-    // !isNotZoneAware is required as not a single broker can be zoned.
-    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
-      return Either.left(
-          new InvalidRequest(
-              "Changing the replication factor is not supported on zone-aware clusters."));
-    }
-
-    // if membersToAdd and membersToRemove have common items, reject the request
-    if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
-      return Either.left(
-          new ClusterConfigurationRequestFailedException.InvalidRequest(
-              new IllegalArgumentException(
-                  "Cannot add and remove the same member in the same request")));
-    }
-
-    final var newSetOfMembers = new HashSet<>(clusterConfiguration.members().keySet());
-    newSetOfMembers.addAll(membersToAdd);
-    newSetOfMembers.removeAll(membersToRemove);
-
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
-        .operations(clusterConfiguration);
   }
 }

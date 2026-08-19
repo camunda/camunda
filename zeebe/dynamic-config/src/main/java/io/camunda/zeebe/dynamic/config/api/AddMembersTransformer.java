@@ -10,10 +10,11 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
 import java.util.List;
@@ -27,11 +28,15 @@ public class AddMembersTransformer implements ConfigurationChangeRequest {
     this.members = members;
   }
 
+  /**
+   * One global phase joining the brokers. Joining a broker is cluster-wide and places nothing on
+   * it, so there is no per-tenant work to plan and every physical tenant is unaffected until a
+   * later request puts partitions there.
+   */
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    return joins(clusterConfiguration.members().keySet(), clusterConfiguration.isFullyZoneAware())
-        .map(List::<ClusterConfigurationChangeOperation>copyOf);
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return joins(configuration.getMembers(), configuration.isFullyZoneAware())
+        .map(joins -> joins.isEmpty() ? List.of() : List.of(new GlobalPhase(joins)));
   }
 
   /**

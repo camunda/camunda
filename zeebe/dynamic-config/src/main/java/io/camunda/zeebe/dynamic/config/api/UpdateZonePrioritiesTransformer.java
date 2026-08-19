@@ -9,8 +9,6 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -53,21 +51,6 @@ public final class UpdateZonePrioritiesTransformer implements ConfigurationChang
         .flatMap(
             newConfig ->
                 new UpdatePartitionDistributionTransformer(newConfig).phases(configuration));
-  }
-
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    return reprioritized(currentConfiguration.partitionDistributorConfig())
-        .flatMap(
-            newConfig ->
-                new UpdatePartitionDistributionTransformer(newConfig)
-                    .operations(currentConfiguration));
   }
 
   /**

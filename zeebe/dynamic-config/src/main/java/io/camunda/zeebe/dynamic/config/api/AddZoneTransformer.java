@@ -10,8 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
@@ -54,11 +52,9 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
    * the re-included zone layout to {@link
    * UpdatePartitionDistributionTransformer#phases(CurrentClusterConfiguration)}.
    *
-   * <p>The brokers have to join before any partition can land on them, so their joins are folded
-   * into the leading global phase of that plan — the one that persists the layout — rather than
-   * emitted as a phase of their own. That is the same plan {@code toPhases} derives from the flat
-   * operation list {@link #operations(ClusterConfiguration)} produces, where the joins and the
-   * layout are one uninterrupted run of global operations.
+   * <p>The brokers have to join before any partition can land on them, and the layout has to be
+   * persisted before a partition placed by the new distributor is applied, so both are folded into
+   * the leading global phase of that plan rather than emitted as a phase of their own.
    */
   @Override
   public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
@@ -72,37 +68,6 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
                             new UpdatePartitionDistributionTransformer(newConfig, brokers)
                                 .phases(configuration)
                                 .map(phases -> withJoinsFirst(joins, phases))));
-  }
-
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentConfiguration) {
-    return zoneAddedConfig(currentConfiguration.partitionDistributorConfig())
-        .flatMap(
-            newConfig ->
-                // Join the returning brokers, then reuse the shared distribution transformer to
-                // persist the new config and reassign partitions over the current members plus the
-                // returning brokers.
-                new AddMembersTransformer(brokers)
-                    .operations(currentConfiguration)
-                    .flatMap(
-                        addMembersOps ->
-                            new UpdatePartitionDistributionTransformer(newConfig, brokers)
-                                .operations(currentConfiguration)
-                                .map(
-                                    distributionOps -> {
-                                      final var allOps =
-                                          new ArrayList<ClusterConfigurationChangeOperation>(
-                                              addMembersOps.size() + distributionOps.size());
-                                      allOps.addAll(addMembersOps);
-                                      allOps.addAll(distributionOps);
-                                      return allOps;
-                                    })));
   }
 
   private static List<Phase> withJoinsFirst(

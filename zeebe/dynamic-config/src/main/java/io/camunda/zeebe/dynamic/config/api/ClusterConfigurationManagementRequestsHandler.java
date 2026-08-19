@@ -25,7 +25,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
@@ -101,14 +100,6 @@ public final class ClusterConfigurationManagementRequestsHandler
             leavePartitionRequest.memberId(),
             leavePartitionRequest.partitionId(),
             leavePartitionRequest.physicalTenantId()));
-  }
-
-  @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> reassignPartitions(
-      final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return handleRequest(
-        reassignPartitionsRequest.dryRun(),
-        new PartitionReassignRequestTransformer(reassignPartitionsRequest.members()));
   }
 
   @Override

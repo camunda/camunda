@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -55,7 +56,7 @@ class ForceScaleDownRequestTransformerTest {
         new ForceScaleDownRequestTransformer(membersToRetain, id0);
 
     // when
-    final var result = forceConfigureTransformer.operations(currentTopology);
+    final var result = plannedOperations(forceConfigureTransformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -76,7 +77,7 @@ class ForceScaleDownRequestTransformerTest {
         new ForceScaleDownRequestTransformer(membersToRetain, id0);
 
     // when
-    final var result = forceConfigureTransformer.operations(currentTopology);
+    final var result = plannedOperations(forceConfigureTransformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -91,7 +92,7 @@ class ForceScaleDownRequestTransformerTest {
         new ForceScaleDownRequestTransformer(membersToRetain, id0);
 
     // when
-    final var result = forceConfigureTransformer.operations(currentTopology);
+    final var result = plannedOperations(forceConfigureTransformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -100,22 +101,6 @@ class ForceScaleDownRequestTransformerTest {
 
   @Nested
   class Phases {
-
-    @Test
-    void shouldPlanTheSameChangeAsTheLegacyPath() {
-      // given — a cluster with a single physical tenant, which is what the legacy path can express
-      final var transformer = new ForceScaleDownRequestTransformer(Set.of(id0, id2), id0);
-
-      // when
-      final var phases =
-          transformer.phases(CurrentClusterConfiguration.fromLegacy(currentTopology));
-
-      // then
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(
-              CurrentClusterConfiguration.toPhases(transformer.operations(currentTopology).get()));
-    }
 
     /**
      * The brokers are gone for every tenant at once, so every tenant's partitions have to be handed

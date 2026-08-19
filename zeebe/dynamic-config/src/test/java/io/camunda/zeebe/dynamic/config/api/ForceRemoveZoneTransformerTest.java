@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -66,7 +67,7 @@ final class ForceRemoveZoneTransformerTest {
     final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
 
     // when
-    final var result = new ForceRemoveZoneTransformer(ZONE_B).operations(currentTopology);
+    final var result = plannedOperations(new ForceRemoveZoneTransformer(ZONE_B), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -94,7 +95,8 @@ final class ForceRemoveZoneTransformerTest {
             .setPartitionDistributorConfig(new RoundRobinConfig());
 
     // when
-    final var result = new ForceRemoveZoneTransformer(ZONE_A).operations(roundRobinTopology);
+    final var result =
+        plannedOperations(new ForceRemoveZoneTransformer(ZONE_A), roundRobinTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -109,7 +111,7 @@ final class ForceRemoveZoneTransformerTest {
     final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
 
     // when
-    final var result = new ForceRemoveZoneTransformer(ZONE_C).operations(currentTopology);
+    final var result = plannedOperations(new ForceRemoveZoneTransformer(ZONE_C), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -129,7 +131,7 @@ final class ForceRemoveZoneTransformerTest {
             .setPartitionDistributorConfig(ghostZoneConfig);
 
     // when
-    final var result = new ForceRemoveZoneTransformer(ZONE_B).operations(currentTopology);
+    final var result = plannedOperations(new ForceRemoveZoneTransformer(ZONE_B), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -145,7 +147,7 @@ final class ForceRemoveZoneTransformerTest {
     final var currentTopology = buildTopology(singleZoneConfig, Set.of(ZONE_A_0));
 
     // when
-    final var result = new ForceRemoveZoneTransformer(ZONE_A).operations(currentTopology);
+    final var result = plannedOperations(new ForceRemoveZoneTransformer(ZONE_A), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -159,21 +161,6 @@ final class ForceRemoveZoneTransformerTest {
 
     private static final ZoneAwareConfig SURVIVING_CONFIG =
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
-
-    @Test
-    void shouldPlanTheSameChangeAsTheLegacyPath() {
-      // given — a cluster with a single physical tenant, which is what the legacy path can express
-      final var topology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
-      final var transformer = new ForceRemoveZoneTransformer(ZONE_B);
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(topology));
-
-      // then
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(topology).get()));
-    }
 
     /**
      * A zone fails over for the whole cluster, so every tenant's partitions have to be handed to

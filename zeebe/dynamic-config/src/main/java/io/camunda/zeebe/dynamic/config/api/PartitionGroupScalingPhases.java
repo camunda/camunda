@@ -45,20 +45,18 @@ import java.util.stream.Stream;
  * <p>Partitions are distributed across brokers considering every physical tenant's partitions at
  * once, not just those of the tenant being scaled: a tenant scaled on its own would be placed as if
  * the brokers held nothing else, and would pile onto brokers that are already busy with another
- * tenant's partitions. This is why the change cannot be planned through {@code
- * ConfigurationChangeRequest#operations(ClusterConfiguration)} — the legacy configuration that
- * takes projects a single partition group, so a distribution computed from it can only ever see the
- * partitions of the group being scaled. The replication factor is why this matters even when no
- * partition count changes: it is a cluster-wide setting, so it has to reach every group's
+ * tenant's partitions. This is why the placement is computed from the whole {@link
+ * CurrentClusterConfiguration} rather than from one group: a distribution computed from a single
+ * group can only ever see that group's partitions. The replication factor is why this matters even
+ * when no partition count changes: it is a cluster-wide setting, so it has to reach every group's
  * partitions rather than only the default group's.
  *
  * <p>The distribution itself is the cluster's configured {@link
- * io.camunda.zeebe.dynamic.config.PartitionDistributor} — the same round-robin (or zone-aware) one
- * {@code PartitionReassignRequestTransformer} already applies, only over every group's partitions
- * rather than one group's. It computes a placement from scratch, so scaling one tenant can also
- * relocate partitions of another; a {@code PartitionReassigner} that reaches a comparable balance
- * while moving fewer existing partitions can replace this one call without changing anything else
- * here.
+ * io.camunda.zeebe.dynamic.config.PartitionDistributor}, the round-robin or zone-aware one, applied
+ * over every group's partitions at once. It computes a placement from scratch, so scaling one
+ * tenant can also relocate partitions of another; a {@code PartitionReassigner} that reaches a
+ * comparable balance while moving fewer existing partitions can replace this one call without
+ * changing anything else here.
  *
  * <p>{@link PartitionReassignmentOperationsGenerator} turns the resulting distribution into
  * operations per group, emitting them only where a partition's placement actually changed.
@@ -224,9 +222,8 @@ final class PartitionGroupScalingPhases {
    * a distribution is computed. What the distributor itself rejects — a placement it cannot produce
    * for these members and zones — surfaces separately, as the {@code RuntimeException} it raises.
    *
-   * <p>Both bounds on the replication factor are checked here rather than left to the distributor
-   * so that the operator sees why the request is impossible, with the same wording {@code
-   * PartitionReassignRequestTransformer} answers with.
+   * <p>Both bounds on the replication factor are checked here rather than left to the distributor,
+   * so that the operator sees why the request is impossible.
    *
    * @return the rejection to answer with, or empty if the request can be planned
    */
@@ -295,8 +292,6 @@ final class PartitionGroupScalingPhases {
    * Wraps the scaled group's partition operations in the three {@code ScaleUpOperation}s that drive
    * the engine's side of a scale-up: the engine is told the new partition count before any new
    * partition is bootstrapped, and redistribution and relocation are awaited once they all are.
-   * Mirrors the ordering {@code PartitionReassignRequestTransformer} produces for the legacy
-   * single-group model.
    *
    * <p>All three name the cluster configuration coordinator rather than a member of the scaled
    * group. They do not act on a local partition — they drive the group's engine through a

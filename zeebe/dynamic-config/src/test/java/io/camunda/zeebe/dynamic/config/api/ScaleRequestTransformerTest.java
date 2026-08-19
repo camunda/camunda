@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -61,34 +62,12 @@ import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class ScaleRequestTransformerTest {
 
   private static final String TENANT_A = "tenant-a";
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
-
-  static List<Arguments> singleTenantScenarios() {
-    final var two = members(2);
-    final var three = members(3);
-    return List.of(
-        Arguments.of("scale up", two, three, Optional.empty(), Optional.empty()),
-        Arguments.of("scale down", three, two, Optional.empty(), Optional.empty()),
-        Arguments.of(
-            "add and remove",
-            three,
-            Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("3")),
-            Optional.empty(),
-            Optional.empty()),
-        Arguments.of("unchanged members", three, three, Optional.empty(), Optional.empty()),
-        Arguments.of(
-            "scale up with replication factor", two, three, Optional.of(2), Optional.empty()),
-        Arguments.of("scale up with partition count", two, three, Optional.empty(), Optional.of(5)),
-        Arguments.of("scale up with both", two, three, Optional.of(2), Optional.of(5)));
-  }
 
   private static Set<MemberId> members(final int count) {
     return IntStream.range(0, count)
@@ -211,7 +190,7 @@ class ScaleRequestTransformerTest {
 
     // when
     final var operationsEither =
-        new ScaleRequestTransformer(newMembers).operations(oldClusterTopology);
+        plannedOperations(new ScaleRequestTransformer(newMembers), oldClusterTopology);
 
     // then
     EitherAssert.assertThat(operationsEither)
@@ -257,7 +236,7 @@ class ScaleRequestTransformerTest {
 
     // when
     final var operations =
-        new ScaleRequestTransformer(newMembers).operations(oldClusterTopology).get();
+        plannedOperations(new ScaleRequestTransformer(newMembers), oldClusterTopology).get();
 
     // apply operations to generate new topology
     final ClusterConfiguration newTopology =
@@ -351,7 +330,7 @@ class ScaleRequestTransformerTest {
     final var transformer =
         new ScaleRequestTransformer(
             getClusterMembers(clusterSize), Optional.of(3), Optional.of(desiredPartitionCount));
-    final var operations = transformer.operations(config);
+    final var operations = plannedOperations(transformer, config);
     if (desiredPartitionCount < currentPartitionCount) {
       EitherAssert.assertThat(operations).isLeft();
     } else {
@@ -364,46 +343,6 @@ class ScaleRequestTransformerTest {
 
   SortedSet<Integer> partitionsInRange(final int from, final int to) {
     return new TreeSet<>(IntStream.range(from, to).boxed().toList());
-  }
-
-  @Nested
-  class PhasesOnASingleTenantCluster {
-
-    /**
-     * A single-tenant cluster must plan exactly the change it planned before {@code phases()}
-     * existed, so this compares the two directly: the phases the new path builds against the phases
-     * {@code toPhases} derives from the legacy flat operation list. Asserting equality rather than
-     * re-deriving an expected plan is what makes it a regression test — any divergence in operation
-     * content, ordering, or phase boundaries fails it.
-     */
-    @ParameterizedTest(name = "{0}")
-    @MethodSource(
-        "io.camunda.zeebe.dynamic.config.api.ScaleRequestTransformerTest#singleTenantScenarios")
-    void shouldPlanTheSameChangeAsTheLegacyPath(
-        final String name,
-        final Set<MemberId> oldMembers,
-        final Set<MemberId> newMembers,
-        final Optional<Integer> newReplicationFactor,
-        final Optional<Integer> newPartitionCount) {
-      // given
-      final var legacy =
-          ConfigurationUtil.getClusterConfigFrom(
-              new RoundRobinPartitionDistributor()
-                  .distributePartitions(oldMembers, sortedPartitionIds(3), 1),
-              DynamicPartitionConfig.init(),
-              "clusterId");
-      final var transformer =
-          new ScaleRequestTransformer(newMembers, newReplicationFactor, newPartitionCount);
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(legacy));
-
-      // then
-      final var legacyPhases =
-          CurrentClusterConfiguration.toPhases(transformer.operations(legacy).get());
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get()).isEqualTo(legacyPhases);
-    }
   }
 
   @Nested
@@ -696,9 +635,10 @@ class ScaleRequestTransformerTest {
 
       // when
       final var operations =
-          new ScaleRequestTransformer(
-                  newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-b"))
-              .operations(oldTopology)
+          plannedOperations(
+                  new ScaleRequestTransformer(
+                      newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-b")),
+                  oldTopology)
               .get();
 
       // then
@@ -805,9 +745,10 @@ class ScaleRequestTransformerTest {
 
       // when
       final var operations =
-          new ScaleRequestTransformer(
-                  newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-c"))
-              .operations(oldTopology)
+          plannedOperations(
+                  new ScaleRequestTransformer(
+                      newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-c")),
+                  oldTopology)
               .get();
 
       // then: no pre/post scaling callbacks, the new zone's brokers create their leases on startup

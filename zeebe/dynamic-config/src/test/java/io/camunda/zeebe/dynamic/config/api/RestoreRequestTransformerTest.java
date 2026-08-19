@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -108,34 +109,7 @@ final class RestoreRequestTransformerTest {
             registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
 
     // when
-    final var result = transformer.operations(ClusterConfiguration.init());
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .isInstanceOf(ConcurrentModificationException.class);
-  }
-
-  @Test
-  void shouldRejectWhenABrokerWithoutPartitionsIsStillActive() {
-    // given - memberOne holds no partition and is still active, while memberTwo holds the partition
-    // to restore and is recovering. On the legacy model recovery is a broker-wide state that every
-    // active broker enters, so memberOne having stayed behind means the cluster is not recovering
-    final var memberOne = MemberId.from("0");
-    final var memberTwo = MemberId.from("1");
-    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
-    final var topology =
-        ClusterConfiguration.init()
-            .addMember(memberOne, MemberState.initializeAsActive(Map.of()))
-            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
-    final var transformer =
-        new RestoreRequestTransformer(
-            restoreRequest(),
-            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
-
-    // when
-    final var result = transformer.operations(topology);
+    final var result = plannedOperations(transformer, ClusterConfiguration.init());
 
     // then
     EitherAssert.assertThat(result)
@@ -160,7 +134,7 @@ final class RestoreRequestTransformerTest {
             registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
 
     // when
-    final var result = transformer.operations(topology);
+    final var result = plannedOperations(transformer, topology);
 
     // then - restoring a partition still being processed elsewhere is refused
     EitherAssert.assertThat(result)
@@ -176,7 +150,7 @@ final class RestoreRequestTransformerTest {
         new RestoreRequestTransformer(restoreRequest(), new RequestValidatorRegistry());
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InternalError.class);
@@ -194,7 +168,7 @@ final class RestoreRequestTransformerTest {
                         new InvalidRequest("backupId and time range are mutually exclusive")))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result)
@@ -216,7 +190,7 @@ final class RestoreRequestTransformerTest {
                     Either.left(new IllegalArgumentException("bad request parameters")))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result)
@@ -238,7 +212,7 @@ final class RestoreRequestTransformerTest {
                     Either.left(new IllegalStateException("no common checkpoint")))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result)
@@ -259,7 +233,7 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(Either.left(new NoSuchElementException("backup not found")))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result)
@@ -280,7 +254,7 @@ final class RestoreRequestTransformerTest {
                 validatorReturning(Either.left(new RuntimeException("unexpected")))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = plannedOperations(transformer, recoveringTopology());
 
     // then
     EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InternalError.class);
@@ -302,7 +276,7 @@ final class RestoreRequestTransformerTest {
             restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
 
     // when
-    final var result = transformer.operations(topology);
+    final var result = plannedOperations(transformer, topology);
 
     // then - phase-major: all PreRestore, then all Restore, then exit recovery, then incarnation
     EitherAssert.assertThat(result).isRight();
@@ -311,37 +285,6 @@ final class RestoreRequestTransformerTest {
             new PartitionPreRestoreOperation(memberOne, 1),
             new PartitionPreRestoreOperation(memberTwo, 1),
             new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
-            new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
-            new ModeChangeOperation(memberOne, Mode.PROCESSING),
-            new ModeChangeOperation(memberTwo, Mode.PROCESSING),
-            new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
-            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-            new UpdateIncarnationNumberOperation(memberOne));
-  }
-
-  @Test
-  void shouldSkipPartitionOperationsForRecoveringMemberWithNoLocalPartitions() {
-    // given - memberOne (sorted first) has no local partitions, memberTwo has partition 1
-    final var memberOne = MemberId.from("0");
-    final var memberTwo = MemberId.from("1");
-    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
-    final var topology =
-        ClusterConfiguration.init()
-            .addMember(memberOne, MemberState.initializeAsActive(Map.of()).toRecovering())
-            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
-    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
-    final var transformer =
-        new RestoreRequestTransformer(
-            restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
-
-    // when
-    final var result = transformer.operations(topology);
-
-    // then - memberOne contributes no Pre/Restore operations but still gets the tail operations
-    EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            new PartitionPreRestoreOperation(memberTwo, 1),
             new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
             new ModeChangeOperation(memberOne, Mode.PROCESSING),
             new ModeChangeOperation(memberTwo, Mode.PROCESSING),

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration.DEFAULT_GROUP;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
@@ -70,12 +71,13 @@ final class ClusterPatchRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterPatchRequestTransformer(
+        plannedOperations(
+            new ClusterPatchRequestTransformer(
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
-            .operations(ClusterConfiguration.init());
+                patchRequest.newReplicationFactor()),
+            ClusterConfiguration.init());
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
@@ -95,12 +97,13 @@ final class ClusterPatchRequestTransformerTest {
     final var patchRequest =
         new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(1), Optional.empty(), false);
     final var result =
-        new ClusterPatchRequestTransformer(
+        plannedOperations(
+            new ClusterPatchRequestTransformer(
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
-            .operations(ClusterConfiguration.init());
+                patchRequest.newReplicationFactor()),
+            ClusterConfiguration.init());
 
     // then
     assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
@@ -249,12 +252,13 @@ final class ClusterPatchRequestTransformerTest {
 
     // when
     final var result =
-        new ClusterPatchRequestTransformer(
+        plannedOperations(
+            new ClusterPatchRequestTransformer(
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
-            .operations(oldClusterTopology);
+                patchRequest.newReplicationFactor()),
+            oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();
 

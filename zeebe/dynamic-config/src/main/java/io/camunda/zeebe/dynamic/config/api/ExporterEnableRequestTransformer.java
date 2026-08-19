@@ -9,8 +9,6 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -48,15 +46,6 @@ final class ExporterEnableRequestTransformer implements ConfigurationChangeReque
     this.exporterId = exporterId;
     this.initializeFrom = initializeFrom;
     this.physicalTenantId = physicalTenantId;
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    throw new UnsupportedOperationException(
-        "ExporterEnableRequestTransformer builds its change plan via "
-            + "phases(CurrentClusterConfiguration); the new-model coordinator path never calls "
-            + "operations(ClusterConfiguration)");
   }
 
   @Override

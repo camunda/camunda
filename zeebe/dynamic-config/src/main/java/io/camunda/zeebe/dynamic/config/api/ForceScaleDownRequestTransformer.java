@@ -7,12 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Ordering;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
@@ -53,46 +50,6 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
       final Set<MemberId> membersToRetain, final MemberId coordinator) {
     this.membersToRetain = membersToRetain;
     this.coordinator = coordinator;
-  }
-
-  /**
-   * Plans the same change as {@link #phases(CurrentClusterConfiguration)}, but for the default
-   * partition group alone. Nothing in production plans through here anymore; it is what the tests
-   * around this transformer and the two that delegate to it assert on.
-   */
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    final var unknownRetainedMember =
-        unknownRetainedMember(clusterConfiguration.members().keySet());
-    if (unknownRetainedMember.isPresent()) {
-      return Either.left(unknownRetainedMember.get());
-    }
-
-    final SortedMap<Integer, SortedSet<MemberId>> partitionsWithNewMembers =
-        survivingReplicas(
-            clusterConfiguration.members().entrySet().stream()
-                .collect(
-                    Collectors.toMap(
-                        Entry::getKey, entry -> entry.getValue().partitions().keySet())));
-
-    final var partitionsWithNoReplicas = orphanedPartitions(partitionsWithNewMembers);
-
-    if (!partitionsWithNoReplicas.isEmpty()) {
-      return Either.left(
-          new InvalidRequest(
-              String.format(
-                  "Expected to force configure and retain members '%s', but this will result in partitions '%s' having no replicas",
-                  membersToRetain, partitionsWithNoReplicas)));
-    }
-
-    // members that are not in membersToRetain
-    final var memberToRemove =
-        clusterConfiguration.members().keySet().stream()
-            .filter(m -> !membersToRetain.contains(m))
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
-
-    return generateOperations(partitionsWithNewMembers, memberToRemove);
   }
 
   /**

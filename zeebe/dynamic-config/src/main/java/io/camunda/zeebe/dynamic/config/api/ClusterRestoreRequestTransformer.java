@@ -11,8 +11,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -35,9 +33,8 @@ import java.util.Optional;
  * named tenant restores in parallel. A cluster-wide request — one naming every physical tenant of
  * the cluster — restores them all this way in a single change.
  *
- * <p>{@link #operations(ClusterConfiguration)} is the legacy single-group entry point predating
- * multi-tenant support; it only has a single, ungrouped {@link ClusterConfiguration} to work with,
- * so it continues to support a request naming exactly one physical tenant and rejects the rest.
+ * <p>A request naming no physical tenant at all plans nothing, rather than being rejected: there is
+ * no tenant whose partitions it could restore.
  */
 public final class ClusterRestoreRequestTransformer implements ConfigurationChangeRequest {
 
@@ -48,14 +45,6 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       final ClusterRestoreRequest request, final RequestValidatorRegistry registry) {
     this.request = request;
     this.registry = registry;
-  }
-
-  @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration clusterConfiguration) {
-    return singleTenantRestore()
-        .map(restore -> restore.operations(clusterConfiguration))
-        .orElseGet(() -> Either.left(clusterWideNotSupported()));
   }
 
   @Override

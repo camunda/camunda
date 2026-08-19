@@ -202,9 +202,10 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    List.of(
-                        new PartitionJoinOperation(MEMBER_0, 2, 1),
-                        new PartitionLeaveOperation(MEMBER_1, 1, 1))))
+                    CurrentClusterConfiguration.toPhases(
+                        List.of(
+                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionLeaveOperation(MEMBER_1, 1, 1)))))
         .join();
 
     // then
@@ -234,10 +235,11 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    List.of(
-                        new ModeChangeOperation(MEMBER_0, Mode.RECOVERING),
-                        new ModeChangeOperation(MEMBER_1, Mode.RECOVERING),
-                        new ModeChangeOperation(MEMBER_2, Mode.RECOVERING))))
+                    CurrentClusterConfiguration.toPhases(
+                        List.of(
+                            new ModeChangeOperation(MEMBER_0, Mode.RECOVERING),
+                            new ModeChangeOperation(MEMBER_1, Mode.RECOVERING),
+                            new ModeChangeOperation(MEMBER_2, Mode.RECOVERING)))))
         .join();
 
     // then
@@ -263,10 +265,11 @@ class ClusterConfigurationManagementIntegrationTest {
         .applyOperations(
             ignore ->
                 Either.right(
-                    List.of(
-                        new PartitionJoinOperation(MEMBER_0, 2, 1),
-                        new PartitionLeaveOperation(MEMBER_1, 1, 1),
-                        new PartitionJoinOperation(MEMBER_1, 1, 1))))
+                    CurrentClusterConfiguration.toPhases(
+                        List.of(
+                            new PartitionJoinOperation(MEMBER_0, 2, 1),
+                            new PartitionLeaveOperation(MEMBER_1, 1, 1),
+                            new PartitionJoinOperation(MEMBER_1, 1, 1)))))
         .join();
 
     // then

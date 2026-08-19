@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -79,7 +80,7 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -109,7 +110,7 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -134,7 +135,7 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(currentTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -162,7 +163,7 @@ class UpdatePartitionDistributionTransformerTest {
     final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
 
     // when
-    final var result = transformer.operations(roundRobinTopology);
+    final var result = plannedOperations(transformer, roundRobinTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -186,7 +187,7 @@ class UpdatePartitionDistributionTransformerTest {
 
     // when
     final var result =
-        new UpdatePartitionDistributionTransformer(newConfig).operations(mixedTopology);
+        plannedOperations(new UpdatePartitionDistributionTransformer(newConfig), mixedTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -204,7 +205,7 @@ class UpdatePartitionDistributionTransformerTest {
             new PartitionDistributorConfig.RoundRobinConfig());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -221,7 +222,7 @@ class UpdatePartitionDistributionTransformerTest {
         new UpdatePartitionDistributionTransformer(new PartitionDistributorConfig.FixedConfig());
 
     // when
-    final var result = transformer.operations(currentTopology);
+    final var result = plannedOperations(transformer, currentTopology);
 
     // then
     EitherAssert.assertThat(result)
@@ -235,40 +236,6 @@ class UpdatePartitionDistributionTransformerTest {
 
     private static final ZoneAwareConfig HIGHER_REPLICATION_FACTOR =
         new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500)));
-
-    /**
-     * A single-tenant cluster must plan exactly the change it planned before {@code phases()}
-     * existed, so this compares the two directly rather than re-deriving an expected plan: the
-     * phases the multi-group path builds against the phases {@code toPhases} derives from the
-     * legacy flat operation list. Any divergence in operation content, ordering, or phase
-     * boundaries fails it.
-     */
-    @Test
-    void shouldPlanTheSameReplicationFactorChangeAsTheLegacyPath() {
-      shouldPlanTheSameChangeAsTheLegacyPath(HIGHER_REPLICATION_FACTOR);
-    }
-
-    /** The layout change an operator makes to move leadership, which changes no placement. */
-    @Test
-    void shouldPlanTheSamePriorityChangeAsTheLegacyPath() {
-      shouldPlanTheSameChangeAsTheLegacyPath(
-          new ZoneAwareConfig(
-              List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000))));
-    }
-
-    private void shouldPlanTheSameChangeAsTheLegacyPath(final ZoneAwareConfig newConfig) {
-      // given
-      final var topology = buildTopology(INITIAL_CONFIG, MEMBERS);
-      final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
-
-      // when
-      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(topology));
-
-      // then
-      EitherAssert.assertThat(phases).isRight();
-      assertThat(phases.get())
-          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(topology).get()));
-    }
 
     /**
      * The replication factor of a zone-aware cluster is derived from its zone layout, so this is

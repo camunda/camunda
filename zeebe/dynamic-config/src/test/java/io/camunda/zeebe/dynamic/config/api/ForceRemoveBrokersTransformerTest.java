@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.TestChangePlan.plannedOperations;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
 import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
@@ -105,8 +106,9 @@ final class ForceRemoveBrokersTransformerTest {
 
     // when
     final var result =
-        new ForceRemoveBrokersRequestTransformer(patchRequest.membersToRemove(), id0)
-            .operations(oldClusterTopology);
+        plannedOperations(
+            new ForceRemoveBrokersRequestTransformer(patchRequest.membersToRemove(), id0),
+            oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();
 

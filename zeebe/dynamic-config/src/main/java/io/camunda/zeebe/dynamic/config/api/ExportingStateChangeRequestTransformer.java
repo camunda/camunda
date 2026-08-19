@@ -10,13 +10,20 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
+/**
+ * Plans the default physical tenant's partition group and no other. Nothing constructs this request
+ * today — no endpoint and no other transformer reaches it — so the scope has never had to be
+ * decided; a caller that wires it up on a multi-tenant cluster has to.
+ */
 public final class ExportingStateChangeRequestTransformer implements ConfigurationChangeRequest {
 
   private final ExportingState targetState;
@@ -26,7 +33,11 @@ public final class ExportingStateChangeRequestTransformer implements Configurati
   }
 
   @Override
-  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+  public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
+    return operations(configuration.toLegacyDefault()).map(CurrentClusterConfiguration::toPhases);
+  }
+
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
     // One operation per partition-owning member that is not already fully in the target state.
     // A member already converged (all its partitions in the target state) is skipped so that
