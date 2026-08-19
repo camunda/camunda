@@ -32,6 +32,7 @@ test.beforeAll(async () => {
     './resources/date_and_time_task_with_form.bpmn',
     './resources/form_with_date_and_time.form',
     './resources/number_task_with_form.bpmn',
+    './resources/number_task_with_form_by_buttons.bpmn',
     './resources/form_with_number.form',
     './resources/radio_button_task_with_form.bpmn',
     './resources/form_with_radio_button.form',
@@ -72,6 +73,7 @@ test.beforeAll(async () => {
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
     createInstances('Number_Task', 1, 2),
+    createInstances('Number_Task_By_Buttons', 1, 2),
     createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
@@ -447,7 +449,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.clickIncrementButton();
@@ -461,7 +463,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
 
