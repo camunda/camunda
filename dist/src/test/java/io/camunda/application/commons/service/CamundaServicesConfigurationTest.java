@@ -42,6 +42,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -415,6 +416,7 @@ class CamundaServicesConfigurationTest {
         new GatewayRestConfiguration(),
         mock(BrokerTopologyManager.class),
         mock(ClusterConfigurationManagementRequestSender.class),
+        mock(RebalanceRequestSender.class),
         new SimpleMeterRegistry(),
         new MockEnvironment(),
         new ManagementServices(new CamundaLicense(null)),

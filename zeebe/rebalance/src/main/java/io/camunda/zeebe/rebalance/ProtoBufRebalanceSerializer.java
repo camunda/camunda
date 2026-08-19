@@ -140,7 +140,8 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
               .setOverrides(encodeOverrides(running.overrides()))
               .setDryRun(running.dryRun())
               .setCancelRequested(running.cancelRequested())
-              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList()));
+              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList())
+              .setStartedAt(toTimestamp(running.startedAt())));
     }
     final var lastCompleted = status.lastCompleted();
     if (lastCompleted != null) {
@@ -148,7 +149,6 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
           Rebalance.CompletedRebalance.newBuilder()
               .setRebalanceId(lastCompleted.rebalanceId())
               .setOutcome(encodeOutcome(lastCompleted.outcome()))
-              .setDryRun(lastCompleted.dryRun())
               .addAllPartitions(
                   lastCompleted.partitions().stream().map(this::encodePartition).toList())
               .setStartedAt(toTimestamp(lastCompleted.startedAt()))
@@ -360,14 +360,14 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         decodeOverrides(running.getOverrides()),
         running.getDryRun(),
         running.getCancelRequested(),
-        running.getPartitionsList().stream().map(this::decodePartition).toList());
+        running.getPartitionsList().stream().map(this::decodePartition).toList(),
+        fromTimestamp(running.getStartedAt()));
   }
 
   private RebalanceStatus.Completed decodeCompleted(final Rebalance.CompletedRebalance completed) {
     return new RebalanceStatus.Completed(
         completed.getRebalanceId(),
         decodeOutcome(completed.getOutcome()),
-        completed.getDryRun(),
         completed.getPartitionsList().stream().map(this::decodePartition).toList(),
         fromTimestamp(completed.getStartedAt()),
         fromTimestamp(completed.getFinishedAt()));

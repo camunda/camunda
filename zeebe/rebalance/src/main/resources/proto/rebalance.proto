@@ -63,6 +63,7 @@ message RunningRebalance {
   bool cancelRequested = 4;
   // Empty until the rebalance has been planned.
   repeated PartitionRebalance partitions = 5;
+  google.protobuf.Timestamp startedAt = 6;
 }
 
 message CompletedRebalance {
@@ -77,10 +78,9 @@ message CompletedRebalance {
 
   uint64 rebalanceId = 1;
   RebalanceOutcome outcome = 2;
-  bool dryRun = 3;
-  repeated PartitionRebalance partitions = 4;
-  google.protobuf.Timestamp startedAt = 5;
-  google.protobuf.Timestamp finishedAt = 6;
+  repeated PartitionRebalance partitions = 3;
+  google.protobuf.Timestamp startedAt = 4;
+  google.protobuf.Timestamp finishedAt = 5;
 }
 
 message PartitionRebalance {

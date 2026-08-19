@@ -128,11 +128,11 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   public ActorFuture<Void> run(final RebalanceRun rebalance) {
     rebalance.plan(planner.plan(rebalance.configuration()));
     logPlan(rebalance);
-    publish(rebalance);
     final ActorFuture<Void> completion = executor.createFuture();
     if (rebalance.dryRun()) {
       completion.asNullable().complete(null);
     } else {
+      publish(rebalance);
       observePlanned(rebalance);
       transferFrom(rebalance, 0, completion);
     }

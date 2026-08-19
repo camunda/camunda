@@ -116,11 +116,11 @@ final class ProtoBufRebalanceSerializerTest {
                         1,
                         MemberId.from("0"),
                         MemberId.from("1"),
-                        PartitionRebalanceProgress.TRANSFERRING))),
+                        PartitionRebalanceProgress.TRANSFERRING)),
+                STARTED_AT),
             new RebalanceStatus.Completed(
                 41,
                 RebalanceOutcome.CANCELLED,
-                false,
                 List.of(PartitionRebalance.alreadyLeader("tenant-a", 2, MemberId.from("2"))),
                 STARTED_AT,
                 FINISHED_AT),
@@ -140,7 +140,7 @@ final class ProtoBufRebalanceSerializerTest {
     final var status =
         new RebalanceStatus(
             null,
-            new RebalanceStatus.Completed(7, outcome, false, List.of(), STARTED_AT, FINISHED_AT),
+            new RebalanceStatus.Completed(7, outcome, List.of(), STARTED_AT, FINISHED_AT),
             LEADERSHIP_STATUS);
 
     // when
@@ -162,7 +162,7 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT),
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
             LEADERSHIP_STATUS);
 
     // when
@@ -188,7 +188,7 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT),
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
             LEADERSHIP_STATUS);
 
     // when
@@ -208,7 +208,7 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, true, List.of(partition), STARTED_AT, FINISHED_AT),
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
             LEADERSHIP_STATUS);
 
     // when

@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -260,6 +261,35 @@ final class SequentialRebalanceRunnerTest {
     // then
     assertThat(transfers.initiated).isEmpty();
     assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.PENDING);
+  }
+
+  @Test
+  void shouldReturnTheCompletePlanForADryRunWithoutTouchingExecutionMetrics() {
+    // given
+    final var groupLeaders = leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>());
+    groupLeaders.put(1, MEMBER_2);
+    groupLeaders.put(2, MEMBER_1);
+    start(twoPartitionsConfiguration());
+    final var partitionStateGaugeBefore = partitionStateGauge(1);
+    final var partitionDurationSamplesBefore = totalPartitionDurationSamples();
+
+    // when
+    final var rebalance = planDryRun(twoPartitionsConfiguration());
+
+    // then
+    assertThat(rebalance.partitions()).hasSize(2);
+    assertThat(partitionStateGauge(1))
+        .as("a dry run must not replace the gauges left behind by a real rebalance")
+        .isEqualTo(partitionStateGaugeBefore);
+    assertThat(totalPartitionDurationSamples())
+        .as("a dry run must not record any partition-duration sample")
+        .isEqualTo(partitionDurationSamplesBefore);
+  }
+
+  private long totalPartitionDurationSamples() {
+    return registry.find("zeebe.cluster.rebalance.partition.duration").timers().stream()
+        .mapToLong(Timer::count)
+        .sum();
   }
 
   @Test

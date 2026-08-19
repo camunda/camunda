@@ -17,6 +17,7 @@ import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
+import io.camunda.service.ClusterRebalanceServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
@@ -166,6 +167,8 @@ public interface ServiceRegistry {
   ClusterRecoveryServices clusterRecoveryServices();
 
   ClusterExportingServices clusterExportingServices();
+
+  ClusterRebalanceServices clusterRebalanceServices();
 
   ManagementServices managementServices();
 }

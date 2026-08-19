@@ -104,7 +104,8 @@ final class RebalanceForwardingTest {
             new RebalanceOverrides(2048L, Duration.ofSeconds(20), 3, null), true);
     COORDINATOR.status =
         new RebalanceStatus(
-            new RebalanceStatus.Running(9, request.overrides(), true, false, List.of()),
+            new RebalanceStatus.Running(
+                9, request.overrides(), true, false, List.of(), Instant.EPOCH),
             null,
             RebalanceStatus.idle().leadershipStatus());
 
@@ -125,7 +126,6 @@ final class RebalanceForwardingTest {
             new RebalanceStatus.Completed(
                 8,
                 RebalanceOutcome.COMPLETED,
-                false,
                 List.of(PartitionRebalance.alreadyLeader("default", 1, MemberId.from("1"))),
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:05Z")),
