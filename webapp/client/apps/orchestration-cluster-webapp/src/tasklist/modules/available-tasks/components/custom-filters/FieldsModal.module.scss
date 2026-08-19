@@ -68,6 +68,48 @@
 	}
 }
 
+// DS-only — scoped via .modal, which is only ever applied when
+// featureFlags.dsTasklistUI is on (see FieldsModal.tsx's ComposedModal
+// className); Carbon's own (wider) modal keeps the two-column rules above
+// untouched at every width. Below `sm` (--breakpoint-sm, 40rem/640px) the DS
+// dialog is nearly full (mobile) viewport width, same as everywhere else in
+// this app that goes single-column below a breakpoint; at `sm` and up it
+// snaps to a fixed 400px (`sm:max-w-[400px]` on the underlying Radix
+// content) — narrower than Carbon's own modal, but wide enough for the
+// original two-column layout, so it's left untouched there. Below `sm`,
+// single column instead; every pair this grid places side by side
+// (Assignee/Status, the two date fieldsets, Task ID/Business ID) stacks.
+@media (width < 40rem) {
+	.modal .twoColumnGrid {
+		grid-template-columns: 1fr;
+
+		& > * {
+			max-width: unset;
+			min-width: 0;
+		}
+
+		// The two-column layout's right-alignment hack (offsetting by the
+		// variable row's 40px remove-button width, so column 2 lines up
+		// visually with column 1 above it) only makes sense next to a first
+		// column — moot once everything stacks into one.
+		& > .secondColumn {
+			margin-right: 0;
+			justify-self: stretch;
+		}
+
+		// .nameField/.toggle/.variableFormGroup below request `span 2`
+		// against the original two-column layout — with only one explicit
+		// column left, that span forces the grid to implicitly generate a
+		// second (empty) column just to satisfy it, undoing the
+		// single-column stack above.
+		& > .nameField,
+		& > .toggle,
+		& > .variableFormGroup {
+			grid-column: unset;
+		}
+	}
+}
+
 .nameField {
 	width: 100%;
 	grid-column-start: span 2;
@@ -93,6 +135,26 @@
 	}
 }
 
+// DS-only (see .twoColumnGrid above for the same .modal-scoping rationale).
+.modal .variableGrid {
+	// 288px was calibrated against the wider, two-column Carbon layout this
+	// grid used to share horizontal space with. Fluid fr tracks let Name/Value
+	// shrink with the (much narrower) DS dialog instead of overflowing it.
+	grid-template-columns: 1fr 1fr auto;
+
+	& .variableGridItem {
+		min-width: 0;
+	}
+
+	// Was `center`, which vertically centers the button against the row's
+	// full height — label text plus input box — landing it up near the label
+	// instead of next to the input. `end` bottom-aligns it with the input
+	// box's own edge instead, per explicit request.
+	& .variableGridRemove {
+		align-self: end;
+	}
+}
+
 .toggle {
 	grid-column-start: span 2;
 }
@@ -104,6 +166,16 @@
 
 .dateRangeFormGroup {
 	display: inline-flex;
+}
+
+// DS-only (see .twoColumnGrid above for the same .modal-scoping and
+// breakpoint rationale). Lets the From/To date pickers wrap onto their own
+// line at the narrowest widths instead of overflowing, rather than assuming
+// two fixed-width pickers always fit side by side.
+@media (width < 40rem) {
+	.modal .dateRangeFormGroup {
+		flex-wrap: wrap;
+	}
 }
 
 .datePicker {

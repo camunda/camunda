@@ -13,6 +13,15 @@
 	align-items: center;
 }
 
+// DS-only (see AdvancedStringFilter.tsx). No row-gap in the shared rule above
+// (Carbon's own label carries its own bottom margin) — the DS Text label
+// doesn't, leaving the label flush against the field row. 4px matches the
+// gap a plain DS TextInput/label pair uses (Task ID, the equivalent field
+// next to this one), so the two line up.
+.containerDS {
+	row-gap: var(--cds-spacing-02);
+}
+
 .label {
 	grid-column: 1 / -1;
 }

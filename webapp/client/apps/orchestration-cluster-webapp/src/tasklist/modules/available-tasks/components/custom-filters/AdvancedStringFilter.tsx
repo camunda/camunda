@@ -86,7 +86,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 	};
 
 	return (
-		<div className={styles.container}>
+		<div className={cn(styles.container, featureFlags.dsTasklistUI && styles.containerDS)}>
 			{/* text-sm font-medium (DS typography) vs cds--label (Carbon's own label
 			    class) — Tailwind utility classes exist in the bundle regardless of
 			    the flag, so this needs its own explicit branch: unlike components
