@@ -17,18 +17,16 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.HistoryItem;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateAgentInstanceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AgentInstanceHistoryItem;
-import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceMetricsDelta;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
@@ -119,51 +117,18 @@ public class UpdateAgentInstanceCommandImpl
   }
 
   @Override
-  public UpdateAgentInstanceCommandStep2 history(final List<HistoryItem> history) {
+  public UpdateAgentInstanceCommandStep2 history(final List<AgentInstanceHistoryItem> history) {
     ArgumentUtil.ensureNotNull("history", history);
-    final List<AgentInstanceHistoryItem> protocolHistory = new ArrayList<>(history.size());
-    for (final HistoryItem item : history) {
+    final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
+        new ArrayList<>(history.size());
+    for (final AgentInstanceHistoryItem item : history) {
       if (item == null) {
         throw new IllegalArgumentException("history must not contain null elements");
       }
-      protocolHistory.add(toProtocolHistoryItem(item));
+      protocolHistory.add(AgentInstanceHistoryMapper.toProtocolHistoryItem(item));
     }
     request.history(protocolHistory);
     return this;
-  }
-
-  private AgentInstanceHistoryItem toProtocolHistoryItem(final HistoryItem item) {
-    ArgumentUtil.ensureNotNull("historyItemId", item.getHistoryItemId());
-    if (item.getHistoryItemId().trim().isEmpty()) {
-      throw new IllegalArgumentException("historyItemId must not be blank");
-    }
-    ArgumentUtil.ensureGreaterThan("loopIteration", item.getLoopIteration(), 0);
-    ArgumentUtil.ensureNotNull("role", item.getRole());
-    ArgumentUtil.ensureNotNull("content", item.getContent());
-    ArgumentUtil.ensureNotNull("producedAt", item.getProducedAt());
-
-    final AgentInstanceHistoryRoleEnum protoRole =
-        AgentInstanceHistoryRoleEnum.fromValue(item.getRole().name());
-    if (protoRole == null) {
-      throw new IllegalArgumentException("Invalid role: " + item.getRole());
-    }
-
-    return new AgentInstanceHistoryItem()
-        .historyItemId(item.getHistoryItemId())
-        .loopIteration(item.getLoopIteration())
-        .role(protoRole)
-        .content(AgentInstanceHistoryMapper.toProtocolContent(item.getContent()))
-        .toolCalls(AgentInstanceHistoryMapper.toProtocolToolCalls(item.getToolCalls()))
-        .metrics(AgentInstanceHistoryMapper.toProtocolMetrics(item.getMetrics()))
-        .producedAt(item.getProducedAt().toString())
-        .tools(AgentInstanceHistoryMapper.toProtocolTools(item.getTools()))
-        .model(item.getModel())
-        .provider(item.getProvider())
-        .limits(AgentInstanceHistoryMapper.toProtocolLimits(item.getLimits()))
-        .systemPrompt(
-            item.getSystemPrompt() != null
-                ? AgentInstanceHistoryMapper.toProtocolContent(item.getSystemPrompt())
-                : null);
   }
 
   @Override

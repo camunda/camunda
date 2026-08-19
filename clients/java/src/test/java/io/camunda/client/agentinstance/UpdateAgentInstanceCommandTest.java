@@ -734,7 +734,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapAllConfigurationFieldsOnConfigurationHistoryItem() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .role(AgentInstanceHistoryRole.CONFIGURATION)
               .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
@@ -907,7 +907,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldAllowEmptyContentListInHistoryItem() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item = historyItem("item-1").content(Collections.emptyList());
+      final AgentInstanceHistoryItem item = historyItem("item-1").content(Collections.emptyList());
 
       // when
       client
