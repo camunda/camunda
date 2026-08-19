@@ -705,15 +705,19 @@ final class SystemContextTest {
 
   @Test
   void shouldFailWhenNonDefaultTenantPartitionCountExceedsFixedSchemeCoverage() {
-    // given – the root's fixed scheme only covers partition 1, but tenantA overrides its own
-    // cluster.partition-count above the root value, so its partition 2 is left uncovered.
+    // given – the root's fixed scheme covers partition 1 for both the default tenant and
+    // tenantA, but tenantA overrides its own cluster.partition-count above the root value, so
+    // its partition 2 is left uncovered.
     final var rootCfg = new BrokerCfg();
+    final var defaultPartition = new FixedPartitionCfg();
+    defaultPartition.setPartitionId(1);
+    defaultPartition.getNodes().add(new NodeCfg());
     final var fixedPartition = new FixedPartitionCfg();
     fixedPartition.setPartitionId(1);
     fixedPartition.setPhysicalTenantId("tenantA");
     fixedPartition.getNodes().add(new NodeCfg());
     rootCfg.getExperimental().getPartitioning().setScheme(Scheme.FIXED);
-    rootCfg.getExperimental().getPartitioning().setFixed(List.of(fixedPartition));
+    rootCfg.getExperimental().getPartitioning().setFixed(List.of(defaultPartition, fixedPartition));
 
     final var tenantACfg = new BrokerCfg();
     tenantACfg.getExperimental().getPartitioning().setScheme(Scheme.FIXED);
