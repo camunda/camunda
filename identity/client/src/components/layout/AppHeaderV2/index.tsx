@@ -17,7 +17,7 @@ import {
   type UserMenuItem,
 } from "@camunda/design-system";
 import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
-import { useCallback, useLayoutEffect, useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -119,6 +119,29 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     setTimeout(logout, LOGOUT_DELAY);
   }, [enqueueNotification, t]);
 
+  /**
+   * Intercepts and fixes "skip to content" navigation. It's bare `href="#main-content"`
+   * does not work with the `<base href>` for Thymeleaf's contextPath support configured
+   * in the app's `index.html`. Without the intercept, "skip to content" resolved against
+   * the "base" path instead of the current URL, which breaks the app.
+   */
+  const handleSkipToContentClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const { target } = event;
+      if (
+        !(target instanceof HTMLAnchorElement) ||
+        target.getAttribute("href") !== `#${SKIP_TO_CONTENT_TARGET_ID}`
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      window.location.hash = SKIP_TO_CONTENT_TARGET_ID;
+      document.getElementById(SKIP_TO_CONTENT_TARGET_ID)?.focus();
+    },
+    [],
+  );
+
   const breadcrumb = useBreadcrumbs();
   const sidebarChildren = useSidebarChildren(hideNavLinks);
   const hasSidebar = sidebarChildren.length > 0;
@@ -140,6 +163,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
         <SidebarBodySync hasSidebar={hasSidebar} />
         <AppHeader
           aria-label="Admin"
+          onClick={handleSkipToContentClick}
           skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
           showSidebarTrigger={hasSidebar}
           logo={
