@@ -116,6 +116,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getLeaseToken()).isNull();
 
     job = receivedJobs.get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -135,6 +136,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
+    assertThat(job.getLeaseToken()).isNull();
   }
 
   @Test
