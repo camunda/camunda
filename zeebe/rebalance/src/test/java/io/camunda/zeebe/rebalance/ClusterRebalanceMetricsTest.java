@@ -10,8 +10,10 @@ package io.camunda.zeebe.rebalance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -78,6 +80,49 @@ final class ClusterRebalanceMetricsTest {
         .containsExactlyInAnyOrder("COMPLETED", "CANCELLED", "FAILED");
   }
 
+  @Test
+  void shouldDeregisterEveryCoordinatorOwnedMeterWhenCoordinationStops() {
+    // given
+    metrics.setPartitionStates(
+        List.of(PartitionRebalance.pending(GROUP, 1, MEMBER_1, MEMBER_2).transferred()));
+    metrics.observePartitionDuration(
+        new PartitionId(GROUP, 1), "TRANSFERRED", Duration.ofSeconds(1));
+    metrics.observeElapsed(RebalanceOutcome.COMPLETED, Duration.ofSeconds(1));
+
+    // when
+    metrics.stopCoordinating();
+
+    // then
+    assertThat(gauge(1)).isNull();
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.duration").timers()).isEmpty();
+    assertThat(registry.find("zeebe.cluster.rebalance.elapsed").timers()).isEmpty();
+  }
+
+  @Test
+  void shouldNotReuseStaleMeterMapEntriesAfterCoordinationRestarts() {
+    // given
+    metrics.observePartitionDuration(
+        new PartitionId(GROUP, 1), "TRANSFERRED", Duration.ofSeconds(1));
+    metrics.observeElapsed(RebalanceOutcome.COMPLETED, Duration.ofSeconds(1));
+    metrics.stopCoordinating();
+
+    // when
+    metrics.observePartitionDuration(
+        new PartitionId(GROUP, 1), "TRANSFERRED", Duration.ofSeconds(2));
+    metrics.observeElapsed(RebalanceOutcome.COMPLETED, Duration.ofSeconds(2));
+
+    // then
+    assertThat(partitionDurationCount(1, "TRANSFERRED")).isEqualTo(1);
+    assertThat(registry.get("zeebe.cluster.rebalance.elapsed").timers()).hasSize(1);
+    assertThat(
+            registry
+                .get("zeebe.cluster.rebalance.elapsed")
+                .tag("result", RebalanceOutcome.COMPLETED.name())
+                .timer()
+                .count())
+        .isEqualTo(1);
+  }
+
   private double state(final int partitionId) {
     return registry
         .get("zeebe.cluster.rebalance.partition.state")
@@ -92,5 +137,15 @@ final class ClusterRebalanceMetricsTest {
         .find("zeebe.cluster.rebalance.partition.state")
         .tag("partition", String.valueOf(partitionId))
         .gauge();
+  }
+
+  private long partitionDurationCount(final int partitionId, final String result) {
+    return registry
+        .get("zeebe.cluster.rebalance.partition.duration")
+        .tag("partition", String.valueOf(partitionId))
+        .tag("physicalTenant", GROUP)
+        .tag("result", result)
+        .timer()
+        .count();
   }
 }

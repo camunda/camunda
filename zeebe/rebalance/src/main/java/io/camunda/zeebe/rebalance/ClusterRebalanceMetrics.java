@@ -93,6 +93,10 @@ public final class ClusterRebalanceMetrics {
   public void stopCoordinating() {
     partitionStates.values().forEach(registry::remove);
     partitionStates.clear();
+    partitionDurations.values().forEach(registry::remove);
+    partitionDurations.clear();
+    elapsed.values().forEach(registry::remove);
+    elapsed.clear();
   }
 
   /**
