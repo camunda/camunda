@@ -106,4 +106,4 @@ const requestErrorSchema = z.union([
 	}),
 ]);
 
-export {getCsrfTokenFromStorage, request, requestErrorSchema};
+export {getCsrfTokenFromStorage, request, requestErrorSchema, type RequestError};

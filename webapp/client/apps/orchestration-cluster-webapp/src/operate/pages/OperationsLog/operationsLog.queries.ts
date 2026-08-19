@@ -9,6 +9,7 @@
 import {infiniteQueryOptions, useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryAuditLogsRequestBody, QueryAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_LIMIT = 50;
@@ -25,7 +26,7 @@ function auditLogsInfiniteQuery(
 				endpoints.queryAuditLogs({filter, sort, page: {from: pageParam, limit: PAGE_LIMIT}}),
 			);
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},

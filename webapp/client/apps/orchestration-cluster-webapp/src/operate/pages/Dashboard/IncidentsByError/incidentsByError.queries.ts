@@ -12,6 +12,7 @@ import type {
 	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
@@ -27,7 +28,7 @@ const incidentsByErrorInfiniteQuery = () =>
 				}),
 			);
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},
@@ -53,7 +54,7 @@ const incidentsByErrorDefinitionsQuery = (errorHashCode: number) =>
 				}),
 			);
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},

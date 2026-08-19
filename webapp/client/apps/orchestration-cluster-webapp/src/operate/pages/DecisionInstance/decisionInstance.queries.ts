@@ -9,6 +9,7 @@
 import {queryOptions, useQuery} from '@tanstack/react-query';
 import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 
 function decisionInstanceQuery(decisionEvaluationInstanceKey: string) {
@@ -17,7 +18,7 @@ function decisionInstanceQuery(decisionEvaluationInstanceKey: string) {
 		queryFn: async (): Promise<GetDecisionInstanceResponseBody> => {
 			const {response, error} = await request(endpoints.getDecisionInstance({decisionEvaluationInstanceKey}));
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json();
 		},

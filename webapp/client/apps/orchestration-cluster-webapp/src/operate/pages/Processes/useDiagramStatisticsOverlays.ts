@@ -14,6 +14,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {request} from '#/shared/http/request';
+import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import type {OverlayData} from '#/operate/shared/Diagram/overlayTypes';
 import {isProcessOrSubProcessEndEvent, getSubprocessOverlayFromIncidentElements} from '#/operate/shared/utils/elements';
@@ -91,7 +92,7 @@ function diagramStatisticsOverlaysQuery(
 		queryFn: async () => {
 			const {response, error} = await request(endpoints.getProcessDefinitionStatistics({processDefinitionKey, filter}));
 			if (error !== null) {
-				throw error;
+				throw mapQueryError(error);
 			}
 			return response.json() as Promise<GetProcessDefinitionStatisticsResponseBody>;
 		},

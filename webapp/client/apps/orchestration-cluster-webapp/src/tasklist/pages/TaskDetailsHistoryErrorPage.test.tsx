@@ -10,11 +10,8 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
+import {ForbiddenError} from '#/shared/errors';
 import {TaskDetailsHistoryErrorPage} from './TaskDetailsHistoryErrorPage';
-
-function failedResponseError(status: number) {
-	return {variant: 'failed-response', response: new Response(null, {status}), networkError: null} as unknown as Error;
-}
 
 function networkError() {
 	return {variant: 'network-error', response: null, networkError: new Error('Failed to fetch')} as unknown as Error;
@@ -46,9 +43,7 @@ describe('<TaskDetailsHistoryErrorPage />', () => {
 
 	it('should tell the user when they do not have permission to view task history', async () => {
 		const screen = await renderWithRouter(
-			() => (
-				<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />
-			),
+			() => <TaskDetailsHistoryErrorPage error={new ForbiddenError()} info={{componentStack: ''}} reset={vi.fn()} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -59,9 +54,7 @@ describe('<TaskDetailsHistoryErrorPage />', () => {
 
 	it('should help the user learn about required permissions', async () => {
 		const screen = await renderWithRouter(
-			() => (
-				<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />
-			),
+			() => <TaskDetailsHistoryErrorPage error={new ForbiddenError()} info={{componentStack: ''}} reset={vi.fn()} />,
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 

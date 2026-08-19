@@ -10,17 +10,15 @@ import {Button, Layer, Link, Stack} from '@carbon/react';
 import {Launch} from '@carbon/react/icons';
 import {useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {Trans, useTranslation} from 'react-i18next';
-import {requestErrorSchema} from '#/shared/http/request';
+import {ForbiddenError} from '#/shared/errors';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import SvgForbidden from '#/shared/svg/Forbidden';
 import styles from './TaskDetailsHistoryErrorPage.module.scss';
 import {useCallback} from 'react';
 
-const HTTP_STATUS_FORBIDDEN = 403;
 const DOCS_URL = 'https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/';
 
 const TaskDetailsHistoryErrorPage: React.FC<ErrorComponentProps> = ({error, reset}) => {
-	const result = requestErrorSchema.safeParse(error);
 	const navigate = useNavigate();
 
 	const handleRetry = useCallback(() => {
@@ -28,11 +26,7 @@ const TaskDetailsHistoryErrorPage: React.FC<ErrorComponentProps> = ({error, rese
 		navigate({to: '.', replace: true});
 	}, [reset, navigate]);
 
-	if (
-		result.success &&
-		result.data.variant === 'failed-response' &&
-		result.data.response.status === HTTP_STATUS_FORBIDDEN
-	) {
+	if (error instanceof ForbiddenError) {
 		return <ForbiddenHistoryPage />;
 	}
 
