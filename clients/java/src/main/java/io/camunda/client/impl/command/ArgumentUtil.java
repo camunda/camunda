@@ -18,9 +18,12 @@ package io.camunda.client.impl.command;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 public final class ArgumentUtil {
+
+  private static final int MAX_VALUE_LENGTH = 500;
 
   public static void ensureNotNull(final String property, final Object value) {
     if (value == null) {
@@ -82,10 +85,28 @@ public final class ArgumentUtil {
     ensureNotEmpty(property, value);
   }
 
+  @SuppressWarnings("unchecked")
+  public static Map<String, Object> ensureJsonObject(final String property, final Object value) {
+    if (!(value instanceof Map<?, ?>)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "%s must be a JSON object, but was: %s",
+              property, abbreviate(String.valueOf(value))));
+    }
+    return (Map<String, Object>) value;
+  }
+
   private static <T> void ensureNotEmpty(
       final String property, final T value, final Predicate<T> isEmptyPredicate) {
     if (isEmptyPredicate.test(value)) {
       throw new IllegalArgumentException(property + " must not be empty");
     }
+  }
+
+  private static String abbreviate(final String value) {
+    if (value.length() <= MAX_VALUE_LENGTH) {
+      return value;
+    }
+    return value.substring(0, MAX_VALUE_LENGTH - 3) + "...";
   }
 }

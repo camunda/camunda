@@ -18,7 +18,6 @@ package io.camunda.client.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.util.ClientRestTest;
@@ -125,8 +124,7 @@ final class CorrelateMessageTest extends ClientRestTest {
                     .withoutCorrelationKey()
                     .tenantId(tenantId)
                     .variables(variables))
-        .isInstanceOf(InternalClientException.class)
-        .hasMessageContaining(
-            String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", variables));
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 }
