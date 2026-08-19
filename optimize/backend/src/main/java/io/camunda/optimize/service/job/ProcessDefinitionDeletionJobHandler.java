@@ -66,7 +66,7 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   public void handle(final JobRegistryEntryDto job) {
     final String definitionId = job.getEntityId();
     final Optional<ProcessDefinitionOptimizeDto> definition =
-        processDefinitionReader.getProcessDefinition(definitionId);
+        processDefinitionReader.getProcessDefinition(definitionId, false);
     if (definition.isEmpty()) {
       LOG.info("Process definition with ID {} no longer exists, nothing to delete.", definitionId);
       return;
@@ -107,8 +107,15 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     }
   }
 
-  private boolean isRetryable(final Throwable t) {
-    return RETRYABLE_EXCEPTIONS.stream()
-        .anyMatch(clazz -> clazz.isInstance(t) || clazz.isInstance(t.getCause()));
+  // The real error could be wrapped several levels deep
+  private boolean isRetryable(final Throwable throwable) {
+    for (Throwable current = throwable; current != null; current = current.getCause()) {
+      for (final Class<? extends Throwable> retryableClass : RETRYABLE_EXCEPTIONS) {
+        if (retryableClass.isInstance(current)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
