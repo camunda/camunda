@@ -2376,7 +2376,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2392,7 +2392,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
-   * Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2408,7 +2408,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -2423,7 +2423,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
-   * Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
