@@ -842,6 +842,33 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-scoped-spring-session</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>org.springframework.session:spring-session-core:*:*:test</exclude>
+                  </excludes>
+                  <message>spring-session-core must stay non-test scoped: CSL's WebSessionConfiguration
+                    needs it at runtime, and no test can catch its absence because the test classpath
+                    always has it. Test scope silently packages it out of the distribution, which then
+                    fails to start with optimize.security.csl.enabled=true (see #60518).</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
