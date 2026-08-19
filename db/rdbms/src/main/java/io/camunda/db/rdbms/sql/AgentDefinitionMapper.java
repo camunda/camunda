@@ -18,4 +18,6 @@ public interface AgentDefinitionMapper {
   Long count(AgentDefinitionDbQuery query);
 
   List<AgentDefinitionDbModel> search(AgentDefinitionDbQuery query);
+
+  int deleteByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);
 }

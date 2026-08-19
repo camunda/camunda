@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.write.domain.AgentDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -16,9 +17,12 @@ import java.util.List;
 
 public class AgentDefinitionWriter implements RdbmsWriter {
 
+  private final AgentDefinitionMapper mapper;
   private final ExecutionQueue executionQueue;
 
-  public AgentDefinitionWriter(final ExecutionQueue executionQueue) {
+  public AgentDefinitionWriter(
+      final AgentDefinitionMapper mapper, final ExecutionQueue executionQueue) {
+    this.mapper = mapper;
     this.executionQueue = executionQueue;
   }
 
@@ -34,7 +38,6 @@ public class AgentDefinitionWriter implements RdbmsWriter {
 
   public int deleteByProcessDefinitionKeys(
       final List<Long> processDefinitionKeys, final int limit) {
-    throw new UnsupportedOperationException(
-        "AgentDefinitionWriter#deleteByProcessDefinitionKeys is not implemented yet");
+    return mapper.deleteByProcessDefinitionKeys(processDefinitionKeys, limit);
   }
 }

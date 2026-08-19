@@ -159,4 +159,44 @@
     </if>
   </sql>
 
+  <delete id="deleteByProcessDefinitionKeys">
+    DELETE FROM ${prefix}AGENT_DEFINITION
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+
+  <delete id="deleteByProcessDefinitionKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}AGENT_DEFINITION
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
+  <delete id="deleteByProcessDefinitionKeys" databaseId="oracle">
+    DELETE FROM ${prefix}AGENT_DEFINITION
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}AGENT_DEFINITION
+                    WHERE PROCESS_DEFINITION_KEY IN
+                    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                      #{key}
+                    </foreach>
+                    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <delete id="deleteByProcessDefinitionKeys" databaseId="postgresql">
+    DELETE FROM ${prefix}AGENT_DEFINITION
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}AGENT_DEFINITION
+                   WHERE PROCESS_DEFINITION_KEY IN
+                   <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                     #{key}
+                   </foreach>
+                   LIMIT #{limit})
+  </delete>
+
 </mapper>
