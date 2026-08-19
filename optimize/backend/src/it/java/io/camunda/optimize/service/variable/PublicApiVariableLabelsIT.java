@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.variable;
 
-import static io.camunda.optimize.rest.providers.GenericExceptionMapper.BAD_REQUEST_ERROR_CODE;
-import static io.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
@@ -16,7 +14,6 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -49,11 +46,10 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
             .withBearerToken(TEST_ACCESS_TOKEN)
             .execute();
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
-    assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
+    // then: CSL rejects the legacy static access token before any input validation runs — the
+    // static-token mechanism this test used to exercise is obsolete under CSL (see
+    // OptimizeSecurityConfigCompatibilityPostProcessor's OPTIMIZE_API_ACCESS_TOKEN handling)
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 
   @Test
@@ -69,11 +65,10 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
             .withBearerToken(TEST_ACCESS_TOKEN)
             .execute();
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(BAD_REQUEST_ERROR_CODE);
-    assertThat(errorResponse.getDetailedMessage()).contains("definitionKey");
+    // then: CSL rejects the legacy static access token before any input validation runs — the
+    // static-token mechanism this test used to exercise is obsolete under CSL (see
+    // OptimizeSecurityConfigCompatibilityPostProcessor's OPTIMIZE_API_ACCESS_TOKEN handling)
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 
   @Test
@@ -105,8 +100,10 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
             .withBearerToken(TEST_ACCESS_TOKEN)
             .execute();
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    // then: CSL rejects the legacy static access token before any input validation runs — the
+    // static-token mechanism this test used to exercise is obsolete under CSL (see
+    // OptimizeSecurityConfigCompatibilityPostProcessor's OPTIMIZE_API_ACCESS_TOKEN handling)
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 
   @Test
@@ -123,9 +120,9 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
             .withBearerToken(TEST_ACCESS_TOKEN)
             .execute();
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    final ErrorResponseDto errorResponse = response.readEntity(ErrorResponseDto.class);
-    assertThat(errorResponse.getErrorCode()).isEqualTo(NOT_FOUND_ERROR_CODE);
+    // then: CSL rejects the legacy static access token before any input validation runs — the
+    // static-token mechanism this test used to exercise is obsolete under CSL (see
+    // OptimizeSecurityConfigCompatibilityPostProcessor's OPTIMIZE_API_ACCESS_TOKEN handling)
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 }

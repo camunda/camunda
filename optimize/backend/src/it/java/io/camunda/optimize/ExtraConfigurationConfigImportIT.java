@@ -36,7 +36,7 @@ public class ExtraConfigurationConfigImportIT extends AbstractCCSMIT {
   @Override
   protected void startAndUseNewOptimizeInstance() {
     startAndUseNewOptimizeInstance(
-        Map.of("spring.config.location", configDir.toAbsolutePath() + "/"),
+        Map.of("spring.config.additional-location", configDir.toAbsolutePath() + "/"),
         ConfigurationServiceConstants.CCSM_PROFILE);
   }
 
