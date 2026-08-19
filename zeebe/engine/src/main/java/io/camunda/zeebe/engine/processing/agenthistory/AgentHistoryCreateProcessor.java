@@ -162,6 +162,6 @@ public final class AgentHistoryCreateProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    return record.isInternalCommand() ? SuspensionBehavior.BUFFER : SuspensionBehavior.REJECT;
   }
 }
