@@ -421,6 +421,15 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     if (response.accepted()) {
       return;
     }
+    if (response.status() != Status.OK) {
+      LOG.warn(
+          "Rebalance {} failed requesting current leader of partition {} to transfer leadership: "
+              + "{} (will still watch for outcome)",
+          rebalance.id(),
+          partition,
+          response.error());
+      return;
+    }
     final var rejectionReason = response.rejectionReason();
     LOG.warn(
         "Rebalance {} was declined requesting transfer of partition {}: {}",

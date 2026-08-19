@@ -14,6 +14,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferProtocol;
 import io.atomix.raft.LeadershipTransferResult;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
@@ -468,6 +469,22 @@ final class SequentialRebalanceRunnerTest {
     // then
     assertThat(rebalance.partition(0).outcome())
         .isEqualTo(PartitionRebalanceOutcome.TIMEOUT_NOW_EXHAUSTED);
+  }
+
+  @Test
+  void shouldNotThrowWhenInitiationRespondsWithErrorAndNoRejectionReason() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var rebalance = start(groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)));
+
+    // when
+    transfers.error(RaftError.Type.ILLEGAL_MEMBER_STATE);
+    leaders.get(GROUP).put(1, MEMBER_2);
+    executor.runAll();
+
+    // then
+    assertThat(rebalance.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(rebalance.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.TRANSFERRED);
   }
 
   @Test
@@ -933,6 +950,14 @@ final class SequentialRebalanceRunnerTest {
 
     void fail(final Throwable error) {
       pending.completeExceptionally(error);
+    }
+
+    void error(final RaftError.Type type) {
+      pending.complete(
+          LeadershipTransferInitiateResponse.builder()
+              .withStatus(Status.ERROR)
+              .withError(new RaftError(type, null))
+              .build());
     }
 
     void report(final LeadershipTransferResult result) {
