@@ -269,7 +269,8 @@ public final class JobWorkerBuilderImpl
               backoffSupplier,
               scheduledExecutor,
               System::nanoTime,
-              metrics);
+              metrics,
+              withLease);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();

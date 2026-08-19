@@ -167,6 +167,28 @@ final class JobStreamImplTest {
   }
 
   @Test
+  void shouldSetWithLease() {
+    // given
+    jobStreamer = createStreamer(Duration.ofHours(8), null, true);
+    final StreamActivatedJobsRequest expectedRequest =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType("type")
+            .setWorker("worker")
+            .setTimeout(Duration.ofSeconds(10).toMillis())
+            .addFetchVariable("foo")
+            .addFetchVariable("bar")
+            .addTenantIds("test-tenant")
+            .setWithLease(true)
+            .build();
+
+    // when
+    jobStreamer.openStreamer(ignored -> {});
+
+    // then
+    assertThat(service.lastRequest()).isEqualTo(expectedRequest);
+  }
+
+  @Test
   void shouldForwardJobsToConsumer() {
     // given
     final List<ActivatedJob> jobs = new ArrayList<>();
@@ -447,6 +469,13 @@ final class JobStreamImplTest {
 
   private JobStreamerImpl createStreamer(
       final Duration streamingTimeout, final Duration streamInactivityTimeout) {
+    return createStreamer(streamingTimeout, streamInactivityTimeout, false);
+  }
+
+  private JobStreamerImpl createStreamer(
+      final Duration streamingTimeout,
+      final Duration streamInactivityTimeout,
+      final boolean withLease) {
     return new JobStreamerImpl(
         client,
         "type",
@@ -460,7 +489,8 @@ final class JobStreamImplTest {
         ignored -> 10_000L,
         scheduler,
         virtualNanos::get,
-        metrics);
+        metrics,
+        withLease);
   }
 
   private void advanceTime(final long amount, final TimeUnit unit) {
