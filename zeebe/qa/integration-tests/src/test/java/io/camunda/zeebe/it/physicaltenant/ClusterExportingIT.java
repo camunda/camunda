@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.Base64;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -52,6 +53,8 @@ final class ClusterExportingIT {
   private static final int TENANT_B_PARTITION_COUNT = 2;
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
   private static final ObjectMapper JSON = new ObjectMapper();
+
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
@@ -170,7 +173,7 @@ final class ClusterExportingIT {
             .method(method, BodyPublishers.noBody())
             .header("Accept", "application/json")
             .build();
-    return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    return HTTP_CLIENT.send(request, BodyHandlers.ofString());
   }
 
   private URI resolve(final String path) {

@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 
 class ClusterExportingServicesTest {
 
-  private static final String TENANT_A = "tenant-a";
-  private static final String TENANT_B = "tenant-b";
-  private static final String TENANT_C = "tenant-c";
+  private static final String TENANT_A = "tenanta";
+  private static final String TENANT_B = "tenantb";
+  private static final String TENANT_C = "tenantc";
   private static final Set<String> THREE_TENANTS = Set.of(TENANT_A, TENANT_B, TENANT_C);
 
   @Test
