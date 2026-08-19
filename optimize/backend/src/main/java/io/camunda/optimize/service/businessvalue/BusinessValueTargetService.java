@@ -37,8 +37,8 @@ import org.springframework.stereotype.Component;
  * a targeted recompute the first time a reader observes a row older than {@code 2 ×} the refresh
  * interval. A per-write synchronous recompute is intentionally omitted here — the compute service
  * on the sibling M2.4 branch has been refactored to a single scheduler-driven entry point, and
- * blasting a cluster-wide recompute on every modal save is too expensive relative to the
- * stale-read latency budget documented in {@code bvd-target-technical-design.md} §3.4.
+ * blasting a cluster-wide recompute on every modal save is too expensive relative to the stale-read
+ * latency budget documented in {@code bvd-target-technical-design.md} §3.4.
  *
  * <p>Field-level input validation ({@code automationRateTargetPct ∈ [0, 100]}, {@code
  * cycleTimeTarget.value ≥ 0}) is expressed as JSR-380 annotations on {@link
