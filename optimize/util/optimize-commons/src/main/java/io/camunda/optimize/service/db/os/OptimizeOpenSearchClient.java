@@ -186,7 +186,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public static void validateTaskResponse(final GetTasksResponse taskResponse) {
     if (taskResponse.error() != null) {
       LOG.error("An Opensearch task failed with error: {}", taskResponse.error());
-      throw new OptimizeRuntimeException(taskResponse.error().toString());
+      // ErrorCause has no toString() override; toJsonString() serializes every field.
+      throw new OptimizeRuntimeException(taskResponse.error().toJsonString());
     }
 
     if (taskResponse.response() != null) {

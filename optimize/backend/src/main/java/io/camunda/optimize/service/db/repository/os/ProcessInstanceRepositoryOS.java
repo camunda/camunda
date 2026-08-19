@@ -24,6 +24,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.P
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundExceptionInCauseChain;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static java.lang.Math.min;
 import static java.lang.String.format;
@@ -106,12 +107,15 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   @Override
   public void deleteByDefinitionId(final String bpmnProcessId, final String definitionId) {
     try {
-      osClient.deleteByQuery(
+      osClient.deleteByQueryTask(
+          String.format("process instances with definitionId %s", definitionId),
           term(ProcessInstanceIndex.PROCESS_DEFINITION_ID, definitionId),
           true,
           getProcessInstanceIndexAliasName(bpmnProcessId));
-    } catch (final OpenSearchException e) {
-      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+    } catch (final RuntimeException e) {
+      // Depending on how the async delete-by-query task fails, a missing index can surface as an
+      // OpenSearchException directly or wrapped in one or more OptimizeRuntimeExceptions
+      if (isInstanceIndexNotFoundExceptionInCauseChain(PROCESS, e)) {
         LOG.info(
             "Was not able to delete process instances for definitionId {} because instance index {} does not exist.",
             definitionId,
