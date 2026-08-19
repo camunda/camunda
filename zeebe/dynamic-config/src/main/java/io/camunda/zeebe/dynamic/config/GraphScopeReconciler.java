@@ -207,6 +207,12 @@ final class GraphScopeReconciler {
               + " cancelled.",
           groupId,
           operation);
+      // A replacement plan on this group numbers its operations from zero, same as this one did,
+      // so its own operationId may collide with the one just removed from inFlight above. If that
+      // collision was blocking it, this is the only place left to notice: nothing else about this
+      // stale completion touches the replacement plan, so without this call the collision clears
+      // but nothing ever re-checks what it was blocking.
+      reconcile();
       return;
     }
 

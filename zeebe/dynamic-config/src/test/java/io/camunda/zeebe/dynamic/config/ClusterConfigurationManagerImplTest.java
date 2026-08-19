@@ -464,6 +464,122 @@ final class ClusterConfigurationManagerImplTest {
     assertThat(peakConcurrent).hasValueLessThanOrEqualTo(4);
   }
 
+  @Test
+  void shouldStartAReplacementOperationBlockedByAStaleInFlightId() {
+    // given — operation ids restart at 0 for every fresh graph, and in-flight tracking is keyed by
+    // that bare id, per group. Cancelling a plan while one of its operations is still applying
+    // (async, real work, not instantly resolving), then starting a replacement on the same group,
+    // reproduces the case: the replacement's own id-0 operation is runnable but looks like it is
+    // already in flight, because id 0 still is -- from the plan that no longer exists.
+    final var member1 = MemberId.from("1");
+    final var pendingApplies =
+        new HashMap<Integer, CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>>();
+    final var applied = new java.util.ArrayList<Integer>();
+    final var manager = newManager(MEMBER_0);
+    final var real =
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor());
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        operation -> {
+          final var partitionOperation = (PartitionLeaveOperation) operation;
+          final var delegate = real.getApplier(operation);
+          return new PartitionGroupConfigurationChangeApplier() {
+            @Override
+            public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+                final GlobalConfiguration global, final PartitionGroupConfiguration group) {
+              return delegate.init(global, group);
+            }
+
+            @Override
+            public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+              applied.add(partitionOperation.partitionId());
+              final var future =
+                  new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
+              pendingApplies.put(partitionOperation.partitionId(), future);
+              return future;
+            }
+          };
+        });
+
+    final var replicated =
+        BrokerPartitionState.initialize(
+            Map.of(
+                1, PartitionState.active(1, partitionConfig),
+                2, PartitionState.active(1, partitionConfig)));
+    manager
+        .updateMultiConfiguration(
+            ignored ->
+                new CurrentClusterConfiguration(
+                    CurrentClusterConfiguration.INITIAL_VERSION,
+                    new GlobalConfiguration(
+                        1,
+                        Optional.empty(),
+                        Map.of(
+                            MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                            member1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(MEMBER_0, replicated, member1, replicated),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    PhasedChangeState.empty()))
+        .join();
+
+    // when — plan A leaves partition 1; its single operation gets id 0 and is still applying
+    // (its future is deliberately left unresolved) when the plan is cancelled
+    final var planAGraph = OperationGraph.builder();
+    planAGraph.add(new PartitionLeaveOperation(MEMBER_0, 1, 1));
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupGraphPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP, planAGraph.build())))))
+        .join();
+    assertThat(applied).containsExactly(1);
+    final var planAId =
+        configuration(manager).phasedChangeState().pending().keySet().iterator().next();
+    manager.updateMultiConfiguration(c -> c.cancelPendingChanges(planAId)).join();
+
+    // and — plan B leaves partition 2 instead; its single operation is also id 0 (a fresh graph
+    // numbers from zero), and is runnable, but is skipped: id 0 is still in flight, from plan A
+    final var planBGraph = OperationGraph.builder();
+    planBGraph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1));
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupGraphPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP, planBGraph.build())))))
+        .join();
+    assertThat(applied).describedAs("plan B blocked behind plan A's stale id").containsExactly(1);
+
+    // and — plan A's operation finally resolves. Its own plan is long gone (the version check
+    // inside onApplied sees that and returns early), but this must not also strand plan B's
+    // operation that only looked blocked because of the id it reused
+    pendingApplies.get(1).complete(UnaryOperator.identity());
+
+    // then — plan B's operation starts once the stale id clears
+    assertThat(applied)
+        .describedAs("plan B's operation runs once the stale in-flight id is gone")
+        .containsExactly(1, 2);
+  }
+
   /** Both members replicate partitions 1 and 2, so either may leave either partition. */
   private CurrentClusterConfiguration twoPartitionCluster() {
     final var replicated =
