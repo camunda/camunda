@@ -16,6 +16,7 @@ import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import {tracking} from 'modules/tracking';
 import {createRoot} from 'react-dom/client';
+import {IS_NAV_V2_ENABLED} from 'modules/feature-flags';
 
 function enableMockingForDevEnv(): Promise<void> {
   return new Promise((resolve) => {
@@ -39,6 +40,7 @@ Promise.all([
 ]).then(() => {
   const rootElement = document.getElementById('root');
   if (rootElement !== null) {
+    rootElement.classList.toggle('operate-nav-v2', IS_NAV_V2_ENABLED);
     const root = createRoot(rootElement);
     root.render(<App />);
   }
