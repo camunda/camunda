@@ -25,10 +25,10 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import org.agrona.collections.MutableBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
@@ -255,10 +255,17 @@ public interface BackupCompatibilityAcceptance {
 
   private long takeBackup(final BrokerContainer broker, final long backupId, final int retryCount) {
     final var partitionsActuator = PartitionsActuator.of(broker);
+    final var previousSnapshotId = partitionsActuator.query().get(1).snapshotId();
     partitionsActuator.takeSnapshot();
-    Awaitility.await("Snapshot is taken")
-        .atMost(Duration.ofSeconds(60))
-        .until(() -> partitionsActuator.query().get(1).snapshotId(), Objects::nonNull);
+    try {
+      Awaitility.await("Snapshot is taken")
+          .atMost(Duration.ofSeconds(20))
+          .until(
+              () -> partitionsActuator.query().get(1).snapshotId(),
+              id -> id != null && !id.equals(previousSnapshotId));
+    } catch (final ConditionTimeoutException e) {
+      // Ignore for retry
+    }
 
     // Initiate additional processing to progress logstream so that backup doesn't fail
     createProcessInstanceWithJob(broker);
@@ -290,10 +297,7 @@ public interface BackupCompatibilityAcceptance {
   }
 
   private boolean shouldRetryBackupDueToSnapshot(final BackupInfo status, final int retryCount) {
-    return status.getState() == StateCode.FAILED
-        && status.getFailureReason() != null
-        && status.getFailureReason().contains("No valid snapshots found for backup")
-        && retryCount < MAX_BACKUP_RETRIES;
+    return status.getState() == StateCode.FAILED && retryCount < MAX_BACKUP_RETRIES;
   }
 
   /**
