@@ -18,32 +18,28 @@ package io.camunda.process.test.impl.assertions;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
-public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
+public class ProcessInstanceIncidentAssertj
+    extends AbstractAssert<ProcessInstanceIncidentAssertj, String> {
 
   private static final int MAX_ERROR_MESSAGE_LENGTH = 500;
-
-  private static final List<IncidentState> ACTIVE_INCIDENT_STATES =
-      Arrays.asList(IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED);
 
   private final CamundaDataSource dataSource;
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
 
-  protected IncidentAssertj(
+  protected ProcessInstanceIncidentAssertj(
       final CamundaDataSource dataSource,
       final Supplier<CamundaAssertAwaitBehavior> awaitBehavior,
       final String failureMessagePrefix) {
-    super(failureMessagePrefix, IncidentAssertj.class);
+    super(failureMessagePrefix, ProcessInstanceIncidentAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
   }
@@ -77,7 +73,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private List<Incident> activeIncidents(final List<Incident> incidents) {
     return incidents.stream()
-        .filter(i -> ACTIVE_INCIDENT_STATES.contains(i.getState()))
+        .filter(i -> IncidentStateSupport.isActive(i.getState()))
         .collect(Collectors.toList());
   }
 

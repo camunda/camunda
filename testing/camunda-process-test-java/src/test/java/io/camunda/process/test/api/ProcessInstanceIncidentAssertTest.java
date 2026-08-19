@@ -45,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({CamundaAssertExtension.class, MockitoExtension.class})
-public class IncidentAssertTest {
+public class ProcessInstanceIncidentAssertTest {
 
   private static final long PROCESS_INSTANCE_KEY = 1L;
 
