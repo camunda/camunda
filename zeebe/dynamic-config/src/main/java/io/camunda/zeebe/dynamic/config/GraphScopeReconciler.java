@@ -99,6 +99,12 @@ final class GraphScopeReconciler {
 
   /**
    * Starts every operation of this group the local member may run right now and has not started.
+   *
+   * <p>Caps on {@code inFlight.size()}, not on a count local to this call. Staging an operation (in
+   * {@link #start}) persists synchronously, which re-enters this method before {@link #start}
+   * returns — a local counter would reset to zero on each nested call and the cap would only ever
+   * bound one nesting level, not the group as a whole. {@code inFlight} is the one piece of state
+   * every nesting level shares, so it is what the cap has to read.
    */
   void reconcile() {
     final var group = currentConfiguration.get().partitionGroup(groupId);
@@ -107,16 +113,14 @@ final class GraphScopeReconciler {
       return;
     }
 
-    int started = 0;
     for (final var entry : group.runnableFor(localMemberId).entrySet()) {
-      if (started >= MAX_CONCURRENT_OPERATIONS) {
+      if (inFlight.size() >= MAX_CONCURRENT_OPERATIONS) {
         break;
       }
       if (inFlight.contains(entry.getKey())) {
         continue;
       }
       start(entry.getKey(), entry.getValue(), groupAppliers);
-      started++;
     }
   }
 

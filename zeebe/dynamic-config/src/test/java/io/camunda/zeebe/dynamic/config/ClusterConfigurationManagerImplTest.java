@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChange
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
@@ -53,17 +54,21 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -366,6 +371,97 @@ final class ClusterConfigurationManagerImplTest {
         configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     assertThat(defaultGroup.pendingGraphChanges().orElseThrow().completed()).isEmpty();
     assertThat(defaultGroup.getMember(MEMBER_0).partitions()).containsOnlyKeys(1, 2);
+  }
+
+  @Test
+  void shouldNotExceedTheConcurrencyCapAcrossReentrantReconciliation() {
+    // given — 6 independent operations on one broker, well above the concurrency cap (4), each
+    // held open (never resolving) so the count of simultaneously-applying operations can be
+    // observed. Staging an operation persists synchronously, which re-enters reconcile() before
+    // the operation that triggered it has itself been counted — a cap tracked as a count local to
+    // one reconcile() call resets to zero on every such nesting and never actually bounds
+    // anything, which is exactly the shape this pins.
+    final var member1 = MemberId.from("1");
+    final var startedCount = new AtomicInteger();
+    final var peakConcurrent = new AtomicInteger();
+    final var manager = newManager(MEMBER_0);
+    final var real =
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor());
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        operation -> {
+          final var delegate = real.getApplier(operation);
+          return new PartitionGroupConfigurationChangeApplier() {
+            @Override
+            public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+                final GlobalConfiguration global, final PartitionGroupConfiguration group) {
+              return delegate.init(global, group);
+            }
+
+            @Override
+            public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+              peakConcurrent.updateAndGet(ignored -> startedCount.incrementAndGet());
+              // Never completes: a real (I/O-bound) applier stays in flight for a while too, and
+              // that is the window the cap is meant to hold.
+              return new CompletableActorFuture<>();
+            }
+          };
+        });
+
+    final Map<Integer, PartitionState> partitions = new HashMap<>();
+    for (int p = 1; p <= 6; p++) {
+      partitions.put(p, PartitionState.active(1, partitionConfig));
+    }
+    manager
+        .updateMultiConfiguration(
+            ignored ->
+                new CurrentClusterConfiguration(
+                    CurrentClusterConfiguration.INITIAL_VERSION,
+                    new GlobalConfiguration(
+                        1,
+                        Optional.empty(),
+                        Map.of(
+                            MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                            member1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(
+                                MEMBER_0, BrokerPartitionState.initialize(partitions),
+                                member1, BrokerPartitionState.initialize(partitions)),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    PhasedChangeState.empty()))
+        .join();
+
+    // when — member 0 leaves all 6 of its own replicas; each partition keeps member 1's replica,
+    // so every leave is independently valid and none depends on another
+    final var graph = OperationGraph.builder();
+    for (int p = 1; p <= 6; p++) {
+      graph.add(new PartitionLeaveOperation(MEMBER_0, p, 1));
+    }
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupGraphPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — never more than the cap were simultaneously applying, however deep the reentrant
+    // cascade of staging one operation into the next went
+    assertThat(peakConcurrent).hasValueLessThanOrEqualTo(4);
   }
 
   /** Both members replicate partitions 1 and 2, so either may leave either partition. */
