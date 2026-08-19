@@ -1097,9 +1097,9 @@ The architectural decisions for Identity are documented as individual ADR files:
 Cross-cutting decisions on the CSL migration (affecting Identity along with other modules) are
 documented at the repo-root level rather than here:
 
-- [ADR: Endpoint Required-Permission Mapping](../../docs/adr/security/001-endpoint-required-permission-mapping.md)
-- [ADR: Tenant Access Provider Ownership and Seam](../../docs/adr/security/002-tenant-access-provider-ownership-and-seam.md)
-- [ADR: Physical-Tenant Routing of Authorization Reads](../../docs/adr/orchestration-cluster/0005-physical-tenant-routing-of-authorization-reads.md) -- the background for the per-physical-tenant `AuthorizationCheckPort` scoping described in [5.2.2](#522-security---level-2).
+- [ADR: Endpoint Required-Permission Mapping](https://github.com/camunda/camunda/blob/main/docs/adr/security/001-endpoint-required-permission-mapping.md)
+- [ADR: Tenant Access Provider Ownership and Seam](https://github.com/camunda/camunda/blob/main/docs/adr/security/002-tenant-access-provider-ownership-and-seam.md)
+- [ADR: Physical-Tenant Routing of Authorization Reads](https://github.com/camunda/camunda/blob/main/docs/adr/orchestration-cluster/0005-physical-tenant-routing-of-authorization-reads.md) -- the background for the per-physical-tenant `AuthorizationCheckPort` scoping described in [5.2.2](#522-security---level-2).
 
 No dedicated ADR records the decision to adopt CSL itself; that predates these two and is not
 tracked in `identity/docs/adr/` or `docs/adr/`.
