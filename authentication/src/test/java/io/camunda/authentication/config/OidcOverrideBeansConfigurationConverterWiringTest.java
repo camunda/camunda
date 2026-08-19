@@ -95,31 +95,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenant-a");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(loginRequest));
 
-    final Map<String, String> tenantSeenByLookup = new HashMap<>();
-    when(membershipPort.mappingRuleIds(any()))
-        .thenAnswer(
-            invocation -> {
-              tenantSeenByLookup.put("mappingRuleIds", PhysicalTenantContext.current());
-              return List.of("mapping-rule-1");
-            });
-    when(membershipPort.groupIds(any()))
-        .thenAnswer(
-            invocation -> {
-              tenantSeenByLookup.put("groupIds", PhysicalTenantContext.current());
-              return List.of("group-1");
-            });
-    when(membershipPort.roleIds(any()))
-        .thenAnswer(
-            invocation -> {
-              tenantSeenByLookup.put("roleIds", PhysicalTenantContext.current());
-              return List.of("role-1");
-            });
-    when(membershipPort.tenantIds(any()))
-        .thenAnswer(
-            invocation -> {
-              tenantSeenByLookup.put("tenantIds", PhysicalTenantContext.current());
-              return List.of("tenant-1");
-            });
+    final Map<String, String> tenantSeenByLookup = recordTenantPerLookup();
 
     final var cslProperties = new CamundaSecurityLibraryProperties();
     cslProperties.getAuthentication().getOidc().setUsernameClaim(USERNAME_CLAIM);
@@ -145,14 +121,80 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         .containsEntry("tenantIds", "tenant-a");
   }
 
+  @Test
+  void shouldResolveScopedRegistrationMembershipAgainstTenantCapturedAtLogin() {
+    // given a login on a physical tenant's own OIDC registration, converted with the real
+    // propagator. This converter is built per registration id, separately from the root one above.
+    final var loginRequest = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenant-a");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(loginRequest));
+
+    final Map<String, String> tenantSeenByLookup = recordTenantPerLookup();
+    final var authentication =
+        converter(USERNAME_CLAIM, USERNAME_CLAIM, new PhysicalTenantMembershipContextPropagator())
+            .convert(login("auth0", Map.of(USERNAME_CLAIM, "alice")));
+
+    // when the request has ended before any list is read
+    RequestContextHolder.resetRequestAttributes();
+
+    // then the scoped converter's lists resolve against the tenant from login too
+    assertThat(authentication.authenticatedMappingRuleIds()).containsExactly("mapping-rule-1");
+    assertThat(authentication.authenticatedGroupIds()).containsExactly("group-1");
+    assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
+    assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
+    assertThat(tenantSeenByLookup)
+        .containsEntry("mappingRuleIds", "tenant-a")
+        .containsEntry("groupIds", "tenant-a")
+        .containsEntry("roleIds", "tenant-a")
+        .containsEntry("tenantIds", "tenant-a");
+  }
+
   @AfterEach
   void clearRequestScope() {
     // if a test fails early, the request it bound would leak into the next test
     RequestContextHolder.resetRequestAttributes();
   }
 
+  /** Records the physical tenant each membership lookup observes, keyed by lookup name. */
+  private Map<String, String> recordTenantPerLookup() {
+    final Map<String, String> tenantSeenByLookup = new HashMap<>();
+    when(membershipPort.mappingRuleIds(any()))
+        .thenAnswer(
+            invocation -> {
+              tenantSeenByLookup.put("mappingRuleIds", PhysicalTenantContext.current());
+              return List.of("mapping-rule-1");
+            });
+    when(membershipPort.groupIds(any()))
+        .thenAnswer(
+            invocation -> {
+              tenantSeenByLookup.put("groupIds", PhysicalTenantContext.current());
+              return List.of("group-1");
+            });
+    when(membershipPort.roleIds(any()))
+        .thenAnswer(
+            invocation -> {
+              tenantSeenByLookup.put("roleIds", PhysicalTenantContext.current());
+              return List.of("role-1");
+            });
+    when(membershipPort.tenantIds(any()))
+        .thenAnswer(
+            invocation -> {
+              tenantSeenByLookup.put("tenantIds", PhysicalTenantContext.current());
+              return List.of("tenant-1");
+            });
+    return tenantSeenByLookup;
+  }
+
   private CamundaAuthenticationConverter<Authentication> converter(
       final String rootUsernameClaim, final String scopedUsernameClaim) {
+    return converter(
+        rootUsernameClaim, scopedUsernameClaim, MembershipResolutionContextPropagator.identity());
+  }
+
+  private CamundaAuthenticationConverter<Authentication> converter(
+      final String rootUsernameClaim,
+      final String scopedUsernameClaim,
+      final MembershipResolutionContextPropagator propagator) {
     when(oidcProviderRepository.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
     // authorizedClientRepository returns no client, so the converter falls back to ID-token
     // (principal) claims, which is the interactive-login path this test exercises.
@@ -180,7 +222,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         request,
         oidcProviderRepository,
         membershipPort,
-        MembershipResolutionContextPropagator.identity(),
+        propagator,
         environment);
   }
 
