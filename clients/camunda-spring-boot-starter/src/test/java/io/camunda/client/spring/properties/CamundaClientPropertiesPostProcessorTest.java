@@ -184,6 +184,25 @@ public class CamundaClientPropertiesPostProcessorTest {
     }
 
     @Test
+    void shouldRejectBlankTenantId() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.tenant[ ].tenantVar", "tenantValue")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null))
+          .withMessageContaining("tenant ID must not be null or blank");
+    }
+
+    @Test
     void shouldBeIdempotentAcrossRepeatedPostProcessing() {
       // given
       final StandardEnvironment environment = new StandardEnvironment();
