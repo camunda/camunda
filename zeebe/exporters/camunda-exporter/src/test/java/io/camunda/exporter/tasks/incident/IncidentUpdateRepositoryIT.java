@@ -26,6 +26,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.search.schema.SearchEngineClient;
@@ -758,7 +759,7 @@ abstract class IncidentUpdateRepositoryIT {
     void shouldBulkUpdateListView() throws PersistenceException, IOException {
       // given
       final var repository = createRepository();
-      final var bulk = new IncidentBulkUpdate();
+      final var bulk = new NonIncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
@@ -807,7 +808,7 @@ abstract class IncidentUpdateRepositoryIT {
     void shouldBulkUpdateFlowNodeInstances() throws PersistenceException, IOException {
       // given
       final var repository = createRepository();
-      final var bulk = new IncidentBulkUpdate();
+      final var bulk = new NonIncidentBulkUpdate();
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.addWithId(
           flowNodeInstanceTemplate.getFullQualifiedName(),
