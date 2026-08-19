@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.TestOtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -110,5 +111,14 @@ class AgentInstanceCreatedHandlerTest {
                   .doesNotContain("Looks up a customer by email address")
                   .doesNotContain("release-2026-q1");
             });
+  }
+
+  @Test
+  void shouldReturnCorrectCategory() {
+    final var handler =
+        new AgentInstanceCreatedHandler(
+            TestOtelSdkManager.inMemory(InMemoryLogRecordExporter.create()));
+
+    assertThat(handler.category()).isEqualTo(AnalyticsCategory.OPTIONAL);
   }
 }

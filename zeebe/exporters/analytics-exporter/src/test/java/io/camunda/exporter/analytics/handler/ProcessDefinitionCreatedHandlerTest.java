@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.TestOtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -87,5 +88,14 @@ class ProcessDefinitionCreatedHandlerTest {
                   .doesNotContain("Jane Doe's order process.bpmn")
                   .doesNotContain("<definitions/>");
             });
+  }
+
+  @Test
+  void shouldReturnCorrectCategory() {
+    final var handler =
+        new ProcessDefinitionCreatedHandler(
+            TestOtelSdkManager.inMemory(InMemoryLogRecordExporter.create()));
+
+    assertThat(handler.category()).isEqualTo(AnalyticsCategory.OPTIONAL);
   }
 }

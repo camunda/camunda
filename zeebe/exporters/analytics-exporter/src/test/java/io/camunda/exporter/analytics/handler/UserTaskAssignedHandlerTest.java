@@ -10,6 +10,7 @@ package io.camunda.exporter.analytics.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
+import io.camunda.exporter.analytics.AnalyticsCategory;
 import io.camunda.exporter.analytics.TestOtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -169,5 +170,10 @@ class UserTaskAssignedHandlerTest {
                 assertThat(logRecord.getAttributes().asMap())
                     .containsEntry(
                         AnalyticsAttributes.UserTask.ASSIGNEE_HASH, WHITESPACE_ASSIGNEE_SHA_256));
+  }
+
+  @Test
+  void shouldReturnCorrectCategory() {
+    assertThat(handler.category()).isEqualTo(AnalyticsCategory.CONTRACTUAL);
   }
 }
