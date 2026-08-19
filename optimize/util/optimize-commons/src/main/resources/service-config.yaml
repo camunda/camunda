@@ -158,7 +158,7 @@ zeebe:
   # The max page size for importing Zeebe data
   maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:200}
   # Determines whether Optimize should convert and store object variables from Zeebe
-  includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
+  includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:false}
   # Indicates whether variable import is enabled
   variableImportEnabled: ${CAMUNDA_OPTIMIZE_ZEEBE_VARIABLE_IMPORT_ENABLED:true}
   importConfig:

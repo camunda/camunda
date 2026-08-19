@@ -113,6 +113,13 @@
       <artifactId>log4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-log4j2</artifactId>
+      <version>${logunit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Utilities -->
     <dependency>
       <groupId>com.google.guava</groupId>
