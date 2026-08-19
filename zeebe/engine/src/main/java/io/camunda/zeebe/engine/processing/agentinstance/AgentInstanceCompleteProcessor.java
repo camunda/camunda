@@ -77,6 +77,6 @@ public final class AgentInstanceCompleteProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentInstanceRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    return SuspensionBehavior.PROCESS;
   }
 }
