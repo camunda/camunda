@@ -14,8 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
-import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.libc.LibC;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -23,6 +23,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import jnr.constants.platform.Errno;
+import jnr.ffi.Pointer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -88,7 +89,7 @@ final class PosixFsTest {
   @Test
   void shouldFailWithNegativeLength() throws IOException {
     // given
-    final var posixFs = new PosixFs(LibC.ofNativeLibrary());
+    final var posixFs = new PosixFs(LibC.instance());
     final var path = tmpDir.resolve("file");
 
     // when
@@ -124,7 +125,7 @@ final class PosixFsTest {
         Arguments.of(Errno.ENOSPC, OutOfDiskSpace.class));
   }
 
-  private static final class FailingPosixFallocate extends InvalidLibC {
+  private static final class FailingPosixFallocate implements LibC {
     private final Errno errno;
 
     private FailingPosixFallocate(final Errno errno) {
@@ -134,6 +135,11 @@ final class PosixFsTest {
     @Override
     public int posix_fallocate(final int fd, final long offset, final long len) {
       return errno.intValue();
+    }
+
+    @Override
+    public int sprintf(final Pointer str, final String format, final Object... args) {
+      throw new UnsupportedOperationException();
     }
   }
 }
