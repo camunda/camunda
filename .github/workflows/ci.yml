@@ -1250,6 +1250,10 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
+      # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
+      # apt-get without nick-fields/retry having to kill across the privilege boundary --
+      # doing that externally throws `kill EPERM` and crashes instead of retrying, see
+      # https://github.com/nick-fields/retry/issues/124.
       - name: Install bats and xmllint
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -1257,7 +1261,7 @@ jobs:
           retry_wait_seconds: 10
           timeout_seconds: 60
           shell: bash
-          command: sudo apt-get install -y --no-install-recommends bats libxml2-utils
+          command: sudo timeout 55 bash -c "apt-get install -y --no-install-recommends bats libxml2-utils"
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
