@@ -22,6 +22,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentTool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -144,12 +145,7 @@ public class AgentInstanceRequestValidator {
           }
 
           if (request.getTools() != null) {
-            for (int i = 0; i < request.getTools().size(); i++) {
-              final var tool = request.getTools().get(i);
-              if (tool.getName() == null || tool.getName().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tools[" + i + "].name"));
-              }
-            }
+            validateTools("tools", request.getTools(), violations);
           }
 
           if (request.getJobKey() != null) {
@@ -193,7 +189,7 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getRole() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].role"));
     }
-    if (historyItem.getContent() == null || historyItem.getContent().isEmpty()) {
+    if (historyItem.getContent() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].content"));
     } else {
       for (int i = 0; i < historyItem.getContent().size(); i++) {
@@ -207,6 +203,31 @@ public class AgentInstanceRequestValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].producedAt"));
     } else {
       validateDate(historyItem.getProducedAt(), "history[" + index + "].producedAt", violations);
+    }
+    if (historyItem.getTools() != null) {
+      validateTools("history[" + index + "].tools", historyItem.getTools(), violations);
+    }
+    if (historyItem.getLimits() != null) {
+      final var limits = historyItem.getLimits();
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxTokens", limits.getMaxTokens()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxModelCalls", limits.getMaxModelCalls()));
+      violations.addAll(
+          validateLimit("history[" + index + "].limits.maxToolCalls", limits.getMaxToolCalls()));
+    }
+    if (historyItem.getSystemPrompt() != null) {
+      if (historyItem.getSystemPrompt().isEmpty()) {
+        violations.add(
+            ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].systemPrompt"));
+      } else {
+        for (int i = 0; i < historyItem.getSystemPrompt().size(); i++) {
+          validateContentItem(
+              "history[" + index + "].systemPrompt[" + i + "]",
+              historyItem.getSystemPrompt().get(i),
+              violations);
+        }
+      }
     }
   }
 
@@ -247,6 +268,20 @@ public class AgentInstanceRequestValidator {
     final var expiresAt = ref.getMetadata().getExpiresAt();
     if (expiresAt != null && !expiresAt.isBlank()) {
       validateDate(expiresAt, fieldPrefix + ".documentReference.metadata.expiresAt", violations);
+    }
+  }
+
+  private void validateTools(
+      final String fieldPrefix, final List<AgentTool> tools, final List<String> violations) {
+    for (int i = 0; i < tools.size(); i++) {
+      final var tool = tools.get(i);
+      if (tool == null) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "]"));
+        continue;
+      }
+      if (tool.getName() == null || tool.getName().isBlank()) {
+        violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(fieldPrefix + "[" + i + "].name"));
+      }
     }
   }
 

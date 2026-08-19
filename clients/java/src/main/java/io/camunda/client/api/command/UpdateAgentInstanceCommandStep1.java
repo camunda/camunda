@@ -184,6 +184,46 @@ public interface UpdateAgentInstanceCommandStep1 {
     }
   }
 
+  /**
+   * A snapshot of the agent instance's operational limits, as recorded on a CONFIGURATION history
+   * item.
+   */
+  interface AgentInstanceLimits {
+    long getMaxTokens();
+
+    int getMaxModelCalls();
+
+    int getMaxToolCalls();
+
+    /**
+     * Creates a limits snapshot with the given values.
+     *
+     * @param maxTokens the token limit. Use -1 for no limit.
+     * @param maxModelCalls the model-call limit. Use -1 for no limit.
+     * @param maxToolCalls the tool-call limit. Use -1 for no limit.
+     * @return a new {@link AgentInstanceLimits}
+     */
+    static AgentInstanceLimits of(
+        final long maxTokens, final int maxModelCalls, final int maxToolCalls) {
+      return new AgentInstanceLimits() {
+        @Override
+        public long getMaxTokens() {
+          return maxTokens;
+        }
+
+        @Override
+        public int getMaxModelCalls() {
+          return maxModelCalls;
+        }
+
+        @Override
+        public int getMaxToolCalls() {
+          return maxToolCalls;
+        }
+      };
+    }
+  }
+
   /** A single conversation history item to append as part of an update batch. */
   final class HistoryItem {
     private String historyItemId;
@@ -193,6 +233,11 @@ public interface UpdateAgentInstanceCommandStep1 {
     private OffsetDateTime producedAt;
     private List<AgentInstanceHistoryToolCall> toolCalls;
     private AgentInstanceHistoryMetrics metrics;
+    private List<AgentTool> tools;
+    private String model;
+    private String provider;
+    private AgentInstanceLimits limits;
+    private List<AgentInstanceHistoryContent> systemPrompt;
 
     /**
      * Sets the caller-assigned identifier used to detect and dedupe retries of the same item.
@@ -275,6 +320,61 @@ public interface UpdateAgentInstanceCommandStep1 {
       return this;
     }
 
+    /**
+     * Sets the tools available to the agent as of this entry. CONFIGURATION items only.
+     *
+     * @param tools the tools. May be null.
+     * @return this builder for method chaining
+     */
+    public HistoryItem tools(final List<AgentTool> tools) {
+      this.tools = tools;
+      return this;
+    }
+
+    /**
+     * Sets the LLM model identifier as of this entry. CONFIGURATION items only.
+     *
+     * @param model the model identifier. May be null.
+     * @return this builder for method chaining
+     */
+    public HistoryItem model(final String model) {
+      this.model = model;
+      return this;
+    }
+
+    /**
+     * Sets the LLM provider as of this entry. CONFIGURATION items only.
+     *
+     * @param provider the provider identifier. May be null.
+     * @return this builder for method chaining
+     */
+    public HistoryItem provider(final String provider) {
+      this.provider = provider;
+      return this;
+    }
+
+    /**
+     * Sets the operational limits as of this entry. CONFIGURATION items only.
+     *
+     * @param limits the limits. May be null.
+     * @return this builder for method chaining
+     */
+    public HistoryItem limits(final AgentInstanceLimits limits) {
+      this.limits = limits;
+      return this;
+    }
+
+    /**
+     * Sets the system prompt, as content blocks, as of this entry. CONFIGURATION items only.
+     *
+     * @param systemPrompt the system prompt content blocks. May be null.
+     * @return this builder for method chaining
+     */
+    public HistoryItem systemPrompt(final List<AgentInstanceHistoryContent> systemPrompt) {
+      this.systemPrompt = systemPrompt;
+      return this;
+    }
+
     public String getHistoryItemId() {
       return historyItemId;
     }
@@ -301,6 +401,26 @@ public interface UpdateAgentInstanceCommandStep1 {
 
     public AgentInstanceHistoryMetrics getMetrics() {
       return metrics;
+    }
+
+    public List<AgentTool> getTools() {
+      return tools;
+    }
+
+    public String getModel() {
+      return model;
+    }
+
+    public String getProvider() {
+      return provider;
+    }
+
+    public AgentInstanceLimits getLimits() {
+      return limits;
+    }
+
+    public List<AgentInstanceHistoryContent> getSystemPrompt() {
+      return systemPrompt;
     }
   }
 }

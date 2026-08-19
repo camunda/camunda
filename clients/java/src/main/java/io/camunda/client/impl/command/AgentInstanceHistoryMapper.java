@@ -21,6 +21,8 @@ import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentInstanceLimits;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
@@ -167,5 +169,50 @@ final class AgentInstanceHistoryMapper {
         .inputTokens(metrics.getInputTokens())
         .outputTokens(metrics.getOutputTokens())
         .durationMs(metrics.getDurationMs());
+  }
+
+  static List<io.camunda.client.protocol.rest.AgentTool> toProtocolTools(
+      final List<AgentTool> tools) {
+    if (tools == null) {
+      return null;
+    }
+    final List<io.camunda.client.protocol.rest.AgentTool> protocolTools =
+        new ArrayList<>(tools.size());
+    for (final AgentTool tool : tools) {
+      if (tool == null) {
+        throw new IllegalArgumentException("tools must not contain null elements");
+      }
+      final io.camunda.client.protocol.rest.AgentTool protocolTool =
+          new io.camunda.client.protocol.rest.AgentTool();
+      protocolTool.name(tool.getName());
+      if (tool.getDescription() != null) {
+        protocolTool.description(tool.getDescription());
+      }
+      if (tool.getElementId() != null) {
+        protocolTool.elementId(tool.getElementId());
+      }
+      protocolTools.add(protocolTool);
+    }
+    return protocolTools;
+  }
+
+  static io.camunda.client.protocol.rest.AgentInstanceLimits toProtocolLimits(
+      final AgentInstanceLimits limits) {
+    if (limits == null) {
+      return null;
+    }
+    if (limits.getMaxTokens() < -1) {
+      throw new IllegalArgumentException("maxTokens must be >= -1");
+    }
+    if (limits.getMaxModelCalls() < -1) {
+      throw new IllegalArgumentException("maxModelCalls must be >= -1");
+    }
+    if (limits.getMaxToolCalls() < -1) {
+      throw new IllegalArgumentException("maxToolCalls must be >= -1");
+    }
+    return new io.camunda.client.protocol.rest.AgentInstanceLimits()
+        .maxTokens(limits.getMaxTokens())
+        .maxModelCalls(limits.getMaxModelCalls())
+        .maxToolCalls(limits.getMaxToolCalls());
   }
 }

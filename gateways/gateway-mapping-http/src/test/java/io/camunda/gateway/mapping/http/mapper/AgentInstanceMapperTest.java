@@ -13,6 +13,7 @@ import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
@@ -240,6 +241,110 @@ class AgentInstanceMapperTest {
       final var record = result.get();
       assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
       assertThat(record.getJobLease()).isEqualTo("lease-abc");
+    }
+
+    @Test
+    void shouldMapConfigurationFieldsOntoHistoryRecord() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      final var item =
+          AgentInstanceHistoryItem.Builder.create()
+              .historyItemId("item-1")
+              .loopIteration(1)
+              .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+              .content(List.of(textContent("switching model")))
+              .producedAt("2025-06-01T12:00:00Z")
+              .build();
+      item.tools(
+          List.of(
+              AgentTool.Builder.create()
+                  .name("searchDatabase")
+                  .description("Searches the database")
+                  .elementId(null)
+                  .build()));
+      item.model("gpt-5");
+      item.provider("openai");
+      item.limits(
+          AgentInstanceLimits.Builder.create()
+              .maxModelCalls(10)
+              .maxTokens(1000L)
+              .maxToolCalls(5)
+              .build());
+      item.systemPrompt(List.of(textContent("be helpful")));
+      request.setHistory(List.of(item));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getTools()).hasSize(1);
+      assertThat(mappedItem.getTools().get(0).getName()).isEqualTo("searchDatabase");
+      assertThat(mappedItem.getModel()).isEqualTo("gpt-5");
+      assertThat(mappedItem.getProvider()).isEqualTo("openai");
+      assertThat(mappedItem.getLimits().getMaxModelCalls()).isEqualTo(10);
+      assertThat(mappedItem.getLimits().getMaxTokens()).isEqualTo(1000L);
+      assertThat(mappedItem.getLimits().getMaxToolCalls()).isEqualTo(5);
+      assertThat(mappedItem.getSystemPrompt()).hasSize(1);
+      assertThat(mappedItem.getSystemPrompt().get(0).getText()).isEqualTo("be helpful");
+      assertThat(mappedItem.getChangedAttributes())
+          .containsExactlyInAnyOrder("tools", "model", "provider", "limits", "systemPrompt");
+    }
+
+    @Test
+    void shouldLeaveConfigurationFieldsAtDefaultsWhenAbsentFromHistoryItem() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(List.of(historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hi")));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getTools()).isEmpty();
+      assertThat(mappedItem.getModel()).isEmpty();
+      assertThat(mappedItem.getProvider()).isEmpty();
+      assertThat(mappedItem.getLimits().getMaxTokens()).isEqualTo(-1L);
+      assertThat(mappedItem.getLimits().getMaxModelCalls()).isEqualTo(-1);
+      assertThat(mappedItem.getLimits().getMaxToolCalls()).isEqualTo(-1);
+      assertThat(mappedItem.getSystemPrompt()).isEmpty();
+      assertThat(mappedItem.getChangedAttributes()).isEmpty();
+    }
+
+    @Test
+    void shouldTreatExplicitEmptyToolsAsProvided() {
+      // given
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      final var item = historyItem("item-1", AgentInstanceHistoryRoleEnum.CONFIGURATION, "hi");
+      item.tools(List.of());
+      request.setHistory(List.of(item));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getTools()).isEmpty();
+      assertThat(mappedItem.getChangedAttributes()).containsExactlyInAnyOrder("tools");
     }
 
     @Test

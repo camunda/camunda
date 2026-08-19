@@ -37,7 +37,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UpdateAgentInstanceCommandImpl
@@ -98,23 +97,7 @@ public class UpdateAgentInstanceCommandImpl
 
   @Override
   public UpdateAgentInstanceCommandStep2 tools(final List<AgentTool> tools) {
-    final List<io.camunda.client.protocol.rest.AgentTool> protocolTools =
-        tools.stream()
-            .map(
-                apiTool -> {
-                  final io.camunda.client.protocol.rest.AgentTool protocolTool =
-                      new io.camunda.client.protocol.rest.AgentTool();
-                  protocolTool.name(apiTool.getName());
-                  if (apiTool.getDescription() != null) {
-                    protocolTool.description(apiTool.getDescription());
-                  }
-                  if (apiTool.getElementId() != null) {
-                    protocolTool.elementId(apiTool.getElementId());
-                  }
-                  return protocolTool;
-                })
-            .collect(Collectors.toList());
-    request.tools(protocolTools);
+    request.tools(AgentInstanceHistoryMapper.toProtocolTools(tools));
     return this;
   }
 
@@ -157,9 +140,6 @@ public class UpdateAgentInstanceCommandImpl
     ArgumentUtil.ensureGreaterThan("loopIteration", item.getLoopIteration(), 0);
     ArgumentUtil.ensureNotNull("role", item.getRole());
     ArgumentUtil.ensureNotNull("content", item.getContent());
-    if (item.getContent().isEmpty()) {
-      throw new IllegalArgumentException("content must not be empty");
-    }
     ArgumentUtil.ensureNotNull("producedAt", item.getProducedAt());
 
     final AgentInstanceHistoryRoleEnum protoRole =
@@ -175,7 +155,15 @@ public class UpdateAgentInstanceCommandImpl
         .content(AgentInstanceHistoryMapper.toProtocolContent(item.getContent()))
         .toolCalls(AgentInstanceHistoryMapper.toProtocolToolCalls(item.getToolCalls()))
         .metrics(AgentInstanceHistoryMapper.toProtocolMetrics(item.getMetrics()))
-        .producedAt(item.getProducedAt().toString());
+        .producedAt(item.getProducedAt().toString())
+        .tools(AgentInstanceHistoryMapper.toProtocolTools(item.getTools()))
+        .model(item.getModel())
+        .provider(item.getProvider())
+        .limits(AgentInstanceHistoryMapper.toProtocolLimits(item.getLimits()))
+        .systemPrompt(
+            item.getSystemPrompt() != null
+                ? AgentInstanceHistoryMapper.toProtocolContent(item.getSystemPrompt())
+                : null);
   }
 
   @Override

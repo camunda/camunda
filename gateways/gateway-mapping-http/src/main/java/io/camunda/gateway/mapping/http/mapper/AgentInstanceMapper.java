@@ -244,6 +244,35 @@ public class AgentInstanceMapper {
       }
     }
 
+    if (historyItem.getTools() != null) {
+      final List<AgentInstanceTool> tools =
+          historyItem.getTools().stream().map(this::mapTool).collect(Collectors.toList());
+      record.setTools(tools);
+      record.addChangedAttribute("tools");
+    }
+
+    if (historyItem.getModel() != null) {
+      record.setModel(historyItem.getModel());
+      record.addChangedAttribute("model");
+    }
+
+    if (historyItem.getProvider() != null) {
+      record.setProvider(historyItem.getProvider());
+      record.addChangedAttribute("provider");
+    }
+
+    if (historyItem.getLimits() != null) {
+      fillLimits(historyItem.getLimits(), record.getLimits());
+      record.addChangedAttribute("limits");
+    }
+
+    if (historyItem.getSystemPrompt() != null) {
+      for (final AgentInstanceMessageContent content : historyItem.getSystemPrompt()) {
+        record.addSystemPrompt(mapContent(content));
+      }
+      record.addChangedAttribute("systemPrompt");
+    }
+
     return record;
   }
 
