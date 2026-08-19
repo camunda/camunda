@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -244,8 +245,14 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var incarnationNumber = Arbitraries.longs().greaterOrEqual(0);
     final var members = Arbitraries.maps(memberIds(), brokerPartitionStates()).ofMaxSize(6);
     final var routingState = routingStates().optional();
-    final var pendingChanges =
-        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    // Typed as ChangePlan so the generated value fits the group's field, which now carries either
+    // execution model. Only the queue model is generated here; the dependency-graph model has its
+    // own round-trip coverage.
+    final Arbitrary<Optional<ChangePlan>> pendingChanges =
+        Arbitraries.forType(ClusterChangePlan.class)
+            .enableRecursion()
+            .<ChangePlan>map(plan -> plan)
+            .optional();
     final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
     final var availability = tenantAvailabilities();
     return Combinators.combine(

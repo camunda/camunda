@@ -20,9 +20,11 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -39,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
@@ -99,6 +102,11 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Map<String, Boolean> onGoingGroupOperation = new HashMap<>();
   private final Map<String, Boolean> shouldRetryGroup = new HashMap<>();
   private final Map<String, ExponentialBackoffRetryDelay> groupBackoffRetry = new HashMap<>();
+  // Dependency-graph execution runs several of a group's operations at once, so in-flight and
+  // retry state are keyed per operation rather than per group as the queue path's are.
+  private final Set<GraphOperationKey> inFlightGraphOperations = new HashSet<>();
+  private final Map<GraphOperationKey, ExponentialBackoffRetryDelay> graphOperationBackoff =
+      new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
@@ -696,6 +704,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                               "Failed to process cluster configuration received via gossip. '{}'",
                               receivedConfiguration,
                               error));
+            } else {
+              // The merge changed nothing locally, but a graph change may still be drained and
+              // unfinished — most plausibly because an earlier attempt failed to persist. Retrying
+              // on every gossip round rides the existing sync cadence and needs no timer of its
+              // own.
+              maybeCompleteGraphChanges(merged);
             }
           } catch (final Exception e) {
             LOG.warn(
@@ -716,6 +730,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       if (currentConfigurationGossiper != null) {
         currentConfigurationGossiper.accept(configuration);
       }
+      // Before maybeAdvancePhase: a phase counts as complete when its sub-configurations have no
+      // pending changes, and finishing a drained graph change is what drains one.
+      maybeCompleteGraphChanges(configuration);
       maybeAdvancePhase(configuration);
       return Either.right(configuration);
     } catch (final Exception e) {
@@ -754,6 +771,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           case final GlobalPhase ignored -> !config.globalConfiguration().hasPendingChanges();
           case final PartitionGroupParallelPhase parallelPhase ->
               parallelPhase.groupOperations().keySet().stream()
+                  .map(config::partitionGroup)
+                  .allMatch(group -> group != null && !group.hasPendingChanges());
+          case final PartitionGroupGraphPhase graphPhase ->
+              graphPhase.groupGraphs().keySet().stream()
                   .map(config::partitionGroup)
                   .allMatch(group -> group != null && !group.hasPendingChanges());
         };
@@ -822,9 +843,11 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     // phases. So additional enforcement of ordering is not needed here.
     for (final String groupId :
         List.copyOf(persistedCurrentConfiguration.getConfiguration().partitionGroups().keySet())) {
-      // Can apply operations to multiple groups in parallel, but only one operation per group at a
-      // time.
+      // Can apply operations to multiple groups in parallel. Within a group the queue path runs one
+      // operation at a time; the dependency-graph path runs everything currently runnable. A group
+      // holds one change of one model, so at most one of these does anything.
       applyPartitionGroupConfigurationChangeOperation(groupId);
+      applyPartitionGroupGraphOperations(groupId);
     }
   }
 
@@ -1003,4 +1026,193 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     LOG.info("Partition group '{}' operation {} applied.", groupId, operation);
     executor.run(this::applyNewConfigurationChangeOperation);
   }
+
+  // ---------------------------------------------------------------------------
+  // Dependency-graph execution (see DependencyChangePlan). Only groups whose change was built by a
+  // transformer that opted in take this path; everything else stays on the queue above.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * How many of a group's operations this broker will run at once.
+   *
+   * <p>The degree of concurrency is a runtime policy here rather than a property of the plan, which
+   * is the point: it can be lowered to 1 to reproduce one-operation-at-a-time behaviour, or raised,
+   * without changing a single transformer. Restore is I/O bound, so whether running several
+   * partition restores at once on one broker actually helps is a question to settle by measurement.
+   */
+  private static final int MAX_CONCURRENT_GRAPH_OPERATIONS_PER_GROUP = 4;
+
+  private void applyPartitionGroupGraphOperations(final String groupId) {
+    final var config = persistedCurrentConfiguration.getConfiguration();
+    final var group = config.partitionGroup(groupId);
+    final var appliers = partitionGroupChangeAppliers.get(groupId);
+    if (group == null || appliers == null) {
+      return;
+    }
+
+    int started = 0;
+    for (final var entry : group.runnableFor(localMemberId).entrySet()) {
+      if (started >= MAX_CONCURRENT_GRAPH_OPERATIONS_PER_GROUP) {
+        break;
+      }
+      if (inFlightGraphOperations.contains(new GraphOperationKey(groupId, entry.getKey()))) {
+        continue;
+      }
+      startGraphOperation(groupId, entry.getKey(), entry.getValue(), appliers);
+      started++;
+    }
+  }
+
+  private void startGraphOperation(
+      final String groupId,
+      final OperationId operationId,
+      final PartitionGroupOperation operation,
+      final PartitionGroupConfigurationChangeAppliers appliers) {
+    // Read the configuration fresh for each operation rather than once for the loop: init writes
+    // through updateLocalCurrentConfiguration, which persists within this turn, so a hoisted read
+    // would make the second operation of a batch overwrite the first one's init.
+    final var config = persistedCurrentConfiguration.getConfiguration();
+    final var group = config.partitionGroup(groupId);
+    if (group == null) {
+      return;
+    }
+
+    final var key = new GraphOperationKey(groupId, operationId);
+    inFlightGraphOperations.add(key);
+    final var observer = topologyMetrics.observeOperation(operation);
+    LOG.info("Applying partition group '{}' operation {} ({})", groupId, operationId, operation);
+
+    final var applier = appliers.getApplier(operation);
+    final var initialized =
+        applier
+            .init(config.globalConfiguration(), group)
+            .map(transformer -> config.updatePartitionGroupConfig(groupId, transformer))
+            .flatMap(this::updateLocalCurrentConfiguration);
+
+    if (initialized.isLeft()) {
+      observer.failed();
+      inFlightGraphOperations.remove(key);
+      LOG.error(
+          "Failed to initialize partition group '{}' operation {}",
+          groupId,
+          operation,
+          initialized.getLeft());
+      return;
+    }
+
+    final var startedConfiguration = initialized.get();
+    applier
+        .apply()
+        .onComplete(
+            (transformer, error) ->
+                onGraphOperationApplied(
+                    groupId,
+                    operationId,
+                    operation,
+                    startedConfiguration,
+                    transformer,
+                    error,
+                    observer));
+  }
+
+  private void onGraphOperationApplied(
+      final String groupId,
+      final OperationId operationId,
+      final PartitionGroupOperation operation,
+      final CurrentClusterConfiguration configurationOnWhichOperationIsApplied,
+      final UnaryOperator<PartitionGroupConfiguration> transformer,
+      final Throwable error,
+      final OperationObserver observer) {
+    final var key = new GraphOperationKey(groupId, operationId);
+    inFlightGraphOperations.remove(key);
+
+    if (error != null) {
+      observer.failed();
+      final Duration delay =
+          graphOperationBackoff
+              .computeIfAbsent(
+                  key, ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
+              .nextDelay();
+      LOG.warn(
+          "Failed to apply partition group '{}' operation {}. Will be retried in {}.",
+          groupId,
+          operation,
+          delay,
+          error);
+      // Only this operation retries; the group's other runnable operations are unaffected, which is
+      // the point of tracking in-flight state per operation.
+      executor.schedule(delay, () -> applyPartitionGroupGraphOperations(groupId));
+      return;
+    }
+
+    observer.applied();
+    graphOperationBackoff.remove(key);
+
+    final var current = persistedCurrentConfiguration.getConfiguration();
+    final var currentGroup = current.partitionGroup(groupId);
+    final var startedGroup = configurationOnWhichOperationIsApplied.partitionGroup(groupId);
+    if (currentGroup == null
+        || startedGroup == null
+        || currentGroup.version() != startedGroup.version()) {
+      // Recording an operation moves no version, so a version change here means the change was
+      // cancelled or already completed while this operation was running.
+      LOG.warn(
+          "Partition group '{}' changed while applying operation {}. Most likely the change was cancelled.",
+          groupId,
+          operation);
+      return;
+    }
+
+    final var advanced =
+        current.updatePartitionGroupConfig(
+            groupId,
+            g -> g.completeOperation(operationId, transformer).completeGraphChangeIfDrained());
+    updateLocalCurrentConfiguration(advanced);
+    LOG.info("Partition group '{}' operation {} applied.", groupId, operation);
+    executor.run(this::applyNewConfigurationChangeOperation);
+  }
+
+  /**
+   * Finishes any graph change whose operations have all completed.
+   *
+   * <p>Runs on every broker with no coordinator check: completion is a pure function of converged
+   * state, so several brokers computing it agree. It must also run when a gossip merge changes
+   * nothing locally — otherwise a completion whose persist failed is never retried once the cluster
+   * converges, and the change sits drained but unfinished with nothing left to perturb it.
+   */
+  private void maybeCompleteGraphChanges(final CurrentClusterConfiguration config) {
+    final var drained =
+        config.partitionGroups().entrySet().stream()
+            .anyMatch(
+                entry ->
+                    entry
+                        .getValue()
+                        .pendingGraphChanges()
+                        .filter(plan -> !plan.hasPendingChanges())
+                        .isPresent());
+    if (!drained) {
+      return;
+    }
+    updateMultiConfiguration(ClusterConfigurationManagerImpl::completeDrainedGraphChanges)
+        .onComplete(
+            (ignore, completionError) -> {
+              if (completionError != null) {
+                LOG.warn("Failed to complete a drained configuration change", completionError);
+              }
+            });
+  }
+
+  private static CurrentClusterConfiguration completeDrainedGraphChanges(
+      final CurrentClusterConfiguration config) {
+    var result = config;
+    for (final String groupId : List.copyOf(config.partitionGroups().keySet())) {
+      result =
+          result.updatePartitionGroupConfig(
+              groupId, PartitionGroupConfiguration::completeGraphChangeIfDrained);
+    }
+    return result;
+  }
+
+  /** Identifies one in-flight operation: operation ids are unique only within a group's plan. */
+  private record GraphOperationKey(String groupId, OperationId operationId) {}
 }

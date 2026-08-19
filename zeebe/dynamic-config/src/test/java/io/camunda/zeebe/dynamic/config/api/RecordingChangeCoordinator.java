@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -100,6 +101,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
         case final GlobalPhase globalPhase -> operations.addAll(globalPhase.operations());
         case final PartitionGroupParallelPhase parallelPhase ->
             parallelPhase.groupOperations().values().forEach(operations::addAll);
+        case final PartitionGroupGraphPhase graphPhase ->
+            graphPhase.groupOperations().values().forEach(operations::addAll);
       }
     }
     return operations;

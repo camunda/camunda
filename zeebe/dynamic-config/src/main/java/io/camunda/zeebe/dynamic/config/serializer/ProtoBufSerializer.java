@@ -49,12 +49,14 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
@@ -69,6 +71,8 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
@@ -93,6 +97,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
@@ -109,6 +114,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
@@ -1974,11 +1981,122 @@ public class ProtoBufSerializer
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
     configuration
         .pendingChanges()
-        .ifPresent(changePlan -> builder.setPendingChanges(encodeChangePlan(changePlan)));
+        .ifPresent(
+            changePlan -> {
+              if (changePlan instanceof final ClusterChangePlan queue) {
+                builder.setPendingChanges(encodeChangePlan(queue));
+              } else if (changePlan instanceof final DependencyChangePlan graph) {
+                builder.setPendingGraphChanges(encodeDependencyChangePlan(graph));
+              }
+            });
     configuration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
     return builder.build();
+  }
+
+  private Topology.OperationGraph encodeOperationGraph(final OperationGraph graph) {
+    final var builder = Topology.OperationGraph.newBuilder();
+    graph
+        .operations()
+        .forEach(
+            (operationId, planned) -> {
+              final var operation =
+                  Topology.PlannedOperation.newBuilder()
+                      .setId(operationId.value())
+                      .setOperation(
+                          encodePartitionGroupChangeOperation(
+                              (PartitionGroupOperation) planned.operation()));
+              planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
+              builder.addOperations(operation.build());
+            });
+    return builder.build();
+  }
+
+  private OperationGraph decodeOperationGraph(final Topology.OperationGraph proto) {
+    final SortedMap<OperationId, OperationGraph.PlannedOperation> operations = new TreeMap<>();
+    proto
+        .getOperationsList()
+        .forEach(
+            planned -> {
+              final var dependsOn = new TreeSet<OperationId>();
+              planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
+              operations.put(
+                  OperationId.of(planned.getId()),
+                  new OperationGraph.PlannedOperation(
+                      decodePartitionGroupChangeOperation(planned.getOperation()), dependsOn));
+            });
+    return new OperationGraph(operations);
+  }
+
+  private Topology.DependencyChangePlan encodeDependencyChangePlan(
+      final DependencyChangePlan plan) {
+    final var graph = Topology.OperationGraph.newBuilder();
+    plan.operations()
+        .forEach(
+            (operationId, planned) -> {
+              final var operation =
+                  Topology.PlannedOperation.newBuilder()
+                      .setId(operationId.value())
+                      .setOperation(
+                          encodePartitionGroupChangeOperation(
+                              (PartitionGroupOperation) planned.operation()));
+              planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
+              graph.addOperations(operation.build());
+            });
+
+    final var builder =
+        Topology.DependencyChangePlan.newBuilder()
+            .setId(plan.id())
+            .setStatus(fromTopologyChangeStatus(plan.status()))
+            .setStartedAt(toTimestamp(plan.startedAt()))
+            .setGraph(graph.build());
+    plan.completed()
+        .forEach(
+            (operationId, at) ->
+                builder.addCompleted(
+                    Topology.OperationCompletion.newBuilder()
+                        .setOperationId(operationId.value())
+                        .setCompletedAt(toTimestamp(at))
+                        .build()));
+    return builder.build();
+  }
+
+  private DependencyChangePlan decodeDependencyChangePlan(
+      final Topology.DependencyChangePlan proto) {
+    final SortedMap<OperationId, OperationGraph.PlannedOperation> operations = new TreeMap<>();
+    proto
+        .getGraph()
+        .getOperationsList()
+        .forEach(
+            planned -> {
+              final var dependsOn = new TreeSet<OperationId>();
+              planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
+              operations.put(
+                  OperationId.of(planned.getId()),
+                  new OperationGraph.PlannedOperation(
+                      decodePartitionGroupChangeOperation(planned.getOperation()), dependsOn));
+            });
+
+    final SortedMap<OperationId, java.time.Instant> completed = new TreeMap<>();
+    proto
+        .getCompletedList()
+        .forEach(
+            completion ->
+                completed.put(
+                    OperationId.of(completion.getOperationId()),
+                    Instant.ofEpochSecond(
+                        completion.getCompletedAt().getSeconds(),
+                        completion.getCompletedAt().getNanos())));
+
+    return new DependencyChangePlan(
+        proto.getId(),
+        toChangeStatus(proto.getStatus()),
+        Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
+        // Not OperationGraph.of(...): re-validating on every decode would re-run the pairwise
+        // write-set check on a graph the coordinator already validated before it was persisted.
+        new OperationGraph(operations),
+        completed);
   }
 
   public PartitionGroupConfiguration decodePartitionGroupConfiguration(
@@ -1990,10 +2108,13 @@ public class ProtoBufSerializer
                     e -> MemberId.from(e.getKey()), e -> decodeBrokerPartitionState(e.getValue())));
     final Optional<RoutingState> routingState =
         proto.hasRoutingState() ? decodeRoutingState(proto.getRoutingState()) : Optional.empty();
-    final Optional<ClusterChangePlan> pendingChanges =
+    // At most one is set; a group runs one change, and a change uses one execution model.
+    final Optional<ChangePlan> pendingChanges =
         proto.hasPendingChanges()
             ? Optional.of(decodeChangePlan(proto.getPendingChanges()))
-            : Optional.empty();
+            : proto.hasPendingGraphChanges()
+                ? Optional.of(decodeDependencyChangePlan(proto.getPendingGraphChanges()))
+                : Optional.empty();
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
             ? Optional.of(decodeCompletedChange(proto.getLastChange()))
@@ -2117,6 +2238,14 @@ public class ProtoBufSerializer
                           .map(this::encodeGlobalChangeOperation)
                           .toList())
                   .build());
+      case final PartitionGroupGraphPhase graphPhase -> {
+        final var graphBuilder = Topology.PartitionGroupGraphPhase.newBuilder();
+        graphPhase
+            .groupGraphs()
+            .forEach(
+                (group, graph) -> graphBuilder.putGroupGraphs(group, encodeOperationGraph(graph)));
+        builder.setPartitionGroupGraphPhase(graphBuilder.build());
+      }
       case final PartitionGroupParallelPhase parallelPhase -> {
         final var parallelBuilder = Topology.PartitionGroupParallelPhase.newBuilder();
         parallelPhase
@@ -2154,6 +2283,11 @@ public class ProtoBufSerializer
                               e.getValue().getOperationsList().stream()
                                   .map(this::decodePartitionGroupChangeOperation)
                                   .toList())));
+      case PARTITIONGROUPGRAPHPHASE ->
+          new PartitionGroupGraphPhase(
+              proto.getPartitionGroupGraphPhase().getGroupGraphsMap().entrySet().stream()
+                  .collect(
+                      Collectors.toMap(Entry::getKey, e -> decodeOperationGraph(e.getValue()))));
       case PHASE_NOT_SET -> throw new IllegalStateException("Unknown phase: " + proto);
     };
   }

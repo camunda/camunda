@@ -41,9 +41,39 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 2;
   map<string, BrokerPartitionState> members = 3;
   RoutingState routingState = 4;
+  // At most one of pendingChanges (queue execution) and pendingGraphChanges
+  // (dependency-graph execution) is set: a group runs one change at a time, and
+  // a change uses one model, chosen by the transformer that built it.
   ClusterChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
   TenantAvailability availability = 7;
+  DependencyChangePlan pendingGraphChanges = 8;
+}
+
+// A change whose operations carry their own dependencies. An operation runs once
+// everything it depends on has completed, so concurrency is the absence of an edge.
+message DependencyChangePlan {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  OperationGraph graph = 4;
+  repeated OperationCompletion completed = 5;
+}
+
+// The immutable operations of a change and the order constraints between them.
+message OperationGraph {
+  repeated PlannedOperation operations = 1;
+}
+
+message PlannedOperation {
+  int32 id = 1;
+  PartitionGroupChangeOperation operation = 2;
+  repeated int32 dependsOn = 3;
+}
+
+message OperationCompletion {
+  int32 operationId = 1;
+  google.protobuf.Timestamp completedAt = 2;
 }
 
 // Whether a physical tenant is currently disabled (removed from local static configuration, but
@@ -103,7 +133,13 @@ message PhasedChangePlanPhase {
   oneof phase {
     GlobalPhase globalPhase = 1;
     PartitionGroupParallelPhase partitionGroupParallelPhase = 2;
+    PartitionGroupGraphPhase partitionGroupGraphPhase = 3;
   }
+}
+
+// Graphs written to the named groups' pendingGraphChanges when this phase is activated.
+message PartitionGroupGraphPhase {
+  map<string, OperationGraph> groupGraphs = 1;
 }
 
 // Operations written to GlobalConfiguration.pendingChanges when this phase

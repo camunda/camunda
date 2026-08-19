@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.time.Instant;
@@ -246,11 +247,16 @@ public record CurrentClusterConfiguration(
             (memberId, brokerState) ->
                 members.put(memberId, toLegacyMemberState(brokerState, group.getMember(memberId))));
 
+    // The single-group projection carries whichever model the group is running; both expose the
+    // same read API, and a dependency-graph change flattens into the sequential ordering it
+    // degrades to for a reader that predates it.
     final Optional<ClusterChangePlan> pendingChanges =
         globalConfiguration
             .pendingChanges()
-            .filter(ClusterChangePlan::hasPendingChanges)
-            .or(() -> group.pendingChanges().filter(ClusterChangePlan::hasPendingChanges));
+            .<ChangePlan>map(plan -> plan)
+            .filter(ChangePlan::hasPendingChanges)
+            .or(() -> group.pendingChanges().filter(ChangePlan::hasPendingChanges))
+            .map(CurrentClusterConfiguration::toQueueProjection);
 
     final Optional<CompletedChange> lastChange =
         phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
@@ -476,6 +482,15 @@ public record CurrentClusterConfiguration(
         switch (plan.currentPhase()) {
           case final GlobalPhase ignored ->
               updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
+          case final PartitionGroupGraphPhase graphPhase -> {
+            var r = this;
+            for (final var groupId : graphPhase.groupGraphs().keySet()) {
+              r =
+                  r.updatePartitionGroupConfig(
+                      groupId, PartitionGroupConfiguration::cancelPendingChanges);
+            }
+            yield r;
+          }
           case final PartitionGroupParallelPhase parallelPhase -> {
             var r = this;
             for (final var groupId : parallelPhase.groupOperations().keySet()) {
@@ -539,6 +554,25 @@ public record CurrentClusterConfiguration(
         }
         yield result;
       }
+      case final PartitionGroupGraphPhase graphPhase -> {
+        var result = this;
+        for (final var entry : graphPhase.groupGraphs().entrySet()) {
+          final var groupId = entry.getKey();
+          final var graph = entry.getValue();
+          result =
+              result.updatePartitionGroupConfig(
+                  groupId,
+                  group -> {
+                    if (group.hasPendingChanges()) {
+                      throw new IllegalStateException(
+                          "Cannot activate partition-group graph phase for %s: group already has pending changes"
+                              .formatted(groupId));
+                    }
+                    return group.startGraphConfigurationChange(graph);
+                  });
+        }
+        yield result;
+      }
     };
   }
 
@@ -588,6 +622,34 @@ public record CurrentClusterConfiguration(
   public Map<String, SortedMap<Integer, MemberId>> desiredLeaders() {
     return partitionGroups.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().desiredLeaders()));
+  }
+
+  /**
+   * Projects whichever execution model a change uses onto the queue shape the single-group {@link
+   * ClusterConfiguration} exposes.
+   *
+   * <p>A queue projects as itself. A dependency graph flattens into its pending and completed
+   * operations in plan order — a valid, merely slower, sequential reading of the same change — with
+   * the version taken as one per completed operation, which is the contract that field has always
+   * had.
+   *
+   * <p>The projection is necessarily lossy: it cannot express that several operations are running
+   * at once, and a reader that merges by this version alone would keep only one of two concurrent
+   * completions. That is a property of the queue model, not something the projection can repair, so
+   * nothing here tries to. The single-group view is for reporting.
+   */
+  private static ClusterChangePlan toQueueProjection(final ChangePlan plan) {
+    if (plan instanceof final ClusterChangePlan queue) {
+      return queue;
+    }
+    final var completed = plan.completedOperations();
+    return new ClusterChangePlan(
+        plan.id(),
+        1 + completed.size(),
+        plan.status(),
+        plan.startedAt(),
+        completed,
+        plan.pendingOperations());
   }
 
   private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {

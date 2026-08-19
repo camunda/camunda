@@ -189,8 +189,34 @@ public record PhasedChangePlan(
   }
 
   /**
-   * A single phase in a {@link PhasedChangePlan}. Exactly one of the two permitted subtypes is
-   * active.
+   * A single phase in a {@link PhasedChangePlan}. Exactly one of the permitted subtypes is active.
    */
-  public sealed interface Phase permits GlobalPhase, PartitionGroupParallelPhase {}
+  /**
+   * A phase whose named partition groups each run an {@link OperationGraph} — operations with
+   * declared dependencies, executed concurrently wherever no edge orders them.
+   *
+   * <p>The dependency-graph execution model alongside {@link PartitionGroupParallelPhase}'s queue.
+   * A transformer opts in by producing this instead; everything that has not opted in keeps the
+   * queue and its one-broker-at-a-time behaviour.
+   */
+  public record PartitionGroupGraphPhase(Map<String, OperationGraph> groupGraphs) implements Phase {
+    public PartitionGroupGraphPhase {
+      groupGraphs = Map.copyOf(groupGraphs);
+    }
+
+    /** Every operation of this phase per group, flattening the dependencies away for reporting. */
+    public Map<String, List<PartitionGroupOperation>> groupOperations() {
+      return groupGraphs.entrySet().stream()
+          .collect(
+              Collectors.toUnmodifiableMap(
+                  Map.Entry::getKey,
+                  e ->
+                      e.getValue().inOrder().stream()
+                          .map(PartitionGroupOperation.class::cast)
+                          .toList()));
+    }
+  }
+
+  public sealed interface Phase
+      permits GlobalPhase, PartitionGroupParallelPhase, PartitionGroupGraphPhase {}
 }
