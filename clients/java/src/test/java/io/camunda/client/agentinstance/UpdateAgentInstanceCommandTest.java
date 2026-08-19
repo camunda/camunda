@@ -904,19 +904,23 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     }
 
     @Test
-    void shouldRejectEmptyContentListInHistoryItem() {
-      assertThatThrownBy(
-              () ->
-                  client
-                      .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
-                      .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                      .jobKey(JOB_KEY)
-                      .history(
-                          Collections.singletonList(
-                              historyItem("item-1").content(Collections.emptyList())))
-                      .execute())
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("content must not be empty");
+    void shouldAllowEmptyContentListInHistoryItem() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item = historyItem("item-1").content(Collections.emptyList());
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      assertThat(body.getHistory().get(0).getContent()).isEmpty();
     }
 
     @Test

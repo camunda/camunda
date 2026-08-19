@@ -140,9 +140,6 @@ public class UpdateAgentInstanceCommandImpl
     ArgumentUtil.ensureGreaterThan("loopIteration", item.getLoopIteration(), 0);
     ArgumentUtil.ensureNotNull("role", item.getRole());
     ArgumentUtil.ensureNotNull("content", item.getContent());
-    if (item.getContent().isEmpty()) {
-      throw new IllegalArgumentException("content must not be empty");
-    }
     ArgumentUtil.ensureNotNull("producedAt", item.getProducedAt());
 
     final AgentInstanceHistoryRoleEnum protoRole =
