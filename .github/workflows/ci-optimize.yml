@@ -386,28 +386,35 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
+      - uses: ./.github/actions/apt-fast-mirror-failover
+      # Every network-bound, sudo'd step below is wrapped in its own `sudo timeout ...`
+      # so a hang self-terminates inside the sudo'd root process tree instead of
+      # requiring nick-fields/retry to kill across the privilege boundary -- doing
+      # that externally throws `kill EPERM` and crashes instead of retrying, see
+      # https://github.com/nick-fields/retry/issues/124. Budgeted against the 7-minute
+      # outer timeout: 90s + 30s + 180s = 300s worst case, leaving 2 minutes of headroom
+      # for the (fast, non-network) tee/verification steps and process overhead.
+      # google-chrome-stable itself gets the largest share (180s): it and its
+      # dependencies are a much bigger download than the other two apt calls.
       - name: Install Google Chrome
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_wait_seconds: 15
-          timeout_minutes: 5
+          timeout_minutes: 7
           shell: bash
           command: |
             set -euo pipefail
 
             if ! command -v google-chrome >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates
+              sudo timeout 90 bash -c "apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates"
 
-              wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
-                | sudo gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg
+              sudo timeout 30 bash -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
 
               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
                 | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
 
-              sudo apt-get update
-              sudo apt-get install -y --no-install-recommends google-chrome-stable
+              sudo timeout 180 bash -c "apt-get update && apt-get install -y --no-install-recommends google-chrome-stable"
             fi
 
             google-chrome --version
