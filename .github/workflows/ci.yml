@@ -1250,6 +1250,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
+      - uses: ./.github/actions/apt-fast-mirror-failover
       # `timeout` runs inside the sudo'd root process tree so it can self-terminate a hung
       # apt-get without nick-fields/retry having to kill across the privilege boundary --
       # doing that externally throws `kill EPERM` and crashes instead of retrying, see
