@@ -95,6 +95,28 @@ class BusinessValueOverviewReadServiceTest {
   }
 
   @Test
+  void shouldPassAnEmptyListWhenUserIsAuthorizedToNoTenants() {
+    // A user with zero authorized tenants is a legitimate state — new customer, tenant assignment
+    // pending, role that doesn't grant any tenant access. The read must still short-circuit
+    // cleanly: pass an empty collection so the repository's is-empty guard returns immediately
+    // without hitting the datastore.
+    // given
+    when(tenantService.getTenantIdsForUser(USER)).thenReturn(List.of());
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
+
+    // when
+    final BusinessValueOverviewResponseDto response =
+        readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    final ArgumentCaptor<Collection<String>> captor = collectionCaptor();
+    verify(overviewRepository).readByRange(eq(MetricRange.THIRTY_DAYS), captor.capture());
+    assertThat(captor.getValue()).isEmpty();
+    assertThat(response.isHasAnyTarget()).isFalse();
+    assertThat(response.getCoverage().getTotalProcesses()).isZero();
+  }
+
+  @Test
   void shouldReturnEmptyResponseWhenNoRows() {
     // given
     when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());

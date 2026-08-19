@@ -26,6 +26,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class BusinessValueOverviewRestServiceTest {
 
@@ -45,36 +49,73 @@ class BusinessValueOverviewRestServiceTest {
     restService = new BusinessValueOverviewRestService(readService, sessionService);
   }
 
-  @Test
-  void shouldDelegateToReadServiceForValidRange() {
+  @ParameterizedTest(name = "range={0} → resolves to {1}")
+  @CsvSource({"7d,  SEVEN_DAYS", "30d, THIRTY_DAYS", "3m,  THREE_MONTHS", "6m,  SIX_MONTHS"})
+  void shouldDelegateToReadServiceForEveryValidRangePreset(
+      final String rangeParam, final MetricRange expected) {
     // given
-    final BusinessValueOverviewResponseDto expected =
+    final BusinessValueOverviewResponseDto expectedResponse =
         new BusinessValueOverviewResponseDto(
             false, new CoverageDto(0, 0), new AttainmentDto(0, 0), List.of(), List.of());
-    when(readService.getOverview(USER, MetricRange.THIRTY_DAYS)).thenReturn(expected);
+    when(readService.getOverview(USER, expected)).thenReturn(expectedResponse);
 
     // when
-    final BusinessValueOverviewResponseDto response = restService.getOverview("30d", request);
+    final BusinessValueOverviewResponseDto response = restService.getOverview(rangeParam, request);
 
     // then
-    assertThat(response).isSameAs(expected);
-    verify(readService).getOverview(USER, MetricRange.THIRTY_DAYS);
+    assertThat(response).isSameAs(expectedResponse);
+    verify(readService).getOverview(USER, expected);
   }
 
   @Test
   void shouldRejectUnknownRangeWithBadRequest() {
-    // 12m is intentionally excluded — SaaS retains only 180 days, see tech design §1
-    // given
+    // 12m is intentionally excluded because SaaS retains only 180 days — see tech design §1.
+    // given / when / then
     assertThatThrownBy(() -> restService.getOverview("12m", request))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("12m");
   }
 
-  @Test
-  void shouldRejectNullRangeWithBadRequest() {
-    // given
-    assertThatThrownBy(() -> restService.getOverview(null, request))
+  @ParameterizedTest(name = "range=\"{0}\" is rejected with 400")
+  @ValueSource(strings = {"12m", "1y", "xyz", "30 d", "30D", "7D", "3M", "6M", " 30d", "30d "})
+  void shouldRejectAnyOtherRangeStringWithBadRequest(final String rangeParam) {
+    // MetricRange.fromId is intentionally case-sensitive and does not trim, so anything that
+    // doesn't match one of the four canonical presets — including case variants and stray
+    // whitespace — falls into the same failure bucket as an obviously-bad "xyz".
+    // given / when / then
+    assertThatThrownBy(() -> restService.getOverview(rangeParam, request))
         .isInstanceOf(BadRequestException.class);
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  void shouldRejectNullOrEmptyRangeWithBadRequest(final String rangeParam) {
+    // given / when / then
+    assertThatThrownBy(() -> restService.getOverview(rangeParam, request))
+        .isInstanceOf(BadRequestException.class);
+  }
+
+  @ParameterizedTest(name = "range=\"{0}\" (special-char payload) is rejected safely")
+  @ValueSource(
+      strings = {
+        "' OR '1'='1",
+        "\"; DROP INDEX overview; --",
+        "<script>alert(1)</script>",
+        "../../etc/passwd",
+        "%00",
+        "%2F30d",
+        "30d%00",
+        "30d\n7d",
+        "30d;7d"
+      })
+  void shouldRejectSpecialCharacterPayloadsAsBadRequestWithoutReachingTheService(
+      final String rangeParam) {
+    // Anything that isn't one of the four canonical presets is a plain 400; the important part
+    // is that no injection-style payload flows through to the read service or the datastore.
+    // given / when / then
+    assertThatThrownBy(() -> restService.getOverview(rangeParam, request))
+        .isInstanceOf(BadRequestException.class);
+    verify(readService, org.mockito.Mockito.never()).getOverview(any(), any());
   }
 
   @Test
@@ -83,9 +124,24 @@ class BusinessValueOverviewRestServiceTest {
     when(sessionService.getRequestUserOrFailNotAuthorized(any()))
         .thenThrow(new io.camunda.optimize.rest.exceptions.NotAuthorizedException("nope"));
 
-    // when
+    // when / then
     assertThatThrownBy(() -> restService.getOverview("30d", request))
         .isInstanceOf(io.camunda.optimize.rest.exceptions.NotAuthorizedException.class);
+  }
+
+  @Test
+  void shouldNotInvokeReadServiceWhenAuthorizationFailsForAnOtherwiseValidRange() {
+    // A malformed range is caught before auth; a valid range with a bad session must still
+    // bail out before hitting the read service. This makes the ordering — auth first, then
+    // range parsing — an assertion rather than an implementation detail.
+    // given
+    when(sessionService.getRequestUserOrFailNotAuthorized(any()))
+        .thenThrow(new io.camunda.optimize.rest.exceptions.NotAuthorizedException("nope"));
+
+    // when / then
+    assertThatThrownBy(() -> restService.getOverview("30d", request))
+        .isInstanceOf(io.camunda.optimize.rest.exceptions.NotAuthorizedException.class);
+    verify(readService, org.mockito.Mockito.never()).getOverview(any(), any());
   }
 
   @Test
@@ -93,7 +149,7 @@ class BusinessValueOverviewRestServiceTest {
     // given
     when(readService.getOverview(anyString(), any())).thenThrow(new IllegalStateException("boom"));
 
-    // when
+    // when / then
     assertThatThrownBy(() -> restService.getOverview("30d", request))
         .isInstanceOf(IllegalStateException.class);
   }
