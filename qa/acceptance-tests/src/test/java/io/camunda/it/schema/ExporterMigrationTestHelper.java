@@ -549,8 +549,11 @@ public class ExporterMigrationTestHelper {
   /**
    * Docker Hub is an external dependency, and this runs while JUnit provides the arguments for the
    * migration ITs. An argument-provider failure is a container-level failure, which Failsafe's
-   * {@code rerunFailingTestsCount} cannot recover — so a single reset connection or rate-limited
-   * response fails the build outright. The retry therefore has to live here.
+   * {@code rerunFailingTestsCount} cannot recover — so a single reset connection would fail the
+   * build outright. The retry therefore has to live here.
+   *
+   * <p>Only transport failures are retried. An HTTP error response means Docker Hub answered, so it
+   * fails immediately rather than repeating a request that is already known to be rejected.
    */
   public static List<String> fetchAllPatchesFromPreviousMinor() {
     return Awaitility.await("fetch camunda/camunda image tags for " + PREVIOUS_MINOR_VERSION)
@@ -577,12 +580,14 @@ public class ExporterMigrationTestHelper {
         final HttpRequest request =
             HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(TAG_FETCH_REQUEST_TIMEOUT).GET().build();
-      final HttpResponse<String> response =
-          client.send(request, HttpResponse.BodyHandlers.ofString());
+                .timeout(TAG_FETCH_REQUEST_TIMEOUT)
+                .GET()
+                .build();
+        final HttpResponse<String> response =
+            client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-          throw new IOException(
+          throw new IllegalStateException(
               String.format(
                   "Failed to fetch Docker Hub tags from %s: HTTP %d, body: %s",
                   url, response.statusCode(), response.body()));
@@ -590,9 +595,9 @@ public class ExporterMigrationTestHelper {
 
         final JsonNode root = mapper.readTree(response.body());
 
-      for (final JsonNode tag : root.get("results")) {
-        allTags.add(tag.get("name").asString());
-      }
+        for (final JsonNode tag : root.get("results")) {
+          allTags.add(tag.get("name").asString());
+        }
 
         // pagination
         final JsonNode next = root.get("next");
