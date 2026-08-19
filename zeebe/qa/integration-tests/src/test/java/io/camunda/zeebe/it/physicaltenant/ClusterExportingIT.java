@@ -127,6 +127,20 @@ final class ClusterExportingIT {
     assertThat(awaitSettledClusterStatus()).isEqualTo("EXPORTING");
   }
 
+  @Test
+  void shouldReportMixedWhenPhysicalTenantsDisagree() throws Exception {
+    // given — pausing only one physical tenant directly (the per-PT endpoint, not the
+    // cluster-wide one) leaves the other exporting, so the fold must report MIXED rather than
+    // either tenant's own phase. This is a steady state, not a transition to wait out: nothing
+    // else changes once the pause completes.
+    pausePhysicalTenant(TENANT_B);
+
+    // when / then
+    assertThat(awaitClusterStatus("MIXED")).isEqualTo("MIXED");
+    assertPartitionsReport(TENANT_B, "PAUSED");
+    assertPartitionsReport(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, "EXPORTING");
+  }
+
   /**
    * Pause and resume answer once every partition of every tenant has acknowledged, but a replica
    * may still be mid-transition, so the status is polled until it settles rather than read once.
@@ -135,6 +149,12 @@ final class ClusterExportingIT {
     return Awaitility.await("until the cluster-wide exporting status settles on a single phase")
         .atMost(TIMEOUT)
         .until(this::readClusterStatus, phase -> !"MIXED".equals(phase));
+  }
+
+  private String awaitClusterStatus(final String expectedPhase) {
+    return Awaitility.await("until the cluster-wide exporting status reports " + expectedPhase)
+        .atMost(TIMEOUT)
+        .until(this::readClusterStatus, expectedPhase::equals);
   }
 
   private String readClusterStatus() throws Exception {
@@ -163,6 +183,26 @@ final class ClusterExportingIT {
     final var response = send("POST", path);
     assertThat(response.statusCode())
         .as("POST %s should succeed, but got: %s", path, response.body())
+        .isEqualTo(204);
+  }
+
+  /**
+   * Pauses one physical tenant directly through the per-PT endpoint (unauthenticated on this
+   * broker, unlike the cluster-admin-gated cluster-wide endpoint) rather than through {@link
+   * #post}, so the other physical tenant is left untouched.
+   */
+  private void pausePhysicalTenant(final String physicalTenantId) throws Exception {
+    final var request =
+        HttpRequest.newBuilder(
+                resolve("/physical-tenants/" + physicalTenantId + "/v2/exporting/pause"))
+            .method("POST", BodyPublishers.noBody())
+            .header("Accept", "application/json")
+            .build();
+    final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+    assertThat(response.statusCode())
+        .as(
+            "Pausing physical tenant '%s' should succeed, but got: %s",
+            physicalTenantId, response.body())
         .isEqualTo(204);
   }
 
