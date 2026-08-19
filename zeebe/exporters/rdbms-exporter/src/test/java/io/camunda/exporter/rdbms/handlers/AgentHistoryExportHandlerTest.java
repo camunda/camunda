@@ -16,7 +16,7 @@ import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
 import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;

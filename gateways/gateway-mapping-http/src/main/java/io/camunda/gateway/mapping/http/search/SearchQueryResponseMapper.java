@@ -193,6 +193,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
+import io.camunda.search.entities.ContentItem;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -202,6 +203,8 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputE
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.entities.DocumentMetadata;
+import io.camunda.search.entities.DocumentReference;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -2319,8 +2322,7 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static AgentInstanceMessageContent toAgentInstanceMessageContent(
-      final AgentInstanceHistoryEntity.ContentItem item) {
+  private static AgentInstanceMessageContent toAgentInstanceMessageContent(final ContentItem item) {
     return switch (item.contentType()) {
       case TEXT ->
           AgentInstanceTextContent.Builder.create()
@@ -2343,7 +2345,7 @@ public final class SearchQueryResponseMapper {
   }
 
   private static io.camunda.gateway.protocol.model.DocumentReference toDocumentReference(
-      final AgentInstanceHistoryEntity.DocumentReference ref) {
+      final DocumentReference ref) {
     return io.camunda.gateway.protocol.model.DocumentReference.Builder.create()
         .camundaDocumentType(
             io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum.CAMUNDA)
@@ -2354,8 +2356,7 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static DocumentMetadataResponse toDocumentMetadataResponse(
-      final AgentInstanceHistoryEntity.DocumentMetadata meta) {
+  private static DocumentMetadataResponse toDocumentMetadataResponse(final DocumentMetadata meta) {
     return DocumentMetadataResponse.Builder.create()
         .fileName(meta.fileName())
         .expiresAt(formatDateOrNull(meta.expiresAt()))
