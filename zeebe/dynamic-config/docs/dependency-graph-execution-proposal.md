@@ -7,6 +7,19 @@
 **Alternative to**: [parallel member execution proposal](./parallel-member-execution-proposal.md),
 which solves the same problem by nesting containers instead
 
+> **As implemented, this proposal's write-set safety net does not exist.** The "Eligibility" section
+> below and the `state/` implementation note under "Implementation notes" describe a disjoint-write-set
+> check that was built, then removed: it could not protect the orderings that mattered most (a
+> pre-restore before a restore writes no configuration state at all, so the check saw it as safely
+> concurrent regardless of any edge), and none of the operations the two current adopters — restore
+> and mode change — declare need it, since both name every edge by hand. `WriteSet` and `WriteSets`
+> are gone from `state/`; `OperationGraph.of` validates only that the graph is acyclic and that every
+> `dependsOn` id exists. Ordering correctness is the transformer author's alone — see
+> `OperationGraph`'s class javadoc, which documents the two traps this check used to catch
+> automatically. Left the sections below as they were reasoned through, since the write-set idea and
+> why it falls short of a real safety net is itself the point of "Why write-set analysis alone cannot
+> replace declared edges" — but nothing past this note is current behavior.
+
 ## Summary
 
 Model a configuration change as **operations with declared dependencies** rather than as a sequence
@@ -273,9 +286,11 @@ sequencing concept in the system. Worth stating as the direction; not worth bund
 ### `state/`
 
 - `DependencyChangePlan` + `PlannedOperation` + `OperationId` as above.
-- `WriteSet` and `writeSet(ClusterConfigurationChangeOperation)`.
-- Plan construction validates: no cycles (topological sort), every `dependsOn` id exists, and every
-  unordered pair without a path between them has disjoint write sets.
+- ~~`WriteSet` and `writeSet(ClusterConfigurationChangeOperation)`.~~ Built, then removed — see the
+  note at the top of this document.
+- Plan construction validates: no cycles (topological sort) and every `dependsOn` id exists. ~~and
+  every unordered pair without a path between them has disjoint write sets~~ — removed along with
+  `WriteSet`; a missing edge between two operations that may run concurrently is not rejected.
 - `pendingChangesFor(MemberId)` becomes `runnableFor(MemberId)` and returns a *collection*. It must
   be a genuine per-member lookup — today both sub-configurations implement it as "if the plan has
   pending changes for this member, return `nextPendingOperation()`", which is only sound while one
@@ -362,10 +377,13 @@ Stated plainly, because these are the reasons to say no.
 
 ## Risks
 
-- **Under-declared edges are silent.** A transformer that forgets an edge produces a plan that is
-  valid, passes write-set disjointness, and races on something outside the configuration — the
-  `bootstrap`/`join` shape. Write-set analysis cannot catch it. Mitigation is the `sequential(…)`
-  default: nothing is parallel unless someone deliberately made it so.
+- **Under-declared edges are silent**, and more so than originally scoped here: with `WriteSet`
+  removed (see the note at the top of this document), nothing checks a missing edge at all any more,
+  not even the same-member-writes case this section originally carved out as the one thing write-set
+  analysis *could* catch. A transformer that forgets an edge produces a plan that is accepted and
+  races — silently, since two operations writing the same entry both succeed and the sub-configuration
+  merge just keeps one by version. Mitigation is unchanged: the `sequential(…)` default (nothing is
+  parallel unless someone deliberately made it so), plus tests pinning each adopter's edges by hand.
 - **Concurrent recovery entry is a behavioural change**, not just a faster one — brokers transition
   together rather than one at a time. Same caveat as the companion proposal; the mode-change
   transformer should stay sequential until the recovery owner reviews it.
