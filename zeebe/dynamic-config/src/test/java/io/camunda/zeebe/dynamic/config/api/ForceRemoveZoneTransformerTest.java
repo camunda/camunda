@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.TENANT_A;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.partitionGroupPhase;
+import static io.camunda.zeebe.dynamic.config.util.PhysicalTenantFixtures.withMirroredTenant;
 import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
@@ -20,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
@@ -27,6 +32,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class ForceRemoveZoneTransformerTest {
@@ -146,5 +152,93 @@ final class ForceRemoveZoneTransformerTest {
     assertThat(result.getLeft())
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
         .hasMessageContaining("last remaining zone");
+  }
+
+  @Nested
+  class Phases {
+
+    private static final ZoneAwareConfig SURVIVING_CONFIG =
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
+
+    @Test
+    void shouldPlanTheSameChangeAsTheLegacyPath() {
+      // given — a cluster with a single physical tenant, which is what the legacy path can express
+      final var topology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
+      final var transformer = new ForceRemoveZoneTransformer(ZONE_B);
+
+      // when
+      final var phases = transformer.phases(CurrentClusterConfiguration.fromLegacy(topology));
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get())
+          .isEqualTo(CurrentClusterConfiguration.toPhases(transformer.operations(topology).get()));
+    }
+
+    /**
+     * A zone fails over for the whole cluster, so every tenant's partitions have to be handed to
+     * the brokers outside it. A tenant left out keeps replicas in the failed zone — and the member
+     * removal that follows refuses the whole failover over it.
+     */
+    @Test
+    void shouldEvictTheFailedZoneFromEveryPhysicalTenant() {
+      // given
+      final var configuration =
+          withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
+
+      // when — zone-b fails over
+      final var phases = new ForceRemoveZoneTransformer(ZONE_B).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(partitionGroupPhase(phases.get()).groupOperations())
+          .containsOnlyKeys(CurrentClusterConfiguration.DEFAULT_GROUP, TENANT_A)
+          .allSatisfy(
+              (physicalTenantId, operations) ->
+                  assertThat(operations)
+                      .describedAs("partitions of physical tenant '%s'", physicalTenantId)
+                      .containsExactly(
+                          new PartitionForceReconfigureOperation(ZONE_A_0, 1, Set.of(ZONE_A_0)),
+                          new PartitionForceReconfigureOperation(ZONE_A_0, 2, Set.of(ZONE_A_0))));
+    }
+
+    /**
+     * The shrunk layout is persisted in the same phase that removes the zone's brokers, so the
+     * cluster never describes a zone layout its members do not match.
+     */
+    @Test
+    void shouldDropTheZoneFromTheLayoutAsTheBrokersAreRemoved() {
+      // given
+      final var configuration =
+          withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
+
+      // when
+      final var phases = new ForceRemoveZoneTransformer(ZONE_B).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases).isRight();
+      assertThat(phases.get()).hasSize(2);
+      assertThat(((GlobalPhase) phases.get().getLast()).operations())
+          .containsExactly(
+              new MemberRemoveOperation(ZONE_A_0, ZONE_B_0),
+              new UpdatePartitionDistributorConfigOperation(ZONE_A_0, SURVIVING_CONFIG));
+    }
+
+    @Test
+    void shouldRejectAnInvalidRequestBeforePlanningAnyTenant() {
+      // given
+      final var configuration =
+          withMirroredTenant(buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS));
+
+      // when
+      final var phases = new ForceRemoveZoneTransformer(ZONE_C).phases(configuration);
+
+      // then
+      EitherAssert.assertThat(phases)
+          .isLeft()
+          .left()
+          .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+          .satisfies(error -> assertThat(error).hasMessageContaining("unknown zone"));
+    }
   }
 }
