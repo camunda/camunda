@@ -58,6 +58,9 @@ public class JobRegistryReaderES implements JobRegistryReader {
                         sort ->
                             sort.field(
                                 f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Asc)))
+                    // tiebreaker
+                    .sort(
+                        sort -> sort.field(f -> f.field(JobRegistryIndex.ID).order(SortOrder.Asc)))
                     .size(limit));
 
     try {
