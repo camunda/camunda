@@ -1,0 +1,9 @@
+camunda:
+  security:
+    authentication:
+      oidc:
+        client-id: it-client
+        client-secret: it-secret
+        authorization-uri: https://idp.example.com/authorize
+        token-uri: https://idp.example.com/token
+        jwk-set-uri: https://idp.example.com/jwks
