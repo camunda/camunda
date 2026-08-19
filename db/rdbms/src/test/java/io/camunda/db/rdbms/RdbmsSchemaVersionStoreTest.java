@@ -14,6 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.RdbmsSchemaVersionStore.CurrentSchemaVersion.Kind;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -170,6 +171,56 @@ class RdbmsSchemaVersionStoreTest {
     verify(dataSource, never()).getConnection();
   }
 
+  // ---- getCurrentSchemaVersion (upgrade-readiness facts) ----
+
+  @Test
+  void shouldReportAvailableCurrentSchemaVersion() {
+    // given - schema=8.10.0, app=8.10.0
+    final var currentSchemaVersion = versionStore("8.10.0", "8.10.0").getCurrentSchemaVersion();
+
+    // then
+    assertThat(currentSchemaVersion.kind()).isEqualTo(Kind.AVAILABLE);
+    assertThat(currentSchemaVersion.schemaVersion()).contains("8.10.0");
+    assertThat(currentSchemaVersion.stableApplicationVersion()).contains("8.10.0");
+  }
+
+  @Test
+  void shouldNormalizeApplicationVersionForCurrentSchemaVersion() {
+    // given - schema=8.9.0, app=8.10.0-SNAPSHOT
+    final var currentSchemaVersion =
+        versionStore("8.9.0", "8.10.0-SNAPSHOT").getCurrentSchemaVersion();
+
+    // then
+    assertThat(currentSchemaVersion.kind()).isEqualTo(Kind.AVAILABLE);
+    assertThat(currentSchemaVersion.stableApplicationVersion()).contains("8.10.0");
+  }
+
+  @Test
+  void shouldReportFreshDatabaseCurrentSchemaVersion() {
+    // given - resolveCurrentSchemaVersion returns null (fresh DB, not yet initialized)
+    final var currentSchemaVersion = versionStore(null, "8.11.0").getCurrentSchemaVersion();
+
+    // then
+    assertThat(currentSchemaVersion.kind()).isEqualTo(Kind.FRESH_DATABASE);
+    assertThat(currentSchemaVersion.schemaVersion()).isEmpty();
+  }
+
+  @Test
+  void shouldReportReadFailureCurrentSchemaVersion() throws Exception {
+    // given - getConnection() throws
+    final var dataSource = mock(DataSource.class);
+    when(dataSource.getConnection()).thenThrow(new RuntimeException("DB connection refused"));
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when
+    final var currentSchemaVersion = store.getCurrentSchemaVersion();
+
+    // then - a read failure must never throw; it must be reported as raw failure facts
+    assertThat(currentSchemaVersion.kind()).isEqualTo(Kind.READ_FAILURE);
+    assertThat(currentSchemaVersion.detail())
+        .hasValueSatisfying(s -> s.contains("DB connection refused"));
+  }
+
   // ---- toStableVersion ----
 
   @Test
@@ -190,8 +241,8 @@ class RdbmsSchemaVersionStoreTest {
   // ---- helpers ----
 
   /**
-   * Builds a {@link RdbmsSchemaVersionStore} whose {@link #resolveCurrentSchemaVersion} returns
-   * {@code schemaVersion}, backed by a mock data source that yields a mock connection.
+   * Builds a {@link RdbmsSchemaVersionStore} whose currentSchemaVersion returns {@code
+   * schemaVersion}, backed by a mock data source that yields a mock connection.
    */
   private static RdbmsSchemaVersionStore versionStore(
       final String schemaVersion, final String appVersion) {
