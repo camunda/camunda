@@ -44,6 +44,7 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   private static final String AGENTIC_JOB_TYPE =
       JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
   private static final String PLAIN_JOB_TYPE = "plain-service-task";
+  private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-task";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -90,6 +91,30 @@ public class AgentHistoryDiscardOnJobDestructionTest {
         .withType(AGENTIC_JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
+
+    // then
+    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+  }
+
+  @Test
+  public void shouldDiscardPendingItemsWhenExternalAgentJobCanceledByCancelCommand() {
+    // given — external agent marker, job type does not carry the legacy agentic prefix
+    final var fixture =
+        deployActivateAndCreatePendingItem(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done(),
+            EXTERNAL_AGENT_JOB_TYPE);
+
+    // when — explicit JOB:CANCEL command (JobCancelProcessor path)
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(fixture.jobKey)
+            .job(JobIntent.CANCEL, new JobRecord().setType(EXTERNAL_AGENT_JOB_TYPE)));
 
     // then
     assertItemDiscarded(fixture.jobKey, fixture.itemKey);
