@@ -172,22 +172,41 @@ public class AgentHistoryDiscardOnJobDestructionTest {
 
   @Test
   public void shouldNotDiscardWhenNonAgenticJobIsCanceled() {
-    // given
-    final var fixture = deployActivateAndCreatePendingItem(process(PLAIN_JOB_TYPE), PLAIN_JOB_TYPE);
+    // given — a plain service task with no agent definition anywhere, so it cannot carry a
+    // pending history item in the first place
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(PLAIN_JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.jobs().withType(PLAIN_JOB_TYPE).activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(PLAIN_JOB_TYPE)
+            .getFirst()
+            .getKey();
 
     // when
-    ENGINE.processInstance().withInstanceKey(fixture.processInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // then — the job is canceled but no discard is emitted for this non-agentic job. Scope by
-    // jobKey so residual async records from other tests on the shared engine cannot interfere.
+    // then — scope by jobKey so residual async records from other tests on the shared engine
+    // cannot interfere.
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
                 .withValueType(ValueType.AGENT_HISTORY)
                 .filter(r -> r.getIntent() == AgentHistoryIntent.DISCARD)
-                .filter(r -> ((AgentHistoryRecordValue) r.getValue()).getJobKey() == fixture.jobKey)
+                .filter(r -> ((AgentHistoryRecordValue) r.getValue()).getJobKey() == jobKey)
                 .exists())
+        .describedAs(
+            "no discard command is emitted for a job whose element has no agent definition")
         .isFalse();
   }
 
