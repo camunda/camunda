@@ -35,12 +35,15 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 /**
- * Opt-in configuration that adopts CSL for Optimize. See <a
+ * Default configuration that adopts CSL for Optimize. See <a
  * href="https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md">ADR-0038</a>.
  *
- * <p>Activated by {@code optimize.security.csl.enabled=true}. The legacy adapters ({@code
- * CCSMSecurityConfigurerAdapter} / {@code CCSaaSSecurityConfigurerAdapter}) carry the inverse
- * condition, so exactly one security setup is active at a time.
+ * <p>Active whenever {@code optimize.security.csl.enabled} is {@code true} or absent — the default
+ * since 8.10 (camunda/camunda#58483). An operator can opt back into the legacy stack with {@code
+ * optimize.security.csl.enabled=false} until the flag and the legacy adapters ({@code
+ * CCSMSecurityConfigurerAdapter} / {@code CCSaaSSecurityConfigurerAdapter}) are removed together at
+ * 8.11 (camunda/camunda#58484). The two carry the inverse condition, so exactly one security setup
+ * is active at a time.
  *
  * <p>Because CSL gives the API and webapp chains distinct orders (API before webapp), Optimize can
  * use the umbrella {@code CamundaSecurityAutoConfiguration} directly and return {@code /**} from
@@ -53,17 +56,20 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
  * camunda.security.session.persistent.enabled}, so without that property CSL keeps its in-memory
  * sessions and nothing here changes.
  *
- * <p>Required application config:
+ * <p>Required application config (with {@code optimize.security.csl.enabled} left at its default of
+ * {@code true}):
  *
  * <ul>
- *   <li>{@code optimize.security.csl.enabled=true}
  *   <li>{@code camunda.security.authentication.method=oidc}
  *   <li>{@code camunda.security.authentication.oidc.*} for the Identity (CCSM) / Auth0 (CCSaaS)
  *       client registration
  * </ul>
  */
 @Configuration
-@ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 @Import(WebSessionConfiguration.class)
 public class OptimizeCamundaSecurityConfig {

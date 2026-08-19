@@ -23,15 +23,18 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
-// Backs off under CSL: otherwise CSL adopts this legacy Auth0 ClientRegistrationRepository via
-// @ConditionalOnMissingBean and its sso-callback redirect overrides camunda.security.*.oidc config.
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// Otherwise CSL adopts this legacy Auth0 ClientRegistrationRepository via @ConditionalOnMissingBean
+// and its sso-callback redirect overrides camunda.security.*.oidc config. The flag and this legacy
+// stack are removed together at 8.11 (camunda/camunda#58484).
 // https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @Conditional(CCSaaSCondition.class)
 @ConditionalOnProperty(
     name = "optimize.security.csl.enabled",
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = false)
 public class CCSaasAuth0WebSecurityConfig {
 
   public static final String OAUTH_AUTH_ENDPOINT = "/sso";

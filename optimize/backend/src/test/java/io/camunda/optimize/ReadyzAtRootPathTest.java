@@ -134,7 +134,7 @@ class ReadyzAtRootPathTest {
 
   private void givenCslEnabled(final boolean enabled) {
     lenient()
-        .when(environment.getProperty("optimize.security.csl.enabled", Boolean.class, false))
+        .when(environment.getProperty("optimize.security.csl.enabled", Boolean.class, true))
         .thenReturn(enabled);
     // Keep the connector setup in customize() inert: no HTTP or HTTPS port configured.
     lenient()

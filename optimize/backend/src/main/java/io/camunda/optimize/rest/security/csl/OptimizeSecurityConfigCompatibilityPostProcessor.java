@@ -30,8 +30,16 @@ import org.springframework.core.env.MapPropertySource;
  * <p>The derived property source is added at the <b>end</b> of the source list (lowest precedence),
  * so any explicit {@code camunda.security.*} value an operator sets still wins.
  *
- * <p>Only active when {@code optimize.security.csl.enabled=true}. Keys with no meaning under CSL
- * (server-side sessions, no self-signed tokens) are logged as deprecated and otherwise ignored.
+ * <p>Only active while CSL is active, i.e. {@code optimize.security.csl.enabled} is {@code true} or
+ * absent — the default since 8.10 (camunda/camunda#58483). Keys with no meaning under CSL
+ * (server-side sessions, no self-signed tokens) are logged as deprecated and otherwise ignored. An
+ * operator who explicitly sets the flag to {@code false} gets a startup warning naming the 8.11
+ * removal instead (camunda/camunda#58484, camunda/camunda#58485).
+ *
+ * <p>Also canonicalizes {@code optimize.security.csl.enabled} itself to a literal {@code "true"} or
+ * {@code "false"}, overriding any other value (e.g. a typo). The CSL and legacy security beans are
+ * gated by {@code @ConditionalOnProperty} on this same flag with exact-match {@code havingValue}s,
+ * so without this, an unrecognised value would leave neither security stack active.
  *
  * <p>Bridges the CCSM (Identity) and CCSaaS (Auth0) OIDC registrations from their {@code
  * CAMUNDA_OPTIMIZE_IDENTITY_*} / {@code CAMUNDA_OPTIMIZE_AUTH0_*} / {@code
@@ -50,6 +58,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
 
   static final String CSL_ENABLED_PROPERTY = "optimize.security.csl.enabled";
   static final String COMPATIBILITY_PROPERTY_SOURCE_NAME = "optimizeCslCompatibility";
+  static final String CANONICAL_FLAG_PROPERTY_SOURCE_NAME = "optimizeCslFlagCanonical";
 
   private static final String OIDC_PREFIX = "camunda.security.authentication.oidc.";
   private static final String LEGACY_KEY_REMOVAL_VERSION = "8.11";
@@ -66,7 +75,21 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
-    if (!Boolean.parseBoolean(env.getProperty(CSL_ENABLED_PROPERTY, "false"))) {
+    final boolean cslEnabled =
+        !"false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"));
+    // Canonicalize to a literal "true"/"false" so every @ConditionalOnProperty on this flag (CSL
+    // config, legacy adapters) and every direct Environment read of it agree on the same outcome,
+    // even given a value that is neither, e.g. a typo. Those conditions match the value verbatim,
+    // so left unnormalized a typo would leave neither the CSL nor the legacy security stack active.
+    // Added first (highest precedence) so it wins over whatever the operator actually set.
+    env.getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                CANONICAL_FLAG_PROPERTY_SOURCE_NAME,
+                Map.of(CSL_ENABLED_PROPERTY, Boolean.toString(cslEnabled))));
+
+    if (!cslEnabled) {
+      warnCslFlagExplicitlyDisabled();
       return;
     }
 
@@ -88,6 +111,19 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
               + " (always-on defaults plus values derived from legacy Optimize config).",
           derived.size());
     }
+  }
+
+  // Reached only when an operator explicitly sets the flag to false: every other path now
+  // defaults CSL to active (camunda/camunda#58483), so an unset property never reaches here.
+  private void warnCslFlagExplicitlyDisabled() {
+    LOG.warn(
+        "Optimize config '{}' is deprecated and set to false, keeping the legacy authentication"
+            + " stack active instead of CSL. Support for the flag and for the legacy config keys"
+            + " it gates will be removed in {}, together with the legacy stack itself"
+            + " (camunda/camunda#58484, camunda/camunda#58485). Unset it once CSL is confirmed"
+            + " working to prepare for that removal.",
+        CSL_ENABLED_PROPERTY,
+        LEGACY_KEY_REMOVAL_VERSION);
   }
 
   // Always applied when CSL is enabled, independent of any legacy key.
