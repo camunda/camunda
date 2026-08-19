@@ -432,6 +432,12 @@ public class BackupRestoreTest {
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
 
+    builder.setHttpClientConfigCallback(
+        httpClientBuilder -> {
+          httpClientBuilder.disableContentCompression();
+          return httpClientBuilder;
+        });
+
     final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
     builder.setMapper(jsonpMapper);
 
