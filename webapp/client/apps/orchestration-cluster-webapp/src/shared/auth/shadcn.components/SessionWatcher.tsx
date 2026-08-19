@@ -6,25 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react-lite';
+import {toast} from '@camunda/design-system';
 import {Navigate, useLocation} from '@tanstack/react-router';
+import {observer} from 'mobx-react-lite';
 import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {isTasklistPath} from '#/shared/auth/isTasklistPath';
 
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();
 	const {status} = authenticationStore;
-	const removeNotification = useRef<(() => void) | null>(null);
+	const toastId = useRef<string | number | null>(null);
 	const {t} = useTranslation();
-	const isTasklistIndex = location.href === '/tasklist';
-
 	const isSessionExpired =
 		status === 'logged-out' ||
 		status === 'session-expired' ||
-		(status === 'session-invalid' && location.pathname !== '/');
+		(status === 'session-invalid' && location.pathname !== '/shadcn');
 
 	useEffect(() => {
 		if (location.pathname.endsWith('/login')) {
@@ -32,25 +29,22 @@ const SessionWatcher: React.FC = observer(() => {
 		}
 
 		if (status === 'session-expired' || status === 'session-invalid') {
-			removeNotification.current = notificationsStore.displayNotification({
-				kind: 'info',
-				title: t('sessionWatcherExpiredTitle'),
-				isDismissable: true,
-			});
+			toastId.current = toast.info(t('sessionWatcherExpiredTitle'));
 		}
 	}, [location.pathname, status, t]);
 
 	useEffect(() => {
-		if (status === 'logged-in') {
-			removeNotification.current?.();
+		if (status === 'logged-in' && toastId.current !== null) {
+			toast.dismiss(toastId.current);
+			toastId.current = null;
 		}
 	}, [status]);
 
 	if (isSessionExpired) {
 		return (
 			<Navigate
-				to={isTasklistPath(location.pathname) ? '/tasklist/login' : '/login'}
-				search={location.href === '/' || isTasklistIndex ? {} : {redirect: location.href}}
+				to="/shadcn/tasklist/login"
+				search={location.href === '/shadcn/tasklist' ? {} : {redirect: location.href}}
 				replace
 			/>
 		);

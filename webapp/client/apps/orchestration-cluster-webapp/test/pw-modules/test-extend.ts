@@ -22,6 +22,8 @@ import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
 import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
+import {ShadcnTasklistIndexPage} from '#/pages/ShadcnTasklistIndex.page';
+import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
 import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
 
 type Fixtures = {
@@ -41,6 +43,8 @@ type Fixtures = {
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
+	shadcnTasklistIndexPage: ShadcnTasklistIndexPage;
+	shadcnTasklistProcessesPage: ShadcnTasklistProcessesPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -86,6 +90,12 @@ const test = base.extend<Fixtures>({
 	},
 	componentAccessDeniedPage: async ({page}, use) => {
 		await use(new ComponentAccessDeniedPage(page));
+	},
+	shadcnTasklistIndexPage: async ({page}, use) => {
+		await use(new ShadcnTasklistIndexPage(page));
+	},
+	shadcnTasklistProcessesPage: async ({page}, use) => {
+		await use(new ShadcnTasklistProcessesPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [
