@@ -8,9 +8,8 @@
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # called-by: camunda-daily-load-tests.yml
-# note: called by camunda-daily-load-tests.yml, itself calling 4 more reusable workflows, putting
-#       this chain 3 of GitHub's 4 allowed nesting levels deep; none of the called workflows may
-#       add another nested "uses:" job without breaking this chain.
+# note: this chain is 3 of GitHub's 4 allowed reusable-workflow nesting levels deep (calls 4 more
+#       reusable workflows); none of them may add another nested "uses:" job without breaking it.
 # type: CI
 # owner: @camunda/reliability-testing
 name: Load test variant
