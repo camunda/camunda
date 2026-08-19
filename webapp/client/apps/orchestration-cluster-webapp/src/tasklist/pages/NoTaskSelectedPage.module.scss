@@ -8,8 +8,8 @@
 
 @use '@carbon/type';
 
-// Old-UI only now, plus the DS isOldUser ("pick a task") state — the DS
-// first-time-user state below renders EmptyState in .containerDS instead.
+// Old-UI only now — both DS states (first-time and returning user) render
+// EmptyState in .containerDS instead.
 .container {
 	padding-top: var(--cds-spacing-13);
 }
@@ -63,8 +63,4 @@
 	color: var(--cds-text-primary);
 	display: flex;
 	align-items: center;
-
-	&.oldUserTextDS {
-		color: var(--neutral-foreground-strong);
-	}
 }
