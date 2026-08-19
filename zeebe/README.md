@@ -24,3 +24,5 @@ This is a small overview of the contents of the different modules:
 - `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
 - `journal` contains the append-only log used by the consensus algorithm
 - `snapshots` abstracts how state snapshots (i.e. `zb-db`) are handled
+
+test
