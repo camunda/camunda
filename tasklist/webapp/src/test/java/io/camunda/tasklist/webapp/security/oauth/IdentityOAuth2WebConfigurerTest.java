@@ -106,7 +106,8 @@ class IdentityOAuth2WebConfigurerTest {
   }
 
   @Test
-  public void configureShouldFailFastWithOffendingUriWhenIssuerBackendUrlIsMissing() {
+  public void configureShouldFailFastWithOffendingUriWhenIssuerBackendUrlIsMissing()
+      throws Exception {
     // given
     when(environment.containsProperty(
             IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI))
@@ -117,8 +118,33 @@ class IdentityOAuth2WebConfigurerTest {
 
     final HttpSecurity httpSecurity = mock(HttpSecurity.class);
 
-    // when / then
-    assertThatThrownBy(() -> webConfigurer.configure(httpSecurity))
+    // when
+    webConfigurer.configure(httpSecurity);
+
+    // then
+    // the customizer chain is only wired up lazily by Spring Security, so it must be driven
+    // manually to reach the point where the JWK Set URI is actually resolved
+    final var oauth2ResourceServerCustomizer =
+        captureFrom(
+            httpSecurity,
+            Customizer.class,
+            (o, t) -> {
+              try {
+                o.oauth2ResourceServer(t);
+              } catch (final Exception e) {
+                fail(e);
+              }
+            });
+    final var serverConfigurer = mock(OAuth2ResourceServerConfigurer.class);
+    when(serverConfigurer.authenticationEntryPoint(any())).thenReturn(serverConfigurer);
+    oauth2ResourceServerCustomizer.customize(serverConfigurer);
+    final var jwtCustomizer =
+        captureFrom(serverConfigurer, Customizer.class, OAuth2ResourceServerConfigurer::jwt);
+    final OAuth2ResourceServerConfigurer<HttpSecurity>.JwtConfigurer jwtConfigurer =
+        mock(OAuth2ResourceServerConfigurer.JwtConfigurer.class);
+    when(jwtConfigurer.jwtAuthenticationConverter(jwtConverter)).thenReturn(jwtConfigurer);
+
+    assertThatThrownBy(() -> jwtCustomizer.customize(jwtConfigurer))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("null/protocol/openid-connect/certs");
   }
