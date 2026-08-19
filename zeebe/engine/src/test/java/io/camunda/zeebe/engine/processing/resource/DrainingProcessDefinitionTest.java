@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -44,6 +44,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
@@ -576,15 +577,16 @@ public class DrainingProcessDefinitionTest {
   @Test
   public void shouldFullyDeleteWhenLastInstanceDrains() {
     // given - a draining definition on the deployment partition. On this single-partition harness
-    // ProcessDrainingApplier auto-seeds only the local partition (1) at delete time; partitions 2
-    // and 3 are injected to simulate the rest of a three-partition cluster.
+    // the real deletion auto-seeds only the local partition (1); a second injected DRAINING event
+    // carries partitions 2 and 3 so ProcessDrainingApplier seeds them too, simulating the rest of a
+    // three-partition cluster.
     final var processId = helper.getBpmnProcessId();
     final var metadata = deployWithJob(processId);
     final long processDefinitionKey = metadata.getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
     awaitJobCreated(processInstanceKey);
     drainViaDeletion(processDefinitionKey);
-    seedPendingDeletions(processDefinitionKey, 2, 3);
+    injectDraining(metadata, false, 2, 3);
 
     // when - the last active instance completes, finalizing locally and reporting drained
     engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
@@ -681,6 +683,88 @@ public class DrainingProcessDefinitionTest {
 
     // then - the definition is finalized even though a banned instance still references it
     assertDeletedLocally(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldFinalizeDrainingWhenLastInstanceMigratedAway() {
+    // given - a draining source definition whose only active instance is about to migrate away, and
+    // a separate target definition to receive it
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+
+    // when - the instance migrates to the target, emptying the draining source without ever
+    // emitting
+    // a completion or termination event against it
+    migrateToTarget(processInstanceKey, target.getProcessDefinitionKey(), "task");
+
+    // then - the source is finalized (physically deleted locally and reported drained) rather than
+    // stranded in DRAINING forever
+    assertDeletedLocally(source.getProcessDefinitionKey());
+    assertReportedDrained(source.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotFinalizeDrainingWhenOtherInstancesRemainAfterMigration() {
+    // given - a draining source definition with two active instances, and a target definition
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long migratingInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(engine.processInstance().ofBpmnProcessId(sourceId).create());
+    awaitJobCreated(migratingInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+
+    // when - only one of the two instances migrates away
+    migrateToTarget(migratingInstanceKey, target.getProcessDefinitionKey(), "task");
+
+    // then - the source is not finalized while the other instance still references it: it stays
+    // DRAINING, so a new instance is still rejected for that reason (not "not found")
+    engine.processInstance().ofBpmnProcessId(sourceId).expectRejection().create();
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                sourceId, source.getVersion(), source.getProcessDefinitionKey()));
+  }
+
+  @Test
+  public void shouldReportDrainedAcrossPartitionsAfterMigration() {
+    // given - a draining source (seeded across three partitions) with one active instance, and a
+    // target definition to migrate into
+    final var sourceId = helper.getBpmnProcessId() + "-source";
+    final var targetId = helper.getBpmnProcessId() + "-target";
+    final var source = deployWithJob(sourceId);
+    final var target = deployWithJob(targetId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
+    awaitJobCreated(processInstanceKey);
+    drainViaDeletion(source.getProcessDefinitionKey());
+    injectDraining(source, false, 2, 3);
+
+    // when - the last active instance migrates away, finalizing partition 1 locally, and each
+    // partition then reports it has finished draining
+    migrateToTarget(processInstanceKey, target.getProcessDefinitionKey(), "task");
+    engine.writeRecords(
+        drainReport(source.getProcessDefinitionKey(), source, 1),
+        drainReport(source.getProcessDefinitionKey(), source, 2),
+        drainReport(source.getProcessDefinitionKey(), source, 3));
+
+    // then - the definition is reported fully deleted cluster-wide exactly once
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(source.getProcessDefinitionKey())
+                .limit(1)
+                .count())
+        .describedAs("the source is reported fully deleted exactly once")
+        .isEqualTo(1);
   }
 
   @Test
@@ -843,6 +927,27 @@ public class DrainingProcessDefinitionTest {
         .isFalse();
   }
 
+  @Test
+  public void shouldPopulateResourceMetadataOnRejectedDeleteWhileDrainingWithoutExplicitType() {
+    // given - a definition kept DRAINING by a still-running instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    engine.processInstance().ofBpmnProcessId(processId).create();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // when - the repeated delete carries only the resource key, as the default client path does
+    final var rejection =
+        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+
+    // then - the processor stamps the resolved metadata onto the rejection
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+  }
+
   private RecordToWrite drainReport(
       final long processDefinitionKey,
       final ProcessMetadataValue metadata,
@@ -872,18 +977,6 @@ public class DrainingProcessDefinitionTest {
                 .setTenantId(metadata.getTenantId()));
   }
 
-  private void seedPendingDeletions(final long processDefinitionKey, final int... partitionIds) {
-    // seeding the aggregation set happens at delete time (#56978), so it is injected here directly
-    // to drive the deployment-partition aggregation
-    engine.pauseProcessing(Protocol.DEPLOYMENT_PARTITION);
-    final var processState =
-        ((MutableProcessingState) engine.getProcessingState()).getProcessState();
-    for (final int partitionId : partitionIds) {
-      processState.addPendingDeletion(processDefinitionKey, partitionId);
-    }
-    engine.resumeProcessing(Protocol.DEPLOYMENT_PARTITION);
-  }
-
   private void assertDeletedLocally(final long processDefinitionKey) {
     assertThat(
             RecordingExporter.processRecords()
@@ -903,6 +996,23 @@ public class DrainingProcessDefinitionTest {
                 .exists())
         .describedAs("this partition reports drained (DELETE_COMPLETE) once its last instance ends")
         .isTrue();
+  }
+
+  private void migrateToTarget(
+      final long processInstanceKey,
+      final long targetProcessDefinitionKey,
+      final String elementId) {
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(elementId, elementId)
+        .migrate();
+    // await MIGRATED so the source definition's active-instance state has settled before asserting
+    RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
   }
 
   private void awaitJobCreated(final long processInstanceKey) {
@@ -971,15 +1081,23 @@ public class DrainingProcessDefinitionTest {
    *       definition — real deletion unsubscribes start events as it drains;
    *   <li>tests with no active instance to keep the definition draining (e.g. the defensive {@code
    *       ACTIVATE_ELEMENT} guard), where a real deletion would finalize immediately;
-   *   <li>deployment-partition aggregation tests that pair injection with {@link
-   *       #seedPendingDeletions} to simulate a multi-partition cluster on this single partition.
+   *   <li>deployment-partition aggregation tests that pass {@code drainPartitions} to simulate a
+   *       multi-partition cluster on this single partition.
    * </ul>
+   *
+   * <p>{@code drainPartitions} are the frozen partitions to wait for: {@code
+   * ProcessDrainingApplier} seeds one pending deletion per partition on the deployment partition as
+   * it applies the event, so this drives the aggregation the same way a real cluster-wide deletion
+   * would — no direct state writes needed.
    */
   private void injectDraining(final ProcessMetadataValue metadata) {
     injectDraining(metadata, false);
   }
 
-  private void injectDraining(final ProcessMetadataValue metadata, final boolean deleteHistory) {
+  private void injectDraining(
+      final ProcessMetadataValue metadata,
+      final boolean deleteHistory,
+      final int... drainPartitions) {
     engine.stop();
     engine.writeRecords(
         RecordToWrite.event()
@@ -991,7 +1109,8 @@ public class DrainingProcessDefinitionTest {
                     .setBpmnProcessId(metadata.getBpmnProcessId())
                     .setVersion(metadata.getVersion())
                     .setResourceName(metadata.getResourceName())
-                    .setTenantId(metadata.getTenantId())));
+                    .setTenantId(metadata.getTenantId())
+                    .setDrainPartitions(Arrays.stream(drainPartitions).boxed().toList())));
     engine.start();
 
     RecordingExporter.processRecords()
