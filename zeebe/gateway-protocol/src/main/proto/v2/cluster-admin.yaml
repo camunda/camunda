@@ -504,13 +504,11 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           description: >-
-            The backup could not be scheduled on every targeted physical tenant — because one of
-            them hit an internal error, or because its snapshot repository is absent from the
-            store, a deployment fault no change to the request can correct. The check that
-            precedes the fan-out rejects the request before anything is scheduled, but a failure
-            during the fan-out itself can leave snapshots behind on the tenants already reached, so
-            delete this backup id before retrying. Narrow the request with `physicalTenantId` to
-            work with the tenants whose repository is usable.
+            The backup could not be scheduled on every targeted physical tenant, because one of
+            them hit an internal error. The check that precedes the fan-out rejects the request
+            before anything is scheduled, but a failure during the fan-out itself can leave
+            snapshots behind on the tenants already reached, so delete this backup id before
+            retrying.
           content:
             application/problem+json:
               schema:
@@ -594,7 +592,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: '#/components/responses/ClusterHistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
@@ -671,7 +669,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: '#/components/responses/ClusterHistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
@@ -720,7 +718,19 @@ paths:
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
-          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+          description: >-
+            The cluster's secondary storage cannot serve history backups, or a targeted physical
+            tenant's snapshot repository is absent from the store. Unlike the per-physical-tenant
+            backup endpoints, the cluster-admin surface performs no fine-grained authorization, so
+            a missing `BACKUP` permission is never the reason. Deletion fans out with no preceding
+            check, so an absent repository is found only once that tenant is reached, by which time
+            the backup may already be deleted from the others; those deletions are not undone.
+            Narrow the request with `physicalTenantId` to work with the tenants whose repository is
+            usable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "404":
           description: >-
             The requested `physicalTenantId` does not exist in this cluster, or every targeted
@@ -731,11 +741,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           description: >-
-            The backup could not be deleted from every targeted physical tenant — because one of
-            them hit an internal error, or because its snapshot repository is absent from the
-            store, a deployment fault no change to the request can correct — so it may still exist
-            on some of them. The deletions that already succeeded are not undone, so a retry has
-            only the remaining tenants left to reach.
+            The backup could not be deleted from every targeted physical tenant, because one of
+            them hit an internal error, so it may still exist on some of them. The deletions that
+            already succeeded are not undone, so a retry has only the remaining tenants left to
+            reach.
           content:
             application/problem+json:
               schema:
@@ -748,25 +757,15 @@ paths:
 
 components:
   responses:
-    ClusterHistoryBackupInternalError:
-      description: >-
-        A targeted physical tenant hit an internal error, or its snapshot repository is absent from
-        the store — configured under a name the store does not have, or not configured at all. The
-        repository case is a deployment fault the caller cannot correct by changing its request, so
-        it is neither a `400` nor a `404`, and the per-physical-tenant endpoints answer `500` for it
-        too. Narrow the request with `physicalTenantId` to work with the tenants whose repository is
-        usable.
-      content:
-        application/problem+json:
-          schema:
-            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-
     ClusterHistoryBackupForbidden:
       description: >-
-        The cluster's secondary storage is neither Elasticsearch nor OpenSearch, and therefore
-        cannot serve history backups. Unlike the per-physical-tenant backup endpoints, the
-        cluster-admin surface performs no fine-grained authorization, so a missing `BACKUP`
-        permission is never the reason.
+        The cluster's secondary storage is neither Elasticsearch nor OpenSearch and therefore
+        cannot serve history backups, or a targeted physical tenant's snapshot repository is absent
+        from the store — configured under a name the store does not have, or not configured at all.
+        Both are deployment faults the caller cannot correct by changing its request; narrow the
+        request with `physicalTenantId` to work with the tenants whose repository is usable. Unlike
+        the per-physical-tenant backup endpoints, the cluster-admin surface performs no fine-grained
+        authorization, so a missing `BACKUP` permission is never the reason.
       content:
         application/problem+json:
           schema:

@@ -146,13 +146,13 @@ public class ClusterHistoryBackupServicesTest {
     // given
     absentOn(TENANT_A, 42L);
     when(api.getBackupState(TENANT_B, 42L))
-        .thenThrow(new ServiceException("no repository", Status.INTERNAL));
+        .thenThrow(new ServiceException("no repository", Status.FORBIDDEN));
 
     // when
     final var taken = services.takeBackup(null, 42L);
 
     // then
-    assertThat(failureOf(taken).getStatus()).isEqualTo(Status.INTERNAL);
+    assertThat(failureOf(taken).getStatus()).isEqualTo(Status.FORBIDDEN);
     verify(api, never()).takeBackup(anyString(), anyLong());
   }
 
@@ -229,7 +229,7 @@ public class ClusterHistoryBackupServicesTest {
     when(api.getBackupState(TENANT_A, 42L))
         .thenThrow(new ServiceException("connection refused", Status.UNAVAILABLE));
     when(api.getBackupState(TENANT_B, 42L))
-        .thenThrow(new ServiceException("no repository", Status.INVALID_ARGUMENT));
+        .thenThrow(new ServiceException("no repository", Status.FORBIDDEN));
 
     // when
     final var backup = services.getBackup(null, 42L);

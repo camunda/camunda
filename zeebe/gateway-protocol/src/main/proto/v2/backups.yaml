@@ -324,7 +324,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: '#/components/responses/HistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
@@ -380,7 +380,7 @@ paths:
         "403":
           $ref: '#/components/responses/HistoryBackupForbidden'
         "500":
-          $ref: '#/components/responses/HistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
@@ -426,7 +426,7 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: '#/components/responses/HistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
@@ -467,30 +467,21 @@ paths:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
-          $ref: '#/components/responses/HistoryBackupInternalError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
 
 components:
   responses:
-    HistoryBackupInternalError:
-      description: |
-        An internal error occurred, or the physical tenant's snapshot repository is absent from
-        the store — configured under a name the store does not have, or not configured at all.
-        The repository case is a deployment fault the caller cannot correct by changing its
-        request, so it is neither a `400` nor a `404`.
-      content:
-        application/problem+json:
-          schema:
-            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-
     HistoryBackupForbidden:
       description: |
-        The request is forbidden, either because the authenticated caller lacks the required
-        `BACKUP` permission, or because the cluster's secondary storage is neither Elasticsearch
-        nor OpenSearch and therefore cannot serve history backups. The problem detail says which
-        of the two applies.
+        The request is forbidden for one of three reasons: the authenticated caller lacks the
+        required `BACKUP` permission; the cluster's secondary storage is neither Elasticsearch nor
+        OpenSearch and therefore cannot serve history backups; or the physical tenant's snapshot
+        repository is absent from the store — configured under a name the store does not have, or
+        not configured at all. The problem detail says which applies. The latter two are deployment
+        faults the caller cannot correct by changing its request.
       content:
         application/problem+json:
           schema:

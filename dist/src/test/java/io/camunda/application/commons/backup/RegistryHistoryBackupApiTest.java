@@ -207,8 +207,9 @@ class RegistryHistoryBackupApiTest {
    * validateRepositoryExists} the way take and delete do, so this pre-check is the only guard on
    * the list path.
    *
-   * <p>Reported as a server error, like a repository the store does not have: an unconfigured
-   * repository is a deployment fault, and no change to the request can make the call succeed.
+   * <p>Answers 403, like a repository the store does not have: an unconfigured repository says this
+   * deployment cannot serve history backups for the tenant, which is what the endpoint's
+   * secondary-storage gate already answers 403 for one level up.
    */
   @ParameterizedTest
   @MethodSource("allOperations")
@@ -222,7 +223,7 @@ class RegistryHistoryBackupApiTest {
         .isThrownBy(() -> operation.accept(api))
         .satisfies(
             e -> {
-              assertThat(e.getStatus()).isEqualTo(Status.INTERNAL);
+              assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN);
               assertThat(e.getMessage()).contains(TENANT_ID);
             });
   }
@@ -270,7 +271,7 @@ class RegistryHistoryBackupApiTest {
         Arguments.of(new BackupAlreadyRunningException("running"), Status.INVALID_STATE),
         Arguments.of(new InvalidRequestException("invalid"), Status.INVALID_ARGUMENT),
         Arguments.of(new ResourceNotFoundException("missing"), Status.NOT_FOUND),
-        Arguments.of(new MissingRepositoryException("no repo"), Status.INTERNAL),
+        Arguments.of(new MissingRepositoryException("no repo"), Status.FORBIDDEN),
         Arguments.of(new BackupRepositoryConnectionException("unreachable"), Status.UNAVAILABLE),
         Arguments.of(new IndexNotFoundException(List.of("index-1")), Status.INTERNAL),
         Arguments.of(new BackupException("something else"), Status.INTERNAL));
@@ -298,7 +299,7 @@ class RegistryHistoryBackupApiTest {
     // when / then
     assertThatExceptionOfType(ServiceException.class)
         .isThrownBy(() -> api.getBackups(TENANT_ID, true, "*"))
-        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN));
   }
 
   /**
@@ -315,7 +316,7 @@ class RegistryHistoryBackupApiTest {
     // when / then
     assertThatExceptionOfType(ServiceException.class)
         .isThrownBy(() -> api.getBackupState(TENANT_ID, 42L))
-        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+        .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.FORBIDDEN));
     assertThatExceptionOfType(ServiceException.class)
         .isThrownBy(() -> api.getBackupState(TENANT_ID, 43L))
         .satisfies(e -> assertThat(e.getStatus()).isEqualTo(Status.NOT_FOUND));

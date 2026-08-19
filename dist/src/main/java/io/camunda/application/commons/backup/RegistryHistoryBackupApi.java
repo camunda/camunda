@@ -42,9 +42,11 @@ import org.jspecify.annotations.Nullable;
  * {@code @RequiresSecondaryStorage} interceptor before any handler runs.
  *
  * <p>Translates {@link BackupException} into {@link ServiceException} so the gateway's error mapper
- * produces the right status. Note the deliberate divergence from the {@code backupHistory}
+ * produces the right status. Two statuses deliberately diverge from the {@code backupHistory}
  * actuator: a repository connection failure maps to 503 here, not 502, because 503 is what the
- * {@code /v2/backups/*} spec documents.
+ * {@code /v2/backups/*} spec documents; and a repository missing from the store maps to 403, not
+ * 404, to match how {@code @RequiresSecondaryStorage} already reports a storage that cannot serve
+ * history backups.
  */
 @NullMarked
 public class RegistryHistoryBackupApi implements HistoryBackupApi {
@@ -94,11 +96,6 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
         });
   }
 
-  /**
-   * Resolves the tenant's backup wiring and rejects a tenant with no snapshot repository. Reported
-   * as a server error, alongside a repository the store does not have: both are deployment faults
-   * the caller cannot correct by changing its request.
-   */
   private PhysicalTenantBackup backupFor(final String physicalTenantId) {
     final PhysicalTenantBackup backup;
     try {
@@ -110,7 +107,7 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
     if (repositoryName == null || repositoryName.isBlank()) {
       throw new ServiceException(
           "No backup repository configured for physical tenant '%s'".formatted(physicalTenantId),
-          Status.INTERNAL);
+          Status.FORBIDDEN);
     }
     return backup;
   }
@@ -129,12 +126,7 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
       case final BackupAlreadyRunningException ignored -> Status.INVALID_STATE;
       case final InvalidRequestException ignored -> Status.INVALID_ARGUMENT;
       case final ResourceNotFoundException ignored -> Status.NOT_FOUND;
-      // Not NOT_FOUND: an absent repository is a deployment fault, not an absent backup. The
-      // cluster-wide endpoints fan out over every physical tenant and read NOT_FOUND as "this
-      // tenant was reached and holds nothing", so conflating the two would let them report an
-      // unusable tenant as ordinary absence. Not a 4xx either — nothing about the request is
-      // wrong, so there is nothing the caller could change to make it succeed.
-      case final MissingRepositoryException ignored -> Status.INTERNAL;
+      case final MissingRepositoryException ignored -> Status.FORBIDDEN;
       case final BackupRepositoryConnectionException ignored -> Status.UNAVAILABLE;
       case final IndexNotFoundException ignored -> Status.INTERNAL;
       default -> Status.INTERNAL;
