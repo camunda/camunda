@@ -15,7 +15,9 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
@@ -65,6 +67,7 @@ final class StreamJobsWithLeaseIT {
             .withLease(true)
             .open()) {
       // when
+      awaitStreamRegistered(jobType);
       client.newCreateInstanceCommand().bpmnProcessId(jobType).latestVersion().send().join();
       Awaitility.await("until the streamed job is received")
           .atMost(Duration.ofSeconds(10))
@@ -102,6 +105,8 @@ final class StreamJobsWithLeaseIT {
             .streamEnabled(true)
             .withLease(true)
             .open()) {
+      // when
+      awaitStreamRegistered(jobType);
       client.newCreateInstanceCommand().bpmnProcessId(jobType).latestVersion().send().join();
       Awaitility.await("until the streamed job is received")
           .atMost(Duration.ofSeconds(10))
@@ -121,5 +126,15 @@ final class StreamJobsWithLeaseIT {
       assertThatThrownBy(() -> client.newCompleteCommand(job.getKey()).send().join())
           .hasMessageContaining(expectedMessage);
     }
+  }
+
+  private void awaitStreamRegistered(final String jobType) {
+    final var actuator = JobStreamActuator.of(zeebe);
+    Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .haveJobType(1, jobType));
   }
 }
