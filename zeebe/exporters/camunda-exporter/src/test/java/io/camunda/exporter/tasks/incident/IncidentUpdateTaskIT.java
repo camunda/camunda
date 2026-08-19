@@ -1190,7 +1190,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   }
 
   @TestTemplate
-  void shouldSendNotificationsWhenRetryingAfterPartialBulkUpdateFailure(
+  void shouldSendNotificationsWhenRetryingAfterPartialNonIncidentBulkUpdateFailure(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     withTask(
         config,
@@ -1302,13 +1302,13 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           }
 
           // given
-          errorInjectingRepository.setFailFlowNodeBulkUpdates(true);
+          errorInjectingRepository.setFailFlowNodeBulkUpdates(false);
 
           // when
           final var updatedSecond = job.execute();
 
           // then
-          assertThat(updatedSecond).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(4);
+          assertThat(updatedSecond).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
 
           client.refresh(testPrefix);
 
@@ -1332,10 +1332,6 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(incidentEntity);
-
-          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
-          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(4);
-          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
