@@ -233,6 +233,36 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldNotDeriveIssuerUriFromTheLegacyEnvVarWhenTheOidcEndpointsAreConfigured() {
+    // The docker-compose CCSM shape sets CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL rather than
+    // camunda.identity.issuer. It feeds the same issuer-uri, so it has to be gated the same way,
+    // while still telling the operator the key is deprecated.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(
+        "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL",
+        "https://public.example.com/auth/realms/camunda-platform");
+    legacy.put(
+        OIDC + "authorization-uri",
+        "https://public.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth");
+    legacy.put(
+        OIDC + "jwk-set-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
+    legacy.put(
+        OIDC + "token-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    logs.assertContains(
+        entry ->
+            entry.getMessage().contains("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL")
+                && entry.getMessage().contains(OIDC + "issuer-uri"),
+        "the key stays deprecated even when its value no longer feeds issuer-uri");
+  }
+
+  @Test
   void shouldStillDeriveIssuerUriWhenTheOidcEndpointsAreIncomplete() {
     // CSL needs an issuer-uri or all three endpoints. A host that configured only some of them
     // relies on the derived issuer-uri to boot at all, so the derivation must stay.

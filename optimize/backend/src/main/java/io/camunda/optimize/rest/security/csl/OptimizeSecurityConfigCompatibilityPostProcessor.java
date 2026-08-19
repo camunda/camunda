@@ -164,18 +164,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isAuth0Configured(env)) {
       return;
     }
-    mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", OIDC_PREFIX + "issuer-uri");
+    mapIssuerUri(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL");
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    // Only when the host has not configured the OIDC endpoints itself. An issuer-uri makes CSL
-    // resolve the endpoints through OIDC discovery, dialing the browser-facing issuer from inside
-    // the pod; explicit authorization-uri/jwk-set-uri/token-uri exist precisely to avoid that, for
-    // instance to keep the back-channel on an in-cluster URL, or where the pod's truststore cannot
-    // validate the public certificate. Deriving an issuer-uri on top would silently override that
-    // choice and reintroduce the discovery call.
-    if (!hasExplicitOidcEndpoints(env)) {
-      mapIfCslKeyUnset(env, derived, "camunda.identity.issuer", OIDC_PREFIX + "issuer-uri");
+    // Only when that env var is absent: application-ccsm.yaml mirrors it into
+    // camunda.identity.issuer for every docker-compose CCSM install, so feeding both would
+    // double-warn for a value the operator only set once.
+    if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"))) {
+      mapIssuerUri(env, derived, "camunda.identity.issuer");
     }
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
@@ -217,6 +214,28 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0RedirectAndContextPath(env, derived, clusterId);
     bridgeAuth0Credentials(env, derived, auth0ClientId);
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
+  }
+
+  // Bridges a legacy issuer source into issuer-uri. The key is deprecated either way, so the
+  // warning
+  // is emitted whenever it is set, but the value only feeds issuer-uri when the host has not
+  // configured the OIDC endpoints itself. An issuer-uri makes CSL resolve the endpoints through
+  // discovery, dialing the browser-facing issuer from inside the pod; explicit
+  // authorization-uri/jwk-set-uri/token-uri exist precisely to avoid that, for instance to keep the
+  // back-channel on an in-cluster URL, or where the pod's truststore cannot validate the public
+  // certificate. Deriving an issuer-uri on top would silently override that choice.
+  private void mapIssuerUri(
+      final ConfigurableEnvironment env,
+      final Map<String, Object> derived,
+      final String legacyKey) {
+    final String value = env.getProperty(legacyKey);
+    if (isBlank(value)) {
+      return;
+    }
+    warnDeprecated(legacyKey, OIDC_PREFIX + "issuer-uri");
+    if (!hasExplicitOidcEndpoints(env)) {
+      derived.putIfAbsent(OIDC_PREFIX + "issuer-uri", value);
+    }
   }
 
   // True when the host configured the OIDC endpoints directly instead of leaving CSL to discover
