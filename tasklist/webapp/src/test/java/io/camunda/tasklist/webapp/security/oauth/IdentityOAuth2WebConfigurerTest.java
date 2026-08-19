@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.security.oauth;
 
 import static io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
@@ -102,6 +103,24 @@ class IdentityOAuth2WebConfigurerTest {
     // Ensure that both jwt and at+jwt types are being verified
     assertThat(joseVerifier.getAllowedTypes())
         .containsExactlyInAnyOrder(new JOSEObjectType("jwt"), new JOSEObjectType("at+jwt"), null);
+  }
+
+  @Test
+  public void configureShouldFailFastWithOffendingUriWhenIssuerBackendUrlIsMissing() {
+    // given
+    when(environment.containsProperty(
+            IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI))
+        .thenReturn(true);
+    when(environment.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
+        .thenReturn(false);
+    when(identityConfiguration.getIssuerBackendUrl()).thenReturn(null);
+
+    final HttpSecurity httpSecurity = mock(HttpSecurity.class);
+
+    // when / then
+    assertThatThrownBy(() -> webConfigurer.configure(httpSecurity))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("null/protocol/openid-connect/certs");
   }
 
   @Test
