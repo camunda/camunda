@@ -138,46 +138,6 @@ public interface UpdateAgentInstanceCommandStep1 {
     UpdateAgentInstanceCommandStep2 history(List<HistoryItem> history);
   }
 
-  /**
-   * A snapshot of the agent instance's operational limits, as recorded on a CONFIGURATION history
-   * item.
-   */
-  interface AgentInstanceLimits {
-    long getMaxTokens();
-
-    int getMaxModelCalls();
-
-    int getMaxToolCalls();
-
-    /**
-     * Creates a limits snapshot with the given values.
-     *
-     * @param maxTokens the token limit. Use -1 for no limit.
-     * @param maxModelCalls the model-call limit. Use -1 for no limit.
-     * @param maxToolCalls the tool-call limit. Use -1 for no limit.
-     * @return a new {@link AgentInstanceLimits}
-     */
-    static AgentInstanceLimits of(
-        final long maxTokens, final int maxModelCalls, final int maxToolCalls) {
-      return new AgentInstanceLimits() {
-        @Override
-        public long getMaxTokens() {
-          return maxTokens;
-        }
-
-        @Override
-        public int getMaxModelCalls() {
-          return maxModelCalls;
-        }
-
-        @Override
-        public int getMaxToolCalls() {
-          return maxToolCalls;
-        }
-      };
-    }
-  }
-
   /** A single conversation history item to append as part of an update batch. */
   final class HistoryItem {
     private String historyItemId;
