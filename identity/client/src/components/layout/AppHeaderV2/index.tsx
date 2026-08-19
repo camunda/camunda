@@ -150,7 +150,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
       USER_MENU_LINKS.map(({ key, labelKey, href }) => ({
         key,
         label: tNav(labelKey),
-        onClick: () => window.open(href, "_blank"),
+        onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
       })),
     [tNav],
   );

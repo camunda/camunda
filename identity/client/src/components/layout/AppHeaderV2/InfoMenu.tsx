@@ -56,7 +56,7 @@ const InfoMenu = () => {
         {INFO_ITEMS.map(({ key, labelKey, href }) => (
           <DropdownMenuItem
             key={key}
-            onClick={() => window.open(href, "_blank")}
+            onClick={() => window.open(href, "_blank", "noopener,noreferrer")}
           >
             {t(labelKey)}
           </DropdownMenuItem>

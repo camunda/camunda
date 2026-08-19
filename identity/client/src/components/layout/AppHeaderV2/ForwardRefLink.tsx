@@ -16,7 +16,7 @@ type Props = Omit<LinkProps, "to"> & {
 
 const ForwardRefLink = forwardRef<HTMLAnchorElement, Props>(
   ({ to, href, ...props }, ref) => (
-    <Link {...props} to={to ?? href ?? ""} ref={ref} />
+    <Link {...props} to={to ?? href ?? "/"} ref={ref} />
   ),
 );
 
