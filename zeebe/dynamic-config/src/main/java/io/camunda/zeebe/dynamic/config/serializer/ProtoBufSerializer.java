@@ -1628,11 +1628,12 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodeExportingStateChangeRequest(final ExportingStateChangeRequest request) {
-    return Requests.ExportingStateChangeRequest.newBuilder()
-        .setState(encodeExportingState(request.state()))
-        .setDryRun(request.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.ExportingStateChangeRequest.newBuilder()
+            .setState(encodeExportingState(request.state()))
+            .setDryRun(request.dryRun());
+    request.physicalTenantId().ifPresent(builder::setPhysicalTenantId);
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1641,7 +1642,11 @@ public class ProtoBufSerializer
     try {
       final var request = Requests.ExportingStateChangeRequest.parseFrom(encodedRequest);
       return new ExportingStateChangeRequest(
-          decodeExportingState(request.getState()), request.getDryRun());
+          decodeExportingState(request.getState()),
+          request.hasPhysicalTenantId()
+              ? Optional.of(request.getPhysicalTenantId())
+              : Optional.empty(),
+          request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

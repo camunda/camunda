@@ -300,11 +300,30 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeExportingStateChangeRequest() {
+  void shouldEncodeAndDecodeExportingStateChangeRequestForOnePhysicalTenant() {
     // given
     final var request =
         new ExportingStateChangeRequest(
-            io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED, false);
+            io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED,
+            Optional.of("tenant-b"),
+            false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeExportingStateChangeRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExportingStateChangeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExportingStateChangeRequestForEveryPhysicalTenant() {
+    // given — an absent tenant means every physical tenant
+    final var request =
+        new ExportingStateChangeRequest(
+            io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED,
+            Optional.empty(),
+            false);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeExportingStateChangeRequest(request);
