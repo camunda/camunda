@@ -41,9 +41,9 @@ public class SearchEngineDatabaseConfiguration {
 
   /**
    * The initializer exists on every node, but only a node with an HTTP gateway holds startup until
-   * a physical tenant is serviceable (ADR 004 D2) — hence a flag rather than a bean condition. The
-   * flag comes from the same predicate that decides whether the schema readiness indicator joins
-   * the readiness group, so the socket and the probe cannot disagree about what an HTTP node is.
+   * a physical tenant is serviceable, hence a flag rather than a bean condition. The flag comes
+   * from the same predicate that decides whether the schema readiness indicator joins the readiness
+   * group, so the socket and the probe cannot disagree about what an HTTP node is.
    */
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(

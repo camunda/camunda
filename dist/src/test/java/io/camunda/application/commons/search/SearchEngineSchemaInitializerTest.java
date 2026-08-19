@@ -198,7 +198,7 @@ class SearchEngineSchemaInitializerTest {
     initializer = terminallyMisconfiguredInitializer(false);
 
     // when / then - the abort belongs to the gate, so a node without one stays up with its tenant
-    // degraded and its exporter retrying per partition, as it does today (ADR 004 D2, D3)
+    // degraded and its exporter retrying per partition, as it does today
     assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
     assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
   }
@@ -238,7 +238,7 @@ class SearchEngineSchemaInitializerTest {
         .doesNotThrowAnyException();
   }
 
-  /** A node with an HTTP gateway: it holds startup at the gate (ADR 004 D2). */
+  /** A node with an HTTP gateway: it holds startup at the gate. */
   private SearchEngineSchemaInitializer gatewayInitializerFor(
       final PhysicalTenantResolver resolver) {
     return initializerFor(resolver, true);

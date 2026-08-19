@@ -37,7 +37,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * tenant whose schema cannot be applied is degraded on its own, the node still serves the healthy
  * tenants, and the degraded tenant recovers in the background once the cause is removed — with no
  * restart and no operator action. See {@code
- * docs/adr/management/004-per-physical-tenant-schema-initialization.md}.
+ * docs/adr/management/005-per-physical-tenant-schema-initialization.md}.
  *
  * <p>The failure is injected at schema-initialization time by pre-creating one of tenant A's
  * indices with a strict, conflicting mapping, so the tenant's very first attempt fails while
@@ -66,6 +66,7 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
       TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static final String ES_URL;
+  private static final PhysicalTenantsITHelper TENANTS;
 
   /** The conflicting index has to exist before the broker boots, or the first attempt succeeds. */
   static {
@@ -78,13 +79,12 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
       ES.stop();
       throw e;
     }
+    TENANTS =
+        PhysicalTenantsITHelper.builder()
+            .withTenant(DEFAULT_TENANT, Storage.elasticsearch(ES_URL, DEFAULT_PREFIX))
+            .withTenant(TENANT_A, Storage.elasticsearch(ES_URL, TENANT_A_PREFIX))
+            .build();
   }
-
-  private static final PhysicalTenantsITHelper TENANTS =
-      PhysicalTenantsITHelper.builder()
-          .withTenant(DEFAULT_TENANT, Storage.elasticsearch(ES_URL, DEFAULT_PREFIX))
-          .withTenant(TENANT_A, Storage.elasticsearch(ES_URL, TENANT_A_PREFIX))
-          .build();
 
   @TestZeebe
   private final TestStandaloneBroker broker =

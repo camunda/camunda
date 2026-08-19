@@ -37,18 +37,17 @@ import org.slf4j.LoggerFactory;
  * serviceable tenant is what keeps a node started alongside its storage from opening its port a
  * second in, on the first connect timeout, and then serving 503s until the storage finishes
  * booting; requiring it only while some tenant can still make progress is what keeps the gate from
- * waiting on a condition nothing can satisfy. See ADR 004 D3 ({@code
- * docs/adr/management/004-per-physical-tenant-schema-initialization.md}).
+ * waiting on a condition nothing can satisfy.
  *
  * <p>The one state the gate refuses to open into is every tenant terminal: that is a diagnosis that
  * no wait will change the outcome, so {@link #awaitGate()} throws instead and startup aborts. The
  * other ways a tenant can stop trying are not diagnoses, and they release the gate as above.
  *
  * <p>Only a caller that serves an HTTP surface calls {@link #awaitGate()}; every other caller
- * {@link #start()}s the tasks and returns (ADR 004 D2).
+ * {@link #start()}s the tasks and returns.
  *
  * <p>{@link #isInitialized(String)} is a one-way latch: it asserts that the schema described in the
- * source code was applied, never that the tenant's storage is currently reachable (ADR 004 D4).
+ * source code was applied, never that the tenant's storage is currently reachable.
  */
 @NullMarked
 public final class PerTenantSchemaInitialization implements AutoCloseable {
@@ -79,8 +78,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * @param terminal decides whether one failure will not be repaired by retrying — the cause chain
    *     is walked for the caller, so this only classifies a single throwable. A tenant classified
    *     terminal stops trying, and if every tenant is classified that way the gate aborts startup
-   *     rather than releasing, so the bar is "certainly not repairable without operator action"
-   *     (ADR 004 D6).
+   *     rather than releasing, so the bar is "certainly not repairable without operator action".
    * @param retryConfig the backoff applied between a tenant's attempts
    */
   public PerTenantSchemaInitialization(
@@ -101,7 +99,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
 
   /**
    * Starts one background task per physical tenant and returns as soon as they are running. A
-   * storage failure degrades its own tenant and nothing else (ADR 004 D1).
+   * storage failure degrades its own tenant and nothing else.
    */
   public void start() {
     tenants.forEach(
@@ -140,7 +138,7 @@ public final class PerTenantSchemaInitialization implements AutoCloseable {
    * be allowed to finish for the broker to shut down gracefully.
    *
    * @throws EveryTenantTerminallyFailedException if the gate opened with no serviceable tenant and
-   *     every tenant terminal, which aborts the caller's startup (ADR 004 D3)
+   *     every tenant terminal, which aborts the caller's startup
    */
   public void awaitGate() {
     gateLock.lock();

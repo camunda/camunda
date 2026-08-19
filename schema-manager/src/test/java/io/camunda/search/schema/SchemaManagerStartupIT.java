@@ -181,11 +181,11 @@ class SchemaManagerStartupIT {
   }
 
   /**
-   * A node without an HTTP gateway does not wait for its schema at all (ADR 004 D2), so an
-   * unreachable Elasticsearch delays nothing: it starts, keeps retrying in the background, and
-   * reports the tenant as degraded through the gauge. Its counterpart — the same node <em>with</em>
-   * a gateway, which is expected to stay at the gate while a tenant can still make progress — is
-   * covered by {@link #shouldGracefullyShutdownWhenSchemaStartupStillRunning} above.
+   * A node without an HTTP gateway does not wait for its schema at all, so an unreachable
+   * Elasticsearch delays nothing: it starts, keeps retrying in the background, and reports the
+   * tenant as degraded through the gauge. Its counterpart — the same node <em>with</em> a gateway,
+   * which is expected to stay at the gate while a tenant can still make progress — is covered by
+   * {@link #shouldGracefullyShutdownWhenSchemaStartupStillRunning} above.
    */
   @Test
   void shouldNotBlockStartupWhenCannotConnectToElasticAndNoHttpGatewayIsEnabled() throws Exception {
@@ -215,7 +215,7 @@ class SchemaManagerStartupIT {
    * tenant has failed in a way retrying cannot repair, nothing is left that could ever produce a
    * serviceable tenant: a gate that only counted serviceable tenants would block in the context
    * refresh forever with no management endpoint to say why, and releasing would admit a node that
-   * can serve nobody. It aborts instead, which is what it does today (ADR 004 D3).
+   * can serve nobody. It aborts instead, which is what it does today.
    *
    * <p>The failure is made terminal by recording a schema version in the tenant's metadata index
    * that the running version refuses to migrate from, which is an {@code

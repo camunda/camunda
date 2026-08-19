@@ -13,7 +13,7 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Thrown out of {@link PerTenantSchemaInitialization#awaitGate()} when every physical tenant's
  * schema initialization failed with a cause that retrying cannot repair, so the node has nothing
- * left to serve and no task that could ever change that (ADR 004 D3).
+ * left to serve and no task that could ever change that.
  *
  * <p>Unchecked so that it travels the path an aborting startup already takes — out of the bean's
  * {@code afterPropertiesSet}, through the context refresh, to a non-zero exit.
