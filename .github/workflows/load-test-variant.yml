@@ -8,6 +8,9 @@
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml,
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # called-by: camunda-daily-load-tests.yml
+# note: called by camunda-daily-load-tests.yml, itself calling 4 more reusable workflows, putting
+#       this chain 3 of GitHub's 4 allowed nesting levels deep; none of the called workflows may
+#       add another nested "uses:" job without breaking this chain.
 # type: CI
 # owner: @camunda/reliability-testing
 name: Load test variant
@@ -120,18 +123,19 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
-  NAME: ${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
   NAMESPACE: c8-${{ inputs.benchmark }}${{ inputs.namespace-suffix }}
   # Fixed timing constants: no current or planned variant needs different values, and GitHub
   # Actions can't compute `timeout-minutes` from an input expression, so these stay hardcoded
   # rather than caller-configurable (see profile-load-test.yml's similar INVARIANT comment).
   WARMUP_SECONDS: 900
   SOAK_SECONDS: 10800
-  PROFILE_DURATION_SECONDS: '1800'
 
 jobs:
   setup:
     name: Setup
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -208,6 +212,9 @@ jobs:
     name: Collect metrics
     needs: [ setup, soak ]
     if: needs.soak.result == 'success' && needs.setup.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
@@ -229,17 +236,19 @@ jobs:
     steps:
       - name: Write variant metrics manifest
         env:
+          VARIANT_KEY: ${{ inputs.variant-key }}
+          VARIANT_LABEL: ${{ inputs.variant-label }}
           RESULTS_JSON: ${{ needs.collect-metrics.outputs.results-json }}
           SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
         run: |
           jq -n \
-            --arg key "${{ inputs.variant-key }}" \
-            --arg label "${{ inputs.variant-label }}" \
+            --arg key "$VARIANT_KEY" \
+            --arg label "$VARIANT_LABEL" \
             --arg namespace "${NAMESPACE}" \
-            --argjson soakEndEpoch "${SOAK_END_EPOCH}" \
-            --argjson results "${RESULTS_JSON:-\{\}}" \
+            --argjson soakEndEpoch "${SOAK_END_EPOCH:-0}" \
+            --argjson results "${RESULTS_JSON:-{}}" \
             '{key: $key, label: $label, namespace: $namespace, soakEndEpoch: $soakEndEpoch, results: $results}' \
-            > "variant-${{ inputs.variant-key }}.json"
+            > "variant-${VARIANT_KEY}.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: daily-load-test-variant-metrics-${{ inputs.variant-key }}
