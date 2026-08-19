@@ -23,6 +23,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -36,11 +37,13 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
   }
 
   @BeforeEach
+  @Order(1)
   public void bootWithCslDisabled() {
     startAndUseNewOptimizeInstance();
   }
 
   @BeforeEach
+  @Order(2)
   public void configurePublicApiToken() {
     embeddedOptimizeExtension
         .getConfigurationService()
