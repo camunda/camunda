@@ -29,7 +29,8 @@ import {MessageMetrics} from './MessageMetrics';
 import {DocumentContent} from './MessageAttachments/DocumentContent';
 import {ToolCalls} from './MessageAttachments/ToolCalls';
 
-type Actor = Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT'> | 'SYSTEM';
+type Actor =
+  Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT' | 'CONFIGURATION'> | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
 type Metrics = AgentInstanceHistoryItem['metrics'];

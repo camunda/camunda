@@ -245,7 +245,7 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render the model provider and name', () => {
+  it('should render the model provider, name and agent definition key', () => {
     render(
       <AgentDetails
         agentInstances={[agentInstance]}
@@ -264,6 +264,12 @@ describe('<AgentDetails />', () => {
     expect(within(section).getByText('openai')).toBeInTheDocument();
     expect(within(section).getByText('Model:')).toBeInTheDocument();
     expect(within(section).getByText('gpt-4')).toBeInTheDocument();
+    expect(
+      within(section).getByText('Agent definition key:'),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByText(agentInstance.agentDefinitionKey),
+    ).toBeInTheDocument();
   });
 
   it('should render tools available for the agent instance', () => {
