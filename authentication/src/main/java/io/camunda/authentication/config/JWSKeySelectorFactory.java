@@ -13,6 +13,7 @@ import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -44,6 +45,16 @@ public class JWSKeySelectorFactory {
           JWSAlgorithm.ES256,
           JWSAlgorithm.ES384,
           JWSAlgorithm.ES512);
+
+  // Nimbus's own default is 500ms for both, tuned for fast, responsive IdPs; this tolerates a
+  // realistically slower external IdP while still failing fast on genuine unavailability.
+  private static final int JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS = 2000;
+  private static final int JWK_SOURCE_HTTP_READ_TIMEOUT_MS = 2000;
+
+  // How long a caller blocks waiting for another thread's in-flight synchronous refresh before
+  // giving up. Nimbus's own default is 15,000ms; this still leaves comfortable headroom over the
+  // connect+read timeouts above while failing much faster when the IdP is genuinely down.
+  private static final long JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS = 5000;
 
   private final Set<JWSAlgorithm> jwsAlgorithms;
 
@@ -127,10 +138,27 @@ public class JWSKeySelectorFactory {
    * @return a {@link JWKSource} for use in verifying JWT signatures
    */
   protected JWKSource<SecurityContext> createJWKSource(final URL jwkSetUri) {
-    return JWKSourceBuilder.create(jwkSetUri)
-        .refreshAheadCache(false)
+    final var retriever =
+        new DefaultResourceRetriever(
+            JWK_SOURCE_HTTP_CONNECT_TIMEOUT_MS,
+            JWK_SOURCE_HTTP_READ_TIMEOUT_MS,
+            JWKSourceBuilder.DEFAULT_HTTP_SIZE_LIMIT);
+    // refreshAheadCache(true) matches Nimbus's own default (true); the previous
+    // refreshAheadCache(false) here was an explicit override copied from Spring's
+    // NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder#jwkSource, and that override — not a Nimbus
+    // default — is what made refresh run synchronously on the request path. Restoring the
+    // default means concurrent lookups are served the still-valid cached keys instead of
+    // blocking on a synchronous refetch. This is non-scheduled (refreshAheadScheduled stays
+    // false): the ahead-of-expiry refresh only fires when a request lands inside the last 30s
+    // before expiry, so the guarantee holds under continuous traffic — the reported incident —
+    // but a sparse-traffic instance can still hit a synchronous refresh at full expiry, now
+    // bounded by the timeouts below instead of Nimbus's tighter defaults. outageTolerant is
+    // deliberately left at Nimbus's default (false): a cache that is genuinely expired with no
+    // successful refresh still fails closed.
+    return JWKSourceBuilder.create(jwkSetUri, retriever)
+        .refreshAheadCache(true)
         .rateLimited(false)
-        .cache(true)
+        .cache(JWKSourceBuilder.DEFAULT_CACHE_TIME_TO_LIVE, JWK_SOURCE_CACHE_REFRESH_TIMEOUT_MS)
         .build();
   }
 
