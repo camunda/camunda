@@ -20,7 +20,7 @@ ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
 # GitHub renders a matrixed reusable-workflow call's inner jobs as
 # "<outer job name> / <inner job name>" (confirmed against a real run of
 # zeebe-search-integration-tests.yml via `gh api .../jobs`). camunda-daily-load-tests.yml's
-# gRPC matrix leg is named "gRPC" and load-test-variant.yml's soak job is always named "Soak",
+# gRPC matrix leg is named "gRPC" and daily-load-test-variant.yml's soak job is always named "Soak",
 # so the composite name is "gRPC / Soak". startswith() (not ==) keeps this resilient if the
 # inner workflow ever nests one level deeper.
 SOAK_JOB_NAME = "gRPC / Soak"
