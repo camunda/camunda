@@ -74,7 +74,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 					onFocus={onFocus}
 					placeholder={placeholder}
 					aria-invalid={invalid || undefined}
-					aria-errormessage={invalid ? errorId : undefined}
+					aria-errormessage={invalid && invalidText !== undefined ? errorId : undefined}
 					className={styles.passwordInput}
 				/>
 				<Button

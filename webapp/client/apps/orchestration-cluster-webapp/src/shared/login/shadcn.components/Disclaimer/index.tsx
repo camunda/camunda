@@ -19,11 +19,11 @@ const Disclaimer: React.FC = () => {
 	return (
 		<Text as="span" variant="helper" className={styles.container}>
 			Non-Production License. If you would like information on production usage, please refer to our{' '}
-			<Link href="https://legal.camunda.com/#self-managed-non-production-terms" target="_blank">
+			<Link href="https://legal.camunda.com/#self-managed-non-production-terms" target="_blank" rel="noreferrer">
 				terms & conditions page
 			</Link>{' '}
 			or{' '}
-			<Link href="https://camunda.com/contact/" target="_blank">
+			<Link href="https://camunda.com/contact/" target="_blank" rel="noreferrer">
 				contact sales
 			</Link>
 			.
