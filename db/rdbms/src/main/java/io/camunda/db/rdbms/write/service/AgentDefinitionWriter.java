@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 
 public class AgentDefinitionWriter implements RdbmsWriter {
 
@@ -29,5 +30,11 @@ public class AgentDefinitionWriter implements RdbmsWriter {
             agentDefinition.agentDefinitionKey(),
             "io.camunda.db.rdbms.sql.AgentDefinitionMapper.insert",
             agentDefinition));
+  }
+
+  public int deleteByProcessDefinitionKeys(
+      final List<Long> processDefinitionKeys, final int limit) {
+    throw new UnsupportedOperationException(
+        "AgentDefinitionWriter#deleteByProcessDefinitionKeys is not implemented yet");
   }
 }
