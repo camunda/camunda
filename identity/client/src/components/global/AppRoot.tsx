@@ -71,8 +71,8 @@ const GridMain = styled.div`
 
 const GridMainContent = styled.div`
   grid-area: 1 / 1 / 1 / 4;
-  /* The header publishes the rail's rendered width on <body>, and 0 when it
-     renders no rail — so an unset variable means "nothing to offset". */
+  /* Variable is set by "SidebarProvider". Or overwritten in this
+  component "AppContent" if no sidebar should be visible.  */
   padding-left: var(--app-sidebar-width, 0);
   transition: padding-left 0.15s ease-out;
 `;
@@ -117,7 +117,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         <GridHeader>
           <AppHeader hideNavLinks />
         </GridHeader>
-        <GridMain>
+        <GridMain style={{ "--app-sidebar-width": 0 }}>
           <GridMainContent id="main-content" tabIndex={-1}>
             <ForbiddenComponent />
           </GridMainContent>

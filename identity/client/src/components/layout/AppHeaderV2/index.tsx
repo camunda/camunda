@@ -6,18 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { C3LicenseTag } from "@camunda/camunda-composite-components";
+import {
+  C3LicenseTag,
+  preview_C3ToolsArea as C3ToolsArea,
+  preview_useCamundaTools as useCamundaTools,
+  type UseCamundaToolsOptions,
+} from "@camunda/camunda-composite-components";
 import {
   AppHeader,
   AppSidebar,
   CamundaLogo,
-  SidebarProvider,
-  TooltipProvider,
-  useSidebar,
+  Text,
+  type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
 import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
-import { useCallback, useLayoutEffect, useMemo, type MouseEvent } from "react";
+import { useCallback, useMemo, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -31,43 +35,12 @@ import { authenticationQueries } from "src/utility/api/authentication/queries.ts
 import { ForwardRefLink } from "./ForwardRefLink";
 import { InfoMenu } from "./InfoMenu";
 import { LogoutAwareUserMenu } from "./LogoutAwareUserMenu";
-import { Notifications } from "./Notifications";
 import { ThemeSelector } from "./ThemeSelector";
 import { useBreadcrumbs } from "./useBreadcrumbs";
 import { useSidebarChildren } from "./useSidebarChildren";
 
 const SKIP_TO_CONTENT_TARGET_ID = "main-content";
 const LOGOUT_DELAY = 1000;
-/** Mirrors `AppSidebar`'s own `collapsedWidth` default. */
-const SIDEBAR_COLLAPSED_WIDTH = "3rem";
-
-/**
- * Publishes the rail's rendered width as `--app-sidebar-width` on `<body>`, for
- * the page content to offset itself by.
- *
- * `SidebarProvider` publishes the same variable, but only on its own wrapper
- * element: custom properties inherit down the tree, and the app grid is a
- * sibling of this header, not a descendant. `<body>` is the nearest element both
- * share.
- */
-function SidebarBodySync({ hasSidebar }: { hasSidebar: boolean }): null {
-  const ctx = useSidebar();
-  const sidebarWidth =
-    !hasSidebar || !ctx || ctx.isMobile
-      ? "0px"
-      : ctx.expanded
-        ? ctx.width
-        : SIDEBAR_COLLAPSED_WIDTH;
-
-  useLayoutEffect(() => {
-    document.body.style.setProperty("--app-sidebar-width", sidebarWidth);
-    return () => {
-      document.body.style.removeProperty("--app-sidebar-width");
-    };
-  }, [sidebarWidth]);
-
-  return null;
-}
 
 const USER_MENU_LINKS = [
   {
@@ -95,9 +68,13 @@ const VersionFooter = () => {
   const { t } = useTranslate("navigation");
 
   return (
-    <div className="px-2 py-1.5 text-xs text-neutral-foreground-subtle">
-      <div>{t("version", { version: import.meta.env.VITE_APP_VERSION })}</div>
-      <div>{t("copyright", { year: new Date().getFullYear() })}</div>
+    <div className="px-2 py-1.5">
+      <Text variant="helper" as="p">
+        {t("version", { version: import.meta.env.VITE_APP_VERSION })}
+      </Text>
+      <Text variant="helper" as="p">
+        {t("copyright", { year: new Date().getFullYear() })}
+      </Text>
     </div>
   );
 };
@@ -142,6 +119,46 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     [],
   );
 
+  const toolsOptions = useMemo<UseCamundaToolsOptions>(
+    () => ({
+      notifications: isSaaS
+        ? {
+            title: tNav("notifications"),
+            ariaLabel: tNav("notifications"),
+            labels: {
+              dismissAll: tNav("notificationsDismissAll"),
+              emptyTitle: tNav("notificationsEmptyTitle"),
+              emptyDescription: tNav("notificationsEmptyDescription"),
+            },
+          }
+        : undefined,
+    }),
+    [tNav],
+  );
+  const { tools, ToolsProvider } = useCamundaTools(toolsOptions);
+  const globalActions = useMemo<GlobalActionButton[]>(() => {
+    return isSaaS
+      ? [
+          {
+            key: "notifications",
+            label: tNav("notifications"),
+            element: <C3ToolsArea tools={tools} />,
+          },
+          {
+            key: "info",
+            label: tNav("info"),
+            element: <InfoMenu />,
+          },
+        ]
+      : [
+          {
+            key: "info",
+            label: tNav("info"),
+            element: <InfoMenu />,
+          },
+        ];
+  }, [tNav, tools]);
+
   const breadcrumb = useBreadcrumbs();
   const sidebarChildren = useSidebarChildren(hideNavLinks);
   const hasSidebar = sidebarChildren.length > 0;
@@ -158,78 +175,60 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
   const licenseTag = getLicenseTag(license);
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <SidebarBodySync hasSidebar={hasSidebar} />
-        <AppHeader
-          onClick={handleSkipToContentClick}
-          skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
-          showSidebarTrigger={hasSidebar}
-          logo={
-            <ForwardRefLink
-              to="/"
-              aria-label="Camunda Admin"
-              className="flex items-center"
-            >
-              <CamundaLogo />
-            </ForwardRefLink>
-          }
-          breadcrumb={breadcrumb}
-          trailing={
-            licenseTag.show ? (
-              <div className="flex items-center">
-                <C3LicenseTag
-                  isProductionLicense={licenseTag.isProductionLicense}
-                  isCommercial={licenseTag.isCommercial}
-                  expiresAt={licenseTag.expiresAt}
-                />
-              </div>
-            ) : undefined
-          }
-          globalActions={[
-            ...(isSaaS
-              ? [
-                  {
-                    key: "notifications",
-                    label: tNav("notifications"),
-                    element: <Notifications />,
-                  },
-                ]
-              : []),
-            {
-              key: "info",
-              label: tNav("info"),
-              element: <InfoMenu />,
-            },
-          ]}
-          actions={
-            camundaUser === undefined ? undefined : (
-              <LogoutAwareUserMenu
-                userName={camundaUser.displayName}
-                userEmail={camundaUser.email}
-                canLogout={Boolean(camundaUser.canLogout)}
-                onLogout={logoutWithNotification}
-                items={userMenuItems}
-                customSection={
-                  <>
-                    <ThemeSelector />
-                    <VersionFooter />
-                  </>
-                }
+    <ToolsProvider>
+      <AppHeader
+        onClick={handleSkipToContentClick}
+        skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
+        showSidebarTrigger={hasSidebar}
+        logo={
+          <ForwardRefLink
+            to="/"
+            aria-label="Camunda Admin"
+            className="flex items-center"
+          >
+            <CamundaLogo />
+          </ForwardRefLink>
+        }
+        breadcrumb={breadcrumb}
+        trailing={
+          licenseTag.show ? (
+            <div className="flex items-center">
+              <C3LicenseTag
+                isProductionLicense={licenseTag.isProductionLicense}
+                isCommercial={licenseTag.isCommercial}
+                expiresAt={licenseTag.expiresAt}
               />
-            )
-          }
+            </div>
+          ) : undefined
+        }
+        globalActions={globalActions}
+        actions={
+          camundaUser === undefined ? undefined : (
+            <LogoutAwareUserMenu
+              userName={camundaUser.displayName}
+              userEmail={camundaUser.email}
+              canLogout={Boolean(camundaUser.canLogout)}
+              onLogout={logoutWithNotification}
+              items={userMenuItems}
+              customSection={
+                <>
+                  <ThemeSelector />
+                  <VersionFooter />
+                </>
+              }
+            />
+          )
+        }
+      />
+      {hasSidebar && (
+        <AppSidebar
+          ariaLabel={tNav("mainNavigation")}
+          items={sidebarChildren}
+          activeItemKey={pathname + search}
+          linkComponent={ForwardRefLink}
         />
-        {hasSidebar && (
-          <AppSidebar
-            ariaLabel={tNav("mainNavigation")}
-            items={sidebarChildren}
-            activeItemKey={pathname + search}
-            linkComponent={ForwardRefLink}
-          />
-        )}
-      </SidebarProvider>
-    </TooltipProvider>
+      )}
+    </ToolsProvider>
   );
 };
 
