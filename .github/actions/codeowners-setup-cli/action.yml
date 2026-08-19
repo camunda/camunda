@@ -34,7 +34,11 @@ runs:
 
         mkdir -p "${target_dir}"
         echo "Downloading codeowners-cli ${version} from ${download_url}"
-        curl -fsSL "${download_url}" -o "${archive_path}"
+        # --retry-all-errors: retry on any failure, not just the curl-default subset (a
+        # mid-transfer "Recv failure: Connection reset by peer" isn't retried by default),
+        # see https://github.com/camunda/camunda/actions/runs/32242321929/job/96035501009
+        curl -fsSL --retry 5 --retry-delay 2 --retry-max-time 60 --retry-all-errors \
+          "${download_url}" -o "${archive_path}"
         tar -xzf "${archive_path}" -C "${target_dir}"
         chmod +x "${target_dir}/codeowners-cli"
         rm -f "${archive_path}"
