@@ -13,9 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
@@ -67,6 +69,62 @@ public class AgentInstanceUpdatedApplierTest {
     assertThat(stored.getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(stored.getMetrics().getInputTokens()).isEqualTo(10L);
     assertThat(stored.getMetrics().getOutputTokens()).isEqualTo(5L);
+  }
+
+  @Test
+  void shouldNotPersistHistoryBatch() {
+    // given — an UPDATED event echoing back a history batch (as AgentInstanceUpdateProcessor does).
+    final long agentInstanceKey = 44L;
+    final var initial =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING);
+    createdApplier.applyState(agentInstanceKey, initial);
+
+    final var updated =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.THINKING);
+    updated.addHistoryItem(
+        new AgentHistoryRecord().setHistoryItemId("item-1").setRole(AgentHistoryRole.USER));
+
+    // when
+    updatedApplier.applyState(agentInstanceKey, updated);
+
+    // then — history is a transient per-command payload, not real AgentInstance state: every item
+    // it carries is already persisted independently as its own AGENT_HISTORY record.
+    final var stored = agentInstanceState.getRecord(agentInstanceKey);
+    assertThat(stored).isNotNull();
+    assertThat(stored.getHistory()).isEmpty();
+  }
+
+  @Test
+  void shouldNotPersistJobContext() {
+    // given — an UPDATED event echoing back the job context that produced its history batch (as
+    // AgentInstanceUpdateProcessor does).
+    final long agentInstanceKey = 45L;
+    final var initial =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING);
+    createdApplier.applyState(agentInstanceKey, initial);
+
+    final var updated =
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStatus(AgentInstanceStatus.THINKING)
+            .setJobKey(123L)
+            .setJobLease("lease-1");
+
+    // when
+    updatedApplier.applyState(agentInstanceKey, updated);
+
+    // then — jobKey/jobLease are per-command payload, not real AgentInstance state: they're
+    // redundant with what's already captured on the separate AGENT_HISTORY entities.
+    final var stored = agentInstanceState.getRecord(agentInstanceKey);
+    assertThat(stored).isNotNull();
+    assertThat(stored.getJobKey()).isEqualTo(-1L);
+    assertThat(stored.getJobLease()).isEmpty();
   }
 
   @Test

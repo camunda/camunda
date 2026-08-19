@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -63,6 +63,7 @@ public final class AgentInstanceCreateProcessor
   private final AgentDefinitionState agentDefinitionState;
   private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
+  private final AgentHistoryBatchBehavior historyBatchHelper;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
@@ -77,6 +78,7 @@ public final class AgentInstanceCreateProcessor
     agentDefinitionState = processingState.getAgentDefinitionState();
     this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
+    historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override
@@ -165,6 +167,25 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var validJob =
+        historyBatchHelper.validateJobContext(
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(),
+            commandValue.getHistory());
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
+    if (isHistoryValid.isLeft()) {
+      final var rejection = isHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
@@ -198,7 +219,24 @@ public final class AgentInstanceCreateProcessor
         .setMaxModelCalls(commandValue.getLimits().getMaxModelCalls())
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
+    if (!commandValue.getHistory().isEmpty()) {
+      historyBatchHelper.applyInstanceChangesFromHistory(
+          event,
+          commandValue.getJobKey(),
+          commandValue.getJobLease(),
+          commandValue.getElementInstanceKey(),
+          commandValue.getHistory());
+    }
+
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
+
+    event
+        .getHistory()
+        .forEach(
+            item ->
+                stateWriter.appendFollowUpEvent(
+                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
   }

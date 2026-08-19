@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
@@ -31,19 +31,21 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public final class AgentInstanceUpdateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord>, SuspensionAware<AgentInstanceRecord> {
 
-  // Iteration order matters: it determines the order of names in the emitted changedAttributes
-  // list and must be stable across JVMs and replays. Used both as the allow-list for incoming
-  // changedAttributes and as the iteration order for applying the patch.
-  private static final List<String> ALLOWED_ATTRIBUTES =
-      List.of(
+  private static final Set<String> ALLOWED_REQUEST_LEVEL_ATTRIBUTES =
+      Set.of(AgentInstanceRecord.ATTR_STATUS);
+  private static final Set<String> BACKWARDS_COMPAT_ATTRIBUTES =
+      Set.of(
           AgentInstanceRecord.ATTR_STATUS,
           AgentInstanceRecord.ATTR_METRICS,
           AgentInstanceRecord.ATTR_TOOLS);
@@ -68,9 +70,7 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance with key '%d' for element instance with key '%d', but the process instance key '%d' does not match the agent instance's process instance key '%d'.";
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
-
   private static final long METRIC_NOT_PROVIDED = -1L;
-
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
           AgentInstanceStatus.INITIALIZING,
@@ -85,17 +85,20 @@ public final class AgentInstanceUpdateProcessor
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
+  private final AgentHistoryBatchBehavior historyBatchHelper;
 
   public AgentInstanceUpdateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
+    historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
 
   @Override
@@ -195,42 +198,30 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-
-    final var unknown =
-        changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();
-    if (!unknown.isEmpty()) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, ALLOWED_ATTRIBUTES));
+    final var validJob =
+        historyBatchHelper.validateJobContext(
+            commandValue.getJobKey(),
+            commandValue.getJobLease(),
+            commandValue.getElementInstanceKey(),
+            commandValue.getHistory());
+    if (validJob.isLeft()) {
+      final var rejection = validJob.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
-    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
-        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
-      final var metrics = commandValue.getMetrics();
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_INVALID_METRIC_DELTA.formatted(
-              metrics.getInputTokens(),
-              metrics.getOutputTokens(),
-              metrics.getModelCalls(),
-              metrics.getToolCalls()));
+    final var isHistoryValid = historyBatchHelper.validateHistory(commandValue.getHistory());
+    if (isHistoryValid.isLeft()) {
+      final var rejection = isHistoryValid.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
-    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
-      final var from = current.getStatus();
-      final var to = commandValue.getStatus();
-      if (!isAllowedTransition(from, to)) {
-        writeRejection(
-            command,
-            RejectionType.INVALID_STATE,
-            ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to));
-        return;
-      }
+    final var validPatch = validateRequestLevelChanges(command, current);
+    if (validPatch.isLeft()) {
+      final var rejection = validPatch.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
     }
 
     if (!current.getElementInstanceKeys().contains(newElementInstanceKey)) {
@@ -238,31 +229,98 @@ public final class AgentInstanceUpdateProcessor
     }
     current.setElementInstanceKey(newElementInstanceKey);
 
-    current.setChangedAttributes(applyPatch(current, commandValue, changed));
+    final var changedAttributes = new HashSet<String>();
+
+    if (!commandValue.getHistory().isEmpty()) {
+      final var historyChanges =
+          historyBatchHelper.applyInstanceChangesFromHistory(
+              current,
+              commandValue.getJobKey(),
+              commandValue.getJobLease(),
+              commandValue.getElementInstanceKey(),
+              commandValue.getHistory());
+
+      current
+          .getHistory()
+          .forEach(
+              item ->
+                  stateWriter.appendFollowUpEvent(
+                      item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+
+      changedAttributes.addAll(historyChanges);
+    }
+
+    final var requestLevelChanges =
+        applyRequestLevelChanges(current, commandValue, validPatch.get());
+    changedAttributes.addAll(requestLevelChanges);
+
+    current.setChangedAttributes(changedAttributes.stream().sorted().toList());
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
-  /**
-   * <strong>Mutates {@code current} in place.</strong> For each attribute named in {@code changed},
-   * applies the corresponding value from {@code delta} to {@code current} (status/tools are
-   * overwritten, metrics fields are summed). The caller's {@code current} reference observes every
-   * mutation directly — nothing is copied.
-   *
-   * <p>Returns the effective {@code changedAttributes} for the UPDATED event — i.e. the subset of
-   * {@code changed} whose values actually moved.
-   */
-  @SuppressWarnings("checkstyle:MissingSwitchDefault") // exhaustive over ALLOWED_ATTRIBUTES
-  private static List<String> applyPatch(
+  private Either<Rejection, List<String>> validateRequestLevelChanges(
+      final TypedRecord<AgentInstanceRecord> command, final AgentInstanceRecord current) {
+
+    final var commandValue = command.getValue();
+    final var agentInstanceKey = current.getAgentInstanceKey();
+    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
+
+    final var allowedAttributes =
+        commandValue.getHistory().isEmpty()
+            ? BACKWARDS_COMPAT_ATTRIBUTES
+            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
+
+    final var unknown = changed.stream().filter(attr -> !allowedAttributes.contains(attr)).toList();
+    if (!unknown.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(
+                  unknown, allowedAttributes.stream().sorted().toList())));
+    }
+
+    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
+        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
+      final var metrics = commandValue.getMetrics();
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              ERROR_MSG_INVALID_METRIC_DELTA.formatted(
+                  metrics.getInputTokens(),
+                  metrics.getOutputTokens(),
+                  metrics.getModelCalls(),
+                  metrics.getToolCalls())));
+    }
+
+    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
+      final var from = current.getStatus();
+      final var to = commandValue.getStatus();
+      if (!isAllowedTransition(from, to)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_STATE,
+                ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to)));
+      }
+    }
+
+    return Either.right(new ArrayList<>(changed));
+  }
+
+  private List<String> applyRequestLevelChanges(
       final AgentInstanceRecord current,
       final AgentInstanceRecord delta,
-      final Set<String> changed) {
+      final List<String> changed) {
+
+    final var allowedAttributes =
+        delta.getHistory().isEmpty()
+            ? BACKWARDS_COMPAT_ATTRIBUTES
+            : ALLOWED_REQUEST_LEVEL_ATTRIBUTES;
+
     final var effective = new ArrayList<String>(changed.size());
-    // Iterate ALLOWED_ATTRIBUTES (not the incoming set) so the output order is fixed regardless of
-    // the JVM's hash randomization or client ordering.
-    for (final var attr : ALLOWED_ATTRIBUTES) {
+    for (final var attr : allowedAttributes) {
       if (!changed.contains(attr)) {
         continue;
       }
@@ -283,6 +341,9 @@ public final class AgentInstanceUpdateProcessor
             current.setTools(delta.getTools());
             effective.add(AgentInstanceRecord.ATTR_TOOLS);
           }
+        }
+        default -> {
+          // allowedAttributes only ever contains the three cases above; nothing else to apply.
         }
       }
     }

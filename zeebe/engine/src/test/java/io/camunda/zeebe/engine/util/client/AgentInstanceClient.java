@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.record.Record;
@@ -143,6 +144,22 @@ public final class AgentInstanceClient {
   public AgentInstanceClient withTools(final List<AgentInstanceTool> tools) {
     record.setTools(tools);
     autoChangedAttributes.add("tools");
+    return this;
+  }
+
+  public AgentInstanceClient withJobKey(final long jobKey) {
+    record.setJobKey(jobKey);
+    return this;
+  }
+
+  public AgentInstanceClient withJobLease(final String jobLease) {
+    record.setJobLease(jobLease);
+    return this;
+  }
+
+  /** Sets the embedded {@code history[]} batch carried by this command. */
+  public AgentInstanceClient withHistory(final List<AgentHistoryRecord> history) {
+    record.setHistory(history);
     return this;
   }
 
