@@ -121,6 +121,35 @@ public class AgentHistoryDiscardOnJobDestructionTest {
   }
 
   @Test
+  public void shouldDiscardPendingItemsWhenExternalAgentJobThrowsCaughtError() {
+    // given — external agent marker, job type does not carry the legacy agentic prefix
+    final var fixture =
+        deployActivateAndCreatePendingItem(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+                .boundaryEvent(BOUNDARY_ID, b -> b.error(ERROR_CODE))
+                .endEvent()
+                .moveToActivity(SERVICE_TASK_ID)
+                .endEvent()
+                .done(),
+            EXTERNAL_AGENT_JOB_TYPE);
+
+    // when — error is caught by the boundary event, so the job is deleted without completing
+    ENGINE
+        .job()
+        .ofInstance(fixture.processInstanceKey)
+        .withType(EXTERNAL_AGENT_JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertItemDiscarded(fixture.jobKey, fixture.itemKey);
+  }
+
+  @Test
   public void shouldNotDiscardWhenNonAgenticJobIsCanceled() {
     // given
     final var fixture = deployActivateAndCreatePendingItem(process(PLAIN_JOB_TYPE), PLAIN_JOB_TYPE);
