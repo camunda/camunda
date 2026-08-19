@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.state.ChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -61,6 +62,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
@@ -112,6 +114,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 
@@ -281,18 +284,30 @@ final class ClusterApiUtils {
               completed,
               pending);
       case final PartitionGroupParallelPhase parallelPhase ->
-          parallelPhase
-              .groupOperations()
-              .forEach(
-                  (groupId, operations) ->
-                      splitSubConfigOperations(
-                          groupId,
-                          operations,
-                          Optional.ofNullable(configuration.partitionGroups().get(groupId))
-                              .flatMap(PartitionGroupConfiguration::pendingChanges),
-                          completed,
-                          pending));
+          splitGroupOperations(configuration, parallelPhase.groupOperations(), completed, pending);
+      // A graph phase splits the same way. The progress it reports is which operations have
+      // completed, not how far a queue has advanced, and a graph plan answers that question
+      // through the same ChangePlan methods.
+      case final PartitionGroupGraphPhase graphPhase ->
+          splitGroupOperations(configuration, graphPhase.groupOperations(), completed, pending);
     }
+  }
+
+  private static void splitGroupOperations(
+      final CurrentClusterConfiguration configuration,
+      final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
+          groupOperations,
+      final List<Operation> completed,
+      final List<Operation> pending) {
+    groupOperations.forEach(
+        (groupId, operations) ->
+            splitSubConfigOperations(
+                groupId,
+                operations,
+                Optional.ofNullable(configuration.partitionGroups().get(groupId))
+                    .flatMap(PartitionGroupConfiguration::pendingChanges),
+                completed,
+                pending));
   }
 
   /**
@@ -305,7 +320,7 @@ final class ClusterApiUtils {
   private static void splitSubConfigOperations(
       final String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
-      final Optional<ClusterChangePlan> subConfigPlan,
+      final Optional<? extends ChangePlan> subConfigPlan,
       final List<Operation> completed,
       final List<Operation> pending) {
     if (subConfigPlan.isEmpty()) {
@@ -377,6 +392,13 @@ final class ClusterApiUtils {
     return operations.stream().map(op -> mapOperation(physicalTenantId, op)).toList();
   }
 
+  private static Stream<Operation> mapGroupOperations(
+      final Map<String, ? extends List<? extends ClusterConfigurationChangeOperation>>
+          groupOperations) {
+    return groupOperations.entrySet().stream()
+        .flatMap(entry -> mapOperations(entry.getKey(), entry.getValue()).stream());
+  }
+
   private static List<Operation> mapPhaseOperations(final List<Phase> phases) {
     return phases.stream()
         .flatMap(
@@ -385,9 +407,9 @@ final class ClusterApiUtils {
                   case final GlobalPhase globalPhase ->
                       mapOperations(null, globalPhase.operations()).stream();
                   case final PartitionGroupParallelPhase partitionGroupPhase ->
-                      partitionGroupPhase.groupOperations().entrySet().stream()
-                          .flatMap(
-                              entry -> mapOperations(entry.getKey(), entry.getValue()).stream());
+                      mapGroupOperations(partitionGroupPhase.groupOperations());
+                  case final PartitionGroupGraphPhase graphPhase ->
+                      mapGroupOperations(graphPhase.groupOperations());
                 })
         .toList();
   }
