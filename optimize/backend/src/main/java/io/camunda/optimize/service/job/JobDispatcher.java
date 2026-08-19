@@ -53,9 +53,7 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
   private final JobRegistryWriter jobRegistryWriter;
   private final Map<Pair<JobType, EntityType>, JobHandler> handlersByTypeAndEntity;
 
-  // Created lazily on first dispatch, not at construction: most Optimize instances in a cluster
-  // run with the dispatcher disabled, and this avoids reserving a thread pool that instance never
-  // uses.
+  // Created lazily on first dispatch
   private ExecutorService executorService;
 
   public JobDispatcher(
@@ -129,9 +127,11 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
     }
     final Collection<JobRegistryEntryDto> jobsToDispatch = oldestPerEntity(queuedJobs);
     LOG.info("Dispatching {} queued job registry entries", jobsToDispatch.size());
-    jobsToDispatch.stream()
-        .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), getExecutorService()))
-        .forEach(CompletableFuture::join);
+    final List<CompletableFuture<Void>> futures =
+        jobsToDispatch.stream()
+            .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), getExecutorService()))
+            .toList();
+    futures.forEach(CompletableFuture::join);
   }
 
   private synchronized ExecutorService getExecutorService() {
@@ -205,7 +205,7 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
           job.getEntityType(),
           job.getEntityId(),
           e);
-      jobRegistryWriter.updateJobStatus(job.getId(), JobStatus.FAILED, e.getMessage());
+      jobRegistryWriter.updateJobStatus(job.getId(), JobStatus.FAILED, describeError(e));
       return;
     }
     jobRegistryWriter.updateJobStatus(job.getId(), JobStatus.COMPLETED, null);
@@ -215,6 +215,13 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
         job.getJobType(),
         job.getEntityType(),
         job.getEntityId());
+  }
+
+  private static String describeError(final Exception e) {
+    final String message = e.getMessage();
+    return message == null
+        ? e.getClass().getSimpleName()
+        : e.getClass().getSimpleName() + ": " + message;
   }
 
   @Override
