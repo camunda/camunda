@@ -29,6 +29,7 @@ import org.springframework.core.env.StandardEnvironment;
 class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
   private static final String OIDC = "camunda.security.authentication.oidc.";
+  private static final SpringApplication OPTIMIZE_APPLICATION = new SpringApplication(Main.class);
 
   @RegisterExtension
   final LogCapturer logs =
@@ -37,8 +38,6 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
   private final OptimizeSecurityConfigCompatibilityPostProcessor processor =
       new OptimizeSecurityConfigCompatibilityPostProcessor();
-
-  private static final SpringApplication OPTIMIZE_APPLICATION = new SpringApplication(Main.class);
 
   private static StandardEnvironment environmentWith(final Map<String, Object> legacy) {
     final StandardEnvironment env = new StandardEnvironment();
