@@ -482,7 +482,7 @@ jobs:
             if ! command -v google-chrome >/dev/null 2>&1; then
               sudo timeout 90 bash -c "apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates"
 
-              sudo timeout 30 bash -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
+              sudo timeout 30 bash -o pipefail -c 'wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg'
 
               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
                 | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
