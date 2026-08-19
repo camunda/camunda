@@ -8,7 +8,7 @@
 #              When a specific pod is given, profiles that pod with cpu event only.
 #              Uploads flamegraph artifacts named
 #              flamegraph-{test-type}-{event}-{pod}-{date}.
-# called-by: camunda-pr-load-test.yml, load-test-variant.yml (itself called by
+# called-by: camunda-pr-load-test.yml, daily-load-test-variant.yml (itself called by
 #            camunda-daily-load-tests.yml)
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
@@ -90,7 +90,7 @@ jobs:
     # GitHub Actions does not support arithmetic in `timeout-minutes` expressions (no
     # +/-/*// operators), so this can't be computed from `inputs.duration-seconds`
     # automatically -- bump it manually if a caller raises duration-seconds. Largest known
-    # caller today: load-test-variant.yml's profile job (called per-variant from camunda-daily-load-tests.yml) passes
+    # caller today: daily-load-test-variant.yml's profile job (called per-variant from camunda-daily-load-tests.yml) passes
     # duration-seconds: '1800' (30 min), i.e. up to 90 minutes of profiling alone per pod.
     # If the job timeout is increased, make sure to also increase the Teleport
     # "certificate-ttl" below to keep it roughly greater or equal to the job
@@ -187,7 +187,7 @@ jobs:
     # job may time out mid-profile. GitHub Actions does not support arithmetic in
     # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
     # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: load-test-variant.yml's profile job (called per-variant from camunda-daily-load-tests.yml) passes
+    # duration-seconds. Largest known caller today: daily-load-test-variant.yml's profile job (called per-variant from camunda-daily-load-tests.yml) passes
     # duration-seconds: '1800' (30 min).
     timeout-minutes: 60
     if: ${{ inputs.pod != '' }}

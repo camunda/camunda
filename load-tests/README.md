@@ -55,7 +55,7 @@ graph TD
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
-        VARIANT["load-test-variant.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        VARIANT["daily-load-test-variant.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
