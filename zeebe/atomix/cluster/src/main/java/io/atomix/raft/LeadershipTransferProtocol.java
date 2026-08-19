@@ -20,6 +20,7 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
 import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
+import io.camunda.cluster.PartitionId;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
@@ -37,18 +38,14 @@ public interface LeadershipTransferProtocol {
    * through {@link #onResult}.
    */
   CompletableFuture<LeadershipTransferInitiateResponse> initiate(
-      MemberId leader,
-      String partitionGroup,
-      int partitionId,
-      LeadershipTransferInitiateRequest request);
+      MemberId leader, PartitionId partitionId, LeadershipTransferInitiateRequest request);
 
   /**
    * Handles the terminal outcome the given partition's leader reports back. The result is
    * correlated to the initiate request by {@link LeadershipTransferResultRequest#correlationId()}.
    */
   void onResult(
-      String partitionGroup,
-      int partitionId,
+      PartitionId partitionId,
       Function<LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
           handler);
 }

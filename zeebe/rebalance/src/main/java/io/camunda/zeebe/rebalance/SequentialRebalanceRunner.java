@@ -286,9 +286,9 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 pending.desiredLeader(),
                 PartitionRebalanceProgress.TRANSFERRING));
     publish(rebalance);
+    final var partitionId = new PartitionId(partition.physicalTenantId(), partition.partitionId());
     transfers.onResult(
-        partition.physicalTenantId(),
-        partition.partitionId(),
+        partitionId,
         result -> {
           executor.run(() -> onTransferResultReported(rebalance, index, result, completion));
           return CompletableFuture.completedFuture(
@@ -301,11 +301,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         partition,
         desiredLeader);
     transfers
-        .initiate(
-            leader,
-            partition.physicalTenantId(),
-            partition.partitionId(),
-            createTransferInitiateRequest(rebalance, desiredLeader))
+        .initiate(leader, partitionId, createTransferInitiateRequest(rebalance, desiredLeader))
         .whenCompleteAsync(
             (response, error) -> onTransferInitiated(rebalance, index, response, error, completion),
             executor);

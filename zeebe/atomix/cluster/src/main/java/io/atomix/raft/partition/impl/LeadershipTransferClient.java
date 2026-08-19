@@ -25,6 +25,7 @@ import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.cluster.PartitionId;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -53,11 +54,10 @@ public final class LeadershipTransferClient implements LeadershipTransferProtoco
   @Override
   public CompletableFuture<LeadershipTransferInitiateResponse> initiate(
       final MemberId leader,
-      final String partitionGroup,
-      final int partitionId,
+      final PartitionId partitionId,
       final LeadershipTransferInitiateRequest request) {
     return communicationService.send(
-        subjects(partitionGroup, partitionId).getLeadershipTransferInitiateSubject(),
+        subjects(partitionId).getLeadershipTransferInitiateSubject(),
         request,
         serializer::encode,
         serializer::decode,
@@ -67,12 +67,11 @@ public final class LeadershipTransferClient implements LeadershipTransferProtoco
 
   @Override
   public void onResult(
-      final String partitionGroup,
-      final int partitionId,
+      final PartitionId partitionId,
       final Function<
               LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
           handler) {
-    final var subject = subjects(partitionGroup, partitionId).getLeadershipTransferResultSubject();
+    final var subject = subjects(partitionId).getLeadershipTransferResultSubject();
     subscriptions.add(subject);
     communicationService.replyTo(subject, serializer::decode, handler, serializer::encode);
   }
@@ -83,7 +82,8 @@ public final class LeadershipTransferClient implements LeadershipTransferProtoco
     subscriptions.clear();
   }
 
-  private RaftMessageContext subjects(final String partitionGroup, final int partitionId) {
-    return new RaftMessageContext(PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId));
+  private RaftMessageContext subjects(final PartitionId partitionId) {
+    return new RaftMessageContext(
+        PARTITION_NAME_FORMAT.formatted(partitionId.group(), partitionId.number()));
   }
 }

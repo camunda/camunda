@@ -913,23 +913,21 @@ final class SequentialRebalanceRunnerTest {
     @Override
     public CompletableFuture<LeadershipTransferInitiateResponse> initiate(
         final MemberId leader,
-        final String partitionGroup,
-        final int partitionId,
+        final PartitionId partitionId,
         final LeadershipTransferInitiateRequest request) {
-      initiated.add(new Initiated(leader, partitionGroup, partitionId, request));
+      initiated.add(new Initiated(leader, partitionId.group(), partitionId.number(), request));
       pending = new CompletableFuture<>();
       return pending;
     }
 
     @Override
     public void onResult(
-        final String partitionGroup,
-        final int partitionId,
+        final PartitionId partitionId,
         final Function<
                 LeadershipTransferResultRequest,
                 CompletableFuture<LeadershipTransferResultResponse>>
             handler) {
-      resultHandlers.put(new PartitionId(partitionGroup, partitionId), handler);
+      resultHandlers.put(partitionId, handler);
     }
 
     Initiated lastInitiated() {
