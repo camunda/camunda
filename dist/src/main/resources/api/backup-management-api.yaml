@@ -32,6 +32,12 @@ paths:
         The `physicalTenant` query parameter is only read when the request carries a
         `Content-Type: application/json` header (the body itself may be empty). A request without
         that header always covers every physical tenant.
+
+        If some tenants' backups are triggered and others fail, the status code is the failure's but
+        the body is still a `TakeBackupRuntimeResponse`: `backupIds` lists the backups that *were*
+        triggered so they can be monitored or deleted, and `failureReason` says what went wrong. It
+        also repeats the failure in `message`, so a client that reads error bodies as `Error` still
+        surfaces it.
       parameters:
         - $ref: '#/components/parameters/PhysicalTenant'
       requestBody:
@@ -665,6 +671,12 @@ components:
           example:
             default: 1756891200000
             tenanta: 1756891200001
+        failureReason:
+          description: |
+            Why the request did not cover every physical tenant it targeted. Only set when the
+            status code is an error one and `backupIds` is non-empty, i.e. some tenants' backups
+            were triggered and at least one tenant's was not.
+          type: string
         message:
           description: A message indicating backup has been triggered
           type: string

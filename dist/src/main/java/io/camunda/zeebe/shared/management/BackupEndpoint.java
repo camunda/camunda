@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.shared.management.PhysicalTenantFanOut.Outcome;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -54,11 +55,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
@@ -89,22 +89,6 @@ import org.springframework.stereotype.Component;
 @Component
 @WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
-
-  /**
-   * Cross-tenant precedence for the aggregated state of one backup, mirroring the per-partition
-   * rule documented on {@code BackupInfo}: any tenant failing fails the whole backup, and a backup
-   * that only some tenants have is incomplete rather than complete. {@link State#DOES_NOT_EXIST}
-   * maps to {@link StateCode#INCOMPLETE} because a backup missing from every tenant is answered
-   * with a 404 before aggregation, so seeing it here means at least one other tenant does have it.
-   */
-  private static final List<State> STATE_PRECEDENCE =
-      List.of(
-          State.FAILED,
-          State.INCOMPLETE,
-          State.DOES_NOT_EXIST,
-          State.IN_PROGRESS,
-          State.DELETED,
-          State.COMPLETED);
 
   private final SequencedMap<String, PhysicalTenantBackup> backups;
 
@@ -197,12 +181,13 @@ public final class BackupEndpoint {
       return badRequest(e.getMessage());
     }
 
-    final var ranges = fanOut(targets, tenant -> api(tenant).api().syncMetadata(tenant));
+    final var ranges =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().syncMetadata(tenant));
     final var checkpointStates =
-        fanOut(targets, tenant -> api(tenant).api().getCheckpointState(tenant));
-    var failure = firstFailure(ranges);
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().getCheckpointState(tenant));
+    var failure = PhysicalTenantFanOut.firstFailure(ranges);
     if (failure == null) {
-      failure = firstFailure(checkpointStates);
+      failure = PhysicalTenantFanOut.firstFailure(checkpointStates);
     }
     if (failure != null) {
       return mapErrorResponse(failure);
@@ -288,7 +273,9 @@ public final class BackupEndpoint {
       return incorrectBackupIdErrorResponse();
     }
 
-    final var taken = fanOut(targets, tenant -> api(tenant).api().takeBackup(tenant, backupId));
+    final var taken =
+        PhysicalTenantFanOut.over(
+            targets, tenant -> api(tenant).api().takeBackup(tenant, backupId));
     return takeResponse(targets, taken);
   }
 
@@ -298,14 +285,18 @@ public final class BackupEndpoint {
       return incorrectBackupIdErrorResponse();
     }
 
-    final var taken = fanOut(targets, tenant -> api(tenant).api().takeBackup(tenant));
+    final var taken =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().takeBackup(tenant));
     return takeResponse(targets, taken);
   }
 
   /**
    * Reports the ids of the backups that were triggered. On a partial failure the status code is the
-   * failure's, and the message still names every tenant whose backup <em>was</em> triggered so the
-   * operator can monitor or delete them (ADR 003 D4).
+   * failure's, but the body stays a {@link TakeBackupRuntimeResponse} carrying {@code backupIds} so
+   * the operator can monitor or delete the backups that <em>were</em> triggered (ADR 003 D4) —
+   * naming the tenants alone would not be enough, since with generated ids the caller has no other
+   * way to learn those ids. The failure text stays in {@code message} as well, so a caller reading
+   * the error body as an {@link Error} still sees it.
    */
   private WebEndpointResponse<?> takeResponse(
       final List<String> targets, final Map<String, Outcome<Long>> taken) {
@@ -318,29 +309,28 @@ public final class BackupEndpoint {
           }
         });
 
-    final var failure = firstFailure(taken);
+    final var failure = PhysicalTenantFanOut.firstFailure(taken);
     if (failure != null) {
       final var response = mapErrorResponse(failure);
       if (backupIds.isEmpty()) {
         return response;
       }
+      final var failureReason = response.getBody().getMessage();
       return new WebEndpointResponse<>(
-          new Error()
+          new TakeBackupRuntimeResponse()
+              .backupId(reportedIdOf(backupIds))
+              .backupIds(backupIds)
+              .failureReason(failureReason)
               .message(
-                  response.getBody().getMessage()
+                  failureReason
                       + describeTenants(
                           " Backups were still triggered for physical tenant(s): %s.",
-                          backupIds.keySet())),
+                          backupIds.keySet())
+                      + " See backupIds for the id of each backup that was triggered."),
           response.getStatus());
     }
 
-    // the default tenant's id keeps the meaning backupId always had; the others are in backupIds.
-    // A request narrowed to another tenant reports that tenant's id, since that is the only backup
-    // the caller asked for.
-    final var reportedId =
-        backupIds.containsKey(DEFAULT_PHYSICAL_TENANT_ID)
-            ? backupIds.get(DEFAULT_PHYSICAL_TENANT_ID)
-            : backupIds.values().iterator().next();
+    final var reportedId = reportedIdOf(backupIds);
     return new WebEndpointResponse<>(
         new TakeBackupRuntimeResponse()
             .backupId(reportedId)
@@ -351,16 +341,31 @@ public final class BackupEndpoint {
         202);
   }
 
+  /**
+   * The one id {@code backupId} reports. The default tenant's keeps the meaning that field always
+   * had; a request narrowed to another tenant reports that tenant's, since that is the only backup
+   * the caller asked for.
+   */
+  private static long reportedIdOf(final SequencedMap<String, Long> backupIds) {
+    return backupIds.containsKey(DEFAULT_PHYSICAL_TENANT_ID)
+        ? backupIds.get(DEFAULT_PHYSICAL_TENANT_ID)
+        : backupIds.firstEntry().getValue();
+  }
+
   private WebEndpointResponse<?> status(final List<String> targets, final long id) {
-    final var statuses = fanOut(targets, tenant -> api(tenant).api().getStatus(tenant, id));
-    final var failure = firstFailure(statuses);
+    final var statuses =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().getStatus(tenant, id));
+    final var failure = PhysicalTenantFanOut.firstFailure(statuses);
     if (failure != null) {
       return mapErrorResponse(failure);
     }
 
-    final var perTenant = new ArrayList<TenantBackupStatus>();
-    targets.forEach(
-        tenant -> perTenant.add(new TenantBackupStatus(tenant, statuses.get(tenant).value())));
+    final var perTenant =
+        perTenantStatuses(
+            targets,
+            targets.stream()
+                .collect(
+                    Collectors.toMap(tenant -> tenant, tenant -> statuses.get(tenant).value())));
     if (perTenant.stream().allMatch(s -> s.status().status() == State.DOES_NOT_EXIST)) {
       return new WebEndpointResponse<>(
           new Error().message("Backup with id %d does not exist".formatted(id)),
@@ -370,14 +375,18 @@ public final class BackupEndpoint {
   }
 
   private WebEndpointResponse<?> listPrefix(final List<String> targets, final String prefix) {
-    final var listings = fanOut(targets, tenant -> api(tenant).api().listBackups(tenant, prefix));
-    final var failure = firstFailure(listings);
+    final var listings =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().listBackups(tenant, prefix));
+    final var failure = PhysicalTenantFanOut.firstFailure(listings);
     if (failure != null) {
       return mapErrorResponse(failure);
     }
 
-    // one entry per backup id, holding every tenant that has a backup with that id
-    final var byBackupId = new LinkedHashMap<Long, List<TenantBackupStatus>>();
+    // one entry per backup id, holding every in-scope tenant. A tenant that did not list the id
+    // contributes DOES_NOT_EXIST rather than being left out, so a listed backup aggregates exactly
+    // as the same backup does when queried by id - otherwise a backup only one tenant has would
+    // list as COMPLETED but read as INCOMPLETE.
+    final var byBackupId = new LinkedHashMap<Long, LinkedHashMap<String, BackupStatus>>();
     targets.forEach(
         tenant ->
             listings
@@ -386,20 +395,39 @@ public final class BackupEndpoint {
                 .forEach(
                     status ->
                         byBackupId
-                            .computeIfAbsent(status.backupId(), ignored -> new ArrayList<>())
-                            .add(new TenantBackupStatus(tenant, status))));
+                            .computeIfAbsent(status.backupId(), ignored -> new LinkedHashMap<>())
+                            .put(tenant, status)));
+    byBackupId.forEach(
+        (backupId, reporting) ->
+            targets.forEach(
+                tenant ->
+                    reporting.computeIfAbsent(
+                        tenant,
+                        ignored ->
+                            new BackupStatus(
+                                backupId, State.DOES_NOT_EXIST, Optional.empty(), List.of()))));
 
     final var response =
         byBackupId.entrySet().stream()
-            .sorted(Map.Entry.<Long, List<TenantBackupStatus>>comparingByKey().reversed())
-            .map(entry -> aggregate(entry.getValue()))
+            .sorted(
+                Map.Entry.<Long, LinkedHashMap<String, BackupStatus>>comparingByKey().reversed())
+            .map(entry -> aggregate(perTenantStatuses(targets, entry.getValue())))
             .toList();
     return new WebEndpointResponse<>(response);
   }
 
+  /** One backup's statuses in fan-out order, so every response orders tenants the same way. */
+  private static List<TenantBackupStatus> perTenantStatuses(
+      final List<String> targets, final Map<String, BackupStatus> byTenant) {
+    return targets.stream()
+        .map(tenant -> new TenantBackupStatus(tenant, byTenant.get(tenant)))
+        .toList();
+  }
+
   private WebEndpointResponse<?> deleteBackup(final List<String> targets, final long id) {
-    final var deletions = fanOut(targets, tenant -> api(tenant).api().deleteBackup(tenant, id));
-    final var failure = firstFailure(deletions);
+    final var deletions =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().deleteBackup(tenant, id));
+    final var failure = PhysicalTenantFanOut.firstFailure(deletions);
     if (failure != null) {
       return mapErrorResponse(failure);
     }
@@ -407,8 +435,9 @@ public final class BackupEndpoint {
   }
 
   private WebEndpointResponse<?> deleteState(final List<String> targets) {
-    final var deletions = fanOut(targets, tenant -> api(tenant).api().deleteRuntimeState(tenant));
-    final var failure = firstFailure(deletions);
+    final var deletions =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().deleteRuntimeState(tenant));
+    final var failure = PhysicalTenantFanOut.firstFailure(deletions);
     if (failure != null) {
       return mapErrorResponse(failure);
     }
@@ -422,8 +451,9 @@ public final class BackupEndpoint {
    */
   private WebEndpointResponse<?> state(final List<String> targets) {
     final var checkpointStates =
-        fanOut(targets, tenant -> api(tenant).api().getCheckpointState(tenant));
-    final var ranges = fanOut(targets, tenant -> api(tenant).api().getBackupRanges(tenant));
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().getCheckpointState(tenant));
+    final var ranges =
+        PhysicalTenantFanOut.over(targets, tenant -> api(tenant).api().getBackupRanges(tenant));
     return new WebEndpointResponse<>(toCheckpointState(targets, checkpointStates, ranges));
   }
 
@@ -589,14 +619,40 @@ public final class BackupEndpoint {
         .toList();
   }
 
+  /**
+   * Folds the per-tenant states into one, following the same rule {@code
+   * BackupRequestHandler.getAggregatedStatus} applies across a tenant's partitions, so a backup
+   * spread over tenants reads the same way as one spread over partitions.
+   *
+   * <p>The one state that rule never sees is {@link State#INCOMPLETE}: a single partition is never
+   * incomplete, but a whole tenant can be. It ranks just below {@link State#FAILED}, since a tenant
+   * missing part of its own backup is worse news than one whose backup was deleted or is still
+   * running.
+   */
   private StateCode worstStateOf(final List<TenantBackupStatus> perTenant) {
-    final var present = perTenant.stream().map(tenant -> tenant.status().status()).toList();
-    for (final State candidate : STATE_PRECEDENCE) {
-      if (present.contains(candidate)) {
-        return candidate == State.DOES_NOT_EXIST
-            ? StateCode.INCOMPLETE
-            : getBackupStateCode(candidate);
-      }
+    final var states =
+        perTenant.stream().map(tenant -> tenant.status().status()).collect(Collectors.toSet());
+    if (states.contains(State.FAILED)) {
+      return StateCode.FAILED;
+    }
+    if (states.contains(State.INCOMPLETE)) {
+      return StateCode.INCOMPLETE;
+    }
+    // a backup that some tenants have and others never had, with none deleted, is partial rather
+    // than gone - as per partition, where a deletion is the stronger signal
+    if ((states.contains(State.IN_PROGRESS) || states.contains(State.COMPLETED))
+        && states.contains(State.DOES_NOT_EXIST)
+        && !states.contains(State.DELETED)) {
+      return StateCode.INCOMPLETE;
+    }
+    if (states.contains(State.DELETED)) {
+      return StateCode.DELETED;
+    }
+    if (states.contains(State.IN_PROGRESS)) {
+      return StateCode.IN_PROGRESS;
+    }
+    if (states.contains(State.DOES_NOT_EXIST)) {
+      return StateCode.DOES_NOT_EXIST;
     }
     return StateCode.COMPLETED;
   }
@@ -714,52 +770,13 @@ public final class BackupEndpoint {
   }
 
   /**
-   * Sends one request per physical tenant, starting every request before waiting on any so a
-   * cluster-wide operation costs the same round trips as a single-tenant one, and keeping each
-   * tenant's outcome so a partial failure can be reported as one.
-   *
-   * <p>A synchronous throw is turned into a failed future so both failure shapes reach {@link
-   * #mapErrorResponse} as a {@link CompletionException}, which maps them identically.
+   * Names the given tenants, or says nothing on a single-tenant cluster — where there is nothing to
+   * disambiguate, and naming {@code default} would only add noise to a message that has read the
+   * same way for releases. Gated on the cluster rather than on the tenants being named, so a
+   * two-tenant cluster still reports a set that happens to be exactly {@code {default}}.
    */
-  private static <T> Map<String, Outcome<T>> fanOut(
-      final List<String> targets, final Function<String, CompletionStage<T>> call) {
-    final var started = new LinkedHashMap<String, CompletableFuture<T>>();
-    for (final var tenant : targets) {
-      try {
-        started.put(tenant, call.apply(tenant).toCompletableFuture());
-      } catch (final Exception e) {
-        started.put(tenant, CompletableFuture.failedFuture(e));
-      }
-    }
-
-    final var outcomes = new LinkedHashMap<String, Outcome<T>>();
-    started.forEach(
-        (tenant, future) -> {
-          try {
-            outcomes.put(tenant, new Outcome<>(future.join(), null));
-          } catch (final Exception e) {
-            outcomes.put(tenant, new Outcome<>(null, e));
-          }
-        });
-    return outcomes;
-  }
-
-  private static @Nullable Throwable firstFailure(
-      final Map<String, ? extends Outcome<?>> outcomes) {
-    for (final var outcome : outcomes.values()) {
-      if (outcome.error() != null) {
-        return outcome.error();
-      }
-    }
-    return null;
-  }
-
-  private static String describeTenants(final String format, final Collection<String> tenants) {
-    // a single-tenant cluster has nothing to disambiguate, and naming "default" there would only
-    // add noise to a message that has read the same way for releases
-    return tenants.size() > 1 || !tenants.contains(DEFAULT_PHYSICAL_TENANT_ID)
-        ? format.formatted(tenants.stream().sorted().toList())
-        : "";
+  private String describeTenants(final String format, final Collection<String> tenants) {
+    return backups.size() > 1 ? format.formatted(tenants.stream().sorted().toList()) : "";
   }
 
   private static SequencedMap<String, PhysicalTenantBackup> physicalTenantBackups(
@@ -799,6 +816,4 @@ public final class BackupEndpoint {
   record PhysicalTenantBackup(BackupApi api, boolean generatesIds) {}
 
   private record TenantBackupStatus(String physicalTenantId, BackupStatus status) {}
-
-  private record Outcome<T>(@Nullable T value, @Nullable Throwable error) {}
 }

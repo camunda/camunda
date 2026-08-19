@@ -1571,26 +1571,75 @@ final class BackupEndpointTest {
     }
 
     @Test
-    void shouldReportTriggeredBackupsWhenOnePhysicalTenantFails() {
+    void shouldReportTriggeredBackupIdsWhenOnePhysicalTenantFails() {
       // given
       final var apiA = mock(BackupApi.class);
       final var apiB = mock(BackupApi.class);
-      when(apiA.takeBackup(TENANT_A, 7L)).thenReturn(CompletableFuture.completedFuture(7L));
-      when(apiB.takeBackup(TENANT_B, 7L))
+      when(apiA.takeBackup(TENANT_A)).thenReturn(CompletableFuture.completedFuture(101L));
+      when(apiB.takeBackup(TENANT_B))
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenantb is down")));
-      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+      final var endpoint = endpoint(generatedIds(apiA), generatedIds(apiB));
 
       // when
+      final var response = endpoint.take();
+
+      // then the id of the backup that was triggered is still reachable, which with generated ids
+      // is the only way the operator can learn it
+      assertThat(response.getStatus()).isEqualTo(500);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .satisfies(
+              body -> {
+                assertThat(body.getBackupIds()).isEqualTo(Map.of(TENANT_A, 101L));
+                assertThat(body.getBackupId()).isEqualTo(101L);
+                assertThat(body.getFailureReason()).isEqualTo("tenantb is down");
+                assertThat(body.getMessage())
+                    .contains("tenantb is down")
+                    .contains("Backups were still triggered for physical tenant(s): [tenanta]");
+              });
+    }
+
+    @Test
+    void shouldNamePhysicalTenantsWhenOnlyTheDefaultOneWasTriggered() {
+      // given a two-tenant cluster where the default tenant is the one that succeeded
+      final var defaultApi = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(defaultApi.takeBackup(DEFAULT_PHYSICAL_TENANT_ID, 7L))
+          .thenReturn(CompletableFuture.completedFuture(7L));
+      when(apiB.takeBackup(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenantb is down")));
+      final var backups = new LinkedHashMap<String, PhysicalTenantBackup>();
+      backups.put(DEFAULT_PHYSICAL_TENANT_ID, explicitIds(defaultApi));
+      backups.put(TENANT_B, explicitIds(apiB));
+
+      // when
+      final var response = new BackupEndpoint(backups).take(7L, null);
+
+      // then the clause is not suppressed just because the reported set is exactly {default}
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .extracting(TakeBackupRuntimeResponse::getMessage)
+          .asString()
+          .contains("Backups were still triggered for physical tenant(s): [default]");
+    }
+
+    @Test
+    void shouldNotNamePhysicalTenantsOnASingleTenantCluster() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofMinutes(1)));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when an explicit id is rejected because the single tenant generates its own
       final var response = endpoint.take(7L, null);
 
-      // then
-      assertThat(response.getStatus()).isEqualTo(500);
+      // then the message reads exactly as it did before physical tenants existed
       assertThat(response.getBody())
           .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
           .extracting(Error::getMessage)
           .asString()
-          .contains("tenantb is down")
-          .contains("Backups were still triggered for physical tenant(s): [tenanta]");
+          .doesNotContain("physical tenant");
     }
 
     @Test
@@ -1648,6 +1697,47 @@ final class BackupEndpointTest {
           .isEqualTo(StateCode.INCOMPLETE);
     }
 
+    @ParameterizedTest(name = "{0} + {1} -> {2}")
+    @MethodSource("aggregatedStates")
+    void shouldAggregateStateAsThePerPartitionRuleDoes(
+        final State tenantA, final State tenantB, final StateCode expected) {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, tenantA)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, tenantB)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query("7", null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(BackupInfo.class))
+          .extracting(BackupInfo::getState)
+          .isEqualTo(expected);
+    }
+
+    /**
+     * The rule {@code BackupRequestHandler.getAggregatedStatus} applies across partitions, which
+     * this must match across tenants. Note DELETED outranks IN_PROGRESS, and outranks the COMPLETED
+     * + DOES_NOT_EXIST pair that would otherwise be INCOMPLETE.
+     */
+    private static Stream<Arguments> aggregatedStates() {
+      return Stream.of(
+          Arguments.of(State.COMPLETED, State.FAILED, StateCode.FAILED),
+          Arguments.of(State.COMPLETED, State.INCOMPLETE, StateCode.INCOMPLETE),
+          Arguments.of(State.COMPLETED, State.DOES_NOT_EXIST, StateCode.INCOMPLETE),
+          Arguments.of(State.IN_PROGRESS, State.DOES_NOT_EXIST, StateCode.INCOMPLETE),
+          Arguments.of(State.COMPLETED, State.DELETED, StateCode.DELETED),
+          Arguments.of(State.IN_PROGRESS, State.DELETED, StateCode.DELETED),
+          Arguments.of(State.DELETED, State.DOES_NOT_EXIST, StateCode.DELETED),
+          Arguments.of(State.COMPLETED, State.IN_PROGRESS, StateCode.IN_PROGRESS),
+          Arguments.of(State.COMPLETED, State.COMPLETED, StateCode.COMPLETED));
+    }
+
     @Test
     void shouldReturn404WhenBackupIsMissingInEveryPhysicalTenant() {
       // given
@@ -1682,7 +1772,8 @@ final class BackupEndpointTest {
       // when
       final var response = endpoint.listAll(null);
 
-      // then
+      // then a backup only one tenant has is INCOMPLETE, exactly as querying it by id reports it,
+      // and every in-scope tenant is accounted for
       assertThat(response.getBody())
           .asInstanceOf(InstanceOfAssertFactories.list(BackupInfo.class))
           .satisfies(
@@ -1690,14 +1781,40 @@ final class BackupEndpointTest {
                 assertThat(backups)
                     .extracting(BackupInfo::getBackupId, BackupInfo::getState)
                     .containsExactly(
-                        tuple(2L, StateCode.IN_PROGRESS), tuple(1L, StateCode.COMPLETED));
+                        tuple(2L, StateCode.IN_PROGRESS), tuple(1L, StateCode.INCOMPLETE));
                 assertThat(backups.getFirst().getPhysicalTenants())
                     .extracting(BackupTenantInfo::getPhysicalTenantId)
                     .containsExactly(TENANT_A, TENANT_B);
                 assertThat(backups.getLast().getPhysicalTenants())
-                    .extracting(BackupTenantInfo::getPhysicalTenantId)
-                    .containsExactly(TENANT_A);
+                    .extracting(BackupTenantInfo::getPhysicalTenantId, BackupTenantInfo::getState)
+                    .containsExactly(
+                        tuple(TENANT_A, StateCode.COMPLETED),
+                        tuple(TENANT_B, StateCode.DOES_NOT_EXIST));
               });
+    }
+
+    @Test
+    void shouldReportTheSameStateWhetherABackupIsListedOrQueriedById() {
+      // given a backup only one of two tenants has
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.listBackups(TENANT_A, "*"))
+          .thenReturn(CompletableFuture.completedFuture(List.of(status(7L, State.COMPLETED))));
+      when(apiB.listBackups(TENANT_B, "*"))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, State.COMPLETED)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, State.DOES_NOT_EXIST)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var listed =
+          ((List<BackupInfo>) endpoint.listAll(null).getBody()).getFirst().getState();
+      final var queried = ((BackupInfo) endpoint.query("7", null).getBody()).getState();
+
+      // then
+      assertThat(listed).isEqualTo(queried).isEqualTo(StateCode.INCOMPLETE);
     }
 
     @Test
