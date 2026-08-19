@@ -38,7 +38,7 @@
     "react-transition-group": "4.4.5",
     "styled-components": "6.5.0",
     "zod": "4.4.3",
-    "@camunda/design-system": "^0.45.0",
+    "@camunda/design-system": "0.45.0",
     "lucide-react": "1.17.0"
   },
   "devDependencies": {

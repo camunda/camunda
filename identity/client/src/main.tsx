@@ -12,12 +12,17 @@ import App from "./App";
 import "./index.scss";
 import "@camunda/design-system/styles.css";
 import { C4Provider } from "@camunda/design-system";
+import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "./feature-flags";
 import "./c4-ui.css";
 
+const app = IS_NEW_DESIGN_SYSTEM_ENABLED ? (
+  <C4Provider>
+    <App />
+  </C4Provider>
+) : (
+  <App />
+);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <C4Provider>
-      <App />
-    </C4Provider>
-  </React.StrictMode>,
+  <React.StrictMode>{app}</React.StrictMode>,
 );
