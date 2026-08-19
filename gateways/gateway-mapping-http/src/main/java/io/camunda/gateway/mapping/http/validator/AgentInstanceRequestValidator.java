@@ -8,7 +8,9 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -18,6 +20,7 @@ import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
@@ -49,39 +52,50 @@ public class AgentInstanceRequestValidator {
                 request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
-          if (request.getDefinition() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition"));
-          } else {
-            final var def = request.getDefinition();
-            if (def.getModel() == null || def.getModel().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.model"));
-            }
-            if (def.getProvider() == null || def.getProvider().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.provider"));
-            }
-            if (def.getSystemPrompt() == null || def.getSystemPrompt().isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.systemPrompt"));
-            }
-          }
-
-          if (request.getLimits() != null) {
-            final var limits = request.getLimits();
-            violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
-            violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
-            violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
-          }
-
           if (request.getJobKey() != null) {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
 
-          if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+          final var history = request.getHistory();
+
+          if (history != null && !history.isEmpty()) {
             if (request.getJobKey() == null) {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
             }
 
-            for (int i = 0; i < request.getHistory().size(); i++) {
-              validateHistoryItem(i, request.getHistory().get(i), violations);
+            if (request.getDefinition() != null) {
+              violations.add(ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY.formatted("definition"));
+            }
+            if (request.getLimits() != null) {
+              violations.add(ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY.formatted("limits"));
+            }
+
+            for (int i = 0; i < history.size(); i++) {
+              validateHistoryItem(i, history.get(i), violations);
+            }
+
+            validateConfigurationEstablishesDefinition(history, violations);
+          } else {
+            if (request.getDefinition() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition"));
+            } else {
+              final var def = request.getDefinition();
+              if (def.getModel() == null || def.getModel().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.model"));
+              }
+              if (def.getProvider() == null || def.getProvider().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.provider"));
+              }
+              if (def.getSystemPrompt() == null || def.getSystemPrompt().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.systemPrompt"));
+              }
+            }
+
+            if (request.getLimits() != null) {
+              final var limits = request.getLimits();
+              violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
+              violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
+              violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
             }
           }
 
@@ -242,6 +256,37 @@ public class AgentInstanceRequestValidator {
               violations);
         }
       }
+    }
+  }
+
+  private void validateConfigurationEstablishesDefinition(
+      final List<AgentInstanceHistoryItem> history, final List<String> violations) {
+    final var configurationItems =
+        history.stream()
+            .filter(
+                item ->
+                    item != null && item.getRole() == AgentInstanceHistoryRoleEnum.CONFIGURATION)
+            .toList();
+
+    final boolean hasModel =
+        configurationItems.stream()
+            .anyMatch(item -> item.getModel() != null && !item.getModel().isBlank());
+    final boolean hasProvider =
+        configurationItems.stream()
+            .anyMatch(item -> item.getProvider() != null && !item.getProvider().isBlank());
+    final boolean hasSystemPrompt =
+        configurationItems.stream()
+            .anyMatch(item -> item.getSystemPrompt() != null && !item.getSystemPrompt().isEmpty());
+
+    if (!hasModel) {
+      violations.add(ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("model"));
+    }
+    if (!hasProvider) {
+      violations.add(ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("provider"));
+    }
+    if (!hasSystemPrompt) {
+      violations.add(
+          ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE.formatted("systemPrompt"));
     }
   }
 

@@ -655,7 +655,6 @@ components:
       type: object
       required:
         - elementInstanceKey
-        - definition
       properties:
         elementInstanceKey:
           description: |
@@ -665,13 +664,17 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         definition:
-          description: Static definition set once at creation.
+          description: |
+            Static definition set once at creation. Required when history is omitted.
+            Must be omitted when history is provided — supply model, provider, and
+            systemPrompt through a CONFIGURATION item in history instead.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceDefinition'
         limits:
           description: |
             Limits for the agent execution. When omitted, all limits default to -1
-            (no limit).
+            (no limit). Must be omitted when history is provided — supply limits
+            through a CONFIGURATION item in history instead, if needed.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceLimits'
         jobKey:
@@ -693,7 +696,10 @@ components:
           description: |
             A batch of history items to append to the agent instance's conversation
             history, in request order. Each created item is echoed back in the
-            response's createdHistory, positionally correlated.
+            response's createdHistory, positionally correlated. When provided, model,
+            provider, and systemPrompt (and, if needed, limits) must be established
+            through a CONFIGURATION item in this batch instead of the top-level
+            definition/limits, which must then be omitted.
           nullable: true
           type: array
           items:

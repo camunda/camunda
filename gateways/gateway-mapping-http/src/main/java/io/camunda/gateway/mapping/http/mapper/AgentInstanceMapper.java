@@ -65,12 +65,14 @@ public class AgentInstanceMapper {
 
           record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
 
-          final var def = request.getDefinition();
-          record
-              .getDefinition()
-              .setModel(def.getModel())
-              .setProvider(def.getProvider())
-              .setSystemPrompt(def.getSystemPrompt());
+          if (request.getDefinition() != null) {
+            final var def = request.getDefinition();
+            record
+                .getDefinition()
+                .setModel(def.getModel())
+                .setProvider(def.getProvider())
+                .setSystemPrompt(def.getSystemPrompt());
+          }
 
           if (request.getLimits() != null) {
             fillLimits(request.getLimits(), record.getLimits());
