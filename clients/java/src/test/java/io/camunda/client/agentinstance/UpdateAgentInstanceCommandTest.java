@@ -729,6 +729,46 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
       assertThat(mappedItem.getLimits()).isNull();
       assertThat(mappedItem.getSystemPrompt()).isNull();
     }
+
+    @Test
+    void shouldMapAllConfigurationFieldsOnConfigurationHistoryItem() {
+      // given
+      gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
+      final HistoryItem item =
+          historyItem("item-1")
+              .role(AgentInstanceHistoryRole.CONFIGURATION)
+              .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
+              .model("gpt-5")
+              .provider("openai")
+              .limits(AgentInstanceLimits.of(1000L, 10, 20))
+              .systemPrompt(Collections.singletonList(AgentInstanceHistoryContent.text("be nice")));
+
+      // when
+      client
+          .newUpdateAgentInstanceCommand(AGENT_INSTANCE_KEY)
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(JOB_KEY)
+          .history(Collections.singletonList(item))
+          .execute();
+
+      // then
+      final AgentInstanceUpdateRequest body =
+          gatewayService.getLastRequest(AgentInstanceUpdateRequest.class);
+      final io.camunda.client.protocol.rest.AgentInstanceHistoryItem mappedItem =
+          body.getHistory().get(0);
+      assertThat(mappedItem.getRole()).isEqualTo(AgentInstanceHistoryRoleEnum.CONFIGURATION);
+      assertThat(mappedItem.getTools())
+          .singleElement()
+          .satisfies(tool -> assertThat(tool.getName()).isEqualTo("search"));
+      assertThat(mappedItem.getModel()).isEqualTo("gpt-5");
+      assertThat(mappedItem.getProvider()).isEqualTo("openai");
+      assertThat(mappedItem.getLimits().getMaxTokens()).isEqualTo(1000L);
+      assertThat(mappedItem.getLimits().getMaxModelCalls()).isEqualTo(10);
+      assertThat(mappedItem.getLimits().getMaxToolCalls()).isEqualTo(20);
+      assertThat(mappedItem.getSystemPrompt()).hasSize(1);
+      assertThat(((AgentInstanceTextContent) mappedItem.getSystemPrompt().get(0)).getText())
+          .isEqualTo("be nice");
+    }
   }
 
   @Nested
