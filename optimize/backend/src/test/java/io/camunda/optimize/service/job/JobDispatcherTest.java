@@ -208,6 +208,18 @@ public class JobDispatcherTest {
   }
 
   @Test
+  public void shouldRefuseToDispatchAfterDestroy() {
+    // given
+    when(jobRegistryReader.findOldestQueuedJobs(anyInt())).thenReturn(List.of(jobEntry("1")));
+    final JobDispatcher underTest = createDispatcherToTest();
+    underTest.destroy();
+
+    // when / then
+    // Once destroy() has run, no later dispatch may lazily spin up a fresh pool
+    assertThatExceptionOfType(IllegalStateException.class).isThrownBy(underTest::dispatchNextBatch);
+  }
+
+  @Test
   public void shouldFailToConstructWhenTwoHandlersRegisterForSameJobTypeAndEntityType() {
     // given
     final JobHandler handler1 = mockHandler(JobType.DELETE, EntityType.PROCESS_DEFINITION);
