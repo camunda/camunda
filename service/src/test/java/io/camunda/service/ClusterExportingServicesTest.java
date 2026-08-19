@@ -243,13 +243,13 @@ class ClusterExportingServicesTest {
   }
 
   @Test
-  void shouldIncludeFailingTenantIdInPauseFailureDetail() {
-    // given
+  void shouldIncludeFailingTenantIdWhenBroadcasterThrowsSynchronously() {
+    // given — validateTopology() throws before returning a future, mirroring the real
+    // ExportingRequestBroadcaster; this is the only path IncompleteTopologyException ever takes.
     final var broadcaster = mock(ExportingRequestBroadcaster.class);
     when(broadcaster.pauseExporting(TENANT_A)).thenReturn(CompletableFuture.completedFuture(null));
     when(broadcaster.pauseExporting(TENANT_B))
-        .thenReturn(
-            CompletableFuture.failedFuture(new IncompleteTopologyException("no topology yet")));
+        .thenThrow(new IncompleteTopologyException("no topology yet"));
     final var services = new ClusterExportingServices(broadcaster, Set.of(TENANT_A, TENANT_B));
 
     // when
@@ -261,10 +261,41 @@ class ClusterExportingServicesTest {
         .withThrowableThat()
         .withCauseInstanceOf(ServiceException.class)
         .satisfies(
-            e ->
-                assertThat(((ServiceException) e.getCause()).getMessage())
-                    .contains(TENANT_B)
-                    .contains("no topology yet"));
+            e -> {
+              final var mapped = (ServiceException) e.getCause();
+              assertThat(mapped.getMessage()).contains(TENANT_B).contains("no topology yet");
+              assertThat(mapped.getStatus()).isEqualTo(Status.UNAVAILABLE);
+            });
+  }
+
+  @Test
+  void shouldIncludeFailingTenantIdWhenTenantFutureFailsAsynchronously() {
+    // given — CompletableFuture.allOf wraps a dependency's failure in a CompletionException
+    // (per its own javadoc), which is what a real broker request failure looks like by the time
+    // it reaches fanOutOne. A bare instanceof check against the raw throwable would never match
+    // this, silently dropping the tenant id for every genuine async failure.
+    final var broadcaster = mock(ExportingRequestBroadcaster.class);
+    when(broadcaster.pauseExporting(TENANT_A)).thenReturn(CompletableFuture.completedFuture(null));
+    when(broadcaster.pauseExporting(TENANT_B))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CompletionException(new IncompleteTopologyException("no topology yet"))));
+    final var services = new ClusterExportingServices(broadcaster, Set.of(TENANT_A, TENANT_B));
+
+    // when
+    final var future = services.pauseExporting(false);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ZERO)
+        .withThrowableThat()
+        .withCauseInstanceOf(ServiceException.class)
+        .satisfies(
+            e -> {
+              final var mapped = (ServiceException) e.getCause();
+              assertThat(mapped.getMessage()).contains(TENANT_B).contains("no topology yet");
+              assertThat(mapped.getStatus()).isEqualTo(Status.UNAVAILABLE);
+            });
   }
 
   @Test

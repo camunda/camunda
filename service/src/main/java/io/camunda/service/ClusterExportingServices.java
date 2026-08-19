@@ -8,9 +8,9 @@
 package io.camunda.service;
 
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.admin.ExportingStatus;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -82,9 +82,14 @@ public final class ClusterExportingServices {
   /**
    * Attaches the physical tenant id to a failure, both for a future that completes exceptionally
    * and for a synchronous throw ({@code validateTopology()} rejects before returning a future).
-   * Without this, an {@code IncompleteTopologyException} on a 10-tenant cluster tells the operator
-   * only "one tenant had an incomplete topology", not which one — the exact toil this endpoint
-   * exists to remove.
+   * Without this, a failure on a 10-tenant cluster tells the operator only "one tenant failed", not
+   * which one — the exact toil this endpoint exists to remove.
+   *
+   * <p>Maps through {@link ErrorMapper} first, rather than matching on the raw throwable, because
+   * {@link CompletableFuture#allOf} wraps every dependency's failure in a {@link
+   * java.util.concurrent.CompletionException} — so a bare {@code instanceof} check against, say,
+   * {@code IncompleteTopologyException} never matches here, and only {@code ErrorMapper}'s
+   * recursive unwrap reaches the real cause and its mapped status regardless of exception type.
    */
   private static CompletableFuture<Void> fanOutOne(
       final String physicalTenantId, final Function<String, CompletableFuture<Void>> action) {
@@ -93,17 +98,17 @@ public final class ClusterExportingServices {
           .apply(physicalTenantId)
           .exceptionallyCompose(
               e -> CompletableFuture.failedFuture(withTenantId(physicalTenantId, e)));
-    } catch (final IncompleteTopologyException e) {
+    } catch (final RuntimeException e) {
       return CompletableFuture.failedFuture(withTenantId(physicalTenantId, e));
     }
   }
 
-  private static Throwable withTenantId(final String physicalTenantId, final Throwable error) {
-    if (error instanceof final IncompleteTopologyException e) {
-      return new IncompleteTopologyException(
-          "Physical tenant '%s': %s".formatted(physicalTenantId, e.getMessage()));
-    }
-    return error;
+  private static ServiceException withTenantId(
+      final String physicalTenantId, final Throwable error) {
+    final var mapped = ErrorMapper.mapError(error);
+    return new ServiceException(
+        "Physical tenant '%s': %s".formatted(physicalTenantId, mapped.getMessage()),
+        mapped.getStatus());
   }
 
   private static ExportingStatus fold(final List<ExportingStatus> perTenantStatuses) {
