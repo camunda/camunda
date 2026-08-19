@@ -125,7 +125,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 											className={cn(
 												styles.inlineIcon,
 												featureFlags.dsTasklistUI && styles.inlineIconDS,
-												'fill-current text-info-foreground-strong',
+												featureFlags.dsTasklistUI && 'text-info-action-default',
 											)}
 										/>
 									}
@@ -142,7 +142,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 											className={cn(
 												styles.inlineIcon,
 												featureFlags.dsTasklistUI && styles.inlineIconDS,
-												'fill-current text-danger-foreground-strong',
+												featureFlags.dsTasklistUI && 'text-danger-action-default',
 											)}
 										/>
 									}
@@ -167,7 +167,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 											className={cn(
 												styles.inlineIcon,
 												featureFlags.dsTasklistUI && styles.inlineIconDS,
-												'fill-current text-success-foreground-strong',
+												featureFlags.dsTasklistUI && 'text-success-action-default',
 											)}
 										/>
 									}

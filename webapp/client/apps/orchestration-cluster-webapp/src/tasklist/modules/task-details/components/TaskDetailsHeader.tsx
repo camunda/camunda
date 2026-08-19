@@ -70,8 +70,21 @@ const TaskDetailsHeader: React.FC<Props> = ({
 						data-testid="completion-label"
 						title={t('tasklist.taskDetailsTaskCompletedBy')}
 					>
-						<Stack className={styles.alignItemsCenter} orientation="horizontal" gap={2}>
-							<CheckmarkFilledIcon size={16} color="green" />
+						{/* gap/color: Stack and CheckmarkFilledIcon resolve to the same
+						    Carbon or DS component either way (see
+						    design-system-compat/index.ts), so the literal prop values
+						    reach both paths — branch each explicitly rather than shifting
+						    Carbon's own 4px gap and named "green" to match DS's 16px
+						    spacing and --success-action-default token. */}
+						<Stack
+							className={styles.alignItemsCenter}
+							orientation="horizontal"
+							gap={featureFlags.dsTasklistUI ? 5 : 2}
+						>
+							<CheckmarkFilledIcon
+								size={16}
+								color={featureFlags.dsTasklistUI ? 'var(--success-action-default)' : 'green'}
+							/>
 							{assignee ? (
 								<>
 									{t('tasklist.taskDetailsTaskCompletedBy') + ' '}
