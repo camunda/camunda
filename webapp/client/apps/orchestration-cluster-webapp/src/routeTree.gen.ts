@@ -15,7 +15,6 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
-import { Route as DevPreviewGenericErrorRouteImport } from './routes/dev-preview.generic-error'
 import { Route as TasklistLoginRouteImport } from './routes/tasklist.login'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
@@ -29,6 +28,7 @@ import { Route as AuthOperateDecisionsIndexRouteImport } from './routes/_auth/op
 import { Route as AuthOperateDecisionsDecisionInstanceIdRouteImport } from './routes/_auth/operate/decisions/$decisionInstanceId'
 import { Route as AuthTasklistTasksIndexRouteImport } from './routes/_auth/tasklist/_tasks/index'
 import { Route as AuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/route'
+import { Route as AuthTasklistDevPreviewGenericErrorRouteImport } from './routes/_auth/tasklist/dev-preview.generic-error'
 import { Route as AuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/index'
 import { Route as AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/route'
 import { Route as AuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/process'
@@ -63,11 +63,6 @@ const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
   id: '/tasklist',
   path: '/tasklist',
   getParentRoute: () => AuthRouteRoute,
-} as any)
-const DevPreviewGenericErrorRoute = DevPreviewGenericErrorRouteImport.update({
-  id: '/dev-preview/generic-error',
-  path: '/dev-preview/generic-error',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const TasklistLoginRoute = TasklistLoginRouteImport.update({
   id: '/tasklist/login',
@@ -139,6 +134,12 @@ const AuthTasklistTasksUserTaskKeyRouteRoute =
     path: '/$userTaskKey',
     getParentRoute: () => AuthTasklistTasksRouteRoute,
   } as any)
+const AuthTasklistDevPreviewGenericErrorRoute =
+  AuthTasklistDevPreviewGenericErrorRouteImport.update({
+    id: '/dev-preview/generic-error',
+    path: '/dev-preview/generic-error',
+    getParentRoute: () => AuthTasklistRouteRoute,
+  } as any)
 const AuthTasklistTasksUserTaskKeyIndexRoute =
   AuthTasklistTasksUserTaskKeyIndexRouteImport.update({
     id: '/',
@@ -176,7 +177,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
-  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
   '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
@@ -187,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/operate/decisions/$decisionInstanceId': typeof AuthOperateDecisionsDecisionInstanceIdRoute
+  '/tasklist/dev-preview/generic-error': typeof AuthTasklistDevPreviewGenericErrorRoute
   '/operate/decisions/': typeof AuthOperateDecisionsIndexRoute
   '/tasklist/': typeof AuthTasklistTasksIndexRoute
   '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
@@ -198,7 +199,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/tasklist': typeof AuthTasklistTasksIndexRoute
-  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/': typeof AuthIndexRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRouteRouteWithChildren
@@ -208,6 +208,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
   '/operate/decisions/$decisionInstanceId': typeof AuthOperateDecisionsDecisionInstanceIdRoute
+  '/tasklist/dev-preview/generic-error': typeof AuthTasklistDevPreviewGenericErrorRoute
   '/operate/decisions': typeof AuthOperateDecisionsIndexRoute
   '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/tasklist/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
@@ -222,7 +223,6 @@ export interface FileRoutesById {
   '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
-  '/dev-preview/generic-error': typeof DevPreviewGenericErrorRoute
   '/tasklist/login': typeof TasklistLoginRoute
   '/_auth/': typeof AuthIndexRoute
   '/_auth/tasklist/_tasks': typeof AuthTasklistTasksRouteRouteWithChildren
@@ -235,6 +235,7 @@ export interface FileRoutesById {
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/_auth/operate/decisions/$decisionInstanceId': typeof AuthOperateDecisionsDecisionInstanceIdRoute
+  '/_auth/tasklist/dev-preview/generic-error': typeof AuthTasklistDevPreviewGenericErrorRoute
   '/_auth/operate/decisions/': typeof AuthOperateDecisionsIndexRoute
   '/_auth/tasklist/_tasks/': typeof AuthTasklistTasksIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
@@ -251,7 +252,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
-    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/tasklist/processes'
     | '/operate/batch-operations'
@@ -262,6 +262,7 @@ export interface FileRouteTypes {
     | '/operate/'
     | '/tasklist/$userTaskKey'
     | '/operate/decisions/$decisionInstanceId'
+    | '/tasklist/dev-preview/generic-error'
     | '/operate/decisions/'
     | '/tasklist/'
     | '/tasklist/$userTaskKey/history'
@@ -273,7 +274,6 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/tasklist'
-    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/'
     | '/tasklist/processes'
@@ -283,6 +283,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/operate/decisions/$decisionInstanceId'
+    | '/tasklist/dev-preview/generic-error'
     | '/operate/decisions'
     | '/tasklist/$userTaskKey/history'
     | '/tasklist/$userTaskKey/process'
@@ -296,7 +297,6 @@ export interface FileRouteTypes {
     | '/_auth/admin'
     | '/_auth/operate'
     | '/_auth/tasklist'
-    | '/dev-preview/generic-error'
     | '/tasklist/login'
     | '/_auth/'
     | '/_auth/tasklist/_tasks'
@@ -309,6 +309,7 @@ export interface FileRouteTypes {
     | '/_auth/operate/'
     | '/_auth/tasklist/_tasks/$userTaskKey'
     | '/_auth/operate/decisions/$decisionInstanceId'
+    | '/_auth/tasklist/dev-preview/generic-error'
     | '/_auth/operate/decisions/'
     | '/_auth/tasklist/_tasks/'
     | '/_auth/tasklist/_tasks/$userTaskKey/history'
@@ -321,7 +322,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
-  DevPreviewGenericErrorRoute: typeof DevPreviewGenericErrorRoute
   TasklistLoginRoute: typeof TasklistLoginRoute
 }
 
@@ -368,13 +368,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist'
       preLoaderRoute: typeof AuthTasklistRouteRouteImport
       parentRoute: typeof AuthRouteRoute
-    }
-    '/dev-preview/generic-error': {
-      id: '/dev-preview/generic-error'
-      path: '/dev-preview/generic-error'
-      fullPath: '/dev-preview/generic-error'
-      preLoaderRoute: typeof DevPreviewGenericErrorRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/tasklist/login': {
       id: '/tasklist/login'
@@ -466,6 +459,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist/$userTaskKey'
       preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyRouteRouteImport
       parentRoute: typeof AuthTasklistTasksRouteRoute
+    }
+    '/_auth/tasklist/dev-preview/generic-error': {
+      id: '/_auth/tasklist/dev-preview/generic-error'
+      path: '/dev-preview/generic-error'
+      fullPath: '/tasklist/dev-preview/generic-error'
+      preLoaderRoute: typeof AuthTasklistDevPreviewGenericErrorRouteImport
+      parentRoute: typeof AuthTasklistRouteRoute
     }
     '/_auth/tasklist/_tasks/$userTaskKey/': {
       id: '/_auth/tasklist/_tasks/$userTaskKey/'
@@ -621,11 +621,14 @@ const AuthTasklistProcessesRouteRouteWithChildren =
 interface AuthTasklistRouteRouteChildren {
   AuthTasklistTasksRouteRoute: typeof AuthTasklistTasksRouteRouteWithChildren
   AuthTasklistProcessesRouteRoute: typeof AuthTasklistProcessesRouteRouteWithChildren
+  AuthTasklistDevPreviewGenericErrorRoute: typeof AuthTasklistDevPreviewGenericErrorRoute
 }
 
 const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
   AuthTasklistTasksRouteRoute: AuthTasklistTasksRouteRouteWithChildren,
   AuthTasklistProcessesRouteRoute: AuthTasklistProcessesRouteRouteWithChildren,
+  AuthTasklistDevPreviewGenericErrorRoute:
+    AuthTasklistDevPreviewGenericErrorRoute,
 }
 
 const AuthTasklistRouteRouteWithChildren =
@@ -652,7 +655,6 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   LoginRoute: LoginRoute,
-  DevPreviewGenericErrorRoute: DevPreviewGenericErrorRoute,
   TasklistLoginRoute: TasklistLoginRoute,
 }
 export const routeTree = rootRouteImport
