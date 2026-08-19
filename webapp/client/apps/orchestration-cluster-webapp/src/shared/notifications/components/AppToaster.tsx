@@ -11,12 +11,13 @@
 // Carbon Tasklist path) — inert and empty until a DS Tasklist call site
 // fires toast(). position="top-right" matches Notifications.module.scss's
 // existing top-right placement.
-import {observer} from 'mobx-react-lite';
-import {Toaster} from 'sonner';
-import {themeStore} from '#/shared/theme/theme';
+//
+// No theme prop: the DS Toaster reads light/dark off the ambient
+// .c4-ui/.dark scope (see C4Provider, mounted once at the app root in
+// main.tsx) the same way every other DS component does, instead of the raw
+// sonner Toaster's own theme prop this used to need.
+import {Toaster} from '@camunda/design-system';
 
-const AppToaster: React.FC = observer(() => (
-	<Toaster theme={themeStore.selectedTheme} position="top-right" richColors />
-));
+const AppToaster: React.FC = () => <Toaster position="top-right" />;
 
 export {AppToaster};
