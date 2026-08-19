@@ -12,16 +12,13 @@ import io.camunda.service.backup.HistoryBackupRequests;
 import io.camunda.service.backup.HistoryBackupSnapshot;
 import io.camunda.service.backup.HistoryBackupState;
 import io.camunda.service.backup.HistoryBackupStateCode;
-import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -245,38 +242,15 @@ public final class ClusterHistoryBackupServices {
             .map(
                 tenant ->
                     CompletableFuture.supplyAsync(() -> perTenant.apply(tenant), executor)
-                        .handle((value, error) -> new Outcome<>(tenant, value, error)))
+                        .handle(
+                            (value, error) ->
+                                new PhysicalTenantFanOut.Outcome<>(tenant, value, error)))
             .toList();
     return CompletableFuture.allOf(outcomes.toArray(CompletableFuture[]::new))
-        .thenApply(ignored -> collect(outcomes.stream().map(CompletableFuture::join).toList()));
-  }
-
-  private static <T> List<T> collect(final List<Outcome<T>> outcomes) {
-    final var failures = outcomes.stream().filter(outcome -> outcome.error() != null).toList();
-    if (!failures.isEmpty()) {
-      throw combine(failures, outcomes.size());
-    }
-    return outcomes.stream().map(Outcome::value).toList();
-  }
-
-  /**
-   * Folds the failures of a fan-out into the one exception the request answers with. A shared
-   * status is kept — so a request narrowed to a single tenant answers exactly what the per-tenant
-   * endpoint would — while genuinely different causes have no honest status other than 500.
-   */
-  private static ServiceException combine(
-      final List<? extends Outcome<?>> failures, final int targeted) {
-    final var statuses = new LinkedHashSet<Status>();
-    final var detail = new StringJoiner("; ");
-    for (final var failure : failures) {
-      final var cause = ErrorMapper.mapError(failure.error());
-      statuses.add(cause.getStatus());
-      detail.add("'%s': %s".formatted(failure.physicalTenantId(), cause.getMessage()));
-    }
-    return new ServiceException(
-        "Expected to serve every targeted physical tenant, but %d of %d failed — %s"
-            .formatted(failures.size(), targeted, detail),
-        statuses.size() == 1 ? statuses.iterator().next() : Status.INTERNAL);
+        .thenApply(
+            ignored ->
+                PhysicalTenantFanOut.requireEveryTenant(
+                    outcomes.stream().map(CompletableFuture::join).toList()));
   }
 
   private static List<ClusterHistoryBackup> groupByBackupId(
@@ -331,9 +305,6 @@ public final class ClusterHistoryBackupServices {
       return CompletableFuture.failedFuture(e);
     }
   }
-
-  private record Outcome<T>(
-      String physicalTenantId, @Nullable T value, @Nullable Throwable error) {}
 
   private record PhysicalTenantBackups(String physicalTenantId, List<HistoryBackupState> backups) {}
 
