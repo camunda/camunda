@@ -64,7 +64,8 @@ final class GraphScopeReconciler {
   private final MemberId localMemberId;
   private final Supplier<CurrentClusterConfiguration> currentConfiguration;
   private final Supplier<@Nullable PartitionGroupConfigurationChangeAppliers> appliers;
-  private final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+  private final Function<
+          CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
       updateLocally;
   private final ConcurrencyControl executor;
   private final TopologyManagerMetrics topologyMetrics;
@@ -79,8 +80,7 @@ final class GraphScopeReconciler {
       final MemberId localMemberId,
       final Supplier<CurrentClusterConfiguration> currentConfiguration,
       final Supplier<@Nullable PartitionGroupConfigurationChangeAppliers> appliers,
-      final Function<
-              CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
+      final Function<CurrentClusterConfiguration, Either<Exception, CurrentClusterConfiguration>>
           updateLocally,
       final ConcurrencyControl executor,
       final TopologyManagerMetrics topologyMetrics,
@@ -97,7 +97,9 @@ final class GraphScopeReconciler {
     this.maxRetryDelay = maxRetryDelay;
   }
 
-  /** Starts every operation of this group the local member may run right now and has not started. */
+  /**
+   * Starts every operation of this group the local member may run right now and has not started.
+   */
   void reconcile() {
     final var group = currentConfiguration.get().partitionGroup(groupId);
     final var groupAppliers = appliers.get();

@@ -528,7 +528,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         config.partitionGroups().values().stream()
             .anyMatch(
                 group ->
-                    group.pendingGraphChanges().filter(plan -> !plan.hasPendingChanges()).isPresent());
+                    group
+                        .pendingGraphChanges()
+                        .filter(plan -> !plan.hasPendingChanges())
+                        .isPresent());
     if (!drained) {
       return;
     }

@@ -21,7 +21,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
