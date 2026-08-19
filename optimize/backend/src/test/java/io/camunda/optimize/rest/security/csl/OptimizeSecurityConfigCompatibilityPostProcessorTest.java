@@ -209,14 +209,20 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   @Test
   void shouldStillBridgeCredentialsWhenOnlyTheOidcEndpointsAreConfigured() {
     // Without an issuer-uri the bridge withholds client-id and client-secret, because CSL cannot
-    // build a registration from credentials alone. Explicit endpoints are the other way to give it
-    // one, so they must satisfy that guard rather than leave the client unconfigured.
+    // build a registration from credentials alone. The complete endpoint trio is the other way to
+    // give it one, so it must satisfy that guard rather than leave the client unconfigured.
     final Map<String, Object> legacy = cslEnabledConfig();
     legacy.put("camunda.identity.clientId", "optimize");
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
     legacy.put(
         OIDC + "authorization-uri",
         "https://public.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth");
+    legacy.put(
+        OIDC + "jwk-set-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
+    legacy.put(
+        OIDC + "token-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
@@ -224,6 +230,24 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
     assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("helm-secret");
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+  }
+
+  @Test
+  void shouldStillDeriveIssuerUriWhenTheOidcEndpointsAreIncomplete() {
+    // CSL needs an issuer-uri or all three endpoints. A host that configured only some of them
+    // relies on the derived issuer-uri to boot at all, so the derivation must stay.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(
+        "camunda.identity.issuer", "https://public.example.com/auth/realms/camunda-platform");
+    legacy.put(
+        OIDC + "jwk-set-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri"))
+        .isEqualTo("https://public.example.com/auth/realms/camunda-platform");
   }
 
   @Test

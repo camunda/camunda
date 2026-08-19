@@ -220,12 +220,13 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   }
 
   // True when the host configured the OIDC endpoints directly instead of leaving CSL to discover
-  // them from an issuer-uri. Any one of them is enough: CSL builds the registration from whichever
-  // are present, and a partially configured registration is the host's decision to own.
+  // them from an issuer-uri. All three are required: CSL accepts either an issuer-uri or the
+  // complete trio, so withholding the derived issuer-uri from a partial set would turn a working
+  // startup into a ClientRegistration failure.
   private static boolean hasExplicitOidcEndpoints(final ConfigurableEnvironment env) {
     return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
-        || !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
-        || !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
+        && !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
+        && !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {
