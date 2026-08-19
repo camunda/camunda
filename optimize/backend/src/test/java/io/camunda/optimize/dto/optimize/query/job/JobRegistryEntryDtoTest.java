@@ -15,9 +15,12 @@ class JobRegistryEntryDtoTest {
 
   @Test
   void shouldInitializeQueuedEntryWithGeneratedIdAndCreationTimestamp() {
+    // given
+    // when
     final JobRegistryEntryDto entry =
         new JobRegistryEntryDto(JobType.DELETE, EntityType.PROCESS_DEFINITION, "2251799813685251");
 
+    // then
     assertThat(entry.getId()).isNotBlank();
     assertThat(entry.getJobType()).isEqualTo(JobType.DELETE);
     assertThat(entry.getEntityType()).isEqualTo(EntityType.PROCESS_DEFINITION);
@@ -30,11 +33,14 @@ class JobRegistryEntryDtoTest {
 
   @Test
   void shouldGenerateDifferentIdsForEachEntry() {
+    // given
+    // when
     final JobRegistryEntryDto first =
         new JobRegistryEntryDto(JobType.DELETE, EntityType.PROCESS_DEFINITION, "1");
     final JobRegistryEntryDto second =
         new JobRegistryEntryDto(JobType.DELETE, EntityType.PROCESS_DEFINITION, "2");
 
+    // then
     assertThat(first.getId()).isNotEqualTo(second.getId());
   }
 }
