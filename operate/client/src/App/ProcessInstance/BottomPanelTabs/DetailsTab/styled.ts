@@ -13,15 +13,21 @@ const EmptyMessageContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1;
 `;
 
-const Container = styled.div`
+const Container = styled.div.attrs({
+  role: 'region',
+  'aria-label': 'Details',
+})<{$isEmpty?: boolean}>`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-05);
-  padding-inline: var(--cds-spacing-05);
-  padding-block-end: var(--cds-spacing-05);
+  height: 100%;
+  min-height: 0;
+  gap: ${({$isEmpty}) => ($isEmpty ? 0 : 'var(--cds-spacing-05)')};
+  padding-inline: ${({$isEmpty}) => ($isEmpty ? 0 : 'var(--cds-spacing-05)')};
+  padding-block-end: ${({$isEmpty}) =>
+    $isEmpty ? 0 : 'var(--cds-spacing-05)'};
   overflow-y: auto;
 
   & > * {

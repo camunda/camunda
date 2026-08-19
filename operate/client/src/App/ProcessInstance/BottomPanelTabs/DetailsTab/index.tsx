@@ -528,7 +528,7 @@ const DetailsTab: React.FC = () => {
     // The process scope only surfaces the process-level wait state status
     // (the Details tab is only shown when such a wait state exists).
     return (
-      <Container data-testid="details-tab">
+      <Container>
         <WaitingStatus waitStates={waitStates} />
       </Container>
     );
@@ -544,20 +544,22 @@ const DetailsTab: React.FC = () => {
     !showAgentInstance
   ) {
     return (
-      <EmptyMessageContainer>
-        <EmptyMessage
-          message={
-            hasMultipleInstances
-              ? 'To view the details, select a single element instance in the instance history.'
-              : 'There is no element selected.'
-          }
-        />
-      </EmptyMessageContainer>
+      <Container $isEmpty>
+        <EmptyMessageContainer>
+          <EmptyMessage
+            message={
+              hasMultipleInstances
+                ? 'To view the details, select a single element instance in the instance history.'
+                : 'There is no element selected.'
+            }
+          />
+        </EmptyMessageContainer>
+      </Container>
     );
   }
 
   return (
-    <Container data-testid="details-tab">
+    <Container>
       {resolvedElementType === 'USER_TASK' &&
         !isCamundaUserTask(businessObject) && (
           <Callout
