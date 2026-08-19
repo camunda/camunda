@@ -50,6 +50,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -628,6 +629,44 @@ final class RestoreRequestTransformerTest {
   private static int partitionOf(final OperationGraph graph, final OperationId operationId) {
     return ((PartitionChangeOperation) graph.operations().get(operationId).operation())
         .partitionId();
+  }
+
+  @Test
+  void shouldOrderEveryBrokersAwaitAfterItsOwnModeChange() {
+    // given — a broker holding no partition of the group still has to leave recovery, so it gets a
+    // mode change and an await with no partition work between them. An earlier version of the edge
+    // rules derived the await's dependencies from the brokers it shares a partition with, which for
+    // this broker is nobody — leaving its own mode change unordered against its own await. Both
+    // write that broker's member entry, so the sub-configuration merge would keep one by version
+    // and silently drop the other. Nothing rejects that shape any more, so it is pinned here.
+    final var withPartitions = MemberId.from("0");
+    final var withoutPartitions = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    withPartitions, recovering(1),
+                    withoutPartitions, BrokerPartitionState.initialize(Map.of()))));
+
+    // then — every await depends on its own broker's mode change
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var modeChangeOf = new HashMap<MemberId, OperationId>();
+    idsOf(graph, ModeChangeOperation.class)
+        .forEach(id -> modeChangeOf.put(memberOf(graph, id), id));
+    assertThat(idsOf(graph, AwaitModeChangeOperation.class))
+        .isNotEmpty()
+        .allSatisfy(
+            await ->
+                assertThat(graph.operations().get(await).dependsOn())
+                    .describedAs("dependencies of the await on %s", memberOf(graph, await))
+                    .contains(modeChangeOf.get(memberOf(graph, await))));
   }
 
   private static OperationGraph graphOf(final List<Phase> phases) {
