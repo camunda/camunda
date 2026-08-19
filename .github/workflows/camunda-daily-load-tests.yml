@@ -183,8 +183,10 @@ jobs:
     name: Notify Slack with results
     runs-on: ubuntu-latest
     needs: [ benchmark-data, aggregate-metrics ]
-    # Post only if at least one variant actually produced metrics.
-    if: always() && needs.aggregate-metrics.outputs.variants-json != '[]'
+    # Post only if aggregate-metrics actually succeeded and at least one variant produced
+    # metrics: a failed aggregate-metrics run yields an empty (still != '[]') output, which
+    # would otherwise post an empty Slack payload.
+    if: always() && needs.aggregate-metrics.result == 'success' && needs.aggregate-metrics.outputs.variants-json != '[]'
     timeout-minutes: 5
     permissions:
       actions: read
