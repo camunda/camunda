@@ -178,6 +178,55 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   }
 
   @Test
+  void shouldNotDeriveIssuerUriWhenTheHostConfiguredTheOidcEndpoints() {
+    // The camunda-platform Helm chart renders the endpoints directly for a Keycloak setup, keeping
+    // the back-channel on the in-cluster URL. Deriving an issuer-uri from camunda.identity.issuer
+    // would make CSL discard them and resolve the endpoints over the browser-facing issuer instead,
+    // which fails wherever the pod cannot validate that certificate.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put(
+        "camunda.identity.issuer", "https://public.example.com/auth/realms/camunda-platform");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+    legacy.put(
+        OIDC + "authorization-uri",
+        "https://public.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth");
+    legacy.put(
+        OIDC + "jwk-set-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
+    legacy.put(
+        OIDC + "token-uri",
+        "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo("http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
+  }
+
+  @Test
+  void shouldStillBridgeCredentialsWhenOnlyTheOidcEndpointsAreConfigured() {
+    // Without an issuer-uri the bridge withholds client-id and client-secret, because CSL cannot
+    // build a registration from credentials alone. Explicit endpoints are the other way to give it
+    // one, so they must satisfy that guard rather than leave the client unconfigured.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
+    legacy.put(
+        OIDC + "authorization-uri",
+        "https://public.example.com/auth/realms/camunda-platform/protocol/openid-connect/auth");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+    assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("helm-secret");
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+  }
+
+  @Test
   void shouldNotBridgeHelmChartIdentityIssuerUriKeyWhenBlank() {
     // application-ccsm.yaml resolves camunda.identity.issuer to "" (via a Spring placeholder
     // default) whenever CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL is unset, which is the normal state

@@ -168,7 +168,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    mapIfCslKeyUnset(env, derived, "camunda.identity.issuer", OIDC_PREFIX + "issuer-uri");
+    // Only when the host has not configured the OIDC endpoints itself. An issuer-uri makes CSL
+    // resolve the endpoints through OIDC discovery, dialing the browser-facing issuer from inside
+    // the pod; explicit authorization-uri/jwk-set-uri/token-uri exist precisely to avoid that, for
+    // instance to keep the back-channel on an in-cluster URL, or where the pod's truststore cannot
+    // validate the public certificate. Deriving an issuer-uri on top would silently override that
+    // choice and reintroduce the discovery call.
+    if (!hasExplicitOidcEndpoints(env)) {
+      mapIfCslKeyUnset(env, derived, "camunda.identity.issuer", OIDC_PREFIX + "issuer-uri");
+    }
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
     // CLIENT_SECRET while leaving camunda.identity.issuer blank. Bridging a client-id/secret with
@@ -177,7 +185,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // all-or-nothing on the issuer-uri: withhold both credentials rather than trade a login problem
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (!derived.containsKey(OIDC_PREFIX + "issuer-uri")
-        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))) {
+        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))
+        && !hasExplicitOidcEndpoints(env)) {
       final String clientId = env.getProperty("camunda.identity.clientId");
       final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
       if (!isBlank(clientId) || !isBlank(clientSecret)) {
@@ -208,6 +217,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0RedirectAndContextPath(env, derived, clusterId);
     bridgeAuth0Credentials(env, derived, auth0ClientId);
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
+  }
+
+  // True when the host configured the OIDC endpoints directly instead of leaving CSL to discover
+  // them from an issuer-uri. Any one of them is enough: CSL builds the registration from whichever
+  // are present, and a partially configured registration is the host's decision to own.
+  private static boolean hasExplicitOidcEndpoints(final ConfigurableEnvironment env) {
+    return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
+        || !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
+        || !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {
