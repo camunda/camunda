@@ -18,6 +18,7 @@ import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
 import io.camunda.service.ClusterRecoveryServices;
+import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
 import io.camunda.service.ClusterVariableServices;
@@ -155,6 +156,8 @@ public interface ServiceRegistry {
    *     cluster-wide storage type, so the two can disagree; both paths answer 403.
    */
   ClusterHistoryBackupServices clusterHistoryBackupServices();
+
+  ClusterRuntimeBackupServices clusterRuntimeBackupServices();
 
   ClusterStatusServices clusterStatusServices();
 

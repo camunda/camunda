@@ -36,11 +36,19 @@ final class PhysicalTenantFanOut {
    * the whole request if any tenant failed.
    */
   static <T> List<T> requireEveryTenant(final List<Outcome<T>> outcomes) {
+    requireNoTenantFailed(outcomes);
+    return outcomes.stream().map(Outcome::requireValue).toList();
+  }
+
+  /**
+   * The same rule for a call that produces no value, whose successful outcomes therefore carry no
+   * value to return — a {@code CompletionStage<Void>} completes with {@code null}.
+   */
+  static void requireNoTenantFailed(final List<? extends Outcome<?>> outcomes) {
     final var failures = outcomes.stream().filter(Outcome::isFailure).toList();
     if (!failures.isEmpty()) {
       throw combine(failures, outcomes.size());
     }
-    return outcomes.stream().map(Outcome::requireValue).toList();
   }
 
   /** Folds the failures of a fan-out into the one exception the request answers with. */
