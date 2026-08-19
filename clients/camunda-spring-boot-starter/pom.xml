@@ -204,7 +204,7 @@
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -227,7 +227,7 @@
             <!-- test-only: classpath-activated by ActuatorOpenApiGenerator's embedded web server
                  and springdoc autoconfig, not referenced directly in compiled test sources -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
-            <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
+            <dependency>org.springdoc:springdoc-openapi-starter-webmvc-api</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
