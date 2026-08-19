@@ -274,6 +274,22 @@
       "defaultValue": "PT5M"
     },
     {
+      "name": "camunda.client.cluster-variables.global",
+      "type": "java.util.Map",
+      "description": "Deprecated globally-scoped cluster variables to set at startup as key-value pairs.",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables"
+      }
+    },
+    {
+      "name": "camunda.client.cluster-variables.tenant",
+      "type": "java.util.Map",
+      "description": "Deprecated tenant-scoped cluster variables to set at startup, keyed by tenant ID.",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables"
+      }
+    },
+    {
       "name": "common.auth-url",
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
