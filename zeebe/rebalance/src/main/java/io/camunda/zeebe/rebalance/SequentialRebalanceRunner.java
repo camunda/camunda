@@ -23,9 +23,12 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -97,6 +100,12 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private final Duration leaderWaitTimeout;
   private final RebalanceConfiguration configuration;
   private final Duration heartbeatInterval;
+
+  /** The transfer each partition is currently in, if any. */
+  private final Map<PartitionId, ActiveTransfer> activeTransfers = new HashMap<>();
+
+  /** Partitions for which a result handler has already been registered. */
+  private final Set<PartitionId> registeredResultHandlers = new HashSet<>();
 
   public SequentialRebalanceRunner(
       final MemberId localMemberId,
@@ -287,13 +296,8 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
                 PartitionRebalanceProgress.TRANSFERRING));
     publish(rebalance);
     final var partitionId = new PartitionId(partition.physicalTenantId(), partition.partitionId());
-    transfers.onResult(
-        partitionId,
-        result -> {
-          executor.run(() -> onTransferResultReported(rebalance, index, result, completion));
-          return CompletableFuture.completedFuture(
-              LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
-        });
+    activeTransfers.put(partitionId, new ActiveTransfer(rebalance, index, completion));
+    registerResultHandler(partitionId);
     LOG.info(
         "Rebalance {} is requesting {} to transfer leadership of partition {} to desired leader {}",
         rebalance.id(),
@@ -306,6 +310,19 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             (response, error) -> onTransferInitiated(rebalance, index, response, error, completion),
             executor);
     watchTransfer(rebalance, index, Duration.ZERO, completion);
+  }
+
+  private void registerResultHandler(final PartitionId partitionId) {
+    if (!registeredResultHandlers.add(partitionId)) {
+      return;
+    }
+    transfers.onResult(
+        partitionId,
+        result -> {
+          executor.run(() -> onTransferResultReported(partitionId, result));
+          return CompletableFuture.completedFuture(
+              LeadershipTransferResultResponse.builder().withStatus(Status.OK).build());
+        });
   }
 
   /** Watches the topology for the transfer in flight taking effect. */
@@ -437,10 +454,16 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   }
 
   private void onTransferResultReported(
-      final RebalanceRun rebalance,
-      final int index,
-      final LeadershipTransferResultRequest result,
-      final ActorFuture<Void> completion) {
+      final PartitionId partitionId, final LeadershipTransferResultRequest result) {
+    final var active = activeTransfers.get(partitionId);
+    if (active == null) {
+      // No transfer is currently active for this partition, e.g. a late result from an earlier
+      // rebalance whose transfer of some other partition has since moved on.
+      return;
+    }
+    final var rebalance = active.rebalance();
+    final var index = active.index();
+    final var completion = active.completion();
     if (isOver(rebalance, completion)
         || result.correlationId() != rebalance.id()
         || rebalance.partition(index).progress() != PartitionRebalanceProgress.TRANSFERRING) {
@@ -558,4 +581,6 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private static boolean isOver(final RebalanceRun rebalance, final ActorFuture<Void> completion) {
     return completion.isDone() || rebalance.isAbandoned();
   }
+
+  private record ActiveTransfer(RebalanceRun rebalance, int index, ActorFuture<Void> completion) {}
 }

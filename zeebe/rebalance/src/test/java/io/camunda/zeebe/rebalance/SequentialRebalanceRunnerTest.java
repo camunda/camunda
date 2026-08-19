@@ -787,6 +787,133 @@ final class SequentialRebalanceRunnerTest {
     assertThat(partitionStateGauge(1)).isEqualTo(3);
   }
 
+  @Test
+  void shouldRegisterOneResultHandlerForTwoTransfersOfTheSamePartition() {
+    // given
+    final var runner = newRunner();
+    final var partitionId = new PartitionId(GROUP, 1);
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var firstRun =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runner.run(firstRun);
+
+    // when
+    final var secondRun =
+        new RebalanceRun(
+            9,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_3, 2)),
+            Instant.EPOCH);
+    runner.run(secondRun);
+
+    // then
+    assertThat(transfers.initiated).hasSize(2);
+    assertThat(transfers.resultHandlerRegistrations(partitionId)).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRouteAResultToWhicheverTransferIsCurrentlyActiveForThePartition() {
+    // given
+    final var runner = newRunner();
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var firstRun =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runner.run(firstRun);
+    final var secondRun =
+        new RebalanceRun(
+            9,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_3, 2)),
+            Instant.EPOCH);
+    runner.run(secondRun);
+
+    // when
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(secondRun.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.COMPLETED);
+    assertThat(secondRun.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.TRANSFERRED);
+    assertThat(firstRun.partition(0).progress()).isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+  }
+
+  @Test
+  void shouldNotCompleteTheCurrentTransferWithAStaleCorrelationId() {
+    // given
+    final var runner = newRunner();
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var firstRun =
+        new RebalanceRun(
+            7,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_2, 2)),
+            Instant.EPOCH);
+    runner.run(firstRun);
+    final var secondRun =
+        new RebalanceRun(
+            9,
+            RebalanceOverrides.none(),
+            false,
+            groupConfiguration(GROUP, Map.of(MEMBER_1, 1, MEMBER_3, 2)),
+            Instant.EPOCH);
+    runner.run(secondRun);
+
+    // when
+    transfers.reportWithCorrelationId(firstRun.id(), LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(secondRun.partition(0).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+    assertThat(secondRun.partition(0).outcome()).isNull();
+  }
+
+  @Test
+  void shouldUseASeparateResultHandlerForEachPartition() {
+    // given
+    final var groupLeaders = leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>());
+    groupLeaders.put(1, MEMBER_1);
+    groupLeaders.put(2, MEMBER_1);
+    final var runner = newRunner();
+    final var rebalance =
+        new RebalanceRun(
+            7, RebalanceOverrides.none(), false, twoPartitionsConfiguration(), Instant.EPOCH);
+
+    // when
+    runner.run(rebalance);
+    transfers.report(LeadershipTransferResult.TRANSFERRED);
+
+    // then
+    assertThat(transfers.resultHandlerRegistrations(new PartitionId(GROUP, 1))).isEqualTo(1);
+    assertThat(transfers.resultHandlerRegistrations(new PartitionId(GROUP, 2))).isEqualTo(1);
+    assertThat(rebalance.partition(0).outcome()).isEqualTo(PartitionRebalanceOutcome.TRANSFERRED);
+    assertThat(rebalance.partition(1).progress())
+        .isEqualTo(PartitionRebalanceProgress.TRANSFERRING);
+  }
+
+  private SequentialRebalanceRunner newRunner() {
+    return new SequentialRebalanceRunner(
+        COORDINATOR,
+        executor,
+        partitionLeaders,
+        transfers,
+        new ClusterRebalanceMetrics(registry),
+        LEADER_WAIT_TIMEOUT,
+        TEST_CONFIGURATION,
+        TEST_HEARTBEAT_INTERVAL);
+  }
+
   private double partitionStateGauge(final int partitionId) {
     return registry
         .get("zeebe.cluster.rebalance.partition.state")
@@ -907,6 +1034,7 @@ final class SequentialRebalanceRunnerTest {
                 LeadershipTransferResultRequest,
                 CompletableFuture<LeadershipTransferResultResponse>>>
         resultHandlers = new HashMap<>();
+    private final Map<PartitionId, Integer> resultHandlerRegistrations = new HashMap<>();
 
     private CompletableFuture<LeadershipTransferInitiateResponse> pending;
 
@@ -928,10 +1056,15 @@ final class SequentialRebalanceRunnerTest {
                 CompletableFuture<LeadershipTransferResultResponse>>
             handler) {
       resultHandlers.put(partitionId, handler);
+      resultHandlerRegistrations.merge(partitionId, 1, Integer::sum);
     }
 
     Initiated lastInitiated() {
       return initiated.get(initiated.size() - 1);
+    }
+
+    int resultHandlerRegistrations(final PartitionId partitionId) {
+      return resultHandlerRegistrations.getOrDefault(partitionId, 0);
     }
 
     void accept() {
