@@ -1701,7 +1701,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
             MAPPER)
-        .startup();
+        .startupOnce();
   }
 
   private void createBatchOperationIndex() throws IOException {

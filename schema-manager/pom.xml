@@ -93,6 +93,7 @@
     <dependency>
       <groupId>io.github.resilience4j</groupId>
       <artifactId>resilience4j-core</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

@@ -13,6 +13,7 @@ import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescr
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.mappingsMatch;
 import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
+import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,14 +107,15 @@ public class SchemaManagerConcurrencyIT {
                 exceptions,
                 () -> {
                   PostMethodPauseAdvice.setPauseForCurrentThread();
-                  schemaManager1.startup();
+                  startupWithRetry(schemaManager1, config);
                 }),
             "schema-manager-1");
     thread1.start();
     // Start schemaManager2 that should execute while schemaManager1 is paused
     final Thread thread2 =
         new Thread(
-            collectExceptions(exceptions, () -> schemaManager2.startup()), "schema-manager-2");
+            collectExceptions(exceptions, () -> startupWithRetry(schemaManager2, config)),
+            "schema-manager-2");
     thread2.start();
     thread2.join(TIMEOUT);
     // unpause schemaManager1
@@ -149,7 +151,7 @@ public class SchemaManagerConcurrencyIT {
     final var schemaManager2 =
         createSchemaManager(
             Set.of(index, metadataIndex), Set.of(indexTemplate), config, VersionUtil.getVersion());
-    schemaManager1.startup(); // initial schema creation
+    startupWithRetry(schemaManager1, config); // initial schema creation
     // set the mappings to a different file
     index.setMappingsClasspathFilename("/mappings-added-property.json");
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
@@ -163,14 +165,15 @@ public class SchemaManagerConcurrencyIT {
                 exceptions,
                 () -> {
                   PostMethodPauseAdvice.setPauseForCurrentThread();
-                  schemaManager1.startup();
+                  startupWithRetry(schemaManager1, config);
                 }),
             "schema-manager-1");
     thread1.start();
     // Start schemaManager2 that should execute while schemaManager1 is paused
     final Thread thread2 =
         new Thread(
-            collectExceptions(exceptions, () -> schemaManager2.startup()), "schema-manager-2");
+            collectExceptions(exceptions, () -> startupWithRetry(schemaManager2, config)),
+            "schema-manager-2");
     thread2.start();
     thread2.join(TIMEOUT);
     // unpause schemaManager1
@@ -206,18 +209,18 @@ public class SchemaManagerConcurrencyIT {
     final var oldSchemaManager =
         createSchemaManager(
             Set.of(index, metadataIndex), Set.of(indexTemplate), config, VersionUtil.getVersion());
-    oldSchemaManager.startup(); // initial schema creation
+    startupWithRetry(oldSchemaManager, config); // initial schema creation
 
     // when
     index.setMappingsClasspathFilename("/mappings-added-property.json");
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
-    updatedSchemaManager.startup();
+    startupWithRetry(updatedSchemaManager, config);
 
     index.setMappingsClasspathFilename("/mappings.json");
     indexTemplate.setMappingsClasspathFilename("/mappings.json");
 
-    oldSchemaManager.startup();
+    startupWithRetry(oldSchemaManager, config);
 
     // then
     final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -245,13 +248,13 @@ public class SchemaManagerConcurrencyIT {
     // given - Initial State: Schema(1.0.0)
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
-    node1Version10.startup(); // Initial schema creation with 1.0.0
+    startupWithRetry(node1Version10, config); // Initial schema creation with 1.0.0
     assertSchemaVersion(clientAdapter, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.1.0");
-    node1Version11.startup();
+    startupWithRetry(node1Version11, config);
 
     // then - Schema should be upgraded to 1.1.0
     assertSchemaVersion(clientAdapter, "1.1.0");
@@ -259,7 +262,7 @@ public class SchemaManagerConcurrencyIT {
     // when - Step 2: Node2 upgrades to 1.1.0 (should skip upgrade since schema is already 1.1.0)
     final var node2Version11 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.1.0");
-    node2Version11.startup();
+    startupWithRetry(node2Version11, config);
 
     // then - Schema should still be 1.1.0
     assertSchemaVersion(clientAdapter, "1.1.0");
@@ -277,7 +280,7 @@ public class SchemaManagerConcurrencyIT {
     // given - Initial State: Schema(1.0.0)
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
-    initialNode.startup();
+    startupWithRetry(initialNode, config);
     assertSchemaVersion(clientAdapter, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
@@ -296,14 +299,16 @@ public class SchemaManagerConcurrencyIT {
                 exceptions,
                 () -> {
                   PostMethodPauseAdvice.setPauseForCurrentThread();
-                  node1Version11.startup();
+                  startupWithRetry(node1Version11, config);
                 }),
             "node1-upgrade");
     thread1.start();
 
     // Step 2: Node2 starts upgrade (should upgrade while Node1 is paused)
     final Thread thread2 =
-        new Thread(collectExceptions(exceptions, node2Version11::startup), "node2-restart");
+        new Thread(
+            collectExceptions(exceptions, () -> startupWithRetry(node2Version11, config)),
+            "node2-restart");
     thread2.start();
     thread2.join(TIMEOUT);
 
@@ -343,19 +348,19 @@ public class SchemaManagerConcurrencyIT {
     // given - Initial State: Schema(1.0.0)
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
-    node1Version10.startup();
+    startupWithRetry(node1Version10, config);
     assertSchemaVersion(clientAdapter, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.1.0");
-    node1Version11.startup();
+    startupWithRetry(node1Version11, config);
     assertSchemaVersion(clientAdapter, "1.1.0");
 
     // when - Step 2: Node2 restarts with old version 1.0.0 (should skip - minor downgrade)
     final var node2Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
-    node2Version10.startup();
+    startupWithRetry(node2Version10, config);
 
     // then - Schema should remain 1.1.0 (not downgraded)
     assertSchemaVersion(clientAdapter, "1.1.0");
@@ -375,7 +380,7 @@ public class SchemaManagerConcurrencyIT {
     // given - Initial State: Schema(1.0.0)
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
-    initialNode.startup();
+    startupWithRetry(initialNode, config);
     assertSchemaVersion(clientAdapter, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
@@ -391,7 +396,7 @@ public class SchemaManagerConcurrencyIT {
                 exceptions,
                 () -> {
                   PostMethodPauseAdvice.setPauseForCurrentThread();
-                  node1Version11.startup();
+                  startupWithRetry(node1Version11, config);
                 }),
             "node1-upgrade");
     thread1.start();
@@ -400,7 +405,9 @@ public class SchemaManagerConcurrencyIT {
     final var node2Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     final Thread thread2 =
-        new Thread(collectExceptions(exceptions, node2Version10::startup), "node2-restart");
+        new Thread(
+            collectExceptions(exceptions, () -> startupWithRetry(node2Version10, config)),
+            "node2-restart");
     thread2.start();
     thread2.join(TIMEOUT);
 

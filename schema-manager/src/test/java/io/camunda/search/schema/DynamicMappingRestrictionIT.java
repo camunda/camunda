@@ -8,6 +8,7 @@
 package io.camunda.search.schema;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -46,7 +47,7 @@ public class DynamicMappingRestrictionIT {
     try (final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config)) {
 
-      schemaManager.startup();
+      startupWithRetry(schemaManager, config);
 
       assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
 

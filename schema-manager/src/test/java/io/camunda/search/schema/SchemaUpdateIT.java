@@ -11,6 +11,7 @@ import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.E
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.OPENSEARCH_NETWORK_ALIAS;
 import static io.camunda.search.schema.utils.SchemaTestUtil.assertMappingsMatch;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.startupWithRetry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Maps;
@@ -138,7 +139,7 @@ class SchemaUpdateIT {
                         .start(
                             () -> {
                               try {
-                                schemaManager.startup();
+                                startupWithRetry(schemaManager, config);
                               } catch (final Throwable e) {
                                 exceptions.add(e);
                               }
