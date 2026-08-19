@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, InlineNotification} from '@carbon/react';
+import {Button, InlineNotification} from '#/shared/design-system-compat';
 import type {ErrorComponentProps} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import styles from './TaskDetailsTaskErrorPage.module.scss';

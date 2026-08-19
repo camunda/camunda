@@ -9,3 +9,12 @@
 .actionableNotification {
 	max-inline-size: initial;
 }
+
+// DS-only (see TurnOnNotificationPermission.tsx). The Alert itself is
+// full-width with no side inset of its own — this matches it to the 16px
+// horizontal padding every other element on this page uses (the header,
+// tabs row, and form all pad themselves in by var(--cds-spacing-05)).
+.alertContainerDS {
+	width: 100%;
+	padding-inline: var(--cds-spacing-05);
+}

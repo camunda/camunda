@@ -9,8 +9,10 @@
 import {ActionableNotification} from '@carbon/react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Alert, Button} from '@camunda/design-system';
 import {requestPermission} from '#/shared/os-notifications/requestPermission';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {featureFlags} from '#/shared/feature-flags';
 import styles from './TurnOnNotificationPermission.module.scss';
 
 const TurnOnNotificationPermission: React.FC = () => {
@@ -24,6 +26,36 @@ const TurnOnNotificationPermission: React.FC = () => {
 		return null;
 	}
 
+	const handleDismiss = () => {
+		setIsEnabled(false);
+		storeStateLocally('tasklist.areNativeNotificationsEnabled', false);
+	};
+
+	const handleActionClick = async () => {
+		const result = await requestPermission();
+		if (result !== 'default') {
+			setIsEnabled(false);
+		}
+	};
+
+	if (featureFlags.dsTasklistUI) {
+		return (
+			<div className={styles.alertContainerDS}>
+				<Alert
+					variant="info"
+					title={t('tasklist.turnOnNotificationTitle')}
+					description={t('tasklist.turnOnNotificationSubtitle')}
+					dismissible
+					onDismiss={handleDismiss}
+				>
+					<Button variant="ghost" size="sm" onClick={handleActionClick}>
+						{t('tasklist.turnOnNotificationsActionButton')}
+					</Button>
+				</Alert>
+			</div>
+		);
+	}
+
 	return (
 		<div>
 			<ActionableNotification
@@ -34,16 +66,8 @@ const TurnOnNotificationPermission: React.FC = () => {
 				title={t('tasklist.turnOnNotificationTitle')}
 				subtitle={t('tasklist.turnOnNotificationSubtitle')}
 				actionButtonLabel={t('tasklist.turnOnNotificationsActionButton')}
-				onActionButtonClick={async () => {
-					const result = await requestPermission();
-					if (result !== 'default') {
-						setIsEnabled(false);
-					}
-				}}
-				onClose={() => {
-					setIsEnabled(false);
-					storeStateLocally('tasklist.areNativeNotificationsEnabled', false);
-				}}
+				onActionButtonClick={handleActionClick}
+				onClose={handleDismiss}
 				className={styles.actionableNotification}
 				lowContrast
 			/>
