@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.tasks.BackgroundTaskIT;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.TestTemplate;
 public class ApplyRolloverPeriodJobIT extends BackgroundTaskIT<ApplyRolloverPeriodJob> {
 
   private static final String DATE_SUFFIX = "2024-01-15";
+  private static final String ORDINAL_SUFFIX = TargetIndex.ORDINAL_SUFFIX_START + "12345";
 
   @Override
   protected ApplyRolloverPeriodJob createBackgroundTask(
@@ -80,6 +82,29 @@ public class ApplyRolloverPeriodJobIT extends BackgroundTaskIT<ApplyRolloverPeri
           assertThat(result).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(0);
 
           final var policy = client.getLifecyclePolicyNameForIndex(mainIndexName);
+          assertThat(policy).isNull();
+        });
+  }
+
+  @TestTemplate
+  void shouldNotApplyLifecyclePolicyToOrdinalIndex(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final var ordinalIndexName = listViewTemplate.getFullQualifiedName() + ORDINAL_SUFFIX;
+          client.createIndex(ordinalIndexName, 0);
+
+          // when
+          final var result = job.execute();
+
+          // then
+          assertThat(result).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(0);
+
+          final var policy = client.getLifecyclePolicyNameForIndex(ordinalIndexName);
           assertThat(policy).isNull();
         });
   }
