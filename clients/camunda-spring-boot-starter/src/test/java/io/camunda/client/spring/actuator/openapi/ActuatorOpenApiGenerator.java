@@ -79,9 +79,12 @@ public final class ActuatorOpenApiGenerator {
         throw new IllegalStateException(
             "Failed to generate actuator OpenAPI spec, status=" + response.statusCode());
       }
-      if (!spec.contains("/actuator/jobworkers")) {
+      if (!spec.contains("/actuator/jobworkers")
+          || !spec.contains("/actuator/jobworkers/{")
+          || !spec.contains("get:")
+          || !spec.contains("post:")) {
         throw new IllegalStateException(
-            "Generated actuator OpenAPI spec is missing the expected jobworkers endpoint");
+            "Generated actuator OpenAPI spec is missing expected jobworkers operations");
       }
 
       Files.createDirectories(outputPath.getParent());
