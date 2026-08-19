@@ -77,6 +77,7 @@ public final class SystemContextLoader {
   private List<ExporterDescriptor> exporterDescriptors;
   private Map<String, IntFunction<Long>> exportedPositionSuppliers = Map.of();
   private SecretStoreRegistries secretStoreRegistries = new SecretStoreRegistries(Map.of());
+  private ResolvedDataDirectory resolvedDataDirectory;
 
   public SystemContextLoader withShutdownTimeout(final Duration shutdownTimeout) {
     this.shutdownTimeout = shutdownTimeout;
@@ -196,6 +197,17 @@ public final class SystemContextLoader {
     return this;
   }
 
+  /**
+   * The data directory resolved for this node, e.g. by a dynamic node id provider. Applied to every
+   * physical tenant's {@code BrokerCfg} so all tenants share the same node-level data directory
+   * root instead of each independently re-deriving it from raw configuration.
+   */
+  public SystemContextLoader withResolvedDataDirectory(
+      final ResolvedDataDirectory resolvedDataDirectory) {
+    this.resolvedDataDirectory = resolvedDataDirectory;
+    return this;
+  }
+
   public SystemContext createSystemContext() {
     final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
     physicalTenantResolver
@@ -240,7 +252,9 @@ public final class SystemContextLoader {
     if (camunda == rootCamunda) {
       // this is for default tenant, with no override
       // This special handling is required so that legacy properties defined via `zeebe.broker.*`
-      // are still applied to the default tenant.
+      // are still applied to the default tenant. Its data directory is already the node-id-
+      // provider-resolved one, since this is the very same BrokerCfg singleton that
+      // NodeIdProviderConfiguration.resolvedDataDirectory() mutated.
       brokerConfig = rootBrokerCfg;
     } else {
       brokerConfig = BrokerBasedPropertiesOverride.convert(camunda);
@@ -251,6 +265,11 @@ public final class SystemContextLoader {
       clusterCfg.setNodeId(currentInstance.id());
       clusterCfg.setNodeVersion(currentInstance.version().version());
       brokerConfig.init(workingDirectory.toAbsolutePath().toString());
+
+      // Every physical tenant shares the same node-level data directory root, resolved once for
+      // this node (e.g. by a dynamic node id provider), rather than each tenant's BrokerCfg
+      // deriving it independently from its own raw configuration.
+      brokerConfig.getData().setDirectory(resolvedDataDirectory.directory());
     }
 
     final var featureFlags = brokerConfig.getExperimental().getFeatures().toFeatureFlags();

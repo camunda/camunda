@@ -138,6 +138,46 @@ final class SystemContextLoaderTest {
   }
 
   @Test
+  void shouldApplyResolvedDataDirectoryToEveryPhysicalTenant() {
+    // given - a resolved data directory (as produced by a dynamic node id provider) already
+    // applied to the root broker config - as NodeIdProviderConfiguration.resolvedDataDirectory()
+    // mutates the very same BrokerCfg singleton reused as rootBrokerCfg - and a non-default
+    // tenant whose own raw configured directory still differs from it
+    final var rootCamunda = new Camunda();
+    final var rootBrokerCfg = new BrokerCfg();
+    rootBrokerCfg.getData().setDirectory("/resolved/node-7");
+    final var tenantCamunda = new Camunda();
+    tenantCamunda.getData().getPrimaryStorage().setDirectory("/configured/tenanta");
+    final var resolvedDataDirectory = new ResolvedDataDirectory("/resolved/node-7");
+
+    final var loader =
+        newLoader(
+                rootCamunda,
+                rootBrokerCfg,
+                Map.of(
+                    PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                    rootCamunda,
+                    "tenanta",
+                    tenantCamunda))
+            .withResolvedDataDirectory(resolvedDataDirectory);
+
+    // when
+    final SystemContext systemContext = loader.createSystemContext();
+
+    // then - both the default and the non-default tenant use the resolved directory, not their
+    // own raw configured value
+    assertThat(
+            systemContext
+                .getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .config()
+                .getData()
+                .getDirectory())
+        .isEqualTo("/resolved/node-7");
+    assertThat(systemContext.getPhysicalTenantContext("tenanta").config().getData().getDirectory())
+        .isEqualTo("/resolved/node-7");
+  }
+
+  @Test
   void shouldThreadSecretStoreRegistryOfEachTenant() {
     // given - a registry configured for one of the two tenants
     final var rootCamunda = new Camunda();
@@ -217,6 +257,8 @@ final class SystemContextLoaderTest {
         .withSearchClientsProxy(mock(SearchClientsProxy.class))
         .withNodeIdProvider(nodeIdProvider)
         .withWorkingDirectory(workingDirectory)
-        .withExporterDescriptors(null);
+        .withExporterDescriptors(null)
+        .withResolvedDataDirectory(
+            new ResolvedDataDirectory(rootBrokerCfg.getData().getDirectory()));
   }
 }

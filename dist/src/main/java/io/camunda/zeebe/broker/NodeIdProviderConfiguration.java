@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -81,7 +80,7 @@ public class NodeIdProviderConfiguration {
   }
 
   @Bean
-  public DataDirectoryProvider dataDirectoryProvider(
+  public ResolvedDataDirectory resolvedDataDirectory(
       final NodeIdProvider nodeIdProvider,
       final NodeIdProviderReadinessAwaiter readinessAwaiter,
       final BrokerBasedConfiguration brokerBasedConfiguration)
@@ -120,7 +119,7 @@ public class NodeIdProviderConfiguration {
     final var configuredDirectory = initializer.initialize(directory).join();
     data.setDirectory(configuredDirectory.toString());
 
-    return initializer;
+    return new ResolvedDataDirectory(configuredDirectory.toString());
   }
 
   @Bean

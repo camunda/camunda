@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -58,8 +57,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
       "io.camunda.zeebe.shared",
     })
 @Profile("broker")
-@DependsOn(
-    "dataDirectoryProvider") // ensure that the data directory is set up before starting the broker
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
@@ -81,6 +78,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
+  private final ResolvedDataDirectory resolvedDataDirectory;
 
   private Broker broker;
 
@@ -105,7 +103,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
-      final SecretStoreRegistries secretStoreRegistries) {
+      final SecretStoreRegistries secretStoreRegistries,
+      final ResolvedDataDirectory resolvedDataDirectory) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -124,6 +123,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
+    this.resolvedDataDirectory = resolvedDataDirectory;
   }
 
   @Bean(destroyMethod = "close")
@@ -156,6 +156,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withExporterDescriptors(exporterDescriptors)
             .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
             .withSecretStoreRegistries(secretStoreRegistries)
+            .withResolvedDataDirectory(resolvedDataDirectory)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
