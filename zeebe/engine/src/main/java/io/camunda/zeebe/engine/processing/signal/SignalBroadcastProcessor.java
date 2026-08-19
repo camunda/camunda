@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
@@ -59,6 +60,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final CslAuthorizationCheck cslCheck;
   private final CslTenantCheck tenantCheck;
   private final VariableBehavior variableBehavior;
+  private final SuspensionState suspensionState;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -81,6 +83,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.variableBehavior = variableBehavior;
+    suspensionState = processingState.getSuspensionState();
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -185,6 +188,13 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
   private void activateElement(
       final SignalSubscriptionRecord subscription, final DirectBuffer variables) {
+    // signal start events have no process instance yet to check, so skip only for non-start
+    // subscriptions
+    final var isStartEvent = subscription.getCatchEventInstanceKey() == -1;
+    if (!isStartEvent && suspensionState.isSuspended(subscription.getProcessInstanceKey())) {
+      return;
+    }
+
     final var processDefinitionKey = subscription.getProcessDefinitionKey();
     final var catchEventInstanceKey = subscription.getCatchEventInstanceKey();
     final var catchEventId = subscription.getCatchEventIdBuffer();
