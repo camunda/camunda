@@ -238,13 +238,27 @@ runs:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}
       mirrors: ${{ steps.maven.outputs.mirrors }}
+  - uses: ./.github/actions/apt-fast-mirror-failover
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+  # tzdata is not installed in self-hosted runners. `timeout` runs inside the sudo'd
+  # root process tree so it can self-terminate a hung apt-get without nick-fields/retry
+  # having to kill across the privilege boundary -- doing that externally throws
+  # `kill EPERM` and crashes instead of retrying, see
+  # https://github.com/nick-fields/retry/issues/124.
+  - name: Install tzdata
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_minutes: 2
+      shell: bash
+      command: sudo timeout 115 bash -c "apt-get update && apt-get install -y tzdata"
   - name: Set Time Zone
     if: inputs.time-zone != '' && runner.os == 'Linux'
     env:
       TZ_IDENTIFIER: ${{ inputs.time-zone }}
     run: |
-      # tzdata is not installed in self-hosted runners
-      sudo apt-get update && sudo apt-get install -y tzdata
       echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
