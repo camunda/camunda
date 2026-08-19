@@ -85,7 +85,7 @@ function mapBreadcrumb(
 export function useBreadcrumbs(): ReactNode | undefined {
   const { pathname, search } = useLocation();
   const { t } = useTranslate("navigation");
-  const breadcrumbs = useClusterWebappBreadcrumbs({ currentApp: "identity" });
+  const breadcrumbs = useClusterWebappBreadcrumbs({ currentApp: "admin" });
   const items = useMemo(() => breadcrumbs.map(mapBreadcrumb), [breadcrumbs]);
 
   if (items.length === 0) return undefined;

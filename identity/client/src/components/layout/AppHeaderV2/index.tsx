@@ -162,7 +162,6 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
       <SidebarProvider>
         <SidebarBodySync hasSidebar={hasSidebar} />
         <AppHeader
-          aria-label="Admin"
           onClick={handleSkipToContentClick}
           skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
           showSidebarTrigger={hasSidebar}
