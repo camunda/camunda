@@ -164,6 +164,11 @@ public final class SystemContextTestFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
+    if (!brokerCfgsByTenant.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
+      throw new IllegalArgumentException(
+          "brokerCfgsByTenant must include an entry for "
+              + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    }
     final Map<String, PhysicalTenantContext> contextsByTenant = new HashMap<>();
     brokerCfgsByTenant.forEach(
         (tenantId, tenantCfg) -> {
