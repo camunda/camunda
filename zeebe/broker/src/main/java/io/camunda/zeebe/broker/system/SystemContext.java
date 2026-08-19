@@ -221,9 +221,9 @@ public final class SystemContext {
   /**
    * Validates the subset of {@link BrokerCfg} that is overridable per physical tenant (see {@code
    * PhysicalTenantOverridePolicyValidation}), against the given tenant's own effective
-   * configuration. Every non-default tenant reaches this with its own {@code BrokerCfg}; the
-   * default tenant's {@code config()} is {@code brokerCfg} by identity, so this also re-validates
-   * the root configuration once more here, which is harmless.
+   * configuration. The root-only pass in {@link #validateConfiguration()} covers a disjoint set of
+   * properties, so for the default tenant this method is the only place its overridable settings
+   * (snapshot period, backup, batch operations, listeners, fixed partition coverage) are validated.
    */
   private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
