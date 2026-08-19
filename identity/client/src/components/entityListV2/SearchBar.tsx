@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { TableToolbarSearch } from "@carbon/react";
+import { SearchInput } from "@camunda/design-system";
 import { FC, useEffect, useState } from "react";
-
 import useDebounce from "react-debounced";
+import useTranslate from "src/utility/localization";
 
 type SearchBarProps = {
   searchKey: string;
@@ -24,6 +24,7 @@ export default function SearchBar({
   onSearch,
   debounce = 300,
 }: SearchBarProps): ReturnType<FC> {
+  const { t } = useTranslate("components");
   const [search, setSearchState] = useState<string>("");
   const debounceFn = useDebounce(debounce);
 
@@ -41,21 +42,17 @@ export default function SearchBar({
   }, [debounceFn, onSearch, search, searchKey]);
 
   return (
-    <TableToolbarSearch
+    <SearchInput
+      className="flex-1"
       placeholder={searchPlaceholder}
+      aria-label={searchPlaceholder ?? t("search")}
+      clearLabel={t("clearSearch")}
       value={search}
-      persistent
-      onChange={(_, value = "") => {
-        setSearchState(value);
+      onChange={(event) => {
+        setSearchState(event.target.value);
       }}
-      onFocus={(event, handleExpand) => {
-        handleExpand(event, true);
-      }}
-      onBlur={(event, handleExpand) => {
-        const { value } = event.target;
-        if (!value) {
-          handleExpand(event, false);
-        }
+      onClear={() => {
+        setSearchState("");
       }}
     />
   );

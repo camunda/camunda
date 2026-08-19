@@ -63,6 +63,8 @@
   "removingClient": "Removing client",
   "enterClientId": "Enter client ID",
   "unableToLoadResource": "Unable to load {{resourceType}}s",
+  "search": "Search",
+  "clearSearch": "Clear search",
   "searchByClientId": "Search by client ID",
   "typeUsername": "Type a username",
   "typeGroup": "Type a group",

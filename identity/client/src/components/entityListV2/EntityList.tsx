@@ -6,53 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, Fragment, ReactNode, useMemo } from "react";
+import { FC, ReactNode, useCallback, useMemo, useState } from "react";
 import {
   Button,
   DataTable,
-  DataTableSkeleton,
-  Link,
-  OverflowMenu,
-  OverflowMenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableExpandHeader,
-  TableExpandRow,
-  TableExpandedRow,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableSelectAll,
-  TableSelectRow,
-  TableToolbar,
-  TableToolbarContent,
-  Pagination,
+  type DataTableColumn,
+  type DataTableRowAction,
+  type PaginationConfig,
+  type RowSelectionConfig,
+  type SortingConfig,
   Tooltip,
-} from "@carbon/react";
-import styled from "styled-components";
-import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
+  TooltipContent,
+  TooltipTrigger,
+} from "@camunda/design-system";
 import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentationV2";
 import Flex from "src/components/layoutV2/Flex";
 import useTranslate from "src/utility/localization";
-import { StyledTableContainer } from "./components";
 import { PageResult, SortConfig } from "src/utility/api";
 import SearchBar from "./SearchBar";
-
-const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
-  cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
-`;
-
-const TooltipTrigger = styled.button`
-  all: unset;
-`;
-
-const StyledToolTip = styled(Tooltip)`
-  .cds--tooltip-content {
-    max-inline-size: 28rem;
-  }
-`;
 
 export type EntityData = {
   [key: string]: string | object | boolean | number | null;
@@ -122,6 +94,12 @@ type EntityListProps<D extends EntityData> = {
   renderExpandedRow?: (entity: D) => ReactNode;
 };
 
+/** Every row carries a stable id so selection and expansion survive re-renders. */
+type EntityRow<D extends EntityData> = D & { id: string };
+
+type SortingState = NonNullable<SortingConfig["sortState"]>;
+type RowSelectionState = NonNullable<RowSelectionConfig["selectedRowIds"]>;
+
 const MAX_ICON_ACTIONS = 2;
 const PAGESIZES = [10, 20, 30, 40, 50];
 
@@ -152,386 +130,300 @@ const EntityList = <D extends EntityData>({
 }: EntityListProps<D>): ReturnType<FC> => {
   const { t } = useTranslate("components");
 
-  const hasMenu = menuItems && menuItems.length > 0;
-  const isExpandable = !!renderExpandedRow;
+  // `EntityList` never receives the *current* sort as a prop — only the
+  // `setSort` setter — so the sort indicator is owned here, exactly as Carbon's
+  // `DataTable` owned it internally. Rows are never reordered locally; the
+  // server returns them already sorted.
+  const [sortingState, setSortingState] = useState<SortingState>([]);
 
-  const [index, tableData] = useMemo(() => {
-    const entityIndex: { [id: string]: D } = {};
-    const entityTableData: (D & { id: string })[] = [];
+  const [entityIndex, tableData] = useMemo(() => {
+    const nextIndex: { [id: string]: D } = {};
+    const nextRows: EntityRow<D>[] = [];
 
     data?.forEach((dataset) => {
       const id = dataset.id || (Date.now() + Math.random()).toString();
-      entityIndex[id] = dataset;
-      entityTableData.push({ ...dataset, id });
+      nextIndex[id] = dataset;
+      nextRows.push({ ...dataset, id });
     });
 
-    return [entityIndex, entityTableData];
+    return [nextIndex, nextRows];
   }, [data]);
 
-  const areRowsEmpty = !tableData || tableData.length === 0;
+  // Rows are shallow copies, so every consumer callback is handed the original
+  // object back — object identity is part of the `batchSelection` contract.
+  const entityOf = useCallback(
+    (row: EntityRow<D>) => entityIndex[row.id],
+    [entityIndex],
+  );
 
   const isEntityClickable = onEntityClick !== undefined;
 
-  const handleEntityClick = (id: string) => () => {
+  const columns = useMemo<DataTableColumn<EntityRow<D>>[]>(
+    () =>
+      headers.map((header, columnIndex) => {
+        const key = String(header.key);
+
+        return {
+          id: key,
+          // Load-bearing: TanStack's `getCanSort()` requires an accessor, so
+          // without this no sort button is rendered for sortable headers.
+          accessorFn: (row: EntityRow<D>) => readCell(row, key),
+          header: header.header,
+          enableSorting: !!header.isSortable,
+          // Carbon always started the cycle ascending; TanStack would flip that
+          // for columns whose first value happens to be numeric.
+          sortDescFirst: false,
+          cell: ({ row }) => {
+            const value = readCell(row.original, key);
+
+            // The first column is the primary cell: with `onRowClick` set the
+            // DataTable wraps its content in a focusable `<button>`, which must
+            // not contain the tooltip's own trigger button. Carbon left this
+            // cell untruncated for the same reason (it rendered a `Link`).
+            return columnIndex === 0 && isEntityClickable
+              ? value
+              : truncateCell(value, maxDisplayCellLength);
+          },
+        };
+      }),
+    [headers, isEntityClickable, maxDisplayCellLength],
+  );
+
+  const rowActions = useMemo<
+    DataTableRowAction<EntityRow<D>>[] | undefined
+  >(() => {
+    // The prop type is a 1-to-3 tuple, so a non-nullish `menuItems` is never
+    // empty — `undefined` is the only "no actions" case to guard against.
+    if (!menuItems) {
+      return undefined;
+    }
+
+    return menuItems.map((menuItem) => {
+      const { label, onClick, isDangerous, disabled, hidden } = menuItem;
+      const Icon = (menuItem as MenuItem<D>).icon;
+
+      return {
+        id: label,
+        label,
+        variant: isDangerous ? "destructive" : "default",
+        icon: Icon ? () => <Icon aria-hidden="true" /> : undefined,
+        disabled: (row) => resolveMenuItemFlag(disabled, entityOf(row)),
+        visible: (row) => !resolveMenuItemFlag(hidden, entityOf(row)),
+        onClick: (row) => onClick(entityOf(row)),
+      };
+    });
+  }, [menuItems, entityOf]);
+
+  const selectedRowIds = useMemo<RowSelectionState>(() => {
+    if (!batchSelection) {
+      return {};
+    }
+
+    const selection: RowSelectionState = {};
+
+    tableData.forEach((row) => {
+      if (batchSelection.isSelected(entityIndex[row.id])) {
+        selection[row.id] = true;
+      }
+    });
+
+    return selection;
+  }, [batchSelection, entityIndex, tableData]);
+
+  /**
+   * TanStack reports the whole next selection map, while `batchSelection`
+   * expects Carbon's per-row / select-all split. A single row checkbox flips
+   * exactly one id; the header checkbox flips every remaining one, so a change
+   * spanning more than one row is treated as "select all".
+   */
+  const handleSelectedRowsChange = useCallback(
+    (nextSelection: RowSelectionState) => {
+      if (!batchSelection) {
+        return;
+      }
+
+      const flipped = tableData.filter(
+        (row) => !!nextSelection[row.id] !== !!selectedRowIds[row.id],
+      );
+
+      if (flipped.length === 0) {
+        return;
+      }
+
+      if (flipped.length > 1) {
+        batchSelection.onSelectAll(
+          tableData.filter((row) => !!nextSelection[row.id]).map(entityOf),
+        );
+        return;
+      }
+
+      const row = flipped[0];
+
+      if (nextSelection[row.id]) {
+        batchSelection.onSelect(entityOf(row));
+      } else {
+        batchSelection.onUnselect(entityOf(row));
+      }
+    },
+    [batchSelection, entityOf, selectedRowIds, tableData],
+  );
+
+  const renderExpansion = renderExpandedRow;
+  const expansion = useMemo(
+    () =>
+      renderExpansion
+        ? (row: EntityRow<D>) => renderExpansion(entityOf(row))
+        : undefined,
+    [renderExpansion, entityOf],
+  );
+
+  const handleRowClick = (row: EntityRow<D>) => {
     const textSelection = window.getSelection();
 
     if (
-      isEntityClickable &&
+      onEntityClick &&
       (!textSelection || textSelection.toString().length === 0)
-    )
-      onEntityClick(index[id]);
+    ) {
+      onEntityClick(entityOf(row));
+    }
   };
 
-  const handleMenuItemClick =
-    (id: string, onClick: MenuItem<D>["onClick"]) => () =>
-      onClick(index[id]);
+  // Kept explicit: a total that fits on the smallest page size has nothing to
+  // page through, and the DS footer would still render a "Page 1 of 1" row.
+  const pagination: PaginationConfig | undefined =
+    pageData?.totalItems && pageData.totalItems > Math.min(...pageSizes)
+      ? {
+          manual: true,
+          pageSizes,
+          pageIndex: pageData.pageNumber - 1,
+          pageSize: pageData.pageSize,
+          rowCount: pageData.totalItems,
+          onPaginationChange: ({ pageIndex, pageSize }) => {
+            setPageNumber(pageIndex + 1);
+            setPageSize(pageSize);
+          },
+        }
+      : undefined;
 
-  const selectedLength =
-    (batchSelection && data?.filter(batchSelection.isSelected).length) || 0;
-
-  const tableContainerProps = isInsideModal
-    ? { $compact: true }
-    : {
-        title,
-        description:
-          !description && !documentationPath ? undefined : (
-            <>
-              {description && <p>{description}</p>}
-              {documentationPath && (
-                <DocumentationLink path={documentationPath}>
-                  {t("Learn more")}
-                </DocumentationLink>
-              )}
-            </>
-          ),
-      };
-
-  const rowColSpan =
-    headers.length +
-    (isExpandable ? 1 : 0) +
-    (batchSelection ? 1 : 0) +
-    (hasMenu ? 1 : 0);
+  const descriptionNode =
+    !description && !documentationPath ? undefined : (
+      <>
+        {description && <p>{description}</p>}
+        {documentationPath && (
+          <DocumentationLink path={documentationPath}>
+            {t("Learn more")}
+          </DocumentationLink>
+        )}
+      </>
+    );
 
   return (
-    <DataTable
-      rows={tableData}
-      headers={headers}
-      isSortable
-      sortRow={() => {
-        return 0;
-      }}
-    >
-      {({
-        rows,
-        getHeaderProps,
-        getRowProps,
-        getExpandedRowProps,
-        getToolbarProps,
-        getTableProps,
-      }) => (
-        <StyledTableContainer {...tableContainerProps}>
-          <>
-            {(searchKey || addEntityLabel) && (
-              <TableToolbar {...getToolbarProps()}>
-                <TableToolbarContent>
-                  {searchKey && (
-                    <SearchBar
-                      searchKey={searchKey}
-                      searchPlaceholder={searchPlaceholder}
-                      onSearch={setSearch}
-                    />
-                  )}
-                  {addEntityLabel && (
-                    <Button
-                      renderIcon={Add}
-                      onClick={onAddEntity}
-                      disabled={addEntityDisabled}
-                    >
-                      {addEntityLabel}
-                    </Button>
-                  )}
-                </TableToolbarContent>
-              </TableToolbar>
-            )}
-            {loading && (
-              <DataTableSkeleton
-                columnCount={headers.length}
-                headers={headers}
-                showHeader={false}
-                showToolbar={false}
-                style={{ padding: 0 }}
-              />
-            )}
-
-            {!loading && (
-              <Table {...getTableProps()}>
-                <TableHead>
-                  <TableRow>
-                    {isExpandable && <TableExpandHeader />}
-                    {batchSelection && (
-                      <TableSelectAll
-                        id="select-all"
-                        name="select-all"
-                        checked={selectedLength === data?.length}
-                        indeterminate={
-                          selectedLength > 0 && selectedLength !== data?.length
-                        }
-                        onSelect={() => {
-                          if (data) {
-                            if (selectedLength === data.length) {
-                              batchSelection.onSelectAll([]);
-                            } else {
-                              batchSelection.onSelectAll(data);
-                            }
-                          }
-                        }}
-                      />
-                    )}
-                    {headers.map((header) => {
-                      return (
-                        <TableHeader
-                          {...getHeaderProps({
-                            header: header,
-                            isSortable: !!header.isSortable,
-                            onClick: (_, { sortHeaderKey, sortDirection }) => {
-                              if (sortDirection === "NONE") {
-                                setSort(undefined);
-                                return;
-                              }
-
-                              setSort([
-                                {
-                                  field: sortHeaderKey,
-                                  order: sortDirection,
-                                },
-                              ]);
-                            },
-                          })}
-                          key={`applications-header-${header.header}`}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      );
-                    })}
-                    {hasMenu && <TableExpandHeader />}
-                  </TableRow>
-                </TableHead>
-                {areRowsEmpty && !loading && (
-                  <TableBody>
-                    <TableRow>
-                      <StyledTableCell colSpan={rowColSpan}>
-                        {t("No results found")}
-                      </StyledTableCell>
-                    </TableRow>
-                  </TableBody>
-                )}
-                {!areRowsEmpty && (
-                  <TableBody>
-                    {rows.map((row) => {
-                      const { id: rowId, cells, isExpanded } = row;
-
-                      const cellContent = (
-                        <>
-                          {batchSelection && (
-                            <TableSelectRow
-                              id={`select-${rowId}`}
-                              name={`select-${rowId}`}
-                              checked={batchSelection.isSelected(index[rowId])}
-                              onSelect={() => {
-                                const item = index[rowId];
-
-                                if (batchSelection.isSelected(item)) {
-                                  batchSelection.onUnselect(item);
-                                } else {
-                                  batchSelection.onSelect(item);
-                                }
-                              }}
-                            />
-                          )}
-                          {cells.map(({ id: cellId, value }, index) => {
-                            const displayValue = Array.isArray(value)
-                              ? value.join(", ")
-                              : value;
-
-                            const truncatedValue =
-                              displayValue &&
-                              displayValue.toString().length >
-                                maxDisplayCellLength ? (
-                                <StyledToolTip
-                                  label={displayValue}
-                                  autoAlign
-                                  align="bottom"
-                                >
-                                  <TooltipTrigger>
-                                    {displayValue
-                                      .substring(0, maxDisplayCellLength)
-                                      .concat("…")}
-                                  </TooltipTrigger>
-                                </StyledToolTip>
-                              ) : (
-                                displayValue
-                              );
-
-                            return (
-                              <StyledTableCell
-                                key={cellId}
-                                onClick={handleEntityClick(rowId)}
-                                $isClickable={isEntityClickable}
-                              >
-                                {index === 0 && isEntityClickable ? (
-                                  <Link>{displayValue}</Link>
-                                ) : (
-                                  truncatedValue
-                                )}
-                              </StyledTableCell>
-                            );
-                          })}
-                          {hasMenu && (
-                            <TableCell>
-                              {menuItems?.length > MAX_ICON_ACTIONS ? (
-                                <OverflowMenu flipped>
-                                  {getVisibleMenuItems(
-                                    menuItems,
-                                    index[rowId],
-                                  ).map(
-                                    ({
-                                      label,
-                                      onClick,
-                                      isDangerous,
-                                      disabled,
-                                    }) => (
-                                      <OverflowMenuItem
-                                        key={`${label}-${rowId}`}
-                                        itemText={<p>{label}</p>}
-                                        isDelete={isDangerous}
-                                        disabled={resolveMenuItemFlag(
-                                          disabled,
-                                          index[rowId],
-                                        )}
-                                        onClick={handleMenuItemClick(
-                                          rowId,
-                                          onClick,
-                                        )}
-                                      />
-                                    ),
-                                  )}
-                                </OverflowMenu>
-                              ) : (
-                                <Flex>
-                                  {getVisibleMenuItems(
-                                    menuItems,
-                                    index[rowId],
-                                  ).map((menuItem) => {
-                                    const {
-                                      label,
-                                      onClick,
-                                      icon,
-                                      isDangerous,
-                                      disabled,
-                                    } = menuItem as MenuItem<D>;
-
-                                    const kind: ButtonKind = isDangerous
-                                      ? "danger--ghost"
-                                      : "ghost";
-                                    const hasIconOnly = !!icon && !isDangerous;
-
-                                    return (
-                                      <Button
-                                        key={`${label}-${rowId}`}
-                                        kind={kind}
-                                        size="md"
-                                        disabled={resolveMenuItemFlag(
-                                          disabled,
-                                          index[rowId],
-                                        )}
-                                        hasIconOnly={hasIconOnly}
-                                        renderIcon={icon}
-                                        tooltipAlignment="end"
-                                        iconDescription={label}
-                                        onClick={handleMenuItemClick(
-                                          rowId,
-                                          onClick,
-                                        )}
-                                      >
-                                        {hasIconOnly ? "" : label}
-                                      </Button>
-                                    );
-                                  })}
-                                </Flex>
-                              )}
-                            </TableCell>
-                          )}
-                        </>
-                      );
-
-                      if (!isExpandable) {
-                        return <TableRow key={rowId}>{cellContent}</TableRow>;
-                      }
-
-                      return (
-                        <Fragment key={rowId}>
-                          <TableExpandRow
-                            // > Warning: A props object containing a "key" prop is being spread into JSX.
-                            // A key is already configured in the fragment. Overwriting the
-                            // key prevents the error from being reported.
-                            {...getRowProps({ row })}
-                            key={undefined}
-                          >
-                            {cellContent}
-                          </TableExpandRow>
-                          <TableExpandedRow
-                            colSpan={rowColSpan}
-                            {...getExpandedRowProps({ row })}
-                          >
-                            {isExpanded &&
-                              index[rowId] &&
-                              renderExpandedRow(index[rowId])}
-                          </TableExpandedRow>
-                        </Fragment>
-                      );
-                    })}
-                  </TableBody>
-                )}
-              </Table>
-            )}
-          </>
-          {!!pageData?.totalItems &&
-            pageData.totalItems > Math.min(...pageSizes) && (
-              <Pagination
-                backwardText={t("Previous page")}
-                forwardText={t("Next page")}
-                itemsPerPageText={t("Items per page:")}
-                page={pageData.pageNumber}
-                pageNumberText={t("Page Number")}
-                pageSize={pageData.pageSize}
-                pageSizes={pageSizes}
-                totalItems={pageData.totalItems}
-                onChange={({
-                  page,
-                  pageSize,
-                }: {
-                  page: number;
-                  pageSize: number;
-                }) => {
-                  setPageNumber(page);
-                  setPageSize(pageSize);
-                }}
-              />
-            )}
-        </StyledTableContainer>
+    <Flex direction="column" align="normal">
+      {(searchKey || addEntityLabel) && (
+        <Flex>
+          {searchKey && (
+            <SearchBar
+              searchKey={searchKey}
+              searchPlaceholder={searchPlaceholder}
+              onSearch={setSearch}
+            />
+          )}
+          {addEntityLabel && (
+            <Button onClick={onAddEntity} disabled={addEntityDisabled}>
+              <Add data-icon="inline-start" aria-hidden="true" />
+              {addEntityLabel}
+            </Button>
+          )}
+        </Flex>
       )}
-    </DataTable>
+      <DataTable<EntityRow<D>>
+        columns={columns}
+        data={tableData}
+        getRowId={(row) => row.id}
+        title={isInsideModal ? undefined : title}
+        description={isInsideModal ? undefined : descriptionNode}
+        loading={loading}
+        emptyState={t("No results found")}
+        sorting={{
+          manual: true,
+          sortState: sortingState,
+          onSortingChange: (state) => {
+            setSortingState(state);
+            setSort(toSortConfig(state));
+          },
+        }}
+        pagination={pagination}
+        rowActions={rowActions}
+        // Carbon collapsed into an overflow menu once `menuItems` held more
+        // than two entries; the DS threshold is the *visible* count at which
+        // the menu kicks in, so it also collapses at three — but now per row,
+        // after `hidden` has been applied.
+        inlineActionsThreshold={MAX_ICON_ACTIONS + 1}
+        expansion={expansion}
+        onRowClick={isEntityClickable ? handleRowClick : undefined}
+        rowSelection={
+          batchSelection
+            ? { selectedRowIds, onSelectedRowsChange: handleSelectedRowsChange }
+            : undefined
+        }
+      />
+    </Flex>
   );
 };
 
-function getVisibleMenuItems<D>(
-  menuItems: (MenuItem<D> | TextMenuItem<D>)[] | undefined,
-  entity: D | undefined,
-): (MenuItem<D> | TextMenuItem<D>)[] {
-  if (!menuItems) {
-    return [];
+/**
+ * `DataTableHeader.key` is constrained to columns whose value is renderable
+ * (`string | ReactNode`), which is the same contract Carbon's cell renderer
+ * relied on. Arrays are joined, matching the previous behaviour.
+ */
+function readCell(row: EntityData, key: string): ReactNode {
+  const value = row[key];
+
+  if (Array.isArray(value)) {
+    return value.join(", ");
   }
-  return menuItems.filter((item) => !resolveMenuItemFlag(item.hidden, entity));
+
+  if (value !== null && typeof value === "object") {
+    return value as ReactNode;
+  }
+
+  return value;
+}
+
+function truncateCell(value: ReactNode, maxLength: number): ReactNode {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return value;
+  }
+
+  const text = String(value);
+
+  if (text.length <= maxLength) {
+    return value;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="[all:unset]"
+        >{`${text.substring(0, maxLength)}…`}</button>
+      </TooltipTrigger>
+      {/* DS ships no width cap on tooltip content; long text would else stretch to the viewport edge. */}
+      <TooltipContent className="max-w-[28rem]">{text}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function toSortConfig(state: SortingState): SortConfig[] | undefined {
+  if (state.length === 0) {
+    return undefined;
+  }
+
+  return state.map(({ id, desc }) => ({
+    field: id,
+    order: desc ? "DESC" : "ASC",
+  }));
 }
 
 function resolveMenuItemFlag<D>(
