@@ -23,7 +23,6 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -36,15 +35,15 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
     startAndUseNewOptimizeInstance(Map.of("optimize.security.csl.enabled", "false"), CCSM_PROFILE);
   }
 
+  // A single @BeforeEach makes the restart-then-configure dependency explicit in code, rather
+  // than relying on JUnit Jupiter's execution order for multiple @BeforeEach methods in one
+  // class, which is deterministic but intentionally unspecified (@Order has no effect on
+  // @BeforeEach/@AfterEach — it only orders @Test methods, extension fields, and test classes).
+  // Splitting this into two methods previously relied on that unspecified order to configure the
+  // access token on the instance this restart just created, rather than one about to be replaced.
   @BeforeEach
-  @Order(1)
-  public void bootWithCslDisabled() {
+  public void bootWithCslDisabledAndConfigurePublicApiToken() {
     startAndUseNewOptimizeInstance();
-  }
-
-  @BeforeEach
-  @Order(2)
-  public void configurePublicApiToken() {
     embeddedOptimizeExtension
         .getConfigurationService()
         .getOptimizeApiConfiguration()
