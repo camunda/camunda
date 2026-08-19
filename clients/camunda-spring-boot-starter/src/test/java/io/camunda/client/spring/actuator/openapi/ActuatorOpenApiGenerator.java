@@ -55,10 +55,10 @@ public final class ActuatorOpenApiGenerator {
             .web(WebApplicationType.SERVLET)
             .properties(
                 "server.port=0",
-                "management.endpoints.web.exposure.include=*",
+                "management.endpoints.web.exposure.include=jobworkers",
                 "springdoc.show-actuator=true",
                 "spring.main.banner-mode=off")
-            .run(args);
+            .run();
     try {
       final Integer port = context.getEnvironment().getProperty("local.server.port", Integer.class);
       final HttpRequest request =
