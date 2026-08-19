@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetEntryDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,10 +29,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -45,12 +45,27 @@ import org.springframework.stereotype.Component;
  * ×} the configured refresh interval are recomputed asynchronously as a safety net for missed
  * scheduler ticks (broker restart, deploy). The current request still returns the stale row; the
  * next reader sees fresh data.
+ *
+ * <p><b>Scale bound.</b> Per-request row count is capped at {@link
+ * DatabaseConstants#LIST_FETCH_LIMIT} (1000) by the underlying {@code readByRange} query, scoped to
+ * (range, authorized-tenant-set). Past that cap the repository throws {@code
+ * OptimizeRuntimeException} and the endpoint 500s — never a silent truncation. A warning is logged
+ * as the row count approaches the cap so ops sees it before a hard fail; the aggregation-based
+ * rewrite that would remove the cap is tracked separately.
  */
 @Component
 public class BusinessValueOverviewReadService {
 
   private static final String CYCLE_TIME_DISPLAY_UNIT = "HOURS";
   private static final String AUTOMATION_RATE_DISPLAY_UNIT = "PERCENT";
+
+  /**
+   * The row count above which the endpoint logs a warning per request. Picked at 80% of the
+   * repository fetch cap so operators see the approach several deployments before rows start
+   * failing.
+   */
+  private static final int ROW_COUNT_WARNING_THRESHOLD =
+      (int) (DatabaseConstants.LIST_FETCH_LIMIT * 0.8);
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(BusinessValueOverviewReadService.class);
@@ -62,12 +77,11 @@ public class BusinessValueOverviewReadService {
   private final ConfigurationService configurationService;
 
   /**
-   * Coalesces backstop recomputes across concurrent readers so a single stale row triggers one
-   * background compute, not one per in-flight request. Entries are keyed by (tenantId,
-   * processDefinitionKey, metricRange) and removed once the compute future completes.
+   * Coalesces concurrent full-scope backstops so multiple in-flight readers can't queue a fresh
+   * full-scope recompute on top of one that's already running. A stale request that arrives while a
+   * backstop is in flight sees this flag set and skips scheduling another job.
    */
-  private final ConcurrentHashMap<BackstopKey, Boolean> inFlightBackstops =
-      new ConcurrentHashMap<>();
+  private final AtomicBoolean backstopInFlight = new AtomicBoolean(false);
 
   public BusinessValueOverviewReadService(
       final BusinessValueOverviewRepository overviewRepository,
@@ -87,6 +101,15 @@ public class BusinessValueOverviewReadService {
     final List<String> authorizedTenantIds = tenantService.getTenantIdsForUser(userId);
     final List<BusinessValueOverviewDto> rawRows =
         overviewRepository.readByRange(range, authorizedTenantIds);
+
+    if (rawRows.size() >= ROW_COUNT_WARNING_THRESHOLD) {
+      LOG.warn(
+          "business-value overview read returned {} rows for range {} (fetch cap is {}); "
+              + "approaching or hitting the LIST_FETCH_LIMIT ceiling.",
+          rawRows.size(),
+          range.getId(),
+          DatabaseConstants.LIST_FETCH_LIMIT);
+    }
 
     if (rawRows.isEmpty()) {
       return emptyResponse();
@@ -125,6 +148,7 @@ public class BusinessValueOverviewReadService {
     int arApplicable = 0;
     int arMet = 0;
     final List<OffTargetEntryDto> offTarget = new ArrayList<>();
+    boolean anyRowStale = false;
 
     for (final BusinessValueOverviewDto row : rows) {
       totalProcesses++;
@@ -135,6 +159,11 @@ public class BusinessValueOverviewReadService {
       targetsMet += row.getTargetsMet();
 
       final CycleTimeBlock cycleTime = row.getCycleTime();
+      // v1: both KPIs are universally applicable to every process, so ctApplicable ends up equal
+      // to totalProcesses on every response. The counter is kept as a distinct field so the
+      // category donut denominator can diverge once a KPI becomes conditionally applicable (e.g.
+      // automation rate on a process with zero user tasks); until then the FE can treat
+      // totalApplicable and totalProcesses as interchangeable.
       ctApplicable++;
       if (cycleTime != null && cycleTime.getTarget() != null) {
         ctWithTarget++;
@@ -158,6 +187,7 @@ public class BusinessValueOverviewReadService {
       }
 
       final AutomationRateBlock automationRate = row.getAutomationRate();
+      // Same v1 invariant as ctApplicable above — see comment.
       arApplicable++;
       if (automationRate != null && automationRate.getTarget() != null) {
         arWithTarget++;
@@ -179,11 +209,19 @@ public class BusinessValueOverviewReadService {
       }
 
       if (isStale(row.getLastComputedAt(), now, staleThreshold)) {
-        triggerBackstop(row.getTenantId(), row.getProcessDefinitionKey(), range);
+        anyRowStale = true;
       }
     }
 
-    offTarget.sort(Comparator.comparingDouble(OffTargetEntryDto::gapPct).reversed());
+    // Fire at most one background compute per read, and only if this reader is the first to
+    // observe staleness. Firing one job per stale row would flood the common pool when every row
+    // is stale (post-deploy, missed scheduler tick), so the response-level flag collapses that
+    // fan-out into a single full-range recompute covering every (tenant, process, range) at once.
+    if (anyRowStale) {
+      triggerFullScopeBackstop();
+    }
+
+    offTarget.sort(Comparator.comparingDouble(OffTargetEntryDto::getGapPct).reversed());
 
     return new BusinessValueOverviewResponseDto(
         processesWithTarget > 0,
@@ -212,7 +250,8 @@ public class BusinessValueOverviewReadService {
         verdict.target(),
         displayUnit,
         verdict.gapPct(),
-        verdict.direction());
+        verdict.direction()); // verdict.direction() is "over"/"under" — matches
+    // OffTargetEntryDto.comparison
   }
 
   private BusinessValueOverviewResponseDto emptyResponse() {
@@ -254,50 +293,22 @@ public class BusinessValueOverviewReadService {
     return Duration.between(lastComputedAt, now).compareTo(staleThreshold) > 0;
   }
 
-  private void triggerBackstop(
-      final String tenantId, final String processDefinitionKey, final MetricRange range) {
-    final BackstopKey key = new BackstopKey(tenantId, processDefinitionKey, range);
-    if (inFlightBackstops.putIfAbsent(key, Boolean.TRUE) != null) {
-      // Another reader already scheduled the recompute for this row this refresh window.
+  private void triggerFullScopeBackstop() {
+    if (!backstopInFlight.compareAndSet(false, true)) {
+      // Another reader has already scheduled the full-scope recompute; nothing to do.
       return;
     }
-    LOG.info(
-        "Stale-read backstop firing for tenantId={} processDefinitionKey={} range={}",
-        tenantId,
-        processDefinitionKey,
-        range.getId());
+    LOG.info("Stale-read backstop firing full-scope recompute across every range and tenant pair.");
     CompletableFuture.runAsync(
-            () ->
-                computeService.computeOverviewRows(
-                    BusinessValueOverviewScope.definition(tenantId, processDefinitionKey),
-                    List.of(range),
-                    BusinessValueOverviewRefreshMode.SCHEDULER))
+            () -> computeService.computeOverviewRows(List.of(MetricRange.values())))
         .whenComplete(
             (result, throwable) -> {
-              inFlightBackstops.remove(key);
+              backstopInFlight.set(false);
               if (throwable != null) {
-                LOG.warn(
-                    "Stale-read backstop compute failed for tenantId={} processDefinitionKey={} range={}",
-                    tenantId,
-                    processDefinitionKey,
-                    range.getId(),
-                    throwable);
+                LOG.warn("Stale-read backstop compute failed", throwable);
               }
             });
   }
 
-  private record DefinitionKey(String tenantId, String processDefinitionKey) {
-    private DefinitionKey {
-      Objects.requireNonNull(tenantId, "tenantId");
-      Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
-    }
-  }
-
-  private record BackstopKey(String tenantId, String processDefinitionKey, MetricRange range) {
-    private BackstopKey {
-      Objects.requireNonNull(tenantId, "tenantId");
-      Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
-      Objects.requireNonNull(range, "range");
-    }
-  }
+  private record DefinitionKey(String tenantId, String processDefinitionKey) {}
 }

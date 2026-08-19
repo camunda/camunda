@@ -64,6 +64,7 @@ class BusinessValueOverviewRestServiceTest {
   @Test
   void shouldRejectUnknownRangeWithBadRequest() {
     // 12m is intentionally excluded — SaaS retains only 180 days, see tech design §1
+    // given
     assertThatThrownBy(() -> restService.getOverview("12m", request))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("12m");
@@ -71,6 +72,7 @@ class BusinessValueOverviewRestServiceTest {
 
   @Test
   void shouldRejectNullRangeWithBadRequest() {
+    // given
     assertThatThrownBy(() -> restService.getOverview(null, request))
         .isInstanceOf(BadRequestException.class);
   }
@@ -81,7 +83,7 @@ class BusinessValueOverviewRestServiceTest {
     when(sessionService.getRequestUserOrFailNotAuthorized(any()))
         .thenThrow(new io.camunda.optimize.rest.exceptions.NotAuthorizedException("nope"));
 
-    // when / then
+    // when
     assertThatThrownBy(() -> restService.getOverview("30d", request))
         .isInstanceOf(io.camunda.optimize.rest.exceptions.NotAuthorizedException.class);
   }
@@ -91,7 +93,7 @@ class BusinessValueOverviewRestServiceTest {
     // given
     when(readService.getOverview(anyString(), any())).thenThrow(new IllegalStateException("boom"));
 
-    // when / then
+    // when
     assertThatThrownBy(() -> restService.getOverview("30d", request))
         .isInstanceOf(IllegalStateException.class);
   }

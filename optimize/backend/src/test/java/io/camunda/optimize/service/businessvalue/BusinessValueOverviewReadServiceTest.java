@@ -81,11 +81,14 @@ class BusinessValueOverviewReadServiceTest {
 
   @Test
   void shouldPushDownAuthorizedTenantIdsToTheRepository() {
+    // given
     when(tenantService.getTenantIdsForUser(USER)).thenReturn(List.of(TENANT_A, "tenant-b"));
     when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
 
+    // when
     readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
+    // then
     final ArgumentCaptor<Collection<String>> captor = collectionCaptor();
     verify(overviewRepository).readByRange(eq(MetricRange.THIRTY_DAYS), captor.capture());
     assertThat(captor.getValue()).containsExactlyInAnyOrder(TENANT_A, "tenant-b");
@@ -93,72 +96,82 @@ class BusinessValueOverviewReadServiceTest {
 
   @Test
   void shouldReturnEmptyResponseWhenNoRows() {
+    // given
     when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(List.of());
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.hasAnyTarget()).isFalse();
-    assertThat(response.coverage().processesWithTarget()).isZero();
-    assertThat(response.coverage().totalProcesses()).isZero();
-    assertThat(response.attainment().targetsSet()).isZero();
-    assertThat(response.attainment().targetsMet()).isZero();
-    assertThat(response.categories()).hasSize(2);
-    assertThat(response.categories())
-        .extracting(BusinessValueOverviewResponseDto.CategoryDto::kpi)
+    // then
+    assertThat(response.isHasAnyTarget()).isFalse();
+    assertThat(response.getCoverage().getProcessesWithTarget()).isZero();
+    assertThat(response.getCoverage().getTotalProcesses()).isZero();
+    assertThat(response.getAttainment().getTargetsSet()).isZero();
+    assertThat(response.getAttainment().getTargetsMet()).isZero();
+    assertThat(response.getCategories()).hasSize(2);
+    assertThat(response.getCategories())
+        .extracting(BusinessValueOverviewResponseDto.CategoryDto::getKpi)
         .containsExactly("cycleTime", "automationRate");
-    assertThat(response.offTarget()).isEmpty();
+    assertThat(response.getOffTarget()).isEmpty();
   }
 
   @Test
   void shouldReportCoverageAndAttainmentCounts() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-1", cyc(6_000L, 8_000L, true), autoNull(), 1, 1)),
         fresh(row(TENANT_A, "proc-2", cycNull(), aut(60.0, 85, false), 1, 0)),
         fresh(row(TENANT_A, "proc-3", cycNull(), autoNull(), 0, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.hasAnyTarget()).isTrue();
-    assertThat(response.coverage().processesWithTarget()).isEqualTo(2);
-    assertThat(response.coverage().totalProcesses()).isEqualTo(3);
-    assertThat(response.attainment().targetsSet()).isEqualTo(2);
-    assertThat(response.attainment().targetsMet()).isEqualTo(1);
+    // then
+    assertThat(response.isHasAnyTarget()).isTrue();
+    assertThat(response.getCoverage().getProcessesWithTarget()).isEqualTo(2);
+    assertThat(response.getCoverage().getTotalProcesses()).isEqualTo(3);
+    assertThat(response.getAttainment().getTargetsSet()).isEqualTo(2);
+    assertThat(response.getAttainment().getTargetsMet()).isEqualTo(1);
   }
 
   @Test
   void shouldBuildCategoriesForBothKpisWithZeroSafeArithmetic() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-cyc-met", cyc(6_000L, 8_000L, true), autoNull(), 1, 1)),
         fresh(row(TENANT_A, "proc-auto-missed", cycNull(), aut(70.0, 90, false), 1, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
+    // then
     final BusinessValueOverviewResponseDto.CategoryDto cycleTimeCategory =
-        response.categories().stream()
-            .filter(c -> c.kpi().equals("cycleTime"))
+        response.getCategories().stream()
+            .filter(c -> c.getKpi().equals("cycleTime"))
             .findFirst()
             .orElseThrow();
-    assertThat(cycleTimeCategory.processesWithTarget()).isEqualTo(1);
-    assertThat(cycleTimeCategory.totalApplicable()).isEqualTo(2);
-    assertThat(cycleTimeCategory.targetsMet()).isEqualTo(1);
+    assertThat(cycleTimeCategory.getProcessesWithTarget()).isEqualTo(1);
+    assertThat(cycleTimeCategory.getTotalApplicable()).isEqualTo(2);
+    assertThat(cycleTimeCategory.getTargetsMet()).isEqualTo(1);
 
     final BusinessValueOverviewResponseDto.CategoryDto automationRateCategory =
-        response.categories().stream()
-            .filter(c -> c.kpi().equals("automationRate"))
+        response.getCategories().stream()
+            .filter(c -> c.getKpi().equals("automationRate"))
             .findFirst()
             .orElseThrow();
-    assertThat(automationRateCategory.processesWithTarget()).isEqualTo(1);
-    assertThat(automationRateCategory.totalApplicable()).isEqualTo(2);
-    assertThat(automationRateCategory.targetsMet()).isZero();
+    assertThat(automationRateCategory.getProcessesWithTarget()).isEqualTo(1);
+    assertThat(automationRateCategory.getTotalApplicable()).isEqualTo(2);
+    assertThat(automationRateCategory.getTargetsMet()).isZero();
   }
 
   @Test
   void shouldEmitOffTargetOnlyForRowsWithTargetAndNotMet() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-no-target", cycNull(), autoNull(), 0, 0)),
@@ -173,57 +186,65 @@ class BusinessValueOverviewReadServiceTest {
                 1,
                 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.offTarget())
-        .extracting(BusinessValueOverviewResponseDto.OffTargetEntryDto::processKey)
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(BusinessValueOverviewResponseDto.OffTargetEntryDto::getProcessKey)
         .containsExactly("proc-missed");
   }
 
   @Test
   void shouldSortOffTargetByGapPctDescending() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-25pct", cyc(10_000L, 8_000L, false), autoNull(), 1, 0)),
         fresh(row(TENANT_A, "proc-50pct", cyc(12_000L, 8_000L, false), autoNull(), 1, 0)),
         fresh(row(TENANT_A, "proc-10pct", cyc(8_800L, 8_000L, false), autoNull(), 1, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.offTarget())
-        .extracting(BusinessValueOverviewResponseDto.OffTargetEntryDto::processKey)
+    // then
+    assertThat(response.getOffTarget())
+        .extracting(BusinessValueOverviewResponseDto.OffTargetEntryDto::getProcessKey)
         .containsExactly("proc-50pct", "proc-25pct", "proc-10pct");
   }
 
   @Test
   void shouldComputeGapPctAndDirectionFromVerdictHelper() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "cyc", cyc(10L, 8L, false), autoNull(), 1, 0)),
         fresh(row(TENANT_A, "aut", cycNull(), aut(70.0, 85, false), 1, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
+    // then
     final BusinessValueOverviewResponseDto.OffTargetEntryDto cycEntry =
-        response.offTarget().stream()
-            .filter(e -> e.kpi().equals("cycleTime"))
+        response.getOffTarget().stream()
+            .filter(e -> e.getKpi().equals("cycleTime"))
             .findFirst()
             .orElseThrow();
-    assertThat(cycEntry.gapPct()).isEqualTo(25.0);
-    assertThat(cycEntry.direction()).isEqualTo("over");
-    assertThat(cycEntry.displayUnit()).isEqualTo("HOURS");
+    assertThat(cycEntry.getGapPct()).isEqualTo(25.0);
+    assertThat(cycEntry.getComparison()).isEqualTo("over");
+    assertThat(cycEntry.getDisplayUnit()).isEqualTo("HOURS");
 
     final BusinessValueOverviewResponseDto.OffTargetEntryDto autoEntry =
-        response.offTarget().stream()
-            .filter(e -> e.kpi().equals("automationRate"))
+        response.getOffTarget().stream()
+            .filter(e -> e.getKpi().equals("automationRate"))
             .findFirst()
             .orElseThrow();
-    assertThat(autoEntry.gapPct()).isEqualTo(17.647058823529413);
-    assertThat(autoEntry.direction()).isEqualTo("under");
-    assertThat(autoEntry.displayUnit()).isEqualTo("PERCENT");
+    assertThat(autoEntry.getGapPct()).isEqualTo(17.647058823529413);
+    assertThat(autoEntry.getComparison()).isEqualTo("under");
+    assertThat(autoEntry.getDisplayUnit()).isEqualTo("PERCENT");
   }
 
   @Test
@@ -231,26 +252,32 @@ class BusinessValueOverviewReadServiceTest {
     // Target = 0 is nonsensical for cycle time (LOWER_IS_BETTER) and would produce Infinity gapPct
     // via division by zero, breaking JSON. Frontend validation is the source of truth; this guard
     // survives if the frontend is bypassed or a legacy target row leaks in.
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "zero-target", cyc(100L, 0L, false), autoNull(), 1, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.offTarget()).isEmpty();
+    // then
+    assertThat(response.getOffTarget()).isEmpty();
   }
 
   @Test
   void shouldSkipOffTargetEntryWhenAutomationRateTargetIsZero() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "zero-auto", cycNull(), aut(0.0, 0, false), 1, 0)));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.offTarget()).isEmpty();
+    // then
+    assertThat(response.getOffTarget()).isEmpty();
   }
 
   @Test
@@ -259,6 +286,7 @@ class BusinessValueOverviewReadServiceTest {
     // row for the deleted definition must not appear in the response and must not trigger the
     // backstop, otherwise the compute service would immediately recreate the row via its
     // synthetic-definition fallback and orphans would never age out.
+    // given
     final BusinessValueOverviewDto liveRow =
         fresh(row(TENANT_A, "still-here", cyc(6_000L, 8_000L, true), autoNull(), 1, 1));
     final BusinessValueOverviewDto orphanRow =
@@ -269,40 +297,48 @@ class BusinessValueOverviewReadServiceTest {
         .thenReturn(List.of(liveRow, orphanRow));
     stubCurrentDefinitions(new DefKey(TENANT_A, "still-here"));
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.coverage().totalProcesses()).isEqualTo(1);
-    assertThat(response.coverage().processesWithTarget()).isEqualTo(1);
-    assertThat(response.attainment().targetsSet()).isEqualTo(1);
-    assertThat(response.attainment().targetsMet()).isEqualTo(1);
-    assertThat(response.offTarget()).isEmpty();
+    // then
+    assertThat(response.getCoverage().getTotalProcesses()).isEqualTo(1);
+    assertThat(response.getCoverage().getProcessesWithTarget()).isEqualTo(1);
+    assertThat(response.getAttainment().getTargetsSet()).isEqualTo(1);
+    assertThat(response.getAttainment().getTargetsMet()).isEqualTo(1);
+    assertThat(response.getOffTarget()).isEmpty();
 
     Awaitility.await()
         .during(java.time.Duration.ofMillis(150))
         .atMost(java.time.Duration.ofMillis(500))
-        .untilAsserted(
-            () -> verify(computeService, never()).computeOverviewRows(any(), anyList(), any()));
+        .untilAsserted(() -> verify(computeService, never()).computeOverviewRows(anyList()));
   }
 
   @Test
   void shouldReturnEmptyResponseWhenEveryRowIsOrphaned() {
+    // given
     when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any()))
         .thenReturn(
             List.of(fresh(row(TENANT_A, "gone-1", cyc(6_000L, 8_000L, true), autoNull(), 1, 1))));
     when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
         .thenReturn(List.of());
 
+    // when
     final BusinessValueOverviewResponseDto response =
         readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
-    assertThat(response.hasAnyTarget()).isFalse();
-    assertThat(response.coverage().totalProcesses()).isZero();
-    assertThat(response.offTarget()).isEmpty();
+    // then
+    assertThat(response.isHasAnyTarget()).isFalse();
+    assertThat(response.getCoverage().getTotalProcesses()).isZero();
+    assertThat(response.getOffTarget()).isEmpty();
   }
 
   @Test
-  void shouldFireStaleBackstopWhenLastComputedAtOlderThanTwoTimesInterval() {
+  void shouldFireFullScopeBackstopWhenAnyRowIsStale() {
+    // A single stale row triggers a full-scope recompute across every range. Firing per row
+    // would flood the common pool when N rows are simultaneously stale (post-deploy, missed
+    // scheduler tick); the response-level flag collapses that fan-out into one job.
+    // given
     final BusinessValueOverviewDto staleRow =
         stamp(
             row(TENANT_A, "proc-stale", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
@@ -311,37 +347,67 @@ class BusinessValueOverviewReadServiceTest {
         .thenReturn(List.of(staleRow));
     stubCurrentDefinitions(new DefKey(TENANT_A, "proc-stale"));
 
+    // when
     readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
+    // then
     Awaitility.await()
         .untilAsserted(
-            () ->
-                verify(computeService)
-                    .computeOverviewRows(
-                        eq(
-                            BusinessValueOverviewScope.definition(
-                                staleRow.getTenantId(), staleRow.getProcessDefinitionKey())),
-                        eq(List.of(MetricRange.THIRTY_DAYS)),
-                        eq(BusinessValueOverviewRefreshMode.SCHEDULER)));
+            () -> verify(computeService).computeOverviewRows(eq(List.of(MetricRange.values()))));
   }
 
   @Test
   void shouldNotFireBackstopWhenFresh() {
+    // given
     seedRows(
         MetricRange.THIRTY_DAYS,
         fresh(row(TENANT_A, "proc-fresh", cyc(6_000L, 8_000L, true), autoNull(), 1, 1)));
 
+    // when
     readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
+    // then
     Awaitility.await()
         .during(java.time.Duration.ofMillis(150))
         .atMost(java.time.Duration.ofMillis(500))
-        .untilAsserted(
-            () -> verify(computeService, never()).computeOverviewRows(any(), anyList(), any()));
+        .untilAsserted(() -> verify(computeService, never()).computeOverviewRows(anyList()));
   }
 
   @Test
-  void shouldCoalesceConcurrentBackstopsForTheSameStaleRow() {
+  void shouldFireBackstopOnceEvenWhenManyRowsAreStale() {
+    // Every row stale is the load pattern that motivated the flag — post-deploy or missed
+    // scheduler tick, the whole page is stale at once. One recompute must cover it, not N.
+    // given
+    final List<BusinessValueOverviewDto> staleRows =
+        List.of(
+            stamp(
+                row(TENANT_A, "proc-a", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
+                NOW.minusSeconds(3L * REFRESH_INTERVAL_SECONDS)),
+            stamp(
+                row(TENANT_A, "proc-b", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
+                NOW.minusSeconds(3L * REFRESH_INTERVAL_SECONDS)),
+            stamp(
+                row(TENANT_A, "proc-c", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
+                NOW.minusSeconds(3L * REFRESH_INTERVAL_SECONDS)));
+    when(overviewRepository.readByRange(eq(MetricRange.THIRTY_DAYS), any())).thenReturn(staleRows);
+    stubCurrentDefinitions(
+        new DefKey(TENANT_A, "proc-a"),
+        new DefKey(TENANT_A, "proc-b"),
+        new DefKey(TENANT_A, "proc-c"));
+
+    // when
+    readService.getOverview(USER, MetricRange.THIRTY_DAYS);
+
+    // then
+    Awaitility.await()
+        .untilAsserted(() -> verify(computeService, times(1)).computeOverviewRows(anyList()));
+  }
+
+  @Test
+  void shouldCollapseConcurrentBackstopsIntoASingleRecompute() {
+    // Two overlapping reads while the first backstop is still running must not schedule a second
+    // full-scope job — the in-flight flag blocks re-entry until the compute future settles.
+    // given
     final BusinessValueOverviewDto staleRow =
         stamp(
             row(TENANT_A, "proc-hot", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
@@ -350,6 +416,7 @@ class BusinessValueOverviewReadServiceTest {
         .thenReturn(List.of(staleRow));
     stubCurrentDefinitions(new DefKey(TENANT_A, "proc-hot"));
 
+    // when
     final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
     org.mockito.Mockito.doAnswer(
             invocation -> {
@@ -357,22 +424,26 @@ class BusinessValueOverviewReadServiceTest {
               return null;
             })
         .when(computeService)
-        .computeOverviewRows(any(), anyList(), any());
+        .computeOverviewRows(anyList());
 
+    // then
     readService.getOverview(USER, MetricRange.THIRTY_DAYS);
     readService.getOverview(USER, MetricRange.THIRTY_DAYS);
 
     Awaitility.await()
         .during(java.time.Duration.ofMillis(200))
         .atMost(java.time.Duration.ofMillis(500))
-        .untilAsserted(
-            () -> verify(computeService, times(1)).computeOverviewRows(any(), anyList(), any()));
+        .untilAsserted(() -> verify(computeService, times(1)).computeOverviewRows(anyList()));
 
     release.countDown();
   }
 
   @Test
-  void shouldPropagateTheStaleRangeToTheBackstop() {
+  void shouldHealEveryRangeInASingleBackstopCall() {
+    // The backstop's purpose is to recover from a stopped scheduler; that scheduler sweeps every
+    // range in one pass, so the backstop must do the same. If it only healed the current range,
+    // switching the range tab after a deploy would trigger another wave of compute work.
+    // given
     final BusinessValueOverviewDto staleRow =
         stamp(
             row(TENANT_A, "proc-x", cyc(6_000L, 8_000L, true), autoNull(), 1, 1),
@@ -381,13 +452,14 @@ class BusinessValueOverviewReadServiceTest {
         .thenReturn(List.of(staleRow));
     stubCurrentDefinitions(new DefKey(TENANT_A, "proc-x"));
 
+    // when
     readService.getOverview(USER, MetricRange.SIX_MONTHS);
 
+    // then
     final ArgumentCaptor<List<MetricRange>> ranges = argCaptor();
     Awaitility.await()
-        .untilAsserted(
-            () -> verify(computeService).computeOverviewRows(any(), ranges.capture(), any()));
-    assertThat(ranges.getValue()).containsExactly(MetricRange.SIX_MONTHS);
+        .untilAsserted(() -> verify(computeService).computeOverviewRows(ranges.capture()));
+    assertThat(ranges.getValue()).containsExactlyInAnyOrder(MetricRange.values());
   }
 
   private void seedRows(final MetricRange range, final BusinessValueOverviewDto... rows) {
