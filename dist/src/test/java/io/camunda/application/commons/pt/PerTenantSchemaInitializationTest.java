@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -167,6 +168,25 @@ final class PerTenantSchemaInitializationTest {
           .extracting(Throwable::getSuppressed, InstanceOfAssertFactories.array(Throwable[].class))
           .singleElement()
           .isInstanceOf(TerminalFailure.class);
+    }
+  }
+
+  @RepeatedTest(1000)
+  void shouldAbortStartupWhenTheLastTenantGoesTerminalWhileTheGateIsAlreadyBeingWaitedOn() {
+    final var bothStarted = new CountDownLatch(2);
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              bothStarted.countDown();
+              awaitUninterruptibly(bothStarted);
+              throw new TerminalFailure();
+            })) {
+      initialization.start();
+
+      // when / then - the waiter must see the diagnosis, never a bare "nothing is serviceable"
+      assertThatThrownBy(initialization::awaitGate)
+          .isInstanceOf(EveryTenantTerminallyFailedException.class);
     }
   }
 
