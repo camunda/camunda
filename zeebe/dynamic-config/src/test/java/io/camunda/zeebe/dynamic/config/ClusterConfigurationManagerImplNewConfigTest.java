@@ -38,12 +38,14 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -242,6 +244,92 @@ final class ClusterConfigurationManagerImplNewConfigTest {
           .describedAs("member 0 left group '%s'", groupId)
           .isFalse();
     }
+  }
+
+  @Test
+  void shouldApplyEveryRunnableGraphOperationOfTheLocalMember() {
+    // given — a graph phase whose two operations have no edge between them, so both are runnable
+    // from the start. Under the queue the local member would have applied one, gossiped, and only
+    // then been offered the second.
+    final var manager = newManager(MEMBER_0);
+    manager.updateMultiConfiguration(ignored -> twoPartitionCluster()).join();
+    final var graph = OperationGraph.builder();
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 1, 1));
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1));
+
+    // when
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupGraphPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — both ran and the graph drained, without any peer having to move
+    final var defaultGroup =
+        configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.pendingGraphChanges()).isEmpty();
+    assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
+  }
+
+  @Test
+  void shouldNotApplyAGraphOperationWhoseDependencyHasNotCompleted() {
+    // given — the local member's operation waits on a peer's, which nothing here will run. This is
+    // what keeps a declared edge meaningful: without it the local member would apply its own
+    // operation as soon as it saw the plan.
+    final var manager = newManager(MEMBER_0);
+    manager.updateMultiConfiguration(ignored -> twoPartitionCluster()).join();
+    final var graph = OperationGraph.builder();
+    final var peerOperation = graph.add(new PartitionLeaveOperation(MEMBER_1, 1, 1));
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(peerOperation));
+
+    // when
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupGraphPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — nothing was applied and both operations are still outstanding
+    final var defaultGroup =
+        configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.pendingGraphChanges().orElseThrow().completed()).isEmpty();
+    assertThat(defaultGroup.getMember(MEMBER_0).partitions()).containsOnlyKeys(1, 2);
+  }
+
+  /** Both members replicate partitions 1 and 2, so either may leave either partition. */
+  private CurrentClusterConfiguration twoPartitionCluster() {
+    final var replicated =
+        BrokerPartitionState.initialize(
+            Map.of(
+                1, PartitionState.active(1, partitionConfig),
+                2, PartitionState.active(1, partitionConfig)));
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty()),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            new PartitionGroupConfiguration(
+                1,
+                0,
+                Map.of(MEMBER_0, replicated, MEMBER_1, replicated),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty())),
+        PhasedChangeState.empty());
   }
 
   @Test
