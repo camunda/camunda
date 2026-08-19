@@ -414,6 +414,105 @@ class CreateAgentInstanceCommandTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRejectDefinitionWithHistory() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentInstanceCommand()
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .model(MODEL)
+                    .provider(PROVIDER)
+                    .systemPrompt(SYSTEM_PROMPT)
+                    .jobKey(JOB_KEY)
+                    .history(
+                        Collections.singletonList(
+                            new AgentInstanceHistoryItem()
+                                .historyItemId("item-0")
+                                .loopIteration(1)
+                                .role(AgentInstanceHistoryRole.CONFIGURATION)
+                                .content(
+                                    Collections.singletonList(
+                                        AgentInstanceHistoryContent.text("configuration")))
+                                .producedAt(PRODUCED_AT)
+                                .model(MODEL)
+                                .provider(PROVIDER)
+                                .systemPrompt(
+                                    Collections.singletonList(
+                                        AgentInstanceHistoryContent.text(SYSTEM_PROMPT)))))
+                    .execute())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("model, provider, and systemPrompt must not be set when history is not empty");
+  }
+
+  @Test
+  void shouldRejectLimitsWithHistory() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentInstanceCommand()
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .maxTokens(1000L)
+                    .jobKey(JOB_KEY)
+                    .history(
+                        Collections.singletonList(
+                            new AgentInstanceHistoryItem()
+                                .historyItemId("item-0")
+                                .loopIteration(1)
+                                .role(AgentInstanceHistoryRole.CONFIGURATION)
+                                .content(
+                                    Collections.singletonList(
+                                        AgentInstanceHistoryContent.text("configuration")))
+                                .producedAt(PRODUCED_AT)
+                                .model(MODEL)
+                                .provider(PROVIDER)
+                                .systemPrompt(
+                                    Collections.singletonList(
+                                        AgentInstanceHistoryContent.text(SYSTEM_PROMPT)))))
+                    .execute())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "maxTokens, maxModelCalls, and maxToolCalls must not be set when history is not"
+                + " empty");
+  }
+
+  @Test
+  void shouldRejectMissingDefinitionWithoutHistory() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentInstanceCommand()
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .execute())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("model, provider, and systemPrompt must be set when history is empty");
+  }
+
+  @Test
+  void shouldRejectHistoryWithoutConfigurationItemEstablishingDefinition() {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentInstanceCommand()
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
+                    .history(
+                        Collections.singletonList(
+                            new AgentInstanceHistoryItem()
+                                .historyItemId("item-1")
+                                .loopIteration(1)
+                                .role(AgentInstanceHistoryRole.USER)
+                                .content(
+                                    Collections.singletonList(
+                                        AgentInstanceHistoryContent.text("hello")))
+                                .producedAt(PRODUCED_AT)))
+                    .execute())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "history must include a CONFIGURATION item establishing model, provider, and"
+                + " systemPrompt when history is not empty");
+  }
+
+  @Test
   void shouldRejectNullHistoryList() {
     assertThatThrownBy(
             () ->
