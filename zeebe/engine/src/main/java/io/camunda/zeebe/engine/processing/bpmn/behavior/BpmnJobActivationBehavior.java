@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.HashSet;
@@ -336,7 +337,8 @@ public class BpmnJobActivationBehavior {
    * falls back to the cause-neutral message. Only the placeholder and path are read from the
    * exception, never its own message, which may quote the variables document.
    */
-  private static String secretInjectionIncidentMessage(final long jobKey, final Exception failure) {
+  @VisibleForTesting
+  static String secretInjectionIncidentMessage(final long jobKey, final Exception failure) {
     if (failure instanceof final SecretPointerMismatchException mismatch) {
       return BpmnIncidentBehavior.SECRET_REFERENCE_UNRESOLVED_MESSAGE.formatted(
           jobKey, mismatch.placeholder(), mismatch.path());

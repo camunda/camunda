@@ -36,10 +36,9 @@ public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware
    * the path names the mismatch via {@link #SECRET_REFERENCE_UNRESOLVED_MESSAGE}.
    */
   public static final String SECRET_INJECTION_FAILED_MESSAGE =
-      "The job with key '%s' can not be activated, because its secret reference no longer "
-          + "matches the job's variables. Correct the mismatched variable and resolve the "
-          + "incident, or use process instance modification to reactivate the element and "
-          + "create a fresh job.";
+      "The job with key '%s' can not be activated, because injecting its secret values "
+          + "failed. Resolve the incident, or use process instance modification to "
+          + "reactivate the element and create a fresh job.";
 
   /**
    * Message the job-push path raises when it knows which secret reference failed to inject: it
