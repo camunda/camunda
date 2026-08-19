@@ -17,6 +17,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentDefinitionEntity.AgentType;
 import io.camunda.search.filter.AgentDefinitionFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -40,6 +41,78 @@ public class AgentDefinitionFilterIT {
             testApplication,
             new AgentDefinitionFilter.Builder()
                 .agentDefinitionKeys(model.agentDefinitionKey())
+                .build());
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items().getFirst().agentDefinitionKey())
+        .isEqualTo(model.agentDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByAgentDefinitionKeyIn(
+      final CamundaRdbmsTestApplication testApplication) {
+    final var model1 = createAndSaveRandomAgentDefinition(testApplication, b -> b);
+    final var model2 = createAndSaveRandomAgentDefinition(testApplication, b -> b);
+    createAndSaveRandomAgentDefinition(testApplication, b -> b);
+
+    final var result =
+        search(
+            testApplication,
+            new AgentDefinitionFilter.Builder()
+                .agentDefinitionKeyOperations(
+                    Operation.in(model1.agentDefinitionKey(), model2.agentDefinitionKey()))
+                .build());
+
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting(AgentDefinitionEntity::agentDefinitionKey)
+        .containsExactlyInAnyOrder(model1.agentDefinitionKey(), model2.agentDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByNameLike(final CamundaRdbmsTestApplication testApplication) {
+    final String tenantId = "tenant-name-like-" + nextStringId();
+    final var model1 =
+        createAndSaveRandomAgentDefinition(
+            testApplication, b -> b.tenantId(tenantId).name("expectedLike1"));
+    final var model2 =
+        createAndSaveRandomAgentDefinition(
+            testApplication, b -> b.tenantId(tenantId).name("expectedLike2"));
+    createAndSaveRandomAgentDefinition(
+        testApplication, b -> b.tenantId(tenantId).name("different" + nextStringId()));
+
+    final var result =
+        search(
+            testApplication,
+            new AgentDefinitionFilter.Builder()
+                .tenantIds(tenantId)
+                .nameOperations(Operation.like("expectedLike*"))
+                .build());
+
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting(AgentDefinitionEntity::agentDefinitionKey)
+        .containsExactlyInAnyOrder(model1.agentDefinitionKey(), model2.agentDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByProcessDefinitionVersionRange(
+      final CamundaRdbmsTestApplication testApplication) {
+    final String tenantId = "tenant-version-range-" + nextStringId();
+    createAndSaveRandomAgentDefinition(
+        testApplication, b -> b.tenantId(tenantId).processDefinitionVersion(1));
+    final var model =
+        createAndSaveRandomAgentDefinition(
+            testApplication, b -> b.tenantId(tenantId).processDefinitionVersion(5));
+    createAndSaveRandomAgentDefinition(
+        testApplication, b -> b.tenantId(tenantId).processDefinitionVersion(9));
+
+    final var result =
+        search(
+            testApplication,
+            new AgentDefinitionFilter.Builder()
+                .tenantIds(tenantId)
+                .processDefinitionVersionOperations(Operation.gt(2), Operation.lt(8))
                 .build());
 
     assertThat(result.total()).isEqualTo(1);
