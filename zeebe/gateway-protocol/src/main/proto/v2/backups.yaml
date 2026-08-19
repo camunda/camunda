@@ -476,10 +476,12 @@ components:
   responses:
     HistoryBackupForbidden:
       description: |
-        The request is forbidden, either because the authenticated caller lacks the required
-        `BACKUP` permission, or because the cluster's secondary storage is neither Elasticsearch
-        nor OpenSearch and therefore cannot serve history backups. The problem detail says which
-        of the two applies.
+        The request is forbidden for one of three reasons: the authenticated caller lacks the
+        required `BACKUP` permission; the cluster's secondary storage is neither Elasticsearch nor
+        OpenSearch and therefore cannot serve history backups; or the physical tenant's snapshot
+        repository is absent from the store — configured under a name the store does not have, or
+        not configured at all. The problem detail says which applies. The latter two are deployment
+        faults the caller cannot correct by changing its request.
       content:
         application/problem+json:
           schema:

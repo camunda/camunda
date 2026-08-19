@@ -424,17 +424,361 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+  /cluster/v2/backups/history:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: takeHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Take a history backup on one or every physical tenant
+      description: >-
+        Triggers a history backup on every physical tenant of the cluster, or on the one named by
+        `physicalTenantId`. Every targeted tenant uses the same caller-supplied `backupId`, but the
+        backups are independent: they are neither coordinated nor rolled back together.
+
+
+        The request is all-or-nothing: the `backupId` is checked on every targeted tenant before any
+        snapshot is scheduled, so a tenant that already holds this id, or that cannot be reached,
+        fails the whole request and no backup is started anywhere. There is no aggregated
+        cluster-level state in the response.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `POST /v2/backups/history` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'backups.yaml#/components/schemas/TakeHistoryBackupRequest'
+      responses:
+        "202":
+          description: The backup has been scheduled on every targeted physical tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeHistoryBackupResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >-
+            At least one targeted physical tenant already holds a backup with this id, or already
+            has another backup running. The check that precedes the fan-out normally rejects the
+            request before anything is scheduled; a tenant that takes the id in between rejects it
+            during the fan-out instead, which can leave snapshots behind on the tenants already
+            reached, so delete this backup id before retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The backup could not be scheduled on every targeted physical tenant, because one of
+            them hit an internal error. The check that precedes the fan-out rejects the request
+            before anything is scheduled, but a failure during the fan-out itself can leave
+            snapshots behind on the tenants already reached, so delete this backup id before
+            retrying.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: listHistoryBackupsAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: List history backups across physical tenants
+      description: >-
+        Lists the history backups of every physical tenant of the cluster, or of the one named by
+        `physicalTenantId`, grouped by backup id. A backup id that only some physical tenants hold
+        is a supported outcome rather than a degraded one, so only the tenants that hold it are
+        listed under it.
+
+
+        The request is all-or-nothing: a physical tenant whose backups cannot be read fails the
+        whole request rather than silently dropping out of the listing. Narrow the request with
+        `physicalTenantId` to list the backups of the tenants that can still be read.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `GET /v2/backups/history` to act as a single physical tenant.
+      parameters:
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+        - name: prefix
+          in: query
+          required: false
+          description: |
+            A prefix that backup ids must match, ending in a single '*'. If omitted, all
+            backups are returned.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupIdPrefix'
+        - name: verbose
+          in: query
+          required: false
+          description: |
+            Whether to ask the secondary storage for snapshot-level detail. Setting this to
+            `false` makes the query cheaper, but the store then reports neither snapshot state
+            nor start time, so both the per-snapshot `details` and the per-tenant `state` are
+            incomplete and the listing order is unspecified.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: >-
+            The history backups of every targeted physical tenant, grouped by backup id and ordered
+            by backup id, descending. Deliberately not the per-physical-tenant endpoint's order,
+            which is by snapshot start time: start times are per tenant, so a group spanning
+            several tenants has no single one to sort on. Descending id is only recency for ids
+            that ascend with time. Empty when every targeted tenant was read and none of them holds
+            a matching backup.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClusterHistoryBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: The requested `physicalTenantId` does not exist in this cluster.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /cluster/v2/backups/history/{backupId}:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: getHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get a history backup across physical tenants
+      description: >-
+        Reports what every physical tenant of the cluster, or the one named by `physicalTenantId`,
+        holds for the given backup id. There is no aggregated cluster-level state: a tenant that was
+        reached and does not hold this backup reports `NOT_FOUND`, which is a successful
+        observation rather than a failure.
+
+
+        The request is all-or-nothing: a physical tenant whose state cannot be read fails the whole
+        request. Narrow the request with `physicalTenantId` to read the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `GET /v2/backups/history/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "200":
+          description: >-
+            Every targeted physical tenant was read. Each one reports either the backup or
+            `NOT_FOUND`; at least one holds the backup.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterHistoryBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/ClusterHistoryBackupForbidden'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, or every targeted
+            physical tenant was read and none of them holds a backup with the given id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Backup
+      operationId: deleteHistoryBackupAsClusterAdmin
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Delete a history backup across physical tenants
+      description: >-
+        Deletes the history backup with the given id from every physical tenant of the cluster, or
+        from the one named by `physicalTenantId`. A tenant that does not hold the backup has already
+        reached the requested end state, so it counts as deleted rather than as a failure.
+
+
+        The request is all-or-nothing: a physical tenant the backup cannot be deleted from fails the
+        whole request, and the deletions that already succeeded on other tenants are not undone.
+        Narrow the request with `physicalTenantId` to delete from the tenants that can still be
+        reached.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here. Only available on clusters whose secondary storage is Elasticsearch or
+        OpenSearch. Use `DELETE /v2/backups/history/{backupId}` to act as a single physical tenant.
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          description: The id of the backup.
+          schema:
+            $ref: 'backups.yaml#/components/schemas/BackupId'
+        - $ref: '#/components/parameters/PhysicalTenantIdParameter'
+      responses:
+        "204":
+          description: >-
+            No targeted physical tenant holds the backup any more, because it was deleted from every
+            tenant that held it. At least one tenant held it.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          description: >-
+            The cluster's secondary storage cannot serve history backups, or a targeted physical
+            tenant's snapshot repository is absent from the store. Unlike the per-physical-tenant
+            backup endpoints, the cluster-admin surface performs no fine-grained authorization, so
+            a missing `BACKUP` permission is never the reason. Deletion fans out with no preceding
+            check, so an absent repository is found only once that tenant is reached, by which time
+            the backup may already be deleted from the others; those deletions are not undone.
+            Narrow the request with `physicalTenantId` to work with the tenants whose repository is
+            usable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "404":
+          description: >-
+            The requested `physicalTenantId` does not exist in this cluster, or every targeted
+            physical tenant was reached and none of them holds a backup with the given id.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          description: >-
+            The backup could not be deleted from every targeted physical tenant, because one of
+            them hit an internal error, so it may still exist on some of them. The deletions that
+            already succeeded are not undone, so a retry has only the remaining tenants left to
+            reach.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
+  responses:
+    ClusterHistoryBackupForbidden:
+      description: >-
+        The cluster's secondary storage is neither Elasticsearch nor OpenSearch and therefore
+        cannot serve history backups, or a targeted physical tenant's snapshot repository is absent
+        from the store — configured under a name the store does not have, or not configured at all.
+        Both are deployment faults the caller cannot correct by changing its request; narrow the
+        request with `physicalTenantId` to work with the tenants whose repository is usable. Unlike
+        the per-physical-tenant backup endpoints, the cluster-admin surface performs no fine-grained
+        authorization, so a missing `BACKUP` permission is never the reason.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
   parameters:
     PhysicalTenantIdParameter:
       name: physicalTenantId
       in: query
       required: false
       description: >-
-        The physical tenant to apply the change to. When omitted, the change is applied to every
-        physical tenant of the cluster.
+        The physical tenant to apply the change to. When omitted, or when passed with an empty
+        value, the change is applied to every physical tenant of the cluster.
       schema:
         type: string
         example: default
@@ -594,3 +938,114 @@ components:
           type: array
           items:
             $ref: 'cluster.yaml#/components/schemas/Partition'
+
+    ClusterTakeHistoryBackupResponse:
+      description: >-
+        The snapshots scheduled on every targeted physical tenant. No cluster-level state is
+        aggregated from the per-tenant outcomes.
+      type: object
+      required:
+        - backupId
+        - physicalTenants
+      properties:
+        backupId:
+          description: The id requested for the backup on every targeted physical tenant.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        physicalTenants:
+          description: The outcome for each targeted physical tenant, ordered by physical tenant id.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterHistoryBackupTakeResult'
+
+    ClusterHistoryBackupTakeResult:
+      description: >-
+        The snapshots scheduled on a single physical tenant. Only successfully scheduled tenants are
+        reported: the request fails as a whole if any targeted tenant could not schedule the backup.
+      type: object
+      required:
+        - physicalTenantId
+        - scheduledSnapshots
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        scheduledSnapshots:
+          description: The names of the snapshots scheduled on this physical tenant.
+          type: array
+          items:
+            type: string
+            description: The name of a scheduled snapshot.
+            example: camunda_webapps_1_8.10.0_part_1_of_6
+
+    ClusterHistoryBackupInfo:
+      description: >-
+        A history backup id and what each physical tenant reports for it. No cluster-level state is
+        aggregated from the per-tenant states.
+      type: object
+      required:
+        - backupId
+        - physicalTenants
+      properties:
+        backupId:
+          description: The id of the backup.
+          allOf:
+            - $ref: 'backups.yaml#/components/schemas/BackupId'
+        physicalTenants:
+          description: >-
+            What each physical tenant reports for this backup id, ordered by physical tenant id.
+            When looking a backup id up directly, every targeted tenant is listed, including the
+            ones reporting `NOT_FOUND`. Within a listing, only the tenants that hold the id are
+            listed.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterHistoryBackupTenantInfo'
+
+    ClusterHistoryBackupTenantInfo:
+      description: What a single physical tenant reports for a history backup id.
+      type: object
+      required:
+        - physicalTenantId
+        - state
+        - failureReason
+        - details
+      properties:
+        physicalTenantId:
+          description: The id of the physical tenant.
+          type: string
+          example: default
+        state:
+          description: The state of the backup on this physical tenant.
+          allOf:
+            - $ref: '#/components/schemas/ClusterHistoryBackupTenantState'
+        failureReason:
+          description: Reason for failure if the state is 'FAILED'.
+          type: string
+          nullable: true
+          example: ""
+        details:
+          description: >-
+            Detailed status of the backup per snapshot on this physical tenant. Empty when the
+            tenant does not hold the backup.
+          type: array
+          items:
+            $ref: 'backups.yaml#/components/schemas/HistoryBackupSnapshotInfo'
+
+    ClusterHistoryBackupTenantState:
+      title: Cluster History Backup Tenant State
+      description: >-
+        What a physical tenant reports for a history backup id: the per-tenant
+        `HistoryBackupStateCode` extended with `NOT_FOUND` for a tenant that was read and does not
+        hold the backup. `NOT_FOUND` is a successful observation, not a failure — a backup that only
+        some physical tenants hold is a supported outcome. There is no state for a tenant that could
+        not be read at all, because such a tenant fails the whole request.
+      type: string
+      enum:
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+        - INCOMPLETE
+        - INCOMPATIBLE
+        - NOT_FOUND
+      example: COMPLETED

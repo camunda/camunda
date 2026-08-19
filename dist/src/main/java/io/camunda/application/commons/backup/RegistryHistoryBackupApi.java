@@ -42,9 +42,11 @@ import org.jspecify.annotations.Nullable;
  * {@code @RequiresSecondaryStorage} interceptor before any handler runs.
  *
  * <p>Translates {@link BackupException} into {@link ServiceException} so the gateway's error mapper
- * produces the right status. Note the deliberate divergence from the {@code backupHistory}
+ * produces the right status. Two statuses deliberately diverge from the {@code backupHistory}
  * actuator: a repository connection failure maps to 503 here, not 502, because 503 is what the
- * {@code /v2/backups/*} spec documents.
+ * {@code /v2/backups/*} spec documents; and a repository missing from the store maps to 403, not
+ * 404, to match how {@code @RequiresSecondaryStorage} already reports a storage that cannot serve
+ * history backups.
  */
 @NullMarked
 public class RegistryHistoryBackupApi implements HistoryBackupApi {
@@ -94,10 +96,6 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
         });
   }
 
-  /**
-   * Resolves the tenant's backup wiring and rejects a tenant with no snapshot repository, which the
-   * actuator equally treats as a bad request rather than a server error.
-   */
   private PhysicalTenantBackup backupFor(final String physicalTenantId) {
     final PhysicalTenantBackup backup;
     try {
@@ -109,7 +107,7 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
     if (repositoryName == null || repositoryName.isBlank()) {
       throw new ServiceException(
           "No backup repository configured for physical tenant '%s'".formatted(physicalTenantId),
-          Status.INVALID_ARGUMENT);
+          Status.FORBIDDEN);
     }
     return backup;
   }
@@ -128,7 +126,7 @@ public class RegistryHistoryBackupApi implements HistoryBackupApi {
       case final BackupAlreadyRunningException ignored -> Status.INVALID_STATE;
       case final InvalidRequestException ignored -> Status.INVALID_ARGUMENT;
       case final ResourceNotFoundException ignored -> Status.NOT_FOUND;
-      case final MissingRepositoryException ignored -> Status.NOT_FOUND;
+      case final MissingRepositoryException ignored -> Status.FORBIDDEN;
       case final BackupRepositoryConnectionException ignored -> Status.UNAVAILABLE;
       case final IndexNotFoundException ignored -> Status.INTERNAL;
       default -> Status.INTERNAL;

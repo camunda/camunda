@@ -21,6 +21,7 @@ import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageTypeNotSupportedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,6 +45,7 @@ class SecondaryStorageInterceptorTest {
   private static final HandlerMethod DOCUMENT_STORAGE_ONLY =
       handlerMethodFor(new DocumentStorageOnly());
   private static final HandlerMethod METHOD_OVERRIDE = handlerMethodFor(new MethodOverride());
+  private static final HandlerMethod CLUSTER_WIDE = handlerMethodFor(new ClusterWide());
 
   private HttpServletRequest request;
   private HttpServletResponse response;
@@ -195,6 +197,48 @@ class SecondaryStorageInterceptorTest {
     assertThat(result).isTrue();
   }
 
+  /**
+   * A cluster-wide endpoint is not served on behalf of one physical tenant, so gating it on the
+   * request's own — the default one, for an unstamped {@code /cluster/v2} request — would let one
+   * arbitrary tenant decide whether the whole cluster-wide surface answers.
+   */
+  @Test
+  void shouldAllowClusterScopedEndpointWhenOnlyAnotherPhysicalTenantIsReady() {
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.isReady(PHYSICAL_TENANT_ID)).thenReturn(false);
+    when(readiness.anyReady()).thenReturn(true);
+    final var interceptor = interceptor(ELASTICSEARCH, readiness);
+
+    final boolean result = interceptor.preHandle(request, response, CLUSTER_WIDE);
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void shouldThrowOnClusterScopedEndpointWhenNoPhysicalTenantIsReady() {
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(false);
+    final var interceptor = interceptor(ELASTICSEARCH, readiness);
+
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, CLUSTER_WIDE))
+        .isInstanceOf(SecondaryStorageDegradedException.class)
+        .hasMessage(SecondaryStorageDegradedException.CLUSTER_SECONDARY_STORAGE_DEGRADED_MESSAGE);
+  }
+
+  @Test
+  void shouldNotConsultThePerTenantReadinessOnAClusterScopedEndpoint() {
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(true);
+    final var interceptor = interceptor(ELASTICSEARCH, readiness);
+
+    interceptor.preHandle(request, response, CLUSTER_WIDE);
+
+    verify(readiness, never()).isReady(any());
+  }
+
   private static SecondaryStorageInterceptor interceptor(
       final DatabaseType databaseType, final SecondaryStorageReadiness readiness) {
     return new SecondaryStorageInterceptor(tenantId -> databaseType, readiness);
@@ -236,6 +280,14 @@ class SecondaryStorageInterceptorTest {
 
   @RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
   public static class DocumentStorageOnly {
+    public String handle() {
+      return "ok";
+    }
+  }
+
+  @ClusterScoped
+  @RequiresSecondaryStorage({ELASTICSEARCH, OPENSEARCH})
+  public static class ClusterWide {
     public String handle() {
       return "ok";
     }

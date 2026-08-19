@@ -26,6 +26,8 @@ import java.util.List;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Full-stack integration tests for the cluster-admin Basic-auth chain ({@code /cluster/v2/**}),
@@ -41,6 +43,8 @@ public class ClusterAdminBasicAuthenticationIT {
   public static final String PATH_CLUSTER_TOPOLOGY = "cluster/v2/topology";
   public static final String PATH_CLUSTER_MODE = "cluster/v2/mode?mode=RECOVERING&dryRun=true";
   public static final String PATH_CLUSTER_STATUS = "cluster/v2/status";
+  public static final String PATH_CLUSTER_HISTORY_BACKUPS = "cluster/v2/backups/history";
+  public static final String PATH_CLUSTER_HISTORY_BACKUP = "cluster/v2/backups/history/1";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
@@ -184,6 +188,21 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — the status chain runs no authentication filter, so the header is never inspected
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+  }
+
+  /**
+   * The history backup endpoints sit behind the same chain as the rest of the cluster-admin API,
+   * and the chain answers before the storage gate does — so this holds on every secondary storage.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {PATH_CLUSTER_HISTORY_BACKUPS, PATH_CLUSTER_HISTORY_BACKUP})
+  void shouldRejectClusterHistoryBackupEndpointWithoutCredentials(final String path)
+      throws Exception {
+    // when
+    final HttpResponse<String> response = send(clusterUri(path), null);
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
   }
 
   private HttpResponse<String> send(final URI uri, final String authorizationHeader)

@@ -16,6 +16,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
+import io.camunda.service.ClusterHistoryBackupServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
@@ -52,9 +53,11 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.exception.ServiceException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Default {@link ServiceRegistry} backed by one {@code Map<physicalTenantId, service>} per
@@ -102,6 +105,7 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
+    @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices,
     ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
     ClusterTopologyServices clusterTopologyServices,
@@ -320,8 +324,18 @@ public record DefaultServiceRegistry(
   }
 
   @Override
-  public ClusterRecoveryServices clusterRecoveryServices() {
-    return clusterRecoveryServices;
+  public ClusterHistoryBackupServices clusterHistoryBackupServices() {
+    if (clusterHistoryBackupServices == null) {
+      // The same answer the @RequiresSecondaryStorage gate gives, rather than an
+      // IllegalStateException surfacing as a 500. The two decide on different inputs — the gate on
+      // the request's physical tenant, the service's existence on the cluster-wide
+      // camunda.data.secondary-storage.type — so a cluster that sets them inconsistently reaches
+      // here, and the caller should still be told what is actually true of this deployment.
+      throw new ServiceException(
+          "The cluster's secondary storage cannot serve history backups",
+          ServiceException.Status.FORBIDDEN);
+    }
+    return clusterHistoryBackupServices;
   }
 
   @Override
@@ -332,6 +346,11 @@ public record DefaultServiceRegistry(
   @Override
   public ClusterTopologyServices clusterTopologyServices() {
     return clusterTopologyServices;
+  }
+
+  @Override
+  public ClusterRecoveryServices clusterRecoveryServices() {
+    return clusterRecoveryServices;
   }
 
   @Override
@@ -423,6 +442,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserServices> userByTenant = new HashMap<>();
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
+    private @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices;
     private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
     private ClusterTopologyServices clusterTopologyServices;
@@ -644,6 +664,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterHistoryBackupServices(final ClusterHistoryBackupServices service) {
+      clusterHistoryBackupServices = service;
+      return this;
+    }
+
     public Builder clusterRecoveryServices(final ClusterRecoveryServices service) {
       clusterRecoveryServices = service;
       return this;
@@ -711,6 +736,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
+          clusterHistoryBackupServices,
           clusterRecoveryServices,
           clusterStatusServices,
           clusterTopologyServices,
