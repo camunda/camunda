@@ -15,6 +15,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
@@ -104,6 +105,7 @@ public record DefaultServiceRegistry(
     ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
     ClusterTopologyServices clusterTopologyServices,
+    ClusterExportingServices clusterExportingServices,
     ManagementServices managementServices)
     implements ServiceRegistry {
 
@@ -333,6 +335,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ClusterExportingServices clusterExportingServices() {
+    return clusterExportingServices;
+  }
+
+  @Override
   public ManagementServices managementServices() {
     return managementServices;
   }
@@ -419,6 +426,7 @@ public record DefaultServiceRegistry(
     private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
     private ClusterTopologyServices clusterTopologyServices;
+    private ClusterExportingServices clusterExportingServices;
     private ManagementServices managementServices;
 
     public Builder adHocSubProcessActivityServices(
@@ -651,6 +659,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterExportingServices(final ClusterExportingServices service) {
+      clusterExportingServices = service;
+      return this;
+    }
+
     public Builder managementServices(final ManagementServices service) {
       managementServices = service;
       return this;
@@ -701,6 +714,7 @@ public record DefaultServiceRegistry(
           clusterRecoveryServices,
           clusterStatusServices,
           clusterTopologyServices,
+          clusterExportingServices,
           managementServices);
     }
   }

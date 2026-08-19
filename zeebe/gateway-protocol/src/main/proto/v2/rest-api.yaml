@@ -504,6 +504,12 @@ paths:
     $ref: 'cluster.yaml#/paths/~1restore'
 
   # Cluster-wide endpoints. Path keys must stay absolute — see `cluster-admin.yaml` for why.
+  /cluster/v2/exporting:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting'
+  /cluster/v2/exporting/pause:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1pause'
+  /cluster/v2/exporting/resume:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1resume'
   /cluster/v2/mode:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
   /cluster/v2/restore:

@@ -125,6 +125,65 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
         .hasStatus(HttpStatus.OK);
   }
 
+  @Test
+  public void shouldRejectUnauthenticatedRequestToClusterExportingStatus() {
+    // when — no Authorization header at all, against the real cluster-wide exporting status path
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_EXPORTING_STATUS_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result)
+        .as("the cluster-wide exporting status must require cluster-admin credentials")
+        .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldRejectUnauthenticatedRequestToClusterExportingPause() {
+    // when — no Authorization header at all, against the real cluster-wide exporting pause path
+    final MvcTestResult result =
+        mockMvcTester
+            .post()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_EXPORTING_PAUSE_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result)
+        .as("cluster-wide exporting pause must require cluster-admin credentials")
+        .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldRejectUnauthenticatedRequestToClusterExportingResume() {
+    // when — no Authorization header at all, against the real cluster-wide exporting resume path
+    final MvcTestResult result =
+        mockMvcTester
+            .post()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result)
+        .as("cluster-wide exporting resume must require cluster-admin credentials")
+        .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldAllowClusterExportingStatusWithClusterAdminCredentials() {
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .headers(basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD))
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_EXPORTING_STATUS_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result).hasStatus(HttpStatus.OK);
+  }
+
   private static HttpHeaders basicAuth(final String username, final String password) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add(

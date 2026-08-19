@@ -15,6 +15,7 @@ import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
@@ -150,6 +151,8 @@ public interface ServiceRegistry {
   ClusterTopologyServices clusterTopologyServices();
 
   ClusterRecoveryServices clusterRecoveryServices();
+
+  ClusterExportingServices clusterExportingServices();
 
   ManagementServices managementServices();
 }

@@ -40,6 +40,18 @@ public class TestApiController {
   public static final String DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT = "/cluster/v2/status";
 
   /**
+   * Dummy endpoints at the real cluster-wide exporting paths ({@code
+   * io.camunda.zeebe.gateway.rest.controller.ClusterExportingController}, off this slice's
+   * classpath), so a literal-path carve-out like {@link #DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT}'s
+   * cannot silently exempt them without a test noticing.
+   */
+  public static final String DUMMY_CLUSTER_EXPORTING_STATUS_ENDPOINT = "/cluster/v2/exporting";
+
+  public static final String DUMMY_CLUSTER_EXPORTING_PAUSE_ENDPOINT = "/cluster/v2/exporting/pause";
+  public static final String DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT =
+      "/cluster/v2/exporting/resume";
+
+  /**
    * Isolated, additive endpoint used only by {@code SessionAuthenticationRefreshTest} to force a
    * real, Spring-Session-backed session to exist before the request under test runs. With CSL
    * ADR-0031's per-chain {@code SessionRepositoryFilter}, nothing creates a session for a request
@@ -142,6 +154,21 @@ public class TestApiController {
 
   @GetMapping(DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
   public @ResponseBody String dummyClusterAdminStatusEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @GetMapping(DUMMY_CLUSTER_EXPORTING_STATUS_ENDPOINT)
+  public @ResponseBody String dummyClusterExportingStatusEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @PostMapping(DUMMY_CLUSTER_EXPORTING_PAUSE_ENDPOINT)
+  public @ResponseBody String dummyClusterExportingPauseEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @PostMapping(DUMMY_CLUSTER_EXPORTING_RESUME_ENDPOINT)
+  public @ResponseBody String dummyClusterExportingResumeEndpoint() {
     return DEFAULT_RESPONSE;
   }
 }
