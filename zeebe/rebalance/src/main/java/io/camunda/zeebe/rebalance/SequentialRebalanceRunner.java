@@ -17,20 +17,16 @@ import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +91,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
   private final PartitionLeaders partitionLeaders;
+  private final PartitionBalancePlanner planner;
   private final LeadershipTransferProtocol transfers;
   private final ClusterRebalanceMetrics metrics;
   private final Duration leaderWaitTimeout;
@@ -119,6 +116,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
     this.localMemberId = localMemberId;
     this.executor = executor;
     this.partitionLeaders = partitionLeaders;
+    planner = new PartitionBalancePlanner(partitionLeaders);
     this.transfers = transfers;
     this.metrics = metrics;
     this.leaderWaitTimeout = leaderWaitTimeout;
@@ -128,7 +126,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
 
   @Override
   public ActorFuture<Void> run(final RebalanceRun rebalance) {
-    rebalance.plan(plan(rebalance.configuration()));
+    rebalance.plan(planner.plan(rebalance.configuration()));
     logPlan(rebalance);
     publish(rebalance);
     final ActorFuture<Void> completion = executor.createFuture();
@@ -151,44 +149,6 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
             partition, Objects.requireNonNull(partition.outcome()), Duration.ZERO);
       }
     }
-  }
-
-  /** Decides what the rebalance will do to each partition. */
-  private List<PartitionRebalance> plan(final CurrentClusterConfiguration configuration) {
-    return configuration.partitionGroups().entrySet().stream()
-        .sorted(Map.Entry.comparingByKey())
-        .flatMap(entry -> planGroup(entry.getKey(), entry.getValue()))
-        .toList();
-  }
-
-  private Stream<PartitionRebalance> planGroup(
-      final String physicalTenantId, final PartitionGroupConfiguration group) {
-    final var groupLeaders = partitionLeaders.forGroup(physicalTenantId);
-    return group
-        .partitionIds()
-        .mapToObj(partitionId -> planPartition(physicalTenantId, group, groupLeaders, partitionId));
-  }
-
-  private PartitionRebalance planPartition(
-      final String physicalTenantId,
-      final PartitionGroupConfiguration group,
-      final PartitionLeaders.PartitionGroupLeaders groupLeaders,
-      final int partitionId) {
-    final var desiredLeader =
-        group
-            .getDesiredLeader(partitionId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "No member of physical tenant %s's partition group is eligible to lead "
-                            + "partition %d, so it cannot be planned"
-                                .formatted(physicalTenantId, partitionId)));
-    final var currentLeader = groupLeaders.currentLeader(partitionId);
-    if (currentLeader.map(desiredLeader::equals).orElse(false)) {
-      return PartitionRebalance.alreadyLeader(physicalTenantId, partitionId, desiredLeader);
-    }
-    return PartitionRebalance.pending(
-        physicalTenantId, partitionId, currentLeader.orElse(null), desiredLeader);
   }
 
   /** Process the first partition that the rebalance still has to transfer. */
