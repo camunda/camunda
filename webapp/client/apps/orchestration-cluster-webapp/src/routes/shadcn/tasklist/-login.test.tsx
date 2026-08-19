@@ -34,11 +34,12 @@ describe('<TasklistLoginPage />', () => {
 		// carbon-compat's TextInput (@camunda/design-system 0.45.0) renders the
 		// error text as a plain <span> with no aria-errormessage linking it to
 		// the input, unlike Carbon's own TextInput used on the Carbon login
-		// page. That's a known upstream gap (tracked separately, not a defect
-		// in this page), so the username field is asserted via visible text +
-		// validity rather than toHaveAccessibleErrorMessage. The password
-		// field is our own composed component, so it does wire
-		// aria-errormessage itself and keeps the stricter assertion.
+		// page. That's a known upstream gap, not a defect in this page —
+		// tracked at https://github.com/camunda/design-system/issues/483 —
+		// so the username field is asserted via visible text + validity
+		// rather than toHaveAccessibleErrorMessage. The password field is
+		// our own composed component, so it does wire aria-errormessage
+		// itself and keeps the stricter assertion.
 		await expect.element(screen.getByText(/username is required/i)).toBeVisible();
 		await expect.element(screen.getByLabelText(/username/i)).toBeInvalid();
 		await expect.element(screen.getByLabelText(/^password$/i)).toHaveAccessibleErrorMessage(/password is required/i);
