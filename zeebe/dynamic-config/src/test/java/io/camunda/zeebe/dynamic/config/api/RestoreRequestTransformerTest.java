@@ -37,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
@@ -57,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -497,10 +499,9 @@ final class RestoreRequestTransformerTest {
   }
 
   @Test
-  void shouldHoldTheStageBoundaryAcrossBrokers() {
-    // given - the conservative stage edges: no restore may start until every pre-restore has
-    // finished, on any broker. Partitions are replicated, and nothing in the current code
-    // establishes that one broker may restore while a peer is still wiping the same partition.
+  void shouldWaitOnlyForItsOwnBrokersPreRestoreOfThatPartition() {
+    // given - two brokers replicating partition 1. Wiping and reloading a broker's own copy is
+    // local to that broker, so a restore is ordered behind exactly one pre-restore: its own.
     final var memberOne = MemberId.from("0");
     final var memberTwo = MemberId.from("1");
     final var transformer =
@@ -516,17 +517,117 @@ final class RestoreRequestTransformerTest {
                     memberOne, recovering(1),
                     memberTwo, recovering(1))));
 
-    // then - each restore waits for both pre-restores, not only for its own broker's
+    // then - each restore depends on the single pre-restore of the same broker and partition, so
+    // neither broker is held up by the other's wipe
     EitherAssert.assertThat(result).isRight();
     final var graph = graphOf(result.get());
-    final var preRestores = idsOf(graph, PartitionPreRestoreOperation.class);
-    assertThat(preRestores).hasSize(2);
     assertThat(idsOf(graph, PartitionRestoreOperation.class))
         .hasSize(2)
         .allSatisfy(
-            restore ->
-                assertThat(graph.operations().get(restore).dependsOn())
-                    .containsExactlyElementsOf(preRestores));
+            restore -> {
+              final var dependsOn = graph.operations().get(restore).dependsOn();
+              assertThat(dependsOn).hasSize(1);
+              final var preRestore = dependsOn.first();
+              assertThat(graph.operations().get(preRestore).operation())
+                  .isInstanceOf(PartitionPreRestoreOperation.class);
+              assertThat(memberOf(graph, preRestore)).isEqualTo(memberOf(graph, restore));
+              assertThat(partitionOf(graph, preRestore)).isEqualTo(partitionOf(graph, restore));
+            });
+  }
+
+  @Test
+  void shouldNotOrderOnePartitionBehindAnother() {
+    // given - two partitions on two brokers. Partition 2 shares nothing with partition 1, so
+    // holding its restore behind partition 1's wipe would serialise work that cannot interfere.
+    // This is the difference from a plan-wide barrier, and where the restore's I/O actually is.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - completing only partition 1's two pre-restores releases partition 1's restores, while
+    // partition 2 is still waiting on its own
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    var group =
+        new PartitionGroupConfiguration(
+                1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(graph);
+    for (final var preRestore : idsOf(graph, PartitionPreRestoreOperation.class)) {
+      if (partitionOf(graph, preRestore) == 1 && memberOf(graph, preRestore).equals(memberOne)) {
+        group = group.completeOperation(preRestore, UnaryOperator.identity());
+      }
+    }
+
+    final var released =
+        group.pendingGraphChanges().orElseThrow().runnableFor(memberOne).values().stream()
+            .filter(PartitionRestoreOperation.class::isInstance)
+            .map(PartitionRestoreOperation.class::cast)
+            .toList();
+    assertThat(released).singleElement().returns(1, PartitionRestoreOperation::partitionId);
+  }
+
+  @Test
+  void shouldAwaitTheModeChangeOnlyAfterEveryRestoreEverywhere() {
+    // given - two brokers, two partitions. Restores are narrowed per partition, but awaiting the
+    // transition observes the group as a whole, so this stage is a cluster-wide barrier: no broker
+    // may start awaiting while any partition anywhere is still reloading.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - every await waits for all four restores and for both mode changes
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var restores = idsOf(graph, PartitionRestoreOperation.class);
+    final var modeChanges = idsOf(graph, ModeChangeOperation.class);
+    assertThat(restores).hasSize(4);
+    assertThat(modeChanges).hasSize(2);
+    assertThat(idsOf(graph, AwaitModeChangeOperation.class))
+        .hasSize(2)
+        .allSatisfy(
+            await ->
+                assertThat(graph.operations().get(await).dependsOn())
+                    .containsAll(restores)
+                    .containsAll(modeChanges));
+  }
+
+  private static MemberId memberOf(final OperationGraph graph, final OperationId operationId) {
+    return graph.operations().get(operationId).operation().memberId();
+  }
+
+  private static int partitionOf(final OperationGraph graph, final OperationId operationId) {
+    return ((PartitionChangeOperation) graph.operations().get(operationId).operation())
+        .partitionId();
   }
 
   private static OperationGraph graphOf(final List<Phase> phases) {
