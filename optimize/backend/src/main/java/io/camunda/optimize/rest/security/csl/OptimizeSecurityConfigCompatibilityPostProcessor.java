@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.Main;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -75,6 +76,19 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
+    if (!isOptimizeApplication(application)) {
+      // EnvironmentPostProcessors are discovered classpath-wide by Spring Boot's
+      // SpringFactoriesLoader for every SpringApplication in the JVM, independent of
+      // @ComponentScan or which class is that application's primary source. camunda-authentication
+      // and camunda-zeebe (dist) are test-scope dependencies of optimize-backend (pulled in via
+      // zeebe-qa-util for the embedded broker Optimize's own CCSM ITs boot), so this class's
+      // META-INF/spring.factories entry is visible to that broker's SpringApplication too. Without
+      // this guard, Optimize's OIDC-only bridge defaults silently overrode the broker's own
+      // explicit BASIC-auth configuration, which then genuinely conflicted with the broker's
+      // separately-configured initial demo user (camunda/camunda#60184).
+      return;
+    }
+
     final boolean cslEnabled =
         !"false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"));
     // Canonicalize to a literal "true"/"false" so every @ConditionalOnProperty on this flag (CSL
@@ -111,6 +125,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
               + " (always-on defaults plus values derived from legacy Optimize config).",
           derived.size());
     }
+  }
+
+  // True only when `application` is genuinely Optimize's own SpringApplication — i.e. Main.class
+  // (the sole primary source of both Main#main and AbstractIT#startAndUseNewOptimizeInstance) is
+  // among its sources. A null application (defensive: the interface contract allows it, and some
+  // callers construct this processor directly without going through Spring Boot's own bootstrap)
+  // is never treated as Optimize's own.
+  private static boolean isOptimizeApplication(final SpringApplication application) {
+    return application != null && application.getAllSources().contains(Main.class);
   }
 
   // Reached only when an operator explicitly sets the flag to false: every other path now
