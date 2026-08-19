@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
+import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -637,6 +639,12 @@ public class DeleteProcessDefinitionHistoryIT {
   }
 
   private void awaitAgentDefinitionCount(final long processDefinitionKey, final int expectedCount) {
+    // under physical-tenant mode, camundaClient routes deploys through the tenant-scoped REST
+    // path, so the process (and its agent definitions) land in that tenant's own store, not
+    // "default" - read back from the same physical tenant the client wrote to
+    final var physicalTenantId =
+        Optional.ofNullable(CamundaMultiDBExtension.getPhysicalTenant())
+            .orElse(DEFAULT_PHYSICAL_TENANT_ID);
     Awaitility.await(
             "Agent definitions for process definition "
                 + processDefinitionKey
@@ -650,7 +658,7 @@ public class DeleteProcessDefinitionHistoryIT {
                         BROKER
                             .bean(PhysicalTenantSearchClientReaders.class)
                             .readersByPhysicalTenant()
-                            .get(DEFAULT_PHYSICAL_TENANT_ID)
+                            .get(physicalTenantId)
                             .agentDefinitionReader()
                             .search(
                                 AgentDefinitionQuery.of(
