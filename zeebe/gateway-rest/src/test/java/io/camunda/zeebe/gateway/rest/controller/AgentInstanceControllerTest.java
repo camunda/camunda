@@ -428,7 +428,87 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
             "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
-                + " Did you pass an entity id instead of an entity key?."));
+                + " Did you pass an entity id instead of an entity key?."),
+        Arguments.of(
+            named(
+                "definition with history",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  },
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "The definition must be omitted when history is provided."),
+        Arguments.of(
+            named(
+                "limits with history",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "limits": {
+                    "maxTokens": 100,
+                    "maxModelCalls": 1,
+                    "maxToolCalls": 1
+                  },
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "The limits must be omitted when history is provided."),
+        Arguments.of(
+            named(
+                "history without a CONFIGURATION item establishing the definition",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-1",
+                      "loopIteration": 1,
+                      "role": "USER",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "No CONFIGURATION history item sets 'model'; when history is provided, it must be"
+                + " set there instead of on definition. No CONFIGURATION history item sets"
+                + " 'provider'; when history is provided, it must be set there instead of on"
+                + " definition. No CONFIGURATION history item sets 'systemPrompt'; when history"
+                + " is provided, it must be set there instead of on definition."));
   }
 
   @Test
