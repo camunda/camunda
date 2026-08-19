@@ -101,23 +101,15 @@ const FieldsModal: React.FC<Props> = ({
         return undefined;
       }
 
-      if (clientMode === 'v1') {
-        return DEFAULT_TENANT_ID;
-      }
-
       if (formTenant !== undefined && formTenant !== '') {
         return formTenant;
-      }
-
-      if (formTenant === '') {
-        return undefined;
       }
 
       if (currentUser?.tenants.length === 1) {
         return currentUser.tenants[0]?.tenantId;
       }
 
-      return undefined;
+      return clientMode === 'v1' ? DEFAULT_TENANT_ID : undefined;
     },
     [clientMode, currentUser, isMultiTenancyEnabled],
   );
