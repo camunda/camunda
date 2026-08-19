@@ -58,6 +58,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 	showLabelText,
 }) => {
 	const [isVisible, setIsVisible] = useState(false);
+	const errorId = `${id}-error`;
 
 	return (
 		<div className={styles.passwordField}>
@@ -73,6 +74,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 					onFocus={onFocus}
 					placeholder={placeholder}
 					aria-invalid={invalid || undefined}
+					aria-errormessage={invalid ? errorId : undefined}
 					className={styles.passwordInput}
 				/>
 				<Button
@@ -89,7 +91,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 				</Button>
 			</div>
 			{invalid && invalidText !== undefined ? (
-				<Text as="p" variant="label-sm" className={styles.fieldError}>
+				<Text id={errorId} as="p" variant="label-sm" className={styles.fieldError}>
 					{invalidText}
 				</Text>
 			) : null}
