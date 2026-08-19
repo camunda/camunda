@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
+import {useCallback, useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -199,64 +199,82 @@ const TopPanel: React.FC = observer(() => {
     return 'content';
   };
 
-  const handleElementSelection = (
-    elementId?: string,
-    isMultiInstance?: boolean,
-    clickedElementId?: string,
-  ) => {
-    if (modificationsStore.state.status === 'moving-token' && businessObjects) {
-      const ancestorScopeType = getAncestorScopeType(
-        businessObjects,
-        sourceElementIdForMoveOperation ?? '',
-        elementId ?? '',
-        totalRunningInstancesByElement,
-      );
+  const handleElementSelection = useCallback(
+    (
+      elementId?: string,
+      isMultiInstance?: boolean,
+      clickedElementId?: string,
+    ) => {
+      if (
+        modificationsStore.state.status === 'moving-token' &&
+        businessObjects
+      ) {
+        const ancestorScopeType = getAncestorScopeType(
+          businessObjects,
+          sourceElementIdForMoveOperation ?? '',
+          elementId ?? '',
+          totalRunningInstancesByElement,
+        );
 
-      clearSelection();
-      finishMovingToken(
-        affectedTokenCount,
-        visibleAffectedTokenCount,
-        businessObjects,
-        processInstance?.processDefinitionId,
-        elementId,
-        ancestorScopeType,
-      );
-      return;
-    }
-
-    if (modificationsStore.state.status === 'adding-token') {
-      return;
-    }
-
-    if (elementId !== undefined) {
-      selectElement({
-        elementId,
-        isMultiInstanceBody: isMultiInstance,
-      });
-      return;
-    }
-
-    if (
-      selectedElementId !== null &&
-      clickedElementId !== undefined &&
-      selectedElementIds?.includes(clickedElementId)
-    ) {
-      if (isModificationModeEnabled) {
         clearSelection();
+        finishMovingToken(
+          affectedTokenCount,
+          visibleAffectedTokenCount,
+          businessObjects,
+          processInstance?.processDefinitionId,
+          elementId,
+          ancestorScopeType,
+        );
         return;
       }
 
-      selectElement({
-        elementId: clickedElementId,
-        isMultiInstanceBody: isMultiInstanceElement(
-          businessObjects?.[clickedElementId],
-        ),
-      });
-      return;
-    }
+      if (modificationsStore.state.status === 'adding-token') {
+        return;
+      }
 
-    clearSelection();
-  };
+      if (elementId !== undefined) {
+        selectElement({
+          elementId,
+          isMultiInstanceBody: isMultiInstance,
+        });
+        return;
+      }
+
+      if (
+        selectedElementId !== null &&
+        clickedElementId !== undefined &&
+        selectedElementIds?.includes(clickedElementId)
+      ) {
+        if (isModificationModeEnabled) {
+          clearSelection();
+          return;
+        }
+
+        selectElement({
+          elementId: clickedElementId,
+          isMultiInstanceBody: isMultiInstanceElement(
+            businessObjects?.[clickedElementId],
+          ),
+        });
+        return;
+      }
+
+      clearSelection();
+    },
+    [
+      affectedTokenCount,
+      businessObjects,
+      clearSelection,
+      isModificationModeEnabled,
+      processInstance?.processDefinitionId,
+      selectedElementId,
+      selectedElementIds,
+      selectElement,
+      sourceElementIdForMoveOperation,
+      totalRunningInstancesByElement,
+      visibleAffectedTokenCount,
+    ],
+  );
 
   return (
     <Container>
