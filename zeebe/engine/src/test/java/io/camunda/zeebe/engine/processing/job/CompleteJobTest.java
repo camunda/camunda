@@ -188,6 +188,34 @@ public final class CompleteJobTest {
   }
 
   @Test
+  public void shouldNotCarryAgentElementIdForNonAgenticJob() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .describedAs(
+            "a plain job with no agent definition and a job type not matching the legacy "
+                + "agentic prefix must not have an agent element id on any follow-up record")
+        .isNotEmpty()
+        .allMatch(r -> r.getAgent() == null || r.getAgent().getElementId().isEmpty());
+  }
+
+  @Test
   public void shouldRejectCompletionIfJobNotFound() {
     // given
     final int key = 123;
