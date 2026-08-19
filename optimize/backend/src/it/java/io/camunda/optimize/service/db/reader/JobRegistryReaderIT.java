@@ -19,6 +19,7 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,30 @@ public class JobRegistryReaderIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(found)
         .extracting(JobRegistryEntryDto::getId)
         .containsExactly(olderEntry.getId(), newerEntry.getId());
+  }
+
+  @Test
+  void shouldBreakTiesByIdWhenCreatedAtIsIdentical() {
+    // given
+    // Same pinned instant for both entries -- createdAt alone can't order two entries created
+    // within the same millisecond, so this exercises the id tiebreaker.
+    LocalDateUtil.setCurrentTime(OffsetDateTime.parse("2026-01-01T00:00:00.000+00:00"));
+    final JobRegistryEntryDto first =
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "300");
+    final JobRegistryEntryDto second =
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "100");
+    final JobRegistryEntryDto third =
+        jobRegistryWriter.createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, "200");
+    final List<String> expectedOrder =
+        Stream.of(second.getId(), third.getId(), first.getId()).sorted().toList();
+
+    // when
+    final List<JobRegistryEntryDto> found = jobRegistryReader.findOldestQueuedJobs(10);
+
+    // then
+    assertThat(found)
+        .extracting(JobRegistryEntryDto::getId)
+        .containsExactlyElementsOf(expectedOrder);
   }
 
   @Test
