@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.debug.cli.Main;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.index.TargetIndex;
@@ -88,8 +89,10 @@ public class RecoverProcessDefinitionsMultiDbIT {
     final long lostKey = deployProcessModel("recover-lost");
     final long survivingKey = deployProcessModel("recover-surviving");
 
+    final Camunda camunda = BROKER.bean(Camunda.class);
+
     final ConnectConfiguration connectConfiguration =
-        BROKER.bean(SearchEngineConnectProperties.class);
+        new SearchEngineConnectPropertiesOverride.Converter(camunda).convert();
     final boolean isElasticsearch = connectConfiguration.getTypeEnum().isElasticSearch();
     final String processIndexName =
         new IndexDescriptors(connectConfiguration.getIndexPrefix(), isElasticsearch)

@@ -11,47 +11,9 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
-import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Primary;
 
-@Configuration
-@EnableConfigurationProperties(LegacySearchEngineRetentionProperties.class)
-@DependsOn("unifiedConfigurationHelper")
-@ConditionalOnSecondaryStorageType({
-  SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
-})
 public class SearchEngineRetentionPropertiesOverride {
-
-  private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacySearchEngineRetentionProperties legacySearchEngineRetentionProperties;
-
-  public SearchEngineRetentionPropertiesOverride(
-      @Autowired final UnifiedConfiguration unifiedConfiguration,
-      @Autowired
-          final LegacySearchEngineRetentionProperties legacySearchEngineRetentionProperties) {
-    this.unifiedConfiguration = unifiedConfiguration;
-    this.legacySearchEngineRetentionProperties = legacySearchEngineRetentionProperties;
-  }
-
-  @Bean
-  @Primary
-  public SearchEngineRetentionProperties searchEngineRetentionProperties() {
-    final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
-    BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-    applyTo(unifiedConfiguration.getCamunda(), override);
-    return override;
-  }
 
   public static void applyTo(
       final Camunda camunda, final SearchEngineRetentionProperties override) {

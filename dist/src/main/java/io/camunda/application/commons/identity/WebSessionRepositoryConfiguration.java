@@ -12,19 +12,17 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.tenant.PhysicalTenantScoped;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.security.core.port.out.ScopedSessionStorePortProvider;
 import io.camunda.security.core.port.out.SessionStorePort;
 import io.camunda.security.spring.annotation.ConditionalOnPersistentWebSessionEnabled;
 import io.camunda.security.spring.session.WebSessionAttributeConverter;
 import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.session.WebSessionRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -55,12 +53,6 @@ public class WebSessionRepositoryConfiguration {
   private static final Logger WEB_SESSION_DELETION_LOGGER =
       LoggerFactory.getLogger(WebSessionRepository.class);
 
-  private final ConnectConfiguration connectConfiguration;
-
-  public WebSessionRepositoryConfiguration(final ConnectConfiguration connectConfiguration) {
-    this.connectConfiguration = connectConfiguration;
-  }
-
   // CSL's default webSessionAttributeConverter is @ConditionalOnMissingBean, so this
   // unconditional host-side bean takes precedence — the migration is always active for
   // this deployment. Omitting @ConditionalOnMissingBean here is intentional: a stale
@@ -69,18 +61,6 @@ public class WebSessionRepositoryConfiguration {
   @Bean
   public WebSessionAttributeConverter webSessionAttributeConverter() {
     return new MigratingWebSessionAttributeConverter();
-  }
-
-  @Bean
-  @ConditionalOnSecondaryStorageType({
-    SecondaryStorageType.elasticsearch,
-    SecondaryStorageType.opensearch
-  })
-  public PersistentWebSessionIndexDescriptor persistentWebSessionIndex() {
-    final var indexPrefix = connectConfiguration.getIndexPrefix();
-    final var isElasticsearch =
-        ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
-    return new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch);
   }
 
   @Bean("persistentWebSessionClientProvider")
