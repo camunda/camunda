@@ -34,8 +34,63 @@ public class AgentHistoryCommitTest {
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
   private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+  private static final String EXTERNAL_SERVICE_TASK_PROCESS_ID = "external-agent-service-task";
+  private static final String EXTERNAL_SERVICE_TASK_ID = "external-agent-task";
+  private static final String EXTERNAL_SERVICE_TASK_JOB_TYPE = "external-agent-job";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldCommitAgentHistoryWhenExternalAgentServiceTaskJobCompletes() {
+    // given — external agent marker on a service task, job type does not carry the legacy
+    // agentic prefix
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(EXTERNAL_SERVICE_TASK_PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    EXTERNAL_SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(EXTERNAL_SERVICE_TASK_JOB_TYPE)
+                            .zeebeExternalAgentDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(EXTERNAL_SERVICE_TASK_PROCESS_ID).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(EXTERNAL_SERVICE_TASK_ID)
+            .getFirst();
+    final long elementInstanceKey = serviceTaskInstance.getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    ENGINE.jobs().withType(EXTERNAL_SERVICE_TASK_JOB_TYPE).activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(EXTERNAL_SERVICE_TASK_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
+
+    // when
+    ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    final var committed =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withRecordKey(itemKey)
+            .getFirst();
+    assertThat(committed.getValue().getJobKey())
+        .describedAs(
+            "a history item for an external agent's job must reach COMMITTED when its job"
+                + " completes, even though the job type does not carry the legacy agentic prefix")
+        .isEqualTo(jobKey);
+  }
 
   @Test
   public void shouldEmitCommittedEventOnCommitCommand() {
