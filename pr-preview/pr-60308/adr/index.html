@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-60308/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-60308/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-60308/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-60308/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-60308/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-60308/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-60308/assets/js/runtime~main.7183ef50.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-60308/assets/js/main.8bb79911.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-60308/assets/js/runtime~main.0a0110a7.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-60308/assets/js/main.5ae87f38.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -38,7 +38,7 @@ the pre-configured cluster-admin (camunda/camunda#54898).</li>
 authoritative inventory of management endpoints in 8.10: per-tenant and
 cluster-wide surfaces, actuator query-parameter selection, cluster-wide
 backup contract, backwards compatibility.</li>
-<li class=""><code>management/004-cluster-wide-history-backup-outcomes.md</code> — <strong>Proposed.</strong>
+<li class=""><code>management/004-cluster-wide-history-backup.md</code> -
 Response contract of the cluster-wide history backup endpoints: per-tenant
 outcomes with no cluster-level aggregate, absence treated as success rather
 than failure, an all-or-nothing fan-out, and why the <code>backupHistory</code>
