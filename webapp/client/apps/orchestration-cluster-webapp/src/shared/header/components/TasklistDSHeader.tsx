@@ -34,9 +34,13 @@ const TasklistDSHeader: React.FC<Props> = ({currentUser, license}) => {
 	const {displayName} = currentUser;
 	// Below `sm` (--breakpoint-sm, 40rem/640px) — narrower than the `md`
 	// breakpoint that flips the sidebar into its mobile overlay — there isn't
-	// room for the full org/workspace chain or the license tags: only the
-	// current (last) breadcrumb segment stays, and the tags drop entirely.
+	// room for the full org/workspace chain: only the current (last)
+	// breadcrumb segment stays.
 	const isLowMobile = useMediaQuery('(width < 40rem)');
+	// Below `lg` (--breakpoint-lg, 64rem/1024px) — wider than isLowMobile, per
+	// explicit request — the license tags drop entirely; they're the first
+	// thing to go since they're informational, not navigational.
+	const isBelowLg = useMediaQuery('(width < 64rem)');
 
 	const logoutWithNotification = () => {
 		notify({
@@ -62,7 +66,7 @@ const TasklistDSHeader: React.FC<Props> = ({currentUser, license}) => {
 					<NavBreadcrumbItem icon={<Briefcase aria-hidden />} label={t('tasklist.headerWorkspacePlaceholder')} />
 				</NavBreadcrumb>
 			}
-			trailing={isLowMobile ? undefined : <LicenseBadges license={license} />}
+			trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
 			actions={
 				<>
 					<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
