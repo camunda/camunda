@@ -156,6 +156,26 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 writers))
         .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.DEFER_CORRELATION,
+            new MessageSubscriptionDeferCorrelationProcessor(
+                processingState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                clock))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE_RETRY,
+            new MessageSubscriptionCorrelateRetryProcessor(
+                processingState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                clock))
+        .onCommand(
             ValueType.MESSAGE_CORRELATION,
             MessageCorrelationIntent.CORRELATE,
             new MessageCorrelationCorrelateProcessor(

@@ -49,6 +49,19 @@ public final class MessageCorrelator {
 
   public boolean correlateNextMessage(
       final long subscriptionKey, final MessageSubscriptionRecord subscriptionRecord) {
+    return correlateNextMessage(subscriptionKey, subscriptionRecord, false);
+  }
+
+  /**
+   * Same as {@link #correlateNextMessage(long, MessageSubscriptionRecord)}, but additionally marks
+   * the correlation as a suspension redirect (the subscription's {@code redirected} flag). Used
+   * when a message headed for a suspended sibling subscription is being redirected to this one
+   * instead, so a further deferral of this attempt knows not to redirect a second time.
+   */
+  public boolean correlateNextMessage(
+      final long subscriptionKey,
+      final MessageSubscriptionRecord subscriptionRecord,
+      final boolean redirected) {
 
     final var isMessageCorrelated = new MutableBoolean(false);
 
@@ -59,7 +72,7 @@ public final class MessageCorrelator {
         storedMessage -> {
           // correlate the first message which is not correlated to the process instance yet
           final var isCorrelated =
-              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage);
+              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage, redirected);
           isMessageCorrelated.set(isCorrelated);
           return !isCorrelated;
         });
@@ -70,7 +83,8 @@ public final class MessageCorrelator {
   private boolean correlateMessage(
       final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
-      final StoredMessage storedMessage) {
+      final StoredMessage storedMessage,
+      final boolean redirected) {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
@@ -90,7 +104,10 @@ public final class MessageCorrelator {
       return false;
     }
 
-    subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
+    subscriptionRecord
+        .setMessageKey(messageKey)
+        .setVariables(message.getVariablesBuffer())
+        .setRedirected(redirected);
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);

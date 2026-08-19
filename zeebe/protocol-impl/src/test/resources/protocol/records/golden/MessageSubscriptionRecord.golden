@@ -46,6 +46,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
+  private static final StringValue REDIRECTED_KEY = new StringValue("redirected");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
@@ -68,9 +69,10 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+  private final BooleanProperty redirectedProp = new BooleanProperty(REDIRECTED_KEY, false);
 
   public MessageSubscriptionRecord() {
-    super(15);
+    super(16);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -85,7 +87,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalKeyProp)
-        .declareProperty(elementTypeProp);
+        .declareProperty(elementTypeProp)
+        .declareProperty(redirectedProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -104,6 +107,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
     setStorageOrdinalKey(record.getStorageOrdinalKey());
     setElementType(record.getElementType());
+    setRedirected(record.isRedirected());
   }
 
   @JsonIgnore
@@ -293,6 +297,16 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
     storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
+  }
+
+  @Override
+  public boolean isRedirected() {
+    return redirectedProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setRedirected(final boolean redirected) {
+    redirectedProp.setValue(redirected);
     return this;
   }
 }

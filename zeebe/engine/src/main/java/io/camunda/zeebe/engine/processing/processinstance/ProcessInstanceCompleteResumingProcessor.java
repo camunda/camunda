@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -17,11 +18,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -56,20 +61,26 @@ public final class ProcessInstanceCompleteResumingProcessor
   private final SideEffectWriter sideEffectWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
+  private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final SuspensionState suspensionState;
   private final DueDateTimerCheckScheduler timerChecker;
+  private final SubscriptionCommandSender subscriptionCommandSender;
 
   public ProcessInstanceCompleteResumingProcessor(
       final ElementInstanceState elementInstanceState,
+      final ProcessMessageSubscriptionState processMessageSubscriptionState,
       final SuspensionState suspensionState,
       final Writers writers,
-      final DueDateTimerCheckScheduler timerChecker) {
+      final DueDateTimerCheckScheduler timerChecker,
+      final SubscriptionCommandSender subscriptionCommandSender) {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
+    this.processMessageSubscriptionState = processMessageSubscriptionState;
     this.suspensionState = suspensionState;
     this.timerChecker = timerChecker;
+    this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
   @Override
@@ -103,6 +114,51 @@ public final class ProcessInstanceCompleteResumingProcessor
           timerChecker.scheduleTimer(-1);
           return true;
         });
+
+    // a message that was mid-correlation when this instance suspended was deferred rather than
+    // buffered (see ProcessMessageSubscriptionCorrelateProcessor), so the subscriptions it left
+    // OPENED never got a chance to re-check whether a still-valid message is now waiting, or
+    // whether the one they had went past its deadline in the meantime. Ask every OPENED
+    // subscription under this instance to retry now that resume gives it a fresh, TTL-correct look.
+    retryOpenMessageSubscriptions(processInstanceKey);
+  }
+
+  /**
+   * Walks every element instance in this process instance's tree (iteratively - the tree can be
+   * arbitrarily deep via nested sub-processes) and asks the subscription partition to retry
+   * correlation for each {@code OPENED} process message subscription found. Closing/opening
+   * subscriptions are skipped: they are mid-lifecycle-change and not eligible to correlate.
+   */
+  private void retryOpenMessageSubscriptions(final long processInstanceKey) {
+    final Deque<Long> pendingElementInstanceKeys = new ArrayDeque<>();
+    pendingElementInstanceKeys.add(processInstanceKey);
+
+    while (!pendingElementInstanceKeys.isEmpty()) {
+      final long elementInstanceKey = pendingElementInstanceKeys.poll();
+      processMessageSubscriptionState.visitElementSubscriptions(
+          elementInstanceKey,
+          subscription -> {
+            if (!subscription.isOpening() && !subscription.isClosing()) {
+              sendCorrelateRetry(subscription.getRecord());
+            }
+            return true;
+          });
+      elementInstanceState
+          .getChildren(elementInstanceKey)
+          .forEach(child -> pendingElementInstanceKeys.add(child.getKey()));
+    }
+  }
+
+  private void sendCorrelateRetry(final ProcessMessageSubscriptionRecord subscription) {
+    subscriptionCommandSender.correlateRetryMessageSubscription(
+        subscription.getSubscriptionPartitionId(),
+        subscription.getProcessInstanceKey(),
+        subscription.getElementInstanceKey(),
+        subscription.getProcessDefinitionKey(),
+        subscription.getBpmnProcessIdBuffer(),
+        subscription.getMessageNameBuffer(),
+        subscription.getCorrelationKeyBuffer(),
+        subscription.getTenantId());
   }
 
   @Override

@@ -520,6 +520,70 @@ public class SubscriptionCommandSender {
   }
 
   /**
+   * Sent by the process instance partition when the target instance is suspended (or resuming)
+   * while a message is correlating. Asks the subscription partition to reset the subscription
+   * non-destructively (it stays open, only the in-flight correlation attempt is undone) and try
+   * redirecting the message to a ready sibling subscription of the same process.
+   */
+  public boolean deferCorrelateMessageSubscription(
+      final int subscriptionPartitionId,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final String tenantId) {
+    return handleFollowUpCommandBasedOnPartition(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.DEFER_CORRELATION,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageName(messageName)
+            .setCorrelationKey(correlationKey)
+            .setMessageKey(messageKey)
+            .setInterrupting(false)
+            .setTenantId(tenantId));
+  }
+
+  /**
+   * Sent by the process instance partition once a suspended instance finishes resuming, for each of
+   * its {@code OPENED} process message subscriptions. Asks the subscription partition to retry
+   * correlation now, re-running the deadline/TTL check from scratch (see {@code
+   * MessageCorrelator#correlateNextMessage}) instead of blindly resuming whatever was in flight
+   * when the instance suspended.
+   */
+  public boolean correlateRetryMessageSubscription(
+      final int subscriptionPartitionId,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final String tenantId) {
+    return handleFollowUpCommandBasedOnPartition(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.CORRELATE_RETRY,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageName(messageName)
+            .setCorrelationKey(correlationKey)
+            .setMessageKey(-1L)
+            .setInterrupting(false)
+            .setTenantId(tenantId));
+  }
+
+  /**
    * Dispatches a batched holder-liveness {@link MessageStartCorrelationKeyLockReleaseIntent#QUERY}
    * from {@code P_K} to {@code P_B}. Sent directly (bypassing the writers' post-commit task)
    * because it originates from the scheduled poll task on {@code P_K} that walks the
