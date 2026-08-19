@@ -70,34 +70,38 @@ const TaskDetailsHeader: React.FC<Props> = ({
 						data-testid="completion-label"
 						title={t('tasklist.taskDetailsTaskCompletedBy')}
 					>
-						{/* gap/color: Stack and CheckmarkFilledIcon resolve to the same
-						    Carbon or DS component either way (see
-						    design-system-compat/index.ts), so the literal prop values
-						    reach both paths — branch each explicitly rather than shifting
-						    Carbon's own 4px gap and named "green" to match DS's 16px
-						    spacing and --success-action-default token. */}
+						{/*
+						    color: CheckmarkFilledIcon resolves to the same Carbon or DS
+						    icon either way (see design-system-compat/index.ts), so the
+						    literal color reaches both paths — branch it explicitly
+						    rather than shifting Carbon's own named "green" to DS's
+						    --success-action-default token.
+
+						    Two nested Stacks, not one: the icon-to-text gap stays the
+						    original 4px on both paths (untouched, per explicit request);
+						    only the text-to-tag gap grows to 16px on DS. One shared
+						    `gap` can't give two different spacings between three
+						    children, so the icon+text pair is its own inner group. */}
 						<Stack
 							className={styles.alignItemsCenter}
 							orientation="horizontal"
 							gap={featureFlags.dsTasklistUI ? 5 : 2}
 						>
-							<CheckmarkFilledIcon
-								size={16}
-								color={featureFlags.dsTasklistUI ? 'var(--success-action-default)' : 'green'}
-							/>
+							<Stack className={styles.alignItemsCenter} orientation="horizontal" gap={2}>
+								<CheckmarkFilledIcon
+									size={16}
+									color={featureFlags.dsTasklistUI ? 'var(--success-action-default)' : 'green'}
+								/>
+								{assignee ? t('tasklist.taskDetailsTaskCompletedBy') + ' ' : t('tasklist.taskAssignmentStatusCompleted')}
+							</Stack>
 							{assignee ? (
-								<>
-									{t('tasklist.taskDetailsTaskCompletedBy') + ' '}
-									<span
-										className={cn(styles.taskAssignee, featureFlags.dsTasklistUI && styles.taskAssigneeDS)}
-										data-testid="assignee"
-									>
-										<AssigneeTag currentUser={user} assignee={assignee} isShortFormat />
-									</span>
-								</>
-							) : (
-								t('tasklist.taskAssignmentStatusCompleted')
-							)}
+								<span
+									className={cn(styles.taskAssignee, featureFlags.dsTasklistUI && styles.taskAssigneeDS)}
+									data-testid="assignee"
+								>
+									<AssigneeTag currentUser={user} assignee={assignee} isShortFormat />
+								</span>
+							) : null}
 						</Stack>
 					</span>
 				);
