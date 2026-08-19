@@ -13,7 +13,7 @@ cutover. Do not replace, move, or delete the Carbon implementation unless explic
 requested.
 
 For general application architecture, defer to `frontend-feature`. This skill overrides
-its Carbon-only component and route guidance during design-system migration.
+its Carbon-only component, route, and SCSS guidance during design-system migration.
 
 ## Route conventions
 
@@ -28,7 +28,8 @@ its Carbon-only component and route guidance during design-system migration.
 - Keep route files thin. They wire loaders and page components into TanStack Router;
   feature logic stays in the pod area.
 - Do not add Carbon providers or global Carbon styles to shadcn routes. The
-  `src/routes/shadcn/route.tsx` layout owns `C4Provider` and design-system styles.
+  `src/routes/shadcn/route.tsx` layout owns `C4Provider`, design-system styles, and the
+  Tailwind stylesheet.
 - Do not change the Carbon route while creating its shadcn counterpart.
 
 Example mapping:
@@ -65,13 +66,28 @@ src/tasklist/modules/available-tasks/
     Filters.test.tsx
 ```
 
+## Styling conventions
+
+- Style shadcn routes and components exclusively with Tailwind utility classes.
+- Do not create or import SCSS, CSS modules, feature CSS files, or styled-components for
+  shadcn routes or components. Translate existing Carbon styles into Tailwind classes
+  instead of copying their stylesheets.
+- Use `cn` from `#/shared/cn` for conditional classes and when combining classes that may
+  conflict.
+- The route-level imports of `@camunda/design-system/styles.css` and
+  `src/shared/theme/tailwind.css` are infrastructure owned by
+  `src/routes/shadcn/route.tsx`; they are not a pattern for feature-level styling.
+- These restrictions apply only to the shadcn implementation. Leave the existing Carbon
+  implementation and its styling approach intact.
+
 ## Migration workflow
 
-1. Read the Carbon route, components, tests, and styles; record their behavior.
+1. Read the Carbon route, components, tests, and styles; record their behavior and visual
+   requirements.
 2. Add the mirrored route under `src/routes/shadcn/`.
 3. Add migrated components under the relevant sibling `shadcn.components/` folder.
 4. Preserve behavior and accessibility while replacing Carbon primitives with
-   `@camunda/design-system` primitives.
+   `@camunda/design-system` primitives and translating styles into Tailwind classes.
 5. Add or migrate tests beside the shadcn components and under `src/routes/shadcn/`.
    These paths run in the `shadcn` Vitest browser instance.
 6. Leave the Carbon route, components, and tests intact.

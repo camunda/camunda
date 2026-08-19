@@ -8,10 +8,15 @@
 
 import {C4Provider} from '@camunda/design-system';
 import '@camunda/design-system/styles.css';
+import appCss from '#/shared/theme/tailwind.css?url';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 const Route = createFileRoute('/shadcn')({
 	component: RouteComponent,
+	head: () => ({
+		meta: [],
+		links: [{rel: 'stylesheet', href: appCss}],
+	}),
 });
 
 function RouteComponent() {
