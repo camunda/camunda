@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -113,6 +114,18 @@ public final class BackupEndpoint {
     this(physicalTenantBackups(client, physicalTenants));
   }
 
+  /**
+   * Single-tenant wiring against a live broker, for tests that drive the endpoint end to end rather
+   * than through a mocked {@link BackupApi}. Production wiring always comes from the physical
+   * tenant configuration, so this deliberately covers the default tenant only.
+   */
+  @VisibleForTesting
+  public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
+    this(
+        new BackupRequestHandler(client, new CheckpointIdGenerator(backupCfg.getOffset())),
+        backupCfg);
+  }
+
   BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {
     this(
         new LinkedHashMap<>(
@@ -146,7 +159,11 @@ public final class BackupEndpoint {
     return takeExplicit(targets, backupId);
   }
 
-  /** Convenience for callers that only pass an id, notably {@code BackupEndpointStandalone}. */
+  /**
+   * Takes a backup with the given id across every physical tenant. Not an operation of its own —
+   * Spring never selects it, since {@link #take(Long, String)} already covers {@code POST} with a
+   * body — it only spares callers holding a plain id from passing a null tenant.
+   */
   public WebEndpointResponse<?> take(final long backupId) {
     return take(backupId, null);
   }
