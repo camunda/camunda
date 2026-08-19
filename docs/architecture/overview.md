@@ -22,7 +22,6 @@ flowchart TD
   subgraph gw["Gateways"]
     REST["REST gateway\nzeebe/gateway-rest\nprimary — all new features"]
     GRPC["gRPC gateway\nzeebe/gateway-grpc\nbackward compat · streaming"]
-    MCP["MCP gateway\ngateways/gateway-mcp\nAI agent integrations"]
   end
 
   AUTH(["authentication/ · security/ · identity/"])
@@ -66,7 +65,7 @@ flowchart TD
 
 ### Write path
 
-Clients submit commands (deploy a process, start an instance, complete a job) through one of three
+Clients submit commands (deploy a process, start an instance, complete a job) through one of two
 entry points:
 
 - **REST gateway** (`zeebe/gateway-rest`): exposes the Camunda REST API and is the primary entry
@@ -77,8 +76,6 @@ entry points:
   `zeebe/gateway-protocol`. Used by the Java client (`clients/java`) and the Spring Boot starter
   (`clients/camunda-spring-boot-starter`). Kept for backward compatibility and performance (gRPC is
   more efficient at scale; job streaming is gRPC-only).
-- **MCP gateway** (`gateways/gateway-mcp`): exposes the Camunda API as a Model Context Protocol
-  server for AI agent integrations.
 
 All entry points authenticate via `authentication/` (OIDC token processing, Spring Security).
 Authorization is enforced by `security/` against rules managed by `identity/`.
@@ -187,7 +184,6 @@ from OIDC tokens. Update all consumers before changing the mapping.
   with `-pl optimize` when needed.
 - `webapps-schema/src/main/resources/schema/` — canonical ES/OS template JSON; changes here affect
   exporters, `schema-manager/`, and `search/` directly.
-- `bom-deprecated/` — legacy BOM kept for backwards compatibility; do not add new entries.
 - `dist/` — distribution assembly only; no application logic lives here.
 
 ## Further detail
