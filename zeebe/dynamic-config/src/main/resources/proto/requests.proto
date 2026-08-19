@@ -146,6 +146,7 @@ enum Mode {
 message ExportingStateChangeRequest {
   topology_protocol.ExportingStateEnum state = 1;
   bool dryRun = 2;
+  optional string physicalTenantId = 3;
 }
 
 message ModeChangeRequest {

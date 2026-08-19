@@ -258,7 +258,12 @@ public sealed interface ClusterConfigurationManagementRequest {
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ExportingStateChangeRequest(ExportingState state, boolean dryRun)
+  /**
+   * @param physicalTenantId the physical tenant to change, or empty for every physical tenant of
+   *     the cluster
+   */
+  record ExportingStateChangeRequest(
+      ExportingState state, Optional<String> physicalTenantId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {
