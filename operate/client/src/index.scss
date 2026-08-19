@@ -54,6 +54,10 @@ body,
   &:has(.camunda-process-instance-page) {
     min-width: 672px;
   }
+
+  &.operate-nav-v2 {
+    min-width: 0;
+  }
 }
 
 /* removes dotted default focus */

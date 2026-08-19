@@ -6,15 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {lazy, Suspense} from 'react';
 import {IS_NAV_V2_ENABLED} from 'modules/feature-flags';
-import {AppHeaderV2} from './AppHeaderV2';
 import {LegacyAppHeader} from './LegacyAppHeader';
+
+const AppHeaderV2 = lazy(async () => {
+  const {AppHeaderV2: Component} = await import('./AppHeaderV2');
+  return {default: Component};
+});
 
 const AppHeader: React.FC<{hideNavLinks?: boolean}> = ({
   hideNavLinks = false,
 }) =>
   IS_NAV_V2_ENABLED ? (
-    <AppHeaderV2 hideNavLinks={hideNavLinks} />
+    <Suspense fallback={null}>
+      <AppHeaderV2 hideNavLinks={hideNavLinks} />
+    </Suspense>
   ) : (
     <LegacyAppHeader />
   );
