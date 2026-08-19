@@ -15,8 +15,8 @@ import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistor
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryLimitsValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryToolValue;
