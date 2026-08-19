@@ -628,7 +628,6 @@ test.describe('task details page', () => {
   test('task completion with large variable form', async ({
     taskPanelPageV1,
     taskDetailsPageV1,
-    page,
   }) => {
     await taskPanelPageV1.filterBy('Unassigned');
     await taskPanelPageV1.openTask('Big Variable Usertask');
