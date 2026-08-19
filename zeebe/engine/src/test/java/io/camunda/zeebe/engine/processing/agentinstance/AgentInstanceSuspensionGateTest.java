@@ -13,8 +13,10 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
@@ -35,21 +37,21 @@ import org.junit.Test;
  * <p>CREATE and UPDATE are classified {@code isInternalCommand() ? BUFFER : REJECT}:
  *
  * <ul>
+ *   <li>External commands (from REST/gRPC clients, carrying request metadata) are REJECT'd to
+ *       prevent an authorization bypass: a buffered command is drained as an internal command on
+ *       resume, skipping the CSL check.
  *   <li>Internal commands (engine-generated follow-ups) are BUFFER'd so they can be replayed when
  *       the instance resumes.
- *   <li>External commands (from REST/gRPC clients) would be REJECT'd to prevent an authorization
- *       bypass: a buffered command is drained as an internal command, skipping the CSL check.
  * </ul>
  *
  * <p>COMPLETE is classified {@code PROCESS} so that teardown bookkeeping is not orphaned when a
  * suspended instance is cancelled.
  *
- * <p>The suspension gate resolves the process instance key from the command record. For CREATE and
- * UPDATE, {@code processInstanceKey} must be present on the record for the gate to fire. Production
- * clients only carry {@code elementInstanceKey} on these commands, so the gate returns PROCESS
- * early for real external commands; the tests below supply {@code processInstanceKey} explicitly
- * via {@link RecordToWrite} to exercise the gate. {@link RecordToWrite#command()} produces internal
- * commands (no request metadata), so the BUFFER path is exercised rather than REJECT.
+ * <p>{@link io.camunda.zeebe.engine.processing.streamprocessor.SuspensionCheck} resolves the
+ * process instance key for CREATE by looking up the target element instance ({@code
+ * elementInstanceKey}), and for UPDATE by looking up the agent instance identified by the command
+ * key — both are populated by real clients, so the gate fires for genuine external/internal
+ * commands without any test scaffolding.
  */
 public class AgentInstanceSuspensionGateTest {
 
@@ -58,36 +60,86 @@ public class AgentInstanceSuspensionGateTest {
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBufferInternalCreateCommandWhileSuspended() {
+  public void shouldRejectExternalCreateCommandWhileSuspended() {
     // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final String taskId = Strings.newRandomValidBpmnId();
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask(taskId, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final var serviceTaskActivated =
+    final long elementInstanceKey = activateServiceTask();
+    final long processInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .getFirst();
-    final long elementInstanceKey = serviceTaskActivated.getKey();
+            .withRecordKey(elementInstanceKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
-    // when — supply processInstanceKey explicitly so the suspension gate can resolve the target PI.
-    // RecordToWrite.command() produces an internal command (no request metadata), so the gate
-    // classifies it as BUFFER (not REJECT, which is the path for external commands).
-    final var commandRecord =
-        new AgentInstanceRecord()
-            .setElementInstanceKey(elementInstanceKey)
-            .setProcessInstanceKey(processInstanceKey);
+    // when — create(username) carries request metadata, so isInternalCommand() is false and the
+    // gate classifies it as REJECT
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .expectRejection()
+            .create("some-user");
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectExternalUpdateCommandWhileSuspended() {
+    // given
+    final long elementInstanceKey = activateServiceTask();
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withRecordKey(elementInstanceKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    final long agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "sys")
+            .withLimits(100L, 5, 5)
+            .create()
+            .getKey();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when — update(username) carries request metadata, so the gate classifies it as REJECT
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(10L, 5L, 1, 1)
+            .expectRejection()
+            .update("some-user");
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldBufferInternalCreateCommandWhileSuspended() {
+    // given
+    final long elementInstanceKey = activateServiceTask();
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withRecordKey(elementInstanceKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when — RecordToWrite.command() produces an internal command (no request metadata), so the
+    // gate classifies it as BUFFER
+    final var commandRecord = new AgentInstanceRecord().setElementInstanceKey(elementInstanceKey);
     ENGINE.writeRecords(
         RecordToWrite.command().agentInstance(AgentInstanceIntent.CREATE, commandRecord));
 
@@ -110,24 +162,13 @@ public class AgentInstanceSuspensionGateTest {
   @Test
   public void shouldBufferInternalUpdateCommandWhileSuspended() {
     // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final String taskId = Strings.newRandomValidBpmnId();
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask(taskId, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final var serviceTaskActivated =
+    final long elementInstanceKey = activateServiceTask();
+    final long processInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .getFirst();
-    final long elementInstanceKey = serviceTaskActivated.getKey();
+            .withRecordKey(elementInstanceKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
 
     final long agentInstanceKey =
         ENGINE
@@ -140,13 +181,9 @@ public class AgentInstanceSuspensionGateTest {
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
-    // when — supply processInstanceKey explicitly so the suspension gate can resolve the target PI.
-    // RecordToWrite.command() produces an internal command, so the gate classifies it as BUFFER.
-    final var commandRecord =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setProcessInstanceKey(processInstanceKey)
-            .setChangedAttributes(List.of("metrics"));
+    // when — RecordToWrite.command() produces an internal command, so the gate classifies it as
+    // BUFFER
+    final var commandRecord = new AgentInstanceRecord().setChangedAttributes(List.of("metrics"));
     commandRecord
         .getMetrics()
         .setInputTokens(10L)
@@ -177,24 +214,13 @@ public class AgentInstanceSuspensionGateTest {
   @Test
   public void shouldProcessCompleteCommandWhileSuspendedOnCancel() {
     // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final String taskId = Strings.newRandomValidBpmnId();
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask(taskId, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final var serviceTaskActivated =
+    final long elementInstanceKey = activateServiceTask();
+    final long processInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .getFirst();
-    final long elementInstanceKey = serviceTaskActivated.getKey();
+            .withRecordKey(elementInstanceKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
 
     final long agentInstanceKey =
         ENGINE
@@ -218,5 +244,25 @@ public class AgentInstanceSuspensionGateTest {
             .withRecordKey(agentInstanceKey)
             .getFirst();
     assertThat(completed).isNotNull();
+  }
+
+  private static long activateServiceTask() {
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(taskId, t -> t.zeebeJobType("agent").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .getFirst()
+        .getKey();
   }
 }
