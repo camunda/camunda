@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import org.springframework.util.CollectionUtils;
 
 class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository {
   private IncidentUpdateRepository realUpdateRepository;
@@ -65,20 +64,22 @@ class ErrorInjectingIncidentUpdateRepository implements IncidentUpdateRepository
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
+    return realUpdateRepository.bulkUpdate(update);
+  }
+
+  @Override
+  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update) {
     if (failFlowNodeBulkUpdates) {
       // Simulate a failure for flow node bulk updates and ensure that they are not updated
       // but allow the other updates to proceed (to simulate a partial update)
-      if (!CollectionUtils.isEmpty(update.flowNodeInstanceRequests())) {
-        final IncidentBulkUpdate updateWithoutFlowNodes =
-            new IncidentBulkUpdate(
-                update.listViewRequests(), Collections.emptyList(), update.incidentRequests());
-        return realUpdateRepository
-            .bulkUpdate(updateWithoutFlowNodes)
-            .thenApply(
-                updatedIds -> {
-                  throw new ExporterException("Simulated failure for flow node bulk updates");
-                });
-      }
+      final NonIncidentBulkUpdate updateWithoutFlowNodes =
+          new NonIncidentBulkUpdate(update.listViewRequests(), Collections.emptyList());
+      return realUpdateRepository
+          .bulkUpdate(updateWithoutFlowNodes)
+          .thenApply(
+              updatedIds -> {
+                throw new ExporterException("Simulated failure for flow node bulk updates");
+              });
     }
 
     return realUpdateRepository.bulkUpdate(update);
