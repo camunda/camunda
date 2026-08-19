@@ -121,6 +121,53 @@ final class CurrentClusterConfigurationSerializerTest {
   }
 
   @Test
+  void shouldRejectADecodedGraphWithADependencyCycle() {
+    // given — a proto whose two operations depend on each other. Nothing produces this from the
+    // domain model (OperationGraph.of rejects the cycle before it could ever be encoded), so the
+    // only way it reaches decode is corruption or a future encoding bug -- exactly what a decode
+    // path has to distrust rather than assume.
+    final var operationA =
+        Topology.PartitionGroupChangeOperation.newBuilder()
+            .setMemberId(MEMBER.id())
+            .setModeChange(
+                Topology.ModeChangeOperation.newBuilder().setMode(Topology.Mode.MODE_PROCESSING))
+            .build();
+    final var plannedA =
+        Topology.PlannedOperation.newBuilder().setId(0).setOperation(operationA).addDependsOn(1);
+    final var plannedB =
+        Topology.PlannedOperation.newBuilder().setId(1).setOperation(operationA).addDependsOn(0);
+    final var graph =
+        Topology.OperationGraph.newBuilder()
+            .addOperations(plannedA)
+            .addOperations(plannedB)
+            .build();
+    final var plan =
+        Topology.DependencyChangePlan.newBuilder()
+            .setId(1)
+            .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+            .setStartedAt(Timestamp.newBuilder().build())
+            .setGraph(graph)
+            .build();
+    final var group =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(1)
+            .setIncarnationNumber(0)
+            .setPendingGraphChanges(plan)
+            .build();
+    final var proto =
+        Topology.CurrentClusterConfiguration.newBuilder()
+            .setVersion(0)
+            .setGlobalConfiguration(Topology.GlobalConfiguration.newBuilder().setVersion(1).build())
+            .putPartitionGroups("tenant", group)
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> serializer.decodeCurrentClusterConfiguration(proto.toByteArray()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dependency cycle");
+  }
+
+  @Test
   void shouldRoundTripAGroupCarryingADependencyGraphChange() {
     // given — a group whose pending change is a graph rather than a queue. The property test only
     // generates queue plans, because the two models share one field and a generator cannot produce

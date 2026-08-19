@@ -2020,7 +2020,10 @@ public class ProtoBufSerializer
                   new OperationGraph.PlannedOperation(
                       decodePartitionGroupChangeOperation(planned.getOperation()), dependsOn));
             });
-    return new OperationGraph(operations);
+    // OperationGraph.of, not the bare constructor: acyclicity is not an invariant of the
+    // constructor, only of this factory, and this graph came off the wire -- corruption or a
+    // future encoding bug is exactly the source a decode path has to distrust.
+    return OperationGraph.of(operations);
   }
 
   private Topology.DependencyChangePlan encodeDependencyChangePlan(
@@ -2087,9 +2090,8 @@ public class ProtoBufSerializer
         proto.getId(),
         toChangeStatus(proto.getStatus()),
         Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
-        // Not OperationGraph.of(...): re-validating on every decode would re-run the pairwise
-        // write-set check on a graph the coordinator already validated before it was persisted.
-        new OperationGraph(operations),
+        // OperationGraph.of, not the bare constructor: see decodeOperationGraph above.
+        OperationGraph.of(operations),
         completed);
   }
 
