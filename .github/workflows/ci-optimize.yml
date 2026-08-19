@@ -109,12 +109,16 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
-        cslEnabled: [ 'false' ]
+        cslEnabled: [ 'false', 'true' ]
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
             cslEnabled: 'false'
+          - includedGroups: 'ccsm-test'
+            excludedGroups: ''
+            profiles: 'ccsm-it'
+            cslEnabled: 'true'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -208,12 +212,16 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
-        cslEnabled: [ 'false' ]
+        cslEnabled: [ 'false', 'true' ]
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: 'openSearchSingleTestFailOK'
             profiles: 'ccsm-it'
             cslEnabled: 'false'
+          - includedGroups: 'ccsm-test'
+            excludedGroups: 'openSearchSingleTestFailOK'
+            profiles: 'ccsm-it'
+            cslEnabled: 'true'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
