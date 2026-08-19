@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
@@ -1380,6 +1382,51 @@ final class ClusterApiUtilsTest {
         List.of(
             new PartitionGroupParallelPhase(
                 Map.of("tenant-a", List.of(joinOperation, leaveOperation))),
+            new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
+    final var config =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", tenantGroup),
+            new PhasedChangeState(
+                8, Map.of(7L, new PhasedChangePlan(7, 0, phases, Instant.now())), List.of()));
+
+    // when
+    final var response = ClusterApiUtils.mapConfigurationChangeResponse(config, 7);
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (ConfigurationChange) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getCompleted())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(tuple(PARTITION_JOIN, "tenant-a"));
+    assertThat(body.getPending())
+        .extracting(Operation::getOperation, Operation::getPhysicalTenant)
+        .containsExactly(
+            tuple(Operation.OperationEnum.PARTITION_LEAVE, "tenant-a"), tuple(BROKER_REMOVE, null));
+  }
+
+  @Test
+  void shouldSplitActiveGraphPhaseUsingSubConfigProgress() {
+    // given: the active phase is a dependency graph rather than a queue. The tenant has run the
+    // join and not the leave, which is what the API must report -- a graph tracks progress as a set
+    // of completed operations, with no queue index to read.
+    final var memberId1 = member(1);
+    final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
+    final var leaveOperation = new PartitionLeaveOperation(memberId1, 4, 0);
+    final var graphBuilder = OperationGraph.builder();
+    final var joinId = graphBuilder.add(joinOperation);
+    graphBuilder.add(leaveOperation, Set.of(joinId));
+    final var tenantGroup =
+        new PartitionGroupConfiguration(
+                1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(graphBuilder.build())
+            .completeOperation(joinId, UnaryOperator.identity());
+    final List<Phase> phases =
+        List.of(
+            new PartitionGroupGraphPhase(
+                Map.of("tenant-a", tenantGroup.pendingGraphChanges().orElseThrow().graph())),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         new CurrentClusterConfiguration(

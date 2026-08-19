@@ -33,10 +33,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -45,6 +48,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,6 +98,64 @@ public class RecoveryControllerTest extends RestControllerTest {
             CurrentClusterConfiguration.uninitialized(),
             CurrentClusterConfiguration.uninitialized(),
             phases));
+  }
+
+  @Test
+  void shouldReturnPlannedChangesOfAGraphPhase() {
+    // given — this is the shape a mode change actually plans now: a graph whose awaits wait for
+    // every broker's mode change. The response lists the operations; the edges between them are
+    // execution detail the API does not report.
+    final var memberId = MemberId.from("0");
+    final var graph = OperationGraph.builder();
+    final var modeChange = graph.add(new ModeChangeOperation(memberId, Mode.RECOVERING));
+    graph.add(new AwaitModeChangeOperation(memberId, Mode.RECOVERING), Set.of(modeChange));
+    final var changeResponse =
+        new ClusterConfigurationChangeResponse(
+            7L,
+            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
+                Map.of(), Map.of(), List.of()),
+            new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
+                CurrentClusterConfiguration.uninitialized(),
+                CurrentClusterConfiguration.uninitialized(),
+                List.of(
+                    new PartitionGroupGraphPhase(
+                        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))));
+    Mockito.when(
+            recoveryServices.changeMode(
+                Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))
+        .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
+
+    final var expectedResponse =
+        """
+        {
+          "changeId": "7",
+          "plannedChanges": [
+            {
+              "physicalTenantId": "default",
+              "operations": [
+                {
+                  "operation": "ModeChangeOperation",
+                  "mode": "RECOVERING"
+                },
+                {
+                  "operation": "AwaitModeChangeOperation",
+                  "mode": "RECOVERING"
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+    // when / then
+    webClient
+        .patch()
+        .uri("/v2/mode?mode=RECOVERING&dryRun=false")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
