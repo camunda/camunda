@@ -16,7 +16,7 @@
 package io.camunda.client.health;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.Topology;
+import io.camunda.client.api.response.StatusResponse;
 
 public class HealthCheck {
   private final CamundaClient camundaClient;
@@ -26,11 +26,11 @@ public class HealthCheck {
   }
 
   public CheckResult health() {
-    final Topology topology = camundaClient.newTopologyRequest().send().join();
-    if (topology.getBrokers().isEmpty()) {
-      return CheckResult.DOWN;
-    } else {
+    final StatusResponse status = camundaClient.newStatusRequest().send().join();
+    if (status.getStatus() == StatusResponse.Status.UP) {
       return CheckResult.UP;
+    } else {
+      return CheckResult.DOWN;
     }
   }
 
