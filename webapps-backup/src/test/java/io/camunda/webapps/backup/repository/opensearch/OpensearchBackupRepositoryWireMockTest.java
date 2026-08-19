@@ -45,7 +45,11 @@ class OpensearchBackupRepositoryWireMockTest {
     transport =
         ApacheHttpClient5TransportBuilder.builder(host)
             .setMapper(new JacksonJsonpMapper())
-            .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder)
+            .setHttpClientConfigCallback(
+                httpClientBuilder -> {
+                  httpClientBuilder.disableContentCompression();
+                  return httpClientBuilder;
+                })
             .build();
 
     final var syncClient = new OpenSearchClient(transport);

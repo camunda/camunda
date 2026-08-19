@@ -400,6 +400,7 @@ public class OpenSearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final OpenSearchProperties osConfig,
       final org.apache.hc.core5.http.HttpRequestInterceptor... httpRequestInterceptors) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");

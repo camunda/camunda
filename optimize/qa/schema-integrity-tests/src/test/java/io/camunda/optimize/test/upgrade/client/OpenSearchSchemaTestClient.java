@@ -43,6 +43,11 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
     openSearchClient =
         new OpenSearchClient(
             ApacheHttpClient5TransportBuilder.builder(new HttpHost("http", "localhost", port))
+                .setHttpClientConfigCallback(
+                    httpClientBuilder -> {
+                      httpClientBuilder.disableContentCompression();
+                      return httpClientBuilder;
+                    })
                 .build());
   }
 
