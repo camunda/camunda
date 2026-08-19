@@ -21,6 +21,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+/**
+ * Reader: before trusting this class as proof that the variable-labels endpoint validates input or
+ * looks up definitions correctly, know that it no longer does. It used to exercise that logic
+ * (null/blank key rejection, a valid request succeeding, a nonexistent definition 404ing) via
+ * Optimize's legacy static {@code api.accessToken} mechanism. Since CSL became the default CCSM
+ * security chain (camunda/camunda#58483), that legacy static-token mechanism is rejected before any
+ * of that validation/lookup logic runs (see {@code
+ * OptimizeSecurityConfigCompatibilityPostProcessor}'s {@code OPTIMIZE_API_ACCESS_TOKEN} handling),
+ * so every test below now only proves CSL's rejection, not the original behavior. That original
+ * coverage is not replicated elsewhere; reproducing it would require an authenticated request via a
+ * real OIDC bearer token, and minting one needs WireMock-backed JWKS infrastructure that is
+ * disproportionate for this class (see {@code CslDefaultEnabledIT}'s javadoc). Treat this as a
+ * known coverage gap worth a follow-up, not evidence the endpoint is tested.
+ */
 public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
 
   private static final String TEST_ACCESS_TOKEN = "test-access-token";
