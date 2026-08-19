@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -84,6 +85,7 @@ public class ResourceDeletionDeleteProcessor
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final ElementInstanceState elementInstanceState;
   private final TimerInstanceState timerInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -113,6 +115,7 @@ public class ResourceDeletionDeleteProcessor
     decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
     bannedInstanceState = processingState.getBannedInstanceState();
@@ -403,15 +406,8 @@ public class ResourceDeletionDeleteProcessor
         !elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
     if (finalizedImmediately) {
-      finalizeDeletion(processRecord);
+      processDeletionBehavior.finalizeDeletion(processRecord);
     }
-  }
-
-  private void finalizeDeletion(final ProcessRecord processRecord) {
-    final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
-    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
-    commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
   }
 
   private ProcessRecord toProcessRecord(final DeployedProcess process) {
