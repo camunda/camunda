@@ -14,6 +14,7 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -77,6 +78,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
@@ -102,6 +104,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
     this.authCheckBehavior = authCheckBehavior;
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehavior(
@@ -199,6 +202,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeAcceptedResponseOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
+
+    // migration can empty a draining source definition without ever emitting a completion event
+    // against it, so re-check its drain here (no-op unless the source is now fully drained).
+    processDeletionBehavior.finalizeDeletionIfDraining(
+        sourceProcessDefinition.getKey(), processInstanceRecord.getTenantId());
   }
 
   @Override
