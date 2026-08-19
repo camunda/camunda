@@ -195,6 +195,16 @@
       enabled: false,
     },
     {
+      description: "Wandalen/wretry.action is deliberately pinned to the v3.8.0_js_action tag, not the v3.8.0 composite it wraps (see PR #60406). That tag isn't semver-shaped, so Renovate's digest lookup resolves it to v3.8.0's commit instead and silently swaps the SHA while leaving the comment untouched. Bump by hand.",
+      matchFileNames: [
+        ".github/actions/build-platform-docker/action.yml",
+      ],
+      matchPackageNames: [
+        "Wandalen/wretry.action",
+      ],
+      enabled: false,
+    },
+    {
       description: "Identify updates related to builds, tooling, etc. that should be routed to Engineering Operations team.",
       matchManagers: [
         "custom.regex",
