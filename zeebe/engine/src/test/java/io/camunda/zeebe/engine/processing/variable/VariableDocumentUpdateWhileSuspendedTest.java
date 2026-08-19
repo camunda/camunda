@@ -14,14 +14,18 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -153,5 +157,66 @@ public final class VariableDocumentUpdateWhileSuspendedTest {
             tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  /**
+   * A user task scope drives the update lifecycle and can create an {@code updating} task listener
+   * job. That job cannot be completed while suspended, so the task would stay in {@code UPDATING}
+   * and the request would never complete. The command is rejected instead.
+   */
+  @Test
+  public void shouldRejectVariableUpdateScopedAtUserTaskWhileSuspended() {
+    // given - suspended on a Camunda user task with an updating task listener
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(
+                    "task",
+                    t -> t.zeebeUserTask().zeebeTaskListener(l -> l.updating().type(listenerType)))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final var rejection =
+        ENGINE
+            .variables()
+            .ofScope(userTask.getValue().getElementInstanceKey())
+            .withDocument(Map.of("x", 1))
+            .expectRejection()
+            .update();
+
+    // then - the task is untouched and no listener job was created
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(processInstanceKey));
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= rejection.getPosition())
+                .userTaskRecords()
+                .withIntent(UserTaskIntent.UPDATING)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("user task must not enter the update lifecycle while suspended")
+        .isFalse();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= rejection.getPosition())
+                .jobRecords()
+                .withIntent(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("no updating task listener job must be created while suspended")
+        .isFalse();
   }
 }

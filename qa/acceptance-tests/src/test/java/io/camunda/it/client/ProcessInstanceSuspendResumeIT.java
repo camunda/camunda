@@ -231,8 +231,9 @@ public class ProcessInstanceSuspendResumeIT {
 
   /**
    * Variable updates during suspension may satisfy a conditional catch event. The variable write
-   * itself must apply immediately, but token activation is buffered and only runs after resume (see
-   * #58089).
+   * itself must apply immediately, and the token only moves past the catch event after resume. That
+   * the trigger is buffered rather than dropped is asserted on the record stream in
+   * VariableDocumentUpdateWhileSuspendedTest; secondary storage cannot show it reliably.
    */
   @Test
   void shouldBufferConditionalActivationTriggeredByVariableUpdateUntilResume() {
@@ -287,7 +288,7 @@ public class ProcessInstanceSuspendResumeIT {
         .send()
         .join();
 
-    // then - variable is updated, but the catch event does not activate the next element yet
+    // then - variable is updated while the instance stays suspended
     await()
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
@@ -302,23 +303,6 @@ public class ProcessInstanceSuspendResumeIT {
                             .items())
                     .anySatisfy(v -> assertThat(v.getValue()).isEqualTo("42")));
 
-    // give the engine a short window where a non-buffered trigger would have advanced the token
-    await()
-        .pollDelay(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(3))
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processInstanceKey(processInstanceKey)
-                                        .elementId(afterConditionTaskId))
-                            .send()
-                            .join()
-                            .items())
-                    .isEmpty());
     assertThat(
             camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join().getState())
         .isEqualTo(ProcessInstanceState.SUSPENDED);

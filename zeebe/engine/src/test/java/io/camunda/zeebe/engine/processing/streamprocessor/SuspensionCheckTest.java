@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -176,6 +177,30 @@ final class SuspensionCheckTest {
 
     // then - the real process instance key is resolved via job state and returned to the caller
     assertThat(result.outcome()).isEqualTo(SuspensionBehavior.REJECT);
+    assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
+  }
+
+  @Test
+  void shouldResolveProcessInstanceKeyFromScopeForVariableDocumentCommand() {
+    // given - VARIABLE_DOCUMENT only carries a scope key; resolve via the element instance
+    final long scopeKey = 99L;
+    final var elementInstanceState = mock(ElementInstanceState.class);
+    final var scope = mock(ElementInstance.class);
+    when(processingState.getElementInstanceState()).thenReturn(elementInstanceState);
+    when(elementInstanceState.getInstance(scopeKey)).thenReturn(scope);
+    when(scope.getValue())
+        .thenReturn(new ProcessInstanceRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+    markerIs(State.SUSPENDED);
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new VariableDocumentRecord().setScopeKey(scopeKey));
+    when(command.getValueType()).thenReturn(ValueType.VARIABLE_DOCUMENT);
+
+    // when
+    final var result =
+        suspensionCheck.resolve(command, overridingProcessor(SuspensionBehavior.PROCESS));
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionBehavior.PROCESS);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
   }
 

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -88,9 +89,9 @@ public final class SuspensionCheck {
 
   /**
    * Resolves the process instance a command targets. Most values carry their own {@code
-   * processInstanceKey}; external {@code JOB}, {@code INCIDENT}, {@code USER_TASK} and {@code
-   * AD_HOC_SUB_PROCESS_INSTRUCTION} commands only carry the entity key, so the persisted entity is
-   * consulted. Returns {@code -1} when it can't be resolved.
+   * processInstanceKey}; external {@code JOB}, {@code INCIDENT}, {@code USER_TASK}, {@code
+   * AD_HOC_SUB_PROCESS_INSTRUCTION} and {@code VARIABLE_DOCUMENT} commands only carry the entity
+   * key, so the persisted entity is consulted. Returns {@code -1} when it can't be resolved.
    */
   private long resolveProcessInstanceKey(final TypedRecord<?> command) {
     if (command.getValue() instanceof final ProcessInstanceRelated processInstanceRelated) {
@@ -121,6 +122,11 @@ public final class SuspensionCheck {
                 .getElementInstanceState()
                 .getInstance(adHocValue.getAdHocSubProcessInstanceKey());
         yield elementInstance != null ? elementInstance.getValue().getProcessInstanceKey() : -1;
+      }
+      case VARIABLE_DOCUMENT -> {
+        final var scopeKey = ((VariableDocumentRecordValue) command.getValue()).getScopeKey();
+        final var scope = processingState.getElementInstanceState().getInstance(scopeKey);
+        yield scope != null ? scope.getValue().getProcessInstanceKey() : -1;
       }
       default -> -1;
     };
