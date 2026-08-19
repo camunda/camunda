@@ -12,6 +12,7 @@ import {
   Navigate,
   RouterProvider,
   useLocation,
+  useNavigate,
 } from 'react-router';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -23,9 +24,15 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {open} from 'modules/mocks/diagrams';
+import {modificationsStore} from 'modules/stores/modifications';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
+const CALL_ACTIVITY_ID = 'confirmDelivery';
+const SERVICE_TASK_ID = 'checkPayment';
 
 const RedirectToVariables: React.FC = () => {
   const location = useLocation();
@@ -34,13 +41,28 @@ const RedirectToVariables: React.FC = () => {
   );
 };
 
-function getWrapper(initialPath?: string) {
+const SelectElement: React.FC<{elementId: string}> = ({elementId}) => {
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate({search: `?elementId=${elementId}`})}>
+      Select {elementId}
+    </button>
+  );
+};
+
+function getWrapper(initialPath?: string, processDefinitionKey?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const router = createMemoryRouter(
       [
         {
           path: Paths.processInstance(undefined, true),
-          element: children,
+          element: (
+            <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
+              <SelectElement elementId={CALL_ACTIVITY_ID} />
+              <SelectElement elementId={SERVICE_TASK_ID} />
+              {children}
+            </ProcessDefinitionKeyContext.Provider>
+          ),
           children: [
             {index: true, element: <RedirectToVariables />},
             {
@@ -662,6 +684,85 @@ describe('<BottomPanelTabs />', () => {
       Paths.processInstanceVariables({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
+    );
+  });
+
+  it('should switch to the details tab when a call activity is selected', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({processInstanceId: PROCESS_INSTANCE_ID}),
+    );
+  });
+
+  it('should not switch tabs when a non-call-activity element is selected', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${SERVICE_TASK_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID}),
+    );
+  });
+
+  it('should not switch to the details tab for a call activity in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(path, '123'),
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: `Select ${CALL_ACTIVITY_ID}`}),
+    );
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({processInstanceId: PROCESS_INSTANCE_ID}),
     );
   });
 });

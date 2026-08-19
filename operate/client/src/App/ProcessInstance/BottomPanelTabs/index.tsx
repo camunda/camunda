@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router';
+import {useLayoutEffect, useRef} from 'react';
+import {Navigate, Outlet, useLocation, useNavigate} from 'react-router';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -16,6 +17,8 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {modificationsStore} from 'modules/stores/modifications';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -50,12 +53,58 @@ function useSelectionAwareIncidentsCount(
 }
 
 const BottomPanelTabs: React.FC = () => {
-  const {hasSelection} = useProcessInstanceElementSelection();
+  const {hasSelection, selectedElementId} =
+    useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
+  const {data: businessObjects} = useBusinessObjects();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
+
+  const prevHasSelectionRef = useRef(hasSelection);
+  useLayoutEffect(() => {
+    // Switches to the Details tab when users select a call activity, so the
+    // "Called Process Instance" link is immediately visible - independent of
+    // the general any-element selection behavior.
+    //
+    // Business objects load asynchronously, so a selection can arrive before
+    // we can classify its element type. Bail out without touching
+    // prevHasSelectionRef in that case, so the transition is still detected
+    // once business objects resolve, instead of being marked as "seen"
+    // before we ever got to check the element type.
+    if (businessObjects === undefined) {
+      return;
+    }
+
+    const prevHasSelection = prevHasSelectionRef.current;
+    prevHasSelectionRef.current = hasSelection;
+    if (
+      !hasSelection ||
+      prevHasSelection ||
+      modificationsStore.isModificationModeEnabled ||
+      businessObjects[selectedElementId ?? '']?.$type !== 'bpmn:CallActivity'
+    ) {
+      return;
+    }
+
+    navigate(
+      {
+        pathname: Paths.processInstanceDetails({processInstanceId}),
+        search: location.search,
+      },
+      {replace: true},
+    );
+  }, [
+    hasSelection,
+    selectedElementId,
+    businessObjects,
+    processInstanceId,
+    location.search,
+    navigate,
+  ]);
+
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
     hasIncident,
