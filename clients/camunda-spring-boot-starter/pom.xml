@@ -330,6 +330,9 @@
                 <argument>${project.build.outputDirectory}</argument>
               </arguments>
               <classpathScope>test</classpathScope>
+              <!-- The generator class lives under src/test/java, so it isn't compiled when
+                   -Dmaven.test.skip skips test compilation; skip this execution too in that case. -->
+              <skip>${maven.test.skip}</skip>
             </configuration>
           </execution>
         </executions>
