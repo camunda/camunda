@@ -10,10 +10,8 @@ package io.camunda.zeebe.dynamic.config.state;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -31,6 +29,29 @@ import org.jspecify.annotations.NullMarked;
  * <p>Two operations with no dependency path between them may run at the same time. That is the
  * whole concurrency model: broker-parallel, partition-parallel and group-parallel execution are all
  * just missing edges, and adding an axis costs nothing structurally.
+ *
+ * <h4>Correctness of the edges is the author's, and only the author's</h4>
+ *
+ * <p>Nothing here checks that concurrently-runnable operations are actually safe together. A
+ * missing edge is not rejected; it is executed. The failure mode is quiet: two operations writing
+ * the same member entry both succeed, and the sub-configuration merge keeps one of them by version,
+ * so the other's effect is simply gone. Expect a rare stall or a lost transition, not a test
+ * failure.
+ *
+ * <p>Two traps that are not visible from an operation's own fields, learned the hard way:
+ *
+ * <ul>
+ *   <li>{@code MemberRemoveOperation} writes the entry of {@code memberToRemove()}, not of {@code
+ *       memberId()} — it dispatches to {@code MemberLeaveApplier(op.memberToRemove(), ...)}. The
+ *       broker applying it and the entry it writes are different members.
+ *   <li>{@code PartitionForceReconfigureOperation} writes an entry set that cannot be derived from
+ *       the operation at all: its applier loops {@code group.members().keySet()} and removes the
+ *       partition from every member outside the target replication group, so what it touches
+ *       depends on the live configuration. Order it after everything in its group.
+ * </ul>
+ *
+ * <p>The rule of thumb the current adopters follow: two operations naming the same member need an
+ * edge between them unless they name different partitions of it.
  */
 @NullMarked
 public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations) {
@@ -48,14 +69,10 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
     }
   }
 
-  /**
-   * Builds a graph and rejects it if it cannot execute correctly: a dependency cycle, or a pair of
-   * operations that may run at the same time and write overlapping state.
-   */
+  /** Builds a graph and rejects it if it cannot execute: see {@link #validateAcyclic()}. */
   public static OperationGraph of(final SortedMap<OperationId, PlannedOperation> operations) {
     final var graph = new OperationGraph(operations);
     graph.validateAcyclic();
-    graph.validateConcurrentOperationsDoNotConflict();
     return graph;
   }
 
@@ -125,58 +142,6 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
                   .map(Map.Entry::getKey)
                   .toList());
     }
-  }
-
-  /**
-   * Rejects a graph in which two operations that may run at the same time write the same state.
-   *
-   * <p>A safety net, not the ordering mechanism. It cannot see an ordering that lives outside the
-   * configuration — a bootstrap and the joins that follow it write different members' entries, and
-   * six operations write nothing at all (see {@link WriteSets}). Those are ordered only by the
-   * edges a transformer declares.
-   */
-  private void validateConcurrentOperationsDoNotConflict() {
-    final Map<OperationId, Set<OperationId>> memo = new HashMap<>();
-    final var ids = List.copyOf(operations.keySet());
-    ids.forEach(id -> dependenciesOf(id, memo));
-
-    for (int i = 0; i < ids.size(); i++) {
-      for (int j = i + 1; j < ids.size(); j++) {
-        final var first = ids.get(i);
-        final var second = ids.get(j);
-        if (memo.getOrDefault(first, Set.of()).contains(second)
-            || memo.getOrDefault(second, Set.of()).contains(first)) {
-          continue; // ordered by a dependency path, so they never run together
-        }
-        final var firstOperation = Objects.requireNonNull(operations.get(first)).operation();
-        final var secondOperation = Objects.requireNonNull(operations.get(second)).operation();
-        if (!WriteSets.of(firstOperation).isDisjointFrom(WriteSets.of(secondOperation))) {
-          throw new IllegalArgumentException(
-              ("Operations %s (%s) and %s (%s) have no dependency between them, so they may run at "
-                      + "the same time, but they write overlapping state. Either declare a "
-                      + "dependency between them or narrow what they write.")
-                  .formatted(first, firstOperation, second, secondOperation));
-        }
-      }
-    }
-  }
-
-  /** Everything {@code operationId} transitively depends on, memoized across the whole walk. */
-  private Set<OperationId> dependenciesOf(
-      final OperationId operationId, final Map<OperationId, Set<OperationId>> memo) {
-    final var known = memo.get(operationId);
-    if (known != null) {
-      return known;
-    }
-    final var all = new HashSet<OperationId>();
-    // Recorded before recursing so a cycle cannot recurse forever. validateAcyclic runs first, but
-    // this must not become the thing that hangs if that ever stops being true.
-    memo.put(operationId, all);
-    for (final var dependency : Objects.requireNonNull(operations.get(operationId)).dependsOn()) {
-      all.add(dependency);
-      all.addAll(dependenciesOf(dependency, memo));
-    }
-    return all;
   }
 
   /** One operation and what it waits for. */

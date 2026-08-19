@@ -382,42 +382,56 @@ final class DependencyChangePlanTest {
   }
 
   @Nested
-  class EligibilityValidation {
+  class GraphValidation {
 
     @Test
-    void shouldRejectTwoUnorderedOperationsThatWriteTheSameState() {
-      // given — two brokers both force-reconfiguring, which conflicts with everything in the group
-      final var builder = OperationGraph.builder();
-      builder.add(new UpdateIncarnationNumberOperation(member(0)));
-      builder.add(new UpdateIncarnationNumberOperation(member(1)));
-
-      // when / then — no edge between them, and both write sub-configuration state
-      assertThatThrownBy(() -> DependencyChangePlan.init(PLAN_ID, builder.build()))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("write overlapping state");
-    }
-
-    @Test
-    void shouldAllowThemOnceADependencyOrdersThem() {
-      // given — the same pair, now explicitly sequenced
-      final var builder = OperationGraph.builder();
-      final var first = builder.add(new UpdateIncarnationNumberOperation(member(0)));
-      builder.add(new UpdateIncarnationNumberOperation(member(1)), Set.of(first));
+    void shouldRejectADependencyCycle() {
+      // given — a cycle would leave every operation in it permanently un-runnable and the change
+      // would stall with no error at all, so it is rejected at construction
+      final var operations = new java.util.TreeMap<OperationId, OperationGraph.PlannedOperation>();
+      operations.put(
+          OperationId.of(0),
+          new OperationGraph.PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(0)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(1)))));
+      operations.put(
+          OperationId.of(1),
+          new OperationGraph.PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(1)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(0)))));
 
       // when / then
-      assertThat(DependencyChangePlan.init(PLAN_ID, builder.build()).operations()).hasSize(2);
+      assertThatThrownBy(() -> OperationGraph.of(operations))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("dependency cycle");
     }
 
     @Test
-    void shouldNotOrderOperationsThatWriteNothing() {
-      // given — two write-nothing operations on the same member. Disjointness permits them, which
-      // is correct: the check cannot see their real ordering, so declaring an edge is the
-      // transformer's job. This pins the documented limit of the safety net.
-      final var builder = OperationGraph.builder();
-      builder.add(new DeleteHistoryOperation(member(0)));
-      builder.add(new DeleteHistoryOperation(member(0)));
+    void shouldRejectADependencyOnAnOperationOutsideTheGraph() {
+      // given / when / then — an edge to an id the graph does not contain can never be satisfied
+      final var operations = new java.util.TreeMap<OperationId, OperationGraph.PlannedOperation>();
+      operations.put(
+          OperationId.of(0),
+          new OperationGraph.PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(0)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(7)))));
 
-      // when / then — accepted, and both runnable at once
+      assertThatThrownBy(() -> OperationGraph.of(operations))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not part of the graph");
+    }
+
+    @Test
+    void shouldAcceptAnyAcyclicGraphWithoutJudgingItsEdges() {
+      // given — two operations writing the same member with no edge between them. This is very
+      // likely a bug in whichever transformer produced it, and nothing here rejects it: the graph
+      // validates that it can execute, not that executing it is correct. See OperationGraph's
+      // javadoc — the edges are the author's responsibility.
+      final var builder = OperationGraph.builder();
+      builder.add(new UpdateIncarnationNumberOperation(member(0)));
+      builder.add(new UpdateIncarnationNumberOperation(member(0)));
+
+      // when / then — accepted, and both offered at once
       final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
       assertThat(plan.runnableFor(member(0))).hasSize(2);
     }

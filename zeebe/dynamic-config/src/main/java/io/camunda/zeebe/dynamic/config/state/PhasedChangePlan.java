@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -116,24 +117,36 @@ public record PhasedChangePlan(
   /**
    * Returns the scope of this plan: {@link Global} if any phase is a {@link GlobalPhase} (the plan
    * touches cluster-wide broker lifecycle, and therefore conflicts with every other plan);
-   * otherwise {@link Groups}, the union of every partition group id named across the plan's {@link
-   * PartitionGroupParallelPhase}s.
+   * otherwise {@link Groups}, the union of every partition group id named across the plan's
+   * partition-group phases, whichever execution model they use.
    */
   public Scope scope() {
     return scopeOf(phases);
   }
 
-  /** Same as {@link #scope()}, computable before a plan (and its id) exists. */
+  /**
+   * Same as {@link #scope()}, computable before a plan (and its id) exists.
+   *
+   * <p>Switches over every phase kind rather than filtering for one: a phase whose groups are not
+   * collected here contributes nothing to the scope, so the plan appears to target no group and
+   * {@link #conflicts(Scope, Scope)} lets a second plan onto the same sub-configuration.
+   */
   public static Scope scopeOf(final List<Phase> phases) {
     if (phases.stream().anyMatch(GlobalPhase.class::isInstance)) {
       return new Global();
     }
-    final Set<String> groupIds =
-        phases.stream()
-            .filter(PartitionGroupParallelPhase.class::isInstance)
-            .map(PartitionGroupParallelPhase.class::cast)
-            .flatMap(phase -> phase.groupOperations().keySet().stream())
-            .collect(Collectors.toUnmodifiableSet());
+    final Set<String> groupIds = new HashSet<>();
+    for (final var phase : phases) {
+      switch (phase) {
+        case final GlobalPhase ignored -> {
+          // Unreachable: a plan containing one is Global above. Kept so the switch is exhaustive.
+        }
+        case final PartitionGroupParallelPhase parallelPhase ->
+            groupIds.addAll(parallelPhase.groupOperations().keySet());
+        case final PartitionGroupGraphPhase graphPhase ->
+            groupIds.addAll(graphPhase.groupGraphs().keySet());
+      }
+    }
     return new Groups(groupIds);
   }
 
