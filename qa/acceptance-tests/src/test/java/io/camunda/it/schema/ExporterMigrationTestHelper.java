@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -50,6 +51,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public class ExporterMigrationTestHelper {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterMigrationTestHelper.class);
 
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
@@ -67,6 +70,10 @@ public class ExporterMigrationTestHelper {
       String.format(
           "https://hub.docker.com/v2/repositories/camunda/camunda/tags?page_size=%d&name=%s",
           100, PREVIOUS_MINOR_VERSION);
+  private static final Duration TAG_FETCH_CONNECT_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration TAG_FETCH_REQUEST_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration TAG_FETCH_MAX_DURATION = Duration.ofMinutes(2);
+  private static final Duration TAG_FETCH_RETRY_INTERVAL = Duration.ofSeconds(2);
 
   private static final String PROCESS_ID = "migration-test";
   private static final String JOB_TYPE = "test-job";
@@ -531,8 +538,7 @@ public class ExporterMigrationTestHelper {
     return Integer.compare(patch1, patch2);
   }
 
-  public static List<String> fetchLatestPatchFromPreviousMinor()
-      throws IOException, InterruptedException {
+  public static List<String> fetchLatestPatchFromPreviousMinor() {
     final List<String> allVersions = fetchAllPatchesFromPreviousMinor();
     final int len = allVersions.size();
     final String latestVersion = allVersions.get(len - 1);
@@ -540,39 +546,65 @@ public class ExporterMigrationTestHelper {
     return List.of(allVersions.get(latestReleaseIndex));
   }
 
-  public static List<String> fetchAllPatchesFromPreviousMinor()
+  /**
+   * Docker Hub is an external dependency, and this runs while JUnit provides the arguments for the
+   * migration ITs. An argument-provider failure is a container-level failure, which Failsafe's
+   * {@code rerunFailingTestsCount} cannot recover — so a single reset connection or rate-limited
+   * response fails the build outright. The retry therefore has to live here.
+   */
+  public static List<String> fetchAllPatchesFromPreviousMinor() {
+    return Awaitility.await("fetch camunda/camunda image tags for " + PREVIOUS_MINOR_VERSION)
+        .atMost(TAG_FETCH_MAX_DURATION)
+        .pollDelay(Duration.ZERO)
+        .pollInterval(TAG_FETCH_RETRY_INTERVAL)
+        .pollInSameThread()
+        .ignoreExceptionsInstanceOf(IOException.class)
+        .until(
+            ExporterMigrationTestHelper::fetchAllPatchesFromPreviousMinorOnce,
+            versions -> !versions.isEmpty());
+  }
+
+  private static List<String> fetchAllPatchesFromPreviousMinorOnce()
       throws IOException, InterruptedException {
-    final HttpClient client = HttpClient.newHttpClient();
     final ObjectMapper mapper = new ObjectMapper();
 
     final List<String> allTags = new ArrayList<>();
     String url = API_URL;
 
-    while (true) {
-      final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+    try (final HttpClient client =
+        HttpClient.newBuilder().connectTimeout(TAG_FETCH_CONNECT_TIMEOUT).build()) {
+      while (true) {
+        final HttpRequest request =
+            HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(TAG_FETCH_REQUEST_TIMEOUT).GET().build();
       final HttpResponse<String> response =
           client.send(request, HttpResponse.BodyHandlers.ofString());
 
-      if (response.statusCode() < 200 || response.statusCode() >= 300) {
-        throw new IOException(
-            String.format(
-                "Failed to fetch Docker Hub tags from %s: HTTP %d, body: %s",
-                url, response.statusCode(), response.body()));
-      }
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+          throw new IOException(
+              String.format(
+                  "Failed to fetch Docker Hub tags from %s: HTTP %d, body: %s",
+                  url, response.statusCode(), response.body()));
+        }
 
-      final JsonNode root = mapper.readTree(response.body());
+        final JsonNode root = mapper.readTree(response.body());
 
       for (final JsonNode tag : root.get("results")) {
         allTags.add(tag.get("name").asString());
       }
 
-      // pagination
-      final JsonNode next = root.get("next");
-      if (next == null || next.isNull()) { // NOTE: edge case
-        break;
-      }
+        // pagination
+        final JsonNode next = root.get("next");
+        if (next == null || next.isNull()) { // NOTE: edge case
+          break;
+        }
 
-      url = next.asString();
+        url = next.asString();
+      }
+    } catch (final IOException e) {
+      LOG.warn("Failed to fetch Docker Hub tags from {}, retrying", url, e);
+      throw e;
     }
 
     final List<String> allVersions = new ArrayList<>();
