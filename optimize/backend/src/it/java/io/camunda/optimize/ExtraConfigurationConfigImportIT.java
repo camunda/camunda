@@ -36,7 +36,19 @@ public class ExtraConfigurationConfigImportIT extends AbstractCCSMIT {
   @Override
   protected void startAndUseNewOptimizeInstance() {
     startAndUseNewOptimizeInstance(
-        Map.of("spring.config.additional-location", configDir.toAbsolutePath() + "/"),
+        Map.of(
+            "spring.config.location",
+            configDir.toAbsolutePath() + "/",
+            "camunda.security.authentication.oidc.client-id",
+            "it-client",
+            "camunda.security.authentication.oidc.client-secret",
+            "it-secret",
+            "camunda.security.authentication.oidc.authorization-uri",
+            "https://idp.example.com/authorize",
+            "camunda.security.authentication.oidc.token-uri",
+            "https://idp.example.com/token",
+            "camunda.security.authentication.oidc.jwk-set-uri",
+            "https://idp.example.com/jwks"),
         ConfigurationServiceConstants.CCSM_PROFILE);
   }
 
