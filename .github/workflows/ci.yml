@@ -1259,9 +1259,9 @@ jobs:
         with:
           max_attempts: 3
           retry_wait_seconds: 10
-          timeout_seconds: 60
+          timeout_minutes: 2
           shell: bash
-          command: sudo timeout 55 bash -c "apt-get install -y --no-install-recommends bats libxml2-utils"
+          command: sudo timeout 115 bash -c "apt-get install -y --no-install-recommends bats libxml2-utils"
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests

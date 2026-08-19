@@ -260,7 +260,7 @@ jobs:
           retry_wait_seconds: 10
           timeout_minutes: 2
           shell: bash
-          command: sudo timeout 115 bash -c "apt-get -qq update && apt-get install -y strace"
+          command: sudo timeout 115 bash -c "apt-get update && apt-get install -y strace"
       - name: Allow ptrace for strace tests
         run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
