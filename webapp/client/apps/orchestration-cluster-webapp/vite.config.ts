@@ -16,6 +16,7 @@ import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
 import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 
 const injectCustomCss: PluginOption = {
 	name: 'inject-custom-css',
@@ -34,6 +35,7 @@ const injectCustomCss: PluginOption = {
 
 const basePlugins: PluginOption[] = [
 	devtools(),
+	tailwindcss(),
 	tanstackRouter({
 		target: 'react',
 		autoCodeSplitting: true,
