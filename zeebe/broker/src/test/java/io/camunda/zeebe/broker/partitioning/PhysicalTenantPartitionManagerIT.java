@@ -11,11 +11,13 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -99,10 +101,11 @@ final class PhysicalTenantPartitionManagerIT {
     assertThatThrownBy(
             () -> {
               final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(rootCfg);
+              AtomixCluster atomixCluster = null;
+              BrokerClient brokerClient = null;
               try {
-                final var atomixCluster =
-                    TestClusterFactory.createAtomixCluster(rootCfg, METER_REGISTRY);
-                final var brokerClient =
+                atomixCluster = TestClusterFactory.createAtomixCluster(rootCfg, METER_REGISTRY);
+                brokerClient =
                     TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
                 final var systemContext =
                     SystemContextTestFactory.multiTenant(
@@ -131,6 +134,12 @@ final class PhysicalTenantPartitionManagerIT {
                   broker.start().join();
                 }
               } finally {
+                if (brokerClient != null) {
+                  brokerClient.close();
+                }
+                if (atomixCluster != null) {
+                  atomixCluster.stop().join();
+                }
                 actorScheduler.close();
               }
             })

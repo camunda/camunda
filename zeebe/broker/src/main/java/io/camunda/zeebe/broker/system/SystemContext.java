@@ -472,7 +472,7 @@ public final class SystemContext {
 
     final var partitionMembers = new HashMap<Integer, Set<Integer>>();
     for (final var partition : partitions) {
-      if (!partition.getPhysicalTenantId().equals(tenantId)) {
+      if (!tenantId.equals(partition.getPhysicalTenantId())) {
         continue;
       }
       final var members =

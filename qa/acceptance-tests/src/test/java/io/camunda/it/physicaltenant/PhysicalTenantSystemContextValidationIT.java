@@ -47,12 +47,16 @@ final class PhysicalTenantSystemContextValidationIT {
 
     // when/then — startup fails, naming the offending tenant, instead of silently booting with an
     // unvalidated per-tenant configuration
-    assertThatThrownBy(broker::start)
-        .isInstanceOf(BeanCreationException.class)
-        .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .rootCause()
-        .hasMessageContaining("Snapshot period")
-        .hasMessageContaining("physical tenant '" + TENANT_A + "'");
+    try {
+      assertThatThrownBy(broker::start)
+          .isInstanceOf(BeanCreationException.class)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .rootCause()
+          .hasMessageContaining("Snapshot period")
+          .hasMessageContaining("physical tenant '" + TENANT_A + "'");
+    } finally {
+      broker.close();
+    }
   }
 
   @Test
