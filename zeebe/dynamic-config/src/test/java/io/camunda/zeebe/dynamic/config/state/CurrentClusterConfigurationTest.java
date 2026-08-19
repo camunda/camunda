@@ -892,6 +892,53 @@ class CurrentClusterConfigurationTest {
     }
 
     @Test
+    void shouldActivateNextPhaseWhenExpectedPhaseIndexMatchesCurrent() {
+      // given — plan: phase 0 global, phase 1 targets group "a"
+      final var config =
+          config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
+              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+      final var planId = config.phasedChangeState().onlyPending().id();
+
+      // when — expectedPhaseIndex (0) matches the plan's actual current phase index
+      final var updated = config.tryActivateNextPhase(planId, 0);
+
+      // then — advances exactly as the unguarded overload would
+      assertThat(updated.phasedChangeState().onlyPending().currentPhaseIndex()).isEqualTo(1);
+      assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
+    }
+
+    @Test
+    void shouldNoOpActivateNextPhaseWhenExpectedPhaseIndexIsStale() {
+      // given — a plan already advanced to phase 1 by an earlier trigger
+      final var config =
+          config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
+              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+      final var planId = config.phasedChangeState().onlyPending().id();
+      final var advanced = config.activateNextPhase(planId);
+
+      // when — a second, stale trigger still expects phase 0 (the phase it observed as complete
+      // before the first trigger's advance ran)
+      final var result = advanced.tryActivateNextPhase(planId, 0);
+
+      // then — no-op: the stale re-validation is rejected instead of throwing or double-advancing
+      assertThat(result).isEqualTo(advanced);
+    }
+
+    @Test
+    void shouldNoOpActivateNextPhaseWithExpectedPhaseIndexWhenPlanNoLongerPending() {
+      // given — a plan that has already completed
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+      final var planId = config.phasedChangeState().onlyPending().id();
+      final var completed = config.completePlan(planId, PhasedChangePlanStatus.COMPLETED);
+
+      // when — a stale trigger tries to advance the now-resolved plan
+      final var result = completed.tryActivateNextPhase(planId, 0);
+
+      // then — no-op, not an exception
+      assertThat(result).isEqualTo(completed);
+    }
+
+    @Test
     void shouldThrowWhenActivatingNextPhaseOnLastPhase() {
       // given — a single-phase plan
       final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
@@ -927,6 +974,50 @@ class CurrentClusterConfigurationTest {
       assertThat(completed.phasedChangeState().lastChange()).isPresent();
       assertThat(completed.phasedChangeState().lastChange().orElseThrow().status())
           .isEqualTo(status);
+    }
+
+    @Test
+    void shouldCompletePlanWhenExpectedPhaseIndexMatchesCurrent() {
+      // given
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+      final var planId = config.phasedChangeState().onlyPending().id();
+
+      // when
+      final var completed = config.tryCompletePlan(planId, 0, PhasedChangePlanStatus.COMPLETED, 10);
+
+      // then — completes exactly as the unguarded overload would
+      assertThat(completed.phasedChangeState().pending()).isEmpty();
+      assertThat(completed.phasedChangeState().lastChange()).isPresent();
+    }
+
+    @Test
+    void shouldNoOpCompletePlanWhenExpectedPhaseIndexIsStale() {
+      // given — a two-phase plan already advanced to phase 1 by an earlier trigger
+      final var config =
+          config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
+              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+      final var planId = config.phasedChangeState().onlyPending().id();
+      final var advanced = config.activateNextPhase(planId);
+
+      // when — a stale trigger tries to complete the plan as if it were still on phase 0
+      final var result = advanced.tryCompletePlan(planId, 0, PhasedChangePlanStatus.COMPLETED, 10);
+
+      // then — no-op: the plan is still pending at phase 1, untouched
+      assertThat(result).isEqualTo(advanced);
+    }
+
+    @Test
+    void shouldNoOpCompletePlanWithExpectedPhaseIndexWhenPlanNoLongerPending() {
+      // given — a plan that has already completed
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+      final var planId = config.phasedChangeState().onlyPending().id();
+      final var completed = config.completePlan(planId, PhasedChangePlanStatus.COMPLETED);
+
+      // when — a stale duplicate completion trigger for the same, already-resolved plan
+      final var result = completed.tryCompletePlan(planId, 0, PhasedChangePlanStatus.CANCELLED, 10);
+
+      // then — no-op, not an exception; the plan's original terminal status is untouched
+      assertThat(result).isEqualTo(completed);
     }
 
     @Test
@@ -979,6 +1070,80 @@ class CurrentClusterConfigurationTest {
       assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
       assertThat(updated.partitionGroup("b").hasPendingChanges()).isFalse();
       assertThat(updated.globalConfiguration().hasPendingChanges()).isFalse();
+    }
+  }
+
+  @Nested
+  class IsCurrentPhaseComplete {
+
+    @Test
+    void shouldThrowWhenNoPlanIsPending() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when / then
+      assertThatThrownBy(() -> config.isCurrentPhaseComplete(1L))
+          .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldBeIncompleteForGlobalPhaseWithPendingChanges() {
+      // given — a plan whose current phase is global, freshly activated
+      final var config =
+          CurrentClusterConfiguration.init()
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+      final var planId = config.phasedChangeState().onlyPending().id();
+
+      // then — the global configuration still has the phase's operation pending
+      assertThat(config.isCurrentPhaseComplete(planId)).isFalse();
+    }
+
+    @Test
+    void shouldBeCompleteForGlobalPhaseOnceDrained() {
+      // given — the global phase's own operation has been applied and advanced
+      final var config =
+          CurrentClusterConfiguration.init()
+              .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+      final var planId = config.phasedChangeState().onlyPending().id();
+      final var drained =
+          config.updateGlobalConfiguration(
+              g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+
+      // then
+      assertThat(drained.isCurrentPhaseComplete(planId)).isTrue();
+    }
+
+    @Test
+    void shouldBeIncompleteForParallelPhaseUntilEveryNamedGroupDrains() {
+      // given — a parallel phase targeting groups "a" and "b"; only "a" has drained
+      final var phase =
+          new PartitionGroupParallelPhase(
+              Map.of(
+                  "a", List.of(new DeleteHistoryOperation(MEMBER_0)),
+                  "b", List.of(new DeleteHistoryOperation(MEMBER_0))));
+      final var config =
+          config(
+                  global(1, Map.of()),
+                  Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+                  PhasedChangeState.empty())
+              .initPlan(List.of(phase));
+      final var planId = config.phasedChangeState().onlyPending().id();
+
+      // when — group "a" drains its side of the phase, "b" is still pending
+      final var partiallyDrained =
+          config.updatePartitionGroupConfig(
+              "a", g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+
+      // then
+      assertThat(partiallyDrained.isCurrentPhaseComplete(planId)).isFalse();
+
+      // when — group "b" drains too
+      final var fullyDrained =
+          partiallyDrained.updatePartitionGroupConfig(
+              "b", g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+
+      // then
+      assertThat(fullyDrained.isCurrentPhaseComplete(planId)).isTrue();
     }
   }
 

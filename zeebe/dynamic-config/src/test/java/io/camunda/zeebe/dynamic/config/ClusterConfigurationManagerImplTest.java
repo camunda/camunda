@@ -180,6 +180,67 @@ final class ClusterConfigurationManagerImplTest {
   }
 
   @Test
+  void shouldApplyEveryOperationInASingleGroupPhaseSequentially() {
+    // given — member 1 replicates partitions 1 and 2; a phase joins the local member (0) to both,
+    // the ordinary scale-up shape (toPhases folds a run of same-kind ops into one phase, so a
+    // multi-partition scale-up is one phase with several operations, not several phases)
+    final var manager = newManager(MEMBER_0);
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(
+                        1, PartitionState.active(1, partitionConfig),
+                        2, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(
+                    MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                    MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    // when — one phase carries two join operations for the local member, one per partition
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(
+                                    new PartitionJoinOperation(MEMBER_0, 1, 1),
+                                    new PartitionJoinOperation(MEMBER_0, 2, 1)))))))
+        .join();
+
+    // then — both operations drained in order and the plan completed; a reconciliation loop that
+    // stopped after the first operation would leave partition 2 (and the plan) stuck pending
+    final var config = configuration(manager);
+    final var defaultGroup = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.hasPendingChanges()).isFalse();
+    assertThat(defaultGroup.getMember(MEMBER_0).partitions()).containsOnlyKeys(1, 2);
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    final var lastChange = config.phasedChangeState().lastChange();
+    assertThat(lastChange).isPresent();
+    assertThat(lastChange.get().status()).isEqualTo(PhasedChangePlanStatus.COMPLETED);
+  }
+
+  @Test
   void shouldApplyOneParallelPhaseToEveryPartitionGroupItTargets() {
     // given — two partition groups (physical tenants), each with the local member replicating its
     // own partition 1. A cluster purge plans one parallel phase spanning every group, so a phase
@@ -379,6 +440,78 @@ final class ClusterConfigurationManagerImplTest {
     final var defaultGroup = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     assertThat(defaultGroup.hasMember(MEMBER_0)).isTrue();
     assertThat(defaultGroup.hasPendingChanges()).isFalse();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    final var lastChange = config.phasedChangeState().lastChange();
+    assertThat(lastChange).isPresent();
+    assertThat(lastChange.get().status()).isEqualTo(PhasedChangePlanStatus.COMPLETED);
+  }
+
+  @Test
+  void shouldAdvanceThroughTwoPhasesTargetingDisjointPartitionGroups() {
+    // given — member 0 is the coordinator; two physical tenants ("a" and "b") each hold one
+    // partition replicated only by member 1
+    final var manager = newManager(MEMBER_0);
+    manager.registerPartitionGroupChangeAppliers(
+        "a",
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+    manager.registerPartitionGroupChangeAppliers(
+        "b",
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    final var groupWithMember1 =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(
+                    MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                    MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of("a", groupWithMember1, "b", groupWithMember1),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    // when — a two-phase plan adds member 0 as a replica of group "a"'s partition 1, then group
+    // "b"'s partition 1: each phase targets exactly one, disjoint group — the shape a
+    // stray-double-advance would corrupt silently, by activating phase 1 without phase 0 having
+    // actually drained, or by skipping straight past phase 1 without ever activating it
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of("a", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))),
+                        new PartitionGroupParallelPhase(
+                            Map.of("b", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+        .join();
+
+    // then — both phases were applied in order and the plan completed; neither group was skipped
+    final var config = configuration(manager);
+    assertThat(config.partitionGroup("a").hasMember(MEMBER_0)).isTrue();
+    assertThat(config.partitionGroup("b").hasMember(MEMBER_0)).isTrue();
     assertThat(config.phasedChangeState().pending()).isEmpty();
     final var lastChange = config.phasedChangeState().lastChange();
     assertThat(lastChange).isPresent();
@@ -750,6 +883,81 @@ final class ClusterConfigurationManagerImplTest {
         .isTrue();
     assertThat(defaultGroup.hasPendingChanges()).isFalse();
     assertThat(config.phasedChangeState().pending()).isEmpty();
+  }
+
+  @Test
+  void shouldRetryPendingOperationInPartitionGroupMultipleTimesBeforeSucceeding() {
+    // given — same setup as shouldRetryPendingOperationInPartitionGroupIfFailed, but the
+    // operation fails three times in a row before eventually succeeding — the previously
+    // untested case where the retry itself also fails, more than once
+    final var manager = newManager(MEMBER_0);
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(Map.of()),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(
+                    MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                    MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new FailingExecutor(3),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor()));
+
+    // when
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+        .join();
+
+    // then — three consecutive failures did not stop the retries; the fourth attempt completed
+    Awaitility.await("Pending operation should be retried until it succeeds")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var config = configuration(manager);
+              assertThat(
+                      config
+                          .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                          .hasPendingChanges())
+                  .isFalse();
+              assertThat(config.phasedChangeState().pending()).isEmpty();
+            });
+    final var defaultGroup =
+        configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.hasMember(MEMBER_0))
+        .describedAs("Member 0 is added to the default group despite three failed attempts")
+        .isTrue();
   }
 
   @Test

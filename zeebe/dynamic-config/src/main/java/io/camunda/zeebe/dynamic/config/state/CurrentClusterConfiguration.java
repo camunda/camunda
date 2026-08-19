@@ -515,6 +515,11 @@ public record CurrentClusterConfiguration(
    *
    * @throws IllegalStateException if no plan {@code planId} is pending, or it is already on its
    *     last phase
+   * @apiNote Unconditional and unguarded — it throws if the precondition doesn't hold, rather than
+   *     re-validating it, so it is only safe against a config snapshot no concurrent trigger can
+   *     act on (e.g. a single-threaded dry-run simulation). A caller driving a live plan against a
+   *     config that another trigger could concurrently advance must use {@link
+   *     #tryActivateNextPhase(long, int)} instead.
    */
   public CurrentClusterConfiguration activateNextPhase(final long planId) {
     final var plan = phasedChangeState.pending().get(planId);
@@ -532,10 +537,37 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Like {@link #activateNextPhase(long)}, but re-validates {@code expectedPhaseIndex} against the
+   * plan's actual current phase index first, no-op'ing (returning {@code this}) instead of mutating
+   * if it no longer matches — i.e. the plan is no longer pending, or some other trigger already
+   * advanced it past the phase this call was decided against. Intended for callers that computed
+   * "phase complete, advance it" from a config snapshot that may since have gone stale (e.g. two
+   * independent triggers both observing the same completed phase): re-validating at execution time,
+   * rather than throwing, turns a stale/duplicate advance into a harmless no-op instead of an
+   * exception that would otherwise be retried forever against a precondition that can never become
+   * true again. The {@code try} prefix marks it as the safe-by-default choice for any caller
+   * driving a live plan, as opposed to {@link #activateNextPhase(long)}.
+   */
+  public CurrentClusterConfiguration tryActivateNextPhase(
+      final long planId, final int expectedPhaseIndex) {
+    final var plan = phasedChangeState.pending().get(planId);
+    if (plan == null || plan.currentPhaseIndex() != expectedPhaseIndex) {
+      return this;
+    }
+    return activateNextPhase(planId);
+  }
+
+  /**
    * Completes the pending plan {@code planId} with the given terminal status, moving it into {@code
    * history}. Sub-configuration changes activated by the plan are left untouched.
    *
    * @throws IllegalStateException if plan {@code planId} is not pending
+   * @apiNote Unconditional and unguarded — it throws if the plan isn't pending, rather than
+   *     re-validating, so it is only safe against a config snapshot no concurrent trigger can act
+   *     on (e.g. a single-threaded dry-run simulation, or a caller that already confirmed the plan
+   *     is pending under the same single-writer authority that owns it). A caller driving a live
+   *     plan against a config that another trigger could concurrently complete must use {@link
+   *     #tryCompletePlan(long, int, PhasedChangePlanStatus, int)} instead.
    */
   public CurrentClusterConfiguration completePlan(
       final long planId, final PhasedChangePlanStatus status) {
@@ -546,6 +578,49 @@ public record CurrentClusterConfiguration(
   public CurrentClusterConfiguration completePlan(
       final long planId, final PhasedChangePlanStatus status, final int historyLimit) {
     return withPhasedChangeState(phasedChangeState.completePlan(planId, status, historyLimit));
+  }
+
+  /**
+   * Like {@link #completePlan(long, PhasedChangePlanStatus, int)}, but re-validates {@code
+   * expectedPhaseIndex} first, no-op'ing (returning {@code this}) instead of throwing if the plan
+   * is no longer pending or has moved past that phase. See {@link #tryActivateNextPhase(long, int)}
+   * for why re-validation, not an exception, is the correct response to a stale/duplicate
+   * completion trigger. The {@code try} prefix marks it as the safe-by-default choice for any
+   * caller driving a live plan, as opposed to the unguarded {@link #completePlan(long,
+   * PhasedChangePlanStatus, int)}.
+   */
+  public CurrentClusterConfiguration tryCompletePlan(
+      final long planId,
+      final int expectedPhaseIndex,
+      final PhasedChangePlanStatus status,
+      final int historyLimit) {
+    final var plan = phasedChangeState.pending().get(planId);
+    if (plan == null || plan.currentPhaseIndex() != expectedPhaseIndex) {
+      return this;
+    }
+    return completePlan(planId, status, historyLimit);
+  }
+
+  /**
+   * Returns {@code true} if plan {@code planId}'s current phase has fully drained: every
+   * sub-configuration it targets (the global configuration for a {@link GlobalPhase}, or each named
+   * partition group for a {@link PartitionGroupParallelPhase}) has no pending changes left.
+   *
+   * @throws IllegalStateException if no plan {@code planId} is pending
+   */
+  public boolean isCurrentPhaseComplete(final long planId) {
+    final var plan = phasedChangeState.pending().get(planId);
+    if (plan == null) {
+      throw new IllegalStateException(
+          "Cannot check phase completion: no plan '%d' is pending".formatted(planId));
+    }
+    return switch (plan.currentPhase()) {
+      case final GlobalPhase ignored -> !globalConfiguration.hasPendingChanges();
+      case final PartitionGroupParallelPhase parallelPhase ->
+          parallelPhase.groupOperations().keySet().stream()
+              .map(this::partitionGroup)
+              .allMatch(group -> group != null && !group.hasPendingChanges());
+    };
   }
 
   /**

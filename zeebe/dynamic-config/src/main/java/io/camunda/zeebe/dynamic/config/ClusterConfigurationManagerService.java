@@ -322,6 +322,7 @@ public final class ClusterConfigurationManagerService
       configurationRequestServer.close();
     }
     clusterConfigurationGossiper.close();
+    clusterConfigurationManager.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }
 
