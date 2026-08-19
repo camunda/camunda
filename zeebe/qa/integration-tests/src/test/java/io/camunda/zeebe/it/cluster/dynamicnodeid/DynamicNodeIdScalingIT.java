@@ -343,8 +343,8 @@ public class DynamicNodeIdScalingIT {
     private static final int REPLICATION_FACTOR = 1;
 
     // the gateway is usually included in the gossip update for the removed broker (after ~5s), but
-    // can take 10s if instead falling back to its own timeout
-    private static final Duration TOPOLOGY_TIMEOUT = Duration.ofSeconds(30);
+    // can take 10s if instead falling back to its own timeout - so we add some headroom
+    private static final Duration TOPOLOGY_TIMEOUT = Duration.ofSeconds(20);
 
     @TestZeebe(autoStart = false)
     protected TestCluster testCluster =
