@@ -28,6 +28,7 @@ const ComponentAccessDeniedPage: React.FC = () => {
 				<Link
 					href="https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/"
 					target="_blank"
+					rel="noopener noreferrer"
 					renderIcon={Launch}
 				>
 					{t('componentAccessDeniedPageLinkLabel')}
