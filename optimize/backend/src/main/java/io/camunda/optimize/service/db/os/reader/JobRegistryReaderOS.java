@@ -56,9 +56,14 @@ public class JobRegistryReaderOS implements JobRegistryReader {
             .size(limit)
             .query(boolQuery.toQuery())
             .sort(
-                new SortOptions.Builder()
-                    .field(f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Asc))
-                    .build());
+                List.of(
+                    new SortOptions.Builder()
+                        .field(f -> f.field(JobRegistryIndex.CREATED_AT).order(SortOrder.Asc))
+                        .build(),
+                    // tiebreaker
+                    new SortOptions.Builder()
+                        .field(f -> f.field(JobRegistryIndex.ID).order(SortOrder.Asc))
+                        .build()));
 
     final String errorMessage =
         String.format(

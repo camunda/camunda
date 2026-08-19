@@ -29,7 +29,9 @@ import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +43,7 @@ public class JobDispatcherTest {
   private ConfigurationService configurationService;
   private JobRegistryReader jobRegistryReader;
   private JobRegistryWriter jobRegistryWriter;
+  private final List<JobDispatcher> createdDispatchers = new ArrayList<>();
 
   @BeforeEach
   public void init() {
@@ -51,6 +54,14 @@ public class JobDispatcherTest {
     configurationService.getJobRegistryDispatcherConfiguration().setThreadCount(1);
     jobRegistryReader = mock(JobRegistryReader.class);
     jobRegistryWriter = mock(JobRegistryWriter.class);
+  }
+
+  @AfterEach
+  public void shutdownDispatchers() {
+    // dispatchNextBatch() lazily creates a non-daemon thread pool; without this, every test that
+    // dispatches at least one job leaks its dispatcher's threads for the rest of the suite.
+    createdDispatchers.forEach(JobDispatcher::destroy);
+    createdDispatchers.clear();
   }
 
   @Test
@@ -82,7 +93,8 @@ public class JobDispatcherTest {
     underTest.dispatchNextBatch();
 
     // then
-    verify(jobRegistryWriter).updateJobStatus(eq("job-1"), eq(JobStatus.FAILED), eq("boom"));
+    verify(jobRegistryWriter)
+        .updateJobStatus(eq("job-1"), eq(JobStatus.FAILED), eq("RuntimeException: boom"));
   }
 
   @Test
@@ -265,7 +277,10 @@ public class JobDispatcherTest {
   }
 
   private JobDispatcher createDispatcherToTest(final JobHandler... jobHandlers) {
-    return new JobDispatcher(
-        configurationService, jobRegistryReader, jobRegistryWriter, List.of(jobHandlers));
+    final JobDispatcher dispatcher =
+        new JobDispatcher(
+            configurationService, jobRegistryReader, jobRegistryWriter, List.of(jobHandlers));
+    createdDispatchers.add(dispatcher);
+    return dispatcher;
   }
 }
