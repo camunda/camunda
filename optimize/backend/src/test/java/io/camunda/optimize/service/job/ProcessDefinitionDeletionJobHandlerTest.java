@@ -63,7 +63,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
   @Test
   void shouldDeleteInstancesAndDefinitionWhenDefinitionExists() {
     // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID))
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
 
     // when
@@ -77,7 +77,8 @@ class ProcessDefinitionDeletionJobHandlerTest {
   @Test
   void shouldNoOpWhenDefinitionNoLongerExists() {
     // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID)).thenReturn(Optional.empty());
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.empty());
 
     // when
     handler.handle(job());
@@ -90,7 +91,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
   @Test
   void shouldRetryOnRetryableErrorAndEventuallySucceed() {
     // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID))
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     doThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")))
         .doThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")))
@@ -108,9 +109,31 @@ class ProcessDefinitionDeletionJobHandlerTest {
   }
 
   @Test
+  void shouldRetryOnRetryableErrorNestedTwoLevelsDeep() {
+    // given -- the repository layer can wrap a retryable error inside another
+    // OptimizeRuntimeException (e.g. an async delete-by-query task failure)
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    doThrow(
+            new OptimizeRuntimeException(
+                "outer", new OptimizeRuntimeException("inner", new SocketTimeoutException("boom"))))
+        .doNothing()
+        .when(processInstanceWriter)
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(processInstanceWriter, times(2))
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
+  }
+
+  @Test
   void shouldPropagateOnceRetryableErrorExceedsMaxAttempts() {
     // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID))
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     doThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")))
         .when(processInstanceWriter)
@@ -124,7 +147,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
   @Test
   void shouldNotRetryNonRetryableError() {
     // given
-    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID))
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
         .thenReturn(Optional.of(definition()));
     doThrow(new IllegalStateException("not retryable"))
         .when(processInstanceWriter)

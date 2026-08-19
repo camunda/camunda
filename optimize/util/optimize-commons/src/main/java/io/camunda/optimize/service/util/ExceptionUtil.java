@@ -39,6 +39,18 @@ public class ExceptionUtil {
                 && containsInstanceIndexAliasOrPrefix(type, e.getMessage()));
   }
 
+  public static boolean isInstanceIndexNotFoundExceptionInCauseChain(
+      final DefinitionType type, final Throwable throwable) {
+    Throwable current = throwable;
+    while (current instanceof final RuntimeException runtimeException) {
+      if (isInstanceIndexNotFoundException(type, runtimeException)) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
+  }
+
   private static boolean isDbExceptionWithMessage(
       final RuntimeException e, final Function<String, Boolean> messageFilter) {
     if (e instanceof final ElasticsearchException err) {

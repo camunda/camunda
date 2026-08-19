@@ -26,6 +26,7 @@ import io.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,8 +79,8 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(processDefinitionReader.getProcessDefinition(definitionIdV1)).isEmpty();
-    assertThat(processDefinitionReader.getProcessDefinition(definitionIdV2)).isPresent();
+    assertThat(getProcessDefinition(definitionIdV1)).isEmpty();
+    assertThat(getProcessDefinition(definitionIdV2)).isPresent();
 
     final List<ProcessInstanceDto> remainingInstances =
         databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
@@ -107,7 +108,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(processDefinitionReader.getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
     assertThat(processOverviewReader.getProcessOverviewByKey(bpmnProcessId)).isPresent();
   }
 
@@ -123,7 +124,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     // when / then
     assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    assertThat(processDefinitionReader.getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
   }
 
   @Test
@@ -136,7 +137,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
 
     handler.handle(job(definitionId));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    assertThat(processDefinitionReader.getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
 
     // when / then -- re-invoking against already-deleted data is a no-op, not an exception
     assertThatCode(() -> handler.handle(job(definitionId))).doesNotThrowAnyException();
@@ -159,7 +160,7 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(processDefinitionReader.getProcessDefinition(definitionId)).isEmpty();
+    assertThat(getProcessDefinition(definitionId)).isEmpty();
     final JobRegistryReader jobRegistryReader =
         embeddedOptimizeExtension.getBean(JobRegistryReader.class);
     final var found =
@@ -168,6 +169,10 @@ public class ProcessDefinitionDeletionJobHandlerIT extends AbstractBrokerlessZee
     assertThat(found).isPresent();
     assertThat(found.get().getId()).isEqualTo(queued.getId());
     assertThat(found.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
+  }
+
+  private Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
+    return processDefinitionReader.getProcessDefinition(definitionId, false);
   }
 
   private JobRegistryEntryDto job(final String definitionId) {
