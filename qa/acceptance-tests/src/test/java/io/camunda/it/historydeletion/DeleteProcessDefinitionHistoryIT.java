@@ -638,6 +638,60 @@ public class DeleteProcessDefinitionHistoryIT {
     awaitAgentDefinitionCount(otherProcessDefinitionKey, 1);
   }
 
+  @Test
+  void shouldNotDeleteAgentDefinitionsWhenDeletingProcessDefinitionWithoutHistory() {
+    // given - a deployed process with an agent-calling element
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
+                .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+                .zeebeAiAgentSubProcessDefinition()
+                .endEvent("end")
+                .done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // and - deploy-time creation of the agent definition has completed
+    awaitAgentDefinitionCount(processDefinitionKey, 1);
+
+    // when - the process definition is deleted without history (undeploy only, no hard delete)
+    final DeleteResourceResponse result =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
+
+    // then - the process definition is marked as deleted in secondary storage, which confirms
+    // the deletion pipeline has run
+    Awaitility.await("Process definition should be marked as deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var deleted =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .state(ProcessDefinitionState.DELETED))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(deleted).hasSize(1);
+            });
+
+    // and - its agent definition is untouched, because undeploy without history must not remove
+    // secondary storage data
+    awaitAgentDefinitionCount(processDefinitionKey, 1);
+  }
+
   private void awaitAgentDefinitionCount(final long processDefinitionKey, final int expectedCount) {
     // under physical-tenant mode, camundaClient routes deploys through the tenant-scoped REST
     // path, so the process (and its agent definitions) land in that tenant's own store, not
