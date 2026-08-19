@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThatDecision;
+import static io.camunda.process.test.api.CamundaAssert.assertThatIncident;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
@@ -33,6 +34,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ProcessDefinition;
@@ -40,6 +42,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
@@ -1323,6 +1326,55 @@ public class CamundaProcessTestExtensionIT {
 
   @Nested
   class IncidentTests {
+
+    @Test
+    void shouldAssertSpecificIncident() {
+      // given
+      final String processId = "incident-assertion-process";
+      final String gatewayId = "priority-gateway";
+      final String errorMessage =
+          "Expected at least one condition to evaluate to true, or to have a default flow";
+
+      deployProcessModel(
+          Bpmn.createExecutableProcess(processId)
+              .startEvent()
+              .exclusiveGateway(gatewayId)
+              .conditionExpression("priority > 10")
+              .endEvent("high-priority-end")
+              .moveToLastExclusiveGateway()
+              .conditionExpression("priority < 5")
+              .endEvent("low-priority-end")
+              .done());
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .variable("priority", 7)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      final IncidentSelector incidentSelector =
+          IncidentSelectors.byElementId(gatewayId)
+              .and(IncidentSelectors.byProcessInstanceKey(processInstanceKey));
+
+      assertThatIncident(incidentSelector)
+          .isActive()
+          .hasErrorType(IncidentErrorType.CONDITION_ERROR)
+          .hasErrorMessage(errorMessage)
+          .hasElementId(gatewayId)
+          .hasProcessInstanceKey(processInstanceKey);
+
+      // when
+      client.newSetVariablesCommand(processInstanceKey).variable("priority", 15).send().join();
+      processTestContext.resolveIncident(incidentSelector);
+
+      // then
+      assertThatIncident(incidentSelector).isResolved();
+      assertThatProcessInstance(ProcessInstanceSelectors.byKey(processInstanceKey)).isCompleted();
+    }
 
     @Test
     void shouldResolveIncident() {

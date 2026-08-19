@@ -21,6 +21,7 @@ import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.impl.testCases.instructions.AssertDecisionInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertElementInstanceInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertElementInstancesInstructionHandler;
+import io.camunda.process.test.impl.testCases.instructions.AssertIncidentInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertUserTaskInstructionHandler;
@@ -64,6 +65,7 @@ public class TestCaseInstructionHandlerRegistry {
     register(new AssertDecisionInstructionHandler());
     register(new AssertElementInstanceInstructionHandler());
     register(new AssertElementInstancesInstructionHandler());
+    register(new AssertIncidentInstructionHandler());
     register(new AssertProcessInstanceInstructionHandler());
     register(new AssertProcessInstanceMessageSubscriptionInstructionHandler());
     register(new AssertUserTaskInstructionHandler());

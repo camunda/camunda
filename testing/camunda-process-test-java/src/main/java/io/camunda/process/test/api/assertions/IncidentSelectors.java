@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.Incident;
 
@@ -49,6 +51,29 @@ public class IncidentSelectors {
    */
   public static IncidentSelector byProcessInstanceKey(final long processInstanceKey) {
     return new IncidentProcessInstanceKeySelector(processInstanceKey);
+  }
+
+  /**
+   * Select the incident by its error type.
+   *
+   * @param errorType the incident error type
+   * @return the selector
+   */
+  public static IncidentSelector byErrorType(final IncidentErrorType errorType) {
+    return new IncidentErrorTypeSelector(errorType);
+  }
+
+  /**
+   * Select the incident by its exact state.
+   *
+   * <p>For example, {@code byState(IncidentState.ACTIVE)} matches only {@code ACTIVE}, not {@code
+   * PENDING} or {@code MIGRATED}.
+   *
+   * @param state the exact incident state
+   * @return the selector
+   */
+  public static IncidentSelector byState(final IncidentState state) {
+    return new IncidentStateSelector(state);
   }
 
   private static final class IncidentElementIdSelector implements IncidentSelector {
@@ -120,6 +145,54 @@ public class IncidentSelectors {
     @Override
     public void applyFilter(final IncidentFilter filter) {
       filter.processInstanceKey(processInstanceKey);
+    }
+  }
+
+  private static final class IncidentErrorTypeSelector implements IncidentSelector {
+
+    private final IncidentErrorType errorType;
+
+    private IncidentErrorTypeSelector(final IncidentErrorType errorType) {
+      this.errorType = errorType;
+    }
+
+    @Override
+    public boolean test(final Incident incident) {
+      return errorType.equals(incident.getErrorType());
+    }
+
+    @Override
+    public String describe() {
+      return "errorType: " + errorType.name();
+    }
+
+    @Override
+    public void applyFilter(final IncidentFilter filter) {
+      filter.errorType(errorType);
+    }
+  }
+
+  private static final class IncidentStateSelector implements IncidentSelector {
+
+    private final IncidentState state;
+
+    private IncidentStateSelector(final IncidentState state) {
+      this.state = state;
+    }
+
+    @Override
+    public boolean test(final Incident incident) {
+      return state.equals(incident.getState());
+    }
+
+    @Override
+    public String describe() {
+      return "state: " + state.name();
+    }
+
+    @Override
+    public void applyFilter(final IncidentFilter filter) {
+      filter.state(state);
     }
   }
 }
