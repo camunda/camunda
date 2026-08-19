@@ -448,10 +448,6 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    // Uses its own process (UserTask_Number_Buttons) rather than sharing
-    // UserTask_Number with the "by input" test: both complete a task of the
-    // same name with different values, so reopening .first() in the Completed
-    // filter could land on the other test's completion and read its value.
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
