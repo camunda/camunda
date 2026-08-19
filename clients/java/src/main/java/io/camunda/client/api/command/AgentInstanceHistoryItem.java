@@ -20,8 +20,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * A single conversation history item to append as part of a batch, submitted on {@link
- * UpdateAgentInstanceCommandStep1}.
+ * A single conversation history item to append as part of a batch, submitted on either {@link
+ * CreateAgentInstanceCommandStep1} or {@link UpdateAgentInstanceCommandStep1}.
  */
 public final class AgentInstanceHistoryItem {
   private String historyItemId;

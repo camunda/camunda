@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep2;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1.CreateAgentInstanceCommandStep3;
@@ -31,6 +32,8 @@ import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceDefinition;
 import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -104,6 +107,38 @@ public class CreateAgentInstanceCommandImpl
   }
 
   @Override
+  public CreateAgentInstanceCommandStep5 jobKey(final long jobKey) {
+    ArgumentUtil.ensureGreaterThan("jobKey", jobKey, 0);
+    request.jobKey(String.valueOf(jobKey));
+    return this;
+  }
+
+  @Override
+  public CreateAgentInstanceCommandStep5 jobLease(final String jobLease) {
+    ArgumentUtil.ensureNotNull("jobLease", jobLease);
+    if (jobLease.trim().isEmpty()) {
+      throw new IllegalArgumentException("jobLease must not be blank");
+    }
+    request.jobLease(jobLease);
+    return this;
+  }
+
+  @Override
+  public CreateAgentInstanceCommandStep5 history(final List<AgentInstanceHistoryItem> history) {
+    ArgumentUtil.ensureNotNull("history", history);
+    final List<io.camunda.client.protocol.rest.AgentInstanceHistoryItem> protocolHistory =
+        new ArrayList<>(history.size());
+    for (final AgentInstanceHistoryItem item : history) {
+      if (item == null) {
+        throw new IllegalArgumentException("history must not contain null elements");
+      }
+      protocolHistory.add(AgentInstanceHistoryMapper.toProtocolHistoryItem(item));
+    }
+    request.history(protocolHistory);
+    return this;
+  }
+
+  @Override
   public CreateAgentInstanceCommandStep5 requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -111,14 +146,18 @@ public class CreateAgentInstanceCommandImpl
 
   @Override
   public CamundaFuture<CreateAgentInstanceResponse> send() {
+    if (request.getHistory() != null
+        && !request.getHistory().isEmpty()
+        && request.getJobKey() == null) {
+      throw new IllegalArgumentException("jobKey must be set when history is not empty");
+    }
     final HttpCamundaFuture<CreateAgentInstanceResponse> result = new HttpCamundaFuture<>();
-    final CreateAgentInstanceResponseImpl response = new CreateAgentInstanceResponseImpl();
     httpClient.post(
         "/agent-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         AgentInstanceCreationResult.class,
-        response::setResponse,
+        CreateAgentInstanceResponseImpl::new,
         result);
     return result;
   }

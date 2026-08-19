@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateAgentInstanceResponse;
+import java.util.List;
 
 /**
  * Represents a request to create a new agent instance.
@@ -107,5 +108,35 @@ public interface CreateAgentInstanceCommandStep1 {
      * @return this builder for method chaining
      */
     CreateAgentInstanceCommandStep5 maxToolCalls(int maxToolCalls);
+
+    /**
+     * Sets the job key of the currently active job during which this creation was produced.
+     * Required whenever {@link #history(List)} is non-empty; otherwise irrelevant to the creation.
+     *
+     * @param jobKey the key of the active job. Must be greater than 0.
+     * @return this builder for method chaining
+     */
+    CreateAgentInstanceCommandStep5 jobKey(long jobKey);
+
+    /**
+     * Sets the opaque job lease token received from the job activation response. Disambiguates this
+     * activation from any other activation of the same job: if the job is later retried, history
+     * items submitted under a superseded lease are discarded rather than committed.
+     *
+     * @param jobLease the lease token. Must not be null or blank.
+     * @return this builder for method chaining
+     */
+    CreateAgentInstanceCommandStep5 jobLease(String jobLease);
+
+    /**
+     * Sets the batch of conversation history items to append to the agent instance at creation, for
+     * example an initial CONFIGURATION item carrying the system prompt. Requires {@link
+     * #jobKey(long)} to also be set.
+     *
+     * @param history the history items to append, in order. Must not be null; elements must not be
+     *     null.
+     * @return this builder for method chaining
+     */
+    CreateAgentInstanceCommandStep5 history(List<AgentInstanceHistoryItem> history);
   }
 }

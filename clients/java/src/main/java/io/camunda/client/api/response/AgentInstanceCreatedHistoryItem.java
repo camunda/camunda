@@ -16,7 +16,7 @@
 package io.camunda.client.api.response;
 
 /**
- * The outcome of appending a single history item from an update request's history batch.
+ * The outcome of appending a single history item from a create or update request's history batch.
  */
 public interface AgentInstanceCreatedHistoryItem {
 
