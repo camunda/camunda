@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.logging.Log;
-import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -38,6 +38,12 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ClassPathResource;
 
+/**
+ * Spring Boot 3 compatible version of this post processor. Implements the deprecated {@code
+ * org.springframework.boot.env.EnvironmentPostProcessor}, since {@code
+ * org.springframework.boot.EnvironmentPostProcessor} (used by the base module for Spring Boot 4.x)
+ * does not exist in Spring Boot 3.x.
+ */
 public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProcessor {
 
   public static final String CAMUNDA_CLIENT_AUTH_METHOD = "camunda.client.auth.method";

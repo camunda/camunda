@@ -790,6 +790,13 @@
           "code": "java.method.removed",
           "old": "method io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::clusterVariablesPostProcessor(io.camunda.client.api.JsonMapper, io.camunda.client.spring.properties.CamundaClientProperties)",
           "justification": "Bean factory method replaced with a version that injects ResourcePatternResolver. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
+          "new": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
+          "justification": "Spring Boot moved EnvironmentPostProcessor from org.springframework.boot.env to org.springframework.boot and deprecated the old location; this class now implements the new interface, which revapi sees as no longer implementing the old one. Same method contract, no behavior change."
         }
       ]
     }

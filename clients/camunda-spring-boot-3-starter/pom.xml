@@ -206,14 +206,17 @@
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.class</exclude>
                     <!-- The same overrides in the shaded sources jar (createSourcesJar). Filters
                          match by literal path, so the .class excludes above don't cover .java. -->
                     <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.java</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.java</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.java</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                    <exclude>META-INF/spring.factories</exclude>
                   </excludes>
                 </filter>
               </filters>
