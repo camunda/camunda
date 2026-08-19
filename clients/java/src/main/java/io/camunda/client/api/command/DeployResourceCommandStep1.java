@@ -98,7 +98,8 @@ public interface DeployResourceCommandStep1
 
   /**
    * Returns a step2 command that allows adding resources without requiring at least one resource to
-   * be added first.
+   * be added first. At least one resource must still be added before calling {@link #send()}, which
+   * throws {@link IllegalStateException} if no resources were added.
    *
    * @return the builder for this command allowing batch addition of resources.
    */
