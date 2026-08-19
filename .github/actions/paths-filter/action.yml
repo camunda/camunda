@@ -480,7 +480,16 @@ runs:
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
         docs-change:
+          # Keep in sync with the content roots compiled by the docs site in
+          # monorepo-docs-site/docusaurus.config.js. Each of these folders is a
+          # Docusaurus plugin/preset content root; a broken link in any of them
+          # fails the production build. Omitting one here means changes to it
+          # never trigger the docs-preview build, so a broken link stays latent
+          # until an unrelated docs change trips over it.
           - 'docs/monorepo-docs/**'
+          - 'docs/architecture/**'
+          - 'docs/adr/**'
+          - 'identity/docs/**'
           - 'monorepo-docs-site/!(node_modules)/**'
           - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'
