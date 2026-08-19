@@ -235,7 +235,7 @@
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.15.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.10.0</plugin.version.dependency>
+    <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
     <plugin.version.exec>3.6.3</plugin.version.exec>
     <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
@@ -2760,33 +2760,6 @@
           <version>${plugin.version.resources}</version>
         </plugin>
 
-        <!--This plugin's configuration is used to store Eclipse m2e settings
-          only. It has no influence on the Maven build itself. -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <versionRange>[1.3.2,)</versionRange>
-                    <goals>
-                      <goal>java</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-
         <!-- Ant run plugin -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -3126,6 +3099,59 @@
   </build>
 
   <profiles>
+    <!--
+      This plugin's configuration is used to store Eclipse m2e settings only. It has no
+      influence on the Maven build itself, and org.eclipse.m2e:lifecycle-mapping is not
+      published to Maven Central (only to Eclipse's own p2 repository), so the declaration
+      must stay invisible to plain Maven. Since maven-dependency-plugin 3.11.0,
+      dependency:go-offline / dependency:resolve-plugins also try to pre-resolve plugins
+      declared in pluginManagement (not just ones bound to the build lifecycle), which made
+      CI fail with "Could not find artifact org.eclipse.m2e:lifecycle-mapping:jar:1.0.0"
+      once this repo picked up that version (see PR #54531). Guarding the declaration with
+      the m2e.version property activation - the pattern m2e itself documents for exactly
+      this situation - keeps it visible to the IDE (m2e sets that property when it
+      processes the POM) while hiding it from the CLI/CI build, so no plugin ever needs an
+      excludeGroupIds workaround for it.
+      -->
+    <profile>
+      <id>m2e</id>
+      <activation>
+        <property>
+          <name>m2e.version</name>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.eclipse.m2e</groupId>
+              <artifactId>lifecycle-mapping</artifactId>
+              <version>1.0.0</version>
+              <configuration>
+                <lifecycleMappingMetadata>
+                  <pluginExecutions>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <versionRange>[1.3.2,)</versionRange>
+                        <goals>
+                          <goal>java</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore/>
+                      </action>
+                    </pluginExecution>
+                  </pluginExecutions>
+                </lifecycleMappingMetadata>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+
     <profile>
       <id>skip-random-tests</id>
       <build>
