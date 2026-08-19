@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.security.oauth2;
 
 import static io.camunda.operate.webapp.security.SecurityTestUtil.signAndSerialize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -27,9 +28,19 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.jwk.source.CachingJWKSetSource;
+import com.nimbusds.jose.jwk.source.JWKSetBasedJWKSource;
+import com.nimbusds.jose.jwk.source.JWKSetSource;
+import com.nimbusds.jose.jwk.source.JWKSetSourceWrapper;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.RefreshAheadCachingJWKSetSource;
+import com.nimbusds.jose.jwk.source.URLBasedJWKSetSource;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,6 +58,7 @@ public class JwtDecoderIT {
   private final WireMockRuntimeInfo wireMockInfo;
   private final String authServerMockUrl;
   private JwtDecoder decoder;
+  private IdentityConfiguration identityConfiguration;
 
   public JwtDecoderIT(final WireMockRuntimeInfo wireMockInfo) {
     this.wireMockInfo = wireMockInfo;
@@ -55,12 +67,46 @@ public class JwtDecoderIT {
 
   @BeforeEach
   public void setup() {
-    final IdentityConfiguration identityConfiguration =
-        new IdentityConfiguration(null, authServerMockUrl, null, null, null);
+    identityConfiguration = new IdentityConfiguration(null, authServerMockUrl, null, null, null);
     final IdentityOAuth2WebConfigurer identityOAuth2WebConfigurer =
         new IdentityOAuth2WebConfigurer(environment, identityConfiguration, jwtConverter);
 
     decoder = ReflectionTestUtils.invokeMethod(identityOAuth2WebConfigurer, "jwtDecoder");
+  }
+
+  @Test
+  public void shouldConfigureJwkSourceWithRefreshAheadCachingAndIncreasedTimeouts() {
+    // given a configurer built the same way setup() already builds one
+
+    // when the JWK source is built the same way jwtDecoder() builds it internally
+    @SuppressWarnings("unchecked")
+    final JWKSource<SecurityContext> jwkSource =
+        (JWKSource<SecurityContext>)
+            ReflectionTestUtils.invokeMethod(
+                new IdentityOAuth2WebConfigurer(environment, identityConfiguration, jwtConverter),
+                "createJwkSource");
+
+    // then the outer source refreshes ahead of expiry instead of Nimbus's default blocking cache
+    assertThat(jwkSource).isInstanceOf(JWKSetBasedJWKSource.class);
+    final JWKSetSource<SecurityContext> outer =
+        ((JWKSetBasedJWKSource<SecurityContext>) jwkSource).getJWKSetSource();
+    assertThat(outer).isInstanceOf(RefreshAheadCachingJWKSetSource.class);
+
+    // and the blocking cache-refresh wait is reduced from Nimbus's 15s default
+    final CachingJWKSetSource<SecurityContext> cachingSource =
+        (CachingJWKSetSource<SecurityContext>) outer;
+    assertThat(cachingSource.getCacheRefreshTimeout()).isEqualTo(5000L);
+
+    // and the underlying HTTP retriever uses a real, bounded timeout — today there is none at all
+    final JWKSetSource<SecurityContext> inner =
+        ((JWKSetSourceWrapper<SecurityContext>) outer).getSource();
+    assertThat(inner).isInstanceOf(URLBasedJWKSetSource.class);
+    // Nimbus 10.0.2 exposes no getter for the retriever; it gained one only in a later version.
+    final Object retriever = ReflectionTestUtils.getField(inner, "resourceRetriever");
+    assertThat(retriever).isInstanceOf(DefaultResourceRetriever.class);
+    final DefaultResourceRetriever defaultRetriever = (DefaultResourceRetriever) retriever;
+    assertThat(defaultRetriever.getConnectTimeout()).isEqualTo(2000);
+    assertThat(defaultRetriever.getReadTimeout()).isEqualTo(2000);
   }
 
   @ParameterizedTest
