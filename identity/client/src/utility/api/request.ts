@@ -106,10 +106,14 @@ const requestUrl = (baseUrl: string, path: string, params?: unknown) => {
   return `${clearedBaseUrl}${path}${encodedParams}`;
 };
 
+export function getCsrfToken() {
+  return sessionStorage.getItem("X-CSRF-TOKEN");
+}
+
 const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
-  const csrfToken = sessionStorage.getItem("X-CSRF-TOKEN");
+  const csrfToken = getCsrfToken();
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&

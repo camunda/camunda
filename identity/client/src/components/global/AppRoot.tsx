@@ -12,10 +12,15 @@ import { styles } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
+import { useSessionHeartbeat } from "@camunda/session-heartbeat/react";
 import { authenticationQueries } from "src/utility/api/authentication/queries";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
-import { activateSession } from "src/utility/auth";
+import { activateSession, disableSession } from "src/utility/auth";
+import { ApiError, getCsrfToken } from "src/utility/api/request";
+import { notifyApiError } from "src/utility/api/errorNotification";
+import { queryClient } from "src/utility/api/queryClient";
+import { getSessionHeartbeatApiUrl } from "src/configuration/urlConfig";
 import { C3Provider } from "../layout/C3Provider";
 import { ThemeProvider } from "src/common/theme/ThemeProvider";
 
@@ -71,6 +76,22 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   const { data: camundaUser, isLoading: loading } = useQuery(
     authenticationQueries.me(),
   );
+
+  useSessionHeartbeat({
+    enabled: camundaUser !== undefined,
+    url: getSessionHeartbeatApiUrl(),
+    csrfToken: getCsrfToken,
+    onUnauthorized: () => {
+      // Dispatch while isLoggedIn() is still true so the "session expired" toast
+      // and redirect fire immediately, the same way a real request's 401 would.
+      // disableSession() must run after, not before, or ErrorNotificationBridge
+      // silently swallows this notification (and the real request's 401 that
+      // follows it, once the cleared query cache refetches and 401s again).
+      notifyApiError(new ApiError(401, null), { skipToast: false });
+      disableSession();
+      queryClient.clear();
+    },
+  });
 
   useEffect(() => {
     if (camundaUser) {

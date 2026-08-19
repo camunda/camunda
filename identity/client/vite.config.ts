@@ -14,7 +14,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
-const proxyPath = `^${contextPath}/(v2|login|logout).*`;
+const proxyPath = `^${contextPath}/(v2|login|logout|session/heartbeat).*`;
 const configPath = `^${contextPath}/config.js`;
 
 const plugins: PluginOption[] = [
