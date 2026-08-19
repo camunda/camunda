@@ -189,7 +189,7 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getRole() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].role"));
     }
-    if (historyItem.getContent() == null || historyItem.getContent().isEmpty()) {
+    if (historyItem.getContent() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].content"));
     } else {
       for (int i = 0; i < historyItem.getContent().size(); i++) {

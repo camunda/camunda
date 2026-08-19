@@ -362,8 +362,8 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("Should reject a batch item with missing content")
-    void shouldRejectHistoryItemWithMissingContent() {
+    @DisplayName("Should allow a batch item with an empty content list")
+    void shouldAllowHistoryItemWithEmptyContentList() {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
@@ -374,16 +374,15 @@ class AgentInstanceRequestValidatorTest {
               AgentInstanceHistoryItem.Builder.create()
                   .historyItemId("item-1")
                   .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.USER)
-                  .content(null)
+                  .role(AgentInstanceHistoryRoleEnum.ASSISTANT)
+                  .content(List.of())
                   .producedAt("2025-06-01T12:00:00Z")
                   .build()));
 
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
 
-      assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No history[0].content provided.");
+      assertThat(result).isEmpty();
     }
 
     @Test
