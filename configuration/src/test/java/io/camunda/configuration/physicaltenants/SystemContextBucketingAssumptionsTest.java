@@ -21,10 +21,11 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyN
  * <p>{@code SystemContext} cannot depend on the {@code configuration} module, so it cannot call
  * {@link PhysicalTenantOverridePolicyValidation#isNonOverridable} directly and re-derives the same
  * bucketing by hand (see the reproduction guide for #60513). This test asserts, through the real
- * policy, that every property {@code SystemContext} treats as root-only is actually
- * non-overridable, and every property it validates per-tenant is actually overridable. If either
- * assumption drifts — because the deny-list changed without updating {@code SystemContext}, or vice
- * versa — this test fails and forces a deliberate reconciliation.
+ * policy, that a representative sample of the properties {@code SystemContext} treats as root-only
+ * are actually non-overridable, and a representative sample of the properties it validates
+ * per-tenant are actually overridable. If either assumption drifts — because the deny-list changed
+ * without updating {@code SystemContext}, or vice versa — this test fails and forces a deliberate
+ * reconciliation.
  */
 class SystemContextBucketingAssumptionsTest {
 
