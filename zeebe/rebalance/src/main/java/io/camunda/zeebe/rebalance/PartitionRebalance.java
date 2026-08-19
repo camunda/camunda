@@ -87,6 +87,16 @@ public record PartitionRebalance(
     return Objects.equals(desiredLeader, currentLeader);
   }
 
+  /** The ID of the current leader, or {@code null} if the partition has none. */
+  public @Nullable String currentLeaderId() {
+    return currentLeader == null ? null : currentLeader.id();
+  }
+
+  /** The ID of the desired leader. */
+  public String desiredLeaderId() {
+    return desiredLeader.id();
+  }
+
   /** Completes the partition with a given outcome. */
   public PartitionRebalance completed(final PartitionRebalanceOutcome completedOutcome) {
     return new PartitionRebalance(

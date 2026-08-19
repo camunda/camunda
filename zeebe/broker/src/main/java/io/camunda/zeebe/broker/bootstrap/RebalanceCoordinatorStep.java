@@ -12,6 +12,7 @@ import io.atomix.raft.partition.impl.LeadershipTransferClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionLeaders;
 import io.camunda.zeebe.rebalance.ClusterRebalanceMetrics;
 import io.camunda.zeebe.rebalance.PartitionBalanceMetrics;
+import io.camunda.zeebe.rebalance.PartitionBalancePlanner;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceCoordinator;
 import io.camunda.zeebe.rebalance.RebalanceRequestServer;
@@ -106,6 +107,7 @@ public class RebalanceCoordinatorStep implements StartupStep<BrokerStartupContex
                               .getBrokerConfiguration()
                               .getCluster()
                               .getHeartbeatInterval()),
+                      new PartitionBalancePlanner(partitionLeaders),
                       () -> brokerStartupContext.getRequestIdGenerator().nextId(),
                       Clock.systemUTC(),
                       rebalanceMetrics);

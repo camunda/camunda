@@ -30,6 +30,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,6 +51,8 @@ final class RebalanceCoordinatorTest {
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final AtomicLong nextRebalanceId = new AtomicLong(100);
   private final Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+  private final PartitionBalancePlanner balancePlanner =
+      new PartitionBalancePlanner(physicalTenantId -> partitionId -> Optional.empty());
 
   @Test
   void shouldRefuseRequestsBeforeAnyConfigurationArrives() {
@@ -176,6 +179,25 @@ final class RebalanceCoordinatorTest {
                 List.of(PLAN),
                 FIXED_INSTANT,
                 FIXED_INSTANT));
+  }
+
+  @Test
+  void shouldNotRetainADryRunAsTheLastCompletedRebalance() {
+    // given
+    final var coordinator = coordinatingWith(new PlanningRunner());
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    final var completed = coordinator.getRebalanceStatus().join().lastCompleted();
+
+    // when
+    final var dryRun =
+        coordinator
+            .triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true))
+            .join();
+
+    // then
+    assertThat(dryRun.lastCompleted().rebalanceId()).isEqualTo(101);
+    assertThat(dryRun.lastCompleted().dryRun()).isTrue();
+    assertThat(coordinator.getRebalanceStatus().join().lastCompleted()).isEqualTo(completed);
   }
 
   @Test
@@ -412,6 +434,7 @@ final class RebalanceCoordinatorTest {
             LOWEST_ID_MEMBER,
             executor,
             runner,
+            balancePlanner,
             nextRebalanceId::getAndIncrement,
             stepClock,
             new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
@@ -503,6 +526,7 @@ final class RebalanceCoordinatorTest {
         localMemberId,
         executor,
         runner,
+        balancePlanner,
         nextRebalanceId::getAndIncrement,
         clock,
         new ClusterRebalanceMetrics(new SimpleMeterRegistry()));

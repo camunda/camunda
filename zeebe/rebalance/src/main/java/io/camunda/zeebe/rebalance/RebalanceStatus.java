@@ -13,16 +13,20 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The current status of the rebalance coordinator (any running rebalance, and the last completed
- * rebalance).
+ * rebalance), together with the cluster's current leadership status.
  *
  * @param running the currently running rebalance, or {@code null}
  * @param lastCompleted the last rebalance this coordinator finished, or {@code null} if it has not
  *     finished one since becoming coordinator (not preserved over restarts)
+ * @param leadershipStatus the cluster's current leadership status, independent of {@code running}
  */
-public record RebalanceStatus(@Nullable Running running, @Nullable Completed lastCompleted) {
-  /** No running rebalance, no previously completed rebalance. */
+public record RebalanceStatus(
+    @Nullable Running running,
+    @Nullable Completed lastCompleted,
+    ClusterLeadershipStatus leadershipStatus) {
+
   public static RebalanceStatus idle() {
-    return new RebalanceStatus(null, null);
+    return new RebalanceStatus(null, null, ClusterLeadershipStatus.aggregateOf(List.of()));
   }
 
   /**

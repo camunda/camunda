@@ -23,6 +23,37 @@ message RebalanceStatusResponse {
   RunningRebalance running = 1;
   // Absent until a rebalance has run on this coordinator.
   CompletedRebalance lastCompleted = 2;
+  // The cluster's current leadership/balance status (independent of any running
+  // rebalance)
+  ClusterLeadershipStatus leadershipStatus = 3;
+}
+
+message ClusterLeadershipStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    BALANCING = 1;
+    UNBALANCED = 2;
+    BALANCED = 3;
+  }
+
+  State state = 1;
+  repeated PartitionLeadershipStatus partitions = 2;
+}
+
+message PartitionLeadershipStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    TRANSFERRING = 1;
+    UNBALANCED = 2;
+    BALANCED = 3;
+  }
+
+  string physicalTenantId = 1;
+  uint32 partitionId = 2;
+  // Absent while the partition has no current leader.
+  optional string currentLeader = 3;
+  string desiredLeader = 4;
+  State state = 5;
 }
 
 message RunningRebalance {
