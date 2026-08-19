@@ -20,6 +20,7 @@
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.83",
     "@camunda/camunda-composite-components": "0.25.2",
+    "@camunda/design-system": "0.45.0",
     "@carbon/elements": "11.95.0",
     "@carbon/react": "1.112.0",
     "@monaco-editor/react": "4.7.0",
@@ -64,7 +65,10 @@
     "sass": "1.102.0",
     "typescript": "5.9.3",
     "vite": "8.2.1",
-    "vite-plugin-svgr": "5.2.0"
+    "vite-plugin-svgr": "5.2.0",
+    "@tailwindcss/vite": "4.3.0",
+    "tailwindcss": "4.3.0",
+    "tailwindcss-scoped-preflight": "4.0.6"
   },
   "stableVersion": "8.10.0-SNAPSHOT"
 }
