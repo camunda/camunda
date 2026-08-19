@@ -55,6 +55,7 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
 
   // Created lazily on first dispatch
   private ExecutorService executorService;
+  private boolean shuttingDown;
 
   public JobDispatcher(
       final ConfigurationService configurationService,
@@ -102,6 +103,7 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
 
   @PreDestroy
   public synchronized void destroy() {
+    shuttingDown = true;
     stopJobDispatching();
     if (executorService != null) {
       executorService.shutdown();
@@ -127,14 +129,19 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
     }
     final Collection<JobRegistryEntryDto> jobsToDispatch = oldestPerEntity(queuedJobs);
     LOG.info("Dispatching {} queued job registry entries", jobsToDispatch.size());
+    final ExecutorService executor = getExecutorService();
     final List<CompletableFuture<Void>> futures =
         jobsToDispatch.stream()
-            .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), getExecutorService()))
+            .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), executor))
             .toList();
     futures.forEach(CompletableFuture::join);
   }
 
   private synchronized ExecutorService getExecutorService() {
+    if (shuttingDown) {
+      throw new IllegalStateException(
+          "JobDispatcher is shutting down, refusing to dispatch further jobs");
+    }
     if (executorService == null) {
       executorService = Executors.newFixedThreadPool(getDispatcherConfiguration().getThreadCount());
     }
