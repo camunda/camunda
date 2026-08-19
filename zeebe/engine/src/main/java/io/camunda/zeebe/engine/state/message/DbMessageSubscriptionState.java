@@ -157,6 +157,7 @@ public final class DbMessageSubscriptionState
   @Override
   public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
+    final var redirected = record.isRedirected();
     var messageVariables = record.getVariablesBuffer();
     if (record == messageSubscription.getRecord()) {
       // copy the buffer before loading the subscription to avoid that it is overridden
@@ -171,8 +172,12 @@ public final class DbMessageSubscriptionState
               record.getElementInstanceKey(), record.getMessageName()));
     }
 
-    // update the message key, variables and request data
-    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
+    // update the message key, variables and redirected flag
+    subscription
+        .getRecord()
+        .setMessageKey(messageKey)
+        .setVariables(messageVariables)
+        .setRedirected(redirected);
 
     updateCorrelatingFlag(subscription, true);
 

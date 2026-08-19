@@ -93,7 +93,10 @@ public final class MessageSubscriptionRejectProcessor
           if (canBeCorrelated) {
             correlatingSubscription
                 .setMessageKey(messageKey)
-                .setVariables(storedMessage.getMessage().getVariablesBuffer());
+                .setVariables(storedMessage.getMessage().getVariablesBuffer())
+                // this redirect is a rejection fallback, not a suspension redirect - always clear
+                // the flag so a later suspension defer isn't blocked by a stale value
+                .setRedirected(false);
 
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),

@@ -30,7 +30,21 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   DELETED((short) 7),
 
   MIGRATE((short) 9),
-  MIGRATED((short) 10);
+  MIGRATED((short) 10),
+
+  /**
+   * Sent by the process instance partition when the target instance is suspended (or resuming)
+   * during correlation, asking the subscription to reset non-destructively and try redirecting the
+   * message to a ready sibling of the same process.
+   */
+  DEFER_CORRELATION((short) 11),
+  CORRELATION_DEFERRED((short) 12),
+
+  /**
+   * Sent by the process instance partition once a suspended instance finishes resuming, asking an
+   * {@code OPENED} subscription to retry correlation now that TTL/deadline can be re-checked.
+   */
+  CORRELATE_RETRY((short) 13);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -58,6 +72,7 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
       case REJECTED:
       case DELETED:
       case MIGRATED:
+      case CORRELATION_DEFERRED:
         return true;
       default:
         return false;
@@ -88,6 +103,12 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
         return MIGRATE;
       case 10:
         return MIGRATED;
+      case 11:
+        return DEFER_CORRELATION;
+      case 12:
+        return CORRELATION_DEFERRED;
+      case 13:
+        return CORRELATE_RETRY;
       default:
         return Intent.UNKNOWN;
     }

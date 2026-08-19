@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -55,6 +56,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
+  private final SuspensionState suspensionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -73,6 +75,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
+    suspensionState = processingState.getSuspensionState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -112,6 +115,17 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // attempt recovering from a previous acknowledgment that didn't make it to the other
       // partition.
       sendAcknowledgeCommand(record);
+      return;
+
+    } else if (suspensionState.isSuspended(record.getProcessInstanceKey())) {
+      // the target instance is suspended (or resuming its buffer) - activating the catch element
+      // now would let a stale message correlate regardless of whether its TTL has since expired.
+      // Defer instead: leave the subscription OPENED (no state change here) and ask the message
+      // partition to reset non-destructively and try a ready sibling; on resume, the instance
+      // re-polls its OPENED subscriptions itself, re-running the TTL check from scratch.
+      stateWriter.appendFollowUpEvent(
+          subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATION_DEFERRED, record);
+      sendDeferCommand(record);
       return;
     }
 
@@ -224,9 +238,26 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getTenantId());
   }
 
+  private void sendDeferCommand(final ProcessMessageSubscriptionRecord subscription) {
+    subscriptionCommandSender.deferCorrelateMessageSubscription(
+        subscription.getSubscriptionPartitionId(),
+        subscription.getProcessInstanceKey(),
+        subscription.getElementInstanceKey(),
+        subscription.getProcessDefinitionKey(),
+        subscription.getBpmnProcessIdBuffer(),
+        subscription.getMessageKey(),
+        subscription.getMessageNameBuffer(),
+        subscription.getCorrelationKeyBuffer(),
+        subscription.getTenantId());
+  }
+
   @Override
   public SuspensionBehavior suspensionBehavior(
       final TypedRecord<ProcessMessageSubscriptionRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    // opt out of the generic buffer-verbatim gate: BUFFER would replay this CORRELATE command
+    // unchanged on resume, always activating the catch element even if the message's TTL expired
+    // while suspended. PROCESS lets processRecord run its own suspension + TTL-aware check instead
+    // (see the isSuspended branch above).
+    return SuspensionBehavior.PROCESS;
   }
 }

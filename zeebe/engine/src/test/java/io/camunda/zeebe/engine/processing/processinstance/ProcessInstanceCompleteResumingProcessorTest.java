@@ -16,12 +16,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,30 +42,43 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
   private static final long PROCESS_INSTANCE_KEY = 100L;
 
   private ElementInstanceState elementInstanceState;
+  private ProcessMessageSubscriptionState processMessageSubscriptionState;
   private SuspensionState suspensionState;
   private StateWriter stateWriter;
   private SideEffectWriter sideEffectWriter;
   private TypedRejectionWriter rejectionWriter;
   private DueDateTimerCheckScheduler timerChecker;
+  private SubscriptionCommandSender subscriptionCommandSender;
   private ProcessInstanceCompleteResumingProcessor processor;
 
   @BeforeEach
   void setUp() {
     elementInstanceState = mock(ElementInstanceState.class);
+    processMessageSubscriptionState = mock(ProcessMessageSubscriptionState.class);
     suspensionState = mock(SuspensionState.class);
     stateWriter = mock(StateWriter.class);
     sideEffectWriter = mock(SideEffectWriter.class);
     rejectionWriter = mock(TypedRejectionWriter.class);
     timerChecker = mock(DueDateTimerCheckScheduler.class);
+    subscriptionCommandSender = mock(SubscriptionCommandSender.class);
 
     final var writers = mock(Writers.class);
     when(writers.state()).thenReturn(stateWriter);
     when(writers.sideEffect()).thenReturn(sideEffectWriter);
     when(writers.rejection()).thenReturn(rejectionWriter);
 
+    // no descendants by default - the resumed instance's own subscriptions (if any) are stubbed
+    // per-test via processMessageSubscriptionState
+    when(elementInstanceState.getChildren(anyLong())).thenReturn(List.of());
+
     processor =
         new ProcessInstanceCompleteResumingProcessor(
-            elementInstanceState, suspensionState, writers, timerChecker);
+            elementInstanceState,
+            processMessageSubscriptionState,
+            suspensionState,
+            writers,
+            timerChecker,
+            subscriptionCommandSender);
 
     // default: the common case of an active instance still marked RESUMING
     when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))

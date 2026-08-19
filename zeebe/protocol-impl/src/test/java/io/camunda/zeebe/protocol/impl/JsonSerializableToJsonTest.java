@@ -1489,7 +1489,8 @@ final class JsonSerializableToJsonTest {
                   .setElementId("catch-1")
                   .setRootProcessInstanceKey(99L)
                   .setStorageOrdinalKey(storageOrdinalKey)
-                  .setElementType(BpmnElementType.RECEIVE_TASK);
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setRedirected(true);
             },
         """
                 {
@@ -1509,7 +1510,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "catch-1",
                   "rootProcessInstanceKey": 99,
                   "storageOrdinalKey": 8,
-                  "elementType": "RECEIVE_TASK"
+                  "elementType": "RECEIVE_TASK",
+                  "redirected": true
                 }
                 """
       },
@@ -1544,7 +1546,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "rootProcessInstanceKey": -1,
                   "storageOrdinalKey": 0,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "redirected": false
                 }
                 """
       },

@@ -114,4 +114,16 @@ public interface MessageSubscriptionRecordValue
    * @since 8.10
    */
   BpmnElementType getElementType();
+
+  /**
+   * {@code true} if this correlation attempt is the result of a suspension redirect: the message
+   * was originally headed for a sibling subscription of the same process whose instance was
+   * suspended, and got redirected here instead. Used to cap a suspension-triggered redirect chain
+   * at depth one, so two suspended siblings sharing a correlation key cannot bounce a message
+   * between each other forever.
+   *
+   * @return {@code true} if this correlation is a suspension redirect, {@code false} otherwise
+   * @since 8.10
+   */
+  boolean isRedirected();
 }

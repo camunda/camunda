@@ -581,6 +581,10 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.MIGRATED,
         new MessageSubscriptionMigratedApplier(state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.CORRELATION_DEFERRED,
+        new MessageSubscriptionCorrelationDeferredApplier(
+            state.getMessageState(), state.getMessageSubscriptionState()));
   }
 
   private void registerConditionalEvaluationAppliers() {
@@ -746,6 +750,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.MIGRATED,
         new ProcessMessageSubscriptionMigratedApplier(subscriptionState));
+    // no state change: the subscription stays OPENED so it can correlate again after resume (see
+    // ProcessMessageSubscriptionCorrelateProcessor)
+    register(ProcessMessageSubscriptionIntent.CORRELATION_DEFERRED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessEventAppliers(final MutableProcessingState state) {

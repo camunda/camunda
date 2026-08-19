@@ -100,7 +100,8 @@ public final class BpmnProcessors {
         asyncRequestBehavior,
         cslCheck,
         timerChecker,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        subscriptionCommandSender);
     addBufferedCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
@@ -177,7 +178,8 @@ public final class BpmnProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final DueDateTimerCheckScheduler timerChecker,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final SubscriptionCommandSender subscriptionCommandSender) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -196,9 +198,11 @@ public final class BpmnProcessors {
         ProcessInstanceIntent.COMPLETE_RESUMING,
         new ProcessInstanceCompleteResumingProcessor(
             processingState.getElementInstanceState(),
+            processingState.getProcessMessageSubscriptionState(),
             processingState.getSuspensionState(),
             writers,
-            timerChecker));
+            timerChecker,
+            subscriptionCommandSender));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
