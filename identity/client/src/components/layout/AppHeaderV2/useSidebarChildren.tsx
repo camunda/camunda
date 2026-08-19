@@ -19,7 +19,7 @@ import {
   UserAccess,
 } from "@carbon/react/icons";
 import type { CarbonIconType } from "@carbon/icons-react";
-import type { SidebarNodeDescriptor } from "@camunda/camunda-composite-components";
+import type { SidebarNode } from "@camunda/design-system";
 
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { Paths } from "src/components/global/routePaths";
@@ -37,9 +37,7 @@ const ROUTE_ICONS: Record<string, CarbonIconType> = {
   [Paths.mcpProcesses()]: Folder,
 };
 
-export function useSidebarChildren(
-  hideNavLinks: boolean,
-): SidebarNodeDescriptor[] {
+export function useSidebarChildren(hideNavLinks: boolean): SidebarNode[] {
   const routes = useGlobalRoutes();
 
   if (hideNavLinks) {
