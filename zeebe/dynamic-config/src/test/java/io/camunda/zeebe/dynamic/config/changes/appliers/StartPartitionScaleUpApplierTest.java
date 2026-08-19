@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.Has
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +57,18 @@ final class StartPartitionScaleUpApplierTest {
     // when
     final var result =
         new StartPartitionScaleUpApplier(executor, 0)
+            .init(globalConfiguration, groupWith(Map.of(), Optional.empty()));
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft()).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectIfDesiredPartitionCountAboveMaximum() {
+    // when
+    final var result =
+        new StartPartitionScaleUpApplier(executor, 100000)
             .init(globalConfiguration, groupWith(Map.of(), Optional.empty()));
 
     // then
@@ -116,6 +129,29 @@ final class StartPartitionScaleUpApplierTest {
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("not stable");
+  }
+
+  @Test
+  void shouldFailApplyIfExecutorFails() {
+    // given — routing state is stable, so init succeeds
+    final var group =
+        groupWith(
+            Map.of(memberId, brokerWith(Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.of(new RoutingState(1, new AllPartitions(1), new HashMod(1))));
+    final var applier = new StartPartitionScaleUpApplier(executor, 2);
+    final var expectedFailure = new RuntimeException("Expected failure");
+    when(executor.initiateScaleUp(2))
+        .thenReturn(CompletableActorFuture.completedExceptionally(expectedFailure));
+
+    final var initResult = applier.init(globalConfiguration, group);
+    assertThat(initResult).isRight();
+
+    // when — the executor fails while applying the operation
+    // then — the applier's future fails with the same cause
+    Assertions.assertThat(applier.apply())
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedFailure);
   }
 
   @Test
