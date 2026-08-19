@@ -12,7 +12,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -55,7 +54,8 @@ public final class ExportingEndpoint {
    * <p>Exporting is paused per tenant, so a fan-out that fails halfway leaves the cluster with a
    * mix of paused and exporting tenants. Rather than hide that, every tenant is attempted and the
    * first failure decides the response — the operator retries, and a repeated pause or resume of an
-   * already-paused or already-exporting tenant is a no-op.
+   * already-paused or already-exporting tenant is a no-op. {@link PhysicalTenantFanOut} is what
+   * makes "every tenant is attempted" true even for a tenant that fails before returning a future.
    */
   @PostMapping(path = "/{operationKey}")
   public WebEndpointResponse<?> post(
@@ -70,19 +70,15 @@ public final class ExportingEndpoint {
       return new WebEndpointResponse<>(e.getMessage(), WebEndpointResponse.STATUS_BAD_REQUEST);
     }
 
-    try {
-      final var results =
-          targets.stream().map(tenant -> apply(operationKey, soft, tenant)).toList();
-      // collected first so every tenant is attempted even when an earlier one already failed
-      CompletableFuture.allOf(results.toArray(CompletableFuture[]::new)).join();
+    final var failure =
+        PhysicalTenantFanOut.firstFailure(
+            PhysicalTenantFanOut.over(targets, tenant -> apply(operationKey, soft, tenant)));
+    if (failure == null) {
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
-    } catch (final CompletionException e) {
-      final var message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-      return new WebEndpointResponse<>(message, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
-    } catch (final Exception e) {
-      return new WebEndpointResponse<>(
-          e.getMessage(), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
+    final var message =
+        failure.getCause() != null ? failure.getCause().getMessage() : failure.getMessage();
+    return new WebEndpointResponse<>(message, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
   }
 
   private CompletableFuture<Void> apply(

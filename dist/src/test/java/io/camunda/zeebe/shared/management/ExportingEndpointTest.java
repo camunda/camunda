@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -163,6 +164,26 @@ final class ExportingEndpointTest {
       verify(service).resumeExporting("tenantb");
     }
     verifyNoMoreInteractions(service);
+  }
+
+  @Test
+  void shouldAttemptEveryPhysicalTenantWhenOneThrowsBeforeReturningAFuture() {
+    // given a tenant whose topology check fails, which the broker client raises synchronously
+    // rather than through a failed future
+    final var service = mock(ExportingRequestBroadcaster.class);
+    final var endpoint = new ExportingEndpoint(service, () -> Set.of("tenanta", "tenantb"));
+    when(service.pauseExporting("tenanta"))
+        .thenThrow(new IncompleteTopologyException("tenanta has no leader"));
+    when(service.pauseExporting("tenantb")).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var response = endpoint.post(ExportingEndpoint.PAUSE, false, null);
+
+    // then the remaining tenant is still attempted, so the operator is not left with a mixed
+    // cluster that the response says nothing about
+    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    assertThat(response.getBody()).asString().contains("tenanta has no leader");
+    verify(service).pauseExporting("tenantb");
   }
 
   @Test
