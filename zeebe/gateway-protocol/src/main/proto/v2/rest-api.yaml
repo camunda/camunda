@@ -510,6 +510,14 @@ paths:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1pause'
   /cluster/v2/exporting/resume:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1resume'
+  /cluster/v2/backups/runtime:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime'
+  /cluster/v2/backups/runtime/state:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state'
+  /cluster/v2/backups/runtime/state/sync:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state~1sync'
+  /cluster/v2/backups/runtime/{backupId}:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1{backupId}'
   /cluster/v2/backups/history:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history'
   /cluster/v2/backups/history/{backupId}:
