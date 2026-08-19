@@ -37,6 +37,10 @@ public class AgentHistoryCommitTest {
   private static final String EXTERNAL_SERVICE_TASK_PROCESS_ID = "external-agent-service-task";
   private static final String EXTERNAL_SERVICE_TASK_ID = "external-agent-task";
   private static final String EXTERNAL_SERVICE_TASK_JOB_TYPE = "external-agent-job";
+  private static final String EXTERNAL_AD_HOC_PROCESS_ID = "external-agent-ad-hoc-process";
+  private static final String EXTERNAL_AD_HOC_SUB_PROCESS_ID = "external-agent-ad-hoc-sub-process";
+  private static final String EXTERNAL_AD_HOC_INNER_TASK_ID = "external-agent-ad-hoc-inner-task";
+  private static final String EXTERNAL_AD_HOC_JOB_TYPE = "external-agent-ad-hoc-job";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -89,6 +93,61 @@ public class AgentHistoryCommitTest {
         .describedAs(
             "a history item for an external agent's job must reach COMMITTED when its job"
                 + " completes, even though the job type does not carry the legacy agentic prefix")
+        .isEqualTo(jobKey);
+  }
+
+  @Test
+  public void shouldCommitAgentHistoryWhenExternalAgentAdHocSubProcessJobCompletes() {
+    // given — external agent marker on an ad-hoc sub-process, job type does not carry the legacy
+    // agentic prefix
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(EXTERNAL_AD_HOC_PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    EXTERNAL_AD_HOC_SUB_PROCESS_ID,
+                    ahsp -> {
+                      ahsp.zeebeExternalAgentDefinition();
+                      ahsp.task(EXTERNAL_AD_HOC_INNER_TASK_ID);
+                      ahsp.zeebeJobType(EXTERNAL_AD_HOC_JOB_TYPE);
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(EXTERNAL_AD_HOC_PROCESS_ID).create();
+    final var adHocSubProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementId(EXTERNAL_AD_HOC_SUB_PROCESS_ID)
+            .getFirst();
+    final long elementInstanceKey = adHocSubProcessInstance.getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    ENGINE.jobs().withType(EXTERNAL_AD_HOC_JOB_TYPE).activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(EXTERNAL_AD_HOC_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
+
+    // when
+    ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    final var committed =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withRecordKey(itemKey)
+            .getFirst();
+    assertThat(committed.getValue().getJobKey())
+        .describedAs(
+            "a history item for an external agent's ad-hoc sub-process job must reach COMMITTED"
+                + " when its job completes, even though the job type does not carry the legacy"
+                + " agentic prefix")
         .isEqualTo(jobKey);
   }
 
