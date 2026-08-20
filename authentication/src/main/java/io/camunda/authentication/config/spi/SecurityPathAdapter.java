@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config.spi;
 
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +19,10 @@ import java.util.Set;
  */
 public class SecurityPathAdapter implements SecurityPathPort {
 
+  /**
+   * Shared instance for callers outside the Spring context. It reports the default {@code
+   * webapp-enabled} state, so read {@link #webappPaths()} from the configured bean instead.
+   */
   public static final SecurityPathAdapter INSTANCE = new SecurityPathAdapter();
 
   // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
@@ -118,6 +123,16 @@ public class SecurityPathAdapter implements SecurityPathPort {
           // pre-CSL host AdminUserCheckFilter carried.
           "/admin/assets");
 
+  private final boolean webappEnabled;
+
+  public SecurityPathAdapter() {
+    this(AuthenticationConfiguration.DEFAULT_WEBAPP_ENABLED);
+  }
+
+  public SecurityPathAdapter(final boolean webappEnabled) {
+    this.webappEnabled = webappEnabled;
+  }
+
   @Override
   public Set<String> apiPaths() {
     return API_PATHS;
@@ -133,9 +148,14 @@ public class SecurityPathAdapter implements SecurityPathPort {
     return UNPROTECTED_PATHS;
   }
 
+  /**
+   * The webapp path patterns, or an empty set when the webapp is disabled — how a host tells CSL it
+   * serves no webapp, so it builds an inert chain instead. The scoped per-tenant chains need this
+   * because, unlike the cluster chains, they are not gated on {@code webapp-enabled} themselves.
+   */
   @Override
   public Set<String> webappPaths() {
-    return WEBAPP_PATHS;
+    return webappEnabled ? WEBAPP_PATHS : Set.of();
   }
 
   @Override
