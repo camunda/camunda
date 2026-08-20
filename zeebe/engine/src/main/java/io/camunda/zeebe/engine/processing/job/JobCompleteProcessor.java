@@ -219,7 +219,7 @@ public final class JobCompleteProcessor
       final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingSession session) {
 
     final boolean jobBelongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
-    if (job.isAgentic() || jobBelongsToAgent) {
+    if (job.hasAgenticPrefix() || jobBelongsToAgent) {
       session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
     }
 

@@ -728,7 +728,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
    */
   @Deprecated
   @JsonIgnore
-  public boolean isAgentic() {
+  public boolean hasAgenticPrefix() {
     return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
   }
 }
