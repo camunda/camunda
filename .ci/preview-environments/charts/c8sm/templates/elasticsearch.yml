@@ -7,7 +7,8 @@
 # namespaces, so this CR is created in the preview namespace itself).
 #
 # ECK names the Service `<metadata.name>-es-http`, i.e. `elasticsearch-es-http`; the
-# camunda-platform values point `global.elasticsearch.url.host` at that name.
+# camunda-platform values point `optimize.database.elasticsearch.url.host` and
+# `orchestration.data.secondaryStorage.elasticsearch.url` at that name.
 #
 # Anonymous=superuser + TLS disabled mirrors the load-test setup
 # (load-tests/setup/charts/load-test-setup/templates/elasticsearch.yaml): fine for a
