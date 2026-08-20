@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -45,6 +46,7 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final Sleeper sleeper;
 
+  @Autowired
   public ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
