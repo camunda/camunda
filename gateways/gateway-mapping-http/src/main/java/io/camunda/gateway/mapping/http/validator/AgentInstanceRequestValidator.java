@@ -235,6 +235,12 @@ public class AgentInstanceRequestValidator {
     if (historyItem.getTools() != null) {
       validateTools("history[" + index + "].tools", historyItem.getTools(), violations);
     }
+    if (historyItem.getModel() != null && historyItem.getModel().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].model"));
+    }
+    if (historyItem.getProvider() != null && historyItem.getProvider().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history[" + index + "].provider"));
+    }
     if (historyItem.getLimits() != null) {
       final var limits = historyItem.getLimits();
       violations.addAll(

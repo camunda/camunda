@@ -932,6 +932,68 @@ class AgentInstanceRequestValidatorTest {
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No history[0].systemPrompt provided.");
     }
+
+    @Test
+    @DisplayName("Should reject a batch item with a blank model")
+    void shouldRejectHistoryItemWithBlankModel() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].model provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a blank provider")
+    void shouldRejectHistoryItemWithBlankProvider() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .provider("   ")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].provider provided.");
+    }
   }
 
   @Nested
@@ -1268,6 +1330,55 @@ class AgentInstanceRequestValidatorTest {
                   + " 'provider'; when history is provided, it must be set there instead of on"
                   + " definition. No CONFIGURATION history item sets 'systemPrompt'; when history"
                   + " is provided, it must be set there instead of on definition.");
+    }
+
+    @Test
+    @DisplayName(
+        "Should reject a later CONFIGURATION item that clears model with a blank value, even"
+            + " after an earlier CONFIGURATION item established it")
+    void shouldRejectLaterConfigurationItemWithBlankModel() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("be helpful")
+                              .build())),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-2")
+                  .loopIteration(2)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("switching model")
+                              .build()))
+                  .producedAt("2025-06-01T12:01:00Z")
+                  .build()
+                  .model("")));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[1].model provided.");
     }
   }
 }
