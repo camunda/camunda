@@ -85,12 +85,11 @@ public final class PhysicalTenantsITHelper {
   }
 
   /**
-   * Applies each tenant's static configuration: the {@code admin} default role for each
-   * non-default physical tenant's {@code <tenant>-admin} user, the exporters-assigned manifest,
-   * and the per-tenant partition count when one was declared via {@link
-   * Builder#withTenant(String, Storage, int)}. Does not touch secondary storage, so it is safe to
-   * call once at static setup while storage is (re-)applied per run via {@link
-   * #refreshSecondaryStorage}.
+   * Applies each tenant's static configuration: the {@code admin} default role for each non-default
+   * physical tenant's {@code <tenant>-admin} user, the exporters-assigned manifest, and the
+   * per-tenant partition count when one was declared via {@link Builder#withTenant(String, Storage,
+   * int)}. Does not touch secondary storage, so it is safe to call once at static setup while
+   * storage is (re-)applied per run via {@link #refreshSecondaryStorage}.
    */
   public TestStandaloneBroker configureAdminRoles(final TestStandaloneBroker broker) {
     tenants.forEach(
