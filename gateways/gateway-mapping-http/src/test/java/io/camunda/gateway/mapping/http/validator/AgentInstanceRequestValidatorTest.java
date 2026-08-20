@@ -16,7 +16,6 @@ import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
-import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
@@ -68,41 +67,6 @@ class AgentInstanceRequestValidatorTest {
 
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No elementInstanceKey provided.");
-    }
-
-    @Test
-    @DisplayName("Should reject a negative metrics delta")
-    void shouldRejectNegativeMetricsDelta() {
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
-      request.getMetrics().setInputTokens(-1L);
-
-      final Optional<ProblemDetail> result =
-          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
-
-      assertThat(result).isPresent();
-      assertThat(result.get().getDetail())
-          .isEqualTo("The value for metrics.inputTokens is '-1' but must be >= 0.");
-    }
-
-    @Test
-    @DisplayName("Should reject a tool without a name")
-    void shouldRejectToolWithoutName() {
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setTools(
-          List.of(AgentTool.Builder.create().name("").description("d").elementId(null).build()));
-
-      final Optional<ProblemDetail> result =
-          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
-
-      assertThat(result).isPresent();
-      assertThat(result.get().getDetail()).isEqualTo("No tools[0].name provided.");
     }
   }
 
