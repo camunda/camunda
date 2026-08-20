@@ -41,6 +41,12 @@ public class AgentHistoryCommitTest {
   private static final String EXTERNAL_AD_HOC_SUB_PROCESS_ID = "external-agent-ad-hoc-sub-process";
   private static final String EXTERNAL_AD_HOC_INNER_TASK_ID = "external-agent-ad-hoc-inner-task";
   private static final String EXTERNAL_AD_HOC_JOB_TYPE = "external-agent-ad-hoc-job";
+  private static final String EXTERNAL_MULTI_INSTANCE_PROCESS_ID =
+      "external-agent-multi-instance-service-task";
+  private static final String EXTERNAL_MULTI_INSTANCE_TASK_ID =
+      "external-agent-multi-instance-task";
+  private static final String EXTERNAL_MULTI_INSTANCE_JOB_TYPE =
+      "external-agent-multi-instance-job";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -148,6 +154,75 @@ public class AgentHistoryCommitTest {
             "a history item for an external agent's ad-hoc sub-process job must reach COMMITTED"
                 + " when its job completes, even though the job type does not carry the legacy"
                 + " agentic prefix")
+        .isEqualTo(jobKey);
+  }
+
+  /**
+   * A multi-instance body and its inner activity share the same BPMN element id, but only the inner
+   * activity can carry the {@code zeebe:agentDefinition} marker. {@link
+   * io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior#belongsToAgent}
+   * therefore resolves through the multi-instance body to the inner activity before checking for an
+   * agent definition.
+   *
+   * <p>This test proves the runtime half of that resolution — that a completed job on such an
+   * element commits its agent history. {@link
+   * io.camunda.zeebe.engine.processing.deployment.AgentDefinitionMultiInstanceDeploymentTest}
+   * proves the deploy-time half: that the {@code AgentDefinition} is minted for the inner activity,
+   * not the wrapping body.
+   */
+  @Test
+  public void shouldCommitAgentHistoryWhenExternalAgentMultiInstanceServiceTaskJobCompletes() {
+    // given — a service task with an external agent marker that is also configured as a
+    // multi-instance activity; the wrapping multi-instance body and the inner service task
+    // share the same BPMN element id, EXTERNAL_MULTI_INSTANCE_TASK_ID
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(EXTERNAL_MULTI_INSTANCE_PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    EXTERNAL_MULTI_INSTANCE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(EXTERNAL_MULTI_INSTANCE_JOB_TYPE)
+                            .zeebeExternalAgentDefinition()
+                            .multiInstance(m -> m.zeebeInputCollectionExpression("[1]")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(EXTERNAL_MULTI_INSTANCE_PROCESS_ID).create();
+    // withElementType(SERVICE_TASK) picks the inner activity's ELEMENT_ACTIVATED record, not the
+    // wrapping MULTI_INSTANCE_BODY's — both share EXTERNAL_MULTI_INSTANCE_TASK_ID as element id.
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(EXTERNAL_MULTI_INSTANCE_TASK_ID)
+            .getFirst();
+    final long elementInstanceKey = serviceTaskInstance.getKey();
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    ENGINE.jobs().withType(EXTERNAL_MULTI_INSTANCE_JOB_TYPE).activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(EXTERNAL_MULTI_INSTANCE_JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
+
+    // when
+    ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    final var committed =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withRecordKey(itemKey)
+            .getFirst();
+    assertThat(committed.getValue().getJobKey())
+        .describedAs(
+            "a history item for a multi-instance-wrapped agent's job must reach COMMITTED when"
+                + " its job completes")
         .isEqualTo(jobKey);
   }
 
