@@ -29,7 +29,8 @@ import SearchBar from "./SearchBar";
 export type EntityData = {
   [key: string]: string | object | boolean | number | null;
 } & {
-  id?: string;
+  /** Stable identity for the row, required for selection and expansion. */
+  id: string;
 };
 
 type HeaderData<D extends EntityData> = {
@@ -94,14 +95,18 @@ type EntityListProps<D extends EntityData> = {
   renderExpandedRow?: (entity: D) => ReactNode;
 };
 
-/** Every row carries a stable id so selection and expansion survive re-renders. */
-type EntityRow<D extends EntityData> = D & { id: string };
-
 type SortingState = NonNullable<SortingConfig["sortState"]>;
 type RowSelectionState = NonNullable<RowSelectionConfig["selectedRowIds"]>;
 
-const MAX_ICON_ACTIONS = 2;
+const INLINE_ACTIONS_THRESHOLD = 3;
 const PAGESIZES = [10, 20, 30, 40, 50];
+
+/**
+ * Entities are handed to the table as-is, so every consumer callback gets the
+ * original object back — object identity is part of the `batchSelection`
+ * contract.
+ */
+const getRowId = (row: EntityData) => row.id;
 
 const EntityList = <D extends EntityData>({
   title,
@@ -130,35 +135,13 @@ const EntityList = <D extends EntityData>({
 }: EntityListProps<D>): ReturnType<FC> => {
   const { t } = useTranslate("components");
 
-  // `EntityList` never receives the *current* sort as a prop — only the
-  // `setSort` setter — so the sort indicator is owned here, exactly as Carbon's
-  // `DataTable` owned it internally. Rows are never reordered locally; the
-  // server returns them already sorted.
   const [sortingState, setSortingState] = useState<SortingState>([]);
 
-  const [entityIndex, tableData] = useMemo(() => {
-    const nextIndex: { [id: string]: D } = {};
-    const nextRows: EntityRow<D>[] = [];
-
-    data?.forEach((dataset) => {
-      const id = dataset.id || (Date.now() + Math.random()).toString();
-      nextIndex[id] = dataset;
-      nextRows.push({ ...dataset, id });
-    });
-
-    return [nextIndex, nextRows];
-  }, [data]);
-
-  // Rows are shallow copies, so every consumer callback is handed the original
-  // object back — object identity is part of the `batchSelection` contract.
-  const entityOf = useCallback(
-    (row: EntityRow<D>) => entityIndex[row.id],
-    [entityIndex],
-  );
+  const rows = useMemo(() => data ?? [], [data]);
 
   const isEntityClickable = onEntityClick !== undefined;
 
-  const columns = useMemo<DataTableColumn<EntityRow<D>>[]>(
+  const columns = useMemo<DataTableColumn<D>[]>(
     () =>
       headers.map((header, columnIndex) => {
         const key = String(header.key);
@@ -167,19 +150,18 @@ const EntityList = <D extends EntityData>({
           id: key,
           // Load-bearing: TanStack's `getCanSort()` requires an accessor, so
           // without this no sort button is rendered for sortable headers.
-          accessorFn: (row: EntityRow<D>) => readCell(row, key),
+          accessorFn: (row: D) => readCell(row, key),
           header: header.header,
           enableSorting: !!header.isSortable,
-          // Carbon always started the cycle ascending; TanStack would flip that
-          // for columns whose first value happens to be numeric.
+          // TanStack starts the cycle descending for columns whose first value
+          // happens to be numeric; every column here should start ascending.
           sortDescFirst: false,
           cell: ({ row }) => {
             const value = readCell(row.original, key);
 
             // The first column is the primary cell: with `onRowClick` set the
             // DataTable wraps its content in a focusable `<button>`, which must
-            // not contain the tooltip's own trigger button. Carbon left this
-            // cell untruncated for the same reason (it rendered a `Link`).
+            // not contain the tooltip's own trigger button.
             return columnIndex === 0 && isEntityClickable
               ? value
               : truncateCell(value, maxDisplayCellLength);
@@ -189,30 +171,24 @@ const EntityList = <D extends EntityData>({
     [headers, isEntityClickable, maxDisplayCellLength],
   );
 
-  const rowActions = useMemo<
-    DataTableRowAction<EntityRow<D>>[] | undefined
-  >(() => {
-    // The prop type is a 1-to-3 tuple, so a non-nullish `menuItems` is never
-    // empty — `undefined` is the only "no actions" case to guard against.
-    if (!menuItems) {
-      return undefined;
-    }
+  const rowActions = useMemo<DataTableRowAction<D>[] | undefined>(
+    () =>
+      menuItems?.map((menuItem) => {
+        const { label, onClick, isDangerous, disabled, hidden } = menuItem;
+        const Icon = "icon" in menuItem ? menuItem.icon : undefined;
 
-    return menuItems.map((menuItem) => {
-      const { label, onClick, isDangerous, disabled, hidden } = menuItem;
-      const Icon = (menuItem as MenuItem<D>).icon;
-
-      return {
-        id: label,
-        label,
-        variant: isDangerous ? "destructive" : "default",
-        icon: Icon ? () => <Icon aria-hidden="true" /> : undefined,
-        disabled: (row) => resolveMenuItemFlag(disabled, entityOf(row)),
-        visible: (row) => !resolveMenuItemFlag(hidden, entityOf(row)),
-        onClick: (row) => onClick(entityOf(row)),
-      };
-    });
-  }, [menuItems, entityOf]);
+        return {
+          id: label,
+          label,
+          variant: isDangerous ? "destructive" : "default",
+          icon: Icon ? <Icon aria-hidden="true" /> : undefined,
+          disabled: (row: D) => resolveMenuItemFlag(disabled, row),
+          visible: (row: D) => !resolveMenuItemFlag(hidden, row),
+          onClick,
+        };
+      }),
+    [menuItems],
+  );
 
   const selectedRowIds = useMemo<RowSelectionState>(() => {
     if (!batchSelection) {
@@ -220,21 +196,18 @@ const EntityList = <D extends EntityData>({
     }
 
     const selection: RowSelectionState = {};
-
-    tableData.forEach((row) => {
-      if (batchSelection.isSelected(entityIndex[row.id])) {
-        selection[row.id] = true;
+    for (const row of rows) {
+      if (batchSelection?.isSelected(row)) {
+        selection[getRowId(row)] = true;
       }
-    });
-
+    }
     return selection;
-  }, [batchSelection, entityIndex, tableData]);
+  }, [batchSelection, rows]);
 
   /**
-   * TanStack reports the whole next selection map, while `batchSelection`
-   * expects Carbon's per-row / select-all split. A single row checkbox flips
-   * exactly one id; the header checkbox flips every remaining one, so a change
-   * spanning more than one row is treated as "select all".
+   * The DataTable reports the whole next selection map, while `batchSelection`
+   * expects a per-row / select-all split: a row checkbox flips exactly one row,
+   * the header checkbox flips every remaining one.
    */
   const handleSelectedRowsChange = useCallback(
     (nextSelection: RowSelectionState) => {
@@ -242,49 +215,34 @@ const EntityList = <D extends EntityData>({
         return;
       }
 
-      const flipped = tableData.filter(
-        (row) => !!nextSelection[row.id] !== !!selectedRowIds[row.id],
+      const isNowSelected = (row: D) => !!nextSelection[getRowId(row)];
+      const flipped = rows.filter(
+        (row) => isNowSelected(row) !== batchSelection.isSelected(row),
       );
 
-      if (flipped.length === 0) {
-        return;
-      }
-
       if (flipped.length > 1) {
-        batchSelection.onSelectAll(
-          tableData.filter((row) => !!nextSelection[row.id]).map(entityOf),
-        );
-        return;
-      }
+        batchSelection.onSelectAll(rows.filter(isNowSelected));
+      } else if (flipped.length === 1) {
+        const [row] = flipped;
 
-      const row = flipped[0];
-
-      if (nextSelection[row.id]) {
-        batchSelection.onSelect(entityOf(row));
-      } else {
-        batchSelection.onUnselect(entityOf(row));
+        if (batchSelection.isSelected(row)) {
+          batchSelection.onUnselect(row);
+        } else {
+          batchSelection.onSelect(row);
+        }
       }
     },
-    [batchSelection, entityOf, selectedRowIds, tableData],
+    [batchSelection, rows],
   );
 
-  const renderExpansion = renderExpandedRow;
-  const expansion = useMemo(
-    () =>
-      renderExpansion
-        ? (row: EntityRow<D>) => renderExpansion(entityOf(row))
-        : undefined,
-    [renderExpansion, entityOf],
-  );
-
-  const handleRowClick = (row: EntityRow<D>) => {
+  const handleRowClick = (row: D) => {
     const textSelection = window.getSelection();
 
     if (
       onEntityClick &&
       (!textSelection || textSelection.toString().length === 0)
     ) {
-      onEntityClick(entityOf(row));
+      onEntityClick(row);
     }
   };
 
@@ -336,10 +294,10 @@ const EntityList = <D extends EntityData>({
           )}
         </Flex>
       )}
-      <DataTable<EntityRow<D>>
+      <DataTable<D>
         columns={columns}
-        data={tableData}
-        getRowId={(row) => row.id}
+        data={rows}
+        getRowId={getRowId}
         title={isInsideModal ? undefined : title}
         description={isInsideModal ? undefined : descriptionNode}
         loading={loading}
@@ -354,12 +312,8 @@ const EntityList = <D extends EntityData>({
         }}
         pagination={pagination}
         rowActions={rowActions}
-        // Carbon collapsed into an overflow menu once `menuItems` held more
-        // than two entries; the DS threshold is the *visible* count at which
-        // the menu kicks in, so it also collapses at three — but now per row,
-        // after `hidden` has been applied.
-        inlineActionsThreshold={MAX_ICON_ACTIONS + 1}
-        expansion={expansion}
+        inlineActionsThreshold={INLINE_ACTIONS_THRESHOLD}
+        expansion={renderExpandedRow}
         onRowClick={isEntityClickable ? handleRowClick : undefined}
         rowSelection={
           batchSelection
@@ -372,9 +326,8 @@ const EntityList = <D extends EntityData>({
 };
 
 /**
- * `DataTableHeader.key` is constrained to columns whose value is renderable
- * (`string | ReactNode`), which is the same contract Carbon's cell renderer
- * relied on. Arrays are joined, matching the previous behaviour.
+ * `DataTableHeader.key` constrains columns to values that are renderable
+ * (`string | ReactNode`); arrays are joined into a single line.
  */
 function readCell(row: EntityData, key: string): ReactNode {
   const value = row[key];
@@ -428,12 +381,9 @@ function toSortConfig(state: SortingState): SortConfig[] | undefined {
 
 function resolveMenuItemFlag<D>(
   flag: boolean | ((entity: D) => boolean) | undefined,
-  entity: D | undefined,
+  entity: D,
 ): boolean {
-  if (typeof flag === "function") {
-    return entity !== undefined && flag(entity);
-  }
-  return !!flag;
+  return typeof flag === "function" ? flag(entity) : !!flag;
 }
 
 export default EntityList;
