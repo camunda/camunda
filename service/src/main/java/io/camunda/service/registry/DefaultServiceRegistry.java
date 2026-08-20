@@ -18,6 +18,7 @@ import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
 import io.camunda.service.ClusterRecoveryServices;
+import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterStatusServices;
 import io.camunda.service.ClusterTopologyServices;
 import io.camunda.service.ClusterVariableServices;
@@ -106,6 +107,7 @@ public record DefaultServiceRegistry(
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
     @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices,
+    ClusterRuntimeBackupServices clusterRuntimeBackupServices,
     ClusterRecoveryServices clusterRecoveryServices,
     ClusterStatusServices clusterStatusServices,
     ClusterTopologyServices clusterTopologyServices,
@@ -339,6 +341,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ClusterRuntimeBackupServices clusterRuntimeBackupServices() {
+    return clusterRuntimeBackupServices;
+  }
+
+  @Override
   public ClusterStatusServices clusterStatusServices() {
     return clusterStatusServices;
   }
@@ -443,6 +450,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
     private @Nullable ClusterHistoryBackupServices clusterHistoryBackupServices;
+    private ClusterRuntimeBackupServices clusterRuntimeBackupServices;
     private ClusterRecoveryServices clusterRecoveryServices;
     private ClusterStatusServices clusterStatusServices;
     private ClusterTopologyServices clusterTopologyServices;
@@ -669,6 +677,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterRuntimeBackupServices(final ClusterRuntimeBackupServices service) {
+      clusterRuntimeBackupServices = service;
+      return this;
+    }
+
     public Builder clusterRecoveryServices(final ClusterRecoveryServices service) {
       clusterRecoveryServices = service;
       return this;
@@ -737,6 +750,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
           clusterHistoryBackupServices,
+          clusterRuntimeBackupServices,
           clusterRecoveryServices,
           clusterStatusServices,
           clusterTopologyServices,
