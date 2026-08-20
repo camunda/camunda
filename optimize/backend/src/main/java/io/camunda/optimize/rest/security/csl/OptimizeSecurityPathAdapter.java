@@ -52,6 +52,7 @@ public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
         "/api/alert/**",
         "/api/analysis/**",
         "/api/assignee/**",
+        "/api/business-value/**",
         "/api/candidateGroup/**",
         "/api/collection/**",
         "/api/dashboard/**",
