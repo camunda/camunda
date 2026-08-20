@@ -72,23 +72,14 @@ const InstancesTableWrapper: React.FC = observer(() => {
     const visibleIds = processInstances.map(
       (instance) => instance.processInstanceKey,
     );
-    const visibleActiveRootIds = processInstances
-      .filter(
-        (instance) =>
-          instance.state === 'ACTIVE' &&
-          instance.parentProcessInstanceKey === null,
-      )
-      .map((instance) => instance.processInstanceKey);
     const visibleRunningIds = processInstances
       .filter((instance) => instance.state === 'ACTIVE')
       .map((instance) => instance.processInstanceKey);
 
-    const visibleSuspendedRootIds = processInstances
-      .filter(
-        (instance) =>
-          instance.state === 'SUSPENDED' &&
-          instance.parentProcessInstanceKey === null,
-      )
+    // Suspension does not cascade between parent and child instances, so call activity child
+    // instances are eligible for bulk suspend/resume on their own — not restricted to roots.
+    const visibleSuspendedIds = processInstances
+      .filter((instance) => instance.state === 'SUSPENDED')
       .map((instance) => instance.processInstanceKey);
 
     const visibleFinishedIds = processInstances
@@ -106,9 +97,8 @@ const InstancesTableWrapper: React.FC = observer(() => {
       totalCount,
       hasMoreTotalItems,
       visibleIds,
-      visibleActiveRootIds,
       visibleRunningIds,
-      visibleSuspendedRootIds,
+      visibleSuspendedIds,
       visibleFinishedIds,
       visibleIncidentIds,
     });
