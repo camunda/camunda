@@ -28,16 +28,30 @@ import io.camunda.zeebe.util.collection.Tuple;
 public final class BpmnIncidentBehavior implements StreamProcessorLifecycleAware {
 
   /**
-   * Message of the incident both activation paths raise when a job's secret value injection fails.
-   * Shared because the cause is the same on either path: the value the placeholder was baked in for
-   * changed before the job was handed out. It carries no failure detail, since the exception may
-   * quote the variables document and with it secret data that must stay out of persisted records.
+   * Cause-neutral fallback the job-push path raises when a job's secret value injection fails for a
+   * reason it cannot attribute to a specific reference (e.g. malformed variables msgpack). It
+   * carries no failure detail, since the exception may quote the variables document and with it
+   * secret data that must stay out of persisted records. When the failure is a {@link
+   * io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretPointerMismatchException} instead,
+   * the path names the mismatch via {@link #SECRET_REFERENCE_UNRESOLVED_MESSAGE}.
    */
   public static final String SECRET_INJECTION_FAILED_MESSAGE =
-      "The job with key '%s' can not be activated, because its secret reference no longer "
-          + "matches the job's variables. Correct the mismatched variable and resolve the "
-          + "incident, or use process instance modification to reactivate the element and "
-          + "create a fresh job.";
+      "The job with key '%s' can not be activated, because injecting its secret values "
+          + "failed. Resolve the incident, or use process instance modification to "
+          + "reactivate the element and create a fresh job.";
+
+  /**
+   * Message the job-push path raises when it knows which secret reference failed to inject: it
+   * names the reference's placeholder and JSON pointer path (never the secret's value). The batch
+   * path uses an identically worded message of its own ({@code
+   * JobBatchActivateProcessor#SECRET_REFERENCE_UNRESOLVED_MESSAGE}); the two are candidates to
+   * merge once both paths name the mismatch (#60405). Format args: job key, placeholder, path.
+   */
+  public static final String SECRET_REFERENCE_UNRESOLVED_MESSAGE =
+      "The job with key '%s' can not be activated, because the secret reference '%s' "
+          + "could not be resolved at '%s'. Fix the variable's value or the input "
+          + "mapping that sets it, then resolve the incident, or use process instance "
+          + "modification to reactivate the element and create a fresh job.";
 
   private final IncidentRecord incidentRecord = new IncidentRecord();
 

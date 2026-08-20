@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -254,6 +255,86 @@ public final class JobSecretPushInjectionTest {
     assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
     assertThat(jobStream.getActivatedJobs()).isEmpty();
     assertThat(jobState(jobKey)).isEqualTo(State.WAITING_FOR_SECRET_RESOLUTION);
+  }
+
+  @Test
+  public void shouldNameTheMismatchedReferenceWhenInjectionFailsOnPush() {
+    // given - the default tenant, required for a tenant-scoped cluster variable and for the job
+    // that belongs to it to be looked up later
+    engine.tenant().newTenant().withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER).create();
+
+    // and - a SECRET_REFERENCE cluster variable that currently points at "tokenA"
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .withKind(ClusterVariableKind.SECRET_REFERENCE)
+        .withValue(Map.of("token", "camunda.secrets.tokenA"))
+        .create();
+
+    // and - a service task whose start execution listener opens a window between the input
+    // mapping baking the *then-current* placeholder ("tokenA") into the job's variables and the
+    // job's creation, which resolves the reference from whatever the cluster variable holds by then
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("mismatch-process")
+            .startEvent()
+            .serviceTask(
+                "mismatch-task",
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeStartExecutionListener("mismatch-start-el")
+                        .zeebeInputExpression("camunda.vars.tenant.creds.token", "authToken"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("mismatch-process").create();
+    final long listenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("mismatch-start-el")
+            .getFirst()
+            .getKey();
+
+    // and - inside that window the reference is repointed at "tokenB", whose value is cached
+    // before the job becomes activatable, so the push path actually attempts (and fails) the
+    // replacement instead of parking the job on an uncached reference
+    engine
+        .clusterVariables()
+        .withName("creds")
+        .setTenantScope()
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .withValue(Map.of("token", "camunda.secrets.tokenB"))
+        .update();
+    CACHED_SECRETS.put("tokenB", "resolved-B");
+
+    // when - completing the listener lets the job be created with a "tokenB" reference while its
+    // variables still literally hold "camunda.secrets.tokenA", and the push path injects it
+    engine.job().withKey(listenerJobKey).complete();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+
+    // then - the incident names the mismatched placeholder and its JSON pointer, the same detail
+    // the batch path gives, instead of the cause-neutral fallback message
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).withJobKey(jobKey).getFirst();
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.SECRET_RESOLUTION_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("camunda.secrets.tokenB")
+        .contains("/authToken")
+        .contains("could not be resolved at")
+        .contains("Fix the variable's value or the input mapping that sets it");
+
+    // and - the job is not pushed, and no exported record leaks the resolved value
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
+    assertThat(RecordingExporter.getRecords())
+        .noneMatch(record -> record.getValue().toString().contains("resolved-B"));
   }
 
   @Test
