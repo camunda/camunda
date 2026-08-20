@@ -204,7 +204,7 @@ public class AgentInstanceIT {
         .isEqualTo(dbModel.status() != null ? dbModel.status() : AgentInstanceStatus.UNKNOWN);
     assertThat(entity.definition().model()).isEqualTo(dbModel.model());
     assertThat(entity.definition().provider()).isEqualTo(dbModel.provider());
-    assertThat(entity.definition().systemPrompt()).isEqualTo(dbModel.systemPrompt());
+    assertThat(entity.definition().systemPrompt()).isEqualTo(dbModel.systemPromptItems());
     assertThat(entity.limits().maxTokens()).isEqualTo(dbModel.maxTokens());
     assertThat(entity.limits().maxModelCalls()).isEqualTo(dbModel.maxModelCalls());
     assertThat(entity.limits().maxToolCalls()).isEqualTo(dbModel.maxToolCalls());
