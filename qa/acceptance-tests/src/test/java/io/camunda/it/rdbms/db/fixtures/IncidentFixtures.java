@@ -1,0 +1,87 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.rdbms.db.fixtures;
+
+import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.IncidentDbModel;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.function.Function;
+
+public final class IncidentFixtures extends CommonFixtures {
+
+  private IncidentFixtures() {}
+
+  public static IncidentDbModel createRandomized(
+      final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    final var errorMessage = "error-" + generateRandomString(20);
+    final var builder =
+        new IncidentDbModel.Builder()
+            .incidentKey(nextKey())
+            .processDefinitionKey(nextKey())
+            .processDefinitionId("process-" + generateRandomString(20))
+            .flowNodeInstanceKey(nextKey())
+            .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
+            .jobKey(nextKey())
+            .flowNodeId("element-" + nextKey())
+            .state(randomEnum(IncidentState.class))
+            .errorType(randomEnum(ErrorType.class))
+            .errorMessage(errorMessage)
+            .errorMessageHash(errorMessage.hashCode())
+            .creationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
+            .tenantId("tenant-" + generateRandomString(20))
+            .treePath("tree-" + generateRandomString(20));
+
+    return builderFunction.apply(builder).build();
+  }
+
+  public static void createAndSaveRandomIncidents(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomIncidents(rdbmsWriters, b -> b);
+  }
+
+  public static void createAndSaveRandomIncidents(
+      final RdbmsWriters rdbmsWriters,
+      final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    createAndSaveRandomIncidents(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomIncidents(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
+      rdbmsWriters.getIncidentWriter().create(IncidentFixtures.createRandomized(builderFunction));
+    }
+
+    rdbmsWriters.flush();
+  }
+
+  public static IncidentDbModel createAndSaveIncident(
+      final RdbmsWriters rdbmsWriters,
+      final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    final IncidentDbModel randomized = createRandomized(builderFunction);
+    createAndSaveIncidents(rdbmsWriters, List.of(randomized));
+    return randomized;
+  }
+
+  public static void createAndSaveIncident(
+      final RdbmsWriters rdbmsWriters, final IncidentDbModel incident) {
+    createAndSaveIncidents(rdbmsWriters, List.of(incident));
+  }
+
+  public static void createAndSaveIncidents(
+      final RdbmsWriters rdbmsWriters, final List<IncidentDbModel> incidentList) {
+    for (final IncidentDbModel incident : incidentList) {
+      rdbmsWriters.getIncidentWriter().create(incident);
+    }
+    rdbmsWriters.flush();
+  }
+}

@@ -1,0 +1,7 @@
+zeebe.broker.exporters.camundaexporter:
+  className: io.camunda.exporter.CamundaExporter
+  args:
+    connect:
+      url: http://elasticsearch:9200
+    bulk:
+      size: 1

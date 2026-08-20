@@ -1,0 +1,162 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.config.spi;
+
+import io.camunda.security.core.port.out.SecurityPathPort;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Host-supplied {@link SecurityPathPort} declaring the path patterns OC's filter chains operate on.
+ * These values were previously inlined in {@code WebSecurityConfig}; they are lifted here so the
+ * central library-owned chains can consume them.
+ */
+public class SecurityPathAdapter implements SecurityPathPort {
+
+  public static final SecurityPathAdapter INSTANCE = new SecurityPathAdapter();
+
+  // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
+  // owned exclusively by the per-tenant scoped security chains that PhysicalTenantScopeProvider
+  // contributes (CSL derives each scope's matcher as basePath + these apiPaths, e.g.
+  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_API, so
+  // listing the tenant prefix here would let the cluster chain also match a tenant request and, if
+  // it wins the same-order tie-break, validate the token against the cluster's providers instead of
+  // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.
+  private static final Set<String> API_PATHS =
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
+
+  private static final Set<String> UNPROTECTED_API_PATHS =
+      Set.of(
+          "/v2/license",
+          "/v2/setup/user",
+          "/v2/status",
+          "/v1/external/process/**",
+          "/.well-known/oauth-protected-resource/**");
+
+  // Served by CSL's unprotected-paths chain, which sits ahead of every authenticated chain and
+  // installs no authentication filter at all. That is what /cluster/v2/status needs and what
+  // listing it in UNPROTECTED_API_PATHS could not give it: a `permitAll` inside an authenticated
+  // chain still lets the Basic or bearer filter reject a credential it does not recognise, and the
+  // cluster-admin chain recognises only cluster-admin credentials — so a client migrating here from
+  // /v2/status, which sends its ordinary API credentials on every request, would be answered 401 by
+  // a health endpoint. Here the Authorization header is never inspected. The exact path is listed,
+  // so the rest of /cluster/v2/** stays with the cluster-admin chains.
+  private static final Set<String> UNPROTECTED_PATHS =
+      Set.of(
+          "/error",
+          "/actuator/**",
+          "/ready",
+          "/health",
+          "/startup",
+          "/favicon.ico",
+          "/cluster/v2/status");
+
+  private static final Set<String> WEBAPP_PATHS =
+      Set.of(
+          "/login/**",
+          "/logout",
+          "/admin/**",
+          "/operate/**",
+          "/tasklist/**",
+          "/assets/**",
+          "/custom.css",
+          "/favicon.ico",
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**",
+          "/post-logout",
+          "/processes",
+          "/processes/*",
+          "/{regex:[\\d]+}",
+          "/processes/*/start",
+          "/new/*",
+          "/decisions",
+          "/decisions/*",
+          "/instances",
+          "/instances/*",
+          "/default-ui.css",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
+
+  private static final Set<String> UNAUTHENTICATED_WEBAPP_PATHS =
+      Set.of(
+          "/post-logout",
+          "/default-ui.css",
+          "/operate/assets/**",
+          "/operate/client-config.js",
+          "/operate/custom.css",
+          "/operate/favicon.ico",
+          "/admin/assets/**",
+          "/admin/favicon.ico",
+          "/assets/**",
+          "/custom.css",
+          "/favicon.ico",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
+
+  // Single source of truth for the web component names; see WebAppProviderAdapter#WEB_APPS.
+  private static final Set<String> WEB_COMPONENT_NAMES = WebAppProviderAdapter.WEB_APPS;
+
+  private static final Set<String> ADMIN_FILTER_BYPASS_PATHS =
+      Set.of(
+          "/login",
+          "/logout",
+          "/sso-callback",
+          "/post-logout",
+          "/admin/setup",
+          // Setup-page assets (CSS, JS modules) must load before any admin user is provisioned;
+          // without this prefix the filter redirects asset requests to /admin/setup, the SPA gets
+          // text/html back for every <script>/<link> tag, and the browser refuses to evaluate the
+          // setup page with MIME-type errors. Mirrors the explicit ASSETS_PATH bypass the
+          // pre-CSL host AdminUserCheckFilter carried.
+          "/admin/assets");
+
+  @Override
+  public Set<String> apiPaths() {
+    return API_PATHS;
+  }
+
+  @Override
+  public Set<String> unprotectedApiPaths() {
+    return UNPROTECTED_API_PATHS;
+  }
+
+  @Override
+  public Set<String> unprotectedPaths() {
+    return UNPROTECTED_PATHS;
+  }
+
+  @Override
+  public Set<String> webappPaths() {
+    return WEBAPP_PATHS;
+  }
+
+  @Override
+  public Set<String> webComponentNames() {
+    return WEB_COMPONENT_NAMES;
+  }
+
+  @Override
+  public Set<String> unauthenticatedWebappPaths() {
+    return UNAUTHENTICATED_WEBAPP_PATHS;
+  }
+
+  @Override
+  public Set<String> adminFilterBypassPaths() {
+    return ADMIN_FILTER_BYPASS_PATHS;
+  }
+
+  @Override
+  public Optional<String> postLogoutRedirectPath() {
+    return Optional.of("/post-logout");
+  }
+
+  // staticResourceSuffixes() inherits the SPI default which already matches OC's source set.
+}

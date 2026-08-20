@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["src/**/*"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/setupTests.ts",
+    "src/**/__mocks__/**/*",
+    "src/modules/mocks/**/*",
+    "src/**/mocks.tsx",
+    "src/modules/testing/**/*"
+  ],
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "baseUrl": "src"
+  }
+}

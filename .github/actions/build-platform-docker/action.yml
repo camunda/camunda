@@ -1,0 +1,249 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
+# If no version is given, the version is set to the Maven project version.
+
+---
+name: Build Docker Image
+
+# owner: @camunda/engineering-operations
+
+description: Builds the Docker image
+
+inputs:
+  repository:
+    description: 'The image repository, e.g. camunda/camunda'
+    default: 'camunda/camunda'
+    required: true
+  version:
+    description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
+    required: false
+  distball:
+    description: 'The path to the Camunda platform distribution TAR ball'
+    required: false
+    default: 'dist/target/camunda-zeebe-*.tar.gz'
+  revision:
+    description: 'The revision of the source the content of this image is based on.'
+    required: false
+  push:
+    description: 'If true, will push the image'
+    required: false
+    default: 'false'
+  platforms:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64'
+    required: false
+    default: 'linux/amd64'
+  dockerfile:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Path to the dockerfile, that should be used; defaults to camunda.Dockerfile'
+    required: false
+    default: 'camunda.Dockerfile'
+  debug:
+    description: 'Enable debug logging for BuildKit daemon'
+    required: false
+    default: 'false'
+
+outputs:
+  image:
+    description: "Fully qualified image name available in your local Docker daemon"
+    value: ${{ steps.get-image-output.outputs.result }}
+  date:
+    description: "The ISO 8601 date at which the image was created"
+    value: ${{ steps.get-date.outputs.result }}
+  version:
+    description: "The semantic version of the packaged artifact"
+    value: ${{ steps.get-version.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - name: Detect branch type
+      id: branch-detect
+      shell: bash
+      env:
+        IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      run: |
+        echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
+    - name: Check for Fork
+      uses: ./.github/actions/is-fork
+      id: is-fork
+
+    - name: Set up multi-platform support
+      uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+      with:
+        # only cache on persistent branches where reuse is likely
+        cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
+
+    # Creating a context is required when installing buildx on self-hosted runners
+    - name: Create context
+      shell: bash
+      run: |
+        if ! docker context ls --format '{{.Name}}' | grep -q "^zeebe-context$"; then
+          docker context create zeebe-context
+        fi
+
+    - name: Set up Docker Buildx
+      # Wrapped in Wandalen/wretry.action: booting the builder pulls moby/buildkit from Docker Hub,
+      # which answers 502 often enough to be the most frequent way an image build fails on healthy
+      # code. It's a `uses:` step, so nick-fields/retry (our usual retry action, shell-command only)
+      # can't wrap it.
+      #
+      # Pinned to `_js_action`, not the documented `v3.8.0` composite, so github_context/env_context/
+      # job_context/matrix_context below can be overridden -- see
+      # https://github.com/Wandalen/wretry.action/issues/182. Blanked out because
+      # docker/setup-buildx-action's action.yml has no `${{ }}` expressions of its own; re-check this
+      # if that's still true when its pin next bumps.
+      uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
+      with:
+        action: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        # wretry cannot inspect the wrapped action's error -- `retry_condition` only sees contexts
+        # captured before the step ran -- so this retries any failure, not just a 5xx. A genuine
+        # error therefore costs up to 3 attempts before reporting red.
+        attempt_limit: 3
+        attempt_delay: 10000
+        # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
+        github_token: ${{ github.token }}
+        github_context: '{}'
+        env_context: '{}'
+        job_context: '{}'
+        matrix_context: '{}'
+        with: |
+          # to be able to push to local registry, which we use in our tests, we need to use host network
+          driver-opts: network=host
+          buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
+          endpoint: zeebe-context
+
+    # wretry passes the wrapped action's inputs by exporting them into GITHUB_ENV, so all of
+    # setup-buildx-action's INPUT_* variables stay set for the rest of the job -- well past this
+    # composite action. A later step that does not declare one of these inputs itself would read the
+    # stale value instead of that action's own default; `version`, `name` and `platforms` are common
+    # enough input names to collide. GITHUB_ENV cannot unset, so blank them out.
+    # Runs even when the step above exhausted its attempts: that is exactly when the variables have
+    # been exported and no later step will overwrite them, so any `always()` or post step in the job
+    # would otherwise inherit them.
+    - name: Clear buildx inputs leaked into the job environment by wretry
+      if: always()
+      shell: bash
+      run: |
+        env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true
+
+    - name: Set semantic version from Maven project
+      id: get-version
+      if: ${{ inputs.version == ''}}
+      shell: bash
+      run: echo "result=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
+    - name: Set image build label from ISO 8601 DATE
+      id: get-date
+      shell: bash
+      run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
+
+    - name: Build image names from params and/or project version
+      id: get-image
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+      with:
+        images: ${{ inputs.repository }}
+        tags: ${{ inputs.version || steps.get-version.outputs.result }}
+
+    # Pick one (the first) out of multiple tags for the image name out, all
+    # should work equally well in a local Docker daemon
+    - name: Set fully qualified image name for output
+      id: get-image-output
+      shell: bash
+      run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
+
+    # The `version` input accepts a list, and the snapshot deploy jobs in ci.yml pass two versions.
+    # Both values derived from it reach the wrapped build step, whose inputs wretry re-parses as
+    # YAML: a second line would land at column 0 and break the block before build-push-action ever
+    # runs. Both are reduced to a single line here.
+    - name: Reduce the multi-valued build inputs to a single line
+      id: get-build-inputs
+      shell: bash
+      env:
+        TAGS: ${{ steps.get-image.outputs.tags }}
+        VERSION_INPUT: ${{ inputs.version }}
+        MAVEN_VERSION: ${{ steps.get-version.outputs.result }}
+      run: |
+        # build-push-action parses `tags` with the same list helper as `platforms`, which this action
+        # already passes comma-separated, so joining is equivalent to the newline-separated form.
+        echo "tags=$(echo "$TAGS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+        # The VERSION build arg takes a single version. Keeping the first one matches both the image
+        # name output above and what build-push-action already resolved this to: it splits build args
+        # on newlines, so any further line was never a VERSION value to begin with.
+        version="${VERSION_INPUT:-$MAVEN_VERSION}"
+        echo "version=$(echo "$version" | head -n 1)" >> "$GITHUB_OUTPUT"
+
+    - name: Set DISTBALL path relative to the build context
+      id: get-distball
+      shell: bash
+      run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
+
+    - name: Set additional build args dynamically based on workflow run context
+      id: get-additional-build-args
+      shell: bash
+      run: |
+        # Check if current workflow run is related to a fork PR
+        if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
+          echo "The current workflow run is related to a fork PR."
+          echo "As a result, private Minimus hardened base images will be replaced with public images."
+
+          {
+            echo 'result<<EOF'
+            echo 'BASE=public'
+            echo 'EOF'
+          } | tee -a $GITHUB_OUTPUT
+        fi
+
+    - name: Build Docker image
+      # Wrapped for the same reason as the buildx setup above: BuildKit resolves the Dockerfile
+      # frontend and the base images through Docker Hub, whose token endpoint answers 5xx or drops
+      # the connection often enough to fail the build before a single layer is built.
+      #
+      # Pinned to `_js_action` for the same reason as the buildx step above. build-push-action's only
+      # `${{ }}` expression is its `github-token` default, set explicitly below instead since the
+      # context that would resolve it is blanked out; re-check on future version bumps.
+      uses: Wandalen/wretry.action@71a909ebf09f3ffdc6f42a17bd54ecb43481da49 # v3.8.0_js_action
+      env:
+        DOCKER_BUILD_SUMMARY: false
+        DOCKER_BUILD_RECORD_UPLOAD: false
+      with:
+        action: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        # As above, wretry cannot classify the failure, so a broken Dockerfile or a 4xx from the
+        # registry is retried just like a 5xx. Layers already built are cached in the builder, which
+        # persists across attempts, so a replay is cheap up to the point that failed -- but a failing
+        # RUN re-executes on every attempt.
+        attempt_limit: 3
+        attempt_delay: 10000
+        # wretry clones the wrapped action at runtime; without a token that clone gets HTTP 403
+        github_token: ${{ github.token }}
+        github_context: '{}'
+        env_context: '{}'
+        job_context: '{}'
+        matrix_context: '{}'
+        # wretry re-parses this block as YAML, so the indentation below is significant: it has to
+        # stay valid after the expressions expand. Keep every interpolated value single-line -- a
+        # multi-line one would have its later lines land at column 0 and break the nested scalar.
+        with: |
+          context: .
+          file: ${{ inputs.dockerfile }}
+          tags: ${{ steps.get-build-inputs.outputs.tags }}
+          load: ${{ inputs.push != 'true' }}
+          push: false
+          platforms: ${{ inputs.platforms }}
+          provenance: false
+          outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
+          github-token: ${{ github.token }}
+          build-args: |
+            DISTBALL=${{ steps.get-distball.outputs.result }}
+            DATE=${{ steps.get-date.outputs.result }}
+            REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
+            VERSION=${{ steps.get-build-inputs.outputs.version }}
+            ${{ steps.get-additional-build-args.outputs.result }}
+          target: app
+
+    # As above: a build that fails every attempt is the case where this matters most.
+    - name: Clear build-push inputs leaked into the job environment by wretry
+      if: always()
+      shell: bash
+      run: |
+        env | grep -o '^INPUT_[^=]*' | sed 's/$/=/' >> "$GITHUB_ENV" || true

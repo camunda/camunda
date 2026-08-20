@@ -1,0 +1,14 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "testCases": [
+    {
+      "name": "An invalid test case",
+      "instructions": [
+        {
+          "type": "unknown type",
+          "isValid": false
+        }
+      ]
+    }
+  ]
+}

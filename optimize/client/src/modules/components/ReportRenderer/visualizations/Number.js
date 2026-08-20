@@ -1,0 +1,161 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import React, {useCallback, useEffect, useState} from 'react';
+import classnames from 'classnames';
+import fitty from 'fitty';
+
+import {formatters, loadVariables, reportConfig} from 'services';
+import {Loading} from 'components';
+import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
+
+import {formatValue} from '../service';
+
+import ProgressBar from './ProgressBar';
+
+import './Number.scss';
+
+export function Number({report, formatter, mightFail, overlay}) {
+  const {data, result} = report;
+  const {targetValue, precision, valueFormat, subtitle} = data.configuration;
+  const [processVariable, setProcessVariable] = useState();
+  const processVariableReport = data.view.entity === 'variable';
+  const isMultiMeasure = result?.measures.length > 1;
+  // Optional per-report subtitle override (single-measure only, so one subtitle can't be
+  // ambiguously applied across several measures). Trimmed and blank-checked so a whitespace-only
+  // value does not suppress the normal label and render an empty subtitle. Rendered outside the
+  // fitted container — see below.
+  const trimmedSubtitle = subtitle?.trim();
+  const subtitleOverride = trimmedSubtitle && !isMultiMeasure ? trimmedSubtitle : null;
+
+  useEffect(() => {
+    // We need to load the variables in order to resolve the variable label
+    // will be removed once OPT-5961 is done
+    if (processVariableReport) {
+      const {name, type} = data.view.properties[0];
+      const payload = {
+        processesToQuery:
+          data.definitions?.map(({key, versions, tenantIds}) => ({
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds: tenantIds,
+          })) || [],
+        filter: data.filter,
+      };
+      mightFail(
+        loadVariables(payload),
+        (variables) => {
+          setProcessVariable(
+            variables.find((variable) => variable.name === name && variable.type === type) || {}
+          );
+        },
+        showError
+      );
+    }
+  }, [data.definitions, processVariableReport, mightFail, data.view.properties, data.filter]);
+
+  const containerRef = useCallback((node) => {
+    if (node) {
+      fitty(node, {
+        minSize: 5,
+        maxSize: 55,
+      });
+    }
+  }, []);
+
+  if (targetValue && targetValue.active && !isMultiMeasure) {
+    let min, max, isBelow;
+    if (
+      ['frequency', 'percentage'].includes(data.view.properties[0]) ||
+      data.view.entity === 'variable'
+    ) {
+      min = targetValue.countProgress.baseline;
+      max = targetValue.countProgress.target;
+      isBelow = targetValue.countProgress.isBelow;
+    } else {
+      min = formatters.convertDurationToSingleNumber(targetValue.durationProgress.baseline);
+      max = formatters.convertDurationToSingleNumber(targetValue.durationProgress.target);
+      isBelow = targetValue.durationProgress.target.isBelow;
+    }
+
+    return (
+      <ProgressBar
+        min={min}
+        max={max}
+        isBelow={isBelow}
+        value={result.data}
+        formatter={formatter}
+        precision={precision}
+      />
+    );
+  }
+
+  if (processVariableReport && !processVariable) {
+    return <Loading />;
+  }
+
+  return (
+    <div className="Number">
+      <div className={classnames('container', {withSubtitle: subtitleOverride})} ref={containerRef}>
+        {result.measures.map((measure, idx) => {
+          let viewString;
+
+          if (processVariableReport) {
+            viewString = processVariable.label || data.view.properties[0].name;
+          } else if (measure.property === 'percentage') {
+            viewString = t('report.percentageOfInstances');
+          } else {
+            const view = reportConfig.view.find(({matcher}) => matcher(data));
+            let measureString = '';
+            const propertyKey = measure.property === 'frequency' ? 'count' : measure.property;
+            try {
+              measureString = t(`report.view.${propertyKey}`);
+            } catch {
+              measureString = propertyKey;
+            }
+            if (view?.key === 'incident' && measure.property === 'duration') {
+              measureString = t('report.view.resolutionDuration');
+            }
+
+            viewString = view ? `${view.label()} ${measureString}` : measureString;
+          }
+
+          if (measure.property === 'duration' || data.view.entity === 'variable') {
+            const {type, value} = measure.aggregationType;
+            viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
+          }
+
+          return (
+            <React.Fragment key={idx}>
+              <div className="data">
+                {formatValue(
+                  measure.data,
+                  valueFormat ?? measure.property,
+                  precision,
+                  // Agentic control plane tiles render durations in compact notation
+                  // (e.g. "3d 4h 6min"); all other reports keep the default verbose form.
+                  data.agenticControlReport
+                )}
+                {idx === 0 && overlay}
+              </div>
+              {/* The auto-derived subtitle is suppressed when an override is rendered below. */}
+              {!subtitleOverride && <div className="label">{viewString}</div>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {/* Rendered outside the fitted container so its (potentially long) text does not shrink the
+          number: fitty sizes the number to the container's max-content width. */}
+      {subtitleOverride && <div className="subtitle">{subtitleOverride}</div>}
+    </div>
+  );
+}
+
+export default withErrorHandling(Number);

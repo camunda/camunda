@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ClusterVariableMapper">
+
+  <resultMap id="clusterVariableResultMap" type="io.camunda.search.entities.ClusterVariableEntity">
+    <constructor>
+      <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String" name="id"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="name"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="value"/>
+      <arg column="VAR_FULL_VALUE" javaType="java.lang.String" name="fullValue"/>
+      <arg column="IS_PREVIEW" javaType="java.lang.Boolean" name="isPreview"/>
+      <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"
+        name="scope"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="KIND" javaType="io.camunda.search.entities.ClusterVariableKind" name="kind"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="clusterVariableMetadataResultMap"
+    type="io.camunda.db.rdbms.write.domain.ClusterVariableMetadataDbModel">
+    <constructor>
+      <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String" name="clusterVariableId"/>
+      <arg column="METADATA_KEY" javaType="java.lang.String" name="key"/>
+      <arg column="METADATA_VALUE" javaType="java.lang.String" name="value"/>
+      <arg column="METADATA_VALUE_NUMBER" javaType="java.lang.Double" name="valueNumber"/>
+    </constructor>
+  </resultMap>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}CLUSTER_VARIABLE cv
+      <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ClusterVariableDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableResultMap">
+    SELECT * FROM (
+    SELECT
+    CLUSTER_VARIABLE_ID,
+    VAR_NAME,
+    VAR_VALUE,
+    VAR_FULL_VALUE,
+    TENANT_ID,
+    SCOPE,
+    IS_PREVIEW,
+    KIND
+    FROM ${prefix}CLUSTER_VARIABLE cv
+    <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <select id="get" parameterType="java.lang.String"
+    resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableResultMap">
+    SELECT
+    CLUSTER_VARIABLE_ID,
+    VAR_NAME,
+    VAR_VALUE,
+    VAR_FULL_VALUE,
+    TENANT_ID,
+    SCOPE,
+    IS_PREVIEW,
+    KIND
+    FROM ${prefix}CLUSTER_VARIABLE cv
+    WHERE cv.CLUSTER_VARIABLE_ID = #{id}
+  </select>
+
+  <select id="findMetadataByClusterVariableIds"
+    resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableMetadataResultMap">
+    SELECT
+    CLUSTER_VARIABLE_ID,
+    METADATA_KEY,
+    METADATA_VALUE,
+    METADATA_VALUE_NUMBER
+    FROM ${prefix}CLUSTER_VARIABLE_METADATA
+    WHERE CLUSTER_VARIABLE_ID IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </select>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    INSERT INTO ${prefix}CLUSTER_VARIABLE (CLUSTER_VARIABLE_ID, VAR_NAME, TYPE, DOUBLE_VALUE,
+                                           LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, IS_PREVIEW,
+                                           TENANT_ID,
+                                           SCOPE, KIND)
+    VALUES (#{id}, #{name}, #{type}, #{doubleValue, jdbcType=DOUBLE},
+            #{longValue, jdbcType=NUMERIC},
+            #{value},
+            #{fullValue}, #{isPreview}, #{tenantId}, #{scope}, #{kind})
+  </insert>
+
+  <insert id="insertMetadata" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    INSERT INTO ${prefix}CLUSTER_VARIABLE_METADATA (CLUSTER_VARIABLE_ID, METADATA_KEY, METADATA_VALUE,
+                                                     METADATA_VALUE_NUMBER)
+    VALUES
+    <foreach collection="metadata" item="entry" separator=", ">
+      (#{id}, #{entry.key}, #{entry.value}, #{entry.valueNumber, jdbcType=DOUBLE})
+    </foreach>
+  </insert>
+
+  <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
+  <insert id="insertMetadata" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="metadata" item="entry">
+      INTO ${prefix}CLUSTER_VARIABLE_METADATA (CLUSTER_VARIABLE_ID, METADATA_KEY, METADATA_VALUE,
+                                                METADATA_VALUE_NUMBER)
+      VALUES (#{id}, #{entry.key}, #{entry.value}, #{entry.valueNumber, jdbcType=DOUBLE})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <delete id="deleteMetadata" parameterType="java.lang.String">
+    DELETE
+    FROM ${prefix}CLUSTER_VARIABLE_METADATA
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </delete>
+
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    DELETE
+    FROM ${prefix}CLUSTER_VARIABLE
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </delete>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    UPDATE ${prefix}CLUSTER_VARIABLE
+    SET TYPE = #{type},
+        DOUBLE_VALUE = #{doubleValue, jdbcType=DOUBLE},
+        LONG_VALUE = #{longValue, jdbcType=NUMERIC},
+        VAR_VALUE = #{value},
+        VAR_FULL_VALUE = #{fullValue},
+        IS_PREVIEW = #{isPreview}
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </update>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND VAR_NAME IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if
+        test="tenancyEnabled == true">
+        AND (
+        <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+          TENANT_ID IN
+          <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator=","
+            close=")">
+            #{tenantId}
+          </foreach>
+          OR
+        </if>
+        TENANT_ID IS NULL )
+      </if>
+
+
+      <!-- basic filters -->
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND VAR_NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <if test="filter.scopeOperations != null and !filter.scopeOperations.isEmpty()">
+        <foreach collection="filter.scopeOperations" item="operation">
+          AND SCOPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+        <foreach collection="filter.tenantIdOperations" item="operation">
+          AND TENANT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- advanced filters on variable values -->
+      <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
+        <foreach collection="filter.valueOperations" item="operation">
+          AND
+          <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+        </foreach>
+      </if>
+
+      <if test="filter.isTruncated != null">
+        AND IS_PREVIEW = #{filter.isTruncated}
+      </if>
+
+      <!-- metadata filters -->
+      <if test="metadataSearchFilters != null and !metadataSearchFilters.isEmpty()">
+        <foreach collection="metadataSearchFilters" item="metadataFilter">
+          <choose>
+            <when test="metadataFilter.notExists">
+              AND NOT EXISTS (
+              SELECT 1 FROM ${prefix}CLUSTER_VARIABLE_METADATA cvm
+              WHERE cvm.CLUSTER_VARIABLE_ID = cv.CLUSTER_VARIABLE_ID
+              AND cvm.METADATA_KEY = #{metadataFilter.key}
+              )
+            </when>
+            <otherwise>
+              AND EXISTS (
+              SELECT 1 FROM ${prefix}CLUSTER_VARIABLE_METADATA cvm
+              WHERE cvm.CLUSTER_VARIABLE_ID = cv.CLUSTER_VARIABLE_ID
+              AND cvm.METADATA_KEY = #{metadataFilter.key}
+              <foreach collection="metadataFilter.stringOperations" item="operation">
+                AND cvm.METADATA_VALUE
+                <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+              </foreach>
+              <foreach collection="metadataFilter.numericOperations" item="operation">
+                AND cvm.METADATA_VALUE_NUMBER
+                <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+              </foreach>
+              )
+            </otherwise>
+          </choose>
+        </foreach>
+      </if>
+
+      <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
+        <foreach collection="filter.kindOperations" item="operation">
+          AND KIND
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+
+</mapper>
+

@@ -1,0 +1,50 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.streamprocessor.writers;
+
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+
+public interface TypedResponseWriter {
+
+  void writeRejectedResponseOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+
+  void writeRejectedResponseOnCommand(
+      final TypedRecord<?> command,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId);
+
+  void writeRejectedResponse(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId);
+
+  void writeAcceptedResponse(TypedRecord<?> event);
+
+  void writeAcceptedResponseOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
+
+  void writeAcceptedResponse(
+      long eventKey,
+      Intent eventState,
+      UnpackedObject eventValue,
+      ValueType valueType,
+      long requestId,
+      int requestStreamId);
+}

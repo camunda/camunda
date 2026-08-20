@@ -1,0 +1,389 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.github.tomakehurst.wiremock.client.BasicCredentials;
+import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
+import jakarta.servlet.http.Cookie;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.web.util.UriComponentsBuilder;
+
+/**
+ * Test for OIDC authentication flow using client_secret_basic client authentication.
+ *
+ * <p>Tests the Spring Security OIDC authorization code flow from IdP perspective where the client
+ * authenticates to the token endpoint using a client secret.
+ */
+@SuppressWarnings({"SpringBootApplicationProperties", "WrongPropertyKeyValueDelimiter"})
+@AutoConfigureMockMvc
+@AutoConfigureWebMvc
+@SpringBootTest(
+    classes = {
+      OidcFlowTestContext.class,
+      WebSecurityConfig.class,
+    },
+    properties = {
+      "camunda.security.authentication.unprotected-api=false",
+      "camunda.security.authentication.method=oidc",
+      "camunda.security.authentication.oidc.client-id="
+          + OidcClientSecretBasicKeycloakTest.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-secret="
+          + OidcClientSecretBasicKeycloakTest.CLIENT_SECRET,
+      "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
+      "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
+      "logging.level.io.camunda.authentication.config=DEBUG"
+      // essential for debugging the flow
+      //      "logging.level.org.springframework.security=TRACE",
+    })
+@ActiveProfiles("consolidated-auth")
+class OidcClientSecretBasicKeycloakTest {
+
+  @RegisterExtension
+  static WireMockExtension wireMock =
+      WireMockExtension.newInstance()
+          .configureStaticDsl(true)
+          .options(wireMockConfig().notifier(new Slf4jNotifier(false)).dynamicPort())
+          .failOnUnmatchedRequests(true)
+          .build();
+
+  static final String CLIENT_ID = "camunda-client";
+  static final String CLIENT_SECRET = "camunda-client-secret";
+  static final String REALM = "camunda-test";
+  static final String ENDPOINT_WELL_KNOWN_JWKS = "/realms/" + REALM + "/.well-known/jwks.json";
+  static final String ENDPOINT_WELL_KNOWN_OIDC =
+      "/realms/" + REALM + "/.well-known/openid-configuration";
+  static final String ENDPOINT_TOKEN = "/realms/" + REALM + "/oauth/token";
+  static final String ENDPOINT_USERINFO = "/realms/" + REALM + "/userinfo";
+
+  // Test RSA JWK used to sign ID tokens and exposed via JWKS
+  private static RSAKey rsaJwk;
+
+  @Autowired MockMvcTester mockMvcTester;
+
+  @DynamicPropertySource
+  static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
+    registry.add(
+        "camunda.security.authentication.oidc.issuer-uri",
+        () -> "http://localhost:" + wireMock.getPort() + "/realms/" + REALM);
+  }
+
+  @BeforeAll
+  static void stubWellKnownForStartup() throws JOSEException {
+    rsaJwk =
+        new RSAKeyGenerator(2048)
+            .keyID("test-kid")
+            .keyUse(com.nimbusds.jose.jwk.KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+
+    stubFor(
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(wellKnownResponse())));
+  }
+
+  private static void stubJwks() {
+    final String jwksBody =
+        JSONObjectUtils.toJSONString(new JWKSet(rsaJwk.toPublicJWK()).toJSONObject());
+    stubFor(
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
+            .willReturn(
+                aResponse().withHeader("Content-Type", "application/json").withBody(jwksBody)));
+  }
+
+  @Test
+  public void shouldRedirectToOidcAuthorizationEndpointWhenAccessingRoot() {
+    final MvcTestResult result =
+        mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
+    assertThat(result)
+        .hasStatus(HttpStatus.FOUND)
+        .hasHeader("Location", "/oauth2/authorization/oidc");
+  }
+
+  @Test
+  public void shouldSendClientAssertionToTokenEndpointDuringAuthCodeExchange() {
+    // notifying Spring Security we want to authenticate builds and saves an authorizationRequest,
+    // giving us a state/nonce reference to match upon the redirect from the IdP, and a real
+    // session cookie that must be replayed so the follow-up request resolves the same session
+    final var authorizationRedirect = beginAuthenticationFlow();
+    stubTokenEndpoint(signedIdToken(authorizationRedirect.nonceHash()), null, 3600L);
+
+    // when inducing an auth code for token exchange
+    mockAuthenticatedRedirectFromIdp(authorizationRedirect);
+
+    // then the IdP receives the authorization code
+    // with the Spring Security client authenticating using client_secret_basic
+    verifyRequestStructure();
+  }
+
+  private static void stubTokenEndpoint(
+      final String idToken, final String refreshToken, final long accessTokenExpiresInSeconds) {
+    stubFor(
+        post(urlEqualTo(ENDPOINT_TOKEN))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(tokenResponse(idToken, refreshToken, accessTokenExpiresInSeconds))));
+    stubFor(
+        get(urlEqualTo(ENDPOINT_USERINFO))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(userInfoResponse())));
+    stubJwks();
+  }
+
+  private static String userInfoResponse() {
+    return """
+      {
+        "sub": "1234567890",
+        "name": "Camundo Camundovski",
+        "preferred_username": "camundo",
+        "email": "camundo@example.com"
+      }
+      """;
+  }
+
+  private AuthorizationRedirect beginAuthenticationFlow() {
+    final var redirectResult =
+        mockMvcTester
+            .get()
+            .uri("/oauth2/authorization/oidc")
+            .accept(MediaType.TEXT_HTML)
+            .exchange();
+    assertThat(redirectResult).hasStatus3xxRedirection();
+    final String redirectUrl = redirectResult.getResponse().getHeader("Location");
+    assertThat(redirectUrl).isNotNull();
+    final var queryParams =
+        UriComponentsBuilder.fromUriString(redirectUrl).build().getQueryParams();
+    assertThat(queryParams).containsKey("state");
+    final var sessionCookie =
+        redirectResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
+    return new AuthorizationRedirect(
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8),
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("nonce")), StandardCharsets.UTF_8),
+        sessionCookie);
+  }
+
+  private MvcTestResult mockAuthenticatedRedirectFromIdp(
+      final AuthorizationRedirect authorizationRedirect) {
+    return mockMvcTester
+        .get()
+        .uri("/sso-callback")
+        .accept(MediaType.TEXT_HTML)
+        .cookie(authorizationRedirect.sessionCookie())
+        .queryParam("code", "test_authorization_code")
+        .queryParam("state", authorizationRedirect.state())
+        .queryParam("session_state", "test_session_state")
+        .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/" + REALM)
+        .exchange();
+  }
+
+  private void verifyRequestStructure() {
+    verify(
+        1,
+        postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
+            .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
+            .withBasicAuth(new BasicCredentials(CLIENT_ID, CLIENT_SECRET))
+            .withRequestBody(containing("grant_type=authorization_code"))
+            .withRequestBody(containing("code=test_authorization_code"))
+            .withRequestBody(
+                containing(
+                    "resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F&resource=https%3A%2F%2Fapi.example.com%2Fapp2%2F"))
+            .withRequestBody(notContaining("client_assertion_type"))
+            .withRequestBody(notContaining("client_assertion")));
+  }
+
+  @Test
+  public void shouldSendBasicBearerTokenToTokenEndpointDuringRefreshToken() {
+    // log in for real so the resulting session holds a genuine, repository-backed authorized
+    // client; the IdP hands out a token that expires immediately, so the very next request must
+    // trigger OAuth2RefreshTokenFilter to refresh it using the stored refresh token. The same
+    // token-endpoint stub also answers the follow-up refresh-token request.
+    final var authorizationRedirect = beginAuthenticationFlow();
+    stubTokenEndpoint(signedIdToken(authorizationRedirect.nonceHash()), "refresh_token_value", 1L);
+    final var loginResult = mockAuthenticatedRedirectFromIdp(authorizationRedirect);
+    // successful authentication regenerates the session id (session-fixation protection), so the
+    // pre-login cookie is now stale — the post-login cookie must be used for the next request
+    final var postLoginSessionCookie =
+        loginResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(postLoginSessionCookie).isNotNull();
+
+    // OAuth2RefreshTokenFilter only applies its 60s clock-skew tolerance to tokens whose lifetime
+    // exceeds 2x the skew; a 1-second token falls back to a plain now-is-after-expiry check, so
+    // sleeping past that single second is what makes the token actually look expired.
+    awaitTokenExpiry();
+
+    mockMvcTester
+        .get()
+        .uri(TestApiController.DUMMY_WEBAPP_ENDPOINT)
+        .accept(MediaType.TEXT_HTML)
+        .cookie(postLoginSessionCookie)
+        .exchange();
+
+    verify(
+        1,
+        postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
+            .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
+            .withBasicAuth(new BasicCredentials(CLIENT_ID, CLIENT_SECRET))
+            .withRequestBody(containing("grant_type=refresh_token"))
+            .withRequestBody(notContaining("client_assertion"))
+            .withRequestBody(containing("refresh_token=refresh_token_value")));
+  }
+
+  private static void awaitTokenExpiry() {
+    try {
+      Thread.sleep(1500);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static String wellKnownResponse() {
+    return """
+            {
+                "issuer": "http://localhost:000000/realms/KEYCLOAKREALM",
+                "authorization_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/oauth/authorize",
+                "token_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/oauth/token",
+                "userinfo_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/userinfo",
+                "jwks_uri": "http://localhost:000000/realms/KEYCLOAKREALM/.well-known/jwks.json",
+                "response_types_supported": [
+                    "code",
+                    "token",
+                    "id_token",
+                    "code token",
+                    "code id_token",
+                    "token id_token",
+                    "code token id_token",
+                    "none"
+                ],
+                "subject_types_supported": [
+                    "public"
+                ],
+                "id_token_signing_alg_values_supported": [
+                    "RS256"
+                ],
+                "scopes_supported": [
+                    "openid",
+                    "email",
+                    "profile"
+                ]
+            }
+        """
+        .replaceAll("000000", String.valueOf(wireMock.getPort()))
+        .replaceAll("KEYCLOAKREALM", REALM);
+  }
+
+  private static String tokenResponse(
+      final String idToken, final String refreshToken, final long expiresInSeconds) {
+    final var refreshTokenField =
+        refreshToken == null ? "" : "\"refresh_token\": \"%s\",".formatted(refreshToken);
+    return """
+            {
+                "access_token": "dummy-access-token",
+                "expires_in": %d,
+                %s
+                "token_type": "Bearer",
+                "id_token": "%s"
+            }
+        """
+        .formatted(expiresInSeconds, refreshTokenField, idToken);
+  }
+
+  /**
+   * Builds a real RS256-signed ID token whose {@code nonce} claim echoes the given hash. The ID
+   * token's own expiry is unrelated to the access token's {@code expires_in} — it is fixed at an
+   * hour, comfortably longer than any test run.
+   */
+  private static String signedIdToken(final String nonceHash) {
+    final String issuer = "http://localhost:" + wireMock.getPort() + "/realms/" + REALM;
+    final var now = new java.util.Date();
+    final var exp = new java.util.Date(now.getTime() + 3600_000L);
+    final JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer(issuer)
+            .audience(CLIENT_ID)
+            .subject("1234567890")
+            .claim("name", "Camundo Camundovski")
+            .claim("admin", true)
+            .issueTime(now)
+            .expirationTime(exp)
+            .claim("nonce", nonceHash)
+            .build();
+
+    final SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJwk.getKeyID()).build(), claims);
+    try {
+      signedJWT.sign(new RSASSASigner(rsaJwk.toPrivateKey()));
+    } catch (final JOSEException e) {
+      throw new RuntimeException(e);
+    }
+    return signedJWT.serialize();
+  }
+
+  /**
+   * Holds what the test needs from the initial authorization redirect: {@code state} and {@code
+   * nonceHash} are plain query parameters on the redirect to the IdP (standard OIDC behaviour, not
+   * something read back out of the session — {@code nonceHash} is already the SHA-256 hash Spring
+   * Security computed from the raw nonce it stores server-side), and {@code sessionCookie} is the
+   * real Spring-Session-backed cookie the server issued — it must be replayed on the follow-up
+   * request so the server resolves the same session (and the {@code OAuth2AuthorizationRequest}
+   * stored in it) rather than starting a new one.
+   */
+  private record AuthorizationRedirect(String state, String nonceHash, Cookie sessionCookie) {}
+}

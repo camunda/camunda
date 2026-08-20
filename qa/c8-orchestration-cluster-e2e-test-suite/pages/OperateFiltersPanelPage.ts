@@ -1,0 +1,420 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Page, Locator, expect} from '@playwright/test';
+
+type OptionalFilter =
+  | 'Variables'
+  | 'Process Instance Key(s)'
+  | 'Parent Process Instance Key'
+  | 'Batch Operation Key'
+  | 'Error Message'
+  | 'Business ID'
+  | 'Start Date Range'
+  | 'End Date Range'
+  | 'Failed job but retries left';
+
+// The Business ID advanced string filter only renders the operators
+// configured via `selectableOperators` in OptionalFiltersFormGroup.tsx
+// ($eq / $like / $in) — keep this type in sync with that configuration.
+export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
+
+export class OperateFiltersPanelPage {
+  private page: Page;
+  readonly activeInstancesCheckbox: Locator;
+  readonly suspendedInstancesCheckbox: Locator;
+  readonly incidentsInstancesCheckbox: Locator;
+  readonly runningInstancesCheckbox: Locator;
+  readonly completedInstancesCheckbox: Locator;
+  readonly canceledInstancesCheckbox: Locator;
+  readonly finishedInstancesCheckbox: Locator;
+  readonly processNameFilter: Locator;
+  readonly processVersionFilter: Locator;
+  readonly processNameClearButton: Locator;
+  readonly processInstanceKeysFilter: Locator;
+  readonly processInstanceKeysFilterOption: Locator;
+  readonly parentProcessInstanceKeyFilter: Locator;
+  readonly processInstanceKey: Locator;
+  readonly flowNodeFilter: Locator;
+  readonly batchOperationKeyFilter: Locator;
+  readonly resetFiltersButton: Locator;
+  readonly errorMessageFilter: Locator;
+  readonly businessIdFilter: Locator;
+  readonly businessIdFilterType: Locator;
+  readonly startDateFilter: Locator;
+  readonly openVariableFilterModalButton: Locator;
+  readonly variableFilterDialog: Locator;
+  readonly singleConditionNameInput: Locator;
+  readonly singleConditionValueInput: Locator;
+  readonly moreFiltersButton: Locator;
+  readonly dateFilterDialog: Locator;
+  readonly fromTimeInput: Locator;
+  readonly toTimeInput: Locator;
+  readonly fromDateInput: Locator;
+  readonly applyButton: Locator;
+  readonly getOptionByName: (name: string, exact?: boolean) => Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.activeInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Active'});
+    this.suspendedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Suspended'});
+    this.completedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Completed'});
+    this.canceledInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Canceled'});
+    this.runningInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Running Instances'});
+    this.incidentsInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Incidents'});
+    this.finishedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Finished Instances'});
+    this.processNameFilter = this.page.getByRole('combobox', {
+      name: 'Name',
+    });
+    this.processVersionFilter = this.page.getByRole('combobox', {
+      name: 'Version',
+    });
+    this.processNameClearButton = this.processNameFilter
+      .locator('..')
+      .getByRole('button', {
+        name: 'Clear selected item',
+      });
+    this.processInstanceKeysFilterOption = this.page.getByRole('menuitem', {
+      name: 'Process Instance Key(s)',
+    });
+    this.processInstanceKeysFilter = page.getByRole('textbox', {
+      name: 'process instance key',
+    });
+    this.parentProcessInstanceKeyFilter = page.getByRole('textbox', {
+      name: 'parent process instance key',
+    });
+    this.processInstanceKey = page.getByRole('textbox', {
+      name: 'process instance key',
+    });
+    this.flowNodeFilter = this.page.getByRole('combobox', {
+      name: 'element',
+    });
+    this.batchOperationKeyFilter = this.page.getByRole('textbox', {
+      name: 'batch operation key',
+    });
+    this.resetFiltersButton = this.page.getByRole('button', {
+      name: 'reset filters',
+    });
+    this.errorMessageFilter = this.page.getByRole('textbox', {
+      name: 'error message',
+    });
+    this.businessIdFilter = this.page.getByRole('textbox', {
+      name: 'Business ID',
+      exact: true,
+    });
+    this.businessIdFilterType = this.page.getByRole('combobox', {
+      name: 'Business ID filter type',
+    });
+    this.startDateFilter = this.page.getByRole('textbox', {
+      name: 'start date range',
+    });
+    this.openVariableFilterModalButton = page.getByTestId(
+      'open-variable-filter-modal',
+    );
+    this.variableFilterDialog = page.getByRole('dialog', {
+      name: 'Filter by variable',
+    });
+    this.singleConditionNameInput = page.getByTestId('single-condition-name');
+    this.singleConditionValueInput = page.getByTestId('single-condition-value');
+    this.moreFiltersButton = this.page.getByRole('button', {
+      name: 'More Filters',
+    });
+    this.dateFilterDialog = this.page.getByRole('dialog');
+    this.fromTimeInput = page.getByTestId('fromTime');
+    this.toTimeInput = page.getByTestId('toTime');
+    this.fromDateInput = this.page.getByText('From date');
+    this.applyButton = this.page.getByText('Apply');
+    this.getOptionByName = (name: string, exact = true) =>
+      this.page.getByRole('option', {name, exact});
+  }
+
+  async validateCheckedState(
+    checked: Array<Locator>,
+    unChecked: Array<Locator>,
+  ) {
+    for (const filter of checked) {
+      await expect(filter).toBeChecked();
+    }
+
+    for (const filter of unChecked) {
+      await expect(filter).not.toBeChecked();
+    }
+  }
+
+  async displayOptionalFilter(filterName: OptionalFilter) {
+    if (await this.isOptionalFilterDisplayed(filterName)) {
+      return;
+    }
+    await this.moreFiltersButton.click();
+    await this.page
+      .getByRole('menuitem', {
+        name: filterName,
+      })
+      .click();
+  }
+
+  async removeOptionalFilter(filterName: OptionalFilter) {
+    await this.page.getByLabel(filterName, {exact: true}).hover();
+    await this.page.getByLabel(`Remove ${filterName} Filter`).click();
+  }
+
+  async isOptionalFilterDisplayed(
+    filterName: OptionalFilter,
+  ): Promise<boolean> {
+    return await this.page.getByLabel(filterName, {exact: true}).isVisible();
+  }
+
+  async selectProcess(option: string) {
+    if (await this.processNameClearButton.isVisible()) {
+      await this.processNameClearButton.click();
+      await expect(this.processVersionFilter).toBeDisabled({timeout: 30000});
+      await expect
+        .poll(() => this.page.url())
+        .not.toContain('processDefinitionId');
+      await expect
+        .poll(() => this.page.url())
+        .not.toContain('processDefinitionVersion');
+    }
+    await this.processNameFilter.click();
+    await this.getOptionByName(option).click({timeout: 30000});
+    await expect(this.processVersionFilter).toBeEnabled({timeout: 3000});
+  }
+
+  async assertProcessNameOptionVisible(option: string) {
+    await this.processNameFilter.click();
+    await this.processNameFilter.fill(option);
+    await expect(this.getOptionByName(option)).toBeVisible({timeout: 10_000});
+    await this.page.keyboard.press('Escape');
+  }
+
+  async selectVersion(option: string) {
+    await expect(this.processNameFilter).toBeVisible();
+    await expect(this.processVersionFilter).toBeEnabled();
+    // The version dropdown can fail to open, or render before its options have
+    // loaded; retry opening it until the target option is present.
+    await expect(async () => {
+      await this.processVersionFilter.click();
+      await expect(this.getOptionByName(option)).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
+    await this.getOptionByName(option).click({timeout: 30000});
+  }
+
+  async selectFlowNode(option: string) {
+    // The flow-node dropdown can fail to open, or render before its options
+    // have loaded; retry opening it until the target option is present (same
+    // approach as selectVersion).
+    await expect(async () => {
+      await this.flowNodeFilter.click();
+      await expect(this.getOptionByName(option, false)).toBeVisible({
+        timeout: 5_000,
+      });
+    }).toPass({timeout: 30_000});
+    await this.getOptionByName(option, false).click({timeout: 30000});
+  }
+
+  async fillBusinessIdFilter(value: string) {
+    await expect(this.businessIdFilter).toBeVisible();
+    await expect(this.businessIdFilter).toBeEnabled();
+    await this.businessIdFilter.click();
+    await this.businessIdFilter.fill('');
+    await this.businessIdFilter.pressSequentially(value);
+    await expect(this.businessIdFilter).toHaveValue(value, {timeout: 30000});
+  }
+
+  async selectBusinessIdFilterType(operator: AdvancedStringFilterOperator) {
+    await this.businessIdFilterType.click();
+    await this.page.getByRole('option', {name: operator, exact: true}).click();
+  }
+
+  async openVariableFilterModal() {
+    // The modal can fail to open on the first click under load; retry the
+    // click until the dialog is present, but do not click again once it is
+    // already up (a second click would toggle the dialog closed).
+    await expect(async () => {
+      if (!(await this.variableFilterDialog.isVisible())) {
+        await this.openVariableFilterModalButton.click();
+      }
+      await expect(this.variableFilterDialog).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
+  }
+
+  async fillSingleConditionInline(name: string, value: string) {
+    await this.singleConditionNameInput.fill(name);
+    await this.singleConditionValueInput.fill(value);
+    await this.page.waitForTimeout(900);
+  }
+
+  async fillConditionRow(index: number, name: string, value: string) {
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-name-${index}`)
+      .fill(name);
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-value-${index}`)
+      .fill(value);
+  }
+
+  async addCondition() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Add condition'})
+      .click();
+  }
+
+  async applyVariableFilter() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Apply'})
+      .click();
+  }
+
+  async selectOperator(index: number, operatorLabel: string) {
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-operator-${index}`)
+      .click();
+    await this.page.getByRole('option', {name: operatorLabel}).click();
+  }
+
+  async openJsonEditorForRow(index: number) {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Open JSON editor'})
+      .nth(index)
+      .click();
+  }
+
+  async cancelVariableFilterModal() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Cancel'})
+      .click();
+  }
+
+  async fillProcessInstanceKeyFilter(processInstanceKey: string) {
+    await expect(this.processInstanceKeysFilter).toBeVisible();
+    await expect(this.processInstanceKeysFilter).toBeEnabled();
+    await this.processInstanceKeysFilter.click();
+    // Clear any existing content first: pressSequentially appends, so typing
+    // on a retry or a reused filter without clearing produces a doubled value
+    // (e.g. "45034503"). fill('') clears and fires the controlled input's
+    // onChange; pressSequentially then types char-by-char so the value sticks.
+    await this.processInstanceKeysFilter.fill('');
+    await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
+    await expect(this.processInstanceKeysFilter).toHaveValue(
+      processInstanceKey,
+      {timeout: 30000},
+    );
+  }
+
+  async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
+    await expect(this.parentProcessInstanceKeyFilter).toBeVisible();
+    await expect(this.parentProcessInstanceKeyFilter).toBeEnabled();
+    await this.parentProcessInstanceKeyFilter.fill(parentProcessInstanceKey);
+    await expect(this.parentProcessInstanceKeyFilter).toHaveValue(
+      parentProcessInstanceKey,
+    );
+  }
+
+  async fillFromTimeInput(fromTime: string) {
+    await this.fromTimeInput.clear();
+    await this.fromTimeInput.fill(fromTime);
+  }
+
+  async fillToTimeInput(toTime: string) {
+    await this.toTimeInput.clear();
+    await this.toTimeInput.fill(toTime);
+  }
+
+  async pickDateTimeRange({
+    fromDay,
+    toDay,
+    fromTime,
+    toTime,
+  }: {
+    fromDay: string;
+    toDay: string;
+    fromTime?: string;
+    toTime?: string;
+  }) {
+    await expect(this.dateFilterDialog).toBeVisible();
+
+    const date = new Date();
+    const monthName = date.toLocaleString('default', {month: 'long'});
+    const year = date.getFullYear();
+
+    await this.fromDateInput.click();
+    await this.page.getByLabel(`${monthName} ${fromDay}, ${year}`).click();
+    await this.page.getByLabel(`${monthName} ${toDay}, ${year}`).click();
+
+    if (fromTime !== undefined) {
+      await this.fillFromTimeInput(fromTime);
+    }
+
+    if (toTime !== undefined) {
+      await this.fillToTimeInput(toTime);
+    }
+  }
+
+  async clickApply() {
+    await this.applyButton.click();
+  }
+
+  async clickResetFilters() {
+    await this.resetFiltersButton.click();
+  }
+
+  async fillErrorMessageFilter(errorMessage: string) {
+    await expect(this.errorMessageFilter).toBeVisible();
+    await expect(this.errorMessageFilter).toBeEnabled();
+    await this.errorMessageFilter.fill(errorMessage);
+    await expect(this.errorMessageFilter).toHaveValue(errorMessage);
+  }
+
+  async fillBatchOperationKeyFilter(batchOperationKey: string) {
+    await expect(this.batchOperationKeyFilter).toBeVisible();
+    await expect(this.batchOperationKeyFilter).toBeEnabled();
+    await this.batchOperationKeyFilter.fill(batchOperationKey);
+    await expect(this.batchOperationKeyFilter).toHaveValue(batchOperationKey);
+  }
+
+  async clickRunningInstancesCheckbox(): Promise<void> {
+    await this.runningInstancesCheckbox.click({timeout: 60000});
+  }
+
+  async clickActiveInstancesCheckbox(): Promise<void> {
+    await this.activeInstancesCheckbox.click();
+  }
+
+  async clickSuspendedInstancesCheckbox(): Promise<void> {
+    await this.suspendedInstancesCheckbox.click({timeout: 60000});
+  }
+
+  async clickIncidentsInstancesCheckbox(): Promise<void> {
+    await this.incidentsInstancesCheckbox.click({timeout: 60000});
+  }
+
+  async clickFinishedInstancesCheckbox(): Promise<void> {
+    await this.finishedInstancesCheckbox.click({timeout: 60000});
+  }
+
+  async clickCompletedInstancesCheckbox(): Promise<void> {
+    await this.completedInstancesCheckbox.click({timeout: 60000});
+  }
+  async clickCanceledInstancesCheckbox(): Promise<void> {
+    await this.canceledInstancesCheckbox.click({timeout: 60000});
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "components": [
+    {
+      "label": "proceed?",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_15sclyt",
+        "columns": null
+      },
+      "id": "Field_0pzgltd",
+      "key": "textfield"
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "Date",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_15sclyt",
+        "columns": null
+      },
+      "id": "Field_1lfoywk",
+      "key": "datetime",
+      "timeLabel": "Time",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15
+    },
+    {
+      "label": "Dynamic list",
+      "components": [
+        {
+          "text": "Test",
+          "type": "text",
+          "layout": {
+            "row": "Row_0c4hray",
+            "columns": null
+          },
+          "id": "Field_1wes0a8"
+        },
+        {
+          "type": "table",
+          "layout": {
+            "row": "Row_157t90f",
+            "columns": null
+          },
+          "label": "Table",
+          "dataSource": "=Field_1f4668z",
+          "rowCount": 10,
+          "id": "Field_1f4668z",
+          "columns": [
+            {
+              "label": "ID",
+              "key": "id"
+            },
+            {
+              "label": "Name",
+              "key": "name"
+            },
+            {
+              "label": "Date",
+              "key": "date"
+            }
+          ]
+        },
+        {
+          "type": "image",
+          "layout": {
+            "row": "Row_157t90f",
+            "columns": 7
+          },
+          "id": "Field_1ayf72j",
+          "source": "https://camunda.com/wp-content/uploads/2024/06/adapt-icon.svg"
+        }
+      ],
+      "showOutline": true,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "type": "dynamiclist",
+      "layout": {
+        "row": "Row_0esqa63",
+        "columns": null
+      },
+      "id": "Field_1w76z2c",
+      "path": "dynamiclist_bpyuq0m"
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.38.1"
+  },
+  "schemaVersion": 19,
+  "id": "Form_1viy2x4",
+  "type": "default"
+}

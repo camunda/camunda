@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.45.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="multiInstanceElements" name="Multi-Instance Element Generator" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="OuterSubprocess" name="Outer Loop">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:input source="=innerItems" target="innerItems" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=outerItems" inputElement="outerItem" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Outer" name="Start Outer">
+        <bpmn:outgoing>Flow_Outer_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:subProcess id="InnerSubprocess" name="Inner Loop">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=outerItems" target="outerItems" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_Outer_1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Outer_2</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=innerItems" inputElement="innerItem" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:startEvent id="StartEvent_Inner" name="Start Inner">
+          <bpmn:outgoing>Flow_Inner_1</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_1" name="Step 1">
+          <bpmn:incoming>Flow_Inner_1</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_2</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_2" name="Step 2">
+          <bpmn:incoming>Flow_Inner_2</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_3</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_3" name="Step 3">
+          <bpmn:incoming>Flow_Inner_3</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_4</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_4" name="Step 4">
+          <bpmn:incoming>Flow_Inner_4</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_5</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_5" name="Step 5">
+          <bpmn:incoming>Flow_Inner_5</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_6</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_6" name="Step 6">
+          <bpmn:incoming>Flow_Inner_6</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_7</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_7" name="Step 7">
+          <bpmn:extensionElements />
+          <bpmn:incoming>Flow_Inner_7</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_8</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="ThrowEvent_8" name="Step 8">
+          <bpmn:incoming>Flow_Inner_8</bpmn:incoming>
+          <bpmn:outgoing>Flow_Inner_9</bpmn:outgoing>
+        </bpmn:intermediateThrowEvent>
+        <bpmn:endEvent id="EndEvent_Inner" name="End Inner">
+          <bpmn:incoming>Flow_Inner_9</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Inner_1" sourceRef="StartEvent_Inner" targetRef="ThrowEvent_1" />
+        <bpmn:sequenceFlow id="Flow_Inner_2" sourceRef="ThrowEvent_1" targetRef="ThrowEvent_2" />
+        <bpmn:sequenceFlow id="Flow_Inner_3" sourceRef="ThrowEvent_2" targetRef="ThrowEvent_3" />
+        <bpmn:sequenceFlow id="Flow_Inner_4" sourceRef="ThrowEvent_3" targetRef="ThrowEvent_4" />
+        <bpmn:sequenceFlow id="Flow_Inner_5" sourceRef="ThrowEvent_4" targetRef="ThrowEvent_5" />
+        <bpmn:sequenceFlow id="Flow_Inner_6" sourceRef="ThrowEvent_5" targetRef="ThrowEvent_6" />
+        <bpmn:sequenceFlow id="Flow_Inner_7" sourceRef="ThrowEvent_6" targetRef="ThrowEvent_7" />
+        <bpmn:sequenceFlow id="Flow_Inner_8" sourceRef="ThrowEvent_7" targetRef="ThrowEvent_8" />
+        <bpmn:sequenceFlow id="Flow_Inner_9" sourceRef="ThrowEvent_8" targetRef="EndEvent_Inner" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Outer" name="End Outer">
+        <bpmn:incoming>Flow_Outer_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Outer_1" sourceRef="StartEvent_Outer" targetRef="InnerSubprocess" />
+      <bpmn:sequenceFlow id="Flow_Outer_2" sourceRef="InnerSubprocess" targetRef="EndEvent_Outer" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="OuterSubprocess" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="OuterSubprocess" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="multiInstanceElements">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="325" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OuterSubprocess_di" bpmnElement="OuterSubprocess" isExpanded="true">
+        <dc:Bounds x="240" y="80" width="780" height="440" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Outer_di" bpmnElement="StartEvent_Outer">
+        <dc:Bounds x="270" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="InnerSubprocess_di" bpmnElement="InnerSubprocess" isExpanded="true">
+        <dc:Bounds x="350" y="160" width="580" height="280" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Inner_di" bpmnElement="StartEvent_Inner">
+        <dc:Bounds x="370" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_1_di" bpmnElement="ThrowEvent_1">
+        <dc:Bounds x="422" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_2_di" bpmnElement="ThrowEvent_2">
+        <dc:Bounds x="482" y="267" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="484" y="303" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_3_di" bpmnElement="ThrowEvent_3">
+        <dc:Bounds x="542" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_4_di" bpmnElement="ThrowEvent_4">
+        <dc:Bounds x="602" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_5_di" bpmnElement="ThrowEvent_5">
+        <dc:Bounds x="662" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_6_di" bpmnElement="ThrowEvent_6">
+        <dc:Bounds x="722" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_7_di" bpmnElement="ThrowEvent_7">
+        <dc:Bounds x="782" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ThrowEvent_8_di" bpmnElement="ThrowEvent_8">
+        <dc:Bounds x="842" y="267" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Inner_di" bpmnElement="EndEvent_Inner">
+        <dc:Bounds x="902" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Inner_1_di" bpmnElement="Flow_Inner_1">
+        <di:waypoint x="406" y="300" />
+        <di:waypoint x="420" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_2_di" bpmnElement="Flow_Inner_2">
+        <di:waypoint x="470" y="285" />
+        <di:waypoint x="480" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_3_di" bpmnElement="Flow_Inner_3">
+        <di:waypoint x="530" y="285" />
+        <di:waypoint x="540" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_4_di" bpmnElement="Flow_Inner_4">
+        <di:waypoint x="590" y="285" />
+        <di:waypoint x="600" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_5_di" bpmnElement="Flow_Inner_5">
+        <di:waypoint x="650" y="285" />
+        <di:waypoint x="660" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_6_di" bpmnElement="Flow_Inner_6">
+        <di:waypoint x="710" y="285" />
+        <di:waypoint x="720" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_7_di" bpmnElement="Flow_Inner_7">
+        <di:waypoint x="770" y="285" />
+        <di:waypoint x="780" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_8_di" bpmnElement="Flow_Inner_8">
+        <di:waypoint x="830" y="285" />
+        <di:waypoint x="840" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inner_9_di" bpmnElement="Flow_Inner_9">
+        <di:waypoint x="890" y="285" />
+        <di:waypoint x="902" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_Outer_di" bpmnElement="EndEvent_Outer">
+        <dc:Bounds x="952" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Outer_1_di" bpmnElement="Flow_Outer_1">
+        <di:waypoint x="306" y="300" />
+        <di:waypoint x="350" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Outer_2_di" bpmnElement="Flow_Outer_2">
+        <di:waypoint x="930" y="300" />
+        <di:waypoint x="952" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1072" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1080" y="325" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="300" />
+        <di:waypoint x="240" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="1020" y="300" />
+        <di:waypoint x="1072" y="300" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

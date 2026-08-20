@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.read.mapper;
+
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
+import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import java.util.List;
+
+public class AgentHistoryEntityMapper {
+
+  public static AgentInstanceHistoryEntity toEntity(final AgentHistoryDbModel dbModel) {
+    if (dbModel == null) {
+      return null;
+    }
+    final var contentItems = dbModel.contentItems();
+    final var toolCallValues = dbModel.toolCallValues();
+    return new AgentInstanceHistoryEntity(
+        dbModel.agentHistoryKey(),
+        nullToEmpty(dbModel.historyItemId()),
+        dbModel.agentInstanceKey(),
+        dbModel.elementInstanceKey(),
+        dbModel.processInstanceKey(),
+        dbModel.processDefinitionKey(),
+        nullToEmpty(dbModel.processDefinitionId()),
+        nullToEmpty(dbModel.tenantId()),
+        dbModel.jobKey(),
+        nullToEmpty(dbModel.jobLease()),
+        dbModel.loopIteration(),
+        dbModel.role(),
+        contentItems != null ? contentItems : List.of(),
+        toolCallValues != null ? toolCallValues : List.of(),
+        toMetrics(dbModel.inputTokens(), dbModel.outputTokens(), dbModel.durationMs()),
+        dbModel.toolValues(),
+        dbModel.model(),
+        dbModel.provider(),
+        toLimits(dbModel.maxTokens(), dbModel.maxModelCalls(), dbModel.maxToolCalls()),
+        dbModel.systemPromptItems(),
+        dbModel.commitStatus(),
+        dbModel.producedAt());
+  }
+
+  /**
+   * Returns null when all three metric fields are null (metrics were never provided). When only
+   * some fields are null (partial absence), constructs a {@link Metrics} preserving the available
+   * values rather than losing them.
+   */
+  private static Metrics toMetrics(
+      final Long inputTokens, final Long outputTokens, final Long durationMs) {
+    if (inputTokens == null && outputTokens == null && durationMs == null) {
+      return null;
+    }
+    return new Metrics(inputTokens, outputTokens, durationMs);
+  }
+
+  /**
+   * Defaults any null individual field to {@code -1} ("no limit configured"), the same sentinel
+   * {@code AgentInstanceLimits} uses.
+   */
+  private static Limits toLimits(
+      final Long maxTokens, final Integer maxModelCalls, final Integer maxToolCalls) {
+    return new Limits(
+        maxTokens != null ? maxTokens : -1L,
+        maxModelCalls != null ? maxModelCalls : -1,
+        maxToolCalls != null ? maxToolCalls : -1);
+  }
+}

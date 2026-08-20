@@ -1,0 +1,138 @@
+{
+  "index_patterns": [
+    "zeebe-record_agent-history_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-agent-history": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "agentHistoryKey": {
+              "type": "long"
+            },
+            "agentInstanceKey": {
+              "type": "long"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "jobKey": {
+              "type": "long"
+            },
+            "jobLease": {
+              "type": "keyword"
+            },
+            "loopIteration": {
+              "type": "integer"
+            },
+            "role": {
+              "type": "keyword"
+            },
+            "producedAt": {
+              "type": "long"
+            },
+            "content": {
+              "enabled": false
+            },
+            "systemPrompt": {
+              "enabled": false
+            },
+            "toolCalls": {
+              "enabled": false
+            },
+            "metrics": {
+              "properties": {
+                "inputTokens": {
+                  "type": "long"
+                },
+                "outputTokens": {
+                  "type": "long"
+                },
+                "reasoningTokenCount": {
+                  "type": "long"
+                },
+                "cacheCreationTokenCount": {
+                  "type": "long"
+                },
+                "cacheReadTokenCount": {
+                  "type": "long"
+                },
+                "durationMs": {
+                  "type": "long"
+                }
+              }
+            },
+            "historyItemId": {
+              "type": "keyword"
+            },
+            "tools": {
+              "properties": {
+                "name": {
+                  "type": "keyword"
+                },
+                "description": {
+                  "type": "text"
+                },
+                "elementId": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "model": {
+              "type": "keyword"
+            },
+            "provider": {
+              "type": "keyword"
+            },
+            "limits": {
+              "properties": {
+                "maxTokens": {
+                  "type": "long"
+                },
+                "maxModelCalls": {
+                  "type": "integer"
+                },
+                "maxToolCalls": {
+                  "type": "integer"
+                }
+              }
+            },
+            "changedAttributes": {
+              "type": "keyword"
+            },
+            "duplicate": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}

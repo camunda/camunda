@@ -1,0 +1,23 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createRoot} from 'react-dom/client';
+
+import './style.scss';
+import 'polyfills';
+
+import {restorePostLoginRedirect} from 'postLoginRedirect';
+import App from './App';
+
+// re-apply any route stashed before the logout/session-expiry -> login cycle, before the hash
+// router mounts (ADR-0038:
+// https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md)
+restorePostLoginRedirect();
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);

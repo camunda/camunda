@@ -1,0 +1,486 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
+
+import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
+import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ReferencedSecretCollector;
+import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import java.time.InstantSource;
+import org.jspecify.annotations.Nullable;
+
+public final class BpmnBehaviorsImpl implements BpmnBehaviors {
+
+  private final ExpressionProcessor expressionProcessor;
+  private final BpmnDecisionBehavior bpmnDecisionBehavior;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnEventPublicationBehavior eventPublicationBehavior;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnStateBehavior stateBehavior;
+  private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
+  private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
+  private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
+  private final BpmnJobBehavior jobBehavior;
+  private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
+  private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
+  private final CatchEventBehavior catchEventBehavior;
+  private final EventTriggerBehavior eventTriggerBehavior;
+  private final VariableBehavior variableBehavior;
+  private final ElementActivationBehavior elementActivationBehavior;
+  private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final BpmnSignalBehavior signalBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final JobUpdateBehaviour jobUpdateBehaviour;
+  private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
+  private final BpmnConditionalBehavior conditionalBehavior;
+  private final ExpressionBehavior expressionBehavior;
+  private final ExpressionLanguage expressionLanguage;
+  private final AgentInstanceBehavior agentInstanceBehavior;
+
+  public BpmnBehaviorsImpl(
+      final MutableProcessingState processingState,
+      final Writers writers,
+      final JobProcessingMetrics jobMetrics,
+      final DecisionBehavior decisionBehavior,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final RoutingInfo routingInfo,
+      final DueDateTimerCheckScheduler timerChecker,
+      final JobStreamer jobStreamer,
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final ExpressionLanguageMetrics expressionMetrics,
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics,
+      final MessageCorrelationMetrics messageCorrelationMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
+      final SecretStoreRegistry secretStoreRegistry) {
+
+    // The expression endpoint reports which trusted secrets an evaluation touched; only its
+    // contexts record into the collector. The BPMN path uses collector-free contexts, so its
+    // (much more frequent) evaluations never accumulate anything.
+    final var referencedSecretCollector = new ReferencedSecretCollector();
+    final var bpmnClusterContext = buildClusterEvaluationContext(processingState, null);
+    final var endpointClusterContext =
+        buildClusterEvaluationContext(processingState, referencedSecretCollector);
+
+    final var processVariableContext =
+        new VariableEvaluationContext(processingState.getVariableState());
+
+    expressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new ZeebeFeelEngineClock(clock), expressionMetrics);
+
+    expressionProcessor =
+        new ExpressionProcessor(
+            expressionLanguage,
+            CombinedEvaluationContext.withContexts(processVariableContext, bpmnClusterContext),
+            config.getExpressionEvaluationTimeout());
+
+    expressionBehavior =
+        new ExpressionBehavior(
+            endpointClusterContext,
+            expressionLanguage,
+            config.getExpressionEvaluationTimeout(),
+            processingState.getVariableState(),
+            referencedSecretCollector);
+
+    conditionalBehavior =
+        new BpmnConditionalBehavior(
+            processingState, writers.command(), expressionProcessor, expressionLanguage);
+
+    variableBehavior =
+        new VariableBehavior(
+            processingState.getVariableState(),
+            writers.state(),
+            conditionalBehavior,
+            processingState.getKeyGenerator());
+
+    catchEventBehavior =
+        new CatchEventBehavior(
+            processingState,
+            processingState.getKeyGenerator(),
+            expressionProcessor,
+            subscriptionCommandSender,
+            writers,
+            timerChecker,
+            routingInfo,
+            clock,
+            transientProcessMessageSubscriptionState,
+            config.getMaxNameFieldLength(),
+            evaluateBoundaryEventCorrelationKeyInActivityScope);
+
+    stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
+
+    eventTriggerBehavior =
+        new EventTriggerBehavior(
+            processingState.getKeyGenerator(),
+            catchEventBehavior,
+            writers,
+            processingState,
+            stateBehavior,
+            variableBehavior);
+
+    bpmnDecisionBehavior =
+        new BpmnDecisionBehavior(
+            decisionBehavior,
+            processingState,
+            eventTriggerBehavior,
+            writers.state(),
+            processingState.getKeyGenerator(),
+            expressionProcessor,
+            stateBehavior);
+
+    stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
+
+    variableMappingBehavior =
+        new BpmnVariableMappingBehavior(
+            expressionProcessor,
+            processingState,
+            variableBehavior,
+            eventTriggerBehavior,
+            evaluateDuplicateOutputMappingTargetsInOrder);
+
+    eventSubscriptionBehavior =
+        new BpmnEventSubscriptionBehavior(
+            catchEventBehavior, eventTriggerBehavior, processingState);
+
+    incidentBehavior =
+        new BpmnIncidentBehavior(
+            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
+
+    eventPublicationBehavior =
+        new BpmnEventPublicationBehavior(
+            processingState,
+            processingState.getKeyGenerator(),
+            eventTriggerBehavior,
+            stateBehavior,
+            writers);
+
+    processResultSenderBehavior =
+        new BpmnProcessResultSenderBehavior(processingState, writers.response());
+
+    bufferedMessageStartEventBehavior =
+        new BpmnBufferedMessageStartEventBehavior(
+            processingState,
+            processingState.getKeyGenerator(),
+            eventTriggerBehavior,
+            stateBehavior,
+            writers,
+            subscriptionCommandSender,
+            routingInfo,
+            clock,
+            config.isBusinessIdUniquenessEnabled(),
+            messageCorrelationMetrics);
+
+    jobActivationBehavior =
+        new BpmnJobActivationBehavior(
+            jobStreamer,
+            processingState,
+            writers,
+            processingState.getKeyGenerator(),
+            jobMetrics,
+            clock,
+            cslCheck,
+            tenantCheck,
+            secretStoreRegistry,
+            incidentBehavior);
+
+    multiInstanceInputCollectionBehavior =
+        new MultiInstanceInputCollectionBehavior(
+            expressionProcessor, stateBehavior, writers.state());
+    multiInstanceOutputCollectionBehavior =
+        new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionProcessor());
+
+    elementActivationBehavior =
+        new ElementActivationBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            catchEventBehavior,
+            processingState.getElementInstanceState(),
+            stateBehavior);
+
+    signalBehavior =
+        new BpmnSignalBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getVariableState(),
+            writers,
+            expressionProcessor);
+
+    userTaskBehavior =
+        new BpmnUserTaskBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            expressionProcessor,
+            stateBehavior,
+            processingState.getFormState(),
+            processingState.getUserTaskState(),
+            processingState.getVariableState(),
+            processingState.getAsyncRequestState(),
+            processingState.getGlobalListenersState(),
+            processingState.getGroupState(),
+            config.isCandidateGroupNameResolution(),
+            clock);
+
+    jobBehavior =
+        new BpmnJobBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getJobState(),
+            writers,
+            expressionProcessor,
+            stateBehavior,
+            processingState.getResourceState(),
+            processingState.getFormState(),
+            processingState.getAgentDefinitionState(),
+            incidentBehavior,
+            jobActivationBehavior,
+            jobMetrics,
+            userTaskBehavior,
+            config.getMaxWorkerTypeLength(),
+            processingState.getClusterVariableState());
+
+    compensationSubscriptionBehaviour =
+        new BpmnCompensationSubscriptionBehaviour(
+            processingState.getKeyGenerator(), processingState, writers, stateBehavior);
+
+    jobUpdateBehaviour =
+        new JobUpdateBehaviour(processingState, clock, cslCheck, tenantCheck, writers);
+
+    adHocSubProcessBehavior =
+        new BpmnAdHocSubProcessBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            stateBehavior,
+            variableBehavior,
+            processingState);
+
+    agentInstanceBehavior = new AgentInstanceBehavior(writers);
+
+    processDeletionBehavior =
+        new BpmnProcessDeletionBehavior(
+            processingState.getProcessState(),
+            processingState.getAgentDefinitionState(),
+            processingState.getElementInstanceState(),
+            processingState.getBannedInstanceState(),
+            writers.command(),
+            writers.state(),
+            processingState.getKeyGenerator(),
+            processDefinitionMetrics);
+  }
+
+  /**
+   * Builds the {@code camunda.vars.*} / {@code camunda.processInstance} cluster evaluation context
+   * tree. Passing a non-null {@code collector} makes the cluster-variable contexts record the
+   * trusted secret references they resolve (used by the expression endpoint); passing {@code null}
+   * yields collector-free contexts for the BPMN path, which must not accumulate references.
+   */
+  private static NamespacedEvaluationContext buildClusterEvaluationContext(
+      final MutableProcessingState processingState,
+      final @Nullable ReferencedSecretCollector collector) {
+    final var tenantClusterScope =
+        new TenantScopeClusterVariableEvaluationContext(
+            processingState.getClusterVariableState(), collector);
+    final var globalClusterScope =
+        new GlobalScopeClusterVariableEvaluationContext(
+            processingState.getClusterVariableState(), collector);
+    final var mergedClusterScope =
+        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
+
+    final var namespacedTenantClusterScope =
+        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
+    final var namespacedGlobalClusterScope =
+        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
+    final var namespacedMergedClusterScope =
+        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
+
+    final var processInstanceContext =
+        new ProcessInstanceContextEvaluationContext(processingState.getElementInstanceState());
+
+    return NamespacedEvaluationContext.create()
+        .register(
+            "camunda",
+            NamespacedEvaluationContext.create()
+                .register(
+                    "vars",
+                    CombinedEvaluationContext.withContexts(
+                        namespacedMergedClusterScope,
+                        namespacedTenantClusterScope,
+                        namespacedGlobalClusterScope))
+                .register("processInstance", processInstanceContext));
+  }
+
+  @Override
+  public ExpressionProcessor expressionProcessor() {
+    return expressionProcessor;
+  }
+
+  @Override
+  public BpmnDecisionBehavior bpmnDecisionBehavior() {
+    return bpmnDecisionBehavior;
+  }
+
+  @Override
+  public BpmnVariableMappingBehavior variableMappingBehavior() {
+    return variableMappingBehavior;
+  }
+
+  @Override
+  public BpmnEventPublicationBehavior eventPublicationBehavior() {
+    return eventPublicationBehavior;
+  }
+
+  @Override
+  public BpmnEventSubscriptionBehavior eventSubscriptionBehavior() {
+    return eventSubscriptionBehavior;
+  }
+
+  @Override
+  public BpmnIncidentBehavior incidentBehavior() {
+    return incidentBehavior;
+  }
+
+  @Override
+  public BpmnStateBehavior stateBehavior() {
+    return stateBehavior;
+  }
+
+  @Override
+  public ProcessInstanceStateTransitionGuard stateTransitionGuard() {
+    return stateTransitionGuard;
+  }
+
+  @Override
+  public BpmnProcessResultSenderBehavior processResultSenderBehavior() {
+    return processResultSenderBehavior;
+  }
+
+  @Override
+  public BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior() {
+    return bufferedMessageStartEventBehavior;
+  }
+
+  @Override
+  public BpmnJobBehavior jobBehavior() {
+    return jobBehavior;
+  }
+
+  @Override
+  public BpmnSignalBehavior signalBehavior() {
+    return signalBehavior;
+  }
+
+  @Override
+  public MultiInstanceInputCollectionBehavior inputCollectionBehavior() {
+    return multiInstanceInputCollectionBehavior;
+  }
+
+  @Override
+  public MultiInstanceOutputCollectionBehavior outputCollectionBehavior() {
+    return multiInstanceOutputCollectionBehavior;
+  }
+
+  @Override
+  public CatchEventBehavior catchEventBehavior() {
+    return catchEventBehavior;
+  }
+
+  @Override
+  public EventTriggerBehavior eventTriggerBehavior() {
+    return eventTriggerBehavior;
+  }
+
+  @Override
+  public VariableBehavior variableBehavior() {
+    return variableBehavior;
+  }
+
+  @Override
+  public ElementActivationBehavior elementActivationBehavior() {
+    return elementActivationBehavior;
+  }
+
+  @Override
+  public BpmnJobActivationBehavior jobActivationBehavior() {
+    return jobActivationBehavior;
+  }
+
+  @Override
+  public BpmnUserTaskBehavior userTaskBehavior() {
+    return userTaskBehavior;
+  }
+
+  @Override
+  public BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour() {
+    return compensationSubscriptionBehaviour;
+  }
+
+  @Override
+  public JobUpdateBehaviour jobUpdateBehaviour() {
+    return jobUpdateBehaviour;
+  }
+
+  @Override
+  public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
+    return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public AgentInstanceBehavior agentInstanceBehavior() {
+    return agentInstanceBehavior;
+  }
+
+  @Override
+  public BpmnProcessDeletionBehavior processDeletionBehavior() {
+    return processDeletionBehavior;
+  }
+
+  public ExpressionBehavior expressionBehavior() {
+    return expressionBehavior;
+  }
+
+  public ExpressionLanguage expressionLanguage() {
+    return expressionLanguage;
+  }
+}

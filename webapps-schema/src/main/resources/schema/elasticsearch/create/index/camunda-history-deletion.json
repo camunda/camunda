@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "resourceKey": {
+        "type": "long"
+      },
+      "resourceType": {
+        "type": "keyword"
+      },
+      "batchOperationKey": {
+        "type": "long"
+      },
+      "partitionId": {
+        "type": "integer"
+      }
+    }
+  }
+}

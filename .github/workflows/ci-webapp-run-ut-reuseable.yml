@@ -1,0 +1,133 @@
+# description: This is a reuseable workflow used to run Unit tests for Optimize, Tasklist, and Operate. Uses Junit5 Suite to determine which set of tests to run
+# test location: Optimize, Tasklist, Operate
+# type: CI
+# owner: @camunda/core-features
+---
+name: Webapp Run Unit Tests Reusable
+
+on:
+  workflow_call:
+    inputs:
+      componentName:
+        description: "The name of the component under test"
+        required: true
+        type: string
+      suite:
+        description: "The suite under test. ie, DataLayer or CoreFeatures"
+        required: true
+        type: string
+      suiteName:
+        description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
+        required: true
+        type: string
+      owner:
+        description: "Canonical GitHub team handle owning the suite under test, e.g. '@camunda/data-layer'"
+        required: true
+        type: string
+      use-shared-distball:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
+          artifact produced by ci.yml's build-distball job instead of running a
+          local build-zeebe reactor. Only safe when the run has a build-distball
+          job (i.e. via ci.yml). See #52693.
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: ${{ inputs.owner }}
+  TEST_TYPE: Unit
+  FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+permissions: { }
+
+jobs:
+  build:
+    name: "Unit - Back End - ${{ inputs.suiteName}}"
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "${{ inputs.componentName }}"
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Authenticate gcloud when consuming the shared distball (see restore step below).
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        if: ${{ inputs.use-shared-distball }}
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
+      # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
+      # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
+      # workflow_call, addressing the same run-scoped prefix build-distball wrote. See #52693.
+      # (gcloud is authenticated by the GCS build-cache auth step above.)
+      - if: ${{ inputs.use-shared-distball }}
+        uses: ./.github/actions/restore-shared-m2
+      # Fallback when the run has no build-distball job: build the platform locally.
+      - uses: ./.github/actions/build-zeebe
+        if: ${{ !inputs.use-shared-distball }}
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Run Test
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -Dtest=${{inputs.componentName}}${{inputs.suite}}TestSuite
+          -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
+          -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
+          -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D junitThreadCount=16 -P skipFrontendBuild
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[UT] ${{inputs.componentName}} - ${{inputs.suite}}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "${{inputs.componentName}}-unit-tests/${{inputs.suite}}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

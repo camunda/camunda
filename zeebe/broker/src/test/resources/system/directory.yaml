@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    data:
+      directory: foo

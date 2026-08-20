@@ -1,0 +1,33 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.state.immutable;
+
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import java.util.List;
+
+public interface AgentInstanceState {
+
+  /**
+   * @return the stored record, or {@code null} if no record exists for the given key
+   */
+  AgentInstanceRecord getRecord(long agentInstanceKey);
+
+  /**
+   * @return the keys of all agent instances currently associated with the given process instance
+   */
+  List<Long> getAgentInstanceKeysByProcessInstanceKey(long processInstanceKey);
+
+  /**
+   * Returns the smallest remaining agent instance key for the given process instance, without
+   * loading the full key list. Used to drive batch completion one instance at a time.
+   *
+   * @return the smallest key of an agent instance still associated with the given process instance,
+   *     or {@code null} if none remain
+   */
+  Long getFirstAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
+}

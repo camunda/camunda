@@ -1,0 +1,114 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.message;
+
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
+import org.agrona.collections.MutableLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Consumes a {@link MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger and
+ * emits one {@link MessageStartProcessInstanceRequestIntent#EXPIRED_DEDUP_DELETED} event per
+ * past-deadline dedup entry in the cross-partition message-start dedup state on {@code P_B}. Each
+ * event's applier removes the dedup column-family entry for its {@code (processDefinitionKey,
+ * messageKey)} pair. Deletion is purely deadline-driven; the naming uses "expired dedup entry" to
+ * reflect the role the entries play for {@code P_K}'s retries (they exist to bound the retry
+ * window), not a post-completion lifecycle state.
+ *
+ * <p>Each cycle is bounded by {@code batchLimit}; if more past-deadline entries remain, a follow-up
+ * {@code SWEEP_EXPIRED_DEDUPS} command is written to continue draining on the next stream
+ * iteration. Mirrors the trigger-then-batch pattern of {@link MessageBatchExpireProcessor}.
+ */
+@ExcludeAuthorizationCheck
+public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
+    implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor.class);
+
+  private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
+  private final MessageStartProcessInstanceDedupState dedupState;
+  private final int batchLimit;
+  private final InstantSource clock;
+  private final MessageCorrelationMetrics metrics;
+
+  public MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final MessageStartProcessInstanceDedupState dedupState,
+      final int batchLimit,
+      final InstantSource clock,
+      final MessageCorrelationMetrics metrics) {
+    this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
+    this.dedupState = dedupState;
+    this.batchLimit = batchLimit;
+    this.clock = clock;
+    this.metrics = metrics;
+  }
+
+  @Override
+  public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
+    final var visited = new MutableLong(0);
+    final var deleted = new MutableLong(0);
+    final var entry = new MessageStartProcessInstanceRequestRecord();
+    final boolean hasMore =
+        dedupState.visitExpiredEntries(
+            // A dedup row is expired once its deletion deadline (= the message deadline) has passed
+            // on this partition's clock — the same single-clock comparison the TTL-gated expiry
+            // guard uses, so a late retry that outlives the row is refused (REJECT_EXPIRED) rather
+            // than re-evaluated.
+            clock.millis(),
+            (processDefinitionKey, messageKey) -> {
+              if (visited.getAndIncrement() >= batchLimit) {
+                return false;
+              }
+              entry.reset();
+              entry.setProcessDefinitionKey(processDefinitionKey).setMessageKey(messageKey);
+              stateWriter.appendFollowUpEvent(
+                  record.getKey(),
+                  MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
+                  entry);
+              deleted.increment();
+              return true;
+            });
+
+    if (deleted.get() > 0) {
+      metrics.dedupSwept((int) deleted.get());
+    }
+
+    // Logged per sweep run (not per scheduler tick): the scheduler only writes a
+    // SWEEP_EXPIRED_DEDUPS command after a read-only probe finds an expired entry, so a run with
+    // sweptCount=0 is the rare probe/process race worth surfacing, and hasMore=true flags a
+    // batch-limited sweep that will continue on a follow-up command.
+    LOG.atDebug()
+        .addKeyValue("sweptCount", deleted.get())
+        .addKeyValue("hasMore", hasMore)
+        .log("Swept expired cross-partition message-start dedup entries");
+
+    if (hasMore) {
+      // Past-deadline dedup entries remain beyond what fit in this batch. Schedule the next cycle
+      // via a follow-up trigger command rather than waiting for the next scheduler tick.
+      commandWriter.appendFollowUpCommand(
+          record.getKey(),
+          MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
+          new MessageStartProcessInstanceRequestRecord());
+    }
+  }
+}

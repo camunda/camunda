@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1a8cbo5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0">
+  <bpmn:process id="Process_0zaz4fy" isExecutable="true">
+    <bpmn:task id="Activity_0np5087" name="Increment number of taken sequence flows">
+      <bpmn:incoming>Flow_0sekarg</bpmn:incoming>
+      <bpmn:outgoing>Flow_1avosat</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:startEvent id="Event_1igkqew" name="Outgoing sequence flow taken">
+      <bpmn:outgoing>Flow_1ifhvyu</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_1nqfakp" name="Apply ProcessInstance SequenceFlow Taken event">
+      <bpmn:incoming>Flow_1ifhvyu</bpmn:incoming>
+      <bpmn:outgoing>Flow_0sekarg</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1ifhvyu" sourceRef="Event_1igkqew" targetRef="Activity_1nqfakp" />
+    <bpmn:sequenceFlow id="Flow_0sekarg" sourceRef="Activity_1nqfakp" targetRef="Activity_0np5087" />
+    <bpmn:task id="Activity_0kpi37x" name="Process ProcessInstance Activate Element command">
+      <bpmn:incoming>Flow_1avosat</bpmn:incoming>
+      <bpmn:outgoing>Flow_00vq8qm</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1avosat" sourceRef="Activity_0np5087" targetRef="Activity_0kpi37x" />
+    <bpmn:exclusiveGateway id="Gateway_01jetkt" name="Parallel gateway can be activated">
+      <bpmn:incoming>Flow_00vq8qm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o85air</bpmn:outgoing>
+      <bpmn:outgoing>Flow_19jy9i0</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_00vq8qm" sourceRef="Activity_0kpi37x" targetRef="Gateway_01jetkt" />
+    <bpmn:task id="Activity_0zca2sa" name="Apply ProcessInstance Element Activating event">
+      <bpmn:incoming>Flow_0o85air</bpmn:incoming>
+      <bpmn:outgoing>Flow_1luh5vk</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0o85air" name="yes" sourceRef="Gateway_01jetkt" targetRef="Activity_0zca2sa" />
+    <bpmn:task id="Activity_182ap6o" name="Reject activate command">
+      <bpmn:incoming>Flow_19jy9i0</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hzq222</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_19jy9i0" name="no" sourceRef="Gateway_01jetkt" targetRef="Activity_182ap6o" />
+    <bpmn:endEvent id="Event_0mm8r9p">
+      <bpmn:incoming>Flow_1hzq222</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1hzq222" sourceRef="Activity_182ap6o" targetRef="Event_0mm8r9p" />
+    <bpmn:task id="Activity_1360769" name="Apply ProcessInstance Element event">
+      <bpmn:incoming>Flow_1luh5vk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qay9is</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1luh5vk" sourceRef="Activity_0zca2sa" targetRef="Activity_1360769" />
+    <bpmn:endEvent id="Event_1u4nt5u">
+      <bpmn:incoming>Flow_1qay9is</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1qay9is" sourceRef="Activity_1360769" targetRef="Event_1u4nt5u" />
+    <bpmn:textAnnotation id="TextAnnotation_1m4mds7">
+      <bpmn:text>Note: this event does more than just what is modelled here. This model only focuses on the parallel gateway</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1sjz7k0" sourceRef="Activity_1nqfakp" targetRef="TextAnnotation_1m4mds7" />
+    <bpmn:textAnnotation id="TextAnnotation_11ton8q">
+      <bpmn:text>The number of taken sequence flows is stored in the element instance state.
+
+It gets stored using a key consisting of 3 parts:
+1. The flow scope key
+2. The gateway element id
+3. The sequence flow element id
+
+The value is an integer. This will result in a counter of how many times a specific incoming sequence flow of the gateway has been taken.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_05nsw42" sourceRef="Activity_0np5087" targetRef="TextAnnotation_11ton8q" />
+    <bpmn:textAnnotation id="TextAnnotation_1s36nxm">
+      <bpmn:text>Upon completion of an element the outgoing sequence flows are taken to move to the next element(s) in the process.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_14mumve" sourceRef="Event_1igkqew" targetRef="TextAnnotation_1s36nxm" />
+    <bpmn:textAnnotation id="TextAnnotation_17kdafp">
+      <bpmn:text>An ACTIVATE command is written. This is done regardless of the amount of sequence flows that have been taken</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_09hzmsd" sourceRef="Activity_0kpi37x" targetRef="TextAnnotation_17kdafp" />
+    <bpmn:textAnnotation id="TextAnnotation_0aq3iuo">
+      <bpmn:text>Before the processing of the record we check if we are doing a valid state transition.
+
+One of these checks will verify whether we can activate a parallel gateway. This check will collect 2 pieces of data:
+
+1. The number of incoming sequence flows of the parallel gateway
+2. The number of taken sequence flows
+
+Now it can check if the number of taken sequence flows is &gt;= to the number of incoming sequence flows. If this is the case we can activate the element.
+
+If the check fails the command gets rejected.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0h9ar26" sourceRef="Gateway_01jetkt" targetRef="TextAnnotation_0aq3iuo" />
+    <bpmn:textAnnotation id="TextAnnotation_1b9p1e1">
+      <bpmn:text>The applier of this event will clean up the number of taken sequence flows of the parallel gateway. Using the flow scope key and gateway element id it will decrement the number of times a flow has been taken by 1 for each of the incoming sequence flows.
+
+Note: more stuff is done in this applier. However, this is not relevant to understand the parallel gateway logic.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0g7iwh7" sourceRef="Activity_0zca2sa" targetRef="TextAnnotation_1b9p1e1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0zaz4fy">
+      <bpmndi:BPMNEdge id="Flow_1qay9is_di" bpmnElement="Flow_1qay9is">
+        <di:waypoint x="1500" y="347" />
+        <di:waypoint x="1552" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1luh5vk_di" bpmnElement="Flow_1luh5vk">
+        <di:waypoint x="1350" y="347" />
+        <di:waypoint x="1400" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hzq222_di" bpmnElement="Flow_1hzq222">
+        <di:waypoint x="1100" y="200" />
+        <di:waypoint x="1202" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19jy9i0_di" bpmnElement="Flow_19jy9i0">
+        <di:waypoint x="880" y="322" />
+        <di:waypoint x="880" y="200" />
+        <di:waypoint x="1000" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="893" y="283" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o85air_di" bpmnElement="Flow_0o85air">
+        <di:waypoint x="905" y="347" />
+        <di:waypoint x="1250" y="347" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="931" y="329" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00vq8qm_di" bpmnElement="Flow_00vq8qm">
+        <di:waypoint x="790" y="347" />
+        <di:waypoint x="855" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1avosat_di" bpmnElement="Flow_1avosat">
+        <di:waypoint x="630" y="347" />
+        <di:waypoint x="690" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0sekarg_di" bpmnElement="Flow_0sekarg">
+        <di:waypoint x="470" y="347" />
+        <di:waypoint x="530" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ifhvyu_di" bpmnElement="Flow_1ifhvyu">
+        <di:waypoint x="308" y="347" />
+        <di:waypoint x="370" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0np5087_di" bpmnElement="Activity_0np5087">
+        <dc:Bounds x="530" y="307" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1igkqew_di" bpmnElement="Event_1igkqew">
+        <dc:Bounds x="272" y="329" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="255" y="372" width="71" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1nqfakp_di" bpmnElement="Activity_1nqfakp">
+        <dc:Bounds x="370" y="307" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0kpi37x_di" bpmnElement="Activity_0kpi37x">
+        <dc:Bounds x="690" y="307" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_01jetkt_di" bpmnElement="Gateway_01jetkt" isMarkerVisible="true">
+        <dc:Bounds x="855" y="322" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="839" y="382" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0zca2sa_di" bpmnElement="Activity_0zca2sa">
+        <dc:Bounds x="1250" y="307" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_182ap6o_di" bpmnElement="Activity_182ap6o">
+        <dc:Bounds x="1000" y="160" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mm8r9p_di" bpmnElement="Event_0mm8r9p">
+        <dc:Bounds x="1202" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1360769_di" bpmnElement="Activity_1360769">
+        <dc:Bounds x="1400" y="307" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1u4nt5u_di" bpmnElement="Event_1u4nt5u">
+        <dc:Bounds x="1552" y="329" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1m4mds7_di" bpmnElement="TextAnnotation_1m4mds7">
+        <dc:Bounds x="260" y="195" width="180" height="70" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_11ton8q_di" bpmnElement="TextAnnotation_11ton8q">
+        <dc:Bounds x="510" y="450" width="290" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1s36nxm_di" bpmnElement="TextAnnotation_1s36nxm">
+        <dc:Bounds x="160" y="430" width="200" height="69" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_17kdafp_di" bpmnElement="TextAnnotation_17kdafp">
+        <dc:Bounds x="630" y="175" width="170" height="84" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0aq3iuo_di" bpmnElement="TextAnnotation_0aq3iuo">
+        <dc:Bounds x="950" y="450" width="270" height="257" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1b9p1e1_di" bpmnElement="TextAnnotation_1b9p1e1">
+        <dc:Bounds x="1330" y="70" width="240" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1sjz7k0_di" bpmnElement="Association_1sjz7k0">
+        <di:waypoint x="377" y="308" />
+        <di:waypoint x="270" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_05nsw42_di" bpmnElement="Association_05nsw42">
+        <di:waypoint x="535" y="386" />
+        <di:waypoint x="520" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_14mumve_di" bpmnElement="Association_14mumve">
+        <di:waypoint x="273" y="352" />
+        <di:waypoint x="210" y="370" />
+        <di:waypoint x="170" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_09hzmsd_di" bpmnElement="Association_09hzmsd">
+        <di:waypoint x="695" y="308" />
+        <di:waypoint x="640" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0h9ar26_di" bpmnElement="Association_0h9ar26">
+        <di:waypoint x="895" y="357" />
+        <di:waypoint x="940" y="390" />
+        <di:waypoint x="950" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0g7iwh7_di" bpmnElement="Association_0g7iwh7">
+        <di:waypoint x="1312" y="307" />
+        <di:waypoint x="1333" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

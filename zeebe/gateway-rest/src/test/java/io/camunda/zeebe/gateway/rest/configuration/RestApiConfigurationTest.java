@@ -1,0 +1,48 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.rest.configuration;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.TopologyServices;
+import io.camunda.service.TopologyServices.Topology;
+import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+abstract class RestApiConfigurationTest extends RestControllerTest {
+
+  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  static final String TOPOLOGY_URL = "/v2/topology";
+
+  @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean TopologyServices topologyServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
+
+  @BeforeEach
+  void setupServices() {
+    when(serviceRegistry.processInstanceServices(any())).thenReturn(processInstanceServices);
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(new Builder<ProcessInstanceEntity>().build());
+    when(topologyServices.getTopology())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new Topology(List.of(), "cluster-id", 1, 1, 1, "8.8.0", 0L)));
+  }
+}

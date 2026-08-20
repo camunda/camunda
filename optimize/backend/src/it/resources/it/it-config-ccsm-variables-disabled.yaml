@@ -1,0 +1,15 @@
+---
+container:
+  ports:
+    http: 8095
+    https: 8096
+zeebe:
+  partitionCount: 2
+  enabled: true
+  variableImportEnabled: false
+
+import:
+  currentTimeBackoffMilliseconds: 0
+
+es:
+  scrollTimeoutInSeconds: 5

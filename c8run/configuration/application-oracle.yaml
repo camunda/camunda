@@ -1,0 +1,8 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+        username: camunda
+        password: camunda

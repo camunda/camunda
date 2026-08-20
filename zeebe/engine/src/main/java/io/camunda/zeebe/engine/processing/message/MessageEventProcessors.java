@@ -1,0 +1,292 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.message;
+
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
+import java.util.function.Supplier;
+
+public final class MessageEventProcessors {
+
+  public static void addMessageProcessors(
+      final int partitionId,
+      final BpmnBehaviors bpmnBehaviors,
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final Writers writers,
+      final EngineConfiguration config,
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final InstantSource clock,
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig,
+      final MessageCorrelationMetrics metrics) {
+
+    final MutableMessageState messageState = processingState.getMessageState();
+    final MutableMessageCorrelationState messageCorrelationState =
+        processingState.getMessageCorrelationState();
+    final MutableMessageSubscriptionState subscriptionState =
+        processingState.getMessageSubscriptionState();
+    final MutableMessageStartEventSubscriptionState startEventSubscriptionState =
+        processingState.getMessageStartEventSubscriptionState();
+    final MutableEventScopeInstanceState eventScopeInstanceState =
+        processingState.getEventScopeInstanceState();
+    final KeyGenerator keyGenerator = processingState.getKeyGenerator();
+    final var processState = processingState.getProcessState();
+    final var elementInstanceState = processingState.getElementInstanceState();
+    final var bannedInstanceState = processingState.getBannedInstanceState();
+    final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
+    final var cslCheck = new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig);
+    final var tenantCheck = new CslTenantCheck(claimsConverter, securityConfig);
+
+    typedRecordProcessors
+        .onCommand(
+            ValueType.MESSAGE,
+            MessageIntent.PUBLISH,
+            new MessagePublishProcessor(
+                partitionId,
+                messageState,
+                subscriptionState,
+                startEventSubscriptionState,
+                eventScopeInstanceState,
+                subscriptionCommandSender,
+                keyGenerator,
+                writers,
+                processState,
+                bpmnBehaviors.eventTriggerBehavior(),
+                bpmnBehaviors.stateBehavior(),
+                cslCheck,
+                routingInfo,
+                elementInstanceState,
+                bannedInstanceState,
+                businessIdUniquenessEnabled,
+                bpmnBehaviors.variableBehavior(),
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE_BATCH,
+            MessageBatchIntent.EXPIRE,
+            new MessageBatchExpireProcessor(
+                writers.state(),
+                writers.command(),
+                messageState,
+                config.getMessagesTtlCheckerBatchLimit(),
+                featureFlags.enableMessageBodyOnExpired(),
+                clock,
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE,
+            MessageIntent.EXPIRE,
+            new MessageExpireProcessor(writers.state(), metrics))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CREATE,
+            new MessageSubscriptionCreateProcessor(
+                processingState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                keyGenerator,
+                clock))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            new MessageSubscriptionCorrelateProcessor(
+                processingState.getPartitionId(),
+                messageState,
+                messageCorrelationState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                clock))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.DELETE,
+            new MessageSubscriptionDeleteProcessor(
+                subscriptionState, subscriptionCommandSender, writers))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.MIGRATE,
+            new MessageSubscriptionMigrateProcessor(
+                subscriptionState, writers, commandDistributionBehavior))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.REJECT,
+            new MessageSubscriptionRejectProcessor(
+                messageState,
+                subscriptionState,
+                messageCorrelationState,
+                subscriptionCommandSender,
+                writers))
+        .onCommand(
+            ValueType.MESSAGE_CORRELATION,
+            MessageCorrelationIntent.CORRELATE,
+            new MessageCorrelationCorrelateProcessor(
+                writers,
+                keyGenerator,
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors,
+                startEventSubscriptionState,
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                cslCheck,
+                tenantCheck,
+                elementInstanceState,
+                bannedInstanceState,
+                businessIdUniquenessEnabled,
+                routingInfo,
+                partitionId,
+                metrics,
+                processingState.getSuspensionState()))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REQUEST,
+            new MessageStartProcessInstanceRequestRequestProcessor(
+                startEventSubscriptionState,
+                elementInstanceState,
+                bannedInstanceState,
+                processingState.getMessageStartProcessInstanceDedupState(),
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors.eventTriggerBehavior(),
+                bpmnBehaviors.stateBehavior(),
+                subscriptionCommandSender,
+                keyGenerator,
+                clock,
+                businessIdUniquenessEnabled,
+                writers,
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
+            new MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
+                writers.state(),
+                writers.command(),
+                processingState.getMessageStartProcessInstanceDedupState(),
+                config.getMessageStartDedupExpirationSweepBatchLimit(),
+                clock,
+                metrics))
+        // Reply command processors on P_K - these handle the cross-partition replies from P_B
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.START,
+            new MessageStartProcessInstanceRequestStartProcessor(
+                writers.state(),
+                writers.response(),
+                messageState,
+                messageCorrelationState,
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
+            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(
+                writers.state(),
+                writers.response(),
+                messageCorrelationState,
+                messageState,
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
+            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
+                writers.state(),
+                writers.response(),
+                messageCorrelationState,
+                messageState,
+                metrics))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
+            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state(), metrics))
+        // Holder-liveness release query handler on P_B - answers whether a cross-partition
+        // message-start holder instance is still active, so P_K can release its correlation-key
+        // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.
+        .onCommand(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseIntent.QUERY,
+            new MessageStartCorrelationKeyLockReleaseQueryProcessor(
+                elementInstanceState,
+                bannedInstanceState,
+                messageState,
+                subscriptionCommandSender,
+                writers,
+                metrics))
+        // Holder-completion release handler on P_K - on a RELEASE reply from P_B, releases the
+        // correlation-key lock and picks up the next buffered message for that key.
+        .onCommand(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
+            new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
+                messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers, metrics))
+        .withListener(
+            new MessageTimeToLiveCheckScheduler(
+                config.getMessagesTtlCheckerInterval(),
+                featureFlags.enableMessageTTLCheckerAsync(),
+                scheduledTaskStateFactory.get().getMessageState()))
+        .withListener(
+            new PendingMessageSubscriptionCheckScheduler(
+                subscriptionCommandSender,
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
+        .withListener(
+            new MessageStartDedupExpirationSweepScheduler(
+                config.getMessageStartDedupExpirationSweepInterval(),
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
+        .withListener(
+            new PendingMessageStartAskCheckScheduler(
+                subscriptionCommandSender,
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceAskState(),
+                routingInfo,
+                config::getMessageStartAskRetryInterval,
+                metrics))
+        .withListener(
+            new CrossPartitionMessageStartLockReleaseScheduler(
+                partitionId,
+                subscriptionCommandSender,
+                scheduledTaskStateFactory.get().getMessageState(),
+                config::getMessageStartLockReleasePollInterval,
+                config::getMessageStartLockReleasePollBatchLimit,
+                metrics))
+        // Clears the recorder's in-memory ask-duration samples on recovery: they belong to the
+        // previous leadership term and must not be recorded (M7).
+        .withListener(metrics);
+  }
+}

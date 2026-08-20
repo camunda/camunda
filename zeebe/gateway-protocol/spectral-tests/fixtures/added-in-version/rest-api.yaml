@@ -1,0 +1,25 @@
+# Entry point for require-added-in-version rule tests.
+# Mirrors the real spec structure: paths $ref to domain files.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — require-added-in-version
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid cases ──────────────────────────────────────────────
+  # Endpoint with x-added-in-version set
+  /valid/thing:
+    $ref: 'things.yaml#/paths/~1valid~1thing'
+
+  /valid/thing/{thingKey}:
+    $ref: 'things.yaml#/paths/~1valid~1thing~1{thingKey}'
+
+  # ── Invalid cases ───────────────────────────────────────────
+  # Endpoint missing x-added-in-version
+  /invalid/thing:
+    $ref: 'things.yaml#/paths/~1invalid~1thing'
+
+  /invalid/thing/{thingKey}:
+    $ref: 'things.yaml#/paths/~1invalid~1thing~1{thingKey}'

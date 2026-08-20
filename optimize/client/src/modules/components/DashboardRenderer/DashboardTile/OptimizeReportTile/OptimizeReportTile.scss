@@ -1,0 +1,100 @@
+.OptimizeReportTile {
+  &[role='link']:hover:not(.canOnlyClickTitle),
+  &.canOnlyClickTitle .titleBar:hover {
+    cursor: pointer;
+  }
+
+  &[role='link']:hover .EntityName a {
+    text-decoration: underline;
+  }
+
+  .titleBar {
+    display: flex;
+    min-height: 45px;
+
+    .Popover .ButtonTrigger {
+      opacity: 0;
+
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
+    }
+
+    .EntityName {
+      padding-right: 0;
+
+      .Popover {
+        margin-top: 0;
+      }
+    }
+
+    .name-container .name {
+      font-size: 14px;
+      line-height: 18px;
+    }
+  }
+
+  .InstanceCount {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    > .countString {
+      display: none;
+    }
+
+    > span {
+      vertical-align: top;
+    }
+
+    .Popover {
+      display: inline-block;
+    }
+  }
+
+  .visualization {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: auto;
+
+    .Table {
+      table-layout: fixed;
+      min-width: 100%;
+    }
+  }
+
+  // Fixed font-size for KPI tiles with comparison period so the value doesn't
+  // shift when the delta badge renders alongside it.
+  &.hasComparisonPeriod .visualization .Number .container {
+    font-size: 48px;
+    // Keep the value + badge within the tile; the badge wraps below the number
+    // instead of overflowing horizontally when the value is wide.
+    max-width: 100%;
+
+    .data {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      max-width: 100%;
+      font-size: inherit;
+
+      // The badge keeps its intrinsic size and never shrinks the number.
+      .cds--tag {
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+.Sharing,
+.DashboardView {
+  .OptimizeReportTile:hover {
+    .Popover .ButtonTrigger {
+      opacity: 1;
+    }
+  }
+}

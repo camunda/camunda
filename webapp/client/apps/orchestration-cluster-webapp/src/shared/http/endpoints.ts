@@ -1,0 +1,401 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {
+	endpoints as unifiedAPIEndpoints,
+	type QueryUserTasksRequestBody,
+	type QueryVariablesByUserTaskRequestBody,
+	type QueryProcessDefinitionsRequestBody,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionStatisticsRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type QueryBatchOperationsRequestBody,
+	type QueryDecisionDefinitionsRequestBody,
+	type QueryDecisionInstancesRequestBody,
+	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
+	type AssignTaskRequestBody,
+	type CompleteTaskRequestBody,
+	type CreateProcessInstanceRequestBody as ApiCreateProcessInstanceRequestBody,
+	type QueryUserTaskAuditLogsRequestBody,
+	type QueryAuditLogsRequestBody,
+	type UserTask,
+	type ProcessDefinition,
+	type AuditLog,
+	type DecisionInstance,
+	type Variable,
+	type ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getBootConfig} from '#/shared/config/getBootConfig';
+import {mergePathname} from './mergePathname';
+
+const BASE_REQUEST_OPTIONS: RequestInit = {
+	credentials: 'include',
+	mode: 'cors',
+};
+
+type CreateDocumentMetadata = {
+	customProperties?: Record<string, unknown>;
+};
+
+type CreateProcessInstanceRequestBody = Omit<ApiCreateProcessInstanceRequestBody, 'variables'> & {
+	variables?: Record<string, unknown>;
+};
+
+type CreateDocumentsFileEntry = {
+	files: File[];
+	metadata?: CreateDocumentMetadata;
+};
+
+function buildDocumentMultipart(documentPayload: Map<string, CreateDocumentsFileEntry>): {
+	body: Blob;
+	headers: Record<string, string>;
+} {
+	const boundary = `----FormBoundary${Math.random().toString(36).substring(2)}`;
+	const contentType = `multipart/form-data; boundary=${boundary}`;
+	const startBoundary = `--${boundary}`;
+	const endBoundary = `--${boundary}--`;
+	const CRLF = '\r\n';
+	const parts = Array.from(documentPayload.values())
+		.map(({files, metadata}) => {
+			const fileParts = files.map((file) => {
+				const header = [
+					startBoundary,
+					`Content-Disposition: form-data; name="files"; filename="${file.name}"`,
+					`Content-Type: ${file.type}`,
+					...(metadata === undefined ? [] : [`X-Document-Metadata: ${JSON.stringify(metadata)}`]),
+					'',
+					'',
+				].join(CRLF);
+
+				return new Blob([header, file, CRLF], {type: file.type});
+			});
+
+			fileParts.push(new Blob([CRLF, startBoundary, CRLF]));
+
+			return fileParts;
+		})
+		.flat();
+
+	parts.pop();
+	parts.push(new Blob([endBoundary]));
+
+	return {
+		body: new Blob(parts, {type: contentType}),
+		headers: {'Content-Type': contentType},
+	};
+}
+
+function getFullURL(url: string) {
+	if (typeof window.location.origin !== 'string') {
+		throw new Error('window.location.origin is not set');
+	}
+
+	return new URL(mergePathname(getBootConfig().contextPath, url), window.location.origin);
+}
+
+const endpoints = {
+	login: (body: {username: string; password: string}) =>
+		new Request(getFullURL('/login'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'POST',
+			body: new URLSearchParams(body).toString(),
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		}),
+
+	logout: () =>
+		new Request(getFullURL('/logout'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'POST',
+		}),
+
+	sessionHeartbeatUrl: () => getFullURL('/session/heartbeat').toString(),
+
+	getCurrentUser: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getCurrentUser.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getCurrentUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSystemConfiguration: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getSystemConfiguration.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getSystemConfiguration.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getLicense: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getLicense.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getLicense.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSaasUserToken: () =>
+		new Request(getFullURL('/v2/authentication/me/token'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTasks: (body: QueryUserTasksRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTasks.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTasks.method,
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+				'x-is-polling': 'true',
+			},
+		}),
+
+	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinition: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinition.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinition.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessStartForm: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessStartForm.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessStartForm.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createProcessInstance: (body: CreateProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createProcessInstance.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createProcessInstance.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceVersionStatistics: (body: GetProcessDefinitionInstanceVersionStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryBatchOperations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionInstances: (body: QueryDecisionInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDecisionInstancesDeletionBatchOperation: (body: CreateDecisionInstancesDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByDefinition: (
+		body: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getBatchOperation.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUserTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUserTaskForm: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTaskForm.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTaskForm.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariablesByUserTask: ({
+		userTaskKey,
+		truncateValues,
+		...body
+	}: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody & {truncateValues?: boolean}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariablesByUserTask.getUrl({userTaskKey, truncateValues})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariablesByUserTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getVariable: ({variableKey}: Pick<Variable, 'variableKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getVariable.getUrl({variableKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getVariable.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDocuments: ({documentsPayload}: {documentsPayload: Map<string, CreateDocumentsFileEntry>}) => {
+		const {body, headers} = buildDocumentMultipart(documentsPayload);
+
+		return new Request(getFullURL(unifiedAPIEndpoints.createDocuments.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDocuments.method,
+			body,
+			headers,
+		});
+	},
+
+	getDocument: ({documentId, contentHash}: {documentId: string; contentHash?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDocument.getUrl({documentId, contentHash})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDocument.method,
+		}),
+
+	getProcessDefinitionXml: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionXml.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionXml.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionStatistics: ({
+		processDefinitionKey,
+		...body
+	}: Pick<ProcessDefinition, 'processDefinitionKey'> & GetProcessDefinitionStatisticsRequestBody) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessDefinitionStatistics.getUrl({
+					processDefinitionKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessDefinitionStatistics.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	assignTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & AssignTaskRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	unassignTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	completeTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & CompleteTaskRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.completeTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.completeTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTaskAuditLogs: ({userTaskKey, ...body}: {userTaskKey: string} & QueryUserTaskAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTaskAuditLogs.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTaskAuditLogs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getAuditLog: ({auditLogKey}: Pick<AuditLog, 'auditLogKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuditLog.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionInstance: ({decisionEvaluationInstanceKey}: Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionInstance.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuditLogs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuditLogs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessInstanceCallHierarchy: ({processInstanceKey}: Pick<ProcessInstance, 'processInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessInstanceCallHierarchy.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessInstanceCallHierarchy.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+};
+
+export {endpoints};

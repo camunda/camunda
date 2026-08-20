@@ -1,0 +1,45 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients.reader;
+
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.entities.GroupMemberEntity;
+import io.camunda.search.query.GroupMemberQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public class GroupMemberDocumentReader extends DocumentBasedReader implements GroupMemberReader {
+
+  public GroupMemberDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public SearchQueryResult<GroupMemberEntity> search(
+      final GroupMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .search(
+            query,
+            io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class,
+            resourceAccessChecks);
+  }
+
+  public Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
+    final var groupMemberQuery =
+        GroupMemberQuery.of(
+            b -> b.filter(f -> f.groupId(groupId).memberType(entityType)).unlimited());
+    return search(groupMemberQuery, ResourceAccessChecks.disabled()).items().stream()
+        .map(GroupMemberEntity::id)
+        .collect(Collectors.toSet());
+  }
+}

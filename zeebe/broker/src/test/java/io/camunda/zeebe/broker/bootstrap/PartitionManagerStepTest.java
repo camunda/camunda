@@ -1,0 +1,413 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.bootstrap;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
+import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
+import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FeatureFlags;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+class PartitionManagerStepTest {
+  public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
+  private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
+  private static final String PHYSICAL_TENANT_ID = "custom";
+
+  static {
+    final var networkCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
+    networkCfg.setHost("localhost");
+  }
+
+  private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
+  private final PartitionManagerStep sut = new PartitionManagerStep(PHYSICAL_TENANT_ID);
+  private MockBrokerStartupContext testBrokerStartupContext;
+
+  @Test
+  void shouldHaveDescriptiveName() {
+    // when
+    final var actual = sut.getName();
+
+    // then
+    assertThat(actual).isEqualTo("Partition Manager [custom]");
+  }
+
+  @Nested
+  class StartupBehavior {
+
+    private ActorFuture<BrokerStartupContext> startupFuture;
+    private ActorScheduler actorScheduler;
+    private CurrentClusterConfiguration mockClusterConfiguration;
+
+    @BeforeEach
+    void setUp() {
+      actorScheduler = ActorScheduler.newActorScheduler().build();
+      actorScheduler.start();
+      startupFuture = CONCURRENCY_CONTROL.createFuture();
+
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(new BrokerInfo());
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(actorScheduler);
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
+      testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
+      testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
+      testBrokerStartupContext.addBrokerAdminService(
+          PHYSICAL_TENANT_ID, mock(BrokerAdminServiceImpl.class));
+      testBrokerStartupContext.addJobStreamService(
+          PHYSICAL_TENANT_ID, mock(JobStreamService.class));
+      final ClusterConfigurationService clusterConfigurationService =
+          mock(ClusterConfigurationService.class);
+      when(clusterConfigurationService.getPartitionDistribution(any()))
+          .thenReturn(PartitionDistribution.NO_PARTITIONS);
+      mockClusterConfiguration = mock(CurrentClusterConfiguration.class);
+      when(clusterConfigurationService.getInitialClusterConfiguration())
+          .thenReturn(mockClusterConfiguration);
+      final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.PROCESSING);
+      final var partitionGroup =
+          PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);
+      when(mockClusterConfiguration.partitionGroup(any())).thenReturn(partitionGroup);
+
+      testBrokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
+
+      final var memberConfig = new MemberConfig();
+      final var member = new Member(memberConfig);
+
+      final var mockMembershipService = mock(ClusterMembershipService.class);
+      when(mockMembershipService.getLocalMember()).thenReturn(member);
+
+      when(testBrokerStartupContext.getClusterServices().getMembershipService())
+          .thenReturn(mockMembershipService);
+
+      final var port = SocketUtil.getNextAddress().getPort();
+      final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
+      commandApiCfg.setPort(port);
+    }
+
+    @AfterEach
+    void tearDown() {
+      final var partitionManager =
+          testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      if (partitionManager != null) {
+        partitionManager.stop().join();
+      }
+      try {
+        actorScheduler.stop();
+      } catch (final IllegalStateException e) {
+        log.debug("ActorScheduler was already stopped.");
+      }
+    }
+
+    @Test
+    void shouldCompleteFuture() {
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+
+      // then
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      assertThat(startupFuture.join()).isNotNull();
+    }
+
+    @Test
+    void shouldStartAndInstallEmbeddedGatewayService() {
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      await().until(startupFuture::isDone);
+
+      // then
+      final var partitionManager =
+          testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      assertThat(partitionManager).isNotNull();
+    }
+
+    @Test
+    void shouldHandleSyncFailOfStart() throws Exception {
+      // given
+      actorScheduler.close();
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+
+      // then
+      assertThat(startupFuture)
+          .failsWithin(Duration.ZERO)
+          .withThrowableOfType(ExecutionException.class)
+          .withRootCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldStartRecoveryPartitionManager() {
+      // given
+      final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.RECOVERING);
+      final var partitionGroup =
+          PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);
+      when(mockClusterConfiguration.partitionGroup(any())).thenReturn(partitionGroup);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      startupFuture.join();
+
+      // then
+      final var partitionManager =
+          testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+
+      assertThat(partitionManager).isInstanceOf(RecoveryPartitionManager.class);
+    }
+
+    @Test
+    void shouldScopeSearchClientProxyToPartitionGroup() throws Exception {
+      // given
+      final var scopedProxy = mock(SearchClientsProxy.class);
+      final var searchClientsProxy = mock(SearchClientsProxy.class);
+      when(searchClientsProxy.withPhysicalTenant(PHYSICAL_TENANT_ID)).thenReturn(scopedProxy);
+      testBrokerStartupContext.setSearchClientsProxy(searchClientsProxy);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+
+      // then — the scoped proxy (not the original unscoped one) is wired into ZeebePartitionFactory
+      final var partitionManager =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var zeebeFactory = factoryField.get(partitionManager);
+
+      final var proxyField = ZeebePartitionFactory.class.getDeclaredField("searchClientsProxy");
+      proxyField.setAccessible(true);
+
+      assertThat(proxyField.get(zeebeFactory)).isSameAs(scopedProxy);
+    }
+
+    @Test
+    void shouldPassDistinctFeatureFlagsToEachPhysicalTenant() throws Exception {
+      // given — two tenants each with a distinct FeatureFlags instance
+      final var flagsA = new FeatureFlags(true, false, false, false, false, false, true, true);
+      final var flagsB = new FeatureFlags(false, false, true, false, false, false, false, true);
+      final var secondTenantId = "second";
+
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      final var conv = new BrokerRequestAuthorizationConverter(secCfg);
+      testBrokerStartupContext.setPhysicalTenantContext(
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              flagsA,
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository(),
+              new SecretStoreRegistry(Map.of())));
+      testBrokerStartupContext.setPhysicalTenantContext(
+          secondTenantId,
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              flagsB,
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository(),
+              new SecretStoreRegistry(Map.of())));
+
+      final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
+      final var secondStep = new PartitionManagerStep(secondTenantId);
+
+      testBrokerStartupContext.addJobStreamService(secondTenantId, mock(JobStreamService.class));
+
+      // when — start the steps one after the other. They are started sequentially on purpose:
+      // both steps build their PartitionManagerImpl on actor threads, and that construction reads
+      // from the shared RETURNS_DEEP_STUBS clusterServices mock. Mockito's lazy deep-stub
+      // registration is not thread-safe, so driving the same mock from two actor threads
+      // concurrently intermittently corrupts its internal state (WrongTypeOfReturnValue).
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      secondStep.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, secondFuture);
+      assertThat(secondFuture).succeedsWithin(TIME_OUT);
+
+      // then — each tenant's ZeebePartitionFactory holds its own flags, not the other's
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var flagsField = ZeebePartitionFactory.class.getDeclaredField("featureFlags");
+      flagsField.setAccessible(true);
+
+      final var managerA =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var managerB =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(secondTenantId);
+
+      assertThat(flagsField.get(factoryField.get(managerA))).isSameAs(flagsA);
+      assertThat(flagsField.get(factoryField.get(managerB))).isSameAs(flagsB);
+    }
+
+    @Test
+    void shouldNotFailWhenSearchClientProxyIsNull() {
+      // given
+      testBrokerStartupContext.setSearchClientsProxy(null);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+
+      // then
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+    }
+
+    @Test
+    void shouldRegisterJobStreamErrorHandlerInPartitionListeners() throws Exception {
+      // given — a job stream service with a real, identifiable error handler
+      final var errorHandler =
+          new RemoteJobStreamErrorHandlerService(new YieldingJobStreamErrorHandler());
+      final var jobStreamService = mock(JobStreamService.class);
+      when(jobStreamService.errorHandlerService()).thenReturn(errorHandler);
+
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      final var conv = new BrokerRequestAuthorizationConverter(secCfg);
+      testBrokerStartupContext.setPhysicalTenantContext(
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              FeatureFlags.createDefaultForTests(),
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository(),
+              new SecretStoreRegistry(Map.of())));
+      testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+
+      // then — the error handler is wired into the partition manager's factory, not the global list
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var listenersField = ZeebePartitionFactory.class.getDeclaredField("partitionListeners");
+      listenersField.setAccessible(true);
+
+      final var manager =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var listeners = (List<?>) listenersField.get(factoryField.get(manager));
+      assertThat(listeners).anySatisfy(l -> assertThat(l).isSameAs(errorHandler));
+      assertThat(testBrokerStartupContext.getPartitionListeners())
+          .noneSatisfy(l -> assertThat(l).isSameAs(errorHandler));
+    }
+  }
+
+  @Nested
+  class ShutdownBehavior {
+
+    private PartitionManagerImpl mockPartitionManager;
+    private ActorFuture<BrokerStartupContext> shutdownFuture;
+
+    @BeforeEach
+    void setUp() {
+      mockPartitionManager = mock(PartitionManagerImpl.class);
+      when(mockPartitionManager.stop()).thenReturn(CompletableActorFuture.completed(null));
+
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(new BrokerInfo());
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
+      testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
+
+      testBrokerStartupContext.setClusterConfigurationService(
+          mock(ClusterConfigurationService.class));
+      // Startup wires the step's topology manager. The mock actor scheduler makes the partition
+      // manager submission fail, so the step stores no manager; we inject the mock ourselves.
+      final ActorFuture<BrokerStartupContext> startupFuture = CONCURRENCY_CONTROL.createFuture();
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      testBrokerStartupContext.addPartitionManager(PHYSICAL_TENANT_ID, mockPartitionManager);
+      shutdownFuture = CONCURRENCY_CONTROL.createFuture();
+    }
+
+    @Test
+    void shouldStopAndUninstallEmbeddedGateway() {
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+      await().until(shutdownFuture::isDone);
+
+      // then
+      verify(mockPartitionManager).stop();
+      final var partitionManager =
+          testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      assertThat(partitionManager).isNull();
+    }
+
+    @Test
+    void shouldCompleteFuture() {
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
+      assertThat(shutdownFuture.join()).isNotNull();
+    }
+
+    @Test
+    void shouldCompleteFutureOnRecoveryPartitionManager() {
+      // given
+      final var recoveryPartitionManager = mock(RecoveryPartitionManager.class);
+      when(recoveryPartitionManager.stop()).thenReturn(CompletableActorFuture.completed(null));
+      testBrokerStartupContext.addPartitionManager(PHYSICAL_TENANT_ID, recoveryPartitionManager);
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
+      assertThat(shutdownFuture.join()).isNotNull();
+      assertThat(testBrokerStartupContext.getPartitionManagers()).isEmpty();
+    }
+  }
+}

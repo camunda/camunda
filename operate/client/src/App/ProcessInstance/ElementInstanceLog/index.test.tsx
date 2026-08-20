@@ -1,0 +1,613 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
+
+import {ElementInstanceLog} from './index';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {modificationsStore} from 'modules/stores/modifications';
+
+vi.mock('modules/utils/bpmn');
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: '1',
+  state: 'ACTIVE',
+  startDate: '2018-12-12',
+  endDate: null,
+  processDefinitionKey: 'processName',
+  processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
+  processDefinitionId: 'processName',
+  tenantId: '<default>',
+  processDefinitionName: 'Multi-Instance Process',
+  hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+  businessId: null,
+  suspendedDate: null,
+};
+
+const mockElementInstances = {
+  items: [
+    {
+      elementInstanceKey: '2251799813686130',
+      processInstanceKey: '1',
+      processDefinitionKey: 'processName',
+      processDefinitionId: 'processName',
+      state: 'ACTIVE' as const,
+      type: 'START_EVENT' as const,
+      elementId: 'StartEvent_1',
+      elementName: 'Start Event',
+      hasIncident: true,
+      incidentKey: null,
+      tenantId: '<default>',
+      startDate: '2018-12-12T00:00:00.000+0000',
+      endDate: '2018-12-12T00:00:01.000+0000',
+      rootProcessInstanceKey: null,
+    },
+    {
+      elementInstanceKey: '2251799813686156',
+      processInstanceKey: '1',
+      processDefinitionKey: 'processName',
+      processDefinitionId: 'processName',
+      state: 'COMPLETED' as const,
+      type: 'SERVICE_TASK' as const,
+      elementId: 'ServiceTask_1',
+      elementName: 'Service Task',
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+      startDate: '2018-12-12T00:00:02.000+0000',
+      endDate: '2018-12-12T00:00:03.000+0000',
+      rootProcessInstanceKey: null,
+    },
+  ],
+  page: {
+    totalItems: 2,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
+};
+
+const Wrapper = ({
+  children,
+  initialSearch = '',
+}: {
+  children?: React.ReactNode;
+  initialSearch?: string;
+}) => {
+  return (
+    <MemoryRouter
+      initialEntries={[`${Paths.processInstance('1')}${initialSearch}`]}
+    >
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    </MemoryRouter>
+  );
+};
+
+describe('ElementInstanceLog', () => {
+  beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
+  });
+
+  it('should render skeleton when instance tree is not loaded', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+  });
+
+  it('should render skeleton when instance diagram is not loaded', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+  });
+
+  it('should display error when instance tree data could not be fetched', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withServerError();
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+  });
+
+  it('should display error when instance diagram could not be fetched', async () => {
+    mockFetchProcessDefinitionXml().withServerError();
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+  });
+
+  it('should not display the sort order control while the panel is still loading', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    // given the skeleton is still showing
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
+
+    // then neither the search box nor the sort control is displayed
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /first$/}),
+    ).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+  });
+
+  it('should not display the sort order control when the panel failed to load', async () => {
+    mockFetchProcessDefinitionXml().withServerError();
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    // given the panel is showing its error message
+    expect(
+      await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+
+    // then the sort control is not offered over a panel that has no tree
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /first$/}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display permissions error when access to the process definition is forbidden', async () => {
+    mockFetchProcessDefinitionXml().withServerError(403);
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to access Instance History'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should display permissions error when element instances search returns 403', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withServerError(403);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to access Instance History'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should continue polling after poll failure', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    mockSearchElementInstances().withServerError();
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {name: /processName instance history/i}),
+    ).not.toBeInTheDocument();
+
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    vi.runOnlyPendingTimers();
+    await waitForElementToBeRemoved(
+      screen.queryByText(/Instance History could not be fetched/i),
+    );
+
+    expect(
+      screen.getByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).toBeInTheDocument();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should render element instances tree', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [
+        {
+          itemKey: '1',
+          batchOperationKey: 'op-1',
+          processInstanceKey: '1',
+          state: 'COMPLETED',
+          operationType: 'RESOLVE_INCIDENT',
+          processedDate: '2018-12-12T00:00:00.000+0000',
+          rootProcessInstanceKey: null,
+          errorMessage: null,
+        },
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText('Migrated 2018-12-12 00:00:00'),
+    ).toBeInTheDocument();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+});
+
+const mockSearchResponse = {
+  items: [
+    {
+      elementInstanceKey: '100',
+      processInstanceKey: '1',
+      processDefinitionKey: 'processName',
+      processDefinitionId: 'processName',
+      state: 'ACTIVE' as const,
+      type: 'SERVICE_TASK' as const,
+      elementId: 'order_task',
+      elementName: 'Order Task',
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+      startDate: '2018-12-12T00:00:00.000+0000',
+      endDate: null,
+      rootProcessInstanceKey: null,
+    },
+  ],
+  page: {
+    totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
+};
+
+describe('ElementInstanceLog — search flow', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+  });
+
+  it('shows the filtered results list when the URL has an elementSearch param', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementSearch=order">{children}</Wrapper>
+      ),
+    });
+
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the search input in panel mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the tree instead of the filtered list when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementSearch=order">{children}</Wrapper>
+      ),
+    });
+
+    // Without modification mode the filtered list is shown.
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+
+    // Enable modification mode — the tree must replace the filtered list.
+    modificationsStore.enableModificationMode();
+
+    expect(
+      await screen.findByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('search-result-100')).not.toBeInTheDocument();
+
+    modificationsStore.reset();
+  });
+
+  it('renders the search input without the header when showHeader is false', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel showHeader={false} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Latest first'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Execution count')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {name: 'Instance History'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the search input when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(
+      screen.queryByRole('searchbox', {name: 'Search instance history'}),
+    );
+
+    modificationsStore.reset();
+  });
+
+  it('shows the sort order control in panel mode and hides it in modification mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    const sortOrderToggle = screen.getByRole('button', {
+      name: 'Latest first',
+    });
+    expect(sortOrderToggle).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(sortOrderToggle);
+
+    modificationsStore.reset();
+  });
+
+  it('shows the status filter in panel mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('group', {name: 'Instance status filter'}),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the filtered results list when the URL has an elementStatus param', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementStatus=active">{children}</Wrapper>
+      ),
+    });
+
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the status filter when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    const statusFilter = await screen.findByRole('group', {
+      name: 'Instance status filter',
+    });
+    expect(statusFilter).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(statusFilter);
+
+    modificationsStore.reset();
+  });
+});

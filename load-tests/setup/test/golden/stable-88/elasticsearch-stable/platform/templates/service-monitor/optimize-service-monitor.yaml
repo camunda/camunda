@@ -1,0 +1,26 @@
+---
+# Source: camunda-platform/templates/service-monitor/optimize-service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: c8-golden-stable-88-elasticsearch-stable-camunda-platform-optimize
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/component: optimize
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: management
+      interval: 30s

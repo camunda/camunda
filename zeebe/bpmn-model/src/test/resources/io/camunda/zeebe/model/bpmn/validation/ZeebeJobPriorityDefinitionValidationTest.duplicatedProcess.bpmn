@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="process" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:jobPriorityDefinition priority="5"/>
+      <zeebe:jobPriorityDefinition priority="15"/>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="start"/>
+    <bpmn:serviceTask id="task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="service"/>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,46 @@
+{
+	"name": "@camunda/webapp-client",
+	"description": "Camunda JS/TS monorepo",
+	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
+	"type": "module",
+	"private": true,
+	"license": "LicenseRef-Camunda-1.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/camunda/camunda.git"
+	},
+	"workspaces": [
+		"packages/*",
+		"apps/*"
+	],
+	"scripts": {
+		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
+		"lint:eslint": "eslint .",
+		"lint:prettier": "prettier -c .",
+		"lint:knip": "npm run lint:knip -w @camunda/orchestration-cluster-webapp",
+		"lint": "npm run lint:eslint && npm run lint:prettier && npm run lint:knip",
+		"typecheck": "npm run typecheck --workspaces --if-present",
+		"test:unit": "npm run test:unit --workspaces --if-present",
+		"format": "prettier --write .",
+		"build": "npm run build --workspaces --if-present",
+		"prepublishOnly": "node scripts/prepublishOnly.js",
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas",
+		"publish:session-heartbeat": "npm run prepublishOnly && npm publish -w @camunda/session-heartbeat",
+		"prettier:format": "prettier --write ."
+	},
+	"packageManager": "npm@12.0.2",
+	"devDependencies": {
+		"@eslint/js": "10.0.1",
+		"@tanstack/eslint-plugin-query": "5.101.4",
+		"@vitest/eslint-plugin": "1.6.27",
+		"eslint": "10.8.1",
+		"eslint-plugin-import-x": "4.17.1",
+		"eslint-plugin-license-header": "0.9.0",
+		"eslint-plugin-react-hooks": "7.1.1",
+		"eslint-plugin-react-refresh": "0.5.4",
+		"globals": "17.11.0",
+		"prettier": "3.9.6",
+		"typescript-eslint": "8.67.0"
+	},
+	"version": "8.10.0-SNAPSHOT"
+}

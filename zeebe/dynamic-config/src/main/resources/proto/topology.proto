@@ -1,0 +1,447 @@
+syntax = 'proto3';
+package topology_protocol;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "io.camunda.zeebe.dynamic.config.protocol";
+
+// During a rolling upgrade both fields are populated (dual-write): field 1
+// carries the legacy single-group view (read by old brokers), field 2 carries
+// the full multi-partition-group configuration (read by upgraded brokers).
+message GossipState {
+  ClusterTopology clusterTopology = 1;
+  CurrentClusterConfiguration currentClusterConfiguration = 2;
+}
+
+// ---- New multi-partition-group configuration model (8.10) ----
+
+// Top-level wrapper for the new configuration model. version is always
+// an initial version (0) and reserved for a future root-level fast path.
+message CurrentClusterConfiguration {
+  int64 version = 1;
+  GlobalConfiguration globalConfiguration = 2;
+  map<string, PartitionGroupConfiguration> partitionGroups = 3;
+  PhasedChangeState phasedChangeState = 4;
+}
+
+// Cluster wide configuration that are not specific to partition groups.
+message GlobalConfiguration {
+  int64 version = 1;
+  string clusterId = 2;
+  map<string, BrokerState> members = 3;
+  PartitionDistributorConfig partitionDistributor = 4;
+  ClusterChangePlan pendingChanges = 5;
+  CompletedChange lastChange = 6;
+}
+
+// Tracks per-group partition assignment for a single named Raft group.
+// Does not hold broker lifecycle state.
+message PartitionGroupConfiguration {
+  int64 version = 1;
+  int64 incarnationNumber = 2;
+  map<string, BrokerPartitionState> members = 3;
+  RoutingState routingState = 4;
+  ClusterChangePlan pendingChanges = 5;
+  CompletedChange lastChange = 6;
+  TenantAvailability availability = 7;
+}
+
+// Whether a physical tenant is currently disabled (removed from local static configuration, but
+// retaining its partition assignment and data). Carries its own version, independent of the
+// enclosing PartitionGroupConfiguration.version.
+message TenantAvailability {
+  int64 version = 1;
+  bool disabled = 2;
+}
+
+// Broker lifecycle state. Holds State and timestamps; no partition assignment.
+message BrokerState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  State state = 3;
+}
+
+// A broker's partition assignment within a single group. No lifecycle State.
+// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING,
+// the structural equivalent of the legacy State.RECOVERING), scoped to this
+// group only.
+message BrokerPartitionState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  map<int32, PartitionState> partitions = 3;
+  Mode mode = 4;
+}
+
+// Pre-computed sequence of phases for cluster-spanning operations.
+message PhasedChangePlan {
+  int64 id = 1;
+  int32 currentPhaseIndex = 2;
+  repeated PhasedChangePlanPhase phases = 3;
+  google.protobuf.Timestamp startedAt = 4;
+}
+
+// Minimal record of a completed phased change, kept for observability and ID monotonicity.
+message CompletedPhasedChange {
+  int64 id = 1;
+  PhasedChangePlanStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+// Wrapper that holds every currently pending plan (multiple may be pending
+// concurrently, targeting disjoint sub-configurations) plus a bounded window
+// of recently completed changes. nextId is the monotonic plan-id counter;
+// pending plan ids and history entry ids are always less than nextId.
+message PhasedChangeState {
+  int64 nextId = 1;
+  repeated PhasedChangePlan pending = 2;
+  repeated CompletedPhasedChange history = 3;
+}
+
+// A single phase in a PhasedChangePlan; either global or per-group.
+message PhasedChangePlanPhase {
+  oneof phase {
+    GlobalPhase globalPhase = 1;
+    PartitionGroupParallelPhase partitionGroupParallelPhase = 2;
+  }
+}
+
+// Operations written to GlobalConfiguration.pendingChanges when this phase
+// is activated.
+message GlobalPhase {
+  repeated GlobalChangeOperation operations = 1;
+}
+
+// Operations written atomically to named groups' pendingChanges when this
+// phase is activated.
+message PartitionGroupParallelPhase {
+  map<string, PartitionGroupOperationList> groupOperations = 1;
+}
+
+// A list of operations for a single partition group within a parallel phase.
+message PartitionGroupOperationList {
+  repeated PartitionGroupChangeOperation operations = 1;
+}
+
+// An operation that targets GlobalConfiguration (broker lifecycle and cluster-wide config).
+message GlobalChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    MemberJoinOperation memberJoin = 2;
+    MemberLeaveOperation memberLeave = 3;
+    MemberRemoveOperation memberRemove = 4;
+    PreScalingOperation preScaling = 5;
+    PostScalingOperation postScaling = 6;
+    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 7;
+  }
+}
+
+// An operation that targets a single PartitionGroupConfiguration.
+message PartitionGroupChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    PartitionJoinOperation partitionJoin = 2;
+    PartitionLeaveOperation partitionLeave = 3;
+    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 4;
+    PartitionForceReconfigureOperation partitionForceReconfigure = 5;
+    PartitionDisableExporterOperation partitionDisableExporter = 6;
+    PartitionEnableExporterOperation partitionEnableExporter = 7;
+    PartitionDeleteExporterOperation partitionDeleteExporter = 8;
+    PartitionBootstrapOperation partitionBootstrap = 9;
+    StartPartitionScaleUpOperation initiateScaleUpPartitions = 10;
+    AwaitRedistributionCompletion awaitRedistributionCompletion = 11;
+    AwaitRelocationCompletion awaitRelocationCompletion = 12;
+    UpdateRoutingState updateRoutingState = 13;
+    DeleteHistoryOperation deleteHistory = 14;
+    UpdateIncarnationNumberOperation updateIncarnationNumber = 15;
+    ModeChangeOperation modeChange = 16;
+    AwaitModeChangeOperation awaitModeChange = 17;
+    ExportingStateChangeOperation exporterStateChange = 18;
+    PartitionPreRestoreOperation partitionPreRestore = 19;
+    PartitionRestoreOperation partitionRestore = 20;
+  }
+}
+
+// Legacy message for cluster configuration, will be deprecated from 8.10.
+message ClusterTopology {
+  int64 version = 1;
+  map<string, MemberState> members = 2;
+  CompletedChange lastChange = 3;
+  ClusterChangePlan currentChange = 4;
+  RoutingState routingState = 5;
+  string clusterId = 6;
+  int64 incarnationNumber = 7;
+  PartitionDistributorConfig partitionDistributor = 8;
+}
+
+message RoutingState {
+  int64  version = 1;
+  repeated sint32 activePartitions = 2 [deprecated=true];
+  MessageCorrelation messageCorrelation = 3;
+  RequestHandling requestHandling = 4;
+}
+
+message RequestHandling {
+  oneof strategy {
+    AllPartitions allPartitions = 1;
+    ActivePartitions activePartitions = 2;
+  }
+
+  message AllPartitions { sint32 partitionCount = 1; }
+  message ActivePartitions {
+    sint32 basePartitionCount = 1;
+    repeated sint32 additionalActivePartitions = 2;
+    repeated sint32 inactivePartitions = 3;
+  }
+}
+
+message MessageCorrelation {
+  oneof correlation { HashMod hashMod = 1; }
+
+  message HashMod { sint32 partitionCount = 1; }
+}
+
+message MemberState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  State state = 3;
+  map<int32, PartitionState> partitions = 4;
+}
+
+message PartitionState {
+  State state = 1;
+  int32 priority = 2;
+  PartitionConfig config = 3;
+}
+
+message PartitionConfig { ExportingConfig exporting = 1; }
+
+message ExportingConfig {
+  map<string, ExporterState> exporters = 1;
+  ExportingStateEnum state = 2;
+}
+
+message ExporterState {
+  ExporterStateEnum state = 1;
+  int64 metadataVersion = 2;
+  optional string initializedFrom = 3;
+}
+
+message ClusterChangePlan {
+  int64 id = 1;
+  int32 version = 2;
+  ChangeStatus status = 3;
+  google.protobuf.Timestamp startedAt = 4;
+  repeated CompletedTopologyChangeOperation completedOperations = 5;
+  repeated TopologyChangeOperation pendingOperations = 6;
+}
+
+message CompletedChange {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+message TopologyChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    PartitionJoinOperation partitionJoin = 2;
+    PartitionLeaveOperation partitionLeave = 3;
+    MemberJoinOperation memberJoin = 4;
+    MemberLeaveOperation memberLeave = 5;
+    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
+    PartitionForceReconfigureOperation partitionForceReconfigure = 7;
+    MemberRemoveOperation memberRemove = 8;
+    PartitionDisableExporterOperation partitionDisableExporter = 9;
+    PartitionEnableExporterOperation partitionEnableExporter = 10;
+    PartitionBootstrapOperation partitionBootstrap = 11;
+    StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
+    DeleteHistoryOperation deleteHistory = 13;
+    AwaitRedistributionCompletion awaitRedistributionCompletion = 14;
+    AwaitRelocationCompletion awaitRelocationCompletion = 15;
+    UpdateRoutingState updateRoutingState = 16;
+    PartitionDeleteExporterOperation partitionDeleteExporter = 17;
+    UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
+    PreScalingOperation preScaling = 19;
+    PostScalingOperation postScaling = 20;
+    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
+    ModeChangeOperation modeChange = 24;
+    AwaitModeChangeOperation awaitModeChange = 25;
+    ExportingStateChangeOperation exporterStateChange = 26;
+    PartitionPreRestoreOperation partitionPreRestore = 27;
+    PartitionRestoreOperation partitionRestore = 28;
+  }
+}
+
+message UpdatePartitionDistributorConfigOperation {
+  PartitionDistributorConfig config = 1;
+}
+
+message CompletedTopologyChangeOperation {
+  TopologyChangeOperation operation = 1;
+  google.protobuf.Timestamp completedAt = 2;
+}
+
+message PartitionJoinOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionLeaveOperation {
+  int32 partitionId = 1;
+  int32 minimumAllowedReplicas = 2;
+}
+
+message PartitionReconfigurePriorityOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionForceReconfigureOperation {
+  int32 partitionId = 1;
+  repeated string members = 2;
+}
+
+message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionDeleteExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionEnableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+  optional string initializeFrom = 3;
+}
+
+message PartitionBootstrapOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+  optional PartitionConfig config = 3;
+  bool initializeFromConfig = 4;
+}
+
+message StartPartitionScaleUpOperation {int32 desiredPartitionCount = 2;}
+
+message PartitionPreRestoreOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionRestoreOperation {
+  int32 partitionId = 1;
+  repeated int64 backupIds = 2;
+}
+
+message AwaitRedistributionCompletion {
+  int32 desiredPartitionCount = 1;
+  repeated int32 partitionsToRedistribute = 2;
+}
+
+message AwaitRelocationCompletion {
+  int32 desiredPartitionCount = 1;
+  repeated int32 partitionsToRelocate = 2;
+}
+
+message UpdateRoutingState{
+  RoutingState routing_state = 1;
+}
+
+message UpdateIncarnationNumberOperation {}
+
+message PreScalingOperation {
+  repeated string clusterMembers = 1;
+}
+
+message PostScalingOperation {
+  repeated string clusterMembers = 1;
+}
+
+message DeleteHistoryOperation { int32 memberId = 1; }
+
+message PartitionDistributorConfig {
+  oneof kind {
+    RoundRobinDistributor roundRobin = 1;
+    ZoneAwareDistributor zoneAware = 2;
+    FixedDistributor fixed = 3;
+  }
+  message RoundRobinDistributor {}
+  message FixedDistributor {}
+  message ZoneAwareDistributor {
+    repeated ZoneSpec zones = 1;
+  }
+  message ZoneSpec {
+    string name = 1;
+    int32 numberOfReplicas = 2;
+    int32 priority = 3;
+  }
+}
+
+message MemberJoinOperation {}
+
+message MemberLeaveOperation {}
+
+message MemberRemoveOperation { string memberToRemove = 1; }
+
+message ModeChangeOperation {
+  Mode mode = 1;
+}
+
+message ExportingStateChangeOperation {
+  ExportingStateEnum state = 1;
+}
+
+message AwaitModeChangeOperation {
+  Mode mode = 1;
+}
+
+enum State {
+  UNKNOWN = 0;
+  JOINING = 1;
+  ACTIVE = 2;
+  LEAVING = 3;
+  LEFT = 4;
+  BOOTSTRAPPING = 5;
+  RECOVERING = 6;
+}
+
+enum ChangeStatus {
+  CHANGE_STATUS_UNKNOWN = 0;
+  IN_PROGRESS = 1;
+  COMPLETED = 2;
+  FAILED = 3;
+  CANCELLED = 4;
+}
+
+// Terminal outcome of a CompletedPhasedChange. Unlike ChangeStatus, this enum
+// excludes IN_PROGRESS since it is only used once a change has finished.
+enum PhasedChangePlanStatus {
+  PHASED_CHANGE_STATUS_UNKNOWN = 0;
+  PHASED_CHANGE_COMPLETED = 1;
+  PHASED_CHANGE_FAILED = 2;
+  PHASED_CHANGE_CANCELLED = 3;
+}
+
+enum ExporterStateEnum {
+  ENABLED_DISBALED_UNKNOWN = 0;
+  ENABLED = 1;
+  DISABLED = 2;
+  CONFIG_NOT_FOUND = 3;
+}
+
+enum ExportingStateEnum {
+  EXPORTING_STATE_UNKNOWN = 0;
+  EXPORTING = 1;
+  SOFT_PAUSED = 2;
+  PAUSED = 3;
+}
+
+enum Mode {
+  MODE_UNKNOWN = 0;
+  MODE_PROCESSING = 1;
+  MODE_RECOVERING = 2;
+}

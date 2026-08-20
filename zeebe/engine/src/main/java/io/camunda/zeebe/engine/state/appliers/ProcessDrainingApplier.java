@@ -1,0 +1,38 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.state.appliers;
+
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+
+public class ProcessDrainingApplier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
+
+  private final MutableProcessState processState;
+
+  public ProcessDrainingApplier(final MutableProcessingState state) {
+    processState = state.getProcessState();
+  }
+
+  @Override
+  public void applyState(final long key, final ProcessRecord value) {
+    processState.markDraining(value);
+
+    // Only the deployment partition aggregates; the event key is minted locally so it encodes the
+    // applying partition. Seed one pending entry per frozen partition; each DELETE_COMPLETE clears
+    // one, and the definition is fully deleted once none remain.
+    if (Protocol.decodePartitionId(key) == Protocol.DEPLOYMENT_PARTITION) {
+      for (final int partitionId : value.getDrainPartitions()) {
+        processState.addPendingDeletion(value.getProcessDefinitionKey(), partitionId);
+      }
+    }
+  }
+}

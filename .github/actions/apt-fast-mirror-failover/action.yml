@@ -1,0 +1,23 @@
+---
+name: Configure apt fast mirror failover
+description: |
+  Drops an apt.conf.d snippet so apt abandons a hung mirror quickly instead
+  of riding out its ~120s default per-mirror timeout. GitHub's Ubuntu
+  runner image lists http://azure.archive.ubuntu.com as the priority-1
+  mirror, which intermittently hangs instead of erroring; apt then wastes
+  up to two minutes per attempt before failing over to the working
+  archive.ubuntu.com/security.ubuntu.com mirrors. See INC-6639 / #58992.
+
+inputs: {}
+
+runs:
+  using: composite
+  steps:
+    - name: Write apt fast-failover config
+      shell: bash
+      run: |
+        sudo tee /etc/apt/apt.conf.d/99-fast-mirror-failover.conf > /dev/null <<'EOF'
+        Acquire::http::Timeout "10";
+        Acquire::https::Timeout "10";
+        Acquire::Retries "2";
+        EOF

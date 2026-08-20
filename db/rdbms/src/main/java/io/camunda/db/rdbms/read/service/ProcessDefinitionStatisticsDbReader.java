@@ -1,0 +1,60 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.read.service;
+
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import java.util.Collections;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ProcessDefinitionStatisticsDbReader
+    extends AbstractEntityReader<ProcessFlowNodeStatisticsEntity>
+    implements ProcessDefinitionStatisticsReader {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ProcessDefinitionStatisticsDbReader.class);
+
+  private final ProcessDefinitionMapper processDefinitionMapper;
+
+  public ProcessDefinitionStatisticsDbReader(
+      final ProcessDefinitionMapper processDefinitionMapper, final RdbmsReaderConfig readerConfig) {
+    super(null, readerConfig);
+    this.processDefinitionMapper = processDefinitionMapper;
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> aggregate(
+      final ProcessDefinitionFlowNodeStatisticsQuery query,
+      final ResourceAccessChecks resourceAccessChecks) {
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return Collections.emptyList();
+    }
+
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
+
+    LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", query);
+    return processDefinitionMapper.flowNodeStatistics(
+        ProcessDefinitionStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())));
+  }
+}

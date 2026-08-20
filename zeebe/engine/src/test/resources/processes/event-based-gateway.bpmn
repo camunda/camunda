@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1iercn0" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.6.2">
+  <bpmn:process id="process" isExecutable="true">
+    <bpmn:sequenceFlow id="SequenceFlow_1qvnr9b" sourceRef="timer_event" targetRef="end_event" />
+    <bpmn:sequenceFlow id="SequenceFlow_0l5kjiw" sourceRef="message_event" targetRef="end_event" />
+    <bpmn:sequenceFlow id="SequenceFlow_05u32s1" sourceRef="event_gateway" targetRef="message_event" />
+    <bpmn:sequenceFlow id="SequenceFlow_1tierfh" sourceRef="event_gateway" targetRef="timer_event" />
+    <bpmn:startEvent id="start_event">
+      <bpmn:outgoing>SequenceFlow_00zb3u7</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="message_event" name="msg">
+      <bpmn:incoming>SequenceFlow_05u32s1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0l5kjiw</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_0nnm6e0" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timer_event" name="timer">
+      <bpmn:incoming>SequenceFlow_1tierfh</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1qvnr9b</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_00zb3u7" sourceRef="start_event" targetRef="event_gateway" />
+    <bpmn:eventBasedGateway id="event_gateway">
+      <bpmn:incoming>SequenceFlow_00zb3u7</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_05u32s1</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_1tierfh</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:endEvent id="end_event">
+      <bpmn:incoming>SequenceFlow_1qvnr9b</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0l5kjiw</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_0nnm6e0" name="Message_0n4iu42">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="123" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start_event">
+        <dc:Bounds x="156" y="158" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_00zb3u7_di" bpmnElement="SequenceFlow_00zb3u7">
+        <di:waypoint x="192" y="176" />
+        <di:waypoint x="242" y="176" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EventBasedGateway_11czav4_di" bpmnElement="event_gateway">
+        <dc:Bounds x="242" y="151" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_0wtbiha_di" bpmnElement="message_event">
+        <dc:Bounds x="300" y="228" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="308" y="271" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05u32s1_di" bpmnElement="SequenceFlow_05u32s1">
+        <di:waypoint x="267" y="201" />
+        <di:waypoint x="267" y="246" />
+        <di:waypoint x="300" y="246" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_1qu6rzw_di" bpmnElement="timer_event">
+        <dc:Bounds x="300" y="81" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="306" y="124" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1tierfh_di" bpmnElement="SequenceFlow_1tierfh">
+        <di:waypoint x="267" y="151" />
+        <di:waypoint x="267" y="99" />
+        <di:waypoint x="300" y="99" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_05vnej2_di" bpmnElement="end_event">
+        <dc:Bounds x="389" y="158" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1qvnr9b_di" bpmnElement="SequenceFlow_1qvnr9b">
+        <di:waypoint x="336" y="99" />
+        <di:waypoint x="407" y="99" />
+        <di:waypoint x="407" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0l5kjiw_di" bpmnElement="SequenceFlow_0l5kjiw">
+        <di:waypoint x="336" y="246" />
+        <di:waypoint x="407" y="246" />
+        <di:waypoint x="407" y="194" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

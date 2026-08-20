@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  exporter="Zeebe BPMN Model" exporterVersion="8.6.0-SNAPSHOT"
+  id="definitions_10a4983c-bfa8-45a3-a23e-4c3a54e5f3c1"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0" modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.6.0-SNAPSHOT"
+  targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <process id="process_bce8fd3e-9715-4483-895f-18faf5e179bb" isExecutable="true">
+    <startEvent id="startEvent_e04ab35c-7ea3-4e74-ac03-c468e866708c">
+      <outgoing>sequenceFlow_b5b62cfb-7be8-4451-a6d5-9348d8fc0f5d</outgoing>
+    </startEvent>
+    <serviceTask id="my_serice_task" name="my_service_task">
+      <extensionElements>
+        <zeebe:linkedResources>
+          <zeebe:linkedResource
+                resourceId="restAPIConfig"
+                bindingType="latest"
+                resourceType="config"
+              />
+        </zeebe:linkedResources>
+        <zeebe:taskDefinition type="task_type" retries="8" />
+      </extensionElements>
+      <incoming>sequenceFlow_b5b62cfb-7be8-4451-a6d5-9348d8fc0f5d</incoming>
+      <outgoing>sequenceFlow_52b3e40b-ed4b-4a4a-8108-cd897630f393</outgoing>
+    </serviceTask>
+    <sequenceFlow id="sequenceFlow_b5b62cfb-7be8-4451-a6d5-9348d8fc0f5d"
+      sourceRef="startEvent_e04ab35c-7ea3-4e74-ac03-c468e866708c" targetRef="my_serice_task"/>
+    <endEvent id="endEvent_2db36fcf-1cc8-4fa2-adc9-a57695bad306">
+      <incoming>sequenceFlow_52b3e40b-ed4b-4a4a-8108-cd897630f393</incoming>
+    </endEvent>
+    <sequenceFlow id="sequenceFlow_52b3e40b-ed4b-4a4a-8108-cd897630f393" sourceRef="my_serice_task"
+      targetRef="endEvent_2db36fcf-1cc8-4fa2-adc9-a57695bad306"/>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ba325c44-09a5-4d24-bbe9-82e260451e4f">
+    <bpmndi:BPMNPlane bpmnElement="process_bce8fd3e-9715-4483-895f-18faf5e179bb"
+      id="BPMNPlane_cddf6231-589c-45bc-b605-8b970f8702b1">
+      <bpmndi:BPMNShape bpmnElement="startEvent_e04ab35c-7ea3-4e74-ac03-c468e866708c"
+        id="BPMNShape_fff1c710-88d3-4d27-90cf-df15fbd2af33">
+        <dc:Bounds height="36.0" width="36.0" x="100.0" y="100.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="my_serice_task"
+        id="BPMNShape_70cbe660-9802-4f87-bb3e-04fb0929b70d">
+        <dc:Bounds height="80.0" width="100.0" x="186.0" y="78.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sequenceFlow_b5b62cfb-7be8-4451-a6d5-9348d8fc0f5d"
+        id="BPMNEdge_dec820ff-5fa8-4f7a-b45e-c4d2ad520255">
+        <di:waypoint x="136.0" y="118.0"/>
+        <di:waypoint x="186.0" y="118.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape bpmnElement="endEvent_2db36fcf-1cc8-4fa2-adc9-a57695bad306"
+        id="BPMNShape_052fdae2-ca34-4d23-8dc4-a008a6455355">
+        <dc:Bounds height="36.0" width="36.0" x="336.0" y="100.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sequenceFlow_52b3e40b-ed4b-4a4a-8108-cd897630f393"
+        id="BPMNEdge_3e84d872-a6e0-4296-a288-9d0ba79db23d">
+        <di:waypoint x="286.0" y="118.0"/>
+        <di:waypoint x="336.0" y="118.0"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

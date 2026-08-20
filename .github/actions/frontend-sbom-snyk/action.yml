@@ -1,0 +1,125 @@
+---
+name: Frontend SBOM Snyk
+
+# owner: @camunda/engineering-operations
+
+description: Generate a frontend SBOM and scan it with Snyk
+
+inputs:
+  directory:
+    description: Frontend directory containing package.json
+    required: true
+  package-manager:
+    description: Package manager used by the frontend
+    required: false
+    default: "npm"
+  sbom-file:
+    description: Path to the generated CycloneDX JSON SBOM file
+    required: true
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: "24"
+  project-name:
+    description: Human readable project name for logging
+    required: true
+  snyk-org:
+    description: Snyk organization to scan against
+    required: false
+    default: "team-zeebe"
+  severity-threshold:
+    description: Minimum vulnerability severity that fails the job
+    required: false
+    default: "high"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node for npm
+      if: inputs.package-manager == 'npm'
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: ${{ inputs.directory }}/package-lock.json
+
+    - name: Setup Node for yarn
+      if: inputs.package-manager == 'yarn'
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install Snyk CLI
+      uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+
+    - name: Install dependencies with npm
+      if: inputs.package-manager == 'npm'
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Install dependencies with yarn
+      if: inputs.package-manager == 'yarn'
+      uses: ./.github/actions/yarn-install-with-retry
+      with:
+        directory: ${{ inputs.directory }}
+        args: install --frozen-lockfile
+
+    - name: Generate SBOM with npm
+      if: inputs.package-manager == 'npm'
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: npm run extract-sbom
+
+    - name: Generate SBOM with yarn
+      if: inputs.package-manager == 'yarn'
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn extract-sbom
+
+    - name: Verify generated SBOM path
+      shell: bash
+      run: |
+        test -f "${{ inputs.sbom-file }}"
+        printf 'Using SBOM for %s: %s\n' "${{ inputs.project-name }}" "${{ inputs.sbom-file }}"
+
+    - name: Scan SBOM with Snyk
+      shell: bash
+      env:
+        SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+      run: |
+        # Bounds the `snyk` call so a single stuck/slow call to the Snyk API cannot consume the
+        # whole job's timeout (see INC-6630 for the same class of issue with unbounded external
+        # network calls in CI).
+        #
+        # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
+        # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
+        # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+        # other code straight through - retrying a legitimate vuln finding (1) would needlessly
+        # double every scan that has findings and defeat the purpose of this bound.
+        function runSnykWithRetry() {
+          local maxAttempts=2
+          local perAttemptTimeoutSecs=120
+          local retryDelaySecs=10
+          local attempt=1
+
+          while true; do
+            local status=0
+            timeout "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
+            if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+              return "${status}"
+            fi
+            if [ "${attempt}" -ge "${maxAttempts}" ]; then
+              echo "::error::snyk $* still failing after ${maxAttempts} attempts (exit ${status})"
+              return "${status}"
+            fi
+            echo "snyk $* transient failure (exit ${status}), retry ${attempt}/${maxAttempts} in ${retryDelaySecs}s..."
+            sleep "${retryDelaySecs}"
+            attempt=$((attempt + 1))
+          done
+        }
+
+        runSnykWithRetry sbom test \
+          --file="${{ inputs.sbom-file }}" \
+          --org="${{ inputs.snyk-org }}" \
+          --severity-threshold="${{ inputs.severity-threshold }}"

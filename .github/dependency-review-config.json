@@ -1,0 +1,5 @@
+{
+  "_comment": "Vulnerability gate exceptions — governs the pr-vuln-check job in ci.yml. Gate rules (in check.py): block if fixable (any severity) or high/critical (any fix status). Dev-scoped deps excluded. Add GHSA IDs below with reason, tracking issue, and review-by date. File is CODEOWNERS-protected.",
+  "_example": "GHSA-xxxx-xxxx-xxxx: Vetted: no exploit path in our usage; INC-XYZ; review by 2026-12-01",
+  "allow-ghsas": []
+}

@@ -1,0 +1,314 @@
+# description: Reusable workflow — C8 Orchestration Cluster API Tests (Elasticsearch).
+#              Called by the per-version nightly API workflows.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Reusable API Tests (ES)
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Branch to test (e.g. stable/8.8, main)"
+        required: true
+        type: string
+      camunda_mode:
+        description: "Camunda deployment mode: 'profiles' (default Spring profiles) or 'all-in-one'"
+        required: false
+        type: string
+        default: profiles
+
+permissions:
+  contents: read
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
+jobs:
+  nightly-api-tests:
+    name: API Tests (${{ inputs.branch }} - Mode ${{ inputs.camunda_mode }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.branch }}
+          # Nothing later in this job needs the short-lived GITHUB_TOKEN left
+          # in .git/config (zizmor: artipacked).
+          persist-credentials: false
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="${{ inputs.branch }}"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        shell: bash
+        run: |
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              echo "Using single services for stable/8.7"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              if [[ "${{ inputs.camunda_mode }}" == "all-in-one" ]]; then
+                export CAMUNDA_MODE="all-in-one"
+                echo "Starting with CAMUNDA_MODE=all-in-one"
+              else
+                unset CAMUNDA_MODE
+                echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+              fi
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        shell: bash
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        shell: bash
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        shell: bash
+        if: failure()
+        run: |
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+
+      - name: Run API tests
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          VERSION: ${{ inputs.branch }}
+          API_TESTS_ONLY: true
+          DATABASE: "Elasticsearch"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
+        run: |
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+          fi
+
+          echo "Running API tests"
+          npm run test -- --project=api-tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      # Capture the container logs (incl. camunda.log = the exporter log) and
+      # Elasticsearch state after the tests run, regardless of outcome. These
+      # are not otherwise available in the step log or artifacts, so exporter-
+      # side failures — e.g. a handler throwing during bulk flush, which halts
+      # indexing and makes v2 search/get return empty/404 — can be diagnosed
+      # from the exporter log + ES index doc counts rather than test symptoms.
+      - name: Capture container and Elasticsearch logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p container-logs
+          for c in $(docker ps --format '{{.Names}}' 2>/dev/null || true); do
+            docker logs --timestamps "$c" > "container-logs/${c}.log" 2>&1 || true
+          done
+          docker ps -a > container-logs/docker-ps.txt 2>&1 || true
+          {
+            echo "### _cluster/health"
+            curl -s 'http://localhost:9200/_cluster/health?pretty' || true
+            echo "### _cat/indices"
+            curl -s 'http://localhost:9200/_cat/indices?v&s=index' || true
+          } > container-logs/elasticsearch-state.txt 2>&1 || true
+          curl -s 'http://localhost:9600/actuator/prometheus' 2>/dev/null \
+            | grep -iE 'export|backpressure|flush|zeebe_stream_processor' \
+            > container-logs/camunda-exporter-metrics.txt 2>&1 || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          BRANCH_NAME: ${{ inputs.branch }}
+        run: |
+          pip install trcli==1.14.1
+          trcli -y -h "$TESTRAIL_HOST" \
+            --project 'C8' \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
+            parse_junit --suite-id 17050 \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --close-run \
+            -f "$JUNIT_RESULTS_FILE"
+
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ inputs.branch }}"
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
+      # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
+      # The trace captures the request/response body, which json-report omits;
+      # nightly triage needs it to tell a request-shape/test bug from a product bug.
+      - name: Upload Playwright traces to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
+          if-no-files-found: ignore
+          retention-days: 5
+
+      - name: Upload container logs to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
+          if-no-files-found: warn
+          retention-days: 5
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ inputs.branch }} (Mode ${{ inputs.camunda_mode }})"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

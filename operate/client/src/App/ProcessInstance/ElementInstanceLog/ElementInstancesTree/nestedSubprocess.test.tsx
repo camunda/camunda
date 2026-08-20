@@ -1,0 +1,226 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {act} from 'react';
+import {render, screen} from 'modules/testing-library';
+import {open} from 'modules/mocks/diagrams';
+import {
+  getWrapper,
+  mockNestedSubProcessesInstance,
+  parseBusinessObjects,
+} from './mocks';
+import {ElementInstancesTree} from './index';
+import {modificationsStore} from 'modules/stores/modifications';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+
+const nestedSubProcessesXml = open('NestedSubProcesses.bpmn');
+
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Nested Subprocesses', () => {
+  beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('NestedSubProcesses.bpmn'),
+    );
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [],
+    });
+
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '227539842356787',
+          processDefinitionKey: '39480256723678',
+          processDefinitionId: 'NestedSubProcesses',
+          state: 'COMPLETED',
+          type: 'START_EVENT',
+          elementId: 'StartEvent_1',
+          elementName: 'Start Event 1',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '227539842356787',
+          processDefinitionKey: '39480256723678',
+          processDefinitionId: 'NestedSubProcesses',
+          state: 'ACTIVE',
+          type: 'SERVICE_TASK',
+          elementId: 'ServiceTask',
+          elementName: 'Service Task',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: null,
+          rootProcessInstanceKey: null,
+        },
+      ],
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+  });
+
+  it('should add parent placeholders (ADD_TOKEN)', async () => {
+    const {businessObjects} = await parseBusinessObjects(nestedSubProcessesXml);
+    const {user} = render(
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessesInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('Nested Sub Processes')).toBeInTheDocument();
+    expect(screen.getByText('Start Event 1')).toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('User Task')).not.toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          element: {id: 'UserTask', name: 'User Task'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {
+            SubProcess_1: generateUniqueID(),
+            SubProcess_2: generateUniqueID(),
+          },
+        },
+      });
+    });
+
+    expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('treeitem', {
+        name: /sub process 1/i,
+        expanded: false,
+      }),
+      '{arrowright}',
+    );
+    expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('treeitem', {
+        name: /sub process 2/i,
+        expanded: false,
+      }),
+      '{arrowright}',
+    );
+    expect(screen.getByText('User Task')).toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.disableModificationMode();
+    });
+
+    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('User Task')).not.toBeInTheDocument();
+  });
+
+  it('should add parent placeholders (MOVE_TOKEN)', async () => {
+    const {businessObjects} = await parseBusinessObjects(nestedSubProcessesXml);
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
+
+    const {user} = render(
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessesInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('Nested Sub Processes')).toBeInTheDocument();
+    expect(screen.getByText('Start Event 1')).toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('User Task')).not.toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'MOVE_TOKEN',
+          scopeIds: [generateUniqueID(), generateUniqueID()],
+          element: {id: 'StartEvent_1', name: 'Start Event 1'},
+          targetElement: {id: 'UserTask', name: 'User Task'},
+          affectedTokenCount: 2,
+          visibleAffectedTokenCount: 2,
+          parentScopeIds: {
+            SubProcess_1: generateUniqueID(),
+            SubProcess_2: generateUniqueID(),
+          },
+        },
+      });
+    });
+
+    expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('treeitem', {
+        name: /sub process 1/i,
+        expanded: false,
+      }),
+      '{arrowright}',
+    );
+    expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('treeitem', {
+        name: /sub process 2/i,
+        expanded: false,
+      }),
+      '{arrowright}',
+    );
+    expect(screen.getAllByText('User Task')).toHaveLength(2);
+
+    act(() => {
+      modificationsStore.disableModificationMode();
+    });
+
+    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('User Task')).not.toBeInTheDocument();
+  });
+});

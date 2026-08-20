@@ -1,0 +1,202 @@
+# description: Runs Integration tests on different versions and vendors of RDBMS databases
+# test location: /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Rdbms Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      notify-slack-on-failure:
+        description: "Whether workflow_dispatch runs should send Slack notifications on failure/cancellation"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+  pull_request:
+    paths:
+      - ".ci/db-versions.yml"
+      - ".github/actions/read-db-versions/**"
+      - ".github/workflows/zeebe-rdbms-integration-tests.yml"
+  schedule:
+    - cron: "0 5 * * Mon-Fri"
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  trigger-stable-8-9-nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Trigger stable/8.9 nightly run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref stable/8.9 zeebe-rdbms-integration-tests.yml -f notify-slack-on-failure=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Reads all supported RDBMS versions from .ci/db-versions.yml and generates
+  # the test matrix. Add or remove versions there — this workflow updates automatically.
+  generate-matrix:
+    name: "Generate RDBMS matrix"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read-versions.outputs.rdbms-matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read DB versions
+        id: read-versions
+        uses: ./.github/actions/read-db-versions
+
+  # Builds the distball once and shares it with every matrix shard below via GCS,
+  # replacing a per-shard reactor build (~33 shards). See #56931.
+  # This job block is duplicated verbatim in zeebe-search-integration-tests.yml --
+  # GHA has no way to share a job stanza across workflow files. Keep both in sync.
+  build-distball:
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
+    with:
+      skip-artifact-upload: true  # no docker-checks-style GH-artifact consumer in this workflow
+
+  # If build-distball fails/is cancelled, every matrix job below is skipped by its
+  # needs: dependency (not failed), so their own send-slack-notification never runs.
+  # Without this job that failure would be silent on scheduled runs.
+  notify-build-distball-failure:
+    name: "Send slack notification on build-distball fail"
+    needs: build-distball
+    if: always() && (needs.build-distball.result == 'failure' || needs.build-distball.result == 'cancelled') && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            text: "Scheduled RDBMS Integration Tests shared build (build-distball) on ${{ github.ref_name }} failed or was cancelled — all matrix shards were skipped"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Scheduled *RDBMS Integration Tests* shared build (`build-distball`) on *${{ github.ref_name }}* FAILED or WAS CANCELLED — every matrix shard was skipped as a result\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "notify-build-distball-failure"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-integration-tests:
+    name: "RDBMS ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
+      use-shared-distball: true
+
+  rdbms-history-tests:
+    name: "RDBMS History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "history"
+      test-type: "history-tests"
+      test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
+      use-shared-distball: true
+
+  rdbms-identity-tests:
+    name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix, build-distball ]
+    permissions:
+      actions: write
+      contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
+      use-shared-distball: true

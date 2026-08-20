@@ -1,0 +1,131 @@
+# description: Build and deploy Docusaurus documentation previews for pull requests
+# type: preview
+# owner: @camunda/engineering-operations
+---
+name: Docs PR Preview
+
+on:
+  pull_request:
+    # The docs site is only ever deployed from main (see docs-build-deploy.yml),
+    # so only build/preview docs for PRs targeting main. Stable branches carry a
+    # copy of this workflow but must not run it — their monorepo-docs content is a
+    # backport subset and would otherwise fail the Docusaurus build on every
+    # docs-touching PR.
+    branches: [main]
+    types: [opened, synchronize, closed]
+  workflow_dispatch: {}
+
+# Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  # renovate: datasource=node-version depName=node
+  NODE_VERSION: '24.19.0'
+  DOCS_DIR: monorepo-docs-site
+
+jobs:
+  # Detect changes to avoid unnecessary builds
+  detect-changes:
+    outputs:
+      docs-changes: ${{ steps.filter.outputs.docs-changes }}
+      preview-exists: ${{ steps.check_preview.outputs.preview_exists }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        # Credentials stay: the next step fetches gh-pages from origin.
+        # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
+
+      # Check if preview exists for cleanup on PR close
+      - name: Check if preview exists
+        id: check_preview
+        if: github.event.action == 'closed'
+        run: |
+          # Fetch gh-pages branch and check if preview directory exists
+          git fetch origin gh-pages:gh-pages 2>/dev/null || echo "gh-pages branch not found"
+          if git show "gh-pages:pr-preview/pr-${{ github.event.pull_request.number }}/" >/dev/null 2>&1; then
+            echo "preview_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Preview exists for PR ${{ github.event.pull_request.number }}"
+          else
+            echo "preview_exists=false" >> "$GITHUB_OUTPUT"
+            echo "No preview found for PR ${{ github.event.pull_request.number }}"
+          fi
+
+  build-preview:
+    # Run if docs changed, or if PR is being closed and a preview exists
+    if: needs.detect-changes.outputs.docs-changes == 'true' || (github.event.action == 'closed' && needs.detect-changes.outputs.preview-exists == 'true')
+    name: Build and Deploy PR Preview
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Shared with docs-build-deploy.yml and docs-preview-cleanup.yml -- see the note there.
+    concurrency:
+      group: gh-pages-write
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        # Credentials stay: pr-preview-action pushes the preview to gh-pages.
+        # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: github.event.action != 'closed'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.DOCS_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        if: github.event.action != 'closed'
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.DOCS_DIR }}
+
+      - name: Build documentation with PR preview base URL
+        if: github.event.action != 'closed'
+        working-directory: ${{ env.DOCS_DIR }}
+        run: npm run build
+        env:
+          BASE_URL: /camunda/pr-preview/pr-${{ github.event.pull_request.number }}/
+
+      - name: Deploy PR Preview
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
+        with:
+          source-dir: ./monorepo-docs-site/build/
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: auto #autodetect if the page must be deployed or removed https://github.com/rossjrw/pr-preview-action?tab=readme-ov-file#inputs-configuration
+          wait-for-pages-deployment: true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

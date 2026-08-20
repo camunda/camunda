@@ -1,0 +1,34 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.it.cluster.backup;
+
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import java.nio.file.Path;
+import java.util.UUID;
+import org.junit.jupiter.api.io.TempDir;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers
+@ZeebeIntegration
+final class FilesystemRestoreAcceptanceIT implements RestoreAcceptance {
+  private static @TempDir Path tempDir;
+
+  private final Path basePath = tempDir.resolve(UUID.randomUUID().toString());
+
+  @Override
+  public void configureBackupStore(final Camunda cfg) {
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+
+    final var config = backup.getFilesystem();
+    config.setBasePath(basePath.toAbsolutePath().toString());
+    backup.setFilesystem(config);
+  }
+}

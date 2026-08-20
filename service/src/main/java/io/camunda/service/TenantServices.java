@@ -1,0 +1,168 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.service;
+
+import static io.camunda.service.authorization.Authorizations.TENANT_READER_AUTHORIZATION;
+
+import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerTenantEntityRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+public class TenantServices extends SearchQueryService<TenantServices, TenantQuery, TenantEntity> {
+
+  private final TenantSearchClient tenantSearchClient;
+
+  public TenantServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final TenantSearchClient tenantSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+    this.tenantSearchClient = tenantSearchClient;
+  }
+
+  @Override
+  public SearchQueryResult<TenantEntity> search(
+      final TenantQuery query, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            tenantSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, TENANT_READER_AUTHORIZATION))
+                .searchTenants(query));
+  }
+
+  public SearchQueryResult<TenantMemberEntity> searchMembers(
+      final TenantMemberQuery query, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            tenantSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, TENANT_READER_AUTHORIZATION))
+                .searchTenantMembers(query));
+  }
+
+  public CompletableFuture<TenantRecord> createTenant(
+      final TenantRequest request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerTenantCreateRequest()
+            .setTenantId(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()),
+        authentication);
+  }
+
+  public CompletableFuture<TenantRecord> updateTenant(
+      final TenantRequest request, final CamundaAuthentication authentication) {
+    final var rejection = rejectIfDefaultTenant(request.tenantId(), "update");
+    if (rejection != null) {
+      return rejection;
+    }
+    return sendBrokerRequest(
+        new BrokerTenantUpdateRequest(request.tenantId())
+            .setName(request.name())
+            .setDescription(request.description()),
+        authentication);
+  }
+
+  public CompletableFuture<TenantRecord> deleteTenant(
+      final String tenantId, final CamundaAuthentication authentication) {
+    final var rejection = rejectIfDefaultTenant(tenantId, "delete");
+    if (rejection != null) {
+      return rejection;
+    }
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId), authentication);
+  }
+
+  public CompletableFuture<TenantRecord> addMember(
+      final TenantMemberRequest request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createAddRequest()
+            .setTenantId(request.tenantId())
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
+        authentication);
+  }
+
+  public CompletableFuture<TenantRecord> removeMember(
+      final TenantMemberRequest request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createRemoveRequest()
+            .setTenantId(request.tenantId())
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
+        authentication);
+  }
+
+  private static CompletableFuture<TenantRecord> rejectIfDefaultTenant(
+      final String tenantId, final String operation) {
+    if (TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+      return CompletableFuture.failedFuture(
+          new ServiceException(
+              "Expected to %s tenant with id '%s', but the default tenant cannot be modified."
+                  .formatted(operation, tenantId),
+              ServiceException.Status.FORBIDDEN));
+    }
+    return null;
+  }
+
+  public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds,
+      final CamundaAuthentication authentication) {
+    return search(
+            TenantQuery.of(
+                q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()),
+            authentication)
+        .items();
+  }
+
+  public TenantEntity getById(final String tenantId, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            tenantSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        RequiredAuthorization.withRequiredAuthorization(
+                            TENANT_READER_AUTHORIZATION, tenantId)))
+                .getTenant(tenantId));
+  }
+
+  public record TenantRequest(Long key, String tenantId, String name, String description) {}
+
+  public record TenantMemberRequest(String tenantId, String entityId, EntityType entityType) {}
+}

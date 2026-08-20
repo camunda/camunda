@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1kgscet" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
+  <bpmn:process id="multiInstanceProcess" name="Multi-Instance Process" isExecutable="true">
+    <bpmn:startEvent id="start" name="Start">
+      <bpmn:outgoing>Flow_16v2729</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="peterFork" name="Peter Fork">
+      <bpmn:incoming>SequenceFlow_0lfp9em</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0rzup48</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_05xgu65</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_09ulah7</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="peterJoin" name="Peter Join">
+      <bpmn:incoming>SequenceFlow_0rzup48</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_05xgu65</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_09ulah7</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lp9eqq</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_0rzup48" sourceRef="peterFork" targetRef="peterJoin" />
+    <bpmn:serviceTask id="reduceTask" name="Reduce">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reduce" retries="1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0124g4a</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0pynv0i</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:subProcess id="filterMapSubProcess" name="Filter-Map Sub Process">
+      <bpmn:incoming>Flow_16v2729</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0lfp9em</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="startFilterMap" name="Start&#10;Filter-Map">
+        <bpmn:outgoing>SequenceFlow_1denv3y</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="filterTask" name="Filter">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="filter" retries="1" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_1denv3y</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1vxqfdy</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SequenceFlow_1denv3y" sourceRef="startFilterMap" targetRef="filterTask" />
+      <bpmn:serviceTask id="mapTask" name="Map">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="map" retries="1" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_1vxqfdy</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_106qs66</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SequenceFlow_1vxqfdy" sourceRef="filterTask" targetRef="mapTask" />
+      <bpmn:endEvent id="endFilterMap" name="End&#10;FilterMap&#10;">
+        <bpmn:incoming>SequenceFlow_106qs66</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_106qs66" sourceRef="mapTask" targetRef="endFilterMap" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="end" name="End">
+      <bpmn:incoming>SequenceFlow_0pynv0i</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_05xgu65" sourceRef="peterFork" targetRef="peterJoin" />
+    <bpmn:sequenceFlow id="SequenceFlow_09ulah7" sourceRef="peterFork" targetRef="peterJoin" />
+    <bpmn:sequenceFlow id="SequenceFlow_0lfp9em" sourceRef="filterMapSubProcess" targetRef="peterFork" />
+    <bpmn:sequenceFlow id="SequenceFlow_0pynv0i" sourceRef="reduceTask" targetRef="end" />
+    <bpmn:sequenceFlow id="Flow_1lp9eqq" sourceRef="peterJoin" targetRef="peterTask" />
+    <bpmn:sequenceFlow id="Flow_16v2729" sourceRef="start" targetRef="filterMapSubProcess" />
+    <bpmn:sequenceFlow id="Flow_0124g4a" sourceRef="peterTask" targetRef="reduceTask" />
+    <bpmn:serviceTask id="peterTask" name="Peter case task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="peterTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1lp9eqq</bpmn:incoming>
+      <bpmn:outgoing>Flow_0124g4a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:textAnnotation id="TextAnnotation_077lfkg">
+      <bpmn:text>Fork to simulate peter case</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1bsuyxn" sourceRef="peterFork" targetRef="TextAnnotation_077lfkg" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="multiInstanceProcess">
+      <bpmndi:BPMNShape id="TextAnnotation_077lfkg_di" bpmnElement="TextAnnotation_077lfkg">
+        <dc:Bounds x="660" y="82" width="100" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0lfp9em_di" bpmnElement="SequenceFlow_0lfp9em">
+        <di:waypoint x="667" y="247" />
+        <di:waypoint x="747" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0rzup48_di" bpmnElement="SequenceFlow_0rzup48">
+        <di:waypoint x="797" y="247" />
+        <di:waypoint x="864" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_05xgu65_di" bpmnElement="SequenceFlow_05xgu65">
+        <di:waypoint x="772" y="247" />
+        <di:waypoint x="772" y="338" />
+        <di:waypoint x="889" y="338" />
+        <di:waypoint x="889" y="272" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_09ulah7_di" bpmnElement="SequenceFlow_09ulah7">
+        <di:waypoint x="772" y="222" />
+        <di:waypoint x="772" y="156" />
+        <di:waypoint x="889" y="156" />
+        <di:waypoint x="889" y="222" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lp9eqq_di" bpmnElement="Flow_1lp9eqq">
+        <di:waypoint x="914" y="247" />
+        <di:waypoint x="961" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16v2729_di" bpmnElement="Flow_16v2729">
+        <di:waypoint x="188" y="247" />
+        <di:waypoint x="268" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0pynv0i_di" bpmnElement="SequenceFlow_0pynv0i">
+        <di:waypoint x="1220" y="247" />
+        <di:waypoint x="1280" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0124g4a_di" bpmnElement="Flow_0124g4a">
+        <di:waypoint x="1061" y="247" />
+        <di:waypoint x="1120" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ParallelGateway_195w4tj_di" bpmnElement="peterFork">
+        <dc:Bounds x="747" y="222" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="715" y="276" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_00qjrsu_di" bpmnElement="peterJoin" isMarkerVisible="true">
+        <dc:Bounds x="864" y="222" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="827" y="277" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="152" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="159" y="272" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_19tlu7r_di" bpmnElement="reduceTask">
+        <dc:Bounds x="1120" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1kwl5m7_di" bpmnElement="end">
+        <dc:Bounds x="1280" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1288" y="272" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1bw5q3x_di" bpmnElement="peterTask">
+        <dc:Bounds x="961" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_0wql3ps_di" bpmnElement="filterMapSubProcess" isExpanded="true">
+        <dc:Bounds x="268" y="147" width="399" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_106qs66_di" bpmnElement="SequenceFlow_106qs66">
+        <di:waypoint x="595" y="243" />
+        <di:waypoint x="616" y="243" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1vxqfdy_di" bpmnElement="SequenceFlow_1vxqfdy">
+        <di:waypoint x="461" y="243" />
+        <di:waypoint x="495" y="243" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1denv3y_di" bpmnElement="SequenceFlow_1denv3y">
+        <di:waypoint x="325" y="243" />
+        <di:waypoint x="361" y="243" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_11uxmcd_di" bpmnElement="startFilterMap">
+        <dc:Bounds x="289" y="225" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="285" y="268" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0bw8npn_di" bpmnElement="filterTask">
+        <dc:Bounds x="361" y="203" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1c90zv4_di" bpmnElement="mapTask">
+        <dc:Bounds x="495" y="203" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1r5xmm2_di" bpmnElement="endFilterMap">
+        <dc:Bounds x="616" y="225" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612" y="268" width="47" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1bsuyxn_di" bpmnElement="Association_1bsuyxn">
+        <di:waypoint x="765" y="229" />
+        <di:waypoint x="719" y="122" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

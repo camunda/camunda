@@ -1,0 +1,34 @@
+# Additional values file to run on stable VMs
+# Scheduling on stable VMs is useful to observe long-term behavior, such as memory leaks, etc.
+# https://github.com/camunda/camunda-platform-helm/blob/22051fea1fbd831171cce58292ea53ee2593d8b4/charts/camunda-platform-8.7/values.yaml#L969-L972
+zeebe:
+  # Require n2-standard-4-stable to ensure the broker is the only application running on its node
+  nodeSelector:
+    component: benchmark-n2-standard-4-stable
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+  - key: nodepool
+    operator: Equal
+    value: n2-standard-4-stable
+    effect: NoSchedule
+
+# Support of 10.x camunda platform
+zeebeGateway:
+  # Prefer scheduling on any non-spot VM
+  # GKE does not let us add the cloud.google.com/gke-spot label manually, so when an instance is
+  # not a spot VM, that node label simply is not present. When it is a spot VM, then the value is
+  # set to true.
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: cloud.google.com/gke-spot
+                operator: DoesNotExist
+
+  tolerations:
+  - key: nodepool
+    operator: Equal
+    value: n2-standard-4-stable
+    effect: NoSchedule

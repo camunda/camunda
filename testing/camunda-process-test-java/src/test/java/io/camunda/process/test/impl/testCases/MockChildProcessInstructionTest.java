@@ -1,0 +1,162 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.testCases;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.MockChildProcessBuilder;
+import io.camunda.process.test.api.testCases.instructions.ImmutableMockChildProcessInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockChildProcessInstruction;
+import io.camunda.process.test.impl.testCases.instructions.MockChildProcessInstructionHandler;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class MockChildProcessInstructionTest {
+
+  private static final String CHILD_PROCESS_ID = "child-process";
+
+  @Mock private CamundaProcessTestContext processTestContext;
+
+  @Mock private MockChildProcessBuilder mockChildProcessBuilder;
+
+  @Mock private CamundaClient camundaClient;
+
+  @Mock private AssertionFacade assertionFacade;
+
+  private final MockChildProcessInstructionHandler instructionHandler =
+      new MockChildProcessInstructionHandler();
+
+  @Test
+  void shouldMockChildProcessWithoutVariables() {
+    // given
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
+
+    final MockChildProcessInstruction instruction =
+        ImmutableMockChildProcessInstruction.builder()
+            .processDefinitionId(CHILD_PROCESS_ID)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
+    verify(mockChildProcessBuilder).thenComplete(Collections.emptyMap());
+
+    verifyNoMoreInteractions(
+        processTestContext, mockChildProcessBuilder, camundaClient, assertionFacade);
+  }
+
+  @Test
+  void shouldMockChildProcessWithVariables() {
+    // given
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("amount", 100.0);
+    variables.put("currency", "USD");
+
+    final MockChildProcessInstruction instruction =
+        ImmutableMockChildProcessInstruction.builder()
+            .processDefinitionId(CHILD_PROCESS_ID)
+            .putAllVariables(variables)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
+    verify(mockChildProcessBuilder).thenComplete(variables);
+
+    verifyNoMoreInteractions(
+        processTestContext, mockChildProcessBuilder, camundaClient, assertionFacade);
+  }
+
+  @Test
+  void shouldMockChildProcessWithVersionTag() {
+    // given
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withVersionTag("1.7.1")).thenReturn(mockChildProcessBuilder);
+
+    final MockChildProcessInstruction instruction =
+        ImmutableMockChildProcessInstruction.builder()
+            .processDefinitionId(CHILD_PROCESS_ID)
+            .versionTag("1.7.1")
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
+    verify(mockChildProcessBuilder).withVersionTag("1.7.1");
+    verify(mockChildProcessBuilder).thenComplete(Collections.emptyMap());
+
+    verifyNoMoreInteractions(
+        processTestContext, mockChildProcessBuilder, camundaClient, assertionFacade);
+  }
+
+  @Test
+  void shouldMockChildProcessWithVersionTagAndVariables() {
+    // given
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withVersionTag("1.7.1")).thenReturn(mockChildProcessBuilder);
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("landingStatus", "nominal");
+
+    final MockChildProcessInstruction instruction =
+        ImmutableMockChildProcessInstruction.builder()
+            .processDefinitionId(CHILD_PROCESS_ID)
+            .versionTag("1.7.1")
+            .putAllVariables(variables)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
+    verify(mockChildProcessBuilder).withVersionTag("1.7.1");
+    verify(mockChildProcessBuilder).thenComplete(variables);
+
+    verifyNoMoreInteractions(
+        processTestContext, mockChildProcessBuilder, camundaClient, assertionFacade);
+  }
+}

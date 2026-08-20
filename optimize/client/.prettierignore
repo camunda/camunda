@@ -1,0 +1,7 @@
+node_modules
+.node
+public
+resources
+dist
+eslint.config.js
+index.html

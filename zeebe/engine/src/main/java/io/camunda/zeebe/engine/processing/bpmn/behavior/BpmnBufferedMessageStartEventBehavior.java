@@ -1,0 +1,493 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
+
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc.ReleaseTrigger;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
+import java.util.Optional;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class BpmnBufferedMessageStartEventBehavior {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(BpmnBufferedMessageStartEventBehavior.class);
+
+  private final MessageState messageState;
+  private final ProcessState processState;
+  private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
+  private final MessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
+  private final boolean businessIdUniquenessEnabled;
+
+  private final MessageCorrelateBehavior messageCorrelateBehavior;
+  private final InstantSource clock;
+  private final StateWriter stateWriter;
+  private final SubscriptionCommandSender commandSender;
+  private final MessageCorrelationMetrics metrics;
+
+  public BpmnBufferedMessageStartEventBehavior(
+      final ProcessingState processingState,
+      final KeyGenerator keyGenerator,
+      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
+      final Writers writers,
+      final SubscriptionCommandSender commandSender,
+      final RoutingInfo routingInfo,
+      final InstantSource clock,
+      final boolean businessIdUniquenessEnabled,
+      final MessageCorrelationMetrics metrics) {
+    messageState = processingState.getMessageState();
+    processState = processingState.getProcessState();
+    messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
+    elementInstanceState = processingState.getElementInstanceState();
+    bannedInstanceState = processingState.getBannedInstanceState();
+    messageStartProcessInstanceAskState = processingState.getMessageStartProcessInstanceAskState();
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    this.clock = clock;
+    stateWriter = writers.state();
+    this.commandSender = commandSender;
+    this.metrics = metrics;
+
+    final var eventHandle =
+        new EventHandle(
+            keyGenerator,
+            processingState.getEventScopeInstanceState(),
+            writers,
+            processState,
+            eventTriggerBehavior,
+            stateBehavior);
+
+    // Reuse the live-publish correlation logic for the buffered pick-up so a buffered message whose
+    // businessId belongs to another partition is re-routed through the cross-partition handshake
+    // instead of being started locally (which would bypass P_B's uniqueness check).
+    messageCorrelateBehavior =
+        new MessageCorrelateBehavior(
+            messageStartEventSubscriptionState,
+            messageState,
+            eventHandle,
+            writers.state(),
+            processingState.getMessageSubscriptionState(),
+            commandSender,
+            elementInstanceState,
+            bannedInstanceState,
+            businessIdUniquenessEnabled,
+            routingInfo,
+            processingState.getPartitionId(),
+            metrics);
+  }
+
+  public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
+    final var processInstanceKey = context.getProcessInstanceKey();
+    return Optional.ofNullable(messageState.getProcessInstanceCorrelationKey(processInstanceKey));
+  }
+
+  /**
+   * Pushes a cross-partition message-start holder's completion or termination to {@code P_K}: when
+   * the given root process instance was created as such a holder via the handshake — signalled by a
+   * holder-origin entry on {@code P_B} — this emits a {@link
+   * MessageStartCorrelationKeyLockReleaseIntent#PUSHED} event (which drops the origin entry) and
+   * sends the {@code RELEASE} to {@code P_K}, so {@code P_K} frees the correlation-key lock and
+   * picks up the next buffered message the moment the holder is gone, rather than waiting to be
+   * polled.
+   *
+   * <p>Driven purely by the origin entry's presence, and everything the {@code RELEASE} carries is
+   * read from it — never from the completing element's context, which may belong to a migrated
+   * version declaring a different process id (or no message start event at all). For every
+   * non-holder root instance the lookup is a single point read that misses via the column family's
+   * bloom filter.
+   */
+  public void pushCrossPartitionHolderCompletion(final long processInstanceKey) {
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(processInstanceKey);
+    if (origin == null) {
+      return;
+    }
+
+    // the origin getters are backed by the shared read buffer: copy before appending the event
+    final var bpmnProcessId = BufferUtil.cloneBuffer(origin.getBpmnProcessIdBuffer());
+    final var correlationKey = BufferUtil.cloneBuffer(origin.getCorrelationKeyBuffer());
+    final var tenantId = BufferUtil.bufferAsString(origin.getTenantIdBuffer());
+    // the buffered message key's partition bits address P_K; synthesize the RELEASE's routing
+    // envelope from them (raw key 0: it is a partition address, not an event or request key)
+    final long requestKey =
+        Protocol.encodePartitionId(Protocol.decodePartitionId(origin.getMessageKey()), 0L);
+
+    final var record = new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(requestKey);
+    final var holder =
+        record
+            .addHolder()
+            .setProcessInstanceKey(processInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setCorrelationKey(correlationKey)
+            .setTenantId(tenantId);
+
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);
+    commandSender.sendCorrelationKeyLockRelease(requestKey, holder);
+    metrics.lockReleaseSent(ReleaseTrigger.PUSH);
+
+    LOG.atDebug()
+        .addKeyValue("holderProcessInstanceKey", processInstanceKey)
+        .addKeyValue("targetPartition", Protocol.decodePartitionId(origin.getMessageKey()))
+        .addKeyValue("messageKey", origin.getMessageKey())
+        .log("Pushing correlation-key lock release to P_K");
+  }
+
+  /**
+   * Returns {@code true} when the completing/terminating instance holds a Business ID that the
+   * on-completion re-drive should act on — i.e. the feature is enabled and the instance carries a
+   * non-empty Business ID.
+   *
+   * <p>Unlike the correlation-key arm, the Business ID arm does <em>not</em> require the completing
+   * instance's own process to have a message start event. Business ID uniqueness is scoped per
+   * {@code (businessId, bpmnProcessId)} across versions, so the holder may be an older version — or
+   * a none-start instance created via {@code CreateProcessInstance} — whose version lacks a message
+   * start event, while the <em>latest</em> version that owns the buffered message-start
+   * subscription has one. Gating the re-drive on the holder's own {@code hasMessageStartEvent()}
+   * would strand such a buffered start until TTL (ADR 0002 D5).
+   */
+  public boolean shouldRedriveBlockedBusinessIdOnCompletion(final BpmnElementContext context) {
+    final var businessId = context.getBusinessId();
+    return businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty();
+  }
+
+  /**
+   * Picks the next eligible buffered message-start message for the given {@code (process,
+   * correlationKey)} and triggers it, if any.
+   *
+   * <p>Takes {@code bpmnProcessId} and {@code tenantId} directly rather than a {@link
+   * BpmnElementContext} so it can be driven from contexts that have no completing element instance
+   * to hand. Today the local process-correlation-key lock release runs on process-instance
+   * completion (which supplies a context); the cross-partition lock release runs from a poll
+   * response on {@code P_K} (which does not). Both need the same buffer pick-up behaviour.
+   */
+  public void correlateNextBufferedMessage(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey, final String tenantId) {
+
+    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+
+    findNextMessageToCorrelate(process, correlationKey).ifPresent(this::triggerCorrelation);
+  }
+
+  /**
+   * Picks up buffered message-starts unblocked by a holder instance completing/terminating, for
+   * both unblock reasons: the freed process-correlation-key lock and the freed Business ID. The
+   * holder's own correlation key and businessId are captured by the caller <em>before</em> the
+   * completion transition removes them.
+   *
+   * <p>A single completion may unblock a message in the correlation-key queue and, separately, a
+   * message held only on the Business ID (which may carry a different correlation key, or none).
+   * Both are re-driven. The Business ID hold of a freshly triggered start is applied via a
+   * follow-up command and is therefore <em>not</em> visible within this processing step, so this
+   * method must never trigger two starts carrying the same (freed) Business ID: when the
+   * correlation-key candidate also carries the freed Business ID, only the lower-message-key of the
+   * two is triggered; the other resumes on the next completion. Candidates carrying different
+   * Business IDs are independent and may both start.
+   */
+  public void correlateNextBufferedMessagesOnCompletion(
+      final BpmnElementContext context,
+      final DirectBuffer correlationKey,
+      final String businessId) {
+    final var bpmnProcessId = context.getBpmnProcessId();
+    final var tenantId = context.getTenantId();
+    if (businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty()) {
+      // M16: this holder just released the businessId uniqueness lock on P_B. Report the release so
+      // an ask blocked on it can measure its release-to-start latency; the recorder arms this only
+      // while an ask is actually blocked, so uncontended completions are ignored. Reported before
+      // the process-null guard below so the free is captured even when the latest version has since
+      // drained.
+      metrics.recordBusinessIdFreed(
+          businessId, BufferUtil.bufferAsString(bpmnProcessId), tenantId, clock.millis());
+    }
+    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+    if (process == null) {
+      return;
+    }
+
+    final var correlationKeyCandidate =
+        correlationKey != null
+            ? findNextMessageToCorrelate(process, correlationKey)
+            : Optional.<Correlation>empty();
+    final var businessIdCandidate =
+        businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty()
+            ? findNextMessageToCorrelateByBusinessId(
+                process, tenantId, BufferUtil.wrapString(businessId))
+            : Optional.<Correlation>empty();
+
+    if (correlationKeyCandidate.isEmpty()) {
+      if (businessIdCandidate.isPresent()) {
+        traceBufferedRedrive("business_id_only", correlationKeyCandidate, businessIdCandidate);
+        triggerCorrelation(businessIdCandidate.get());
+      }
+      return;
+    }
+    if (businessIdCandidate.isEmpty()) {
+      traceBufferedRedrive("correlation_key_only", correlationKeyCandidate, businessIdCandidate);
+      triggerCorrelation(correlationKeyCandidate.get());
+      return;
+    }
+
+    final var ck = correlationKeyCandidate.get();
+    final var bid = businessIdCandidate.get();
+    if (ck.messageKey == bid.messageKey) {
+      // both reasons resolve to the same buffered message: trigger it once
+      traceBufferedRedrive("same_message", correlationKeyCandidate, businessIdCandidate);
+      triggerCorrelation(ck);
+      return;
+    }
+
+    final var ckMessage = messageState.getMessage(ck.messageKey);
+    final var ckBusinessId =
+        ckMessage != null
+            ? BufferUtil.bufferAsString(ckMessage.getMessage().getBusinessIdBuffer())
+            : "";
+    if (businessId.equals(ckBusinessId)) {
+      // both candidates carry the freed Business ID — starting both would create two PIs holding
+      // it, since the first start's hold is not yet applied. Trigger only the earlier (FIFO) one.
+      traceBufferedRedrive("fifo_collision", correlationKeyCandidate, businessIdCandidate);
+      triggerCorrelation(ck.messageKey <= bid.messageKey ? ck : bid);
+    } else {
+      // different Business IDs (or the correlation-key candidate carries none) — safe to start both
+      traceBufferedRedrive("both_independent", correlationKeyCandidate, businessIdCandidate);
+      triggerCorrelation(ck);
+      triggerCorrelation(bid);
+    }
+  }
+
+  private void triggerCorrelation(final Correlation messageCorrelation) {
+    final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
+    final var message = storedMessage.getMessage();
+
+    // Route the picked-up message exactly as a fresh publish would be: a businessId that hashes to
+    // another partition is delegated to P_B via the cross-partition ask rather than started
+    // locally,
+    // so the buffered pick-up cannot bypass the uniqueness handshake or violate the invariant that
+    // every businessId-carrying PI lives on P_B.
+    messageCorrelateBehavior.triggerOrDelegateStartEvent(
+        new MessageData(
+            storedMessage.getMessageKey(),
+            message.getNameBuffer(),
+            message.getCorrelationKeyBuffer(),
+            message.getVariablesBuffer(),
+            message.getTenantId(),
+            message.getBusinessIdBuffer(),
+            message.getDeadline(),
+            message.getTimeToLive()),
+        messageCorrelation.subscriptionKey,
+        messageCorrelation.subscriptionRecord);
+  }
+
+  private void traceBufferedRedrive(
+      final String branch,
+      final Optional<Correlation> correlationKeyCandidate,
+      final Optional<Correlation> businessIdCandidate) {
+    if (!LOG.isTraceEnabled()) {
+      return;
+    }
+    LOG.atTrace()
+        .addKeyValue("branch", branch)
+        .addKeyValue(
+            "correlationKeyCandidate",
+            correlationKeyCandidate.map(candidate -> candidate.messageKey).orElse(-1L))
+        .addKeyValue(
+            "businessIdCandidate",
+            businessIdCandidate.map(candidate -> candidate.messageKey).orElse(-1L))
+        .log("Re-driving buffered message(s) on completion");
+  }
+
+  /**
+   * Business-ID analogue of {@link #findNextMessageToCorrelate}: picks the lowest-message-key
+   * eligible buffered message-start that carries {@code businessId} for one of {@code process}'s
+   * message-start subscriptions, applying the same eligibility guards. Mirrors the correlation-key
+   * scan but is driven by the Business-ID index (see ADR 0002 D5).
+   */
+  private Optional<Correlation> findNextMessageToCorrelateByBusinessId(
+      final DeployedProcess process, final String tenantId, final DirectBuffer businessId) {
+
+    final var messageCorrelation = new Correlation();
+    final var bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
+
+    messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
+        process.getKey(),
+        subscription -> {
+          final var messageName = subscription.getRecord().getMessageNameBuffer();
+
+          messageState.visitMessagesWithBusinessId(
+              tenantId,
+              businessId,
+              storedMessage -> {
+                // the Business-ID index is not name-scoped, so match the subscription's name here;
+                // otherwise apply the same guards as the correlation-key scan
+                if (BufferUtil.equals(storedMessage.getMessage().getNameBuffer(), messageName)
+                    && storedMessage.getMessage().getDeadline() > clock.millis()
+                    && !messageState.existMessageCorrelation(
+                        storedMessage.getMessageKey(), process.getBpmnProcessId())
+                    && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)
+                    && !hasLivePendingAsk(storedMessage.getMessageKey(), process.getKey())) {
+
+                  if (storedMessage.getMessageKey() < messageCorrelation.messageKey) {
+                    messageCorrelation.messageKey = storedMessage.getMessageKey();
+                    messageCorrelation.subscriptionKey = subscription.getKey();
+                    messageCorrelation.subscriptionRecord.wrap(subscription.getRecord());
+                  }
+
+                  return false;
+                }
+
+                return true;
+              });
+        });
+
+    if (messageCorrelation.subscriptionKey > 0) {
+      return Optional.of(messageCorrelation);
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<Correlation> findNextMessageToCorrelate(
+      final DeployedProcess process, final DirectBuffer correlationKey) {
+
+    final var messageCorrelation = new Correlation();
+    final var bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
+
+    messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
+        process.getKey(),
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var messageName = subscriptionRecord.getMessageNameBuffer();
+
+          messageState.visitMessages(
+              subscriptionRecord.getTenantId(),
+              messageName,
+              correlationKey,
+              storedMessage -> {
+                // correlate the first message with same correlation key that was not correlated
+                // yet. Additionally, when the feature is enabled, skip a buffered message whose
+                // businessId is currently taken by another active PI on this partition; the
+                // visitor returns true so the scan continues to subsequent buffered entries for
+                // the same correlation key — the queue itself is not stalled, only the skipped
+                // entry is left in the buffer until its TTL or until another K-keyed completion
+                // triggers a rescan.
+                //
+                // Also skip a message that has a live pending cross-partition ask: such a message
+                // is owned by the rejection-retry registry, which is its single retry owner. This
+                // correlation-key-keyed scan cannot retry it correctly anyway — the unblocking
+                // event (the holder PI completing) is businessId-scoped and may carry a different
+                // correlation key, or none at all, so it need not trigger a rescan for this
+                // correlation key. Picking the message up here would emit a redundant second ask
+                // (harmless under P_B's dedup, but wasteful); the registry's scheduler drives the
+                // retry under back-off until the message starts or its TTL expires.
+                if (storedMessage.getMessage().getDeadline() > clock.millis()
+                    && !messageState.existMessageCorrelation(
+                        storedMessage.getMessageKey(), process.getBpmnProcessId())
+                    && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)
+                    && !hasLivePendingAsk(storedMessage.getMessageKey(), process.getKey())) {
+
+                  // correlate the first published message across all message start events
+                  // - using the message key to decide which message was published before
+                  if (storedMessage.getMessageKey() < messageCorrelation.messageKey) {
+                    messageCorrelation.messageKey = storedMessage.getMessageKey();
+                    messageCorrelation.subscriptionKey = subscription.getKey();
+                    messageCorrelation.subscriptionRecord.wrap(subscription.getRecord());
+                  }
+
+                  return false;
+                }
+
+                return true;
+              });
+        });
+
+    if (messageCorrelation.subscriptionKey > 0) {
+      return Optional.of(messageCorrelation);
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns {@code true} when the feature is enabled, the buffered message carries a businessId,
+   * and an active root PI on this partition already holds that businessId for this process
+   * definition. See the class JavaDoc of {@link
+   * io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior} for the system-level
+   * retry/cross-partition narrative this predicate participates in.
+   */
+  private boolean isBusinessIdAlreadyHeld(
+      final StoredMessage storedMessage, final String bpmnProcessId) {
+    if (!businessIdUniquenessEnabled) {
+      return false;
+    }
+    final var businessId = storedMessage.getMessage().getBusinessIdBuffer();
+    if (businessId == null || businessId.capacity() == 0) {
+      return false;
+    }
+    return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        BufferUtil.bufferAsString(businessId),
+        bpmnProcessId,
+        storedMessage.getMessage().getTenantId(),
+        bannedInstanceState::isProcessInstanceBanned);
+  }
+
+  /**
+   * Returns {@code true} when a cross-partition message-start ask is still pending for this {@code
+   * (messageKey, processDefinitionKey)}. Such a message is owned by the rejection-retry registry,
+   * which re-sends the ask under back-off, so the correlation-key buffer scan must not pick it up.
+   *
+   * <p>This guard is not redundant with {@link #isBusinessIdAlreadyHeld}: that predicate only sees
+   * <em>local</em> active PIs, but the rejections this registry retries are precisely the ones it
+   * cannot see — a cross-partition {@code UNIQUENESS_REJECTED} (the holder lives on {@code P_B})
+   * and {@code NO_SUBSCRIPTION_REJECTED} (the businessId is not locally held at all) both leave
+   * {@code isBusinessIdAlreadyHeld} returning {@code false}. Without this guard the scan would
+   * re-pick such a message on the next same-correlation-key completion and emit a redundant second
+   * ask (harmless under {@code P_B}'s dedup, but wasteful). The registry's scheduler is the single
+   * owner of the retry.
+   *
+   * <p>The presence of a pending ask is respected regardless of {@code
+   * businessIdUniquenessEnabled}: a remote Business ID is delegated to {@code P_B} independently of
+   * the flag (see ADR 0002 D6), and {@code NO_SUBSCRIPTION_REJECTED} asks are retried whether or
+   * not uniqueness is enabled, so asks can be pending even when the flag is off.
+   */
+  private boolean hasLivePendingAsk(final long messageKey, final long processDefinitionKey) {
+    return messageStartProcessInstanceAskState.get(messageKey, processDefinitionKey) != null;
+  }
+
+  private static final class Correlation {
+    private long messageKey = Long.MAX_VALUE;
+    private long subscriptionKey = -1L;
+    private final MessageStartEventSubscriptionRecord subscriptionRecord =
+        new MessageStartEventSubscriptionRecord();
+  }
+}

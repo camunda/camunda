@@ -1,0 +1,43 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.link {
+  --border-width: #{layout.to-rem(2px)};
+  --active-border-width: #{layout.to-rem(4px)};
+  --link-height: #{layout.to-rem(40px)};
+  text-decoration: none;
+  color: var(--cds-text-primary);
+  height: var(--link-height);
+  display: block;
+  border-left: var(--active-border-width) solid transparent;
+  border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
+  padding: 0 var(--cds-spacing-04);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @include type.type-style('body-01');
+  line-height: var(--link-height);
+
+  &.active:not(:focus) {
+    border-left: var(--active-border-width) solid var(--cds-border-interactive);
+    background-color: var(--cds-background-selected);
+  }
+
+  &:focus {
+    outline: var(--border-width) solid var(--cds-focus);
+    outline-offset: calc(var(--border-width) * -1);
+  }
+
+  &:hover {
+    background-color: var(--cds-background-hover);
+  }
+}

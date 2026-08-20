@@ -1,0 +1,136 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.5.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "538c0e4"
+  },
+  "schemaVersion": 16,
+  "id": "decide-on-fraud-case-000115q",
+  "components": [
+    {
+      "text": "# Analyst - Decide on Fraud Case\nPlease decide on the following fraud case.",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_1bultam",
+        "columns": null
+      },
+      "id": "Field_1hp8d5s"
+    },
+    {
+      "label": "Dispute amount",
+      "type": "number",
+      "layout": {
+        "row": "Row_0gs6t3m",
+        "columns": null
+      },
+      "id": "Field_1by37ei",
+      "key": "disputeDetails.disputeAmount.amount",
+      "appearance": {
+        "suffixAdorner": "=disputeDetails.disputeAmount.currency"
+      }
+    },
+    {
+      "components": [
+        {
+          "label": "Customer message",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_0kkr9o4",
+            "columns": null
+          },
+          "id": "Field_1lmc52h",
+          "key": "customerProofText"
+        },
+        {
+          "label": "Image view",
+          "type": "image",
+          "layout": {
+            "row": "Row_05t7ams",
+            "columns": null
+          },
+          "id": "Field_1ogl5iz",
+          "source": "=customerProofImage.dataUri"
+        }
+      ],
+      "showOutline": true,
+      "label": "Customer proof",
+      "type": "group",
+      "layout": {
+        "row": "Row_1gvmq2w",
+        "columns": null
+      },
+      "id": "Field_1num67s"
+    },
+    {
+      "components": [
+        {
+          "label": "Vendor message",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_1b21vc9",
+            "columns": null
+          },
+          "id": "Field_1e24ode",
+          "key": "vendorProofText"
+        },
+        {
+          "label": "Image view",
+          "type": "image",
+          "layout": {
+            "row": "Row_0ob9o1k",
+            "columns": null
+          },
+          "id": "Field_110zfe4",
+          "source": "=vendorProofImage.dataUri"
+        }
+      ],
+      "showOutline": true,
+      "label": "Vendor proof",
+      "type": "group",
+      "layout": {
+        "row": "Row_1gvmq2w",
+        "columns": null
+      },
+      "id": "Field_09va0x3"
+    },
+    {
+      "text": "No fraud rating determined!",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_1owqk58",
+        "columns": null
+      },
+      "id": "Field_00fsuxy",
+      "conditional": {
+        "hide": "=isHighFraudRatingConfidence\n!= null"
+      }
+    },
+    {
+      "text": "=\"Fraud rating confidence: \" + if isHighFraudRatingConfidence then \"high\" else \"low\"",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_1e46ual",
+        "columns": null
+      },
+      "id": "Field_0qsjtyu",
+      "conditional": {
+        "hide": "=isHighFraudRatingConfidence\n= null"
+      }
+    },
+    {
+      "label": "Check if customer should receive refund",
+      "type": "checkbox",
+      "layout": {
+        "row": "Row_1c4vufk",
+        "columns": null
+      },
+      "id": "Field_1yxztfu",
+      "key": "isRefund"
+    }
+  ],
+  "type": "default"
+}

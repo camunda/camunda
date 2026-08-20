@@ -1,0 +1,5 @@
+camunda:
+  client:
+    zeebe:
+      defaults:
+        enabled: false

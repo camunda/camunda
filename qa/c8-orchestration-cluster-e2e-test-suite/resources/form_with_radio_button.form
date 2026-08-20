@@ -1,0 +1,22 @@
+{
+  "components": [
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        }
+      ],
+      "label": "Radio",
+      "type": "radio",
+      "layout": {
+        "row": "Row_1tcnaek",
+        "columns": null
+      },
+      "id": "Field_0r84gaq",
+      "key": "field_0koka0e"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_radio_button"
+}

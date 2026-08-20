@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      prefer-rest-over-grpc: true

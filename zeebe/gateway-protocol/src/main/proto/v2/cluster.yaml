@@ -1,0 +1,734 @@
+# Endpoint definitions
+
+paths:
+  /topology:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getTopology
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get cluster topology
+      description: Obtains the current topology of the cluster the gateway is part of.
+      responses:
+        "200":
+          description: Obtains the current topology of the cluster the gateway is part of.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopologyResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.5"
+
+  /status:
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getStatus
+      x-required-permissions: [ ]
+      # Public health-check endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
+      security: [ ]
+      summary: Get physical tenant status
+      description: >-
+        Checks the health status of the default physical tenant by verifying if there's at least one
+        partition of its group with a healthy leader. This endpoint is scoped to the default physical
+        tenant only: it is available unprefixed and at `/physical-tenants/default/v2/status`, but not
+        for any other physical tenant id (`/physical-tenants/{id}/v2/status` returns 404 for every
+        other id, whether or not a physical tenant with that id exists). On a cluster with only the
+        default physical tenant this endpoint answers the same question as `/cluster/v2/status`,
+        though not with the same response: `/cluster/v2/status` reports its status in a body and so
+        also distinguishes a degraded tenant from a healthy one.
+        Use `/cluster/v2/status` for the aggregated status of the whole cluster, or
+        `/physical-tenants/{id}/v2/topology` for the health of a specific physical tenant's
+        partitions.
+      responses:
+        "204":
+          description: The default physical tenant is UP and has at least one partition with a healthy leader.
+        "503":
+          description: The default physical tenant is DOWN and does not have any partition with a healthy leader.
+      x-added-in-version: "8.8"
+
+  /mode:
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: changeClusterMode
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: SYSTEM, permissionType: UPDATE }
+            - { resourceType: BACKUP, permissionType: RESTORE }
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Change cluster mode
+      description: >-
+        Transitions the cluster between processing and recovery mode. This is a non-blocking
+        operation: the request is acknowledged once the change has been accepted, before the
+        transition itself has completed. Entering recovery mode deactivates all partitions so
+        that only a restricted set of read-only operations remains available; exiting recovery
+        mode returns the cluster to normal processing. Returns the planned cluster change so its
+        progress can be monitored via the topology.
+      parameters:
+        - $ref: '#/components/parameters/ModeParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        "200":
+          description: The mode change request was accepted; returns the planned cluster changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterModeChangeResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+  /restore:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: restore
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: RESTORE }
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Restore from a backup
+      description: >-
+        Restores the cluster from a backup. The restore is described either by a single backup ID
+        or by a time range (`from`/`to`) that selects the backups to restore. This endpoint is only
+        accessible while the cluster is in recovery mode; requests are rejected otherwise. The
+        request is validated and acknowledged, but the restore itself is performed asynchronously.
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequest'
+        required: true
+      responses:
+        "202":
+          description: The restore request was accepted; returns the planned cluster changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterRestoreResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: The cluster is not in recovery mode, so the restore cannot be accepted.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: getRestoreStatus
+      x-required-permissions:
+        - { resourceType: BACKUP, permissionType: RESTORE }
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Get the status of the restore that is currently in progress
+      description: >-
+        Returns the status of the restore that is currently in progress, reported per broker and
+        per partition. There is at most one restore in flight at any time. Once the restore has
+        finished this endpoint returns 404; the per-partition detail is not retained after
+        completion.
+      responses:
+        "200":
+          description: The status of the restore that is currently in progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreStatusResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: No restore is currently in progress.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+## Schema definitions
+
+components:
+  parameters:
+    ModeParameter:
+      name: mode
+      in: query
+      required: true
+      description: The target cluster mode.
+      schema:
+        $ref: '#/components/schemas/Mode'
+    DryRunParameter:
+      name: dryRun
+      in: query
+      required: false
+      description: >-
+        If true, the requested change is only validated and the resulting plan is returned,
+        without applying it to the cluster.
+      schema:
+        type: boolean
+        default: false
+
+  schemas:
+    Mode:
+      description: The operating mode of a cluster's partitions.
+      type: string
+      enum:
+        - PROCESSING
+        - RECOVERING
+
+    TopologyResponse:
+      description: The response of a topology request.
+      type: object
+      required:
+        - brokers
+        - clusterSize
+        - partitionsCount
+        - replicationFactor
+        - gatewayVersion
+        - lastCompletedChangeId
+        - clusterId
+      properties:
+        brokers:
+          description: A list of brokers that are part of this cluster.
+          type: array
+          items:
+            $ref: '#/components/schemas/BrokerInfo'
+        clusterId:
+          description: The cluster Id.
+          type: string
+          nullable: true
+        clusterSize:
+          description: The number of brokers in the cluster.
+          type: integer
+          format: int32
+          example: 3
+        partitionsCount:
+          description: The number of partitions are spread across the cluster.
+          type: integer
+          format: int32
+          example: 3
+        replicationFactor:
+          description: The configured replication factor for this cluster.
+          type: integer
+          format: int32
+          example: 3
+        gatewayVersion:
+          description: The version of the Zeebe Gateway.
+          type: string
+          example: 8.8.0
+        lastCompletedChangeId:
+          description: ID of the last completed change
+          type: string
+          example: "-1"
+      x-properties-added-in-version:
+        - propertyName: brokers
+          addedInVersion: "8.6"
+        - propertyName: clusterId
+          addedInVersion: "8.9"
+        - propertyName: clusterSize
+          addedInVersion: "8.6"
+        - propertyName: partitionsCount
+          addedInVersion: "8.6"
+        - propertyName: replicationFactor
+          addedInVersion: "8.6"
+        - propertyName: gatewayVersion
+          addedInVersion: "8.6"
+        - propertyName: lastCompletedChangeId
+          addedInVersion: "8.8"
+
+    BrokerInfo:
+      description: Provides information on a broker node.
+      type: object
+      required:
+        - nodeId
+        - brokerId
+        - host
+        - port
+        - partitions
+        - version
+      properties:
+        nodeId:
+          description: >
+            The node ID for the broker. The uniqueness of this identifier depends
+            if the cluster is zone-aware or not.
+            - non zone-aware: (default) nodeId is unique across the cluster
+            - zone-aware:  (opt-in) nodeId is unique only within its zone.
+            If you are migrating to a zone aware cluster, you must use `brokerId` instead.
+            This property is deprecated, as it's been replaced by `brokerId`.
+
+          type: integer
+          format: int32
+          deprecated: true
+          example: 0
+
+        brokerId:
+          description: >
+            The unique (within a cluster) broker identifier. When the cluster
+            is not zoned, then it's a string that represents the nodeId (an integer).
+            When the cluster is zoned, instead, it's of the form "$zoneName_$nodeId",
+            providing uniqueness even across zones.
+          type: string
+          example: "eu-west-1_0"
+
+        host:
+          description: The hostname for reaching the broker.
+          type: string
+          example: zeebe-0.zeebe-broker-service.b7fd7aa3-b973-4128-8789-74cd2318992c-zeebe.svc.cluster.local
+        port:
+          description: The port for reaching the broker.
+          type: integer
+          format: int32
+          example: 26501
+        partitions:
+          description: A list of partitions managed or replicated on this broker.
+          type: array
+          items:
+            $ref: '#/components/schemas/Partition'
+        version:
+          description: The broker version.
+          type: string
+          example: 8.8.0
+      x-properties-added-in-version:
+        - propertyName: "brokerId"
+          addedInVersion: "8.10"
+
+
+    Partition:
+      description: Provides information on a partition within a broker node.
+      type: object
+      required:
+        - partitionId
+        - role
+        - health
+        - state
+      properties:
+        partitionId:
+          description: The unique ID of this partition.
+          type: integer
+          format: int32
+          example: 1
+        role:
+          description: Describes the Raft role of the broker for a given partition.
+          type: string
+          example: leader
+          enum:
+            - leader
+            - follower
+            - inactive
+        health:
+          description: Describes the current health of the partition.
+          type: string
+          example: healthy
+          enum:
+            - healthy
+            - unhealthy
+            - dead
+        state:
+          description: >
+            Describes the current operational state of the partition within the cluster
+            configuration.
+          type: string
+          example: active
+          enum:
+            - unknown
+            - joining
+            - active
+            - leaving
+            - recovering
+      x-properties-added-in-version:
+        - propertyName: "partitionId"
+          addedInVersion: "8.6"
+        - propertyName: "role"
+          addedInVersion: "8.6"
+        - propertyName: "health"
+          addedInVersion: "8.6"
+        - propertyName: state
+          addedInVersion: "8.10"
+
+    ClusterModeChangeResponse:
+      description: The planned changes resulting from a cluster mode transition request.
+      type: object
+      required:
+        - changeId
+        - plannedChanges
+      properties:
+        changeId:
+          description: The ID of the cluster change that was triggered by the request.
+          type: string
+          example: "7"
+        plannedChanges:
+          description: >-
+            The operations that will be applied to complete the change, grouped by the physical
+            tenant they belong to. Groups are transitioned in parallel; the operations within a
+            group are applied in the given order.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterModeChangePlannedChange'
+
+    ClusterModeChangePlannedChange:
+      description: The operations of a cluster mode change that apply to one physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - operations
+      properties:
+        physicalTenantId:
+          description: >-
+            The physical tenant the operations apply to; null for operations that are not scoped to
+            a single physical tenant, such as broker lifecycle operations.
+          type: string
+          nullable: true
+          example: default
+        operations:
+          description: The ordered list of operations that will be applied to the physical tenant.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterModeChangeOperation'
+
+    ClusterModeChangeOperation:
+      description: A single operation that is part of a cluster mode change.
+      type: object
+      required:
+        - operation
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: ModeChangeOperation
+        mode:
+          description: The target mode of the operation, if applicable.
+          type: string
+          nullable: true
+          example: RECOVERING
+
+    ClusterRestoreResponse:
+      description: The planned changes resulting from a restore request.
+      type: object
+      required:
+        - changeId
+        - plannedChanges
+      properties:
+        changeId:
+          description: The ID of the cluster change that was triggered by the request.
+          type: string
+          example: "7"
+        plannedChanges:
+          description: >-
+            The operations that will be applied to complete the restore, grouped by the physical
+            tenant they belong to. Groups are restored in parallel; the operations within a group
+            are applied in the given order.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRestorePlannedChange'
+
+    ClusterRestorePlannedChange:
+      description: The operations of a restore that apply to one physical tenant.
+      type: object
+      required:
+        - physicalTenantId
+        - operations
+      properties:
+        physicalTenantId:
+          description: >-
+            The physical tenant the operations apply to; null for operations that are not scoped to
+            a single physical tenant, such as broker lifecycle operations.
+          type: string
+          nullable: true
+          example: default
+        operations:
+          description: The ordered list of operations that will be applied to the physical tenant.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRestoreOperation'
+
+    ClusterRestoreOperation:
+      description: >-
+        A single operation that is part of a restore. Every operation names the broker that applies
+        it; the rest of its properties depend on what the operation does, so it is reported as one
+        of the variants below, distinguished by `operation`. A property a variant does not declare
+        is absent from the response rather than reported as null.
+      discriminator:
+        propertyName: operation
+        mapping:
+          PartitionPreRestoreOperation: '#/components/schemas/ClusterRestorePartitionOperation'
+          PartitionRestoreOperation: '#/components/schemas/ClusterRestorePartitionRestoreOperation'
+          ModeChangeOperation: '#/components/schemas/ClusterRestoreModeChangeOperation'
+          AwaitModeChangeOperation: '#/components/schemas/ClusterRestoreAwaitModeChangeOperation'
+          UpdateIncarnationNumberOperation: '#/components/schemas/ClusterRestoreBrokerOperation'
+      oneOf:
+        - $ref: '#/components/schemas/ClusterRestoreBrokerOperation'
+        - $ref: '#/components/schemas/ClusterRestorePartitionOperation'
+        - $ref: '#/components/schemas/ClusterRestorePartitionRestoreOperation'
+        - $ref: '#/components/schemas/ClusterRestoreModeChangeOperation'
+        - $ref: '#/components/schemas/ClusterRestoreAwaitModeChangeOperation'
+
+    ClusterRestoreBrokerOperation:
+      description: >-
+        A restore operation that applies to a broker as a whole, such as the one that updates its
+        incarnation number.
+      type: object
+      required:
+        - operation
+        - brokerId
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: UpdateIncarnationNumberOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+
+    ClusterRestorePartitionOperation:
+      description: >-
+        A restore operation that targets a single partition without restoring it, such as the one
+        that prepares the partition for its restore.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - partitionId
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: PartitionPreRestoreOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionId:
+          description: The partition the operation applies to.
+          type: integer
+          format: int32
+          example: 1
+
+    ClusterRestorePartitionRestoreOperation:
+      description: The operation that restores a single partition from the backups resolved for it.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - partitionId
+        - backupIds
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: PartitionRestoreOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionId:
+          description: The partition the operation restores.
+          type: integer
+          format: int32
+          example: 1
+        backupIds:
+          description: The IDs of the backups the partition is restored from.
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [ 100, 101 ]
+
+    ClusterRestoreModeChangeOperation:
+      description: The operation that transitions a broker to a mode once its partitions are restored.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: ModeChangeOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        mode:
+          description: The mode the broker is transitioned to.
+          type: string
+          example: PROCESSING
+
+    ClusterRestoreAwaitModeChangeOperation:
+      description: The operation that awaits the transition of a broker to a mode.
+      type: object
+      required:
+        - operation
+        - brokerId
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: AwaitModeChangeOperation
+        brokerId:
+          description: The ID of the broker that applies the operation, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        mode:
+          description: The mode the broker is awaited to have transitioned to.
+          type: string
+          example: PROCESSING
+
+    RestoreRequest:
+      description: >-
+        Describes a restore request. Provide either a list of backup IDs or a time range
+        (`from`/`to`) that selects the backups to restore; the two are mutually exclusive.
+      type: object
+      properties:
+        from:
+          description: The start of the time range to restore from, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:00:00Z"
+        to:
+          description: The end of the time range to restore from, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T12:00:00Z"
+        backupIds:
+          description: The IDs of the backups to restore from, one per partition.
+          type: array
+          nullable: true
+          items:
+            type: integer
+            format: int64
+          example: [ 100, 101 ]
+
+    RestoreStatusResponse:
+      description: The status of the restore that is currently in progress.
+      type: object
+      required:
+        - status
+        - changeId
+        - startedAt
+        - brokers
+      properties:
+        status:
+          description: The overall status of the restore.
+          type: string
+          enum:
+            - IN_PROGRESS
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+          example: IN_PROGRESS
+        changeId:
+          description: The ID of the cluster change that performs the restore.
+          type: string
+          example: "-2"
+        startedAt:
+          description: The time the restore started, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:00:00Z"
+        brokers:
+          description: The per-broker restore status.
+          type: array
+          items:
+            $ref: '#/components/schemas/RestoreBrokerStatus'
+
+    RestoreBrokerStatus:
+      description: The restore status of a single broker.
+      type: object
+      required:
+        - brokerId
+        - partitionsRestored
+        - partitionsToRestore
+        - partitions
+      properties:
+        brokerId:
+          description: The ID of the broker, including its zone if it belongs to one.
+          type: string
+          example: "1"
+        partitionsRestored:
+          description: The number of the broker's partitions that have been restored so far.
+          type: integer
+          format: int32
+          example: 1
+        partitionsToRestore:
+          description: The total number of the broker's partitions to restore.
+          type: integer
+          format: int32
+          example: 3
+        partitions:
+          description: The per-partition restore status for this broker.
+          type: array
+          items:
+            $ref: '#/components/schemas/RestorePartitionStatus'
+
+    RestorePartitionStatus:
+      description: The restore status of a single partition on a broker.
+      type: object
+      required:
+        - partitionId
+        - state
+        - backupIds
+        - completedAt
+      properties:
+        partitionId:
+          description: The ID of the partition.
+          type: integer
+          format: int32
+          example: 1
+        state:
+          description: The restore state of the partition.
+          type: string
+          enum:
+            - PENDING
+            - RESTORING
+            - RESTORED
+          example: RESTORING
+        backupIds:
+          description: The IDs of the backups this partition is restored from.
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [ 100, 101 ]
+        completedAt:
+          description: >-
+            The time the partition was restored, as an ISO 8601 timestamp; null unless the partition
+            state is `RESTORED`.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:02:00Z"

@@ -1,0 +1,513 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect, test} from '@playwright/test';
+import {
+  cancelProcessInstance,
+  createInstances,
+  deploy,
+} from '../../../../utils/zeebeClient';
+import {
+  assertBadRequest,
+  assertStatusCode,
+  assertUnauthorizedRequest,
+  buildUrl,
+  jsonHeaders,
+} from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {APIRequestContext} from 'playwright-core';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {DeployResourceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {
+  expectBatchState,
+  findUserTask,
+  postMigrationAssertionOptions,
+  searchElementInstanceByElementIdAndState,
+} from '@requestHelpers';
+import {validateResponse} from 'json-body-assertions';
+
+/* eslint-disable playwright/expect-expect */
+test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
+  const instanceKeys: string[] = [];
+  // Captured once in beforeAll and shared across all tests — avoids
+  // re-deploying v2 on every prepareTestCases call which would create
+  // a new deployment version each time and add noise to the shared cluster.
+  let sharedTargetProcessDefinitionKey: string;
+
+  test.beforeAll(async () => {
+    await deploy(['./resources/test_migration_process_v1.bpmn']);
+    const v2Result: DeployResourceResponse = await deploy([
+      './resources/test_migration_process_v2.bpmn',
+    ]);
+    sharedTargetProcessDefinitionKey =
+      v2Result.processes[0].processDefinitionKey;
+  });
+
+  test.afterAll(async () => {
+    for (const key of instanceKeys) {
+      await cancelProcessInstance(key).catch(() => {
+        // ignore if already completed
+      });
+    }
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - Unauthorized', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-instances/migration'), {
+      data: {
+        processInstanceKeys: [2251799813685249, 2251799813685250],
+        migrationPlan: {
+          targetProcessDefinitionKey: '2251799813738499',
+          mappingInstructions: [
+            {
+              sourceElementId: 'test_migration_api_user_task',
+              targetElementId: 'do_something_else',
+            },
+          ],
+        },
+      },
+    });
+
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - With No Filter - Bad Request', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-instances/migration'), {
+      headers: jsonHeaders(),
+      data: {
+        migrationPlan: {
+          targetProcessDefinitionKey: '2251799813738499',
+          mappingInstructions: [
+            {
+              sourceElementId: 'test_migration_api_user_task',
+              targetElementId: 'do_something_else',
+            },
+          ],
+        },
+      },
+    });
+
+    await assertBadRequest(res, 'No filter provided.', 'INVALID_ARGUMENT');
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - With No Migration Instructions - Bad Request', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-instances/migration'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          hasIncident: true,
+        },
+      },
+    });
+
+    await assertBadRequest(
+      res,
+      'No migrationPlan provided.',
+      'INVALID_ARGUMENT',
+    );
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - With Invalid Filter - Bad Request', async ({
+    request,
+  }) => {
+    const res = await request.post(buildUrl('/process-instances/migration'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          invalidField: 'invalidValue',
+        },
+        migrationPlan: {
+          targetProcessDefinitionKey: '2251799813738499',
+          mappingInstructions: [
+            {
+              sourceElementId: 'test_migration_api_user_task',
+              targetElementId: 'do_something_else',
+            },
+          ],
+        },
+      },
+    });
+    await assertBadRequest(
+      res,
+      'Request property [filter.invalidField] cannot be parsed',
+    );
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - Success', async ({
+    request,
+  }) => {
+    const localState = await prepareTestCases(request);
+
+    await test.step('Create batch migration operation', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/process-instances/migration'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                processInstanceKey: {
+                  $in: [
+                    localState.processInstanceKey1,
+                    localState.processInstanceKey2,
+                  ],
+                },
+              },
+              migrationPlan: {
+                targetProcessDefinitionKey:
+                  localState.targetProcessDefinitionKey,
+                mappingInstructions: [
+                  {
+                    sourceElementId: 'test_migration_api_user_task',
+                    targetElementId: 'do_something_else',
+                  },
+                ],
+              },
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
+        expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
+    });
+
+    await test.step('Verify both instances migrated to target task', async () => {
+      await verifyBothInstancesMigratedToElement(
+        request,
+        localState.processInstanceKey1,
+        localState.processInstanceKey2,
+        'do_something_else',
+      );
+    });
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - With Multiple Filters', async ({
+    request,
+  }) => {
+    const localState = await prepareTestCases(request, undefined, {
+      migrateMe: true,
+    });
+
+    await test.step('Wait until instance is searchable by the migrateMe variable', async () => {
+      // The migration batch evaluates its filter against secondary storage at
+      // creation time. If the migrateMe variable has not been indexed yet, the
+      // batch matches zero instances, completes empty, and the instance is
+      // never migrated. Gate on the variable being queryable via the same
+      // filter the batch will use before issuing the migration.
+      await expect(async () => {
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey2,
+              variables: [
+                {
+                  name: 'migrateMe',
+                  value: 'true',
+                },
+              ],
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const json = await res.json();
+        expect(json.items).toHaveLength(1);
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Migrate only instance with specific variable', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/process-instances/migration'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                processInstanceKey: localState.processInstanceKey2,
+                variables: [
+                  {
+                    name: 'migrateMe',
+                    value: 'true',
+                  },
+                ],
+              },
+              migrationPlan: {
+                targetProcessDefinitionKey:
+                  localState.targetProcessDefinitionKey,
+                mappingInstructions: [
+                  {
+                    sourceElementId: 'test_migration_api_user_task',
+                    targetElementId: 'do_something_else',
+                  },
+                ],
+              },
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
+        expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
+    });
+
+    await test.step('Verify only second instance migrated', async () => {
+      // Instance 1 was filtered out — still at the source element.
+      await findUserTask(
+        request,
+        localState.processInstanceKey1,
+        'CREATED',
+        'test_migration_api_user_task',
+      );
+      // Instance 2 was migrated — first confirm via element-instance (fast),
+      // then verify the user-task API reflects the updated elementId.
+      await searchElementInstanceByElementIdAndState(
+        request,
+        localState.processInstanceKey2,
+        'do_something_else',
+        'ACTIVE',
+      );
+      await findUserTask(
+        request,
+        localState.processInstanceKey2,
+        'CREATED',
+        'do_something_else',
+        postMigrationAssertionOptions,
+      );
+    });
+  });
+
+  test('Create a Batch Operation to Migrate Process Instances - With Or Filters', async ({
+    request,
+  }) => {
+    const localState = await prepareTestCases(
+      request,
+      {type: 'A'},
+      {
+        type: 'B',
+      },
+    );
+
+    await test.step('Migrate instances using OR filters', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/process-instances/migration'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                $or: [
+                  {
+                    processInstanceKey: localState.processInstanceKey1,
+                  },
+                  {
+                    processInstanceKey: localState.processInstanceKey2,
+                  },
+                ],
+              },
+              migrationPlan: {
+                targetProcessDefinitionKey:
+                  localState.targetProcessDefinitionKey,
+                mappingInstructions: [
+                  {
+                    sourceElementId: 'test_migration_api_user_task',
+                    targetElementId: 'do_something_else',
+                  },
+                ],
+              },
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
+        expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
+    });
+
+    await test.step('Verify both instances migrated', async () => {
+      await verifyBothInstancesMigratedToElement(
+        request,
+        localState.processInstanceKey1,
+        localState.processInstanceKey2,
+        'do_something_else',
+      );
+    });
+  });
+
+  // Used before migration to confirm instances are at the source element via
+  // user-task search (only called with defaultAssertionOptions / 30s budget).
+  const verifyBothInstancesAreAtElementId = async (
+    request: APIRequestContext,
+    processInstanceKey1: string,
+    processInstanceKey2: string,
+    elementId: string,
+    assertionOptions = defaultAssertionOptions,
+  ) => {
+    await findUserTask(
+      request,
+      processInstanceKey1,
+      'CREATED',
+      elementId,
+      assertionOptions,
+    );
+
+    await findUserTask(
+      request,
+      processInstanceKey2,
+      'CREATED',
+      elementId,
+      assertionOptions,
+    );
+  };
+
+  // Used after migration to confirm instances reached the target element.
+  // Two-phase: element-instance search first (engine-level, fast) then
+  // user-task search (secondary-storage). Per the migration docs, the existing
+  // user task is preserved through migration with only its elementId updated —
+  // it is NOT deleted and recreated — so verifying the user-task API reflects
+  // the new elementId is a valid assertion. Gating on element-instance first
+  // means the secondary-storage pipeline is already partially caught up, so
+  // a 120s budget for the user-task check is sufficient and stays within the
+  // 2-minute limit.
+  const verifyBothInstancesMigratedToElement = async (
+    request: APIRequestContext,
+    processInstanceKey1: string,
+    processInstanceKey2: string,
+    elementId: string,
+  ) => {
+    await searchElementInstanceByElementIdAndState(
+      request,
+      processInstanceKey1,
+      elementId,
+      'ACTIVE',
+    );
+    await searchElementInstanceByElementIdAndState(
+      request,
+      processInstanceKey2,
+      elementId,
+      'ACTIVE',
+    );
+    await findUserTask(
+      request,
+      processInstanceKey1,
+      'CREATED',
+      elementId,
+      postMigrationAssertionOptions,
+    );
+    await findUserTask(
+      request,
+      processInstanceKey2,
+      'CREATED',
+      elementId,
+      postMigrationAssertionOptions,
+    );
+  };
+
+  const prepareTestCases = async (
+    request: APIRequestContext,
+    variableProcess1?: JSONDoc,
+    variableProcess2?: JSONDoc,
+  ) => {
+    const localState: Record<string, string> = {
+      processInstanceKey1: '',
+      processInstanceKey2: '',
+      targetProcessDefinitionKey: '',
+    };
+
+    await test.step('Create two process instances of version 1', async () => {
+      const instances1 = await createInstances(
+        'test_migration_process',
+        1,
+        1,
+        variableProcess1,
+      );
+      localState.processInstanceKey1 = instances1[0].processInstanceKey;
+      instanceKeys.push(instances1[0].processInstanceKey);
+
+      const instances2 = await createInstances(
+        'test_migration_process',
+        1,
+        1,
+        variableProcess2,
+      );
+      localState.processInstanceKey2 = instances2[0].processInstanceKey;
+      instanceKeys.push(instances2[0].processInstanceKey);
+    });
+
+    await test.step('Verify both instances are at the source task', async () => {
+      await verifyBothInstancesAreAtElementId(
+        request,
+        localState.processInstanceKey1,
+        localState.processInstanceKey2,
+        'test_migration_api_user_task',
+      );
+    });
+
+    await test.step('Use pre-deployed version 2 process definition key', async () => {
+      localState.targetProcessDefinitionKey = sharedTargetProcessDefinitionKey;
+    });
+
+    return localState;
+  };
+});

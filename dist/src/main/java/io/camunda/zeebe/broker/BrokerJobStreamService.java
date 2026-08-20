@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker;
+
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint;
+import io.camunda.zeebe.transport.stream.api.ClientStream;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component(value = "jobStreamService")
+final class BrokerJobStreamService implements JobStreamEndpoint.Service {
+  private final SpringBrokerBridge bridge;
+
+  @Autowired
+  public BrokerJobStreamService(final SpringBrokerBridge bridge) {
+    this.bridge = bridge;
+  }
+
+  @Override
+  public Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams() {
+    return bridge
+        .getJobStreamServices()
+        .map(
+            services ->
+                services.stream()
+                    .flatMap(svc -> svc.remoteStreamService().streams().stream())
+                    .toList())
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams(
+      final Optional<String> physicalTenantId) {
+    if (physicalTenantId.isEmpty()) {
+      return remoteJobStreams();
+    }
+    return bridge
+        .getJobStreamService(physicalTenantId.get())
+        .map(svc -> svc.remoteStreamService().streams())
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Collection<ClientStream<JobActivationProperties>> clientJobStreams() {
+    return bridge
+        .getJobStreamClient()
+        .map(JobStreamClient::list)
+        .map(ActorFuture::join)
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Collection<ClientStream<JobActivationProperties>> clientJobStreams(
+      final Optional<String> physicalTenantId) {
+    if (physicalTenantId.isEmpty()) {
+      return clientJobStreams();
+    }
+    final var tenantId = physicalTenantId.get();
+    return clientJobStreams().stream()
+        .filter(stream -> tenantId.equals(stream.physicalTenantId()))
+        .toList();
+  }
+}

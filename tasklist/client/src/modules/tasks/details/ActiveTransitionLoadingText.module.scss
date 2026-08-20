@@ -1,0 +1,22 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+
+.container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: var(--cds-spacing-03);
+}
+
+.message {
+  @include type.type-style('label-02');
+  color: var(--cds-text-secondary);
+}

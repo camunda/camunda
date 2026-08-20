@@ -1,0 +1,111 @@
+name: Compose
+description: |
+  Compose Wrapper for elasticsearch container
+inputs:
+  compose_file:
+    description: "Full path to the compose file"
+    required: true
+  project_name:
+    description: "Project name to allow running the same file multiple times"
+    required: true
+  additional_flags:
+    description: "Additional flags to pass to the compose command"
+    required: false
+  services:
+    description: "List of (space separated) services to actually run"
+    required: false
+    default: ""
+  timeout:
+    description: "Timeout for the healthcheck (in seconds)"
+    required: false
+    default: "300"
+  max_attempts:
+    description: "Maximum number of image-pull attempts before giving up"
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: "Seconds to wait between pull retry attempts"
+    required: false
+    default: "15"
+  startup_check:
+    description: "How to determine if the service(s) are up and running (healthcheck or wait)"
+    required: false
+    default: "healthcheck"
+runs:
+  using: composite
+  steps:
+    - name: Validate startup_check input
+      if: ${{ inputs.startup_check != 'healthcheck' && inputs.startup_check != 'wait' }}
+      shell: bash
+      env:
+        STARTUP_CHECK: ${{ inputs.startup_check }}
+      run: |
+        echo "::error::startup_check must be 'healthcheck' or 'wait', got '${STARTUP_CHECK}'"
+        exit 1
+
+    # annoyingly we need to have the services in two different formats
+    - name: Validate services
+      shell: bash
+      env:
+        SERVICES: ${{ inputs.services }}
+      run: |
+        if [[ "${SERVICES}" =~ [^a-zA-Z0-9\ _-] ]]; then
+          echo "::error::services input contains invalid characters (only alphanumeric, spaces, hyphens, and underscores are allowed)"
+          exit 1
+        fi
+        echo "COMPOSE_PULL_SERVICES=${SERVICES}" >> "$GITHUB_ENV"
+        services=$(echo "${SERVICES}" | tr -s '[:space:]' '\n' | sed '/^$/d')
+        if grep -qx "EOF" <<< "${services}"; then
+          echo "::error::services input must not contain 'EOF'"
+          exit 1
+        fi
+        {
+          echo "COMPOSE_UP_SERVICES<<EOF"
+          echo "${services}"
+          echo "EOF"
+        } >> "$GITHUB_ENV"
+
+    # Pre-pull images with a retry so a transient registry hiccup (e.g. Docker Hub
+    # 502s, see INC-6810) does not fail the whole job. Once images are cached locally,
+    # the compose "up" below does not need to hit the registry again.
+    - name: Pull ${{ inputs.project_name }} images with retry
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: 10
+        shell: bash
+        command: |
+          docker compose -f "${{ inputs.compose_file }}" \
+            --project-name "${{ inputs.project_name }}" ${{ inputs.additional_flags }} pull ${{ env.COMPOSE_PULL_SERVICES }}
+
+    - name: Run ${{ inputs.project_name }} compose
+      id: compose_up
+      uses: hoverkraft-tech/compose-action@ee6af68587292d72db67743171809c19787df4c9 # v3.1.0
+      with:
+        compose-file: |
+          ${{ inputs.compose_file }}
+        compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
+        up-flags: "${{ inputs.startup_check == 'wait' && format('--wait --wait-timeout {0}', inputs.timeout) || '' }}"
+        services: ${{ env.COMPOSE_UP_SERVICES }}
+
+    - name: Dump compose logs on failure
+      if: ${{ failure() && steps.compose_up.outcome == 'failure' }}
+      shell: bash
+      run: |
+        docker compose -f "${{ inputs.compose_file }}" --project-name "${{ inputs.project_name }}" logs
+
+    - name: Short sleep to let it startup
+      if: ${{ inputs.startup_check == 'healthcheck' }}
+      shell: bash
+      run: sleep 3
+
+    - name: Check if service is healthy
+      if: ${{ inputs.startup_check == 'healthcheck' }}
+      shell: bash
+      run: |
+        ${{ github.action_path }}/healthy.sh
+      env:
+        FILE: ${{ inputs.compose_file }}
+        TIMEOUT: ${{ inputs.timeout }}
+        COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"

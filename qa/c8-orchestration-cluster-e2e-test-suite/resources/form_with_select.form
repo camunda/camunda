@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        }
+      ],
+      "label": "Select",
+      "type": "select",
+      "layout": {
+        "row": "Row_09kimyg",
+        "columns": null
+      },
+      "id": "Field_04maj5g",
+      "key": "field_12k11wu",
+      "defaultValue": "&lt;none&gt;",
+      "searchable": false
+    }
+  ],
+  "type": "default",
+  "id": "form_with_select"
+}

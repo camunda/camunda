@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    network:
+      host: 1.1.1.1

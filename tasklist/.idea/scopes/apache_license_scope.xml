@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="apache-license-scope" pattern="file[zeebe-client-java]:*/||file[zeebe-exporter-api]:*/||file[zeebe-protocol]:*/||file[zeebe-gateway-protocol-impl]:*/||file[zeebe-bpmn-model]:*/" />
+</component>

@@ -1,0 +1,16 @@
+zeebe:
+  broker:
+    experimental:
+      continuousBackups: true
+      versionCheckRestrictionEnabled: false
+      enablePriorityElection: true
+      raft:
+        requestTimeout: 10s
+        maxQuorumResponseTimeout: 8s
+        minStepDownFailureCount: 5
+        preferSnapshotReplicationThreshold: 500
+      queryApi:
+        enabled: true
+      consistencyChecks:
+        enablePreconditions: true
+        enableForeignKeyChecks: true

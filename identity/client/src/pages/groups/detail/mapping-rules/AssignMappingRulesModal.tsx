@@ -1,0 +1,186 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC, useCallback, useEffect, useState } from "react";
+import { Tag } from "@carbon/react";
+import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import useTranslate from "src/utility/localization";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
+import { groupMutations } from "src/utility/api/groups/mutations";
+import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import styled from "styled-components";
+import DropdownSearch from "src/components/form/DropdownSearch";
+import FormModal from "src/components/modal/FormModal";
+import { useNotifications } from "src/components/notifications";
+import type { Group, MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
+
+const SelectedMappingRules = styled.div`
+  margin-top: 0;
+`;
+
+const AssignMappingRulesModal: FC<
+  UseEntityModalCustomProps<
+    { id: Group["groupId"] },
+    { assignedMappingRules: MappingRule[] }
+  >
+> = ({ entity: group, assignedMappingRules, onSuccess, open, onClose }) => {
+  const { t, Translate } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
+  const [selectedMappingRules, setSelectedMappingRules] = useState<
+    MappingRule[]
+  >([]);
+  const [loadingAssignMappingRule, setLoadingAssignMappingRule] =
+    useState(false);
+
+  const [mappingRuleFilter, setMappingRuleFilter] = useState({});
+  const handleMappingRuleFilterChange = useCallback((search: string) => {
+    if (!search.trim()) {
+      setMappingRuleFilter({});
+      return;
+    }
+    setMappingRuleFilter({ filter: { name: search } });
+  }, []);
+
+  const {
+    data: mappingRuleSearchResults,
+    isLoading: loading,
+    refetch: reload,
+    error,
+  } = useQuery(mappingRuleQueries.search(mappingRuleFilter));
+
+  const unassignedFilter = useCallback(
+    ({ mappingRuleId }: MappingRule) =>
+      !assignedMappingRules.some(
+        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+      ) &&
+      !selectedMappingRules.some(
+        (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+      ),
+    [assignedMappingRules, selectedMappingRules],
+  );
+
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignMappingRule } = useMutation(
+    groupMutations.assignMappingRule(qc),
+  );
+
+  const onSelectMappingRule = (mappingRule: MappingRule) => {
+    setSelectedMappingRules([...selectedMappingRules, mappingRule]);
+  };
+
+  const onUnselectMappingRule =
+    ({ mappingRuleId }: MappingRule) =>
+    () => {
+      setSelectedMappingRules(
+        selectedMappingRules.filter(
+          (mappingRule) => mappingRule.mappingRuleId !== mappingRuleId,
+        ),
+      );
+    };
+
+  const canSubmit = group && selectedMappingRules.length;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    setLoadingAssignMappingRule(true);
+    try {
+      await Promise.all(
+        selectedMappingRules.map(({ mappingRuleId }) =>
+          callAssignMappingRule({
+            mappingRuleId: mappingRuleId,
+            groupId: group.id,
+          }),
+        ),
+      );
+      if (selectedMappingRules.length === 1) {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRuleAssigned"),
+          subtitle: t("mappingRuleAssignedSuccessfully"),
+        });
+      } else {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRulesAssigned"),
+          subtitle: t("mappingRulesAssignedSuccessfully"),
+        });
+      }
+      onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignMappingRule(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      setSelectedMappingRules([]);
+    }
+  }, [open]);
+
+  return (
+    <FormModal
+      headline={t("assignMappingRule")}
+      confirmLabel={t("assignMappingRule")}
+      loading={loadingAssignMappingRule}
+      loadingDescription={t("assigningMappingRule")}
+      open={open}
+      onSubmit={handleSubmit}
+      submitDisabled={!canSubmit}
+      onClose={onClose}
+      overflowVisible
+    >
+      <p>
+        <Translate i18nKey="searchAndAssignMappingRuleToGroup">
+          Search and assign mapping rule to group
+        </Translate>
+      </p>
+      {selectedMappingRules.length > 0 && (
+        <SelectedMappingRules>
+          {selectedMappingRules.map((mappingRule) => (
+            <Tag
+              key={mappingRule.mappingRuleId}
+              onClose={onUnselectMappingRule(mappingRule)}
+              size="md"
+              type="blue"
+              filter
+            >
+              {mappingRule.mappingRuleId}
+            </Tag>
+          ))}
+        </SelectedMappingRules>
+      )}
+      <DropdownSearch
+        autoFocus
+        onChange={handleMappingRuleFilterChange}
+        items={mappingRuleSearchResults?.items || []}
+        filter={unassignedFilter}
+        itemTitle={({ mappingRuleId }) => mappingRuleId}
+        itemSubTitle={({ name }) => name}
+        placeholder={t("searchByMappingRuleId")}
+        onSelect={onSelectMappingRule}
+      />
+      {!loading && error && (
+        <TranslatedErrorInlineNotification
+          title={t("mappingRulesCouldNotLoad")}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
+        />
+      )}
+    </FormModal>
+  );
+};
+
+export default AssignMappingRulesModal;

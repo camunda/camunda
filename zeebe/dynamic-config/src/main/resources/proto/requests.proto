@@ -1,0 +1,218 @@
+syntax = 'proto3';
+package topology_requests;
+
+import "topology.proto";
+
+option java_package = "io.camunda.zeebe.dynamic.config.protocol";
+
+message AddMembersRequest {
+  repeated string memberIds = 1;
+  bool dryRun = 2;
+}
+
+message RemoveMembersRequest {
+  repeated string memberIds = 1;
+  bool dryRun = 2;
+}
+
+message JoinPartitionRequest {
+  string memberId = 1;
+  int32 partitionId = 2;
+  int32 priority = 3;
+  bool dryRun = 4;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 5;
+}
+
+message PurgeRequest {
+  bool dryRun = 1;
+  // When physicalTenantId is set, only that tenant is purged.
+  // If not set, all tenants are purged.
+  optional string physicalTenantId = 2;
+}
+
+message LeavePartitionRequest {
+  string memberId = 1;
+  int32 partitionId = 2;
+  bool dryRun = 3;
+  // The physical tenant the partition belongs to; the default tenant if not set. Partition ids
+  // restart at 1 in every tenant, so partitionId identifies a partition only together with this.
+  optional string physicalTenantId = 4;
+}
+
+message BrokerScaleRequest {
+  repeated string memberIds = 1;
+  bool dryRun = 2;
+  optional uint32 newReplicationFactor = 3;
+}
+
+message ClusterScaleRequest {
+  optional uint32 newClusterSize = 1;
+  optional uint32 newPartitionCount = 2;
+  optional uint32 newReplicationFactor = 3;
+  bool dryRun = 4;
+  optional string zone = 5;
+  // The physical tenant newPartitionCount applies to; the default tenant if not set. Must not be
+  // set together with newClusterSize, which changes cluster membership, nor with
+  // newReplicationFactor, which is a cluster-wide setting; neither has a tenant dimension.
+  optional string physicalTenantId = 6;
+}
+
+message ClusterPatchRequest {
+  repeated string membersToAdd = 1;
+  repeated string membersToRemove = 2;
+  optional uint32 newPartitionCount = 3;
+  optional uint32 newReplicationFactor = 4;
+  bool dryRun = 5;
+  // The physical tenant newPartitionCount applies to; the default tenant if not set. Must not be
+  // set together with membersToAdd/membersToRemove, which change cluster membership, nor with
+  // newReplicationFactor, which is a cluster-wide setting; neither has a tenant dimension.
+  optional string physicalTenantId = 6;
+}
+
+message UpdateRoutingStateRequest{
+  topology_protocol.RoutingState routing_state = 1;
+  bool dryRun = 2;
+  // When physicalTenantId is set, only that tenant's routing state is updated.
+  // If not set, the default tenant's routing state is updated.
+  optional string physicalTenantId = 3;
+}
+
+message UpdatePartitionDistributorConfigRequest {
+  topology_protocol.PartitionDistributorConfig config = 1;
+  bool dryRun = 2;
+}
+
+message ClusterZoneMigrationRequest {
+  string zone = 1;
+  bool dryRun = 2;
+}
+
+message ForceRemoveBrokersRequest {
+  repeated string membersToRemove = 1;
+  bool dryRun = 2;
+}
+
+message ForceRemoveZoneRequest {
+  string zoneId = 1;
+  bool dryRun = 2;
+}
+
+message AddZoneRequest {
+  string zoneId = 1;
+  int32 numberOfReplicas = 2;
+  int32 priority = 3;
+  repeated string brokers = 4;
+  bool dryRun = 5;
+}
+
+message UpdateZonePrioritiesRequest {
+  repeated string zoneOrder = 1;
+  bool dryRun = 2;
+}
+
+message ExporterDisableRequest {
+  string exporterId = 1;
+  bool dryRun = 2;
+  // When physicalTenantId is set, the exporter will be disabled only for that tenant.
+  // If not set, the exporter will be disabled for all tenants.
+  optional string physicalTenantId = 3;
+}
+
+message ExporterDeleteRequest {
+  string exporterId = 1;
+  bool dryRun = 2;
+  // When physicalTenantId is set, the exporter will be deleted only for that tenant.
+  // If not set, the exporter will be deleted for all tenants.
+  optional string physicalTenantId = 3;
+}
+
+message ExporterEnableRequest {
+  string exporterId = 1;
+  optional string initializeFrom = 2;
+  bool dryRun = 3;
+  // When physicalTenantId is set, the exporter will be enabled only for that tenant.
+  // If not set, the exporter will be enabled for all tenants.
+  optional string physicalTenantId = 4;
+}
+
+enum Mode {
+  UNKNOWN = 0;
+  RECOVERING = 1;
+  PROCESSING = 2;
+}
+
+message ExportingStateChangeRequest {
+  topology_protocol.ExportingStateEnum state = 1;
+  bool dryRun = 2;
+  optional string physicalTenantId = 3;
+}
+
+message ModeChangeRequest {
+  Mode mode = 1;
+  bool dryRun = 2;
+  optional string physicalTenantId = 3;
+}
+
+message CancelTopologyChangeRequest {
+  int64 changeId = 1;
+}
+
+message RestoreParameters {
+  repeated int64 backupIds = 1;
+  optional string from = 2;
+  optional string to = 3;
+}
+
+message RestoreArguments {
+  RestoreParameters parameters = 1;
+  string databaseType = 2;
+  bool continuousBackups = 3;
+}
+
+message RestoreRequest {
+  string physicalTenantId = 1;
+  RestoreArguments arguments = 2;
+  bool dryRun = 3;
+}
+
+message ClusterRestoreRequest {
+  map<string, RestoreArguments> tenantArguments = 1;
+  bool dryRun = 2;
+}
+
+message TopologyChangeResponse {
+  int64 changeId = 1;
+  map<string, topology_protocol.MemberState> currentTopology = 2;
+  map<string, topology_protocol.MemberState> expectedTopology = 3;
+  repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
+  // The new multi-partition-group configuration, in addition to the legacy
+  // default-group projection above.
+  topology_protocol.CurrentClusterConfiguration currentConfiguration = 5;
+  topology_protocol.CurrentClusterConfiguration expectedConfiguration = 6;
+  repeated topology_protocol.PhasedChangePlanPhase phases = 7;
+}
+
+message Response {
+  oneof response {
+    ErrorResponse error = 1;
+    TopologyChangeResponse topologyChangeResponse = 2;
+    topology_protocol.ClusterTopology clusterTopology = 3;
+    topology_protocol.CurrentClusterConfiguration currentClusterConfiguration = 4;
+  }
+}
+
+message ErrorResponse {
+  ErrorCode errorCode = 1;
+  string errorMessage = 2;
+}
+
+enum ErrorCode {
+  INVALID_REQUEST = 0;
+  OPERATION_NOT_ALLOWED = 1;
+  CONCURRENT_MODIFICATION = 2;
+  INTERNAL_ERROR = 3;
+  INVALID_STATE = 4;
+  NOT_FOUND = 5;
+}

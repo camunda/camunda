@@ -1,0 +1,12 @@
+logging:
+  level:
+    root: debug
+
+# Jackson 2 compatibility mode for Spring Boot 4.0
+spring:
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+  servlet:
+    multipart:
+      max-request-size: 4MB

@@ -1,0 +1,70 @@
+# Fragment file (no `openapi:` at root) that exercises every per-operation
+# check in verifySemanticKindsRegistered — these must keep firing even
+# when the producer-existence cross-reference is skipped. Three defect
+# classes covered:
+#
+#   1. unknown kind on x-semantic-establishes
+#   2. unknown kind on x-semantic-requires
+#   3. illegal direct establishes against an external-entity kind
+#   4. illegal direct requires against an external-entity kind
+#   5. unresolved edge endpoint semanticType (no entity owns it)
+
+paths:
+  /fragment/typo-establishes:
+    post:
+      operationId: typoEstablishes
+      x-semantic-establishes:
+        kind: Wigdet  # typo'd, not in test registry
+        identifiedBy:
+          - { in: body, name: id, semanticType: WidgetId }
+      responses:
+        '201': { description: ok }
+
+  /fragment/typo-requires/{id}:
+    get:
+      operationId: typoRequires
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      x-semantic-requires:
+        kind: Wigdet  # typo'd, not in test registry
+        bind:
+          id: { from: path, name: id }
+      responses:
+        '200': { description: ok }
+
+  /fragment/establishes-external:
+    post:
+      operationId: establishesExternal
+      x-semantic-establishes:
+        kind: ExternalThing
+        identifiedBy:
+          - { in: body, name: id, semanticType: ExternalThingId }
+      responses:
+        '201': { description: ok }
+
+  /fragment/requires-external/{id}:
+    get:
+      operationId: requiresExternal
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      x-semantic-requires:
+        kind: ExternalThing
+        bind:
+          id: { from: path, name: id }
+      responses:
+        '200': { description: ok }
+
+  /fragment/unresolved-endpoint/{a}/{b}:
+    put:
+      operationId: unresolvedEndpoint
+      parameters:
+        - { name: a, in: path, required: true, schema: { type: string } }
+        - { name: b, in: path, required: true, schema: { type: string } }
+      x-semantic-establishes:
+        kind: WidgetMysteryLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: a, semanticType: WidgetId }
+          - { in: path, name: b, semanticType: MysteryId }  # not anyone's identifier
+      responses:
+        '204': { description: ok }

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "testCases": [
+    {
+      "name": "Happy path order processing",
+      "description": "The order should be processed successfully from creation to shipping with tracking code received.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "order_id": "order-1"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    }
+  ]
+}

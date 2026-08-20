@@ -1,0 +1,240 @@
+# description: Profiles a running load test cluster using async-profiler.
+#              When no pod is specified, profiles all 3 pods in parallel (3 parallel jobs,
+#              one per pod). Each pod's job runs all 3 profile types (cpu, wall, alloc
+#              events) *sequentially*, since async-profiler only supports one active
+#              profiling session per JVM and the profiling script writes to fixed
+#              intermediate paths on the pod -- profiling the same pod with two events at
+#              once would collide.
+#              When a specific pod is given, profiles that pod with cpu event only.
+#              Uploads flamegraph artifacts named
+#              flamegraph-{test-type}-{event}-{pod}-{date}.
+# called-by: camunda-pr-load-test.yml, camunda-daily-load-tests.yml
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+name: Profile running load test
+run-name: "Profile running load test: ${{ inputs.name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test to profile'
+        required: true
+      pod:
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (camunda-0, camunda-1, camunda-2) with different events, or specify a pod name for CPU profiling only.'
+        default: ''
+        required: false
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
+        default: ''
+        required: false
+      test-type:
+        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Profiling duration in seconds'
+        default: '100'
+        required: false
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test to profile'
+        required: true
+        type: string
+      pod:
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods with different events, or specify a pod name for CPU profiling only.'
+        default: ''
+        required: false
+        type: string
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
+        default: ''
+        required: false
+        type: string
+      test-type:
+        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Profiling duration in seconds'
+        default: '100'
+        required: false
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+  NAME: ${{ inputs.name }}
+  POD: ${{ inputs.pod }}
+  PROFILER_OPTIONS: ${{ inputs.profiler_options }}
+  PROFILING_DURATION: ${{ inputs.duration-seconds }}
+  TEST_TYPE: ${{ inputs.test-type }}
+
+jobs:
+  profile-all-pods:
+    name: Profile all events on ${{ matrix.pod }}
+    runs-on: ubuntu-latest
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job now
+    # profiles cpu, wall and alloc *sequentially* against its pod (see the matrix comment
+    # below for why the events can't run in parallel against the same pod), plus a buffer
+    # for the checkout/teleport-auth/kubectl-context/upload-artifact/summary steps.
+    # GitHub Actions does not support arithmetic in `timeout-minutes` expressions (no
+    # +/-/*// operators), so this can't be computed from `inputs.duration-seconds`
+    # automatically -- bump it manually if a caller raises duration-seconds. Largest known
+    # caller today: camunda-daily-load-tests.yml's profile-grpc/profile-rest jobs pass
+    # duration-seconds: '1800' (30 min), i.e. up to 90 minutes of profiling alone per pod.
+    # If the job timeout is increased, make sure to also increase the Teleport
+    # "certificate-ttl" below to keep it roughly greater or equal to the job
+    # timeout.
+    timeout-minutes: 120
+    if: ${{ inputs.pod == '' }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      fail-fast: false
+      matrix:
+        # One parallel job per pod. Events (cpu/wall/alloc) are intentionally NOT a
+        # matrix dimension: async-profiler only supports one active profiling session
+        # per JVM, and executeProfiling.sh copies/removes a fixed-path asprof binary
+        # and libasyncProfiler.so on the pod. Two events profiling the *same* pod at
+        # the same time would collide (attach failures and/or one event's cleanup
+        # deleting files the other event is still using). Events are instead run
+        # sequentially within each pod's job below, via a shell loop.
+        pod: [camunda-0, camunda-1, camunda-2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+          # The Teleport certificate for Kubernetes TTL should be roughly
+          # greater or equal to the configured job "timeout-minutes" value: if
+          # the TTL is lower, the certificate can expire will the job is still
+          # running and the subsequent connections to Kubernetes (via Teleport)
+          # will fail with a "certificate expired" error.
+          certificate-ttl: 2h # defaults to 1h
+
+      - name: Set right namespace
+        run: |
+          kubectl config set-context --current --namespace="${NAME}"
+      - name: Compute run date
+        id: run-date
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+      - name: Execute profiling (cpu, wall, alloc sequentially)
+        env:
+          POD: ${{ matrix.pod }}
+        run: |
+          for event in cpu wall alloc; do
+            ./load-tests/docs/scripts/executeProfiling.sh "${POD}" "${event}" "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-cpu-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-cpu-*.html
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-wall-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-wall-*.html
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-alloc-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-alloc-*.html
+      - name: Summarize profiling
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Profiling \`${NAME}\` on ${POD}
+            Async profiling (cpu, wall, alloc) has been executed sequentially on ${NAME}-${POD}. Please download the artifacts.
+          EOF
+        env:
+          POD: ${{ matrix.pod }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "Profile all events on ${{ matrix.pod }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  profile-single-pod:
+    name: Profile CPU on single pod ${{ inputs.pod }}
+    runs-on: ubuntu-latest
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds (plus a buffer for the
+    # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
+    # job may time out mid-profile. GitHub Actions does not support arithmetic in
+    # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
+    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
+    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
+    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
+    timeout-minutes: 60
+    if: ${{ inputs.pod != '' }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - name: Set right namespace
+        run: |
+          kubectl config set-context --current --namespace="${NAME}"
+      - name: Compute run date
+        id: run-date
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+      - name: Execute profiling
+        run: >
+          ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-cpu-${{ inputs.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ inputs.pod }}*
+      - name: Summarize profiling
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Profiling \`${NAME}\` - CPU on ${POD}
+            Async profiling (CPU) has been executed on ${NAME}-${POD}. Please download the artifact.
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

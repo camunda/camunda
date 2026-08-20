@@ -1,0 +1,13 @@
+camunda:
+  client:
+    mode: saas
+    cloud:
+      domain: camunda.io
+      region: bru-2
+      port: 443
+    auth:
+      method: oidc
+      token-url: https://login.cloud.${camunda.client.cloud.domain}/oauth/token
+      audience: zeebe.${camunda.client.cloud.domain}
+    grpc-address: https://${camunda.client.cloud.cluster-id}.${camunda.client.cloud.region}.zeebe.${camunda.client.cloud.domain}:${camunda.client.cloud.port}
+    rest-address: https://${camunda.client.cloud.region}.zeebe.${camunda.client.cloud.domain}:${camunda.client.cloud.port}/${camunda.client.cloud.cluster-id}

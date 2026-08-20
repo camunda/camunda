@@ -1,0 +1,65 @@
+{
+	"mappings": {
+    "dynamic": "strict",
+		"properties": {
+			"operationsFinishedCount": {
+				"type": "long"
+			},
+			"endDate": {
+				"format": "date_time || epoch_millis",
+				"type": "date"
+			},
+			"name": {
+				"type": "keyword"
+			},
+			"instancesCount": {
+				"type": "long"
+			},
+			"operationsTotalCount": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"type": {
+				"type": "keyword"
+			},
+			"startDate": {
+				"format": "date_time || epoch_millis",
+				"type": "date"
+			},
+			"username": {
+				"type": "keyword"
+			},
+			"actorType": {
+				"type": "keyword"
+			},
+			"actorId": {
+				"type": "keyword"
+			},
+			"state": {
+        "type": "keyword"
+      },
+      "operationsFailedCount": {
+        "type": "long"
+      },
+      "operationsCompletedCount": {
+        "type": "long"
+      },
+      "errors": {
+        "type": "object",
+        "properties": {
+          "partitionId": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "message": {
+            "type": "text"
+          }
+        }
+      }
+    }
+	}
+}

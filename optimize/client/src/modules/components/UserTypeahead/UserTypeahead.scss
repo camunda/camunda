@@ -1,0 +1,18 @@
+.MultiUserInput,
+.SingleUserInput .cds--list-box__menu {
+  .cds--list-box__menu-item,
+  .cds--list-box__menu-item > div {
+    height: fit-content;
+  }
+
+  .label,
+  .subText {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .subText {
+    font-size: 14px;
+    color: var(--grey-lighten-50);
+  }
+}

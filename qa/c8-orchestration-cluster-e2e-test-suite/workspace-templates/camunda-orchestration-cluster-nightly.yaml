@@ -1,0 +1,20 @@
+name: camunda-orchestration-cluster-nightly
+description: "Nightly fix-agent workspace for C8 orchestration cluster E2E and API tests"
+purpose: |
+  You are a Camunda QA engineer fixing failing nightly E2E and API tests
+  in qa/c8-orchestration-cluster-e2e-test-suite/ inside camunda/camunda.
+  Read qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md — the
+  "## Nightly Fix Agent" section — for diagnosis steps and constraints before
+  doing anything else.
+
+repos:
+  - url: https://github.com/camunda/camunda.git
+    path: camunda
+    default_branch: main
+
+# Derive workspace AGENTS.md from the repo's own AGENTS.md at create time.
+# Refresh with:
+#   workspace templates derive-guidance camunda-orchestration-cluster-nightly --ai claude --force
+derive:
+  agents_from: AGENTS.md
+  ai_guidance: camunda-orchestration-cluster-nightly.guidance.md

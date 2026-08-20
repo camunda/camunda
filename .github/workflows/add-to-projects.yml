@@ -1,0 +1,231 @@
+# type: Project Management
+# owner: @camunda/engineering-operations
+---
+name: Assign new issues to the default projects
+
+on:
+  issues:
+    types: [ reopened, transferred, labeled ]
+
+jobs:
+  add-to-projects:
+    name: Add issue to team projects if no project assigned and by corresponding component label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        with:
+          github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      # Core Features (#173)
+      # component/zeebe routes here as a fallback when neither zeebe-engine nor zeebe-platform is set
+      - id: add-to-core-features
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/zeebe-engine'
+            || github.event.label.name == 'component/zeebe'
+            || github.event.label.name == 'component/operate'
+            || github.event.label.name == 'component/tasklist'
+            || github.event.label.name == 'component/optimize'
+            || github.event.label.name == 'component/c8-api'
+            || github.event.label.name == 'component/engine'
+            || github.event.label.name == 'component/camunda'
+            || github.event.label.name == 'component/backend'
+            || github.event.label.name == 'component/frontend'
+            || github.event.label.name == 'component/batch-operation'
+            || github.event.label.name == 'component/document-handling'
+            || github.event.label.name == 'component/webapp'
+            || github.event.label.name == 'component/mcp'
+            || github.event.label.name == 'component/camunda-process-test'
+        name: Add to Core Features project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/173
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: >
+            component/zeebe-engine, component/zeebe, component/operate,
+            component/tasklist, component/optimize, component/c8-api,
+            component/engine, component/camunda, component/backend, component/frontend,
+            component/batch-operation, component/document-handling,
+            component/webapp, component/mcp, component/camunda-process-test
+
+      # Distributed Systems / ZDP (#92)
+      # component/zeebe routes here as a fallback when neither zeebe-engine nor zeebe-platform is set
+      - id: add-to-distributed-systems
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/zeebe-platform'
+            || github.event.label.name == 'component/zeebe'
+            || github.event.label.name == 'component/broker'
+            || github.event.label.name == 'component/gateway'
+            || github.event.label.name == 'component/gossip'
+            || github.event.label.name == 'component/journal'
+            || github.event.label.name == 'component/monitor'
+            || github.event.label.name == 'component/partition-transitions'
+            || github.event.label.name == 'component/protocol'
+            || github.event.label.name == 'component/raft'
+            || github.event.label.name == 'component/scheduler'
+            || github.event.label.name == 'component/snapshot'
+            || github.event.label.name == 'component/state'
+            || github.event.label.name == 'component/stream-platform'
+            || github.event.label.name == 'component/transport'
+            || github.event.label.name == 'component/backup'
+        name: Add to Distributed Systems project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/92
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: >
+            component/zeebe-platform, component/zeebe, component/broker,
+            component/gateway, component/gossip, component/journal,
+            component/monitor, component/partition-transitions, component/protocol,
+            component/raft, component/scheduler, component/snapshot, component/state,
+            component/stream-platform, component/transport, component/backup
+
+      # Data Layer (#184)
+      - id: add-to-data-layer
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/data-layer'
+            || github.event.label.name == 'component/rdbms'
+            || github.event.label.name == 'component/db'
+            || github.event.label.name == 'component/schema-manager'
+            || github.event.label.name == 'component/exporter'
+        name: Add to Data Layer project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/184
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: >
+            component/data-layer, component/rdbms, component/db,
+            component/schema-manager, component/exporter
+
+      # C8 API Proposals (#111) — requires both component/c8-api AND kind/proposal
+      - id: add-to-api-proposals
+        if: >
+          github.event.action != 'labeled' ||
+            (github.event.label.name == 'component/c8-api'
+              && github.event.label.name == 'kind/proposal')
+        name: Add to C8 Rest API Proposals
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/111
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/c8-api, kind/proposal
+          label-operator: AND
+
+      # Connectors (#23)
+      - id: add-to-connectors
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/connectors'
+        name: Add to Connectors project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/23
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/connectors
+
+      # Identity (#209)
+      - id: add-to-identity
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/identity'
+            || github.event.label.name == 'component/management-identity'
+        name: Add to Identity project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/209
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/identity, component/management-identity
+
+      # Distribution / C8Run (#33)
+      - id: add-to-distribution
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/c8run'
+        name: Add to Distribution Team project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/33
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/c8run
+
+      # Feel Team (#79)
+      - id: add-to-feel
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/feel-js'
+            || github.event.label.name == 'component/feel-scala'
+        name: Add to Feel Team project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/79
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/feel-js, component/feel-scala
+
+      # Engineering Operations (#115)
+      - id: add-to-engops
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/build-pipeline'
+            || github.event.label.name == 'component/release'
+        name: Add to Engineering Operations Team project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/115
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/build-pipeline, component/release
+
+      # Reliability Testing (#202)
+      - id: add-to-reliability-testing
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/load-tests'
+        name: Add to Reliability Testing project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/202
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/load-tests
+
+      # CamundaEx (#182)
+      - id: add-to-camunda-ex
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/clients'
+            || github.event.label.name == 'component/spring-boot-starter'
+            || github.event.label.name == 'component/c8-api'
+        name: Add to CamundaEx Team project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/182
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: >
+            component/clients, component/spring-boot-starter,
+            component/c8-api
+
+      # QA Issue Board (#162)
+      - id: add-to-qa
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/qa'
+        name: Add to QA Issue Board project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/162
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/qa
+
+      # Quality Board (#187) — all kind/bug issues regardless of component
+      - id: add-bug-to-quality-board
+        # Attention: This step uses a custom action maintained by the QA Engineering Team
+        # It adds all issues labeled with "kind/bug" to the Quality Board project,
+        # extracts the labels for component and severity and sets them in the project accordingly.
+        # The action must be triggered for any label change to keep the project data up to date.
+        name: Add issue to Quality Board
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@28e9ac0ffb3c71c7a1aaa989d5abdad0738c0436 # add-bug-to-quality-board: v1.0.3
+        with:
+          github-token: ${{ steps.github-token.outputs.token }}
+          project-number: "187"
+        if: contains(github.event.issue.labels.*.name, 'kind/bug')

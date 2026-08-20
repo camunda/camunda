@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.AgentHistoryMapper">
+
+  <!-- ===== WRITE operations ===== -->
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    INSERT INTO ${prefix}AGENT_HISTORY (
+      AGENT_HISTORY_KEY,
+      AGENT_INSTANCE_KEY,
+      ELEMENT_INSTANCE_KEY,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      TENANT_ID,
+      PARTITION_ID,
+      JOB_KEY,
+      JOB_LEASE,
+      LOOP_ITERATION,
+      ROLE,
+      COMMIT_STATUS,
+      PRODUCED_AT,
+      INPUT_TOKENS,
+      OUTPUT_TOKENS,
+      DURATION_MS,
+      CONTENT,
+      TOOL_CALLS,
+      HISTORY_ITEM_ID,
+      TOOLS,
+      MODEL,
+      PROVIDER,
+      MAX_TOKENS,
+      MAX_MODEL_CALLS,
+      MAX_TOOL_CALLS,
+      SYSTEM_PROMPT
+    )
+    VALUES (
+      #{agentHistoryKey},
+      #{agentInstanceKey},
+      #{elementInstanceKey},
+      #{processInstanceKey},
+      #{rootProcessInstanceKey},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{tenantId},
+      #{partitionId},
+      #{jobKey},
+      #{jobLease},
+      #{loopIteration},
+      #{role},
+      #{commitStatus},
+      #{producedAt, jdbcType=TIMESTAMP},
+      #{inputTokens},
+      #{outputTokens},
+      #{durationMs},
+      #{content, jdbcType=CLOB},
+      #{toolCalls, jdbcType=CLOB},
+      #{historyItemId},
+      #{tools, jdbcType=CLOB},
+      #{model},
+      #{provider},
+      #{maxTokens},
+      #{maxModelCalls},
+      #{maxToolCalls},
+      #{systemPrompt, jdbcType=CLOB}
+    )
+  </insert>
+
+  <update id="updateCommitStatus" parameterType="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    UPDATE ${prefix}AGENT_HISTORY
+    SET COMMIT_STATUS = #{commitStatus}
+    WHERE AGENT_HISTORY_KEY = #{agentHistoryKey}
+  </update>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+  <!-- ===== READ operations ===== -->
+
+  <!--
+    CONTENT, TOOL_CALLS, TOOLS and SYSTEM_PROMPT are JSON CLOBs. They are mapped to the raw String
+    properties on AgentHistoryDbModel; AgentHistoryDbModel.contentItems(), toolCallValues(),
+    toolValues() and systemPromptItems() then deserialize them lazily on first access.
+    HISTORY_ITEM_ID/MODEL/PROVIDER/MAX_TOKENS/MAX_MODEL_CALLS/MAX_TOOL_CALLS/SYSTEM_PROMPT are
+    CONFIGURATION-only fields; NULL means this item didn't touch the corresponding field.
+  -->
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    <constructor>
+      <idArg column="AGENT_HISTORY_KEY" javaType="_long" name="agentHistoryKey"/>
+      <arg column="AGENT_INSTANCE_KEY" javaType="_long" name="agentInstanceKey"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="_long" name="elementInstanceKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="_long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="_long" name="rootProcessInstanceKey"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="_long" name="processDefinitionKey"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="PARTITION_ID" javaType="_int" name="partitionId"/>
+      <arg column="JOB_KEY" javaType="_long" name="jobKey"/>
+      <arg column="JOB_LEASE" javaType="java.lang.String" name="jobLease"/>
+      <arg column="LOOP_ITERATION" javaType="_int" name="loopIteration"/>
+      <arg column="ROLE"
+        javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"
+        name="role"/>
+      <arg column="COMMIT_STATUS"
+        javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryCommitStatus"
+        name="commitStatus"/>
+      <arg column="PRODUCED_AT" javaType="java.time.OffsetDateTime" name="producedAt"/>
+      <arg column="INPUT_TOKENS" javaType="java.lang.Long" name="inputTokens"/>
+      <arg column="OUTPUT_TOKENS" javaType="java.lang.Long" name="outputTokens"/>
+      <arg column="DURATION_MS" javaType="java.lang.Long" name="durationMs"/>
+      <arg column="CONTENT" javaType="java.lang.String" name="content"/>
+      <arg column="TOOL_CALLS" javaType="java.lang.String" name="toolCalls"/>
+      <arg column="HISTORY_ITEM_ID" javaType="java.lang.String" name="historyItemId"/>
+      <arg column="TOOLS" javaType="java.lang.String" name="tools"/>
+      <arg column="MODEL" javaType="java.lang.String" name="model"/>
+      <arg column="PROVIDER" javaType="java.lang.String" name="provider"/>
+      <arg column="MAX_TOKENS" javaType="java.lang.Long" name="maxTokens"/>
+      <arg column="MAX_MODEL_CALLS" javaType="java.lang.Integer" name="maxModelCalls"/>
+      <arg column="MAX_TOOL_CALLS" javaType="java.lang.Integer" name="maxToolCalls"/>
+      <arg column="SYSTEM_PROMPT" javaType="java.lang.String" name="systemPrompt"/>
+    </constructor>
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.AgentHistoryDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchResultMap">
+    SELECT * FROM (
+      SELECT * FROM (
+        SELECT
+          ah.AGENT_HISTORY_KEY,
+          ah.AGENT_INSTANCE_KEY,
+          ah.ELEMENT_INSTANCE_KEY,
+          ah.PROCESS_INSTANCE_KEY,
+          ah.ROOT_PROCESS_INSTANCE_KEY,
+          ah.PROCESS_DEFINITION_ID,
+          ah.PROCESS_DEFINITION_KEY,
+          ah.TENANT_ID,
+          ah.PARTITION_ID,
+          ah.JOB_KEY,
+          ah.JOB_LEASE,
+          ah.LOOP_ITERATION,
+          ah.ROLE,
+          ah.COMMIT_STATUS,
+          ah.PRODUCED_AT,
+          ah.INPUT_TOKENS,
+          ah.OUTPUT_TOKENS,
+          ah.DURATION_MS,
+          ah.CONTENT,
+          ah.TOOL_CALLS,
+          ah.HISTORY_ITEM_ID,
+          ah.TOOLS,
+          ah.MODEL,
+          ah.PROVIDER,
+          ah.MAX_TOKENS,
+          ah.MAX_MODEL_CALLS,
+          ah.MAX_TOOL_CALLS,
+          ah.SYSTEM_PROMPT
+        FROM ${prefix}AGENT_HISTORY ah
+        <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchAndAuthFilter"/>
+      ) filtered
+      <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+      <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AGENT_HISTORY ah
+      <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchAndAuthFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND ah.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND ah.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchFilter"/>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
+    <if test="filter.agentInstanceKeyOperations != null and !filter.agentInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.agentInstanceKeyOperations" item="operation">
+        AND ah.AGENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.historyItemKeyOperations != null and !filter.historyItemKeyOperations.isEmpty()">
+      <foreach collection="filter.historyItemKeyOperations" item="operation">
+        AND ah.AGENT_HISTORY_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.roleOperations != null and !filter.roleOperations.isEmpty()">
+      <foreach collection="filter.roleOperations" item="operation">
+        AND ah.ROLE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+        AND ah.ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+      <foreach collection="filter.jobKeyOperations" item="operation">
+        AND ah.JOB_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.loopIterationOperations != null and !filter.loopIterationOperations.isEmpty()">
+      <foreach collection="filter.loopIterationOperations" item="operation">
+        AND ah.LOOP_ITERATION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.commitStatusOperations != null and !filter.commitStatusOperations.isEmpty()">
+      <foreach collection="filter.commitStatusOperations" item="operation">
+        AND ah.COMMIT_STATUS
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.producedAtOperations != null and !filter.producedAtOperations.isEmpty()">
+      <foreach collection="filter.producedAtOperations" item="operation">
+        AND ah.PRODUCED_AT
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+</mapper>

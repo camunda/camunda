@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_01hrfwj" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="process_with_multiple_user_tasks" name="Process with multiple User Tasks" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0h26p0r</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0h26p0r" sourceRef="StartEvent_1" targetRef="Gateway_1i9e6w4" />
+    <bpmn:parallelGateway id="Gateway_1i9e6w4">
+      <bpmn:incoming>Flow_0h26p0r</bpmn:incoming>
+      <bpmn:outgoing>Flow_0zdyedv</bpmn:outgoing>
+      <bpmn:outgoing>Flow_109e43h</bpmn:outgoing>
+      <bpmn:outgoing>Flow_12z4g8l</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_0zdyedv" sourceRef="Gateway_1i9e6w4" targetRef="firstUserTask" />
+    <bpmn:sequenceFlow id="Flow_109e43h" sourceRef="Gateway_1i9e6w4" targetRef="secondUserTask" />
+    <bpmn:sequenceFlow id="Flow_0ti79yd" sourceRef="firstUserTask" targetRef="Gateway_018qit8" />
+    <bpmn:parallelGateway id="Gateway_018qit8">
+      <bpmn:incoming>Flow_0ti79yd</bpmn:incoming>
+      <bpmn:incoming>Flow_1tfdyfo</bpmn:incoming>
+      <bpmn:incoming>Flow_1puncfi</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dqo5fh</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_1tfdyfo" sourceRef="secondUserTask" targetRef="Gateway_018qit8" />
+    <bpmn:sequenceFlow id="Flow_12z4g8l" sourceRef="Gateway_1i9e6w4" targetRef="thirdUserTask" />
+    <bpmn:sequenceFlow id="Flow_1puncfi" sourceRef="thirdUserTask" targetRef="Gateway_018qit8" />
+    <bpmn:endEvent id="Event_0kfwy5e">
+      <bpmn:incoming>Flow_0dqo5fh</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0dqo5fh" sourceRef="Gateway_018qit8" targetRef="Event_0kfwy5e" />
+    <bpmn:userTask id="firstUserTask" name="First user task">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0zdyedv</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ti79yd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="secondUserTask" name="Second user task">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_109e43h</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tfdyfo</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="thirdUserTask" name="Third user task">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_12z4g8l</bpmn:incoming>
+      <bpmn:outgoing>Flow_1puncfi</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process_with_multiple_user_tasks">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1pqempm_di" bpmnElement="Gateway_1i9e6w4">
+        <dc:Bounds x="275" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0xviim3_di" bpmnElement="Gateway_018qit8">
+        <dc:Bounds x="555" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0kfwy5e_di" bpmnElement="Event_0kfwy5e">
+        <dc:Bounds x="672" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lmgrbg_di" bpmnElement="firstUserTask">
+        <dc:Bounds x="390" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_01g2wd2_di" bpmnElement="secondUserTask">
+        <dc:Bounds x="390" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1fuxw0j_di" bpmnElement="thirdUserTask">
+        <dc:Bounds x="390" y="300" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0h26p0r_di" bpmnElement="Flow_0h26p0r">
+        <di:waypoint x="218" y="120" />
+        <di:waypoint x="275" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zdyedv_di" bpmnElement="Flow_0zdyedv">
+        <di:waypoint x="325" y="120" />
+        <di:waypoint x="390" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_109e43h_di" bpmnElement="Flow_109e43h">
+        <di:waypoint x="300" y="145" />
+        <di:waypoint x="300" y="230" />
+        <di:waypoint x="390" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ti79yd_di" bpmnElement="Flow_0ti79yd">
+        <di:waypoint x="490" y="120" />
+        <di:waypoint x="555" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tfdyfo_di" bpmnElement="Flow_1tfdyfo">
+        <di:waypoint x="490" y="230" />
+        <di:waypoint x="580" y="230" />
+        <di:waypoint x="580" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12z4g8l_di" bpmnElement="Flow_12z4g8l">
+        <di:waypoint x="300" y="145" />
+        <di:waypoint x="300" y="340" />
+        <di:waypoint x="390" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1puncfi_di" bpmnElement="Flow_1puncfi">
+        <di:waypoint x="490" y="340" />
+        <di:waypoint x="580" y="340" />
+        <di:waypoint x="580" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dqo5fh_di" bpmnElement="Flow_0dqo5fh">
+        <di:waypoint x="605" y="120" />
+        <di:waypoint x="672" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

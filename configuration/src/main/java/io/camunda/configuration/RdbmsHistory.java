@@ -1,0 +1,215 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration;
+
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
+import java.time.Duration;
+
+public class RdbmsHistory {
+
+  /**
+   * The default time to live for all camunda entities that support history time to live. Specified
+   * in Java Duration format.
+   */
+  private Duration defaultHistoryTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
+
+  /**
+   * The default time to live for decision instances without a process instance. Specified in Java
+   * Duration format.
+   */
+  private Duration decisionInstanceTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
+
+  /** The default time to live for all batch operations. Specified in Java Duration format. */
+  private Duration defaultBatchOperationHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+
+  /**
+   * The default time to live for cancel process instance batch operations. Specified in Java
+   * Duration format.
+   */
+  private Duration batchOperationCancelProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+
+  /**
+   * The default time to live for migrate process instance batch operations. Specified in Java
+   * Duration format.
+   */
+  private Duration batchOperationMigrateProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+
+  /**
+   * The default time to live for modify process instance batch operations. Specified in Java
+   * Duration format.
+   */
+  private Duration batchOperationModifyProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+
+  /**
+   * The default time to live for resolve incident batch operations. Specified in Java Duration
+   * format.
+   */
+  private Duration batchOperationResolveIncidentHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
+
+  /**
+   * The min interval between two history cleanup runs. This will be reached when the system is
+   * constantly finding data to clean up. Specified in Java Duration format.
+   */
+  private Duration minHistoryCleanupInterval =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
+
+  /**
+   * The max interval between two history cleanup runs. This will be reached when the system is
+   * constantly finding no data to clean up. Specified in Java Duration format.
+   */
+  private Duration maxHistoryCleanupInterval =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
+
+  /** The number of history records to delete in one batch. */
+  private Integer historyCleanupBatchSize = HistoryConfig.DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+
+  /** The number of historic process instances to delete in one batch. */
+  private Integer historyCleanupProcessInstanceBatchSize =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
+
+  /** Interval how often usage metrics cleanup is performed. Specified in Java Duration format. */
+  private Duration usageMetricsCleanup =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
+
+  /** The default time to live for usage metrics. Specified in Java Duration format. */
+  private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
+
+  /**
+   * Max average percentage usage of the exporter for history cleanup. E.g. with the default value
+   * of {@code 0.25} (25%), the cleanup will use at most 25% of the total exporter time on average.
+   * A value of {@code 0.5} means the cleanup may use up to 50% of the exporter time.
+   */
+  private double maxHistoryCleanupUsage =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_USAGE;
+
+  public Integer getHistoryCleanupBatchSize() {
+    return historyCleanupBatchSize;
+  }
+
+  public void setHistoryCleanupBatchSize(final Integer historyCleanupBatchSize) {
+    this.historyCleanupBatchSize = historyCleanupBatchSize;
+  }
+
+  public Duration getMaxHistoryCleanupInterval() {
+    return maxHistoryCleanupInterval;
+  }
+
+  public void setMaxHistoryCleanupInterval(final Duration maxHistoryCleanupInterval) {
+    this.maxHistoryCleanupInterval = maxHistoryCleanupInterval;
+  }
+
+  public Duration getMinHistoryCleanupInterval() {
+    return minHistoryCleanupInterval;
+  }
+
+  public void setMinHistoryCleanupInterval(final Duration minHistoryCleanupInterval) {
+    this.minHistoryCleanupInterval = minHistoryCleanupInterval;
+  }
+
+  public Duration getBatchOperationResolveIncidentHistoryTTL() {
+    return batchOperationResolveIncidentHistoryTTL;
+  }
+
+  public void setBatchOperationResolveIncidentHistoryTTL(
+      final Duration batchOperationResolveIncidentHistoryTTL) {
+    this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
+  }
+
+  public Duration getBatchOperationModifyProcessInstanceHistoryTTL() {
+    return batchOperationModifyProcessInstanceHistoryTTL;
+  }
+
+  public void setBatchOperationModifyProcessInstanceHistoryTTL(
+      final Duration batchOperationModifyProcessInstanceHistoryTTL) {
+    this.batchOperationModifyProcessInstanceHistoryTTL =
+        batchOperationModifyProcessInstanceHistoryTTL;
+  }
+
+  public Duration getBatchOperationMigrateProcessInstanceHistoryTTL() {
+    return batchOperationMigrateProcessInstanceHistoryTTL;
+  }
+
+  public void setBatchOperationMigrateProcessInstanceHistoryTTL(
+      final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
+    this.batchOperationMigrateProcessInstanceHistoryTTL =
+        batchOperationMigrateProcessInstanceHistoryTTL;
+  }
+
+  public Duration getBatchOperationCancelProcessInstanceHistoryTTL() {
+    return batchOperationCancelProcessInstanceHistoryTTL;
+  }
+
+  public void setBatchOperationCancelProcessInstanceHistoryTTL(
+      final Duration batchOperationCancelProcessInstanceHistoryTTL) {
+    this.batchOperationCancelProcessInstanceHistoryTTL =
+        batchOperationCancelProcessInstanceHistoryTTL;
+  }
+
+  public Duration getDefaultBatchOperationHistoryTTL() {
+    return defaultBatchOperationHistoryTTL;
+  }
+
+  public void setDefaultBatchOperationHistoryTTL(final Duration defaultBatchOperationHistoryTTL) {
+    this.defaultBatchOperationHistoryTTL = defaultBatchOperationHistoryTTL;
+  }
+
+  public Duration getDefaultHistoryTTL() {
+    return defaultHistoryTTL;
+  }
+
+  public void setDefaultHistoryTTL(final Duration defaultHistoryTTL) {
+    this.defaultHistoryTTL = defaultHistoryTTL;
+  }
+
+  public Duration getDecisionInstanceTTL() {
+    return decisionInstanceTTL;
+  }
+
+  public void setDecisionInstanceTTL(final Duration decisionInstanceTTL) {
+    this.decisionInstanceTTL = decisionInstanceTTL;
+  }
+
+  public Duration getUsageMetricsCleanup() {
+    return usageMetricsCleanup;
+  }
+
+  public void setUsageMetricsCleanup(final Duration usageMetricsCleanup) {
+    this.usageMetricsCleanup = usageMetricsCleanup;
+  }
+
+  public Duration getUsageMetricsTTL() {
+    return usageMetricsTTL;
+  }
+
+  public void setUsageMetricsTTL(final Duration usageMetricsTTL) {
+    this.usageMetricsTTL = usageMetricsTTL;
+  }
+
+  public Integer getHistoryCleanupProcessInstanceBatchSize() {
+    return historyCleanupProcessInstanceBatchSize;
+  }
+
+  public void setHistoryCleanupProcessInstanceBatchSize(
+      final Integer historyCleanupProcessInstanceBatchSize) {
+    this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
+  }
+
+  public double getMaxHistoryCleanupUsage() {
+    return maxHistoryCleanupUsage;
+  }
+
+  public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
+    this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
+  }
+}

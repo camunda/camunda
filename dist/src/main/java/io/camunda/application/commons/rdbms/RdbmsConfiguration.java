@@ -1,0 +1,214 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application.commons.rdbms;
+
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.RdbmsTenantReaders;
+import io.camunda.db.rdbms.read.service.PhysicalTenantsRdbmsTableRowCountMetrics;
+import io.camunda.db.rdbms.read.service.RdbmsTableRowCountProvider;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
+@Import(MyBatisConfiguration.class)
+public class RdbmsConfiguration {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
+
+  private static ExecutorService rdbmsMetricsRefreshExecutor(final String physicalTenantId) {
+    final var threadFactory =
+        Thread.ofPlatform()
+            .name("rdbms-metrics-refresh-" + physicalTenantId + "-", 0)
+            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
+            .factory();
+    return Executors.newFixedThreadPool(1, threadFactory);
+  }
+
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantsRdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final var executors = new ArrayList<ExecutorService>();
+    final var rowCountProviders =
+        rdbmsMapperBundles.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> {
+                      final var cacheDuration =
+                          physicalTenantResolver
+                              .forPhysicalTenant(e.getKey())
+                              .getData()
+                              .getSecondaryStorage()
+                              .getRdbms()
+                              .getMetrics()
+                              .getTableRowCountCacheDuration();
+                      final var executor = rdbmsMetricsRefreshExecutor(e.getKey());
+                      executors.add(executor);
+                      return new RdbmsTableRowCountProvider(
+                          e.getValue().tableMetricsMapper(), cacheDuration, executor);
+                    }));
+    return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders, executors);
+  }
+
+  @Bean
+  Map<String, RdbmsTenantReaders> rdbmsTenantReaders(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final var byTenant = new LinkedHashMap<String, RdbmsTenantReaders>();
+    rdbmsMapperBundles.forEach(
+        (tenantId, bundle) ->
+            byTenant.put(
+                tenantId,
+                RdbmsTenantReaders.create(
+                    bundle,
+                    physicalTenantResolver
+                        .forPhysicalTenant(tenantId)
+                        .getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getQuery()
+                        .toReaderConfig())));
+    return Map.copyOf(byTenant);
+  }
+
+  @Bean
+  public PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders(
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
+    final var byTenant = new LinkedHashMap<String, SearchClientReaders>();
+    rdbmsTenantReaders.forEach(
+        (tenantId, readers) -> byTenant.put(tenantId, readers.toSearchClientReaders()));
+    return new PhysicalTenantSearchClientReaders(Map.copyOf(byTenant));
+  }
+
+  @Bean
+  public CamundaSearchClients camundaSearchClients(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final Optional<PhysicalTenantResourceAccessControllers>
+          physicalTenantResourceAccessControllers) {
+    return new CamundaSearchClients(
+        physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+        physicalTenantResourceAccessControllers
+            .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
+            .orElseGet(() -> failFastControllers(physicalTenantSearchClientReaders)));
+  }
+
+  /**
+   * Fallback for non-web contexts (e.g. Restore, engine-only integration tests) where the per-PT
+   * {@link PhysicalTenantResourceAccessControllers} bean is not created. Such contexts do not
+   * perform authorized data-plane reads; an empty delegating controller keeps the context startable
+   * while failing fast on any accidental read.
+   */
+  private static Map<String, ResourceAccessController> failFastControllers(
+      final PhysicalTenantSearchClientReaders readers) {
+    return readers.readersByPhysicalTenant().keySet().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                tenantId -> tenantId,
+                tenantId -> new ResourceAccessDelegatingController(List.of())));
+  }
+
+  @Bean
+  public AuthorizationReader authorizationReader(
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
+    return defaultReaders(rdbmsTenantReaders).authorizationReader();
+  }
+
+  @Bean
+  public RdbmsServiceFactory rdbmsServiceFactory(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
+    return new RdbmsServiceFactory(rdbmsMapperBundles, rdbmsTenantReaders);
+  }
+
+  @Bean
+  public CommandLineRunner logJdbcDriverInfo(final RdbmsDataSources rdbmsDataSources) {
+    return args -> {
+      if (LOG.isDebugEnabled()) {
+        rdbmsDataSources
+            .dataSources()
+            .forEach(
+                (physicalTenantId, datasource) -> {
+                  try (final Connection conn = datasource.getConnection()) {
+                    final DatabaseMetaData meta = conn.getMetaData();
+                    LOG.debug(
+                        "JDBC Driver [physicalTenantId={}]: {} {}",
+                        physicalTenantId,
+                        meta.getDriverName(),
+                        meta.getDriverVersion());
+                    LOG.debug(
+                        "JDBC Spec [physicalTenantId={}]: {}.{}",
+                        physicalTenantId,
+                        meta.getJDBCMajorVersion(),
+                        meta.getJDBCMinorVersion());
+                  } catch (final SQLException e) {
+                    // Best-effort diagnostics only: a failure for one physical tenant must not
+                    // abort
+                    // application startup (this runs as a CommandLineRunner).
+                    LOG.debug(
+                        "Could not log JDBC driver info for physical tenant {}",
+                        physicalTenantId,
+                        e);
+                  }
+                });
+      }
+    };
+  }
+
+  @Bean
+  HealthContributor rdbmsStatusHealthIndicator(final RdbmsDataSources rdbmsDataSources) {
+    // Equivalent to what Boot would normally wire for "db"
+    // TODO: make this a CompositeHealthContributor over all physical tenants (one
+    // DataSourceHealthIndicator per pool) instead of default-tenant only.
+    return new DataSourceHealthIndicator(
+        rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  private static RdbmsTenantReaders defaultReaders(
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
+    final var defaults = rdbmsTenantReaders.get(DEFAULT_PHYSICAL_TENANT_ID);
+    if (defaults == null) {
+      throw new IllegalStateException(
+          "Missing default physical tenant '%s' in rdbmsTenantReaders; known tenants: %s"
+              .formatted(DEFAULT_PHYSICAL_TENANT_ID, rdbmsTenantReaders.keySet()));
+    }
+    return defaults;
+  }
+}

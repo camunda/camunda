@@ -1,0 +1,46 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients;
+
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.core.auth.SecurityContext;
+import java.util.List;
+
+public interface ProcessDefinitionSearchClient {
+
+  ProcessDefinitionEntity getProcessDefinition(final long key);
+
+  SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
+      ProcessDefinitionQuery filter);
+
+  List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter);
+
+  ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
+
+  SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> processDefinitionInstanceStatistics(
+      final ProcessDefinitionInstanceStatisticsQuery query);
+
+  SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
+      getProcessDefinitionMessageSubscriptionStatistics(
+          ProcessDefinitionMessageSubscriptionStatisticsQuery query);
+
+  SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
+      processDefinitionInstanceVersionStatistics(
+          final ProcessDefinitionInstanceVersionStatisticsQuery query);
+}

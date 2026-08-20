@@ -1,0 +1,13 @@
+# Local development configuration for Camunda with the RDBMS Oracle database from db/docker-compose.yml
+
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+        username: camunda
+        password: camunda
+logging:
+  level:
+    io.camunda.db.rdbms: DEBUG

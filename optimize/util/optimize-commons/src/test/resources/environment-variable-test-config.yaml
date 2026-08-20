@@ -1,0 +1,19 @@
+---
+security:
+  auth:
+    token:
+      lifeMin: ${AUTH_TOKEN_LIFEMIN}
+
+api:
+  accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
+
+es:
+  connection:
+    nodes:
+      - host: '${ES_HOST_1}'
+        httpPort: '${ES_PORT_1}'
+      - host: ${ES_HOST_2}
+        httpPort: ${ES_PORT_2}
+
+container:
+  accessUrl: ${ACCESS_URL:null}

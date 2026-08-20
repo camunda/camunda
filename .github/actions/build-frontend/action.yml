@@ -1,0 +1,61 @@
+---
+name: Build Frontend
+
+# owner: @camunda/engineering-operations
+
+description: Builds the frontend project in a certain Yarn workspace
+
+inputs:
+  node-version:
+    description: The Node.js version to use
+    required: false
+    default: "24"
+  directory:
+    description: Directory of the Yarn workspace to build
+    required: true
+  package-manager:
+    description: Package manager to use (yarn or npm)
+    required: false
+    default: "yarn"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Setup yarn
+      if: ${{ inputs.package-manager == 'yarn' }}
+      shell: bash
+      run: npm install -g yarn
+
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      if: ${{ inputs.package-manager == 'yarn' }}
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Install node dependencies (yarn)
+      if: ${{ inputs.package-manager == 'yarn' }}
+      uses: ./.github/actions/yarn-install-with-retry
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Install node dependencies (npm)
+      if: ${{ inputs.package-manager == 'npm' }}
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Build frontend (yarn)
+      if: ${{ inputs.package-manager == 'yarn' }}
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn build
+
+    - name: Build frontend (npm)
+      if: ${{ inputs.package-manager == 'npm' }}
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: npm run build

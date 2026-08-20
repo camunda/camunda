@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:ns1="modeler" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:ns0="xmlns" id="bpmn_copilot_Definition_id" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="63fd423" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0" ns0:modeler="http://camunda.org/schema/modeler/1.0" ns1:executionPlatform="Camunda Cloud" ns1:executionPlatformVersion="8.6">
+  <bpmn:process id="Process_MessageSubscriptions" name="Process with two message subscriptions" processType="None" isClosed="false" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="UserTaskForm_3o4ar3v">{}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1" name="Process Started">
+      <bpmn:outgoing>Flow_1u5w2a1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1u5w2a1" sourceRef="StartEvent_1" targetRef="Activity_WaitForMessages" />
+    <bpmn:userTask id="Activity_WaitForMessages" name="Wait for Messages" implementation="##unspecified">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_3o4ar3v" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1u5w2a1</bpmn:incoming>
+      <bpmn:outgoing>Flow_0g0j3f4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_ManualCompletion" name="Task Completed Manually">
+      <bpmn:incoming>Flow_0g0j3f4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0g0j3f4" sourceRef="Activity_WaitForMessages" targetRef="Event_ManualCompletion" />
+    <bpmn:boundaryEvent id="Event_CatchMessageA" name="Message A Received" attachedToRef="Activity_WaitForMessages">
+      <bpmn:outgoing>Flow_1q9w8e7</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_A" messageRef="Message_A" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_1q9w8e7" sourceRef="Event_CatchMessageA" targetRef="Activity_ProcessMessageA" />
+    <bpmn:serviceTask id="Activity_ProcessMessageA" name="Process Message A">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="processMessageA" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1q9w8e7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0x2c7b3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_EndA" name="End A">
+      <bpmn:incoming>Flow_0x2c7b3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0x2c7b3" sourceRef="Activity_ProcessMessageA" targetRef="Event_EndA" />
+    <bpmn:boundaryEvent id="Event_CatchMessageB" name="Message B Received" attachedToRef="Activity_WaitForMessages">
+      <bpmn:outgoing>Flow_0k4f8g5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_B" messageRef="Message_B" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0k4f8g5" sourceRef="Event_CatchMessageB" targetRef="Activity_ProcessMessageB" />
+    <bpmn:serviceTask id="Activity_ProcessMessageB" name="Process Message B">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="processMessageB" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0k4f8g5</bpmn:incoming>
+      <bpmn:outgoing>Flow_1y9w8e7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_EndB" name="End B">
+      <bpmn:incoming>Flow_1y9w8e7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1y9w8e7" sourceRef="Activity_ProcessMessageB" targetRef="Event_EndB" />
+  </bpmn:process>
+  <bpmn:message id="Message_A" name="MessageA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=123" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_B" name="MessageB">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=456" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_MessageSubscriptions">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_MessageSubscriptions" bpmnElement="Process_MessageSubscriptions">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="177" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="156" y="138" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_WaitForMessages_di" bpmnElement="Activity_WaitForMessages">
+        <dc:Bounds x="295" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ManualCompletion_di" bpmnElement="Event_ManualCompletion">
+        <dc:Bounds x="477" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="456" y="138" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ProcessMessageA_di" bpmnElement="Activity_ProcessMessageA">
+        <dc:Bounds x="445" y="360" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndA_di" bpmnElement="Event_EndA">
+        <dc:Bounds x="627" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="630" y="418" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ProcessMessageB_di" bpmnElement="Activity_ProcessMessageB">
+        <dc:Bounds x="445" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndB_di" bpmnElement="Event_EndB">
+        <dc:Bounds x="627" y="242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="630" y="278" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchMessageB_di" bpmnElement="Event_CatchMessageB">
+        <dc:Bounds x="344" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="372" y="178" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_CatchMessageA_di" bpmnElement="Event_CatchMessageA">
+        <dc:Bounds x="310" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="262" y="178" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1u5w2a1_di" bpmnElement="Flow_1u5w2a1">
+        <di:waypoint x="213" y="120" />
+        <di:waypoint x="295" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0g0j3f4_di" bpmnElement="Flow_0g0j3f4">
+        <di:waypoint x="395" y="120" />
+        <di:waypoint x="477" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1q9w8e7_di" bpmnElement="Flow_1q9w8e7">
+        <di:waypoint x="328.33333333333337" y="178" />
+        <di:waypoint x="328.33333333333337" y="400" />
+        <di:waypoint x="445" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0x2c7b3_di" bpmnElement="Flow_0x2c7b3">
+        <di:waypoint x="545" y="400" />
+        <di:waypoint x="627" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k4f8g5_di" bpmnElement="Flow_0k4f8g5">
+        <di:waypoint x="361.6666666666667" y="178" />
+        <di:waypoint x="361.6666666666667" y="260" />
+        <di:waypoint x="445" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1y9w8e7_di" bpmnElement="Flow_1y9w8e7">
+        <di:waypoint x="545" y="260" />
+        <di:waypoint x="627" y="260" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

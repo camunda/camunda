@@ -1,0 +1,126 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration;
+
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
+public class Data {
+  private static final String PREFIX = "camunda.data";
+  private static final Set<String> LEGACY_SNAPSHOT_PERIOD_PROPERTIES =
+      Set.of("zeebe.broker.data.snapshotPeriod");
+
+  /** How often we take snapshots of streams (time unit) */
+  private Duration snapshotPeriod = Duration.ofMinutes(5);
+
+  /** This section allows to configure the audit log setup. */
+  @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
+
+  /** This section allows to configure the wait-states tracking setup. */
+  @NestedConfigurationProperty private WaitStates waitStates = new WaitStates();
+
+  /** This section allows to configure the history deletion setup. */
+  @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
+
+  /** This section allows to configure primary Zeebe's data storage. */
+  @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
+
+  /** This section allows configuring export. */
+  @NestedConfigurationProperty private Export export = new Export();
+
+  /** This section allows to configure Zeebe's secondary storage. */
+  @NestedConfigurationProperty private SecondaryStorage secondaryStorage = new SecondaryStorage();
+
+  /** This section allows configuring exporters */
+  private Map<String, Exporter> exporters = new HashMap<>();
+
+  /** This section allows configuring extension property mapping. */
+  @NestedConfigurationProperty
+  private ExtensionProperties extensionProperties = new ExtensionProperties();
+
+  public AuditLog getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLog auditLog) {
+    this.auditLog = auditLog;
+  }
+
+  public WaitStates getWaitStates() {
+    return waitStates;
+  }
+
+  public void setWaitStates(final WaitStates waitStates) {
+    this.waitStates = waitStates;
+  }
+
+  public HistoryDeletion getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletion historyDeletion) {
+    this.historyDeletion = historyDeletion;
+  }
+
+  public Duration getSnapshotPeriod() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".snapshot-period",
+        snapshotPeriod,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_SNAPSHOT_PERIOD_PROPERTIES);
+  }
+
+  public void setSnapshotPeriod(final Duration snapshotPeriod) {
+    this.snapshotPeriod = snapshotPeriod;
+  }
+
+  public PrimaryStorage getPrimaryStorage() {
+    return primaryStorage;
+  }
+
+  public void setPrimaryStorage(final PrimaryStorage primaryStorage) {
+    this.primaryStorage = primaryStorage;
+  }
+
+  public Export getExport() {
+    return export;
+  }
+
+  public void setExport(final Export export) {
+    this.export = export;
+  }
+
+  public SecondaryStorage getSecondaryStorage() {
+    return secondaryStorage;
+  }
+
+  public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
+    this.secondaryStorage = secondaryStorage;
+  }
+
+  public Map<String, Exporter> getExporters() {
+    return exporters;
+  }
+
+  public void setExporters(final Map<String, Exporter> exporters) {
+    this.exporters = exporters;
+  }
+
+  public ExtensionProperties getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public void setExtensionProperties(final ExtensionProperties extensionProperties) {
+    this.extensionProperties = extensionProperties;
+  }
+}

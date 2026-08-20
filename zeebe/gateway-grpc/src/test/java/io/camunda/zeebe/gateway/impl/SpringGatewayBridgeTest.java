@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.impl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.gateway.health.Status;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+public class SpringGatewayBridgeTest {
+
+  private SpringGatewayBridge sutBrigde;
+
+  @BeforeEach
+  public void setUp() {
+    sutBrigde = new SpringGatewayBridge();
+  }
+
+  @Test
+  public void shouldReturnNoGatewayStatusByDefault() {
+    // when
+    final Optional<Status> actual = sutBrigde.getGatewayStatus();
+
+    // then
+    assertThat(actual).describedAs("Gateway status when no supplier is set").isEmpty();
+  }
+
+  @Test
+  public void shouldUseGatewayStatusSupplierWhenSet() {
+    // given
+    final Supplier<Status> testSupplier = () -> Status.RUNNING;
+    sutBrigde.registerGatewayStatusSupplier(testSupplier);
+
+    // when
+    final var actual = sutBrigde.getGatewayStatus();
+
+    // then
+    assertThat(actual).contains(Status.RUNNING);
+  }
+
+  @Test
+  public void shouldReturnEmptyClusterStatesByDefault() {
+    // when
+    final var actual = sutBrigde.getClusterStates();
+
+    // then
+    assertThat(actual).describedAs("Cluster states when no supplier is set").isEmpty();
+  }
+
+  @Test
+  public void shouldUseClusterStatesSupplierWhenRegistered() {
+    // given
+    final var mockClusterState = Mockito.mock(BrokerClusterState.class);
+    final Supplier<Map<String, BrokerClusterState>> testSupplier =
+        () -> Map.of("default", mockClusterState);
+    sutBrigde.registerClusterStatesSupplier(testSupplier);
+
+    // when
+    final var actual = sutBrigde.getClusterStates();
+
+    // then
+    assertThat(actual).containsExactly(Map.entry("default", mockClusterState));
+  }
+}

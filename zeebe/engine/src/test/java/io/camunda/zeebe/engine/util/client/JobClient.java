@@ -1,0 +1,248 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.util.client;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+public final class JobClient {
+  private static final long DEFAULT_KEY = -1L;
+
+  private static final Function<Long, Record<JobRecordValue>> SUCCESS_SUPPLIER =
+      (position) -> RecordingExporter.jobRecords().withSourceRecordPosition(position).getFirst();
+
+  private static final Function<Long, Record<JobRecordValue>> REJECTION_SUPPLIER =
+      (position) ->
+          RecordingExporter.jobRecords()
+              .onlyCommandRejections()
+              .withSourceRecordPosition(position)
+              .getFirst();
+
+  private final JobRecord jobRecord;
+  private final CommandWriter writer;
+  private long processInstanceKey;
+  private long jobKey = DEFAULT_KEY;
+  private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+  public JobClient(final CommandWriter writer) {
+    this.writer = writer;
+    jobRecord = new JobRecord();
+  }
+
+  public JobClient ofInstance(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public JobClient withType(final String jobType) {
+    jobRecord.setType(jobType);
+    return this;
+  }
+
+  public JobClient withKey(final long jobKey) {
+    this.jobKey = jobKey;
+    return this;
+  }
+
+  public JobClient withVariables(final String variables) {
+    jobRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
+    return this;
+  }
+
+  public JobClient withVariables(final DirectBuffer variables) {
+    jobRecord.setVariables(variables);
+    return this;
+  }
+
+  public JobClient withVariable(final String key, final Object value) {
+    jobRecord.setVariables(MsgPackUtil.asMsgPack(key, value));
+    return this;
+  }
+
+  public JobClient withVariables(final Map<String, Object> variables) {
+    jobRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+    return this;
+  }
+
+  public JobClient withResult(final JobResult result) {
+    jobRecord.setResult(result);
+    return this;
+  }
+
+  public JobClient withRetries(final int retries) {
+    jobRecord.setRetries(retries);
+    return this;
+  }
+
+  public JobClient withTimeout(final long timeout) {
+    jobRecord.setTimeout(timeout);
+    return this;
+  }
+
+  public JobClient withBackOff(final Duration backOff) {
+    jobRecord.setRetryBackoff(backOff.toMillis());
+    return this;
+  }
+
+  public JobClient withErrorMessage(final String errorMessage) {
+    jobRecord.setErrorMessage(errorMessage);
+    return this;
+  }
+
+  public JobClient withErrorCode(final String errorCode) {
+    jobRecord.setErrorCode(wrapString(errorCode));
+    return this;
+  }
+
+  public JobClient withAuthorizedTenantIds(final String... tenantIds) {
+    authorizedTenantIds = List.of(tenantIds);
+    return this;
+  }
+
+  public JobClient withPriority(final int priority) {
+    jobRecord.setPriority(priority);
+    return this;
+  }
+
+  public JobClient withChangeset(final Set<String> changeset) {
+    jobRecord.setChangedAttributes(changeset);
+    return this;
+  }
+
+  public JobClient withLeaseToken(final String leaseToken) {
+    jobRecord.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  public JobClient withBusinessId(final String businessId) {
+    jobRecord.setBusinessId(businessId);
+    return this;
+  }
+
+  public JobClient expectRejection() {
+    expectation = REJECTION_SUPPLIER;
+    return this;
+  }
+
+  private long findJobKey() {
+    if (jobKey == DEFAULT_KEY) {
+      final Record<JobRecordValue> createdJob =
+          RecordingExporter.jobRecords()
+              .withType(jobRecord.getType())
+              .withIntent(JobIntent.CREATED)
+              .withProcessInstanceKey(processInstanceKey)
+              .getFirst();
+
+      return createdJob.getKey();
+    }
+
+    return jobKey;
+  }
+
+  // Route to the partition encoded in the job key.
+  // Deployment-partition and non-encoded keys keep the default path.
+  private long writeJobCommand(final JobIntent intent) {
+    final long jobKey = findJobKey();
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    if (partitionId <= Protocol.DEPLOYMENT_PARTITION) {
+      return writer.writeCommand(
+          jobKey, intent, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    }
+    return writer.writeCommandOnPartition(
+        partitionId, jobKey, intent, jobRecord, authorizedTenantIds.toArray(new String[0]));
+  }
+
+  private long writeJobCommand(final JobIntent intent, final String username) {
+    final long jobKey = findJobKey();
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    if (partitionId <= Protocol.DEPLOYMENT_PARTITION) {
+      return writer.writeCommand(
+          jobKey, intent, username, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    }
+    return writer.writeCommandOnPartition(
+        partitionId,
+        jobKey,
+        intent,
+        username,
+        jobRecord,
+        authorizedTenantIds.toArray(new String[0]));
+  }
+
+  public Record<JobRecordValue> complete() {
+    return expectation.apply(writeJobCommand(JobIntent.COMPLETE));
+  }
+
+  public Record<JobRecordValue> complete(final String username) {
+    return expectation.apply(writeJobCommand(JobIntent.COMPLETE, username));
+  }
+
+  public Record<JobRecordValue> fail() {
+    return expectation.apply(writeJobCommand(JobIntent.FAIL));
+  }
+
+  public Record<JobRecordValue> fail(final String username) {
+    return expectation.apply(writeJobCommand(JobIntent.FAIL, username));
+  }
+
+  public Record<JobRecordValue> yield() {
+    final long jobKey = findJobKey();
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    final long position =
+        partitionId <= Protocol.DEPLOYMENT_PARTITION
+            ? writer.writeCommand(jobKey, JobIntent.YIELD, jobRecord)
+            : writer.writeCommandOnPartition(partitionId, jobKey, JobIntent.YIELD, jobRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<JobRecordValue> updateRetries() {
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_RETRIES));
+  }
+
+  public Record<JobRecordValue> updateRetries(final String username) {
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_RETRIES, username));
+  }
+
+  public Record<JobRecordValue> updateTimeout() {
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_TIMEOUT));
+  }
+
+  public Record<JobRecordValue> updateTimeout(final String username) {
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE_TIMEOUT, username));
+  }
+
+  public Record<JobRecordValue> update() {
+    return expectation.apply(writeJobCommand(JobIntent.UPDATE));
+  }
+
+  public Record<JobRecordValue> throwError() {
+    return expectation.apply(writeJobCommand(JobIntent.THROW_ERROR));
+  }
+
+  public Record<JobRecordValue> throwError(final String username) {
+    return expectation.apply(writeJobCommand(JobIntent.THROW_ERROR, username));
+  }
+}

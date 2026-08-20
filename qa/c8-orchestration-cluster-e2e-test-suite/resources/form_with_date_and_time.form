@@ -1,0 +1,21 @@
+{
+  "components": [
+    {
+      "subtype": "datetime",
+      "dateLabel": "Date",
+      "label": "Date time",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_0d3trez",
+        "columns": null
+      },
+      "id": "Field_124m3oh",
+      "key": "field_0sccnu9",
+      "timeLabel": "Time",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15
+    }
+  ],
+  "type": "default",
+  "id": "form_with_date_and_time"
+}

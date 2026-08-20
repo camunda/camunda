@@ -1,0 +1,118 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { FormModal, UseEntityModalProps } from "src/components/modal";
+import useTranslate from "src/utility/localization";
+import { beautify, isValid } from "src/utility/components/editor/jsonUtils.ts";
+import JSONEditor from "src/components/form/JSONEditor.tsx";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { clusterVariableMutations } from "src/utility/api/cluster-variables/mutations";
+import { useNotifications } from "src/components/notifications";
+import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
+
+type FormData = {
+  value: string;
+};
+
+const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
+  open,
+  onClose,
+  onSuccess,
+  entity: clusterVariable,
+}) => {
+  const { t } = useTranslate("clusterVariables");
+  const { enqueueNotification } = useNotifications();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(clusterVariableMutations.update(qc));
+  const initialValue = beautify(clusterVariable.value);
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { isValid: isFormValid },
+  } = useForm<FormData>({
+    defaultValues: {
+      value: initialValue,
+    },
+    mode: "all",
+  });
+
+  const currentValue = watch("value");
+  const hasChanged = currentValue !== initialValue;
+  const isSubmitDisabled = !isFormValid || !hasChanged;
+
+  const handleSave = (data: FormData) => {
+    mutate(
+      {
+        name: clusterVariable.name,
+        scope: clusterVariable.scope,
+        tenantId: clusterVariable.tenantId,
+        value: JSON.parse(data.value.trim()),
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("clusterVariableUpdated"),
+            subtitle: t("clusterVariableUpdatedSuccessfully", {
+              name: clusterVariable.name,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
+  };
+
+  return (
+    <FormModal
+      open={open}
+      onClose={onClose}
+      headline={t("editClusterVariable", { name: clusterVariable.name })}
+      onSubmit={handleSubmit(handleSave)}
+      confirmLabel={t("save")}
+      submitDisabled={isSubmitDisabled}
+      loading={loading}
+      loadingDescription={t("updatingClusterVariable")}
+      error={error}
+    >
+      <Controller
+        name="value"
+        control={control}
+        rules={{
+          validate: (value) => {
+            if (!value || !value.trim()) {
+              return t("clusterVariableValueRequired");
+            } else if (!isValid(value.trim())) {
+              return t("clusterVariableValueInvalid");
+            }
+
+            return true;
+          },
+        }}
+        render={({ field, fieldState }) => (
+          <JSONEditor
+            {...field}
+            label={t("clusterVariableDetailsValue")}
+            errors={fieldState.error?.message}
+            beautify
+          />
+        )}
+      />
+    </FormModal>
+  );
+};
+
+export default EditModal;

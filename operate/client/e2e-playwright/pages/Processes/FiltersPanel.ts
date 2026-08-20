@@ -1,0 +1,184 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {type Page, type Locator, expect} from '@playwright/test';
+
+type OptionalFilter =
+  | 'Variables'
+  | 'Process Instance Key(s)'
+  | 'Parent Process Instance Key'
+  | 'Business ID'
+  | 'Batch Operation Key'
+  | 'Error Message'
+  | 'Start Date Range'
+  | 'End Date Range'
+  | 'Failed job but retries left';
+
+export class FiltersPanel {
+  private page: Page;
+  readonly panel: Locator;
+  readonly activeCheckbox: Locator;
+  readonly incidentsCheckbox: Locator;
+  readonly runningInstancesCheckbox: Locator;
+  readonly completedCheckbox: Locator;
+  readonly canceledCheckbox: Locator;
+  readonly finishedInstancesCheckbox: Locator;
+  readonly processNameFilter: Locator;
+  readonly processVersionFilter: Locator;
+  readonly processInstanceKeysFilter: Locator;
+  readonly parentProcessInstanceKey: Locator;
+  readonly elementFilter: Locator;
+  readonly batchOperationKeyFilter: Locator;
+  readonly businessIdFilter: Locator;
+  readonly resetFiltersButton: Locator;
+  readonly errorMessageFilter: Locator;
+  readonly startDateFilter: Locator;
+  readonly openVariableFilterModal: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.panel = page.getByRole('region', {name: 'Filter'});
+    this.activeCheckbox = this.panel.getByRole('checkbox', {name: 'Active'});
+    this.incidentsCheckbox = this.panel.getByRole('checkbox', {
+      name: 'Incidents',
+    });
+    this.runningInstancesCheckbox = this.panel.getByRole('checkbox', {
+      name: 'Running Instances',
+    });
+    this.completedCheckbox = this.panel.getByRole('checkbox', {
+      name: 'Completed',
+    });
+    this.canceledCheckbox = this.panel.getByRole('checkbox', {
+      name: 'Canceled',
+    });
+    this.finishedInstancesCheckbox = this.panel.getByRole('checkbox', {
+      name: 'Finished Instances',
+    });
+
+    this.processNameFilter = this.panel.getByRole('combobox', {
+      name: 'Name',
+    });
+
+    this.processVersionFilter = this.panel.getByRole('combobox', {
+      name: 'Version',
+    });
+
+    this.processInstanceKeysFilter = this.panel.getByLabel(
+      /^process instance key\(s\)$/i,
+    );
+
+    this.parentProcessInstanceKey = page.getByRole('textbox', {
+      name: /parent process instance key/i,
+    });
+
+    this.elementFilter = this.panel.getByRole('combobox', {
+      name: /element/i,
+    });
+
+    this.batchOperationKeyFilter = this.panel.getByRole('textbox', {
+      name: /batch operation key/i,
+    });
+
+    this.businessIdFilter = this.panel.getByRole('textbox', {
+      name: /business id/i,
+    });
+
+    this.resetFiltersButton = this.panel.getByRole('button', {
+      name: /reset filters/i,
+    });
+
+    this.errorMessageFilter = this.panel.getByRole('textbox', {
+      name: /error message/i,
+    });
+
+    this.startDateFilter = this.panel.getByRole('textbox', {
+      name: /start date range/i,
+    });
+
+    this.openVariableFilterModal = this.panel.getByTestId(
+      'open-variable-filter-modal',
+    );
+  }
+
+  async validateCheckedState({
+    checked,
+    unChecked,
+  }: {
+    checked: Array<Locator>;
+    unChecked: Array<Locator>;
+  }) {
+    checked.forEach(async (filter) => {
+      await expect(filter).toBeChecked();
+    });
+    unChecked.forEach(async (filter) => {
+      await expect(filter).not.toBeChecked();
+    });
+  }
+
+  async displayOptionalFilter(filterName: OptionalFilter) {
+    await this.panel.getByRole('button', {name: 'More Filters'}).click();
+    await this.page
+      .getByRole('menuitem', {
+        name: filterName,
+      })
+      .click();
+  }
+
+  async removeOptionalFilter(filterName: OptionalFilter) {
+    await this.panel.getByLabel(filterName, {exact: true}).hover();
+    await this.panel.getByLabel(`Remove ${filterName} Filter`).click();
+  }
+
+  async selectProcess(option: string) {
+    await this.processNameFilter.click();
+    await this.panel.getByRole('option', {name: option, exact: true}).click();
+  }
+
+  async selectVersion(option: string) {
+    await this.processVersionFilter.click();
+    await this.panel.getByRole('option', {name: option, exact: true}).click();
+  }
+
+  async selectElement(option: string) {
+    await this.elementFilter.click();
+    await this.panel.getByRole('option', {name: option}).click();
+  }
+
+  pickDateTimeRange = async ({
+    fromDay,
+    toDay,
+    fromTime,
+    toTime,
+  }: {
+    fromDay: string;
+    toDay: string;
+    fromTime?: string;
+    toTime?: string;
+  }) => {
+    await expect(this.page.getByRole('dialog')).toBeVisible();
+
+    const date = new Date();
+
+    const monthName = date.toLocaleString('default', {month: 'long'});
+    const year = date.getFullYear();
+
+    await this.page.getByText('From date').click();
+    await this.page.getByLabel(`${monthName} ${fromDay}, ${year}`).click();
+    await this.page.getByLabel(`${monthName} ${toDay}, ${year}`).click();
+
+    if (fromTime !== undefined) {
+      await this.page.getByTestId('fromTime').clear();
+      await this.page.getByTestId('fromTime').type(fromTime);
+    }
+
+    if (toTime !== undefined) {
+      await this.page.getByTestId('toTime').clear();
+      await this.page.getByTestId('toTime').type(toTime);
+    }
+  };
+}

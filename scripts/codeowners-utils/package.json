@@ -1,0 +1,19 @@
+{
+  "name": "@camunda/codeowners-utils",
+  "version": "1.0.0",
+  "description": "Utilities for analyzing codeowners and test classification in the Camunda monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "collect-tests": "node collect-tests.js",
+    "test": "node --test lib/*.test.js"
+  },
+  "keywords": [
+    "testing",
+    "codeowners",
+    "ci",
+    "test-classification"
+  ],
+  "author": "Camunda",
+  "license": "PROPRIETARY"
+}

@@ -1,0 +1,51 @@
+# Entry point for response-properties-must-be-required rule tests.
+# Mirrors the real spec structure: paths $ref to domain files.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — response-properties-must-be-required
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid cases ──────────────────────────────────────────────
+  # All properties required (flat object)
+  /valid-flat/get:
+    $ref: 'things.yaml#/paths/~1valid-flat~1get'
+
+  # All properties required via allOf composition
+  /valid-allof/search:
+    $ref: 'things.yaml#/paths/~1valid-allof~1search'
+
+  # allOf with required and properties split across members
+  /valid-allof-split/search:
+    $ref: 'things.yaml#/paths/~1valid-allof-split~1search'
+
+  # Nested object with all properties required
+  /valid-nested/get:
+    $ref: 'things.yaml#/paths/~1valid-nested~1get'
+
+  # Response with no properties (empty schema)
+  /valid-empty/get:
+    $ref: 'things.yaml#/paths/~1valid-empty~1get'
+
+  # ── Invalid cases ───────────────────────────────────────────
+  # One property not in required
+  /invalid-missing-one/get:
+    $ref: 'things.yaml#/paths/~1invalid-missing-one~1get'
+
+  # Multiple properties not in required
+  /invalid-missing-many/get:
+    $ref: 'things.yaml#/paths/~1invalid-missing-many~1get'
+
+  # Nested object has a non-required property
+  /invalid-nested/get:
+    $ref: 'things.yaml#/paths/~1invalid-nested~1get'
+
+  # allOf composition with missing required entry
+  /invalid-allof/search:
+    $ref: 'things.yaml#/paths/~1invalid-allof~1search'
+
+  # Array items contain an object with non-required property
+  /invalid-items-recurse/search:
+    $ref: 'things.yaml#/paths/~1invalid-items-recurse~1search'

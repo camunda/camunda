@@ -1,0 +1,65 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import styled from "styled-components";
+import { Link as BaseLink } from "@carbon/react";
+import { FC, ReactNode } from "react";
+import useTranslate from "../../utility/localization";
+import { useDocsUrl } from "./DocsUrlContext";
+import { Launch } from "@carbon/react/icons";
+
+export const DocumentationDescription = styled.p`
+  margin-top: var(--cds-spacing-04);
+  max-width: none;
+  text-align: left;
+`;
+
+const Link = styled(BaseLink)`
+  .cds--link__icon {
+    margin-inline-start: 0.25rem;
+  }
+`;
+
+export const LightLink = styled(Link)`
+  display: inline;
+  color: var(--cds-link-inverse) !important;
+`;
+
+type DocumentationLinkProps = {
+  children?: ReactNode;
+  light?: boolean;
+  path?: string;
+  withIcon?: boolean;
+};
+
+export const documentationHref = (
+  docsUrl: string,
+  path: DocumentationLinkProps["path"],
+) => `${docsUrl}${path}`;
+
+export const DocumentationLink: FC<DocumentationLinkProps> = ({
+  path = "",
+  light = false,
+  withIcon = false,
+  children,
+}) => {
+  const LinkComponent = light ? LightLink : Link;
+  const { Translate } = useTranslate();
+  const docsUrl = useDocsUrl();
+
+  return (
+    <LinkComponent
+      href={documentationHref(docsUrl, path)}
+      data-test="documentation-link"
+      target="_blank"
+      renderIcon={withIcon ? () => <Launch aria-label="Launch" /> : undefined}
+    >
+      {children || <Translate>documentation</Translate>}
+    </LinkComponent>
+  );
+};

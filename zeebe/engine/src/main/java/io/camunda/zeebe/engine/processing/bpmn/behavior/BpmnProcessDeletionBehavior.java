@@ -1,0 +1,118 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
+
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.immutable.AgentDefinitionState;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+
+/**
+ * Finalizes local deletion of a {@link PersistedProcessState#DRAINING} definition once its last
+ * active instance completes or terminates. Banned instances are excluded from the active-instance
+ * check, as they never complete or terminate.
+ */
+public final class BpmnProcessDeletionBehavior {
+
+  private final ProcessState processState;
+  private final AgentDefinitionState agentDefinitionState;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
+  private final TypedCommandWriter commandWriter;
+  private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
+
+  public BpmnProcessDeletionBehavior(
+      final ProcessState processState,
+      final AgentDefinitionState agentDefinitionState,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
+      final TypedCommandWriter commandWriter,
+      final StateWriter stateWriter,
+      final KeyGenerator keyGenerator,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
+    this.processState = processState;
+    this.agentDefinitionState = agentDefinitionState;
+    this.elementInstanceState = elementInstanceState;
+    this.bannedInstanceState = bannedInstanceState;
+    this.commandWriter = commandWriter;
+    this.stateWriter = stateWriter;
+    this.keyGenerator = keyGenerator;
+    this.processDefinitionMetrics = processDefinitionMetrics;
+  }
+
+  /**
+   * Reports that this partition has finished draining the completed/terminated instance's process
+   * definition, if it is draining and no active instances remain. No-op otherwise.
+   */
+  public void finalizeDeletionIfDraining(final BpmnElementContext context) {
+    final var intent = context.getIntent();
+    if (intent != ProcessInstanceIntent.ELEMENT_COMPLETED
+        && intent != ProcessInstanceIntent.ELEMENT_TERMINATED) {
+      // only a completed or terminated instance frees the definition to drain
+      return;
+    }
+
+    final var process =
+        processState.getProcessByKeyAndTenant(
+            context.getProcessDefinitionKey(), context.getTenantId());
+    if (process == null || process.getState() != PersistedProcessState.DRAINING) {
+      return;
+    }
+
+    final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
+    if (elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances)) {
+      // the definition is still draining; other instances are still running
+      return;
+    }
+
+    final var processRecord =
+        new ProcessRecord()
+            .setBpmnProcessId(process.getBpmnProcessId())
+            .setVersion(process.getVersion())
+            .setVersionTag(process.getVersionTag())
+            .setKey(process.getKey())
+            .setResourceName(process.getResourceName())
+            .setTenantId(process.getTenantId())
+            .setDeploymentKey(process.getDeploymentKey())
+            .setDeleteHistory(process.isDeleteHistory());
+    // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
+    deleteAgentDefinitions(process.getKey());
+    stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
+    commandWriter.appendFollowUpCommand(key, ProcessIntent.DELETE_COMPLETE, processRecord);
+    processDefinitionMetrics.processDefinitionDrainFinalized();
+  }
+
+  /**
+   * Emits {@code AgentDefinition:DELETED} for each agent definition owned by {@code
+   * processDefinitionKey}, so that none is left referencing an already-deleted process, even
+   * momentarily on the record stream.
+   */
+  private void deleteAgentDefinitions(final long processDefinitionKey) {
+    agentDefinitionState.forEachAgentDefinitionKey(
+        processDefinitionKey,
+        agentDefinitionKey ->
+            stateWriter.appendFollowUpEvent(
+                agentDefinitionKey,
+                AgentDefinitionIntent.DELETED,
+                agentDefinitionState.getAgentDefinition(agentDefinitionKey)));
+  }
+}

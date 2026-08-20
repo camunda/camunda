@@ -1,0 +1,161 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.api.judge;
+
+import io.camunda.process.test.impl.judge.JudgeConfigImpl;
+import java.util.Optional;
+
+/**
+ * Configuration for the LLM judge used in judge assertions.
+ *
+ * <p>Configuration for the LLM judge used in judge assertions. Instances are immutable; {@code
+ * with*} methods return a modified copy.
+ */
+public interface JudgeConfig {
+
+  /** The default threshold score (0-1) above which a judge evaluation passes. */
+  double DEFAULT_THRESHOLD = 0.5;
+
+  /** The default value for {@link #isAttachDocuments()}. */
+  boolean DEFAULT_ATTACH_DOCUMENTS = false;
+
+  /**
+   * Creates a new JudgeConfig with default settings and no chat model. A chat model must be set via
+   * {@link #withChatModelAdapter(ChatModelAdapter)} before using the config for judge evaluations.
+   *
+   * @return a new JudgeConfig instance with default settings Creates a config with default settings
+   *     and no chat model. A chat model must be set via {@link
+   *     #withChatModelAdapter(ChatModelAdapter)} before the config is used for judge evaluations.
+   */
+  static JudgeConfig defaults() {
+    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
+  }
+
+  /**
+   * Creates a new JudgeConfig with the given chat model and default threshold.
+   *
+   * @param chatModel the chat model adapter to use for judge evaluations
+   * @return a new JudgeConfig instance
+   */
+  static JudgeConfig of(final ChatModelAdapter chatModel) {
+    if (chatModel == null) {
+      throw new IllegalArgumentException("chatModel must not be null");
+    }
+    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
+  }
+
+  /**
+   * Creates a new JudgeConfig with the given chat model, threshold and optional custom prompt.
+   *
+   * @param chatModel the chat model adapter to use for judge evaluations
+   * @param threshold the threshold score (0-1) above which a judge evaluation passes
+   * @param customPrompt the custom evaluation criteria prompt, or {@code null} to use the default
+   * @return a new JudgeConfig instance
+   */
+  static JudgeConfig of(
+      final ChatModelAdapter chatModel, final double threshold, final String customPrompt) {
+    return of(chatModel).withThreshold(threshold).withCustomPrompt(customPrompt);
+  }
+
+  /**
+   * Returns a new JudgeConfig with the given chat model adapter, keeping all other settings.
+   *
+   * @param chatModel the chat model adapter to use for judge evaluations
+   * @return a new JudgeConfig instance with the updated chat model
+   */
+  JudgeConfig withChatModelAdapter(ChatModelAdapter chatModel);
+
+  /**
+   * Returns a new JudgeConfig with the given threshold, keeping all other settings.
+   *
+   * @param threshold the threshold score (0-1) above which a judge evaluation passes
+   * @return a new JudgeConfig instance with the updated threshold
+   */
+  JudgeConfig withThreshold(double threshold);
+
+  /**
+   * Returns a new JudgeConfig with the given custom prompt, keeping all other settings. The custom
+   * prompt replaces only the default evaluation criteria (the "You are an impartial judge..."
+   * preamble). The system still controls the expectation/value injection, scoring rubric, and JSON
+   * output format.
+   *
+   * @param customPrompt the custom evaluation criteria prompt, or {@code null} to use the default
+   * @return a new JudgeConfig instance with the custom prompt Replaces only the default evaluation
+   *     criteria (the "You are an impartial judge..." preamble). The system still controls
+   *     expectation/value injection, the scoring rubric, and the JSON output format. Pass {@code
+   *     null} to fall back to the default criteria.
+   */
+  JudgeConfig withCustomPrompt(String customPrompt);
+
+  /**
+   * Returns a new JudgeConfig with the given document-attachment toggle, keeping all other
+   * settings.
+   *
+   * <p>When enabled, Camunda document references found in the asserted variable are downloaded and
+   * their content is attached to the judge call as structured content blocks. This allows the judge
+   * to reason about binary artifacts (images, PDFs, etc.) that the agent produced as tool call
+   * results or received as user input. Toggles whether Camunda document references found in the
+   * asserted variable are downloaded and attached to the judge call as structured content blocks.
+   * Disabled by default to avoid token cost.
+   *
+   * <p>Disabled by default to avoid unnecessary token cost. Enable on demand for assertions that
+   * need to reason about document content.
+   *
+   * <p>Document attachment requires the configured {@link ChatModelAdapter} to also implement
+   * {@link MultimodalChatModelAdapter} so the content can be attached as structured content blocks.
+   * The built-in LangChain4j providers already do this; custom presets can opt in by implementing
+   * {@link MultimodalChatModelAdapter} directly. If the toggle is enabled but the adapter does not
+   * implement {@link MultimodalChatModelAdapter}, document attachment is skipped with a warning and
+   * the judge sees only the raw variable JSON.
+   *
+   * @param attachDocuments {@code true} to download and attach document content to the judge call
+   * @return a new JudgeConfig instance with the updated toggle
+   *     <p>Requires the configured {@link ChatModelAdapter} to also implement {@link
+   *     MultimodalChatModelAdapter}; otherwise attachment is skipped with a warning and the judge
+   *     sees only the raw variable JSON.
+   */
+  JudgeConfig withAttachDocuments(boolean attachDocuments);
+
+  /**
+   * Returns the chat model adapter, or {@code null} if not yet configured.
+   *
+   * @return the chat model adapter, or {@code null}
+   */
+  ChatModelAdapter getChatModel();
+
+  /**
+   * Returns the threshold score.
+   *
+   * @return the threshold score (0-1)
+   */
+  double getThreshold();
+
+  /**
+   * Returns the custom prompt, or empty if the default should be used.
+   *
+   * @return the custom prompt
+   */
+  Optional<String> getCustomPrompt();
+
+  /**
+   * Returns whether Camunda document references found in the asserted variable should be downloaded
+   * and attached to the judge call as structured content blocks.
+   *
+   * @return {@code true} if document attachment is enabled
+   * @see #withAttachDocuments(boolean)
+   */
+  boolean isAttachDocuments();
+}

@@ -1,0 +1,57 @@
+# type: Preview Environments
+# owner: @camunda/engineering-operations
+---
+name: Check for PR conflicts
+
+on:
+  schedule:
+  - cron: 23 1 * * 1-5
+  workflow_dispatch:
+  pull_request:
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
+jobs:
+  check-all-pr-conflicts:
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Check all PRs for conflict
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+  check-single-pr-conflict:
+    # No check on label `deploy-preview` here, because it wouldn't run
+    # if there's a remaining merge conflict. Thus, only a cleanup can happen here.
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check PR for merge conflicts
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
+      with:
+        pull-request-id: ${{ github.event.pull_request.number }}
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        sparse-checkout: .github
+        persist-credentials: false
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

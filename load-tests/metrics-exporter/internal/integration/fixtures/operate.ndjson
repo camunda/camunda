@@ -1,0 +1,14 @@
+{"index": {"_id": "pi-running-1"}}
+{"joinRelation": "processInstance"}
+{"index": {"_id": "pi-running-2"}}
+{"joinRelation": "processInstance"}
+{"index": {"_id": "pi-completed-1"}}
+{"joinRelation": "processInstance", "endDate": "2024-01-01T00:00:00"}
+{"index": {"_id": "pi-completed-2"}}
+{"joinRelation": "processInstance", "endDate": "2024-01-02T00:00:00"}
+{"index": {"_id": "pi-completed-3"}}
+{"joinRelation": "processInstance", "endDate": "2024-01-03T00:00:00"}
+{"index": {"_id": "task-running"}}
+{"joinRelation": "task"}
+{"index": {"_id": "task-completed"}}
+{"joinRelation": "task", "endDate": "2024-01-01T00:00:00"}

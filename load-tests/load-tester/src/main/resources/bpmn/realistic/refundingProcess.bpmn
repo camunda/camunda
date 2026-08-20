@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1dhp7yo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0">
+  <bpmn:process id="refundingProcess" name="Refunding Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start refunding">
+      <bpmn:outgoing>Flow_1d7loja</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1d7loja" sourceRef="StartEvent_1" targetRef="Activity_19w3iwm" />
+    <bpmn:serviceTask id="Activity_19w3iwm" name="Refund payment">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="refunding" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1d7loja</bpmn:incoming>
+      <bpmn:outgoing>Flow_063stgz</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_06mglrs" name="Refunding completed">
+      <bpmn:incoming>Flow_063stgz</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_063stgz" sourceRef="Activity_19w3iwm" targetRef="Event_06mglrs" />
+    <bpmn:boundaryEvent id="Event_014zd88" attachedToRef="Activity_19w3iwm">
+      <bpmn:outgoing>Flow_1t6jilw</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0usxs8e" errorRef="Error_0fzixd2" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Event_05wqqiz" name="Refunding failed">
+      <bpmn:incoming>Flow_1t6jilw</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1t6jilw" sourceRef="Event_014zd88" targetRef="Event_05wqqiz" />
+  </bpmn:process>
+  <bpmn:error id="Error_0fzixd2" name="RefundingError" errorCode="refundingError" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="refundingProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="161" y="142" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wef39u_di" bpmnElement="Activity_19w3iwm">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05wqqiz_di" bpmnElement="Event_05wqqiz">
+        <dc:Bounds x="482" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="460" y="265" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_06mglrs_di" bpmnElement="Event_06mglrs">
+        <dc:Bounds x="482" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="475" y="142" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0osvr1v_di" bpmnElement="Event_014zd88">
+        <dc:Bounds x="332" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1d7loja_di" bpmnElement="Flow_1d7loja">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_063stgz_di" bpmnElement="Flow_063stgz">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="482" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t6jilw_di" bpmnElement="Flow_1t6jilw">
+        <di:waypoint x="350" y="175" />
+        <di:waypoint x="350" y="240" />
+        <di:waypoint x="482" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

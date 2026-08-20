@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.transport.stream.api;
+
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.AsyncClosable;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Function;
+
+/**
+ * Manages an instance of {@link ClientStreamer}. Intended to be the main entry point when setting
+ * up the client side for remote streams, primarily via {@link
+ * io.camunda.zeebe.transport.TransportFactory#createRemoteStreamClient(ClusterCommunicationService,
+ * Function)}.
+ *
+ * @param <M> the type of the streaming metadata
+ */
+public interface ClientStreamService<M extends BufferWriter> extends AsyncClosable {
+
+  /**
+   * Starts the service, optionally with the given actor scheduling service. Assumes the scheduling
+   * service is already running.
+   */
+  ActorFuture<Void> start(final ActorSchedulingService schedulingService);
+
+  /**
+   * A callback to be invoked when a streaming server is confirmed to serve a specific partition
+   * group. Drives group-aware stream registration: only streams whose physical tenant matches
+   * {@code physicalTenantId} are registered with {@code memberId}. Implementations should be
+   * idempotent.
+   */
+  void onServerJoined(final MemberId memberId, final String physicalTenantId);
+
+  /**
+   * A callback to be invoked when a streaming server is confirmed removed from a specific partition
+   * group. Only registrations for streams whose physical tenant matches {@code physicalTenantId}
+   * are torn down for {@code memberId}. Implementations should be idempotent.
+   */
+  void onServerRemoved(final MemberId memberId, final String physicalTenantId);
+
+  /** Returns the managed {@link ClientStreamer} associated with this service. */
+  ClientStreamer<M> streamer();
+
+  /** Returns the {@link ClientStream} associated with this ID */
+  ActorFuture<Optional<ClientStream<M>>> streamFor(final ClientStreamId id);
+
+  /** Returns all registered client streams. */
+  ActorFuture<Collection<ClientStream<M>>> streams();
+}

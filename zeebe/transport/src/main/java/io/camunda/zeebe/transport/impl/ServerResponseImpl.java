@@ -1,0 +1,68 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.transport.impl;
+
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.zeebe.transport.ServerResponse;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
+
+public final class ServerResponseImpl implements ServerResponse {
+  private @Nullable BufferWriter writer;
+  private int partitionId;
+  private long requestId;
+
+  public ServerResponseImpl writer(final BufferWriter writer) {
+    this.writer = writer;
+    return this;
+  }
+
+  public ServerResponseImpl reset() {
+    partitionId = -1;
+    writer = null;
+    requestId = -1;
+
+    return this;
+  }
+
+  @Override
+  public int getLength() {
+    return requireNonNull(writer).getLength();
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return requireNonNull(writer).write(buffer, offset);
+  }
+
+  public @Nullable BufferWriter getWriter() {
+    return writer;
+  }
+
+  @Override
+  public long getRequestId() {
+    return requestId;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public ServerResponseImpl setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public ServerResponseImpl setRequestId(final long requestId) {
+    this.requestId = requestId;
+    return this;
+  }
+}

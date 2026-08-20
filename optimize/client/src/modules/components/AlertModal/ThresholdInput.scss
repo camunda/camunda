@@ -1,0 +1,14 @@
+.ThresholdInput {
+  position: relative;
+
+  Input {
+    width: 100%;
+  }
+
+  .percentageIndicator {
+    position: absolute;
+    right: 10px;
+    top: 6px;
+    color: var(--grey-lighten-56);
+  }
+}

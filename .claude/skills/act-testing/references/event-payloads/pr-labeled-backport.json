@@ -1,0 +1,18 @@
+{
+  "action": "labeled",
+  "pull_request": {
+    "number": 12345,
+    "title": "Test PR for release branch",
+    "html_url": "https://github.com/camunda/camunda/pull/12345",
+    "user": {
+      "login": "test-user"
+    },
+    "base": {
+      "ref": "main"
+    },
+    "merged": false
+  },
+  "label": {
+    "name": "backport release-8.8.0"
+  }
+}

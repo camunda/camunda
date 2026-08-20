@@ -1,0 +1,33 @@
+{
+  "components": [
+    {
+      "label": "Field 1",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_15ghdy6",
+        "columns": null
+      },
+      "id": "Field_0ibsmz4",
+      "key": "field_1lfayry"
+    },
+    {
+      "label": "Field 2",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1klibf9",
+        "columns": null
+      },
+      "id": "Field_0msuoi3",
+      "key": "field_1prtdvl"
+    }
+  ],
+  "type": "default",
+  "id": "humanTaskForm",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16
+}

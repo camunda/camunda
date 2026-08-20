@@ -1,0 +1,19 @@
+# build artifacts
+camunda-platform-8*
+pax_global_header
+docker-compose-8*
+camunda.process
+camunda8-run-8*
+connectors.process
+*.lock
+
+/c8run
+/c8run.exe
+/jre
+/main
+/main.exe
+/packager
+/packager.exe
+/e2e_tests/node_modules
+/e2e_tests/playwright-report
+/e2e_tests/test-results

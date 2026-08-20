@@ -1,0 +1,463 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+final class AgentHistoryRecordTest {
+
+  @Test
+  void shouldExposeDefaults() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getAgentHistoryKey()).isEqualTo(-1L);
+    assertThat(record.getAgentInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getJobKey()).isEqualTo(-1L);
+    assertThat(record.getJobLease()).isEmpty();
+    assertThat(record.getLoopIteration()).isEqualTo(0);
+    assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
+    assertThat(record.getProducedAt()).isEqualTo(-1L);
+    assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getBpmnProcessId()).isEmpty();
+    assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldRoundTripScalarFieldsViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord()
+            .setAgentHistoryKey(2251799813685250L)
+            .setAgentInstanceKey(2251799813685251L)
+            .setElementInstanceKey(2251799813685249L)
+            .setJobKey(2251799813685252L)
+            .setJobLease("job-lease-abc123")
+            .setLoopIteration(3)
+            .setRole(AgentHistoryRole.USER)
+            .setProducedAt(1717200000000L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getAgentHistoryKey()).isEqualTo(original.getAgentHistoryKey());
+    assertThat(copy.getAgentInstanceKey()).isEqualTo(original.getAgentInstanceKey());
+    assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
+    assertThat(copy.getJobKey()).isEqualTo(original.getJobKey());
+    assertThat(copy.getJobLease()).isEqualTo(original.getJobLease());
+    assertThat(copy.getLoopIteration()).isEqualTo(original.getLoopIteration());
+    assertThat(copy.getRole()).isEqualTo(original.getRole());
+    assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
+  }
+
+  @Test
+  void shouldRoundTripJobLeaseViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord().setJobLease("job-lease-abc123");
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getJobLease()).isEqualTo("job-lease-abc123");
+  }
+
+  @Test
+  void shouldRoundTripRoleViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setRole(AgentHistoryRole.ASSISTANT);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
+  }
+
+  @Test
+  void shouldExposeDefaultContent() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getContent()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripContentViaMsgPack() {
+    // given
+    final var textBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Hello, world!");
+
+    final var documentBlock =
+        new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
+    documentBlock
+        .getDocumentReference()
+        .setDocumentId("doc-123")
+        .setStoreId("store-456")
+        .setContentHash("sha256-doc123");
+
+    final Map<String, Object> objectData = Map.of("key", "value");
+    final var objectBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.OBJECT)
+            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(objectData)));
+
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setContent(List.of(textBlock, documentBlock, objectBlock));
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    final var content = copy.getContent();
+    assertThat(content).hasSize(3);
+
+    final var text = content.get(0);
+    assertThat(text.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
+    assertThat(text.getText()).isEqualTo("Hello, world!");
+
+    final var document = content.get(1);
+    assertThat(document.getContentType()).isEqualTo(AgentHistoryContentType.DOCUMENT);
+    assertThat(document.getDocumentReference().getDocumentId()).isEqualTo("doc-123");
+    assertThat(document.getDocumentReference().getStoreId()).isEqualTo("store-456");
+    assertThat(document.getDocumentReference().getContentHash()).isEqualTo("sha256-doc123");
+
+    final var object = content.get(2);
+    assertThat(object.getContentType()).isEqualTo(AgentHistoryContentType.OBJECT);
+    assertThat(object.getObject()).isEqualTo(objectData);
+  }
+
+  static Stream<Arguments> objectContentValues() {
+    return Stream.of(
+        Arguments.of(Named.named("map", Map.of("key", "value")), Map.class),
+        Arguments.of(
+            Named.named("array of objects", List.of(Map.of("id", 1), Map.of("id", 2))), List.class),
+        Arguments.of(Named.named("array of scalars", List.of(10, 20, 30)), List.class),
+        Arguments.of(Named.named("number", 42), Integer.class),
+        Arguments.of(Named.named("boolean", true), Boolean.class),
+        Arguments.of(Named.named("string scalar", "hello"), String.class));
+  }
+
+  @ParameterizedTest(name = "shouldRoundTripObjectContent [{0}]")
+  @MethodSource("objectContentValues")
+  void shouldRoundTripObjectContentViaMsgPack(final Object value, final Class<?> expectedType) {
+    // given
+    final var content =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.OBJECT)
+            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value)));
+
+    // when
+    final var copy = new AgentHistoryMessageContent();
+    copy.copy(content);
+
+    // then
+    assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+  }
+
+  @Test
+  void shouldReturnNullObjectForUnsetProperty() {
+    // given
+    final var content =
+        new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.TEXT);
+
+    // then
+    assertThat(content.getObject()).isNull();
+  }
+
+  @Test
+  void shouldExposeDefaultToolCalls() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getToolCalls()).isEmpty();
+  }
+
+  @Test
+  void shouldExposeDefaultMetrics() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getReasoningTokenCount()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getCacheCreationTokenCount()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getCacheReadTokenCount()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldRoundTripToolCallsViaMsgPack() {
+    // given
+    final Map<String, Object> args = Map.of("param", "value");
+    final var toolCall =
+        new AgentHistoryEmbeddedToolCall()
+            .setToolCallId("call-123")
+            .setToolName("myTool")
+            .setElementId("element-456")
+            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(args)));
+
+    final AgentHistoryRecord original = new AgentHistoryRecord().setToolCalls(List.of(toolCall));
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    final var toolCalls = copy.getToolCalls();
+    assertThat(toolCalls).hasSize(1);
+
+    final var copied = toolCalls.get(0);
+    assertThat(copied.getToolCallId()).isEqualTo("call-123");
+    assertThat(copied.getToolName()).isEqualTo("myTool");
+    assertThat(copied.getElementId()).isEqualTo("element-456");
+    assertThat(copied.getArguments()).isEqualTo(args);
+  }
+
+  @Test
+  void shouldRoundTripMetricsViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord();
+    original
+        .getMetrics()
+        .setInputTokens(100L)
+        .setOutputTokens(200L)
+        .setReasoningTokenCount(40L)
+        .setCacheCreationTokenCount(30L)
+        .setCacheReadTokenCount(20L)
+        .setDurationMs(350L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(200L);
+    assertThat(copy.getMetrics().getReasoningTokenCount()).isEqualTo(40L);
+    assertThat(copy.getMetrics().getCacheCreationTokenCount()).isEqualTo(30L);
+    assertThat(copy.getMetrics().getCacheReadTokenCount()).isEqualTo(20L);
+    assertThat(copy.getMetrics().getDurationMs()).isEqualTo(350L);
+  }
+
+  @Test
+  void shouldRoundTripTenantAndProcessFieldsViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord()
+            .setBpmnProcessId("my-process")
+            .setTenantId("tenant-a")
+            .setProcessInstanceKey(2251799813685260L)
+            .setRootProcessInstanceKey(2251799813685262L)
+            .setProcessDefinitionKey(2251799813685261L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getTenantId()).isEqualTo("tenant-a");
+    assertThat(copy.getBpmnProcessId()).isEqualTo("my-process");
+    assertThat(copy.getProcessInstanceKey()).isEqualTo(2251799813685260L);
+    assertThat(copy.getRootProcessInstanceKey()).isEqualTo(2251799813685262L);
+    assertThat(copy.getProcessDefinitionKey()).isEqualTo(2251799813685261L);
+  }
+
+  @Test
+  void shouldDefaultReservedConfigChangeFieldsToUnset() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getTools()).isEmpty();
+    assertThat(record.getModel()).isEmpty();
+    assertThat(record.getProvider()).isEmpty();
+    assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
+    assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
+    assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+    assertThat(record.getChangedAttributes()).isEmpty();
+    assertThat(record.getSystemPrompt()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripReservedConfigChangeFieldsViaMsgPack() {
+    // given
+    final AgentInstanceTool tool =
+        new AgentInstanceTool().setName("extract_line_items").setElementId("extract-task");
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord()
+            .setTools(List.of(tool))
+            .setModel("gpt-4o")
+            .setProvider("openai")
+            .setChangedAttributes(List.of("model", "tools"));
+    original.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getTools())
+        .extracting(AgentInstanceToolValue::getName, AgentInstanceToolValue::getElementId)
+        .containsExactly(tuple("extract_line_items", "extract-task"));
+    assertThat(copy.getModel()).isEqualTo("gpt-4o");
+    assertThat(copy.getProvider()).isEqualTo("openai");
+    assertThat(copy.getLimits().getMaxTokens()).isEqualTo(8000L);
+    assertThat(copy.getLimits().getMaxModelCalls()).isEqualTo(10);
+    assertThat(copy.getLimits().getMaxToolCalls()).isEqualTo(20);
+    assertThat(copy.getChangedAttributes()).containsExactly("model", "tools");
+  }
+
+  @Test
+  void shouldRoundTripSystemPromptIndependentlyOfContentViaMsgPack() {
+    // given
+    final var annotation =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("annotation: rotated system prompt for compliance review");
+    final var systemPromptBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("You are a compliance review assistant.");
+
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord()
+            .setContent(List.of(annotation))
+            .setSystemPrompt(List.of(systemPromptBlock));
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getContent()).hasSize(1);
+    assertThat(copy.getContent().get(0).getText())
+        .isEqualTo("annotation: rotated system prompt for compliance review");
+    assertThat(copy.getSystemPrompt()).hasSize(1);
+    assertThat(copy.getSystemPrompt().get(0).getText())
+        .isEqualTo("You are a compliance review assistant.");
+  }
+
+  @Test
+  void shouldReplaceExistingToolsOnSet() {
+    // given
+    final AgentHistoryRecord record =
+        new AgentHistoryRecord().setTools(List.of(new AgentInstanceTool().setName("first")));
+
+    // when
+    record.setTools(List.of(new AgentInstanceTool().setName("second")));
+
+    // then
+    assertThat(record.getTools())
+        .extracting(AgentInstanceToolValue::getName)
+        .containsExactly("second");
+  }
+
+  @Test
+  void shouldReplaceExistingChangedAttributesOnSet() {
+    // given
+    final AgentHistoryRecord record =
+        new AgentHistoryRecord().setChangedAttributes(List.of("model"));
+
+    // when
+    record.setChangedAttributes(List.of("provider", "limits"));
+
+    // then
+    assertThat(record.getChangedAttributes()).containsExactly("provider", "limits");
+  }
+
+  @Test
+  void shouldAppendChangedAttribute() {
+    // given
+    final AgentHistoryRecord record =
+        new AgentHistoryRecord().setChangedAttributes(List.of("model"));
+
+    // when
+    record.addChangedAttribute("provider");
+
+    // then
+    assertThat(record.getChangedAttributes()).containsExactly("model", "provider");
+  }
+
+  @Test
+  void shouldDefaultHistoryItemIdToEmpty() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getHistoryItemId()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripHistoryItemIdViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord().setHistoryItemId("item-1");
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getHistoryItemId()).isEqualTo("item-1");
+  }
+
+  @Test
+  void shouldDefaultIsDuplicateToFalse() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.isDuplicate()).isFalse();
+  }
+
+  @Test
+  void shouldRoundTripIsDuplicateViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setHistoryItemId("item-1").setDuplicate(true);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.isDuplicate()).isTrue();
+  }
+}

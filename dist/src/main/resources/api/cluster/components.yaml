@@ -1,0 +1,782 @@
+responses:
+  ConcurrentChangeError:
+    description: Failed to accept request. Another topology change is in progress.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  InvalidRequest:
+    description: Invalid request.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  GatewayError:
+    description: Gateway failed to send request to the broker.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  TimeoutError:
+    description: Request from gateway to broker timed out.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  InternalError:
+    description: Internal error
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  NotFound:
+    description: The requested resource was not found.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+schemas:
+  Error:
+    title: Error response
+    description: Generic response for all errors
+    type: object
+    properties:
+      message:
+        description: Error message
+        type: string
+        example: something failed
+
+  ScaleRequest:
+    title: ScaleRequest
+    description: Request body for changing the cluster topology
+    type: array
+    items:
+      $ref: "components.yaml#/schemas/BrokerId"
+
+  ClusterConfigPatchRequest:
+    title: ClusterConfigPatchRequest
+    description: Request body for reconfiguring the cluster
+    type: object
+    properties:
+      brokers:
+        type: object
+        description: Specify the required changes to the brokers. You can either provide the set of
+          brokers to add and remove or the new count of brokers.
+        properties:
+          add:
+            type: array
+            description: List of brokers to add. Can be omitted if no brokers are added.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          remove:
+            type: array
+            description: List of brokers to remove. Can be omitted if no brokers are removed.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          count:
+            type: integer
+            format: int32
+            description: The new number of brokers. Can be omitted if the broker count is not changed
+              or if the brokers to add or remove is provided.
+            example: 12
+          zone:
+            type: string
+            description: On zone-aware clusters, the zone whose broker count should be changed to
+              'count'. Required when 'count' is set and the cluster is zone-aware; must be omitted
+              otherwise.
+            example: zone-a
+      partitions:
+        type: object
+        properties:
+          count:
+            type: integer
+            format: int32
+            description: The new number of partitions. Can be omitted if the partition count is not
+              changed. This is an experimental feature.
+            example: 12
+          replicationFactor:
+            type: integer
+            format: int32
+            description: The new replication factor. Can be omitted if the replication factor is not changed.
+            example: 3
+
+  PlannedOperationsResponse:
+    title: PlannedOperationsResponse
+    description: Returns the current topology, planned changes and the expected final topology
+      when the planned changes have completed.
+    type: object
+    properties:
+      changeId:
+        $ref: "components.yaml#/schemas/ChangeId"
+      currentTopology:
+        description: Current topology of the cluster
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+      plannedChanges:
+        description: A sequence of operations that will be performed to transform the current
+          topology into the expected topology.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+      expectedTopology:
+        description: The expected final topology when the planned changes have completed.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+
+
+  GetTopologyResponse:
+    title: GetTopologyResponse
+    description: |
+      Current topology of the cluster. The top-level fields describe either exactly one physical
+      tenant or more than one, never both, and the two shapes are mutually exclusive:
+
+      - Single-tenant shape (a single-tenant cluster, or a request scoped with
+        `?physicalTenant=<id>`): `version`, `lastChange`, `pendingChange`, and `routing` are
+        populated. Of these, only `routing` is that one physical tenant's own routing state;
+        `version`, `lastChange`, and `pendingChange` describe cluster-wide configuration-change
+        state, not a per-tenant history - `version` is the higher of the cluster-wide and the
+        scoped tenant's own version, `lastChange` comes from the cluster-wide change history (so
+        it is identical whichever tenant is requested), and `pendingChange` reports the
+        cluster-wide pending change, falling back to the scoped tenant's own pending change only
+        when there is no cluster-wide one. This keeps the same top-level field set as before
+        physical tenants existed, so existing consumers of the top-level shape are unaffected.
+      - Multi-tenant shape (an unscoped request against a cluster with more than one physical
+        tenant): `version`, `lastChange`, `pendingChange`, and `routing` are all absent - reporting
+        any one tenant's routing state at the top level would misrepresent the tenants left out,
+        and the cluster-wide change state has no single physical tenant to be scoped to. Each
+        broker's `version` is absent for the same reason, see `BrokerState`.
+
+      `physicalTenants` reports every physical tenant the response covers, in both shapes, and is
+      absent only for an unscoped request against a single-tenant cluster - whose one tenant the
+      top-level fields already describe in full, and which is the shape that predates physical
+      tenants. A request scoping to one tenant therefore reads that tenant's routing state from
+      `physicalTenants` exactly as an unscoped one does, at the cost of repeating it under
+      `routing`; the two always agree.
+
+      `pendingChange` is superseded by the `/actuator/cluster/changes` endpoints, which report
+      pending changes per physical tenant; it is kept here only for the single-tenant shape's
+      backwards compatibility.
+    type: object
+    properties:
+      version:
+        $ref: "components.yaml#/schemas/TopologyVersion"
+      brokers:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+      lastChange:
+        $ref: "components.yaml#/schemas/CompletedChange"
+      pendingChange:
+        $ref: "components.yaml#/schemas/TopologyChange"
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
+      clusterId:
+        type: string
+        description: The unique ID of the cluster
+        example: "cluster-1234"
+      partitionDistribution:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      physicalTenants:
+        description: >
+          One entry per physical tenant the response covers: every physical tenant known to the
+          cluster for an unscoped request, or just the requested one for a request scoped with
+          `?physicalTenant=<id>`. Absent only for an unscoped request against a single-tenant
+          cluster, where `version`/`lastChange`/`pendingChange`/`routing` already carry that one
+          tenant's state (see the schema description).
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PhysicalTenantInfo"
+
+  PhysicalTenantInfo:
+    title: PhysicalTenantInfo
+    description: A physical tenant's own routing state, as reported by `GetTopologyResponse`. A
+      disabled tenant (removed from local static configuration, but retaining its data and
+      partition assignment) only sets `disabled`; `routing` is omitted since the tenant is not
+      running anywhere. An enabled tenant never sets `disabled` - its presence with a populated
+      `routing` already means it is enabled.
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      disabled:
+        type: boolean
+        description: Set only when the physical tenant is disabled.
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
+
+  UpdatePartitionDistributionRequest:
+    description: >
+      Request body for `PUT /cluster/partition-distribution`. Exactly one of `config` and
+      `zonePriorities` must be set.
+    type: object
+    properties:
+      config:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      zonePriorities:
+        type: array
+        minItems: 1
+        items:
+          type: string
+        description: >
+          Leader switchover: desired zone order for Raft leader-election priority, highest first.
+          Must list exactly the currently configured zones. The existing priority values are kept
+          and re-assigned in this order. Mutually exclusive with `config`.
+        example: ["zone-a", "zone-b"]
+
+  PartitionDistributionConfig:
+    description: The partition distributor configuration agreed on by the cluster.
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum: [ROUND_ROBIN, ZONE_AWARE, FIXED]
+        description: >
+          The distributor type. ROUND_ROBIN assigns partitions evenly across all brokers.
+          ZONE_AWARE places replicas according to zone specs. FIXED uses a static mapping
+          defined in each broker's local configuration.
+      zones:
+        type: array
+        description: >
+          Zone specifications; present only when type is ZONE_AWARE. While migrating a bare or
+          partially zoned cluster to zone-aware, the order of this array matters: it determines
+          which existing (bare) nodes get migrated into which zone. Outside of migration, order is
+          irrelevant — every operation addresses a zone by its `name`, never by its position in
+          this array.
+        items:
+          $ref: "components.yaml#/schemas/ZoneSpec"
+
+  ZoneSpec:
+    description: A zone's participation in partition placement.
+    type: object
+    required:
+      - name
+      - numberOfReplicas
+      - priority
+    properties:
+      name:
+        type: string
+        description: Zone name
+        example: "us-east1"
+      numberOfReplicas:
+        type: integer
+        format: int32
+        description: Number of partition replicas placed in this zone
+        example: 2
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking; higher value wins
+        example: 1000
+
+  AddZoneRequest:
+    description: Request body for adding back a previously force-removed zone. The zone name is
+      given in the path.
+    type: object
+    required:
+      - numberOfReplicas
+      - priority
+      - brokers
+    properties:
+      numberOfReplicas:
+        type: integer
+        format: int32
+        description: Number of partition replicas placed in the zone
+        example: 2
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking; higher value wins
+        example: 1000
+      brokers:
+        type: array
+        description: The brokers to re-add to the zone
+        items:
+          $ref: "components.yaml#/schemas/BrokerId"
+
+  PartitionJoinRequest:
+    description: Request body for adding a broker to a partition's replication group. The broker
+      and the partition are given in the path.
+    type: object
+    required:
+      - priority
+    properties:
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking of the broker within the partition; higher value wins
+        example: 1
+
+  ClusterZoneMigrationRequest:
+    description: >
+      Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
+      priorities, and replica counts must already be persisted through the partition-distribution
+      configuration — that persisted order is what determines which existing (bare) nodes are
+      migrated into this zone. When all configured zones have been migrated, the cluster becomes
+      fully zoned and subsequent operations address zones by name.
+    type: object
+    required:
+      - zone
+    properties:
+      zone:
+        type: string
+        description: >
+          Name of the zone to migrate. The zone must already exist in the persisted
+          partition-distribution configuration.
+        example: eu-west-1
+
+  RoutingState:
+    description: The routing state, i.e. where requests are sent to and how messages are correlated
+    type: object
+    required:
+      - version
+      - requestHandling
+      - messageCorrelation
+    properties:
+      version:
+        type: integer
+        format: int64
+        description: The version of the routing state
+        example: 1
+      requestHandling:
+        $ref: "components.yaml#/schemas/RequestHandling"
+      messageCorrelation:
+        $ref: "components.yaml#/schemas/MessageCorrelation"
+
+  RequestHandling:
+    description: The request handling strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
+      - $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        AllPartitions: "components.yaml#/schemas/RequestHandlingAllPartitions"
+        ActivePartitions: "components.yaml#/schemas/RequestHandlingActivePartitions"
+
+  RequestHandlingAllPartitions:
+    description: Requests are handled by all partitions
+    type: object
+    required:
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
+
+  RequestHandlingActivePartitions:
+    description: Requests are only handled by active partitions, inactive partitions are excluded
+    type: object
+    required:
+      - basePartitionCount
+      - additionalActivePartitions
+      - inactivePartitions
+    properties:
+      strategy:
+        type: string
+      basePartitionCount:
+        type: integer
+        format: int32
+        description: Contiguous range of partitions (1..=N) that are active.
+        example: 3
+      additionalActivePartitions:
+        type: array
+        description: A list of additional, active partitions that also accept round-robin requests
+        example: [ 4, 5 ]
+        items:
+          type: integer
+          format: int32
+      inactivePartitions:
+        type: array
+        description: A list of inactive partitions that do not accept round-robing requests
+        example: [ 6, 7 ]
+        items:
+          type: integer
+          format: int32
+
+  MessageCorrelation:
+    description: The message correlation strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/MessageCorrelationHashMod"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        HashMod: "components.yaml#/schemas/MessageCorrelationHashMod"
+
+  MessageCorrelationHashMod:
+    type: object
+    required:
+      - strategy
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
+
+  CompletedChange:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was completed
+        example: "2020-01-01T00:00:00Z"
+
+  TopologyChange:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was completed
+        example: "2020-01-01T00:00:00Z"
+      internalVersion:
+        type: integer
+        format: int64
+        description: The internal version of the topology change
+        example: 1
+      completed:
+        description: The list of operations that have been completed if the change status is not COMPLETED.
+        type: array
+        items:
+          allOf:
+            - $ref: "components.yaml#/schemas/Operation"
+            - type: object
+              properties:
+                completedAt:
+                  type: string
+                  format: date-time
+                  description: The time when the operation was completed
+                  example: "2020-01-01T00:00:00Z"
+      pending:
+        description: The list of operations that are pending.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+
+  ConfigurationChange:
+    title: ConfigurationChange
+    description: >
+      One configuration change plan, identified by its changeId, together with its status and the
+      operations it consists of. A change may target the global broker configuration, a single
+      physical tenant, or several physical tenants in parallel; each operation carries its own
+      `physicalTenant` (absent for a global operation) so operations belonging to different tenants
+      can still be told apart.
+
+
+      `completed`/`pending` reflect only what is currently available from the underlying
+      configuration state, not a persisted history: for the in-progress change, `completed` lists
+      operations from phases already advanced past, and `pending` lists the rest; for a change that
+      has already finished, the individual operations are no longer retained, so both lists are
+      empty and only `id`/`status`/`startedAt`/`completedAt` are meaningful.
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the configuration change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the configuration change was completed, if it has completed
+        example: "2020-01-01T00:00:00Z"
+      completed:
+        description: The list of operations that have been completed so far.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+      pending:
+        description: The list of operations that are pending.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+
+  GetConfigurationChangesResponse:
+    title: GetConfigurationChangesResponse
+    description: All configuration changes currently known to this broker.
+    type: object
+    properties:
+      changes:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/ConfigurationChange"
+
+  Operation:
+    type: object
+    properties:
+      operation:
+        type: string
+        enum:
+          - BROKER_ADD
+          - BROKER_REMOVE
+          - PARTITION_JOIN
+          - PARTITION_LEAVE
+          - PARTITION_RECONFIGURE_PRIORITY
+          - PARTITION_FORCE_RECONFIGURE
+          - BROKER_FORCE_REMOVE
+          - UNKNOWN
+          - PARTITION_DISABLE_EXPORTER
+          - PARTITION_ENABLE_EXPORTER
+          - START_PARTITION_SCALE_UP
+          - PARTITION_BOOTSTRAP
+          - PARTITION_PRE_RESTORE
+          - PARTITION_RESTORE
+          - AWAIT_REDISTRIBUTION
+          - AWAIT_RELOCATION
+          - UPDATE_ROUTING_STATE
+          - DELETE_HISTORY
+          - PARTITION_DELETE_EXPORTER
+          - UPDATE_INCARNATION_NUMBER
+          - PRE_SCALING
+          - POST_SCALING
+          - UPDATE_PARTITION_DISTRIBUTOR_CONFIG
+          - ENTER_RECOVERY
+          - EXIT_RECOVERY
+          - AWAIT_MODE_CHANGE
+          - EXPORTING_STATE_CHANGE
+      brokerId:
+        $ref: "components.yaml#/schemas/BrokerId"
+      partitionId:
+        $ref: "components.yaml#/schemas/PartitionId"
+      physicalTenant:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      priority:
+        type: integer
+        format: int32
+        description: The priority of the partition
+        example: 3
+      brokers:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerId"
+      exporterId:
+        $ref: "components.yaml#/schemas/ExporterId"
+      partitionDistributionConfig:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      exportingState:
+        $ref: "components.yaml#/schemas/ExportingState"
+
+  BrokerState:
+    title: BrokerState
+    description: State of a broker
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/BrokerId"
+      state:
+        $ref: "components.yaml#/schemas/BrokerStateCode"
+      version:
+        type: integer
+        format: int64
+        description: >
+          The version of the broker state, covering both its lifecycle state and its partition
+          state in the physical tenant the response describes. Absent when the response covers
+          more than one physical tenant, since each tenant advances its own counter independently
+          and no single number describes them all; use `lastUpdatedAt` for change detection there.
+        example: 1
+      lastUpdatedAt:
+        type: string
+        format: date-time
+        description: The time when the broker state was last updated
+        example: "2020-01-01T00:00:00Z"
+      partitions:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PartitionState"
+      physicalTenants:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PhysicalTenantState"
+
+  PhysicalTenantState:
+    title: PhysicalTenantState
+    description: State of a physical tenant
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      mode:
+        type: string
+        description: The mode of the physical tenant
+        enum:
+          - UNKNOWN
+          - PROCESSING
+          - RECOVERING
+
+  BrokerStateCode:
+    title: BrokerStateCode
+    description: State of a broker
+    type: string
+    enum:
+      - UNKNOWN
+      - ACTIVE
+      - JOINING
+      - LEAVING
+      - LEFT
+      - RECOVERING
+
+  PartitionState:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PartitionId"
+      physicalTenant:
+        $ref: "components.yaml#/schemas/PhysicalTenantId"
+      state:
+        $ref: "components.yaml#/schemas/PartitionStateCode"
+      priority:
+        type: integer
+        format: int32
+        description: The priority of the partition
+        example: 1
+      config:
+        $ref: "components.yaml#/schemas/PartitionConfig"
+
+  PartitionConfig:
+    type: object
+    properties:
+      exporting:
+        $ref: "components.yaml#/schemas/ExportingConfig"
+
+  ExportingConfig:
+    type: object
+    properties:
+      exporters:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/ExporterConfig"
+
+  ExporterConfig:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ExporterId"
+      state:
+        $ref: "components.yaml#/schemas/ExporterStateCode"
+
+  ExporterStateCode:
+    title: ExporterStateCode
+    description: State of an exporter
+    type: string
+    enum:
+      - UNKNOWN
+      - ENABLED
+      - DISABLED
+      - CONFIG_NOT_FOUND
+
+  PartitionStateCode:
+    title: PartitionStateCode
+    description: State of a partition
+    type: string
+    enum:
+      - UNKNOWN
+      - JOINING
+      - ACTIVE
+      - LEAVING
+      - RECOVERING
+
+  TopologyVersion:
+    title: TopologyVersion
+    description: The version of the topology
+    type: integer
+    format: int64
+    example: 1
+
+  ChangeId:
+    title: ChangeId
+    description: The ID of a topology change operation
+    type: integer
+    format: int64
+    example: 8
+
+  BrokerId:
+    title: BrokerId
+    description: >
+      The ID of a broker. An integer (e.g. 0) for non-zone-aware clusters,
+      or a string (e.g. "zone-a_0") for zone-aware clusters.
+    oneOf:
+      - type: integer
+        format: int32
+        example: 0
+      - type: string
+        example: "zone-a_0"
+
+  PartitionId:
+    title: PartitionId
+    description: The ID of a partition, starting from 1
+    type: integer
+    format: int32
+    example: 1
+
+  PhysicalTenantId:
+    title: PhysicalTenantId
+    description: The ID of a physical tenant
+    type: string
+    example: "mytenant"
+
+  ExporterId:
+    title: Exporter
+    description: The ID of an exporter
+    type: string
+    example: "my-exporter"
+
+  ExportingState:
+    enum:
+      - EXPORTING
+      - PAUSED
+      - SOFT_PAUSED
+      - UNKNOWN

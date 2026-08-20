@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_02hgizz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+  <bpmn:process id="errorProcess" name="Error Process" isExecutable="true">
+    <bpmn:startEvent id="startEvent" name="Start">
+      <bpmn:outgoing>SequenceFlow_1i0srtx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1i0srtx" sourceRef="startEvent" targetRef="serviceTask" />
+    <bpmn:endEvent id="endEvent" name="End">
+      <bpmn:incoming>SequenceFlow_1jg1gnc</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1jg1gnc" sourceRef="serviceTask" targetRef="endEvent" />
+    <bpmn:serviceTask id="serviceTask" name="Task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="errorTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1i0srtx</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1jg1gnc</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="errorBoundaryEvent" name="Error Boundary" attachedToRef="serviceTask">
+      <bpmn:outgoing>SequenceFlow_1sch794</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_12y8yzc" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="boundaryEndEvent" name="Boundary End">
+      <bpmn:incoming>SequenceFlow_1sch794</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1sch794" sourceRef="errorBoundaryEvent" targetRef="boundaryEndEvent" />
+    <bpmn:subProcess id="errorSubProcess" name="Error Sub Process" triggeredByEvent="true">
+      <bpmn:startEvent id="subProcessStartEvent" name="Sub Process Start">
+        <bpmn:outgoing>SequenceFlow_1jhttdc</bpmn:outgoing>
+        <bpmn:errorEventDefinition errorRef="Error_1ibaxgv" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1jhttdc" sourceRef="subProcessStartEvent" targetRef="subProcessEndEvent" />
+      <bpmn:endEvent id="subProcessEndEvent" name="Sub Process End">
+        <bpmn:incoming>SequenceFlow_1jhttdc</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:error id="Error_12y8yzc" name="boundaryError" errorCode="boundary" />
+  <bpmn:error id="Error_1ibaxgv" name="subProcessError" errorCode="subProcess" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="errorProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startEvent">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="185" y="142" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1i0srtx_di" bpmnElement="SequenceFlow_1i0srtx">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1niethi_di" bpmnElement="endEvent">
+        <dc:Bounds x="412" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="420" y="142" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jg1gnc_di" bpmnElement="SequenceFlow_1jg1gnc">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="412" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0fvkxt5_di" bpmnElement="serviceTask">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_148d2nx_di" bpmnElement="errorBoundaryEvent">
+        <dc:Bounds x="282" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="312" y="182" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0e1q20q_di" bpmnElement="boundaryEndEvent">
+        <dc:Bounds x="372" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="355" y="265" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1sch794_di" bpmnElement="SequenceFlow_1sch794">
+        <di:waypoint x="300" y="175" />
+        <di:waypoint x="300" y="240" />
+        <di:waypoint x="372" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_0xvpj1r_di" bpmnElement="errorSubProcess" isExpanded="true">
+        <dc:Bounds x="170" y="330" width="330" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_17b52dz_di" bpmnElement="subProcessStartEvent">
+        <dc:Bounds x="242" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="215" y="455" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jhttdc_di" bpmnElement="SequenceFlow_1jhttdc">
+        <di:waypoint x="278" y="430" />
+        <di:waypoint x="402" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0qjdr1l_di" bpmnElement="subProcessEndEvent">
+        <dc:Bounds x="402" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="378" y="455" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

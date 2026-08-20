@@ -1,0 +1,46 @@
+{
+  "name": "playwright-automation",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:local": "node --env-file=.env ./runTest.js",
+    "lint": "tsc && eslint . && npm run check:testrail-ids",
+    "lint:fix": "eslint . --fix",
+    "check:testrail-ids": "playwright test --list --reporter=./scripts/check-automation-id-length.ts",
+    "responses:regenerate": "assert-json-body extract",
+    "paths:regenerate": "node scripts/generate-api-paths.ts && prettier --write utils/_generated/apiPaths.ts"
+  },
+  "devDependencies": {
+    "@inquirer/prompts": "^8.0.0",
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "8.67.0",
+    "@typescript-eslint/parser": "8.67.0",
+    "assert-json-body": "^1.7.1",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-license-header": "0.9.0",
+    "eslint-plugin-playwright": "2.11.0",
+    "eslint-plugin-prettier": "5.5.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.0",
+    "playwright-slack-report": "1.1.112",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "valibot": "1.4.2",
+    "zeebe-node": "^8.3.2"
+  },
+  "lint-staged": {
+    "*": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@camunda8/sdk": "^8.7.29",
+    "dotenv": "^17.0.0",
+    "mailslurp-client": "^17.0.0"
+  },
+  "packageManager": "npm@12.0.2"
+}

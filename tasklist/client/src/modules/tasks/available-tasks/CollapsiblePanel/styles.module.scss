@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+@use '@carbon/grid';
+
+.base {
+  height: 100%;
+  border-right: 1px solid var(--cds-border-subtle);
+  background-color: var(--cds-layer);
+  display: flex;
+  flex-direction: column;
+}
+
+.collapsedContainer {
+  width: layout.to-rem(40px);
+  padding-top: var(--cds-spacing-02);
+}
+
+.floatingContainer {
+  width: fit-content;
+  max-height: 100%;
+}
+
+@include grid.breakpoint-down('xlg') {
+  .floatingContainer {
+    width: layout.to-rem(40px);
+    position: relative;
+
+    .expandedContainer {
+      position: absolute;
+      z-index: 1;
+    }
+  }
+}
+
+.expandedContainer {
+  width: layout.to-rem(196px);
+  display: grid;
+  grid-template-rows: layout.to-rem(48px) 1fr;
+}
+
+.scrollContainer {
+  overflow-y: auto;
+  overflow-x: visible;
+
+  li {
+    max-height: layout.to-rem(40px);
+  }
+}
+
+.customFilterContainer {
+  display: flex;
+  flex-direction: row;
+  border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
+
+  .customFilterNav {
+    width: 155px;
+    border-bottom: none;
+  }
+
+  .selected,
+  &:hover .overflowMenu.selected {
+    background-color: var(--cds-background-selected);
+  }
+
+  &:hover .overflowMenu {
+    background-color: var(--cds-background-hover);
+  }
+}

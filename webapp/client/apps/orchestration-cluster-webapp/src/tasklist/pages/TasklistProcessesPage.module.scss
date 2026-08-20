@@ -1,0 +1,49 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use 'sass:map';
+@use '@carbon/grid/scss/config' as grid;
+
+.page {
+	width: 100%;
+	height: calc(100% - var(--c3-header-height, var(--cds-spacing-09)));
+	padding: 0;
+	background: var(--cds-layer);
+	overflow: hidden;
+}
+
+.scrollContainer {
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+}
+
+.header {
+	background: var(--cds-background);
+}
+
+.headerContent,
+.processesContent {
+	max-width: map.get(map.get(grid.$grid-breakpoints, max), width);
+	padding: var(--cds-spacing-06) var(--cds-spacing-08);
+}
+
+.processes {
+	background: var(--cds-layer);
+}
+
+.processTileWrapper {
+	min-width: 0;
+	padding-top: var(--cds-spacing-03);
+	padding-bottom: var(--cds-spacing-03);
+}
+
+.loadMoreButton {
+	display: block;
+	margin: var(--cds-spacing-05) auto;
+}

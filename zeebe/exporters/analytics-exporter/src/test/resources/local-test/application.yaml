@@ -1,0 +1,12 @@
+zeebe:
+  broker:
+    exporters:
+      analytics:
+        className: io.camunda.exporter.analytics.AnalyticsExporter
+        args:
+          endpoint: http://localhost:4318
+          pushInterval: PT10S
+
+camunda:
+  license:
+    key: local-test-license-key

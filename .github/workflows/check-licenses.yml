@@ -1,0 +1,204 @@
+# description: Checks for license issues by using FOSSA. If a PR introduces a denied or flagged license, this check will fail
+# test location: /
+# type: CI
+# owner: @camunda/engineering-operations
+---
+name: Check Licenses
+
+on:
+  push:
+    branches:
+    - main
+    - stable/*
+    - release/*
+    - release-*
+    tags:
+    - '*'
+  pull_request:
+    types:
+    - opened
+    - synchronize
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  detect-changes:
+    name: Detect dependency file changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      fossa-changes: ${{ steps.filter.outputs.fossa-changes }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      timeout-minutes: 1
+      with:
+        persist-credentials: false
+    - name: Detect changes
+      uses: ./.github/actions/paths-filter
+      id: filter
+
+  analyze:
+    name: "Analyze ${{ matrix.project.name }} dependencies"
+    needs: [detect-changes]
+    permissions:
+      # Needed for camunda/infra-global-github-actions/fossa/info
+      actions: read
+      contents: read
+    runs-on: ${{ matrix.project.runner }}
+    # Never run on fork PRs (no FOSSA credentials). Otherwise run when fossa-changes is true, which the
+    # paths-filter sets for every push event (keeping the base-branch FOSSA baseline current) and, on
+    # pull requests, when dependency manifests or CI-relevant GitHub Actions/workflow files changed.
+    if: >-
+      (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) &&
+      needs.detect-changes.outputs.fossa-changes == 'true'
+    # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
+    # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      # The matrix is necessary to run separate analyses
+      matrix:
+        project:
+        - name: c8run
+          path: ./c8run
+          runner: gcp-core-4-longrunning
+        - name: optimize
+          path: ./optimize
+          runner: gcp-core-16-longrunning
+          maven-config: |
+            -DskipQaBuild=true
+        - name: single-app
+          path: ./
+          runner: gcp-core-16-longrunning
+          maven-config: |
+            -Dquickly=true
+            -DskipQaBuild=true
+    steps:
+    - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    # Import FOSSA_API_KEY secret from Vault
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+
+    - uses: ./.github/actions/setup-build
+      if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+      with:
+        vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      if: matrix.project.name == 'c8run'
+      with:
+        go-version: '>=1.23.1'
+        cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
+    - name: Update Maven configs
+      if: matrix.project.maven-config != ''
+      env:
+        MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+      run: |
+        echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+
+    - name: Setup fossa-cli
+      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c
+
+    - name: Get context info
+      id: info
+      uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
+
+    - name: Adjust pom.xml files for FOSSA
+      if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+      uses: ./.github/actions/adjust-pom-for-license-analysis
+
+    # The FOSSA CLI occasionally hangs on a single analyzer call, exhausting the job timeout
+    # (see INC-6263). Run with a per-attempt step timeout that's just above the normal ~25m
+    # completion, and retry once on failure so a hang is killed early and recovered.
+    - name: Analyze project (attempt 1)
+      id: analyze1
+      continue-on-error: true
+      timeout-minutes: 30
+      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{  steps.info.outputs.head-ref }}
+        path: ${{ matrix.project.path }}
+        revision-id: ${{ steps.info.outputs.head-revision }}
+
+    - name: Analyze project (attempt 2)
+      if: steps.analyze1.outcome != 'success'
+      timeout-minutes: 30
+      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{  steps.info.outputs.head-ref }}
+        path: ${{ matrix.project.path }}
+        revision-id: ${{ steps.info.outputs.head-revision }}
+
+    # PR-only: Check for newly introduced license issues
+    # This step only fails if the PR introduces new license violations.
+    # It does not fail for pre-existing issues already present in the base branch.
+    - name: Check Pull Request for new License Issues
+      if: steps.info.outputs.is-pull-request == 'true'
+      uses: camunda/infra-global-github-actions/fossa/pr-check@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        base-ref: ${{ steps.info.outputs.base-ref }}
+        # Use the most recent base commit with a FOSSA scan for comparison.
+        # If none is found, fall back to the original base commit — this will cause the check to fail.
+        base-revision: >-
+          ${{
+            steps.info.outputs.base-revision-most-recent-with-scanning-results ||
+            steps.info.outputs.base-revision
+          }}
+        path: ${{ matrix.project.path }}
+        project: ${{ matrix.project.name }}
+        revision: ${{ steps.info.outputs.head-revision }}
+        timeout: 30 # must be less than overall job timeout
+        timeout-start-time: ${{ steps.info.outputs.job-start-time }}
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        job_name: "analyze/${{ matrix.project.name }}"
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  observe-aborted-jobs:
+    needs:
+    - analyze
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions:
+      actions: read # required to read raw job logs for runner-abort detection
+      checks: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check for aborted jobs
+        continue-on-error: true
+        uses: ./.github/actions/observe-aborted-jobs
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

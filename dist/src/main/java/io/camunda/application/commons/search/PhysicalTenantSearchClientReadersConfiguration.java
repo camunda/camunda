@@ -1,0 +1,105 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application.commons.search;
+
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.cache.ProcessCache;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.connect.tenant.SearchClients;
+import io.camunda.search.es.clients.ElasticsearchSearchClient;
+import io.camunda.search.os.clients.OpensearchSearchClient;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnSecondaryStorageType({
+  SecondaryStorageType.elasticsearch,
+  SecondaryStorageType.opensearch
+})
+public class PhysicalTenantSearchClientReadersConfiguration {
+
+  @Bean
+  public SearchClients searchClients(final PhysicalTenantResolver physicalTenantResolver) {
+    return SearchClients.from(
+        physicalTenantResolver.mapValues(
+            physicalTenantCfg ->
+                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
+  }
+
+  @Bean
+  public Map<String, DocumentBasedSearchClient> physicalTenantDocumentSearchClients(
+      final SearchClients searchClients) {
+    final var clients = new LinkedHashMap<String, DocumentBasedSearchClient>();
+    searchClients
+        .esClients()
+        .forEach(
+            (tenantId, esClient) -> clients.put(tenantId, new ElasticsearchSearchClient(esClient)));
+    searchClients
+        .osClients()
+        .forEach(
+            (tenantId, osClient) -> clients.put(tenantId, new OpensearchSearchClient(osClient)));
+    return Map.copyOf(clients);
+  }
+
+  @Bean
+  public Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors(
+      final Map<String, DocumentBasedSearchClient> physicalTenantDocumentSearchClients,
+      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
+    final var executors = new LinkedHashMap<String, SearchClientBasedQueryExecutor>();
+    physicalTenantDocumentSearchClients.forEach(
+        (tenantId, docClient) -> {
+          final var descriptors = physicalTenantScopedIndexDescriptors.get(tenantId);
+          if (descriptors == null) {
+            throw new IllegalStateException(
+                "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
+          }
+          final var transformers = ServiceTransformers.newInstance(descriptors);
+          executors.put(tenantId, new SearchClientBasedQueryExecutor(docClient, transformers));
+        });
+    return Map.copyOf(executors);
+  }
+
+  @Bean
+  public PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders(
+      final Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors,
+      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final var readersByTenant = new LinkedHashMap<String, SearchClientReaders>();
+    physicalTenantQueryExecutors.forEach(
+        (tenantId, executor) -> {
+          final var descriptors = physicalTenantScopedIndexDescriptors.get(tenantId);
+          if (descriptors == null) {
+            throw new IllegalStateException(
+                "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
+          }
+          final var processCacheConfig =
+              physicalTenantResolver
+                  .forPhysicalTenant(tenantId)
+                  .getApi()
+                  .getRest()
+                  .getProcessCache();
+          final var cacheConfig =
+              new ProcessCache.Configuration(
+                  processCacheConfig.getMaxSize(),
+                  processCacheConfig.getExpirationIdle().toMillis());
+          readersByTenant.put(
+              tenantId, SearchClientReadersFactory.create(executor, descriptors, cacheConfig));
+        });
+    return new PhysicalTenantSearchClientReaders(Map.copyOf(readersByTenant));
+  }
+}
