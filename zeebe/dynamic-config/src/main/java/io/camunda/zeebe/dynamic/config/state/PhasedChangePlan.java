@@ -164,9 +164,6 @@ public record PhasedChangePlan(
     return !Collections.disjoint(groupsA, groupsB);
   }
 
-  /** The sub-configuration(s) a {@link PhasedChangePlan} touches. See {@link #scope()}. */
-  public sealed interface Scope permits Global, Groups {}
-
   /** Cluster-wide scope: touches {@link GlobalConfiguration}, conflicts with every other plan. */
   public record Global() implements Scope {}
 
@@ -202,9 +199,6 @@ public record PhasedChangePlan(
   }
 
   /**
-   * A single phase in a {@link PhasedChangePlan}. Exactly one of the permitted subtypes is active.
-   */
-  /**
    * A phase whose named partition groups each run an {@link OperationGraph} — operations with
    * declared dependencies, executed concurrently wherever no edge orders them.
    *
@@ -229,6 +223,9 @@ public record PhasedChangePlan(
                           .toList()));
     }
   }
+
+  /** The sub-configuration(s) a {@link PhasedChangePlan} touches. See {@link #scope()}. */
+  public sealed interface Scope permits Global, Groups {}
 
   public sealed interface Phase
       permits GlobalPhase, PartitionGroupParallelPhase, PartitionGroupGraphPhase {}

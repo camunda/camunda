@@ -285,9 +285,6 @@ final class ClusterApiUtils {
               pending);
       case final PartitionGroupParallelPhase parallelPhase ->
           splitGroupOperations(configuration, parallelPhase.groupOperations(), completed, pending);
-      // A graph phase splits the same way. The progress it reports is which operations have
-      // completed, not how far a queue has advanced, and a graph plan answers that question
-      // through the same ChangePlan methods.
       case final PartitionGroupGraphPhase graphPhase ->
           splitGroupOperations(configuration, graphPhase.groupOperations(), completed, pending);
     }

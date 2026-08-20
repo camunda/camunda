@@ -626,8 +626,6 @@ public record CurrentClusterConfiguration(
           parallelPhase.groupOperations().keySet().stream()
               .map(this::partitionGroup)
               .allMatch(group -> group != null && !group.hasPendingChanges());
-      // Same test as above: hasPendingChanges() covers whichever execution model the group holds,
-      // so a drained graph reads as complete exactly as a drained queue does.
       case final PartitionGroupGraphPhase graphPhase ->
           graphPhase.groupGraphs().keySet().stream()
               .map(this::partitionGroup)

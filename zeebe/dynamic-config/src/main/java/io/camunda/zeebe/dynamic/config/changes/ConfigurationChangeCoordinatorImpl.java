@@ -34,6 +34,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
@@ -340,7 +341,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   private void checkGroupsUnchanged(
-      final java.util.Set<String> groupIds,
+      final Set<String> groupIds,
       final CurrentClusterConfiguration latestConfig,
       final CurrentClusterConfiguration configUsedForGeneratingOperations) {
     for (final var groupId : groupIds) {

@@ -560,7 +560,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         planId,
         executor,
         this::updateMultiConfiguration,
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         this::isLocalMemberCoordinator,
         minRetryDelay,
         maxRetryDelay,
@@ -570,7 +570,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private ScopeReconciler newGlobalScopeReconciler() {
     return new ScopeReconciler(
         new GlobalScopeOperations(),
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
@@ -581,7 +581,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private ScopeReconciler newGroupScopeReconciler(final String groupId) {
     return new ScopeReconciler(
         new GroupScopeOperations(groupId),
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
@@ -593,7 +593,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return new GraphScopeReconciler(
         groupId,
         localMemberId,
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         () -> partitionGroupChangeAppliers.get(groupId),
         this::updateLocalCurrentConfiguration,
         executor,

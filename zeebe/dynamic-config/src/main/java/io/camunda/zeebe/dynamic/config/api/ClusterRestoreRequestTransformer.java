@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -85,11 +84,5 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
     final var physicalTenantId = tenantArguments.keySet().iterator().next();
     return Optional.of(
         new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry));
-  }
-
-  private static InvalidRequest clusterWideNotSupported() {
-    return new InvalidRequest(
-        "Restoring every physical tenant of the cluster in one request is not supported yet; "
-            + "provide a physicalTenantId to restore a single physical tenant.");
   }
 }

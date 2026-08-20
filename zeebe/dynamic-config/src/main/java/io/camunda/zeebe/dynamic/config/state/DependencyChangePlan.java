@@ -61,10 +61,6 @@ public record DependencyChangePlan(
     return init(id, OperationGraph.sequential(operations));
   }
 
-  // ---------------------------------------------------------------------------
-  // Derived views — nothing below is stored.
-  // ---------------------------------------------------------------------------
-
   public SortedMap<OperationId, OperationGraph.PlannedOperation> operations() {
     return graph.operations();
   }
@@ -100,6 +96,7 @@ public record DependencyChangePlan(
     return runnable;
   }
 
+  @Override
   public boolean hasPendingChanges() {
     return completed.size() < graph.size();
   }
@@ -108,6 +105,7 @@ public record DependencyChangePlan(
    * The operations still to run, in operation-id order. Ordering is positional rather than by
    * arrival so that two brokers rendering the same converged plan produce identical lists.
    */
+  @Override
   public List<ClusterConfigurationChangeOperation> pendingOperations() {
     final var pending = new ArrayList<ClusterConfigurationChangeOperation>();
     graph
@@ -122,6 +120,7 @@ public record DependencyChangePlan(
   }
 
   /** The operations already run, in operation-id order. See {@link #pendingOperations()}. */
+  @Override
   public List<CompletedOperation> completedOperations() {
     final var done = new ArrayList<CompletedOperation>();
     graph
@@ -134,6 +133,11 @@ public record DependencyChangePlan(
               }
             });
     return List.copyOf(done);
+  }
+
+  @Override
+  public CompletedChange cancel() {
+    return new CompletedChange(id, Status.CANCELLED, startedAt, Instant.now());
   }
 
   /**
@@ -157,10 +161,6 @@ public record DependencyChangePlan(
             });
     return blocked;
   }
-
-  // ---------------------------------------------------------------------------
-  // Progress
-  // ---------------------------------------------------------------------------
 
   /**
    * Records that {@code operationId} finished. Package-private: only a sub-configuration may move a
@@ -223,10 +223,6 @@ public record DependencyChangePlan(
     final var completedAt =
         completed.values().stream().max(Instant::compareTo).orElseGet(Instant::now);
     return new CompletedChange(id, Status.COMPLETED, startedAt, completedAt);
-  }
-
-  public CompletedChange cancel() {
-    return new CompletedChange(id, Status.CANCELLED, startedAt, Instant.now());
   }
 
   /** The operation behind an id, for callers that already know it exists. */

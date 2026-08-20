@@ -235,7 +235,7 @@ public record PartitionGroupConfiguration(
     final var mergedAvailability = availability.merge(other.availability);
 
     if (version > other.version) {
-      return this.availability.equals(mergedAvailability)
+      return availability.equals(mergedAvailability)
           ? this
           : new PartitionGroupConfiguration(
               version,
@@ -452,11 +452,6 @@ public record PartitionGroupConfiguration(
     }
     return mine;
   }
-
-  // ---------------------------------------------------------------------------
-  // Dependency-graph execution. Only used by changes whose transformer opted in;
-  // everything else continues through the queue methods above.
-  // ---------------------------------------------------------------------------
 
   /** The ongoing change if it uses the dependency-graph model, otherwise empty. */
   public Optional<DependencyChangePlan> pendingGraphChanges() {
