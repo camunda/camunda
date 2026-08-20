@@ -329,8 +329,10 @@
             SELECT 1
             FROM ${prefix}INCIDENT i
             WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-            AND i.ERROR_MESSAGE
-            <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+              <property name="column" value="i.ERROR_MESSAGE"/>
+            </include>
             )
           </otherwise>
         </choose>
