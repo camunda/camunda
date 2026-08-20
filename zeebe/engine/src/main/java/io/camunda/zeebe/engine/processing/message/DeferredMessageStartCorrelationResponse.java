@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +130,26 @@ final class DeferredMessageStartCorrelationResponse {
       final MessageStartProcessInstanceRequestRecord reply,
       final RejectionType rejectionType,
       final String reason) {
-    final var messageKey = reply.getMessageKey();
+    writeNotCorrelatedResponse(
+        reply.getMessageKey(),
+        reply.getMessageName(),
+        reply.getCorrelationKey(),
+        reply.getVariablesBuffer(),
+        reply.getTenantId(),
+        reply.getBusinessId(),
+        rejectionType,
+        reason);
+  }
+
+  private void writeNotCorrelatedResponse(
+      final long messageKey,
+      final String messageName,
+      final String correlationKey,
+      final DirectBuffer variables,
+      final String tenantId,
+      final String businessId,
+      final RejectionType rejectionType,
+      final String reason) {
     if (!messageCorrelationState.existsRequestDataForMessageKey(messageKey)) {
       return;
     }
@@ -142,11 +162,11 @@ final class DeferredMessageStartCorrelationResponse {
 
     correlationRecord.reset();
     correlationRecord
-        .setName(reply.getMessageName())
-        .setCorrelationKey(reply.getCorrelationKey())
-        .setVariables(reply.getVariablesBuffer())
-        .setTenantId(reply.getTenantId())
-        .setBusinessId(reply.getBusinessId())
+        .setName(messageName)
+        .setCorrelationKey(correlationKey)
+        .setVariables(variables)
+        .setTenantId(tenantId)
+        .setBusinessId(businessId)
         .setMessageKey(messageKey)
         .setRequestId(requestData.getRequestId())
         .setRequestStreamId(requestData.getRequestStreamId());
