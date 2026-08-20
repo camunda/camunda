@@ -109,10 +109,11 @@ For detailed inputs, triggers, and job definitions, see each workflow's header c
 
 ![setup-load-test](docs/assets/setup-load-test.jpg)
 
-The setup for all of our load tests is equal for better comparability, and consists of two main ingredients.
+The setup for all of our load tests is equal for better comparability, and consists of three main ingredients.
 
 1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
 2. A custom Helm chart ([camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm)) to set up our load test applications.
+3. A local Helm chart ([`load-test-setup`](setup/charts/load-test-setup)) that provisions everything around the namespace: the namespace itself, credentials, secondary storage, Keycloak, and supporting infra. See [Configuring the `load-test-setup` chart](#configuring-the-load-test-setup-chart) below.
 
 By default, the full Camunda Platform is deployed, including Orchestration Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always run load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
 
@@ -129,6 +130,20 @@ All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GK
 For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Brokers and Zeebe Gateways were deployed standalone.
 
 ![setup](docs/assets/setup.png)
+
+### Configuring the `load-test-setup` chart
+
+The [`load-test-setup`](setup/charts/load-test-setup) chart exposes its own [values](setup/charts/load-test-setup/values.yaml) (e.g. Elasticsearch/OpenSearch/PostgreSQL sizing, etc.). There are three ways to override them, depending on how the load test was created:
+
+1. **Editing the generated files:** `./newLoadTest.sh` creates a `load-test-setup-values.yaml` file at the root of the namespace folder. Edit it, then reapply with `make install-load-test-setup`. This is the preferred place for local changes and those you want to keep across reinstalls (e.g. after a TTL cleanup).
+   See [setup README](setup/README.md#local-modifications).
+2. **Running an ad-hoc load test manually:** pass overrides at install time via
+   `additional_load_test_setup_configuration`, without editing any file:
+
+   ```sh
+   make install additional_load_test_setup_configuration="--set elasticsearch.storage.requests=64Gi"
+   ```
+3. **Via the GitHub Actions workflow:** set the `load-test-setup-helm-values` input on the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), e.g. `--set elasticsearch.storage.requests=64Gi`. See [Workflow inputs, Helm values, and common pitfalls](#workflow-inputs-helm-values-and-common-pitfalls) below.
 
 ### Secondary Storage Options
 
