@@ -17,15 +17,17 @@ import org.jspecify.annotations.NonNull;
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 
   /**
-   * Returns live topology for the given physical tenant (partition group). May return {@code null}
-   * or an uninitialized topology if the group is not (yet) known; callers must handle both.
+   * Returns live topology for the given physical tenant (partition group). Never returns {@code
+   * null}: a group that is not (yet) known is represented by an uninitialized {@link
+   * BrokerClusterState}.
    */
-  BrokerClusterState getTopology(@NonNull String physicalTenantId);
+  @NonNull BrokerClusterState getTopology(@NonNull String physicalTenantId);
 
   /**
    * Returns live topology for the default partition group. Equivalent to {@code
    * getTopology("default")}.
    */
+  @NonNull
   default BrokerClusterState getTopology() {
     return getTopology(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
