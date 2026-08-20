@@ -72,6 +72,10 @@ public interface PartitionReassigner {
    * @return the new distribution for all of {@code targetPartitionIds}
    * @throws IllegalArgumentException if {@code targetMembers} is empty, {@code replicationFactor}
    *     is not positive, or the implementation's removal policy is violated
+   * @throws IllegalStateException an implementation may also throw this for its own
+   *     configuration-specific validation failures (e.g. a zone-aware implementation rejecting a
+   *     configuration whose zones can't satisfy {@code replicationFactor}) — consult the
+   *     implementation's javadoc for which conditions apply
    */
   Set<PartitionMetadata> reassignPartitions(
       CurrentClusterConfiguration currentConfiguration,
