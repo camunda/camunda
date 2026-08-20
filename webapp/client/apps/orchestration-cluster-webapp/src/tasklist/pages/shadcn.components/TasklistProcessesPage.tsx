@@ -36,7 +36,12 @@ const TasklistProcessesPage: React.FC = () => {
 			{/* TODO(#60227): filter bar (search + start-form + tenant dropdowns) slots in here */}
 
 			<div className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-				{/* TODO(#60228): replace with the real process-tile component and real process data */}
+				{/* TODO(#60228): replace with the real process-tile component and real process data.
+				    Note: CardTitle renders a styled <div>, not a heading element (no `as` prop
+				    like Heading has) — Carbon's ProcessTile uses a real <h2> for the tile title.
+				    Using CardTitle as-is here drops heading-level a11y navigation between tiles;
+				    worth fixing in the real component (e.g. wrap children in an <h2>/<h3> at the
+				    call site) rather than carrying it forward silently. */}
 				{PLACEHOLDER_PROCESS_NAMES.map((name) => (
 					<PlaceholderProcessTile key={name} name={name} />
 				))}
