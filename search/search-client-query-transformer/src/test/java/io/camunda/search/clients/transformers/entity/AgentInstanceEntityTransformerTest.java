@@ -10,6 +10,10 @@ package io.camunda.search.clients.transformers.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -30,7 +34,10 @@ class AgentInstanceEntityTransformerTest {
         io.camunda.webapps.schema.entities.agentinstance.AgentInstanceStatus.COMPLETED);
     source.setModel("gpt-4o");
     source.setProvider("openai");
-    source.setSystemPrompt("You are helpful.");
+    source.setSystemPrompt(
+        List.of(
+            new AgentHistoryContentValue(
+                AgentHistoryContentType.TEXT, "You are helpful.", null, null)));
     source.setInputTokens(50L);
     source.setOutputTokens(30L);
     source.setModelCalls(2);
@@ -66,7 +73,8 @@ class AgentInstanceEntityTransformerTest {
     assertThat(result.status()).isEqualTo(AgentInstanceStatus.COMPLETED);
     assertThat(result.definition().model()).isEqualTo("gpt-4o");
     assertThat(result.definition().provider()).isEqualTo("openai");
-    assertThat(result.definition().systemPrompt()).isEqualTo("You are helpful.");
+    assertThat(result.definition().systemPrompt())
+        .containsExactly(new ContentItem(ContentType.TEXT, "You are helpful.", null, null));
     assertThat(result.metrics().inputTokens()).isEqualTo(50L);
     assertThat(result.metrics().outputTokens()).isEqualTo(30L);
     assertThat(result.metrics().modelCalls()).isEqualTo(2);
