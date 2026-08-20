@@ -234,11 +234,10 @@ public class AgentInstanceSuspensionGateTest {
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
     // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    ENGINE.agentInstances().withProcessInstanceKey(processInstanceKey).complete();
 
-    // then — cancelling a suspended instance with an active agent instance emits
-    // AGENT_INSTANCE:COMPLETED. COMPLETE is classified PROCESS so that the processor is not
-    // gated by the suspension marker.
+    // then — COMPLETE is classified PROCESS so the suspended process instance completes its agent
+    // instance.
     final var completed =
         RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
             .withRecordKey(agentInstanceKey)

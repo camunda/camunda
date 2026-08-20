@@ -146,15 +146,26 @@ public class AgentHistorySuspensionGateTest {
 
     final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
     final long jobKey = activateJobForProcessInstance(processInstanceKey);
-    createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey);
+    final long historyItemKey =
+        createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey).getKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
     // when
-    final var result = ENGINE.agentHistories().withJobKey(jobKey).discard();
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .agentHistory(
+                AgentHistoryIntent.DISCARD,
+                new AgentHistoryRecord()
+                    .setJobKey(jobKey)
+                    .setProcessInstanceKey(processInstanceKey)));
 
     // then — DISCARD succeeds while the process instance is suspended (PROCESS classification)
-    assertThat(result.getIntent()).isEqualTo(AgentHistoryIntent.DISCARDED);
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.DISCARDED)
+                .withRecordKey(historyItemKey)
+                .getFirst())
+        .isNotNull();
   }
 
   @Test
@@ -168,15 +179,26 @@ public class AgentHistorySuspensionGateTest {
 
     final long agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
     final long jobKey = activateJobForProcessInstance(processInstanceKey);
-    createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey);
+    final long historyItemKey =
+        createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey).getKey();
 
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
 
     // when
-    final var result = ENGINE.agentHistories().withJobKey(jobKey).commit();
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .agentHistory(
+                AgentHistoryIntent.COMMIT,
+                new AgentHistoryRecord()
+                    .setJobKey(jobKey)
+                    .setProcessInstanceKey(processInstanceKey)));
 
     // then — COMMIT succeeds while the process instance is suspended (PROCESS classification)
-    assertThat(result.getIntent()).isEqualTo(AgentHistoryIntent.COMMITTED);
+    assertThat(
+            RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+                .withRecordKey(historyItemKey)
+                .getFirst())
+        .isNotNull();
   }
 
   // --- helpers ---
@@ -217,9 +239,9 @@ public class AgentHistorySuspensionGateTest {
         .getKey();
   }
 
-  private static void createHistoryItem(
+  private static Record<?> createHistoryItem(
       final long agentInstanceKey, final long jobKey, final long elementInstanceKey) {
-    ENGINE
+    return ENGINE
         .agentHistories()
         .withAgentInstanceKey(agentInstanceKey)
         .withJobKey(jobKey)
