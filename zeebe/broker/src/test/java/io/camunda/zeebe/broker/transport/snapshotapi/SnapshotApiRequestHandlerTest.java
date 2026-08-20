@@ -158,7 +158,9 @@ public class SnapshotApiRequestHandlerTest {
                 snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
-    client = new SnapshotTransferServiceClient(brokerClient);
+    client =
+        new SnapshotTransferServiceClient(
+            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     scheduler.workUntilDone();
   }

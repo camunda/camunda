@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
@@ -322,6 +323,9 @@ final class RequestRetryHandlerTest {
     TestBrokerRequest(final Optional<RequestDispatchStrategy> strategy) {
       super(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE);
       this.strategy = strategy;
+      // requests must always carry a partition group; tests that verify multi-tenant routing
+      // override this with their own tenant id
+      setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     @Override

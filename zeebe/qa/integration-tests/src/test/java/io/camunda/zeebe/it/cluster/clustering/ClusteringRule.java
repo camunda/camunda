@@ -784,6 +784,7 @@ public class ClusteringRule extends ExternalResource {
             .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
+    request.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     final BrokerResponse<ProcessInstanceCreationRecord> response =
         gatewayResource.gateway.getBrokerClient().sendRequestWithRetry(request).join();

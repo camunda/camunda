@@ -174,6 +174,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
                       maxMessageSize,
                       request.getRequest().getPartitionGroup()));
 
+          final var partitionGroup = request.getRequest().getPartitionGroup();
           final List<ActivatedJob> jobsToDefer = jobActivationResult.getJobsToDefer();
           if (!jobsToDefer.isEmpty()) {
             final var jobKeys = jobsToDefer.stream().map(ActivatedJob::key).toList();
@@ -181,7 +182,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
 
             logResponseNotSent(jobType, jobKeys, reason);
-            reactivateJobs(jobsToDefer, reason);
+            reactivateJobs(jobsToDefer, reason, partitionGroup);
           }
 
           final T activateJobsResponse = jobActivationResult.getActivateJobsResponse();
@@ -198,7 +199,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               final var reason = createReasonMessage(result);
 
               logResponseNotSent(jobType, jobKeys, reason);
-              reactivateJobs(activatedJobsToReactivate, reason);
+              reactivateJobs(activatedJobsToReactivate, reason, partitionGroup);
               cancelActivateJobsRequest(reason, delegate);
               return;
             }
@@ -224,14 +225,16 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     return errorMessage;
   }
 
-  private void reactivateJobs(final List<ActivatedJob> activateJobs, final String message) {
+  private void reactivateJobs(
+      final List<ActivatedJob> activateJobs, final String message, final String partitionGroup) {
     if (activateJobs != null) {
-      activateJobs.forEach(j -> tryToReactivateJob(j, message));
+      activateJobs.forEach(j -> tryToReactivateJob(j, message, partitionGroup));
     }
   }
 
-  private void tryToReactivateJob(final ActivatedJob job, final String message) {
-    final var request = toFailJobRequest(job, message);
+  private void tryToReactivateJob(
+      final ActivatedJob job, final String message, final String partitionGroup) {
+    final var request = toFailJobRequest(job, message, partitionGroup);
     brokerClient
         .sendRequestWithRetry(request)
         .whenCompleteAsync(
@@ -247,10 +250,12 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             actor);
   }
 
-  private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
+  private BrokerFailJobRequest toFailJobRequest(
+      final ActivatedJob job, final String errorMessage, final String partitionGroup) {
     final BrokerFailJobRequest brokerFailJobRequest =
         new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
     brokerFailJobRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    brokerFailJobRequest.setPartitionGroup(partitionGroup);
     return brokerFailJobRequest;
   }
 

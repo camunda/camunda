@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.ResponseMapper;
@@ -123,7 +124,10 @@ final class LongPollingActivateJobsPriorityTest {
             .setMaxJobsToActivate(maxJobs)
             .setRequestTimeout(LONG_POLLING_TIMEOUT)
             .build();
-    return RequestMapper.toActivateJobsRequest(grpcRequest);
+    // requests must always carry a partition group before they are sent to the broker
+    final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+    brokerRequest.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    return brokerRequest;
   }
 
   private ResponseObserver<ActivateJobsResponse> buildObserver(
