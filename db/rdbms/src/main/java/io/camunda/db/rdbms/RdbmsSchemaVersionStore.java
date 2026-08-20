@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
+import io.camunda.db.rdbms.exception.RdbmsSchemaVersionUnreadableException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.migration.CurrentSchemaVersion;
@@ -28,6 +30,12 @@ import org.slf4j.LoggerFactory;
  * validated before applying migrations. Only same-minor or next-minor upgrades are permitted (e.g.
  * 8.9.x → 8.9.y or 8.9.x → 8.10.y). Skipping minor versions (e.g. 8.9.x → 8.11.y) is not supported
  * and causes startup to fail with a {@link RdbmsSchemaVersionIncompatibleException}.
+ *
+ * <p>Failures come in two kinds, and the caller has to be able to tell them apart: a version that
+ * cannot be <em>determined</em> ({@link RdbmsSchemaVersionIndeterminateException}) needs an
+ * operator, while a version that cannot be <em>read</em> ({@link
+ * RdbmsSchemaVersionUnreadableException}) may well succeed on the next attempt. Both extend {@link
+ * IllegalStateException}, which every one of these sites threw before they were split apart.
  */
 public class RdbmsSchemaVersionStore {
 
@@ -51,7 +59,7 @@ public class RdbmsSchemaVersionStore {
   /**
    * The current application version. Used to validate the upgrade path from the stored schema
    * version. Must not be {@code null}; a missing value causes startup to be aborted with an {@link
-   * IllegalStateException}.
+   * RdbmsSchemaVersionIndeterminateException}.
    */
   private final String applicationVersion;
 
@@ -70,9 +78,9 @@ public class RdbmsSchemaVersionStore {
    *
    * <ol>
    *   <li>If {@link #applicationVersion} is {@code null}, startup is aborted with an {@link
-   *       IllegalStateException}.
+   *       RdbmsSchemaVersionIndeterminateException}.
    *   <li>If the data source is {@code null}, startup is aborted with an {@link
-   *       IllegalStateException}.
+   *       RdbmsSchemaVersionIndeterminateException}.
    *   <li>If the {@code RDBMS_SCHEMA_VERSION} table does not exist or contains no row (fresh DB or
    *       pre-versioning database):
    *       <ul>
@@ -84,17 +92,18 @@ public class RdbmsSchemaVersionStore {
    *       allow startup to continue. Incompatible paths throw a {@link
    *       RdbmsSchemaVersionIncompatibleException}. An indeterminate path (e.g. the stored schema
    *       version is not a valid semantic version) aborts startup with an {@link
-   *       IllegalStateException}.
-   *   <li>Any unexpected error (e.g. a DB connection failure) causes startup to fail with an {@link
-   *       IllegalStateException}.
+   *       RdbmsSchemaVersionIndeterminateException}.
+   *   <li>Any unexpected error (e.g. a DB connection failure) fails with an {@link
+   *       RdbmsSchemaVersionUnreadableException}, which is retryable.
    * </ol>
    */
   public void checkCompatibility() {
     if (applicationVersion == null) {
-      throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
+      throw new RdbmsSchemaVersionIndeterminateException(
+          "[RDBMS Schema] applicationVersion is not configured.");
     }
     if (dataSource == null) {
-      throw new IllegalStateException(
+      throw new RdbmsSchemaVersionIndeterminateException(
           "[RDBMS Schema] dataSource is not configured for prefix '" + prefix + "'.");
     }
 
@@ -132,11 +141,12 @@ public class RdbmsSchemaVersionStore {
         throw new RdbmsSchemaVersionIncompatibleException(
             currentSchemaVersion, stableAppVersion.get());
       }
-    } catch (final RdbmsSchemaVersionIncompatibleException | IllegalStateException e) {
+    } catch (final RdbmsSchemaVersionIncompatibleException
+        | RdbmsSchemaVersionIndeterminateException e) {
       throw e;
     } catch (final Exception e) {
       LOG.error("[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
-      throw new IllegalStateException(
+      throw new RdbmsSchemaVersionUnreadableException(
           "[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
     }
   }
@@ -187,8 +197,10 @@ public class RdbmsSchemaVersionStore {
    * Liquibase migration. The version is normalized to stable {@code major.minor.patch} before
    * storage (pre-release suffixes such as {@code -SNAPSHOT} are stripped). If the version cannot be
    * parsed as a semantic version (e.g. {@code "development"}), the write is skipped with a warning.
-   * Any failure aborts startup with an {@link IllegalStateException} because a missing or incorrect
-   * schema-version record would cause the next startup to perform an incorrect compatibility check.
+   * Any failure fails with an {@link RdbmsSchemaVersionUnreadableException} because a missing or
+   * incorrect schema-version record would cause the next startup to perform an incorrect
+   * compatibility check; it is retryable, since re-running the whole initialization writes it
+   * again.
    */
   public void recordCurrentVersion() {
     if (applicationVersion == null || dataSource == null) {
@@ -228,7 +240,7 @@ public class RdbmsSchemaVersionStore {
           tableName,
           prefix,
           e);
-      throw new IllegalStateException(
+      throw new RdbmsSchemaVersionUnreadableException(
           "[RDBMS Schema] Failed to update schema version in " + tableName + ". Startup aborted.",
           e);
     }
@@ -337,7 +349,7 @@ public class RdbmsSchemaVersionStore {
           prefix,
           currentSchemaVersion,
           stableAppVersion);
-      throw new IllegalStateException(
+      throw new RdbmsSchemaVersionIndeterminateException(
           "[RDBMS Schema] Cannot determine version compatibility: schema="
               + currentSchemaVersion
               + ", app="

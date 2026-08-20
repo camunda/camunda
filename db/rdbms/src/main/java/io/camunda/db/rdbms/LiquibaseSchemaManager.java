@@ -9,6 +9,7 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIndeterminateException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -65,7 +66,8 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   /**
    * The current application version, supplied at construction time. Must not be {@code null}; a
-   * missing value causes startup to be aborted with an {@link IllegalStateException}.
+   * missing value causes startup to be aborted with an {@link
+   * RdbmsSchemaVersionIndeterminateException}.
    */
   private final String applicationVersion;
 
@@ -98,7 +100,8 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   @Override
   public void initialize() throws Exception {
     if (applicationVersion == null) {
-      throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
+      throw new RdbmsSchemaVersionIndeterminateException(
+          "[RDBMS Schema] applicationVersion is not configured.");
     }
     LOG.info("[RDBMS Schema] Running Liquibase migration with prefix '{}'.", prefix);
     final var runner = buildRunner();
