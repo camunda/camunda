@@ -5,6 +5,21 @@
 # later versions so that the last entry in each list resolves to the newest supported minor.
 # A trailing `# LTS` comment flags longer upstream support — don't remove that entry early.
 #
+# ── Renovate coverage ────────────────────────────────────────────────────────────
+#   Entries with a `# renovate: datasource=... depName=...` comment are kept current
+#   automatically. Entries without one are deliberately un-annotated, not overlooked:
+#     - postgresql / mysql / mariadb: every tag here is a floating family tag
+#       (e.g. `postgres:18-alpine`) that the upstream registry repoints to the latest
+#       patch itself — there is nothing for Renovate to ever detect as outdated. The
+#       only real "update" possible is a new major, which is a deliberate, manual
+#       decision (new matrix row, needs its own test coverage), not something to
+#       automate.
+#     - mssql / azure-sql: floating `-latest`/version-wrapper tags — "latest is
+#       acceptable" here by design.
+#     - oracle `21-slim-faststart` (gvenzl/oracle-xe): also a floating tag, and
+#       appears abandoned upstream (last pushed 2024-10-01) — worth a separate
+#       follow-up to re-evaluate Oracle 21c/XE support, not tracked here.
+#
 # ── How to use this file in CI workflows ────────────────────────────────────────
 #   CI workflows read versions from this file via the reusable action:
 #     .github/actions/read-db-versions
@@ -20,7 +35,10 @@ elasticsearch:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
     - &saas '8.19.16'
   es9:
-    - "9.5.0"
+    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+    - "9.4.5"
+    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+    - "9.5.2"
   saas: *saas
 
 opensearch:
@@ -28,8 +46,11 @@ opensearch:
     # renovate: datasource=docker depName=opensearchproject/opensearch
     - '2.19.6'
   os3:
+    # renovate: datasource=docker depName=opensearchproject/opensearch
     - "3.6.0"  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
+    # renovate: datasource=docker depName=opensearchproject/opensearch
     - "3.7.0"
+    # renovate: datasource=docker depName=opensearchproject/opensearch
     - "3.8.0"
 
 # ── RDBMS databases ─────────────────────────────────────────────────────────────
@@ -63,4 +84,5 @@ azure-sql:
 
 oracle:
   - "21-slim-faststart"
-  - "23.26.1-slim-faststart"
+  # renovate: datasource=docker depName=gvenzl/oracle-free versioning=docker
+  - "23.26.2-slim-faststart"
