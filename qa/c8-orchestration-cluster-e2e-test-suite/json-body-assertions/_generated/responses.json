@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "39a827f3a205dfb8ddbb78395691b87e29adbc0a",
-    "generatedAt": "2026-08-19T12:08:40.459Z",
+    "commit": "85b5914f06bd9d29a3ede0cedb22b983dec66466",
+    "generatedAt": "2026-08-20T12:09:34.504Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "8d457bcf7bdc7c5d64a86c329616e34927f86568f7b0f32ead2c604a4996ebef"
+    "specSha256": "5f2c18220e29dddd1964d11f1e381b09ead8b1e3f2552cf59c73bec7ee7495b8"
   },
   "responses": [
     {
@@ -9661,6 +9661,932 @@
                   "name": "physicalTenantId",
                   "type": "string",
                   "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/exporting",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "EXPORTING",
+              "PAUSED",
+              "SOFT_PAUSED",
+              "MIXED"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "400",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "409",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "500",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "502",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "503",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime",
+      "method": "POST",
+      "status": "504",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "backupId",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "outcome",
+                  "type": "string",
+                  "enumValues": [
+                    "TRIGGERED",
+                    "FAILED",
+                    "UNKNOWN"
+                  ]
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/state",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "schema",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MANUAL_BACKUP",
+                                "SCHEDULED_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "firstLogPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number",
+                              "nullable": true
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "checkpointStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MARKER",
+                                "SCHEDULED_BACKUP",
+                                "MANUAL_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "ranges",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "end",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "start",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            }
+                          ],
+                          "optional": []
+                        }
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/state/sync",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "schema",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "backupStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MANUAL_BACKUP",
+                                "SCHEDULED_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "firstLogPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number",
+                              "nullable": true
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "checkpointStates",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "checkpointId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointPosition",
+                              "type": "number"
+                            },
+                            {
+                              "name": "checkpointTimestamp",
+                              "type": "string"
+                            },
+                            {
+                              "name": "checkpointType",
+                              "type": "string",
+                              "enumValues": [
+                                "MARKER",
+                                "SCHEDULED_BACKUP",
+                                "MANUAL_BACKUP"
+                              ]
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            }
+                          ],
+                          "optional": []
+                        }
+                      },
+                      {
+                        "name": "ranges",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "end",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            },
+                            {
+                              "name": "partitionId",
+                              "type": "number"
+                            },
+                            {
+                              "name": "start",
+                              "type": "items",
+                              "nullable": true,
+                              "children": {
+                                "required": [
+                                  {
+                                    "name": "checkpointId",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "checkpointTimestamp",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "name": "checkpointType",
+                                    "type": "string",
+                                    "enumValues": [
+                                      "MANUAL_BACKUP",
+                                      "SCHEDULED_BACKUP"
+                                    ]
+                                  },
+                                  {
+                                    "name": "firstLogPosition",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "partitionId",
+                                    "type": "number",
+                                    "nullable": true
+                                  }
+                                ],
+                                "optional": []
+                              }
+                            }
+                          ],
+                          "optional": []
+                        }
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/runtime/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "failureReason",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "details",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "brokerId",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "brokerVersion",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "checkpointPosition",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "createdAt",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "failureReason",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "firstLogPosition",
+                        "type": "number",
+                        "nullable": true
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "snapshotId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "state",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failureReason",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "state",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history",
+      "method": "POST",
+      "status": "202",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "scheduledSnapshots",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/cluster/v2/backups/history/{backupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "backupId",
+            "type": "number"
+          },
+          {
+            "name": "physicalTenants",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "details",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "failures",
+                        "type": "array<string>"
+                      },
+                      {
+                        "name": "snapshotName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "startTime",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "state",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failureReason",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "FAILED",
+                    "INCOMPLETE",
+                    "INCOMPATIBLE",
+                    "NOT_FOUND"
+                  ]
                 }
               ],
               "optional": []
