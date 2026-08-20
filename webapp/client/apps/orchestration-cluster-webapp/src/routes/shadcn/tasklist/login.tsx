@@ -9,7 +9,7 @@
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
 import {z} from 'zod';
 import {queries} from '#/shared/http/queries';
-import {TasklistLoginPage} from '#/tasklist/pages/TasklistLoginPage';
+import {TasklistLoginPage} from '#/tasklist/pages/shadcn.components/TasklistLoginPage';
 
 const Route = createFileRoute('/shadcn/tasklist/login')({
 	validateSearch: z.object({

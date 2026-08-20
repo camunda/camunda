@@ -6,10 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Text} from '@camunda/design-system';
-import {Link} from '@camunda/design-system/carbon-compat';
+import {Button, Text} from '@camunda/design-system';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import styles from './styles.module.scss';
 
 const Disclaimer: React.FC = () => {
 	if (getBootConfig().isEnterprise) {
@@ -17,15 +15,19 @@ const Disclaimer: React.FC = () => {
 	}
 
 	return (
-		<Text as="span" variant="helper" className={styles.container}>
+		<Text as="span" variant="helper" className="block pt-4 text-center">
 			Non-Production License. If you would like information on production usage, please refer to our{' '}
-			<Link href="https://legal.camunda.com/#self-managed-non-production-terms" target="_blank" rel="noreferrer">
-				terms & conditions page
-			</Link>{' '}
+			<Button asChild variant="link" className="h-auto p-0 align-baseline text-xs font-normal">
+				<a href="https://legal.camunda.com/#self-managed-non-production-terms" target="_blank" rel="noreferrer">
+					terms & conditions page
+				</a>
+			</Button>{' '}
 			or{' '}
-			<Link href="https://camunda.com/contact/" target="_blank" rel="noreferrer">
-				contact sales
-			</Link>
+			<Button asChild variant="link" className="h-auto p-0 align-baseline text-xs font-normal">
+				<a href="https://camunda.com/contact/" target="_blank" rel="noreferrer">
+					contact sales
+				</a>
+			</Button>
 			.
 		</Text>
 	);
