@@ -28,9 +28,13 @@ public final class AgentDefinitionBehavior {
    *
    * <p>A job's element id does not always refer to a real BPMN element: for example, {@link
    * io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor} overwrites it with a synthetic
-   * marker when an error is thrown but not caught, and a deployment can be deleted while one of its
-   * jobs is still in flight. Neither case can have an agent definition, so both resolve to {@code
-   * false} rather than raising.
+   * marker when an error is thrown but not caught. That case can't have an agent definition, so it
+   * resolves to {@code false} rather than raising.
+   *
+   * <p>The process lookup is defensive rather than a known reachable case: process deletion drains
+   * until every active instance finishes, so a job on a running instance always finds its process
+   * in state. Resolving to {@code false} here guards against that invariant changing, rather than
+   * documenting a gap that exists today.
    */
   public boolean belongsToAgent(final JobRecord job) {
     final var process =
