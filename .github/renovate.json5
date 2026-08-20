@@ -276,6 +276,7 @@
         "elasticsearch",
         "docker.elastic.co/elasticsearch/elasticsearch",
         "opensearchproject/opensearch",
+        "gvenzl/oracle-free",
         "eclipse-temurin",
         "reg.mini.dev/1212/openjre-base",
       ],
@@ -286,24 +287,37 @@
       enabled: false,
     },
     {
-      description: "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      description: "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together. Also covers the docker-compose files where Renovate's native docker-compose manager auto-detects the same image without needing a comment.",
       matchPackageNames: [
         "docker.elastic.co/elasticsearch/elasticsearch",
       ],
       matchManagers: [
         "custom.regex",
+        "docker-compose",
       ],
       groupName: "elasticsearch container version",
     },
     {
-      description: "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      description: "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together. Also covers the docker-compose files where Renovate's native docker-compose manager auto-detects the same image without needing a comment.",
       matchPackageNames: [
         "opensearchproject/opensearch",
       ],
       matchManagers: [
         "custom.regex",
+        "docker-compose",
       ],
       groupName: "opensearch container version",
+    },
+    {
+      description: "Group Oracle Free container version bumps across db-versions.yml and any docker-compose file where Renovate's native docker-compose manager auto-detects the same image.",
+      matchPackageNames: [
+        "gvenzl/oracle-free",
+      ],
+      matchManagers: [
+        "custom.regex",
+        "docker-compose",
+      ],
+      groupName: "oracle-free container version",
     },
     {
       description: "Skip lucene major updates to avoid breaking changes.",
