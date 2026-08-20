@@ -447,6 +447,8 @@ jobs:
           compose_file: optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile self-managed"
+        env:
+          CAMUNDA_VERSION: ${{ steps.pom_info.outputs.x_camunda_docker_version }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
@@ -469,7 +471,7 @@ jobs:
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 17 ]]; then
+            if [[ $count -eq 60 ]]; then
               echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
               prev="-1"
               stable=0
@@ -487,7 +489,7 @@ jobs:
               echo "Import stabilized at $cur process instances"
               break
             fi
-            echo "Index has $count entities. Waiting for 17..."
+            echo "Index has $count entities. Waiting for 60..."
             sleep 10
           done
 
