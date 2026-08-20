@@ -8,10 +8,14 @@
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentInstanceDefinition extends ObjectValue
@@ -19,7 +23,8 @@ public final class AgentInstanceDefinition extends ObjectValue
 
   private final StringProperty modelProp = new StringProperty("model", "");
   private final StringProperty providerProp = new StringProperty("provider", "");
-  private final StringProperty systemPromptProp = new StringProperty("systemPrompt", "");
+  private final ArrayProperty<AgentHistoryMessageContent> systemPromptProp =
+      new ArrayProperty<>("systemPrompt", AgentHistoryMessageContent::new);
 
   public AgentInstanceDefinition() {
     super(3);
@@ -47,12 +52,30 @@ public final class AgentInstanceDefinition extends ObjectValue
   }
 
   @Override
-  public String getSystemPrompt() {
-    return BufferUtil.bufferAsString(systemPromptProp.getValue());
+  public List<AgentHistoryMessageContentValue> getSystemPrompt() {
+    return systemPromptProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentHistoryMessageContent();
+              copy.copy(element);
+              return (AgentHistoryMessageContentValue) copy;
+            })
+        .toList();
   }
 
-  public AgentInstanceDefinition setSystemPrompt(final String systemPrompt) {
-    systemPromptProp.setValue(systemPrompt);
+  public AgentInstanceDefinition setSystemPrompt(
+      final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
+    systemPromptProp.reset();
+    if (systemPrompt != null) {
+      for (final var item : systemPrompt) {
+        systemPromptProp.add().copy(item);
+      }
+    }
+    return this;
+  }
+
+  public AgentInstanceDefinition addSystemPrompt(final AgentHistoryMessageContent block) {
+    systemPromptProp.add().copy(block);
     return this;
   }
 }
