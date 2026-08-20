@@ -7,7 +7,6 @@
  */
 
 import { FC, ReactNode } from "react";
-import Flex from "src/components/layoutV2/Flex";
 import {
   BreadcrumbSkeleton,
   Section,
@@ -40,10 +39,10 @@ export const DetailPageHeaderFallback: FC<DetailPageHeaderFallbackProps> = ({
   hasOverflowMenu = true,
 }) => {
   return (
-    <Flex>
+    <div className="flex items-center gap-3">
       <StyledSkeletonText heading width={cssSize(20)} />
       {hasOverflowMenu && <SkeletonIcon />}
-    </Flex>
+    </div>
   );
 };
 

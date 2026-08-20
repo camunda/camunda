@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Add } from "@carbon/react/icons";
+import { Button, EmptyState } from "@camunda/design-system";
+import { Plus } from "lucide-react";
 import { FC } from "react";
 import { documentationHref } from "src/components/documentationV2";
 import { useDocsUrl } from "../documentation/DocsUrlContext";
@@ -30,26 +30,26 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
   const resourceTypeText = t(resourceTypeTranslationKey).toLowerCase();
 
   return (
-    <C3EmptyState
+    <EmptyState
       heading={t("emptyStateTitleCreate", {
         resourceType: resourceTypeText,
       })}
       description={t("emptyStateSubtitleCreate", {
         resourceType: resourceTypeText,
       })}
-      button={{
-        label: t("emptyStateButtonCreate", {
-          resourceType: resourceTypeText,
-        }),
-        onClick: handleClick,
-        icon: Add,
-      }}
-      link={{
-        href: documentationHref(docsUrl, docsLinkPath),
-        label: t("emptyStateLearnText", {
-          resourceType: resourceTypeText,
-        }),
-      }}
+      action={
+        <Button onClick={handleClick}>
+          <Plus data-icon="inline-start" aria-hidden="true" />
+          {t("emptyStateButtonCreate", { resourceType: resourceTypeText })}
+        </Button>
+      }
+      secondaryAction={
+        <Button variant="link" size="sm" asChild>
+          <a href={documentationHref(docsUrl, docsLinkPath)} target="_blank">
+            {t("emptyStateLearnText", { resourceType: resourceTypeText })}
+          </a>
+        </Button>
+      }
     />
   );
 };
