@@ -63,6 +63,9 @@ public class AgentInstanceRequestValidator {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
             }
 
+            // This is #59784's own mutual-exclusivity rule (definition/limits vs. history),
+            // landing ahead of #58795, which removes definition/limits from this endpoint
+            // entirely — not part of #58795's scope.
             if (request.getDefinition() != null) {
               violations.add(ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY.formatted("definition"));
             }
