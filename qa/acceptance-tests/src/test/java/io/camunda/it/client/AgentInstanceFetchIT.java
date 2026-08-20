@@ -19,6 +19,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.command.ProblemException;
@@ -190,7 +191,12 @@ public class AgentInstanceFetchIT {
           softly
               .assertThat(definition.getSystemPrompt())
               .as("definition.systemPrompt")
-              .isEqualTo("You are a helpful assistant.");
+              .hasSize(1)
+              .first()
+              .isInstanceOfSatisfying(
+                  AgentInstanceHistoryContent.TextContent.class,
+                  block ->
+                      softly.assertThat(block.getText()).isEqualTo("You are a helpful assistant."));
 
           final var metrics = response.getMetrics();
           softly.assertThat(metrics).as("metrics").isNotNull();
@@ -244,7 +250,12 @@ public class AgentInstanceFetchIT {
           softly
               .assertThat(definition.getSystemPrompt())
               .as("definition.systemPrompt")
-              .isEqualTo("You are a helpful assistant.");
+              .hasSize(1)
+              .first()
+              .isInstanceOfSatisfying(
+                  AgentInstanceHistoryContent.TextContent.class,
+                  block ->
+                      softly.assertThat(block.getText()).isEqualTo("You are a helpful assistant."));
 
           final var limits = response.getLimits();
           softly.assertThat(limits.getMaxTokens()).as("limits.maxTokens").isEqualTo(5000L);
