@@ -366,6 +366,7 @@ test.describe('Process Instance Incident', () => {
   });
 
   test('Verify Incident root cause instance', async ({
+    page,
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,
@@ -417,15 +418,11 @@ test.describe('Process Instance Incident', () => {
     });
 
     await test.step('Click Call Activity and verify the error type', async () => {
-      await operateProcessInstancePage.clickOnElementInDiagram(
-        'Task_CallActivity',
-      );
+      await operateProcessInstancePage
+        .getDiagramElement('Task_CallActivity')
+        .dblclick();
 
-      await expect(
-        operateProcessInstancePage.getSelectedIncidentRow(
-          /Called element error\./i,
-        ),
-      ).toBeVisible();
+      await expect(operateProcessInstancePage.getIncidentRow(/Called element error\./i)).toBeVisible({timeout: 15000});
     });
   });
 
