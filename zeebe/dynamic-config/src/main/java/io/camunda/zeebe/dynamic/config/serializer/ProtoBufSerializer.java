@@ -1973,14 +1973,18 @@ public class ProtoBufSerializer
     configuration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    // A switch over ChangePlan's sealed permits, not an if/else-if: a third implementation would
+    // fail to compile here instead of silently vanishing off the wire the way it would with an
+    // if/else-if that falls through to neither branch.
     configuration
         .pendingChanges()
         .ifPresent(
             changePlan -> {
-              if (changePlan instanceof final ClusterChangePlan queue) {
-                builder.setPendingChanges(encodeChangePlan(queue));
-              } else if (changePlan instanceof final DependencyChangePlan graph) {
-                builder.setPendingGraphChanges(encodeDependencyChangePlan(graph));
+              switch (changePlan) {
+                case final ClusterChangePlan queue ->
+                    builder.setPendingChanges(encodeChangePlan(queue));
+                case final DependencyChangePlan graph ->
+                    builder.setPendingGraphChanges(encodeDependencyChangePlan(graph));
               }
             });
     configuration
@@ -2028,26 +2032,12 @@ public class ProtoBufSerializer
 
   private Topology.DependencyChangePlan encodeDependencyChangePlan(
       final DependencyChangePlan plan) {
-    final var graph = Topology.OperationGraph.newBuilder();
-    plan.operations()
-        .forEach(
-            (operationId, planned) -> {
-              final var operation =
-                  Topology.PlannedOperation.newBuilder()
-                      .setId(operationId.value())
-                      .setOperation(
-                          encodePartitionGroupChangeOperation(
-                              (PartitionGroupOperation) planned.operation()));
-              planned.dependsOn().forEach(dependency -> operation.addDependsOn(dependency.value()));
-              graph.addOperations(operation.build());
-            });
-
     final var builder =
         Topology.DependencyChangePlan.newBuilder()
             .setId(plan.id())
             .setStatus(fromTopologyChangeStatus(plan.status()))
             .setStartedAt(toTimestamp(plan.startedAt()))
-            .setGraph(graph.build());
+            .setGraph(encodeOperationGraph(plan.graph()));
     plan.completed()
         .forEach(
             (operationId, at) ->
@@ -2061,21 +2051,7 @@ public class ProtoBufSerializer
 
   private DependencyChangePlan decodeDependencyChangePlan(
       final Topology.DependencyChangePlan proto) {
-    final SortedMap<OperationId, OperationGraph.PlannedOperation> operations = new TreeMap<>();
-    proto
-        .getGraph()
-        .getOperationsList()
-        .forEach(
-            planned -> {
-              final var dependsOn = new TreeSet<OperationId>();
-              planned.getDependsOnList().forEach(id -> dependsOn.add(OperationId.of(id)));
-              operations.put(
-                  OperationId.of(planned.getId()),
-                  new OperationGraph.PlannedOperation(
-                      decodePartitionGroupChangeOperation(planned.getOperation()), dependsOn));
-            });
-
-    final SortedMap<OperationId, java.time.Instant> completed = new TreeMap<>();
+    final SortedMap<OperationId, Instant> completed = new TreeMap<>();
     proto
         .getCompletedList()
         .forEach(
@@ -2090,8 +2066,7 @@ public class ProtoBufSerializer
         proto.getId(),
         toChangeStatus(proto.getStatus()),
         Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
-        // OperationGraph.of, not the bare constructor: see decodeOperationGraph above.
-        OperationGraph.of(operations),
+        decodeOperationGraph(proto.getGraph()),
         completed);
   }
 
