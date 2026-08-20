@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import com.google.common.base.Throwables;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -152,12 +153,8 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
     if (error == null) {
       return true;
     }
-    for (var cause = error; cause != null; cause = cause.getCause()) {
-      if (cause instanceof StateClosedException) {
-        return false;
-      }
-    }
-    return true;
+    return Throwables.getCausalChain(error).stream()
+        .noneMatch(cause -> cause instanceof StateClosedException);
   }
 
   private ActorFuture<Void> forceSnapshot() {

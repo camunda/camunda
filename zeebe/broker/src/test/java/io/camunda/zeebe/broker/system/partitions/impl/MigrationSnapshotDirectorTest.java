@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.Test;
 
@@ -92,5 +93,24 @@ final class MigrationSnapshotDirectorTest {
     // then
     assertThat(sut.isSnapshotTaken()).isTrue();
     verify(onSnapshotTaken, times(1)).run();
+  }
+
+  @Test
+  void shouldGiveUpOnAStateClosedExceptionWrappedInsideAnotherException() {
+    // given - a StateClosedException nested a level deep, not the outermost exception itself;
+    // isRecoverableError() must walk the whole cause chain, not just check the top-level error
+    when(snapshotDirector.forceSnapshot())
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new RuntimeException("wrapped", new StateClosedException("expected"))));
+
+    // when
+    final var sut =
+        new MigrationSnapshotDirector(
+            snapshotDirector, new TestConcurrencyControl(), healthMonitor, onSnapshotTaken);
+
+    // then
+    assertThat(sut.isSnapshotTaken()).isFalse();
+    verify(onSnapshotTaken, never()).run();
   }
 }
