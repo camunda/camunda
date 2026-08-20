@@ -62,9 +62,6 @@
       <when test="operation.operator.name().equals('EXISTS')">
         ${column} IS NOT NULL
       </when>
-      <when test="operation.operator.name().equals('NOT_EXISTS')">
-        ${column} IS NULL
-      </when>
       <when test="operation.operator.name().equals('IN')">
         <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
           ${column} LIKE #{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler}
