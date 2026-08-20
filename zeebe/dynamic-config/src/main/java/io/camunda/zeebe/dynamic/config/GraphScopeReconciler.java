@@ -207,6 +207,13 @@ final class GraphScopeReconciler {
               + " cancelled.",
           groupId,
           operation);
+      // Also clears any backoff this operationId accumulated: a replacement plan on this group
+      // numbers its operations from zero, same as this one did, so its operationId can collide
+      // with this one, and without this an operation that failed a few times before this plan was
+      // cancelled would leave an inflated delay for the replacement plan's same-numbered operation
+      // to inherit -- the same reasoning ScopeReconciler's stale-version path already applies to
+      // its single shared backoff.
+      backoffs.remove(operationId);
       // A replacement plan on this group numbers its operations from zero, same as this one did,
       // so its own operationId may collide with the one just removed from inFlight above. If that
       // collision was blocking it, this is the only place left to notice: nothing else about this
