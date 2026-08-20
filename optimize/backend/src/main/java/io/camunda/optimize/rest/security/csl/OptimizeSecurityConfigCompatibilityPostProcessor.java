@@ -174,6 +174,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"))) {
       mapIssuerUri(env, derived, "camunda.identity.issuer");
     }
+    deriveOidcEndpointsFromIssuerBackendUrl(env, derived);
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
     // CLIENT_SECRET while leaving camunda.identity.issuer blank. Bridging a client-id/secret with
@@ -183,7 +184,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (!derived.containsKey(OIDC_PREFIX + "issuer-uri")
         && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))
-        && !hasExplicitOidcEndpoints(env)) {
+        && !hasOidcEndpoints(env, derived)) {
       final String clientId = env.getProperty("camunda.identity.clientId");
       final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
       if (!isBlank(clientId) || !isBlank(clientSecret)) {
@@ -216,6 +217,38 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
   }
 
+  // Last resort when no issuer-uri could be derived: build the endpoints from
+  // camunda.identity.issuerBackendUrl, which is the in-cluster Identity URL and reachable from the
+  // pod. issuer-uri cannot be derived from it — CSL validates the discovery document's issuer
+  // against the URL it dialed, and Identity reports its externally-configured issuer either way —
+  // but the endpoints carry no such check, so a registration built from them works. Without this a
+  // deployment that configures only the public API (jwtAuthForApiEnabled plus a jwkSetUri, no
+  // browser login) has neither an issuer nor a complete endpoint set, and CSL fails to build any
+  // client registration at all. A deployment that does serve browser login configures
+  // camunda.identity.issuer and never reaches this.
+  private void deriveOidcEndpointsFromIssuerBackendUrl(
+      final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    if (derived.containsKey(OIDC_PREFIX + "issuer-uri")
+        || !isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))) {
+      return;
+    }
+    final String backendUrl = env.getProperty("camunda.identity.issuerBackendUrl");
+    if (isBlank(backendUrl)) {
+      return;
+    }
+    final String base =
+        backendUrl.endsWith("/") ? backendUrl.substring(0, backendUrl.length() - 1) : backendUrl;
+    derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", base + "/protocol/openid-connect/auth");
+    derived.putIfAbsent(OIDC_PREFIX + "token-uri", base + "/protocol/openid-connect/token");
+    derived.putIfAbsent(OIDC_PREFIX + "jwk-set-uri", base + "/protocol/openid-connect/certs");
+    LOG.info(
+        "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl' because no"
+            + " OIDC issuer is configured. Browser login cannot work against an internal URL; set"
+            + " 'camunda.identity.issuer' (or"
+            + " 'camunda.security.authentication.oidc.issuer-uri') if this deployment serves the"
+            + " Optimize UI.");
+  }
+
   // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
   // to CSL: an issuer-uri makes CSL discover them by dialing the browser-facing issuer from inside
   // the pod, which is what explicit endpoints exist to avoid. The key is deprecated either way, so
@@ -240,6 +273,17 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
         && !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
         && !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
+  }
+
+  // As hasExplicitOidcEndpoints, but also counting endpoints this bridge derived in this pass, so
+  // the credential guard below does not withhold client-id and client-secret from a registration
+  // the bridge has just made buildable.
+  private static boolean hasOidcEndpoints(
+      final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    return hasExplicitOidcEndpoints(env)
+        || (derived.containsKey(OIDC_PREFIX + "authorization-uri")
+            && derived.containsKey(OIDC_PREFIX + "jwk-set-uri")
+            && derived.containsKey(OIDC_PREFIX + "token-uri"));
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {
