@@ -23,24 +23,39 @@ import org.junit.jupiter.api.Test;
 /**
  * End-to-end happy-path coverage for {@code GET /actuator/upgradeReadiness}
  * (camunda/product-hub#3067) with RDBMS as the secondary storage: on a normally-booted, healthy
- * broker — no chained-upgrade or migration scenario involved — the condition must settle on {@code
- * MIGRATED} for the default physical tenant, and the endpoint must report the cluster as
- * upgradeable.
+ * broker — no chained-upgrade or migration scenario involved — every registered condition must
+ * settle on {@code MIGRATED} for the default physical tenant, and the endpoint must report the
+ * cluster as upgradeable.
  *
- * <p>Covers {@code RdbmsSchemaMigrationStatusProvider} (schema-version check against the shared
- * RDBMS store) — the only provider wired for a single-node RDBMS broker today.
+ * <p>Covers both providers wired for a single-node RDBMS broker today: {@code
+ * RdbmsSchemaMigrationStatusProvider} (schema-version check against the shared RDBMS store) and
+ * {@code ClusterRocksDbMigrationStatusProvider} (per-partition-replica broadcast over the admin
+ * API). Three partitions are configured because the RocksDB condition folds over every partition's
+ * replicas — with a single partition, an aggregation that dropped every partition but the first
+ * would still pass.
  */
 @ZeebeIntegration
 final class UpgradeReadinessEndpointIT {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  private static final int PARTITION_COUNT = 3;
   private static final String H2_URL =
       "jdbc:h2:mem:upgrade-readiness-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
 
-  @TestZeebe
+  @TestZeebe(partitionCount = PARTITION_COUNT)
   private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
+          .withClusterConfig(
+              cluster -> {
+                cluster.setPartitionCount(PARTITION_COUNT);
+                // The RocksDB provider broadcasts admin requests to every replica over the
+                // internal API, which for this single-node broker means connecting to itself.
+                // Advertising the host's auto-detected LAN address can make that self-connect
+                // depend on the environment's network/firewall setup; loopback is always valid.
+                cluster.getNetwork().setAdvertisedHost("127.0.0.1");
+                cluster.getNetwork().getInternalApi().setAdvertisedHost("127.0.0.1");
+              })
           .withUnifiedConfig(
               cfg -> {
                 final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
@@ -50,9 +65,8 @@ final class UpgradeReadinessEndpointIT {
               });
 
   @Test
-  void shouldReportRdbmsSchemaMigratedForTheDefaultPhysicalTenant() {
-    Awaitility.await(
-            "until the rdbmsSchemaMigrated condition settles on MIGRATED for the default tenant")
+  void shouldReportBothProvidersMigratedForTheDefaultPhysicalTenant() {
+    Awaitility.await("until every registered condition settles on MIGRATED for the default tenant")
         .atMost(TIMEOUT)
         .untilAsserted(
             () -> {
@@ -60,8 +74,9 @@ final class UpgradeReadinessEndpointIT {
 
               assertThat(response.physicalTenants()).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID);
               final var defaultTenant = response.physicalTenants().get(DEFAULT_PHYSICAL_TENANT_ID);
-              assertThat(defaultTenant).containsKey("rdbmsSchemaMigrated");
+              assertThat(defaultTenant).containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated");
               assertThat(defaultTenant.get("rdbmsSchemaMigrated").state()).isEqualTo("MIGRATED");
+              assertThat(defaultTenant.get("rocksDbMigrated").state()).isEqualTo("MIGRATED");
               assertThat(response.upgradeable()).isTrue();
             });
   }
