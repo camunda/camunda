@@ -216,6 +216,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             config.isBusinessIdUniquenessEnabled(),
             messageCorrelationMetrics);
 
+    agentDefinitionBehavior = new AgentDefinitionBehavior(processingState.getProcessState());
+
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
             jobStreamer,
@@ -227,7 +229,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             cslCheck,
             tenantCheck,
             secretStoreRegistry,
-            incidentBehavior);
+            incidentBehavior,
+            agentDefinitionBehavior);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
@@ -264,8 +267,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getGroupState(),
             config.isCandidateGroupNameResolution(),
             clock);
-
-    agentDefinitionBehavior = new AgentDefinitionBehavior(processingState.getProcessState());
 
     jobBehavior =
         new BpmnJobBehavior(
