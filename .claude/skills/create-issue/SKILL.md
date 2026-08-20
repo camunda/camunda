@@ -15,12 +15,7 @@ gh auth status  # must succeed
 ```
 
 If this fails, do not abort. Check whether `mcp__github__*` tools are available in this session; if
-so, use them for the rest of this skill's flow instead of the `gh` examples shown below:
-`mcp__github__search_issues` for the dedup check in Step 1.5, `mcp__github__issue_write` (method
-`create`/`update`) for the `gh issue create` calls in Steps 6-7, `mcp__github__sub_issue_write` for
-the parent sub-issue registration, and `mcp__github__list_issue_types` plus `mcp__github__issue_write`'s
-`type` parameter for setting the native GitHub Issue Type (simpler than the GraphQL-mutation approach
-shown in Step 7). MCP tools use separate credentials, so they often keep working through a `gh`
+so, use them for the rest of this skill's flow instead of the `gh` examples shown below.MCP tools use separate credentials, so they often keep working through a `gh`
 auth failure (stale token, sandbox restrictions, a transient rate limit), though they are not
 immune to failures of their own (their own rate limits, service-side restrictions). If MCP tools
 are not available either, retry `gh auth status` once before asking the user to check their
@@ -60,9 +55,7 @@ gh search issues '<title keywords>' --repo camunda/camunda --state open --limit 
 gh search issues '<title keywords>' --repo camunda/camunda --state closed --limit 10
 ```
 
-`--state` only accepts one value at a time (`open` or `closed`), not `all` — run both. (If `gh`
-auth is unavailable, use `mcp__github__search_issues` instead, per the Prerequisites fallback
-above.)
+`--state` only accepts one value at a time (`open` or `closed`), not `all` — run both.
 
 If a close match turns up, surface it to the user before proceeding - show the issue number,
 state, and title, and ask whether to link the new work to it, comment on the existing issue
