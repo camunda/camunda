@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -144,6 +145,74 @@ public final class CompleteJobTest {
                             && r.getKey() == recordValue.getProcessInstanceKey()))
         .isNotEmpty()
         .allMatch(r -> "task".equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldCompleteExternalAgentJobWithFollowupMetadata() {
+    // given
+    final var externalAgentJobType = jobType;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t -> t.zeebeJobType(externalAgentJobType).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(externalAgentJobType).activate(username);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .describedAs(
+            "a job type not matching the legacy agentic prefix must still carry the agent "
+                + "element id when its element has a resolved external agent definition")
+        .isNotEmpty()
+        .allMatch(r -> r.getAgent() != null && "task".equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldNotCarryAgentElementIdForNonAgenticJob() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .describedAs(
+            "a plain job with no agent definition and a job type not matching the legacy "
+                + "agentic prefix must not have an agent element id on any follow-up record")
+        .isNotEmpty()
+        .allMatch(r -> r.getAgent() == null || r.getAgent().getElementId().isEmpty());
   }
 
   @Test

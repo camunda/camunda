@@ -43,6 +43,8 @@ public class AuditLogAgentIT {
           .withAuthenticatedAccess();
 
   private static final String AGENT_ELEMENT_ID = "test_agent_ahsp";
+  private static final String EXTERNAL_AGENT_ELEMENT_ID = "external_agent_service_task";
+  private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-job";
   private static CamundaClient adminClient;
 
   @BeforeAll
@@ -69,6 +71,26 @@ public class AuditLogAgentIT {
         .send()
         .join();
 
+    // Deploy a process with an external agent service task, whose job type does not carry the
+    // legacy agentic job type prefix, and complete its job
+    final var externalAgentProcessModel =
+        Bpmn.createExecutableProcess("EXTERNAL_AGENT_PROCESS")
+            .startEvent()
+            .serviceTask(
+                EXTERNAL_AGENT_ELEMENT_ID,
+                t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+            .endEvent()
+            .done();
+    final var externalAgentProcess =
+        deployProcessAndWaitForIt(client, externalAgentProcessModel, "external_agent_process.bpmn");
+    final var externalAgentProcessInstance =
+        startProcessInstance(client, externalAgentProcess.getBpmnProcessId());
+    waitForProcessInstancesToStart(client, 2);
+
+    final var externalAgentJobs =
+        waitForJobs(client, List.of(externalAgentProcessInstance.getProcessInstanceKey()));
+    client.newCompleteCommand(externalAgentJobs.getFirst().getJobKey()).send().join();
+
     // Wait for audit logs to be available
     Awaitility.await("job to be completed")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -85,7 +107,7 @@ public class AuditLogAgentIT {
                       .send()
                       .join();
 
-              assertThat(result.items()).hasSize(1);
+              assertThat(result.items()).hasSize(2);
             });
   }
 
@@ -151,5 +173,44 @@ public class AuditLogAgentIT {
             auditLog -> {
               assertThat(auditLog.getAgentElementId()).startsWith("test_agent");
             });
+  }
+
+  @Test
+  void shouldAttributeExternalAgentJobInAuditLog(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - search for the external agent job's audit log entry
+    final var result =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.entityType(AuditLogEntityTypeEnum.JOB))
+            .send()
+            .join();
+
+    // then - the entry for the external agent job carries the agent element id
+    assertThat(result.items())
+        .filteredOn(auditLog -> auditLog.getEntityDescription().equals(EXTERNAL_AGENT_JOB_TYPE))
+        .describedAs("audit log entry for the external agent job")
+        .hasSize(1)
+        .allSatisfy(
+            auditLog ->
+                assertThat(auditLog.getAgentElementId())
+                    .describedAs("agent element id of the external agent job's audit log entry")
+                    .isEqualTo(EXTERNAL_AGENT_ELEMENT_ID));
+
+    // when - filter audit logs by the external agent's element id
+    final var filteredResult =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.agentElementId(EXTERNAL_AGENT_ELEMENT_ID))
+            .send()
+            .join();
+
+    // then - the filter finds the external agent's audit log entry
+    assertThat(filteredResult.items())
+        .describedAs("audit logs filtered by the external agent's element id")
+        .isNotEmpty()
+        .allSatisfy(
+            auditLog ->
+                assertThat(auditLog.getAgentElementId()).isEqualTo(EXTERNAL_AGENT_ELEMENT_ID));
   }
 }
