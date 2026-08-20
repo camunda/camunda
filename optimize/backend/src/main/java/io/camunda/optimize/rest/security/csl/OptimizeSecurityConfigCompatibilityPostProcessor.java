@@ -219,13 +219,10 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // Last resort when no issuer-uri could be derived, so CSL can still build a registration: the
   // endpoints carry no issuer check, unlike issuer-uri, so the backend URL is usable for them.
   //
-  // The paths assume Keycloak's realm layout, which is what camunda.identity.issuerBackendUrl
-  // points
-  // at in the official Helm chart. Behind another provider they are wrong, but only jwk-set-uri can
-  // ever be dialed from here: this is reached only when no issuer is configured, so there is no
-  // browser login to use authorization-uri/token-uri, and the public API's own JWK set URI wins
-  // over
-  // the derived one whenever it is set. Anything else has to configure the endpoints explicitly.
+  // The paths assume Keycloak's realm layout, which is what the chart's issuerBackendUrl points
+  // at. Elsewhere they are wrong, but only jwk-set-uri can be dialed from here: no issuer means
+  // no browser login for authorization-uri/token-uri, and the public API's own JWK set URI wins
+  // when it is set. Any other provider has to configure the endpoints explicitly.
   private void deriveOidcEndpointsFromIssuerBackendUrl(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     if (!isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))) {
@@ -247,13 +244,11 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         OIDC_PREFIX + "jwk-set-uri",
         isBlank(publicApiJwks) ? base + "/protocol/openid-connect/certs" : publicApiJwks);
     LOG.info(
-        "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl' (assuming"
-            + " Keycloak's realm paths) because no OIDC issuer is configured. Browser login cannot"
-            + " work against an internal URL; set 'camunda.identity.issuer' (or"
-            + " 'camunda.security.authentication.oidc.issuer-uri') if this deployment serves the"
-            + " Optimize UI, or set the"
-            + " 'camunda.security.authentication.oidc.{authorization,token,jwk-set}-uri' explicitly"
-            + " for a non-Keycloak provider.");
+        "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl', assuming"
+            + " Keycloak's realm paths, because no OIDC issuer is configured. Browser login cannot"
+            + " work against an internal URL: set 'camunda.identity.issuer' if this deployment"
+            + " serves the Optimize UI, or set the OIDC endpoints explicitly for a non-Keycloak"
+            + " provider.");
   }
 
   // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
