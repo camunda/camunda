@@ -149,9 +149,11 @@ const TasklistLoginPage: React.FC = () => {
 					)}
 				</Form>
 			</main>
-			<Text as="span" variant="helper" className="block py-4 text-center">
-				{getCurrentCopyrightNoticeText()}
-			</Text>
+			<footer className="py-4 text-center">
+				<Text as="span" variant="helper">
+					{getCurrentCopyrightNoticeText()}
+				</Text>
+			</footer>
 		</div>
 	);
 };

@@ -23,12 +23,14 @@ const Disclaimer: React.FC = () => {
 				</a>
 			</Button>{' '}
 			or{' '}
-			<Button asChild variant="link" className="h-auto p-0 align-baseline text-xs font-normal">
-				<a href="https://camunda.com/contact/" target="_blank" rel="noreferrer">
-					contact sales
-				</a>
-			</Button>
-			.
+			<span className="whitespace-nowrap">
+				<Button asChild variant="link" className="h-auto p-0 align-baseline text-xs font-normal">
+					<a href="https://camunda.com/contact/" target="_blank" rel="noreferrer">
+						contact sales
+					</a>
+				</Button>
+				.
+			</span>
 		</Text>
 	);
 };
