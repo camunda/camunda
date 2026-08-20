@@ -46,9 +46,8 @@ class WebSecurityConfigPropagatorImportTest {
     }
   }
 
-  // Empty bodies on purpose: each subclass contributes only a context, inheriting BaseTest's single
-  // assertion so it runs once per authentication method. Both name their method explicitly rather
-  // than leaning on the library default, which could move and quietly collapse the two into one.
+  // Each subclass adds only what its context needs to boot and inherits BaseTest's assertion, so
+  // that assertion runs once per authentication method.
   @Nested
   @SpringBootTest(
       classes = WebSecurityConfigTestContext.class,
