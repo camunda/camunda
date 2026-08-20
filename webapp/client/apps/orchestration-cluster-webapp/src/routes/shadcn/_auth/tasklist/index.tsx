@@ -7,9 +7,8 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {TasklistProcessesPage} from '#/tasklist/pages/shadcn.components/TasklistProcessesPage';
 
 export const Route = createFileRoute('/shadcn/_auth/tasklist/')({
-	component() {
-		return <div>Hello "/shadcn/tasklist"!</div>;
-	},
+	component: TasklistProcessesPage,
 });
