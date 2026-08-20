@@ -364,6 +364,7 @@ public class DynamicNodeIdScalingIT {
                         cfg -> {
                           cfg.getCluster().setSize(initialClusterSize());
                           configureS3NodeIdProvider(cfg);
+                          cfg.getCluster().getMetadata().setSyncDelay(Duration.ofSeconds(1));
                         }))
             .build();
 
