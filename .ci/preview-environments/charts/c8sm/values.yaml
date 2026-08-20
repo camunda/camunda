@@ -52,17 +52,6 @@ global:
     secrets:
       name: camunda-credentials
 
-  # Camunda 8 Self-Managed global configurations
-  elasticsearch:
-    # Required so the orchestration chart renders the `camunda.data.secondary-storage.elasticsearch`
-    # block (url, credentials, etc.). Without this, embedded Operate/Tasklist may fall back
-    # to their defaults (e.g. `http://localhost:9200`).
-    enabled: true
-    url:
-      # Secondary storage is an ECK-managed Elasticsearch CR (templates/elasticsearch.yml);
-      # the ECK operator names the Service <cr-name>-es-http.
-      host: elasticsearch-es-http
-
   identity:
     auth:
       # Enable Camunda Identity-based authentication
@@ -312,6 +301,16 @@ camunda-platform:
     fullnameOverride: optimize
     contextPath: /optimize
     partitionCount: "1"
+    database:
+      elasticsearch:
+        # Optimize's datastore and the legacy Zeebe exporter resolve from this
+        # component-scoped block (global.elasticsearch was removed in
+        # camunda-platform 15.x). Secondary storage is an ECK-managed
+        # Elasticsearch CR (templates/elasticsearch.yml); the ECK operator
+        # names the Service <cr-name>-es-http.
+        enabled: true
+        url:
+          host: elasticsearch-es-http
     image:
       registry: registry.camunda.cloud
       repository: team-camunda/optimize
