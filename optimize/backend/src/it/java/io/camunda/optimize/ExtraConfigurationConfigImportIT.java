@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +36,17 @@ public class ExtraConfigurationConfigImportIT extends AbstractCCSMIT {
 
   @Override
   protected void startAndUseNewOptimizeInstance() {
-    startAndUseNewOptimizeInstance(
-        Map.of("spring.config.location", configDir.toAbsolutePath() + "/"),
-        ConfigurationServiceConstants.CCSM_PROFILE);
+    // spring.config.location (rather than additional-location) is required here: it replaces
+    // Spring Boot's default config search locations, which is exactly what
+    // shouldLoadOptimizeConfigFromExtraFile needs so the temp configDir's override stays
+    // authoritative over the classpath default. That means the classpath application-ccsm.yaml
+    // fixture carrying CSL's OIDC client registration never loads for this restarted instance, so
+    // the same values are supplied directly as property-map entries instead (outside the
+    // config-file search-location mechanism, so this substitution doesn't affect precedence).
+    final Map<String, String> properties =
+        new HashMap<>(CcsmOidcTestFixture.STATIC_OIDC_PROPERTIES);
+    properties.put("spring.config.location", configDir.toAbsolutePath() + "/");
+    startAndUseNewOptimizeInstance(properties, ConfigurationServiceConstants.CCSM_PROFILE);
   }
 
   @Test

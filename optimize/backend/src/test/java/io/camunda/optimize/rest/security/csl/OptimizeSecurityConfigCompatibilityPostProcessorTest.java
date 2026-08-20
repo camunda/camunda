@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.optimize.Main;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
 import java.util.HashMap;
@@ -21,12 +22,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
+import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
 class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
   private static final String OIDC = "camunda.security.authentication.oidc.";
+  private static final SpringApplication OPTIMIZE_APPLICATION = new SpringApplication(Main.class);
 
   @RegisterExtension
   final LogCapturer logs =
@@ -56,7 +59,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "cloud-client");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isNull();
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
@@ -77,7 +80,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("optimize.security.csl.enabled", "flase");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
     logs.assertDoesNotContain(
@@ -94,12 +97,44 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final Map<String, Object> legacy = new HashMap<>();
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
     logs.assertDoesNotContain(
         entry -> entry.getLevel() == Level.WARN,
         "expected no deprecation warning when the flag is simply left at its default");
+  }
+
+  @Test
+  void shouldSkipEntirelyWhenApplicationIsNotOptimizesOwn() {
+    // given a different SpringApplication booted in the same JVM/classpath (e.g. the embedded
+    // TestStandaloneBroker Optimize's own CCSM ITs start for import tests, see
+    // camunda/camunda#60184) that never asked for Optimize's OIDC-only bridge defaults
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", "http://localhost:18080/realm");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    final SpringApplication notOptimize = new SpringApplication(StandardEnvironment.class);
+
+    processor.postProcessEnvironment(env, notOptimize);
+
+    assertThat(env.getProperty("camunda.security.authentication.method")).isNull();
+    assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
+    // left exactly as the caller set it: the guard returns before canonicalization runs, so a
+    // foreign application never even sees this processor's usual normalization of the flag
+    assertThat(env.getProperty("optimize.security.csl.enabled")).isEqualTo("true");
+    logs.assertDoesNotContain(
+        entry -> true, "expected no deprecation warnings for an application that isn't Optimize");
+  }
+
+  @Test
+  void shouldSkipEntirelyWhenApplicationIsNull() {
+    // given no SpringApplication at all (defensive: postProcessEnvironment's contract allows null)
+    final StandardEnvironment env = environmentWith(cslEnabledConfig());
+
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty("camunda.security.authentication.method")).isNull();
   }
 
   @Test
@@ -111,7 +146,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE", "optimize-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
     assertThat(env.getProperty("camunda.security.authentication.catch-all-unhandled-paths-enabled"))
@@ -149,7 +184,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri"))
         .isEqualTo("http://localhost:18080/auth/realms/camunda-platform");
@@ -193,7 +228,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "https://public-api-idp.example.com/keys");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
     assertThat(env.getProperty(OIDC + "authorization-uri"))
@@ -217,7 +252,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.issuerBackendUrl", backend);
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/certs");
@@ -235,7 +270,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "authorization-uri", "https://idp.example.com/authorize");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "authorization-uri"))
         .isEqualTo("https://idp.example.com/authorize");
@@ -255,7 +290,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "camunda.identity.issuerBackendUrl",
         "http://identity.svc:18080/auth/realms/camunda-platform");
 
-    processor.postProcessEnvironment(environmentWith(legacy), null);
+    processor.postProcessEnvironment(environmentWith(legacy), OPTIMIZE_APPLICATION);
 
     logs.assertContains("camunda.identity.issuerBackendUrl");
     logs.assertContains("Browser login cannot work against an internal URL");
@@ -270,7 +305,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "  http://identity.svc:18080/auth/realms/camunda-platform//  ");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "token-uri"))
         .isEqualTo(
@@ -290,7 +325,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "issuer-uri", "");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "authorization-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/auth");
@@ -313,7 +348,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "issuer-uri", "");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
     assertThat(env.getProperty(OIDC + "client-secret")).isNull();
@@ -334,7 +369,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "token-uri", "");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
     assertThat(env.getProperty(OIDC + "client-secret")).isNull();
@@ -352,7 +387,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://identity.svc:18080/auth/realms/camunda-platform");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri"))
         .isEqualTo("https://public.example.com/auth/realms/camunda-platform");
@@ -369,7 +404,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://identity.svc:18080/auth/realms/camunda-platform/");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "token-uri"))
         .isEqualTo(
@@ -398,7 +433,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
@@ -424,7 +459,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
     assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("helm-secret");
@@ -451,7 +486,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
     logs.assertContains(
@@ -473,7 +508,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri"))
         .isEqualTo("https://public.example.com/auth/realms/camunda-platform");
@@ -491,7 +526,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
@@ -515,7 +550,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("http://legacy.example.com/realm");
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("legacy-client");
@@ -552,7 +587,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri")).isNull();
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
@@ -580,7 +615,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "issuer-uri", "");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "client-id")).isNull();
     assertThat(env.getProperty(OIDC + "client-secret")).isNull();
@@ -602,7 +637,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "helm-secret");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
     assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("https://weblogin.example.com/");
@@ -615,7 +650,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put(OIDC + "issuer-uri", "https://operator-configured.example.com/realm");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "issuer-uri"))
         .isEqualTo("https://operator-configured.example.com/realm");
@@ -633,7 +668,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE", "cloud.accounts");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.authentication.method")).isEqualTo("oidc");
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
@@ -666,7 +701,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     // no clusterId set
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.saas.organization-id")).isNull();
     assertThat(env.getProperty("camunda.security.saas.cluster-id")).isNull();
@@ -685,7 +720,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
         .isEqualTo("https://idp.example.com/.well-known/jwks.json");
@@ -707,7 +742,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-login,optimize-public-api");
   }
@@ -718,7 +753,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.audience", "optimize-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-api");
   }
@@ -733,7 +768,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.audience", "optimize-login");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // insertion order follows the code's call order: the pre-existing API-audience bridge call
     // runs before the new Helm-chart identity-audience bridge call
@@ -751,7 +786,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.audience", "optimize-login");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize-login");
     logs.assertDoesNotContain(
@@ -767,7 +802,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("camunda.identity.audience", "optimize-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // the CCSM-only camunda.identity.audience must not leak into the Auth0 audience set
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize,cloud-client");
@@ -783,7 +818,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_API_AUDIENCE", "optimize-public-api");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // The resource audience (bearer path) and the client id (login id_token aud) both survive; the
     // CCSM-only public-API audience does not.
@@ -797,7 +832,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     // No CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE configured: the login id_token must still be accepted, so
     // the client id alone is bridged into the audiences set.
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("cloud-client");
   }
@@ -809,7 +844,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // The client id is bridged to client-id (its deprecation warning is emitted there); reusing it
     // as an audience must not emit a second "deprecated -> audiences" warning.
@@ -826,7 +861,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", "31536000");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.http-headers.hsts.max-age-in-seconds"))
         .isEqualTo("31536000");
@@ -839,7 +874,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", "-1");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.http-headers.hsts.disabled")).isEqualTo("true");
     assertThat(env.getProperty("camunda.security.http-headers.hsts.max-age-in-seconds")).isNull();
@@ -861,7 +896,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("security.responseHeaders.X-XSS-Protection", "0");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     logs.assertContains(
         entry -> entry.getMessage().contains("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET"),
@@ -896,7 +931,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
     final StandardEnvironment env = environmentWith(legacy);
     // must not throw during environment post-processing
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("camunda.security.http-headers.hsts.max-age-in-seconds")).isNull();
     assertThat(env.getProperty("camunda.security.http-headers.hsts.disabled")).isNull();
@@ -920,7 +955,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", "ccsm-client");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // Auth0 values win, no mix with the CCSM identity values
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("cloud-client");
@@ -936,7 +971,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_CONTEXT_PATH", "/legacy-path");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // the clusterId-derived default must not shadow the operator's existing setting
     assertThat(env.getProperty("contextPath")).isNull();
@@ -950,7 +985,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("contextPath", "/explicit");
 
     final StandardEnvironment env = environmentWith(legacy);
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     assertThat(env.getProperty("contextPath")).isEqualTo("/explicit");
   }
@@ -964,7 +999,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
 
     // when
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // then the CSL session store is active on both editions, so sessions survive a restart and are
     // shared across instances rather than being kept in memory on one of them
@@ -979,7 +1014,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     final StandardEnvironment env = environmentWith(legacy);
 
     // when
-    processor.postProcessEnvironment(env, null);
+    processor.postProcessEnvironment(env, OPTIMIZE_APPLICATION);
 
     // then the bridged default does not override them
     assertThat(env.getProperty(SessionConfiguration.PERSISTENT_ENABLED_PROPERTY))

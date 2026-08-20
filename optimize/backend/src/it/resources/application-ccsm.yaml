@@ -1,0 +1,16 @@
+# This file shadows optimize/backend/src/main/resources/application-ccsm.yaml rather than
+# supplementing it: Spring resolves classpath:/application-ccsm.yaml to the first match, and
+# target/test-classes precedes target/classes on the failsafe classpath. That means CCSM ITs never
+# load the production ccsm profile file at all — anything added there later will silently never
+# reach them. Harmless today because nothing reads camunda.identity.* here without a null-safe
+# fallback, but worth knowing before debugging a "why didn't my ccsm config change apply to ITs"
+# mystery (camunda/camunda#60184).
+camunda:
+  security:
+    authentication:
+      oidc:
+        client-id: it-client
+        client-secret: it-secret
+        authorization-uri: https://idp.example.com/authorize
+        token-uri: https://idp.example.com/token
+        jwk-set-uri: https://idp.example.com/jwks

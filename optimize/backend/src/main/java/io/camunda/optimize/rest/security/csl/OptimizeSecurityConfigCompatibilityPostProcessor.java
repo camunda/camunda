@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.optimize.OptimizeApplicationDetector;
 import io.camunda.security.api.model.config.SessionConfiguration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -75,6 +76,14 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment env, final SpringApplication application) {
+    if (!OptimizeApplicationDetector.isOptimizeApplication(application)) {
+      // See OptimizeApplicationDetector: without this guard, Optimize's OIDC-only bridge defaults
+      // silently overrode the embedded broker's own explicit BASIC-auth configuration, which then
+      // genuinely conflicted with the broker's separately-configured initial demo user
+      // (camunda/camunda#60184).
+      return;
+    }
+
     final boolean cslEnabled =
         !"false".equalsIgnoreCase(env.getProperty(CSL_ENABLED_PROPERTY, "true"));
     // Canonicalize to a literal "true"/"false" so every @ConditionalOnProperty on this flag (CSL

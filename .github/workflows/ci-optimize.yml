@@ -109,12 +109,17 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
-        cslEnabled: [ 'false' ]
+        cslEnabled: [ 'false', 'true' ]
+        # This entry deliberately omits cslEnabled so it merges into both matrix values above,
+        # instead of two near-duplicate entries repeating excludedGroups/profiles. Do not add
+        # cslEnabled back to only one of them: the other combination would then have no include
+        # entry supplying `profiles`, so `-P` would swallow the next Maven argument instead of
+        # activating `ccsm-it` (which wires up src/it/java and failsafe) — Maven only warns on an
+        # unknown profile, so that job would go green having run zero ITs.
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
-            cslEnabled: 'false'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -208,12 +213,13 @@ jobs:
       fail-fast: false
       matrix:
         includedGroups: [ 'ccsm-test' ]
-        cslEnabled: [ 'false' ]
+        cslEnabled: [ 'false', 'true' ]
+        # See the identical comment on the Elasticsearch job above: this entry deliberately omits
+        # cslEnabled so it merges into both matrix values instead of duplicating itself per value.
         include:
           - includedGroups: 'ccsm-test'
             excludedGroups: 'openSearchSingleTestFailOK'
             profiles: 'ccsm-it'
-            cslEnabled: 'false'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
