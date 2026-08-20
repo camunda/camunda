@@ -65,7 +65,6 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
         const normalizedTenantId = tenantId ?? DEFAULT_TENANT;
 
         const name = latestProcessDefinitionName || processDefinitionId;
-        const version = hasMultipleVersions ? 'all' : '1';
         const totalInstancesCount =
           activeInstancesWithIncidentCount +
           activeInstancesWithoutIncidentCount;
@@ -82,7 +81,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
             <LinkWrapper
               to={Locations.processes({
                 processDefinitionId,
-                processDefinitionVersion: version.toString(),
+                processDefinitionVersion: 'all',
                 active: true,
                 incidents: true,
                 ...(totalInstancesCount === 0
