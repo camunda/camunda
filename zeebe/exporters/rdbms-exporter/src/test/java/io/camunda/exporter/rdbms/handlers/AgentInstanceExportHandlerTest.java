@@ -13,11 +13,15 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceLimitsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceMetricsValue;
@@ -128,7 +132,8 @@ class AgentInstanceExportHandlerTest {
     // definition
     assertThat(model.model()).isEqualTo("gpt-4o");
     assertThat(model.provider()).isEqualTo("openai");
-    assertThat(model.systemPrompt()).isEqualTo("You are helpful.");
+    assertThat(model.systemPromptItems())
+        .containsExactly(new ContentItem(ContentType.TEXT, "You are helpful.", null, null));
     // limits
     assertThat(model.maxTokens()).isEqualTo(1000L);
     assertThat(model.maxModelCalls()).isEqualTo(10);
@@ -354,7 +359,12 @@ class AgentInstanceExportHandlerTest {
             ImmutableAgentInstanceDefinitionValue.builder()
                 .withModel("gpt-4o")
                 .withProvider("openai")
-                .withSystemPrompt("You are helpful.")
+                .withSystemPrompt(
+                    List.of(
+                        ImmutableAgentHistoryMessageContentValue.builder()
+                            .withContentType(AgentHistoryContentType.TEXT)
+                            .withText("You are helpful.")
+                            .build()))
                 .build())
         .withLimits(
             ImmutableAgentInstanceLimitsValue.builder()

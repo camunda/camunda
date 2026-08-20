@@ -35,6 +35,8 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceStatus;
@@ -42,6 +44,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceLimitsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceMetricsValue;
@@ -122,6 +125,11 @@ final class AgentInstanceHandlerTest {
     final String model = "gpt-4o";
     final String provider = "openai";
     final String systemPrompt = "You are a helpful assistant.";
+    final var systemPromptBlock =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+            .withText(systemPrompt)
+            .build();
     final long maxTokens = 1000L;
     final int maxModelCalls = 10;
     final int maxToolCalls = 5;
@@ -155,7 +163,7 @@ final class AgentInstanceHandlerTest {
                 ImmutableAgentInstanceDefinitionValue.builder()
                     .withModel(model)
                     .withProvider(provider)
-                    .withSystemPrompt(systemPrompt)
+                    .withSystemPrompt(List.of(systemPromptBlock))
                     .build())
             .withLimits(
                 ImmutableAgentInstanceLimitsValue.builder()
@@ -206,7 +214,9 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
     assertThat(entity.getModel()).isEqualTo(model);
     assertThat(entity.getProvider()).isEqualTo(provider);
-    assertThat(entity.getSystemPrompt()).isEqualTo(systemPrompt);
+    assertThat(entity.getSystemPrompt())
+        .containsExactly(
+            new AgentHistoryContentValue(AgentHistoryContentType.TEXT, systemPrompt, null, null));
     assertThat(entity.getMaxTokens()).isEqualTo(maxTokens);
     assertThat(entity.getMaxModelCalls()).isEqualTo(maxModelCalls);
     assertThat(entity.getMaxToolCalls()).isEqualTo(maxToolCalls);
@@ -494,7 +504,13 @@ final class AgentInstanceHandlerTest {
             ImmutableAgentInstanceDefinitionValue.builder()
                 .withModel("gpt-4o")
                 .withProvider("openai")
-                .withSystemPrompt("You are helpful.")
+                .withSystemPrompt(
+                    List.of(
+                        ImmutableAgentHistoryMessageContentValue.builder()
+                            .withContentType(
+                                io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+                            .withText("You are helpful.")
+                            .build()))
                 .build())
         .withLimits(
             ImmutableAgentInstanceLimitsValue.builder()
