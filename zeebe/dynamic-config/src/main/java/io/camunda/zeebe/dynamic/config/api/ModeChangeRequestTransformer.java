@@ -13,18 +13,20 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Transitions partitions between {@link Mode#PROCESSING} and {@link Mode#RECOVERING}, either for
@@ -50,22 +52,22 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
                   .formatted(physicalTenantId.get())));
     }
 
-    final Map<String, List<PartitionGroupOperation>> operationsPerGroup = new LinkedHashMap<>();
+    final Map<String, OperationGraph> graphsPerGroup = new LinkedHashMap<>();
     clusterConfiguration.partitionGroups().entrySet().stream()
         .filter(
             group -> physicalTenantId.isEmpty() || physicalTenantId.get().equals(group.getKey()))
         .forEach(
             group -> {
-              final var operations = modeChangeOperations(membersToTransition(group.getValue()));
-              if (!operations.isEmpty()) {
-                operationsPerGroup.put(group.getKey(), operations);
+              final var members = membersToTransition(group.getValue());
+              if (!members.isEmpty()) {
+                graphsPerGroup.put(group.getKey(), modeChangeGraph(members));
               }
             });
 
-    if (operationsPerGroup.isEmpty()) {
+    if (graphsPerGroup.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(PartitionGroupPhase.sequential(operationsPerGroup)));
+    return Either.right(List.of(new PartitionGroupPhase(graphsPerGroup)));
   }
 
   /**
@@ -82,14 +84,27 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
   }
 
   /**
-   * All members first start the change operation and complete it async. Following up with a
-   * verification step that the operation completed successfully.
+   * Every member starts the transition, then every member's completion is verified.
+   *
+   * <p>The two stages stay ordered against each other exactly as they were when this was a flat
+   * list: each verification waits for <em>all</em> the mode changes, not only its own broker's. The
+   * transition is a cluster-wide one and nothing here establishes that a broker may be confirmed
+   * while a peer has not yet started, so the conservative ordering is kept until someone who knows
+   * the recovery semantics says otherwise. Narrowing each verification to its own broker is a
+   * one-line change to the dependency below.
+   *
+   * <p>What does change is that the members no longer take turns: all the mode changes run at once,
+   * then all the verifications do. Round trips drop from {@code 2N} to two.
    */
-  private List<PartitionGroupOperation> modeChangeOperations(final List<MemberId> members) {
-    final List<PartitionGroupOperation> operations = new ArrayList<>();
-    members.forEach(memberId -> operations.add(new ModeChangeOperation(memberId, request.mode())));
+  private OperationGraph modeChangeGraph(final List<MemberId> members) {
+    final var builder = OperationGraph.builder();
+    final Set<OperationId> modeChanges = new HashSet<>();
     members.forEach(
-        memberId -> operations.add(new AwaitModeChangeOperation(memberId, request.mode())));
-    return operations;
+        memberId ->
+            modeChanges.add(builder.add(new ModeChangeOperation(memberId, request.mode()))));
+    members.forEach(
+        memberId ->
+            builder.add(new AwaitModeChangeOperation(memberId, request.mode()), modeChanges));
+    return builder.build();
   }
 }
