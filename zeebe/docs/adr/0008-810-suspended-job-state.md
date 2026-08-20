@@ -55,12 +55,21 @@ documented as a caller obligation.
 
 **D2. Suspend and resume walk the element instance tree and write one job event per affected job.**
 Both use `ProcessInstanceSuspensionJobBehavior` (same `ArrayDeque` walk pattern as migration). Cost
-is paid once per suspend/resume, not on every poll.
+is paid once per suspend, and once per resume cycle, not on every poll.
 
 - **Suspend:** append `Job.SUSPENDED` for every `ACTIVATABLE` or `WAITING_FOR_SECRET_RESOLUTION` job,
-  then append `ProcessInstance.SUSPENDED`. Job parking finishes before the instance marker is set.
-- **Resume:** append `Job.RESUMED` for every `SUSPENDED` job, then call
-  `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again.
+  then append `ProcessInstance.SUSPENDED`. Suspending every job finishes before the instance marker
+  is set, in one record batch: `Job.SUSPENDED` carries the job's own record, including its variables,
+  so it is not fixed-size, but it is the only record suspend writes per job — no activation record
+  alongside it. The batch's size scales with the aggregate serialized size of every job the walk
+  suspends, since suspend does not chunk (see Consequences).
+- **Resume:** a `RESUME_JOBS` command walks the tree, finds the first still-`SUSPENDED` job, appends
+  `Job.RESUMED` for it, and calls `BpmnJobActivationBehavior.publishWork` so stream and poll workers
+  see the job again, before appending the next `RESUME_JOBS` for what it did not reach. One job per
+  cycle bounds each cycle's batch to that job's own hand-out cost, the same limit any other hand-out
+  already has: publishing a job a stream is waiting for appends a `JobBatch.ACTIVATED` on top of
+  `Job.RESUMED`, carrying the job's fetched variables a second time, so a resume cycle's size depends
+  on the one job it reaches rather than on every job the instance suspended.
 - **Child instances:** left untouched. `ElementInstanceState.getChildren` does not return a child
   instance root, so the walk never reaches those jobs.
 - **Other job states at suspend time:** `ACTIVATED`, `FAILED`, and `ERROR_THROWN` stay as they are
@@ -115,21 +124,37 @@ instance level only.
   by index prefix instead of walking the element instance tree. Rejected because it changes the
   activatable index layout and activation order for a benefit — a different lookup path for a rare
   operation — that does not offset the risk to the hot activation path.
+- **A dedicated index of suspended jobs by process instance.** A new column family keyed
+  `(processInstanceKey, jobKey)`, populated by `Job.SUSPENDED` and cleared by `Job.RESUMED` or job
+  deletion, would let resume prefix-seek its jobs instead of re-walking the element instance tree once
+  per `RESUME_JOBS` cycle. Deferred rather than rejected: it touches only a new, previously-empty
+  index (no migration, since no 8.9 job can be `SUSPENDED`), not the activatable index the point above
+  protects, so the risk this ADR weighs against does not transfer. Not built for the initial 8.10
+  change so the walk-based design could ship without it; tracked as a concrete follow-up in
+  [#60323](https://github.com/camunda/camunda/issues/60323).
 - **Lazy eviction.** Leave the job in the index and reject or discard it at hand-out time if its
   instance is suspended. Still pays a per-job cost on every poll, the same problem as gating at
   hand-out time.
 
 ## Consequences
 
-- One `Job.SUSPENDED` / `Job.RESUMED` event per affected job in the same batch as the instance
-  marker. A very large instance can hit the max record batch size (same limit as migration).
-  Chunking via a `SUSPENDING` intermediate state is a possible later extension.
+- One `Job.SUSPENDED` event per affected job in the same batch as the instance marker. A very large
+  instance can still hit the max record batch size on suspend (same limit as migration); suspend does
+  not chunk. Resume does not share this limit: one job per `RESUME_JOBS` cycle keeps each cycle's
+  batch bounded to that job's own activation cost.
+- Each `RESUME_JOBS` cycle re-walks the element instance tree from the root to find its one job,
+  visiting every active element the previous cycles already resumed along the way, so a large
+  instance's resume cost is quadratic in its suspended job count. Accepted for the same reason as the
+  walk itself: resume is rare. Tracked for removal by
+  [#60323](https://github.com/camunda/camunda/issues/60323), which replaces the re-walk with the
+  dedicated index of suspended jobs by process instance (see Alternatives).
 - The walk visits every active element of the instance, not only job-backed ones, and blocks the
   partition while it runs. Accepted because suspend/resume are rare; the same cost on activation
   would not be. We run on the same path as process instance migration which is fine so far.
 - No downgrade once a job is parked: older brokers fail on the unknown `SUSPENDED` enum name.
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
-- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking.
+- Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
+  suspend.
 
 ## Open questions
 

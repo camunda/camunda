@@ -17,28 +17,29 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Parks jobs of a process instance so they are no longer handed out while the instance is
- * suspended.
+ * Parks and un-parks the jobs of a process instance while it is suspended, walking its
+ * element-instance tree.
  *
- * <p>Jobs of called child instances are left untouched. {@link ElementInstanceState#getChildren}
- * does not return a child instance's root for the given element instance key, so the walk never
- * reaches those jobs. The {@code processInstanceKey} filter below is only a defensive check of that
- * boundary.
+ * <p>Jobs of called child instances are untouched — {@link ElementInstanceState#getChildren} never
+ * returns a child instance's root, so the walk can't reach them; the {@code processInstanceKey}
+ * filter below is a defensive backstop for that.
  */
 @NullMarked
 public final class ProcessInstanceSuspensionJobBehavior {
 
   /**
-   * States that {@link JobIntent#SUSPENDED} may leave. Matches {@code JobSuspendedApplier}: secret
-   * waiting is overridden so a later secret reactivation cannot put the job back into the hand-out
-   * index while the process instance is still suspended.
+   * States {@link JobIntent#SUSPENDED} may leave from; includes secret-waiting so a later
+   * resolution can't reactivate a job while its instance stays suspended.
    */
   private static final Set<State> SUSPENDABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.WAITING_FOR_SECRET_RESOLUTION);
+
+  /** The only state {@link JobIntent#RESUMED} leaves; see {@code JobResumedApplier}. */
+  private static final Set<State> RESUMABLE_STATES = EnumSet.of(State.SUSPENDED);
 
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
@@ -53,33 +54,49 @@ public final class ProcessInstanceSuspensionJobBehavior {
     this.stateWriter = stateWriter;
   }
 
-  /**
-   * Appends {@link JobIntent#SUSPENDED} for every suspendable job of the process instance ({@link
-   * State#ACTIVATABLE} and {@link State#WAITING_FOR_SECRET_RESOLUTION}), which parks each job out
-   * of the hand-out index.
-   */
+  /** Appends {@link JobIntent#SUSPENDED} for every job in {@link #SUSPENDABLE_STATES}. */
   public void suspendJobs(final long processInstanceKey) {
-    forEachJobInStates(
-        processInstanceKey,
-        SUSPENDABLE_STATES,
-        (jobKey, job) -> stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job));
-  }
-
-  private void forEachJobInStates(
-      final long processInstanceKey,
-      final Set<State> states,
-      final BiConsumer<Long, JobRecord> consumer) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
       return;
     }
+    walk(
+        processInstance,
+        // never stops early: every suspendable job must be parked
+        elementInstance ->
+            visitJobInStates(
+                elementInstance,
+                SUSPENDABLE_STATES,
+                (jobKey, job) -> {
+                  stateWriter.appendFollowUpEvent(jobKey, JobIntent.SUSPENDED, job);
+                  return true;
+                }));
+  }
 
-    // a queue instead of recursion, to not blow the stack on a deeply nested instance
+  /**
+   * Visits {@link State#SUSPENDED} jobs of the process instance until {@code visitor} stops the
+   * walk, without changing their state. Takes the already-loaded root so a per-cycle caller doesn't
+   * re-read it.
+   */
+  public void forEachSuspendedJob(final ElementInstance processInstance, final JobVisitor visitor) {
+    walk(
+        processInstance,
+        elementInstance -> visitJobInStates(elementInstance, RESUMABLE_STATES, visitor));
+  }
+
+  /**
+   * Walks the element-instance tree breadth-first, calling {@code visitor} per element until it
+   * returns {@code false}. A queue (not recursion) avoids blowing the stack on a deep instance.
+   */
+  private void walk(final ElementInstance root, final Predicate<ElementInstance> visitor) {
+    final long processInstanceKey = root.getValue().getProcessInstanceKey();
     final var elementInstances = new ArrayDeque<ElementInstance>();
-    elementInstances.add(processInstance);
+    elementInstances.add(root);
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      visitJob(elementInstance, states, consumer);
+      if (!visitor.test(elementInstance)) {
+        return;
+      }
       // defensive invariant, see class javadoc: getChildren never returns a child instance's root
       elementInstanceState.getChildren(elementInstance.getKey()).stream()
           .filter(child -> child.getValue().getProcessInstanceKey() == processInstanceKey)
@@ -87,17 +104,28 @@ public final class ProcessInstanceSuspensionJobBehavior {
     }
   }
 
-  private void visitJob(
-      final ElementInstance elementInstance,
-      final Set<State> states,
-      final BiConsumer<Long, JobRecord> consumer) {
+  /**
+   * Passes this element's job to {@code visitor} if it is in one of {@code states}; otherwise
+   * continues the walk.
+   */
+  private boolean visitJobInStates(
+      final ElementInstance elementInstance, final Set<State> states, final JobVisitor visitor) {
     final long jobKey = elementInstance.getJobKey();
     if (jobKey <= 0 || !states.contains(jobState.getState(jobKey))) {
-      return;
+      return true;
     }
     final var job = jobState.getJob(jobKey);
-    if (job != null) {
-      consumer.accept(jobKey, job);
-    }
+    return job == null || visitor.visit(jobKey, job);
+  }
+
+  /** Visits one job of the process instance and reports whether the walk continues. */
+  @FunctionalInterface
+  public interface JobVisitor {
+
+    /**
+     * @param job valid only for this call — the job state reuses one record instance on every read,
+     *     so copy what you need rather than hold the reference.
+     */
+    boolean visit(long jobKey, JobRecord job);
   }
 }

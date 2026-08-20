@@ -25,20 +25,16 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Drains buffered commands one per {@code DRAIN} cycle, then re-checks the buffer (already up to
- * date, since event appliers run synchronously): if more remains it appends the next {@code DRAIN},
- * otherwise it appends {@code COMPLETE_RESUMING} directly to hand the resume finalization off to
- * {@link ProcessInstanceCompleteResumingProcessor} without an extra empty cycle. The bounded-batch
- * iterator shape follows the same pattern as {@link ProcessInstanceBatchActivateProcessor}. Each
- * drained command reaches its own processor unchanged; this processor raises no incidents. {@link
- * SuspensionBehavior#PROCESS} is unconditional: gating a {@code DRAIN} strands the instance in
- * {@code RESUMING} forever.
+ * Drains buffered commands one per {@code DRAIN} cycle, then re-checks the buffer — already
+ * current, since event appliers run synchronously — to decide the next step: another {@code DRAIN}
+ * if more remains, or {@code RESUME_JOBS} to hand off to {@link
+ * ProcessInstanceResumeJobsProcessor}, which un-parks jobs and appends {@code COMPLETE_RESUMING}
+ * itself. {@link SuspensionBehavior#PROCESS} is unconditional: gating a {@code DRAIN} would strand
+ * the instance in {@code RESUMING} forever.
  *
- * <p>If a cycle fails to write (e.g. the re-emitted command plus its bookkeeping records exceed the
- * batch size limit), draining halts rather than dropping the command: the engine's default error
- * handling logs the failure and rejects the {@code DRAIN} command — without banning the instance
- * ({@code DRAIN.shouldBanInstance == false}). The buffered command is preserved and the instance
- * stays in {@code RESUMING} until a fresh {@code RESUME} restarts the drain (see {@link
+ * <p>A cycle that fails to write (e.g. batch size exceeded) halts rather than drops the command:
+ * the default error handling rejects {@code DRAIN} without banning the instance, and it stays
+ * {@code RESUMING} until a fresh {@code RESUME} restarts the drain (see {@link
  * ProcessInstanceResumeProcessor}).
  */
 @ExcludeAuthorizationCheck
@@ -65,7 +61,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
 
     final var buffered = suspensionState.getOldestBufferedCommand(processInstanceKey).orElse(null);
     if (buffered == null) {
-      appendCompleteResuming(drainValue);
+      appendResumeJobs(drainValue);
       return;
     }
 
@@ -75,7 +71,7 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
     // DRAINED already applied (event appliers run synchronously), so this reflects the buffer as
     // it stands now, without an extra empty DRAIN cycle to find out
     if (suspensionState.getOldestBufferedCommand(processInstanceKey).isEmpty()) {
-      appendCompleteResuming(drainValue);
+      appendResumeJobs(drainValue);
     } else {
       appendNextDrainCommand(drainValue);
     }
@@ -120,10 +116,10 @@ public final class ProcessInstanceBufferedCommandDrainProcessor
             .setTenantId(drainValue.getTenantId()));
   }
 
-  private void appendCompleteResuming(final ProcessInstanceBufferedCommandRecord drainValue) {
+  private void appendResumeJobs(final ProcessInstanceBufferedCommandRecord drainValue) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
-        ProcessInstanceIntent.COMPLETE_RESUMING,
+        ProcessInstanceIntent.RESUME_JOBS,
         new ProcessInstanceRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
