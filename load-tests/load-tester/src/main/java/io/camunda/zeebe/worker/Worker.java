@@ -14,15 +14,23 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -43,17 +51,33 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final Timer handleDurationTimer;
+  private final Map<PublishOutcome, Timer> publishDurationTimers =
+      new EnumMap<>(PublishOutcome.class);
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures);
     this.connectionMonitor = connectionMonitor;
+
+    handleDurationTimer =
+        MicrometerUtil.buildTimer(WorkerMetricsDoc.HANDLE_DURATION).register(registry);
+    for (final var outcome : PublishOutcome.values()) {
+      publishDurationTimers.put(
+          outcome,
+          MicrometerUtil.buildTimer(WorkerMetricsDoc.PUBLISH_DURATION)
+              .tag(WorkerMetricKeyNames.OUTCOME.asString(), outcome.tagValue)
+              .register(registry));
+    }
+    MicrometerUtil.buildGauge(WorkerMetricsDoc.COMPLETION_QUEUE_DEPTH, requestFutures::size)
+        .register(registry);
   }
 
   @PostConstruct
@@ -86,7 +110,16 @@ public class Worker {
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
+    final long startHandlingNanos = System.nanoTime();
+    try {
+      handleJobInternal(jobClient, job, startHandlingTime);
+    } finally {
+      handleDurationTimer.record(System.nanoTime() - startHandlingNanos, TimeUnit.NANOSECONDS);
+    }
+  }
 
+  private void handleJobInternal(
+      final JobClient jobClient, final ActivatedJob job, final long startHandlingTime) {
     if (workerCfg.isSendMessage()) {
       final var correlationKey =
           job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
@@ -132,6 +165,7 @@ public class Worker {
     final var messageName = workerCfg.getMessageName();
 
     LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
+    final long publishStartNanos = System.nanoTime();
     final var messageSendFuture =
         client
             .newPublishMessageCommand()
@@ -141,8 +175,12 @@ public class Worker {
 
     try {
       messageSendFuture.get(10, TimeUnit.SECONDS);
+      recordPublishDuration(PublishOutcome.SUCCESS, publishStartNanos);
       return true;
     } catch (final Exception ex) {
+      recordPublishDuration(
+          ex instanceof TimeoutException ? PublishOutcome.TIMEOUT : PublishOutcome.ERROR,
+          publishStartNanos);
       THROTTLED_LOGGER.error(
           "Exception on publishing a message with name {} and correlationKey {}",
           messageName,
@@ -150,6 +188,10 @@ public class Worker {
           ex);
       return false;
     }
+  }
+
+  private void recordPublishDuration(final PublishOutcome outcome, final long startNanos) {
+    publishDurationTimers.get(outcome).record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);
   }
 
   private static void addDelayToCompletion(
@@ -172,6 +214,18 @@ public class Worker {
           "Interrupted during completion delay sleep of {} ms", completionDelay, e);
     } catch (final Exception e) {
       THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
+    }
+  }
+
+  private enum PublishOutcome {
+    SUCCESS("success"),
+    TIMEOUT("timeout"),
+    ERROR("error");
+
+    private final String tagValue;
+
+    PublishOutcome(final String tagValue) {
+      this.tagValue = tagValue;
     }
   }
 }
