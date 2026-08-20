@@ -66,7 +66,8 @@ public record AgentInstanceEntity(
     public AgentInstanceDefinition {
       Objects.requireNonNull(model, "model");
       Objects.requireNonNull(provider, "provider");
-      systemPrompt = systemPrompt != null ? List.copyOf(systemPrompt) : List.of();
+      // Mutable list required: MyBatis hydrates by calling .add()
+      systemPrompt = systemPrompt != null ? new ArrayList<>(systemPrompt) : new ArrayList<>();
     }
   }
 
