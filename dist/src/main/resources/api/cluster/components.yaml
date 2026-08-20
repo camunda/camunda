@@ -588,6 +588,7 @@ schemas:
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
           - EXPORTING_STATE_CHANGE
+          - REMOVE_PHYSICAL_TENANT
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

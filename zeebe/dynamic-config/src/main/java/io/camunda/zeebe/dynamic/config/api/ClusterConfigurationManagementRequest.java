@@ -210,6 +210,26 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {}
 
   /**
+   * Discards a disabled physical tenant, so that a broker still holding its partitions may leave
+   * the cluster. Until this is called, a disabled tenant blocks a broker removal exactly as an
+   * enabled one does — disabling is a safety barrier against losing a tenant's data by accident,
+   * not a statement that the data is expendable.
+   *
+   * <p>The tenant must already be disabled, i.e. absent from the brokers' static configuration.
+   *
+   * @param force when true, the request is executed by whichever broker receives it instead of
+   *     being routed to the elected coordinator — the operator's bail-out for when the coordinator
+   *     is unreachable. Normally left false, so the request runs on the coordinator like any other
+   *     configuration change.
+   */
+  record RemovePhysicalTenantRequest(String physicalTenantId, boolean dryRun, boolean force)
+      implements ClusterConfigurationManagementRequest {
+    public RemovePhysicalTenantRequest {
+      assertNonEmpty("physicalTenantId").accept(physicalTenantId);
+    }
+  }
+
+  /**
    * Force-evicts a failed zone's brokers from the member set and drops the zone from the persisted
    * {@code ZoneAwareConfig}, in one atomic change.
    */

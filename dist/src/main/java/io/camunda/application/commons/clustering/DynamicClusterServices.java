@@ -107,7 +107,8 @@ public class DynamicClusterServices {
         clusterCommunicationService,
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
-        new ProtoBufSerializer());
+        new ProtoBufSerializer(),
+        clusterMembershipService.getLocalMember().id());
   }
 
   @Bean

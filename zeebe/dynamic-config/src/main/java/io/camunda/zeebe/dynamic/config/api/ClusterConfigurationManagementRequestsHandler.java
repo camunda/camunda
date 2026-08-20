@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -192,6 +193,17 @@ public final class ClusterConfigurationManagementRequestsHandler
         forceRemoveBrokersRequest.dryRun(),
         new ForceRemoveBrokersRequestTransformer(
             forceRemoveBrokersRequest.membersToRemove(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> removePhysicalTenant(
+      final RemovePhysicalTenantRequest removePhysicalTenantRequest) {
+    return handleRequest(
+        removePhysicalTenantRequest.dryRun(),
+        new RemovePhysicalTenantRequestTransformer(
+            removePhysicalTenantRequest.physicalTenantId(),
+            localMemberId,
+            removePhysicalTenantRequest.force()));
   }
 
   @Override

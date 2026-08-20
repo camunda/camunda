@@ -241,6 +241,34 @@ class PartitionGroupConfigurationTest {
       assertThat(reEnabled.version()).isEqualTo(config.version());
       assertThat(reEnabled.members()).isEqualTo(config.members());
     }
+
+    /**
+     * Unlike {@code disable()}/{@code enable()}, removal clears the old assignment rather than
+     * preserving it; see {@link PartitionGroupConfiguration#remove()}.
+     */
+    @Test
+    void shouldRemoveClearingMembersWithoutChangingGroupVersion() {
+      // given
+      final var config = group(4, Map.of(MEMBER_0, broker(1, 1))).disable();
+
+      // when
+      final var removed = config.remove();
+
+      // then
+      assertThat(removed.isRemoved()).isTrue();
+      assertThat(removed.isDisabled()).describedAs("a removed tenant stays disabled").isTrue();
+      assertThat(removed.version()).isEqualTo(config.version());
+      assertThat(removed.members()).isEmpty();
+    }
+
+    @Test
+    void shouldReturnSameInstanceWhenAlreadyRemoved() {
+      // given
+      final var removed = group(1, Map.of(MEMBER_0, broker(1, 1))).disable().remove();
+
+      // when / then
+      assertThat(removed.remove()).isSameAs(removed);
+    }
   }
 
   @Nested

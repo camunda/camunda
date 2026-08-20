@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterPatchRequestTransformer;
 import io.camunda.zeebe.dynamic.config.api.ForceRemoveBrokersRequestTransformer;
+import io.camunda.zeebe.dynamic.config.api.RemovePhysicalTenantRequestTransformer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
@@ -49,25 +50,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Records the dead end described in <a
- * href="https://github.com/camunda/camunda/issues/60344">#60344 </a>: a broker holding a
- * <em>disabled</em> physical tenant's partitions cannot be removed from the cluster by any route.
+ * Verifies that a broker holding a <em>disabled</em> physical tenant's partitions cannot leave the
+ * cluster, by any route, until that tenant has been explicitly removed: the coordinator excludes a
+ * disabled tenant's partitions from every plan, yet {@code MemberLeaveApplier} still refuses a
+ * member leave while any group — including a disabled one — still assigns it partitions.
  *
- * <p>The two mechanisms that produce it are individually correct. The coordinator hands {@code
- * ConfigurationChangeRequest#phases} a configuration with disabled partition groups removed (see
- * {@code CurrentClusterConfiguration#withoutDisabledPartitionGroups}), so no plan can ever move a
- * disabled tenant's partitions — it must not, since no broker runs that tenant and any operation
- * targeting it would stall forever. Their assignment nevertheless remains in the configuration, and
- * {@code MemberLeaveApplier} checks every partition group, so it refuses the member leave that ends
- * both the graceful and the forced removal.
+ * <p>Exercised through the coordinator ({@link #simulate}/{@link #apply}) rather than by inspecting
+ * a transformer's output directly, since the refusal only appears once the plan runs through the
+ * validating appliers.
  *
- * <p>Driven through the coordinator rather than the transformers: the plan itself is fine, and the
- * refusal comes from the appliers the coordinator runs the plan through during validation.
- * Asserting on a transformer's output would show nothing at all.
- *
- * <p>The control case is the same removal with the tenant enabled. It is what makes these tests
- * about the disabled flag rather than about multi-tenancy: with the tenant running, the graceful
- * removal moves its partition off the departing broker and completes.
+ * <p>The control case runs the same removal with the tenant enabled, to isolate the disabled flag
+ * as the cause rather than multi-tenancy in general.
  */
 final class PhysicalTenantDisabledRemovalTest {
 
@@ -154,6 +147,135 @@ final class PhysicalTenantDisabledRemovalTest {
         .containsOnlyKeys(BARE_0, BARE_1);
   }
 
+  /**
+   * Once the operator has discarded the disabled tenant, the broker holding its partitions can
+   * leave.
+   */
+  @Test
+  void shouldGracefullyRemoveABrokerAfterTheDisabledTenantIsRemoved() {
+    // given — a disabled tenant whose partitions sit on broker 2, explicitly discarded
+    wire(BARE_0, disable(TENANT_A, twoTenants()));
+    apply(new RemovePhysicalTenantRequestTransformer(TENANT_A, BARE_0, false));
+
+    // when — broker 2 is asked to leave gracefully, exactly as it was refused before
+    final var configuration =
+        simulate(
+                new ClusterPatchRequestTransformer(
+                    Set.of(), Set.of(BARE_2), Optional.empty(), Optional.empty()))
+            .join()
+            .finalMultiConfiguration();
+
+    // then — the broker is gone, and the discarded tenant's old assignment is cleared rather than
+    // carried forward: only the tombstone itself remains
+    assertThat(configuration.globalConfiguration().members())
+        .describedAs("brokers left in the cluster")
+        .containsOnlyKeys(BARE_0, BARE_1);
+    assertThat(configuration.partitionGroup(TENANT_A).isRemoved())
+        .describedAs("tenant '%s' is tombstoned as discarded", TENANT_A)
+        .isTrue();
+    assertThat(replicasOf(configuration, TENANT_A))
+        .describedAs("assignment of the discarded tenant '%s'", TENANT_A)
+        .isEmpty();
+  }
+
+  /**
+   * The disaster scenario a forced request exists for: the coordinator is unreachable, so the
+   * removal is executed by whichever broker actually received the request instead. Here that is
+   * broker 2, not the coordinator, and the removal still completes on it.
+   */
+  @Test
+  void shouldRemoveADisabledTenantOnWhicheverBrokerReceivedTheRequest() {
+    // given — broker 2, not the coordinator (broker 0), receives the request
+    wire(BARE_2, disable(TENANT_A, twoTenants()));
+
+    // when — the request is forced, naming broker 2 itself as the executing member
+    apply(new RemovePhysicalTenantRequestTransformer(TENANT_A, BARE_2, true));
+
+    // then — the removal completes locally on broker 2 despite it not being the coordinator
+    assertThat(configuration().partitionGroup(TENANT_A).isRemoved())
+        .describedAs("tenant '%s' is tombstoned as discarded", TENANT_A)
+        .isTrue();
+  }
+
+  /**
+   * The normal case, mirroring the disaster scenario above: without {@code force}, a removal
+   * received by a broker that does not hold the election is rejected exactly like any other
+   * configuration change, rather than silently executing wherever it happened to land.
+   */
+  @Test
+  void shouldRejectANonForcedRemovalReceivedByABrokerThatIsNotTheCoordinator() {
+    // given — broker 2, not the coordinator (broker 0), receives the request
+    wire(BARE_2, disable(TENANT_A, twoTenants()));
+
+    // when — the request is not forced, so broker 2 must be the coordinator to execute it
+    final var result =
+        simulate(new RemovePhysicalTenantRequestTransformer(TENANT_A, BARE_2, false));
+
+    // then — the request is rejected because broker 2 does not hold the election
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("is not the coordinator");
+  }
+
+  /**
+   * A removal only makes sense for a tenant that is out of configuration; an enabled one is a typo.
+   */
+  @Test
+  void shouldRejectRemovingAnEnabledPhysicalTenant() {
+    // given — the tenant is still running
+    wire(BARE_0, twoTenants());
+
+    // when / then — the request is refused, and says how to make it valid
+    assertThat(simulate(new RemovePhysicalTenantRequestTransformer(TENANT_A, BARE_0, false)))
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("still enabled");
+  }
+
+  @Test
+  void shouldRejectRemovingAnUnknownPhysicalTenant() {
+    // given
+    wire(BARE_0, twoTenants());
+
+    // when / then
+    assertThat(simulate(new RemovePhysicalTenantRequestTransformer("nosuchtenant", BARE_0, false)))
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("no such tenant");
+  }
+
+  /**
+   * A removal must survive a merge with a peer that has not seen it yet; see {@link
+   * io.camunda.zeebe.dynamic.config.state.TenantAvailability}.
+   */
+  @Test
+  void shouldKeepTheRemovalWhenMergingWithAPeerThatHasNotSeenIt() {
+    // given — a configuration in which the tenant has been discarded, and the stale peer it came
+    // from
+    wire(BARE_0, disable(TENANT_A, twoTenants()));
+    final var stale = configuration();
+    apply(new RemovePhysicalTenantRequestTransformer(TENANT_A, BARE_0, false));
+    final var removed = configuration();
+
+    // when — the two are merged in both directions
+    // then — the removal survives either way, and the tenant's group is still there to be merged
+    assertThat(removed.merge(stale).partitionGroup(TENANT_A).isRemoved())
+        .describedAs("removal merged against a stale peer")
+        .isTrue();
+    assertThat(stale.merge(removed).partitionGroup(TENANT_A).isRemoved())
+        .describedAs("stale peer merged against the removal")
+        .isTrue();
+  }
+
+  /** Applies a request for real, so its effect is in the configuration the next request reads. */
+  private void apply(final ConfigurationChangeRequest request) {
+    coordinator.applyOperations(request).join();
+  }
+
+  private CurrentClusterConfiguration configuration() {
+    return coordinator.getClusterConfiguration().join();
+  }
 
   /**
    * A dry run rather than a real apply: applying would drive each operation on the broker named by
