@@ -24,31 +24,42 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -313,21 +324,20 @@ final class RestoreRequestTransformerTest {
 
     // then - one phase scoped to the tenant's own group, phase-major within it
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            PartitionGroupPhase.sequential(
-                Map.of(
-                    DEFAULT_PHYSICAL_TENANT_ID,
-                    List.of(
-                        new PartitionPreRestoreOperation(memberOne, 1),
-                        new PartitionPreRestoreOperation(memberTwo, 1),
-                        new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
-                        new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
-                        new ModeChangeOperation(memberOne, Mode.PROCESSING),
-                        new ModeChangeOperation(memberTwo, Mode.PROCESSING),
-                        new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
-                        new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-                        new UpdateIncarnationNumberOperation(memberOne)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(
+            Map.of(
+                DEFAULT_PHYSICAL_TENANT_ID,
+                List.of(
+                    new PartitionPreRestoreOperation(memberOne, 1),
+                    new PartitionPreRestoreOperation(memberTwo, 1),
+                    new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
+                    new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
+                    new ModeChangeOperation(memberOne, Mode.PROCESSING),
+                    new ModeChangeOperation(memberTwo, Mode.PROCESSING),
+                    new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
+                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
+                    new UpdateIncarnationNumberOperation(memberOne))));
   }
 
   @Test
@@ -352,17 +362,16 @@ final class RestoreRequestTransformerTest {
 
     // then - the restore is planned for the recovering broker alone
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            PartitionGroupPhase.sequential(
-                Map.of(
-                    DEFAULT_PHYSICAL_TENANT_ID,
-                    List.of(
-                        new PartitionPreRestoreOperation(memberTwo, 1),
-                        new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L))),
-                        new ModeChangeOperation(memberTwo, Mode.PROCESSING),
-                        new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-                        new UpdateIncarnationNumberOperation(memberTwo)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(
+            Map.of(
+                DEFAULT_PHYSICAL_TENANT_ID,
+                List.of(
+                    new PartitionPreRestoreOperation(memberTwo, 1),
+                    new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L))),
+                    new ModeChangeOperation(memberTwo, Mode.PROCESSING),
+                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
+                    new UpdateIncarnationNumberOperation(memberTwo))));
   }
 
   @Test
@@ -407,9 +416,14 @@ final class RestoreRequestTransformerTest {
         .hasMessageContaining(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
-  private static BrokerPartitionState recovering(final int partitionId) {
+  private static BrokerPartitionState recovering(final int... partitionIds) {
     return BrokerPartitionState.initialize(
-            Map.of(partitionId, PartitionState.active(1, DynamicPartitionConfig.init())))
+            Arrays.stream(partitionIds)
+                .boxed()
+                .collect(
+                    Collectors.toMap(
+                        Function.identity(),
+                        ignored -> PartitionState.active(1, DynamicPartitionConfig.init()))))
         .setMode(Mode.RECOVERING);
   }
 
@@ -445,5 +459,236 @@ final class RestoreRequestTransformerTest {
         Optional.empty(),
         Optional.empty(),
         Optional.empty());
+  }
+
+  /**
+   * The point of the dependency-graph model is which operations may run at the same time. The
+   * assertions above pin <em>which</em> operations a restore produces; these two pin the
+   * concurrency, which is the part that changed.
+   */
+  @Test
+  void shouldOfferEveryBrokerAndPartitionAtOnce() {
+    // given - two brokers, each recovering the same two partitions
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - a plan started from this graph offers all four pre-restores at once: both brokers,
+    // both partitions. Under the queue those were four serialised round trips.
+    EitherAssert.assertThat(result).isRight();
+    final var plan = DependencyChangePlan.init(1L, graphOf(result.get()));
+    assertThat(plan.runnableFor(memberOne)).hasSize(2);
+    assertThat(plan.runnableFor(memberTwo)).hasSize(2);
+    assertThat(plan.runnableFor(memberOne).values())
+        .allSatisfy(
+            operation -> assertThat(operation).isInstanceOf(PartitionPreRestoreOperation.class));
+  }
+
+  @Test
+  void shouldWaitOnlyForItsOwnBrokersPreRestoreOfThatPartition() {
+    // given - two brokers replicating partition 1. Wiping and reloading a broker's own copy is
+    // local to that broker, so a restore is ordered behind exactly one pre-restore: its own.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1),
+                    memberTwo, recovering(1))));
+
+    // then - each restore depends on the single pre-restore of the same broker and partition, so
+    // neither broker is held up by the other's wipe
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    assertThat(idsOf(graph, PartitionRestoreOperation.class))
+        .hasSize(2)
+        .allSatisfy(
+            restore -> {
+              final var dependsOn = graph.operations().get(restore).dependsOn();
+              assertThat(dependsOn).hasSize(1);
+              final var preRestore = dependsOn.first();
+              assertThat(graph.operations().get(preRestore).operation())
+                  .isInstanceOf(PartitionPreRestoreOperation.class);
+              assertThat(memberOf(graph, preRestore)).isEqualTo(memberOf(graph, restore));
+              assertThat(partitionOf(graph, preRestore)).isEqualTo(partitionOf(graph, restore));
+            });
+  }
+
+  @Test
+  void shouldNotOrderOnePartitionBehindAnother() {
+    // given - two partitions on two brokers. Partition 2 shares nothing with partition 1, so
+    // holding its restore behind partition 1's wipe would serialise work that cannot interfere.
+    // This is the difference from a plan-wide barrier, and where the restore's I/O actually is.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - completing only partition 1's two pre-restores releases partition 1's restores, while
+    // partition 2 is still waiting on its own
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    var group =
+        new PartitionGroupConfiguration(
+                1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(graph);
+    for (final var preRestore : idsOf(graph, PartitionPreRestoreOperation.class)) {
+      if (partitionOf(graph, preRestore) == 1 && memberOf(graph, preRestore).equals(memberOne)) {
+        group = group.completeOperation(preRestore, UnaryOperator.identity());
+      }
+    }
+
+    final var released =
+        group.pendingGraphChanges().orElseThrow().runnableFor(memberOne).values().stream()
+            .filter(PartitionRestoreOperation.class::isInstance)
+            .map(PartitionRestoreOperation.class::cast)
+            .toList();
+    assertThat(released).singleElement().returns(1, PartitionRestoreOperation::partitionId);
+  }
+
+  @Test
+  void shouldAwaitTheModeChangeOnlyAfterEveryRestoreEverywhere() {
+    // given - two brokers, two partitions. Restores are narrowed per partition, but awaiting the
+    // transition observes the group as a whole, so this stage is a cluster-wide barrier: no broker
+    // may start awaiting while any partition anywhere is still reloading.
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.right(
+                        new RestoreResolvedRequest(
+                            Map.of(1, new long[] {1L}, 2, new long[] {2L}), false)))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    memberOne, recovering(1, 2),
+                    memberTwo, recovering(1, 2))));
+
+    // then - every await waits for all four restores and for both mode changes
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var restores = idsOf(graph, PartitionRestoreOperation.class);
+    final var modeChanges = idsOf(graph, ModeChangeOperation.class);
+    assertThat(restores).hasSize(4);
+    assertThat(modeChanges).hasSize(2);
+    assertThat(idsOf(graph, AwaitModeChangeOperation.class))
+        .hasSize(2)
+        .allSatisfy(
+            await ->
+                assertThat(graph.operations().get(await).dependsOn())
+                    .containsAll(restores)
+                    .containsAll(modeChanges));
+  }
+
+  private static MemberId memberOf(final OperationGraph graph, final OperationId operationId) {
+    return graph.operations().get(operationId).operation().memberId();
+  }
+
+  private static int partitionOf(final OperationGraph graph, final OperationId operationId) {
+    return ((PartitionChangeOperation) graph.operations().get(operationId).operation())
+        .partitionId();
+  }
+
+  @Test
+  void shouldOrderEveryBrokersAwaitAfterItsOwnModeChange() {
+    // given — a broker holding no partition of the group still has to leave recovery, so it gets a
+    // mode change and an await with no partition work between them. An earlier version of the edge
+    // rules derived the await's dependencies from the brokers it shares a partition with, which for
+    // this broker is nobody — leaving its own mode change unordered against its own await. Both
+    // write that broker's member entry, so the sub-configuration merge would keep one by version
+    // and silently drop the other. Nothing rejects that shape any more, so it is pinned here.
+    final var withPartitions = MemberId.from("0");
+    final var withoutPartitions = MemberId.from("1");
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
+
+    // when
+    final var result =
+        transformer.phases(
+            clusterWithDefaultGroup(
+                Map.of(
+                    withPartitions, recovering(1),
+                    withoutPartitions, BrokerPartitionState.initialize(Map.of()))));
+
+    // then — every await depends on its own broker's mode change
+    EitherAssert.assertThat(result).isRight();
+    final var graph = graphOf(result.get());
+    final var modeChangeOf = new HashMap<MemberId, OperationId>();
+    idsOf(graph, ModeChangeOperation.class)
+        .forEach(id -> modeChangeOf.put(memberOf(graph, id), id));
+    assertThat(idsOf(graph, AwaitModeChangeOperation.class))
+        .isNotEmpty()
+        .allSatisfy(
+            await ->
+                assertThat(graph.operations().get(await).dependsOn())
+                    .describedAs("dependencies of the await on %s", memberOf(graph, await))
+                    .contains(modeChangeOf.get(memberOf(graph, await))));
+  }
+
+  private static OperationGraph graphOf(final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst()).groupGraphs().get(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  private static List<OperationId> idsOf(
+      final OperationGraph graph, final Class<? extends ClusterConfigurationChangeOperation> type) {
+    return graph.operations().entrySet().stream()
+        .filter(entry -> type.isInstance(entry.getValue().operation()))
+        .map(Entry::getKey)
+        .toList();
+  }
+
+  /**
+   * The operations each group's graph holds, in plan order. The graph's dependency structure is
+   * covered separately; these assertions are about which operations a request produces.
+   */
+  private static Map<String, List<PartitionGroupOperation>> groupOperationsOf(
+      final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst()).groupOperations();
   }
 }

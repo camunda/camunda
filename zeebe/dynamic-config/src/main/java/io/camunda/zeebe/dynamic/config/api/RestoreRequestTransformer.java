@@ -20,8 +20,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
@@ -31,10 +32,11 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -74,10 +76,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
               "Expected to restore physical tenant '%s', but there's no such tenant"
                   .formatted(physicalTenantId)));
     }
-    return groupOperations(partitionGroup)
-        .map(
-            operations ->
-                List.of(PartitionGroupPhase.sequential(Map.of(physicalTenantId, operations))));
+    return groupGraph(partitionGroup)
+        .map(graph -> List.of(new PartitionGroupPhase(Map.of(physicalTenantId, graph))));
   }
 
   /**
@@ -85,8 +85,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * partition group alone. Shared with {@link ClusterRestoreRequestTransformer}, which combines the
    * plans of several physical tenants into one phase.
    */
-  Either<Exception, List<PartitionGroupOperation>> groupOperations(
-      final PartitionGroupConfiguration partitionGroup) {
+  Either<Exception, OperationGraph> groupGraph(final PartitionGroupConfiguration partitionGroup) {
     if (!isGroupRecovering(partitionGroup)) {
       return Either.left(
           new ConcurrentModificationException(
@@ -102,7 +101,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    * brokers. A validator rejection, and anything the plan builder throws over a partition the
    * validator did not resolve a selection for, is mapped to a request failure.
    */
-  private Either<Exception, List<PartitionGroupOperation>> restorePlan(
+  private Either<Exception, OperationGraph> restorePlan(
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember) {
     final var validator = registry.getValidator(request.physicalTenantId(), RestoreRequest.class);
     if (validator.isEmpty()) {
@@ -114,7 +113,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     }
     try {
       return Either.right(
-          restoreOperations(partitionsPerMember, (RestoreResolvedRequest) resolved.get()));
+          restoreGraph(partitionsPerMember, (RestoreResolvedRequest) resolved.get()));
     } catch (final Exception e) {
       return Either.left(mapFailure(e));
     }
@@ -162,34 +161,105 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
   }
 
   /**
-   * The plan is phase-major: every partition of every broker is pre-restored, then every partition
-   * is restored, then every broker leaves recovery, and finally, the incarnation number is bumped
-   * once so the restored data is not mistaken for the purged generation.
+   * The restore expressed as dependencies rather than list order, scoped to the partition each
+   * operation actually concerns.
+   *
+   * <p>The unit of ordering is one broker's copy of one partition, not the plan. Wiping and
+   * reloading a copy touches nothing else, so every {@code (broker, partition)} pair is an
+   * independent chain: {@code m0} can be reloading partition 1 while {@code m2} is still wiping its
+   * own copy of it.
+   *
+   * <p>The edges, per partition {@code k} and broker {@code m}:
+   *
+   * <ul>
+   *   <li>{@code preRestore(m,k)} — nothing; every pre-restore of every partition starts at once.
+   *   <li>{@code restore(m,k)} — only {@code preRestore(m,k)}. Wiping and reloading a broker's copy
+   *       of a partition is local to that broker, so one broker may reload {@code k} while a peer
+   *       is still wiping its own copy of {@code k}.
+   *   <li>{@code modeChange(m)} — the restores of the partitions {@code m} holds. Partitions {@code
+   *       m} does not hold cannot block it leaving recovery.
+   *   <li>{@code awaitModeChange(m)} — every mode change and <em>every</em> restore. This one is
+   *       deliberately a cluster-wide barrier: awaiting the transition observes the group as a
+   *       whole, so no broker may start observing while any partition anywhere is still reloading.
+   *   <li>{@code updateIncarnationNumber} — every await. It writes the group's own state, so it is
+   *       ordered after everything by construction.
+   * </ul>
+   *
+   * <p>So there is one cluster-wide barrier, at the awaits. Everything before it is scoped: the
+   * {@code N·P} wipes and reloads become {@code N·P} independent chains rather than two
+   * cluster-wide barriers, and a broker leaves recovery as soon as the partitions it holds are back
+   * rather than waiting on partitions it does not hold. On a tenant where every broker replicates
+   * every partition the mode-change edges collapse to cluster-wide anyway, since there every broker
+   * holds everything; the wipe/reload chains do not, and that is where the I/O is.
    */
-  private static List<PartitionGroupOperation> restoreOperations(
+  private static OperationGraph restoreGraph(
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
       final RestoreResolvedRequest resolved) {
-    final var operations = new ArrayList<PartitionGroupOperation>();
-    for (final var member : partitionsPerMember.entrySet()) {
-      for (final var partitionId : member.getValue()) {
-        operations.add(new PartitionPreRestoreOperation(member.getKey(), partitionId));
-      }
-    }
-    for (final var member : partitionsPerMember.entrySet()) {
-      for (final var partitionId : member.getValue()) {
-        final var backupIds = resolved.backups().get(partitionId);
-        operations.add(
-            new PartitionRestoreOperation(member.getKey(), partitionId, toSortedSet(backupIds)));
-      }
-    }
-    for (final var memberId : partitionsPerMember.keySet()) {
-      operations.add(new ModeChangeOperation(memberId, Mode.PROCESSING));
-    }
-    for (final var memberId : partitionsPerMember.keySet()) {
-      operations.add(new AwaitModeChangeOperation(memberId, Mode.PROCESSING));
-    }
-    operations.add(new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()));
-    return operations;
+    final var builder = OperationGraph.builder();
+
+    final Map<MemberId, Map<Integer, OperationId>> preRestoreOf = new TreeMap<>();
+    partitionsPerMember.forEach(
+        (memberId, partitions) ->
+            partitions.forEach(
+                partitionId ->
+                    preRestoreOf
+                        .computeIfAbsent(memberId, ignored -> new TreeMap<>())
+                        .put(
+                            partitionId,
+                            builder.add(new PartitionPreRestoreOperation(memberId, partitionId)))));
+
+    final Map<Integer, Set<OperationId>> restoresOf = new TreeMap<>();
+    partitionsPerMember.forEach(
+        (memberId, partitions) ->
+            partitions.forEach(
+                partitionId ->
+                    restoresOf
+                        .computeIfAbsent(partitionId, ignored -> new HashSet<>())
+                        .add(
+                            builder.add(
+                                new PartitionRestoreOperation(
+                                    memberId,
+                                    partitionId,
+                                    toSortedSet(resolved.backups().get(partitionId))),
+                                Set.of(
+                                    Objects.requireNonNull(
+                                        preRestoreOf.get(memberId).get(partitionId)))))));
+
+    final SortedMap<MemberId, OperationId> modeChanges = new TreeMap<>();
+    partitionsPerMember.forEach(
+        (memberId, partitions) ->
+            modeChanges.put(
+                memberId,
+                builder.add(
+                    new ModeChangeOperation(memberId, Mode.PROCESSING),
+                    operationsFor(partitions, restoresOf))));
+
+    // Every await waits for every restore, cluster-wide, not only for the ones on its own broker or
+    // its own partitions' replicas. Awaiting the transition observes the group as a whole, so a
+    // broker must not start observing while any partition anywhere is still being reloaded.
+    final Set<OperationId> beforeAwaits = new HashSet<>(modeChanges.values());
+    restoresOf.values().forEach(beforeAwaits::addAll);
+
+    final Set<OperationId> awaits = new HashSet<>();
+    partitionsPerMember
+        .keySet()
+        .forEach(
+            memberId ->
+                awaits.add(
+                    builder.add(
+                        new AwaitModeChangeOperation(memberId, Mode.PROCESSING), beforeAwaits)));
+
+    builder.add(new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()), awaits);
+    return builder.build();
+  }
+
+  /** The union of the operations recorded for each of {@code partitions}. */
+  private static Set<OperationId> operationsFor(
+      final Set<Integer> partitions, final Map<Integer, Set<OperationId>> operationsPerPartition) {
+    final Set<OperationId> union = new HashSet<>();
+    partitions.forEach(
+        partitionId -> union.addAll(operationsPerPartition.getOrDefault(partitionId, Set.of())));
+    return union;
   }
 
   /** Whether every initialized broker of the cluster is in recovery. */

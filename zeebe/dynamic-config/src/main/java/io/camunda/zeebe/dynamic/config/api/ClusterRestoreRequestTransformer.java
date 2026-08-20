@@ -8,12 +8,11 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -50,7 +49,7 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
   @Override
   public Either<Exception, List<Phase>> phases(
       final CurrentClusterConfiguration clusterConfiguration) {
-    final Map<String, List<PartitionGroupOperation>> operationsPerTenant = new LinkedHashMap<>();
+    final Map<String, OperationGraph> graphsPerTenant = new LinkedHashMap<>();
     for (final var physicalTenantId : request.tenantArguments().keySet()) {
       final var partitionGroup = clusterConfiguration.partitionGroup(physicalTenantId);
       if (partitionGroup == null) {
@@ -61,18 +60,20 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
       }
       final var transformer =
           new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry);
-      final var result = transformer.groupOperations(partitionGroup);
+      final var result = transformer.groupGraph(partitionGroup);
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }
       if (!result.get().isEmpty()) {
-        operationsPerTenant.put(physicalTenantId, result.get());
+        graphsPerTenant.put(physicalTenantId, result.get());
       }
     }
-    if (operationsPerTenant.isEmpty()) {
+    if (graphsPerTenant.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(PartitionGroupPhase.sequential(operationsPerTenant)));
+    // Each tenant keeps its own graph, so the tenants restore in parallel exactly as before while
+    // each one's brokers and partitions now also proceed concurrently within it.
+    return Either.right(List.of(new PartitionGroupPhase(graphsPerTenant)));
   }
 
   private Optional<RestoreRequestTransformer> singleTenantRestore() {
@@ -83,11 +84,5 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
     final var physicalTenantId = tenantArguments.keySet().iterator().next();
     return Optional.of(
         new RestoreRequestTransformer(request.toRestoreRequest(physicalTenantId), registry));
-  }
-
-  private static InvalidRequest clusterWideNotSupported() {
-    return new InvalidRequest(
-        "Restoring every physical tenant of the cluster in one request is not supported yet; "
-            + "provide a physicalTenantId to restore a single physical tenant.");
   }
 }

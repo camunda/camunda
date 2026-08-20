@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -64,10 +65,8 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — one phase, scoped to tenant-b's own partition; the other two tenants are untouched
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            PartitionGroupPhase.sequential(
-                Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
   }
 
   @Test
@@ -84,13 +83,12 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — all three physical tenants restore in the same phase, each from its own backup
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            PartitionGroupPhase.sequential(
-                Map.of(
-                    DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
-                    TENANT_B, tenantBRestoreOperations(List.of(55L)),
-                    TENANT_C, tenantCRestoreOperations(List.of(77L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(
+            Map.of(
+                DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
+                TENANT_B, tenantBRestoreOperations(List.of(55L)),
+                TENANT_C, tenantCRestoreOperations(List.of(77L))));
   }
 
   @Test
@@ -107,10 +105,8 @@ final class ClusterRestoreRequestTransformerTest {
 
     // then — the restore is planned rather than refused as a cluster that is not recovering
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
-        .containsExactly(
-            PartitionGroupPhase.sequential(
-                Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
+    assertThat(groupOperationsOf(result.get()))
+        .isEqualTo(Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L))));
   }
 
   @Test
@@ -274,5 +270,15 @@ final class ClusterRestoreRequestTransformerTest {
           }
         });
     return registry;
+  }
+
+  /**
+   * The operations each group's graph holds, in plan order. The graph's dependency structure is
+   * covered separately; these assertions are about which operations a request produces.
+   */
+  private static Map<String, List<PartitionGroupOperation>> groupOperationsOf(
+      final List<Phase> phases) {
+    assertThat(phases).singleElement().isInstanceOf(PartitionGroupPhase.class);
+    return ((PartitionGroupPhase) phases.getFirst()).groupOperations();
   }
 }
