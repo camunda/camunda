@@ -114,11 +114,6 @@ jobs:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
-            cslEnabled: 'false'
-          - includedGroups: 'ccsm-test'
-            excludedGroups: ''
-            profiles: 'ccsm-it'
-            cslEnabled: 'true'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
@@ -217,11 +212,6 @@ jobs:
           - includedGroups: 'ccsm-test'
             excludedGroups: 'openSearchSingleTestFailOK'
             profiles: 'ccsm-it'
-            cslEnabled: 'false'
-          - includedGroups: 'ccsm-test'
-            excludedGroups: 'openSearchSingleTestFailOK'
-            profiles: 'ccsm-it'
-            cslEnabled: 'true'
     steps:
       - name: Checkout repository
         # Credentials stay: the next step fetches from origin.
