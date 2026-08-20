@@ -13,11 +13,13 @@ import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractIT;
+import io.camunda.optimize.CcsmOidcTestFixture;
 import io.camunda.optimize.ExtraConfigurationConfigImportIT;
 import io.camunda.optimize.rest.security.ccsm.CCSMSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.csl.OptimizeCamundaSecurityConfig;
 import io.camunda.optimize.test.optimize.HealthClient;
 import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -60,21 +62,10 @@ public class CslDefaultEnabledIT extends AbstractIT {
 
   @Override
   protected void startAndUseNewOptimizeInstance() {
-    startAndUseNewOptimizeInstance(
-        Map.of(
-            "optimize.security.csl.enabled",
-            "true",
-            "camunda.security.authentication.oidc.client-id",
-            "it-client",
-            "camunda.security.authentication.oidc.client-secret",
-            "it-secret",
-            "camunda.security.authentication.oidc.authorization-uri",
-            "https://idp.example.com/authorize",
-            "camunda.security.authentication.oidc.token-uri",
-            "https://idp.example.com/token",
-            "camunda.security.authentication.oidc.jwk-set-uri",
-            "https://idp.example.com/jwks"),
-        CCSM_PROFILE);
+    final Map<String, String> properties =
+        new HashMap<>(CcsmOidcTestFixture.STATIC_OIDC_PROPERTIES);
+    properties.put("optimize.security.csl.enabled", "true");
+    startAndUseNewOptimizeInstance(properties, CCSM_PROFILE);
   }
 
   @BeforeEach
