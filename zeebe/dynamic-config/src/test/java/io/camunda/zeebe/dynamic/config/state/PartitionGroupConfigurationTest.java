@@ -124,6 +124,22 @@ class PartitionGroupConfigurationTest {
     }
 
     @Test
+    void shouldThrowWhenMembersConflictAtEqualVersion() {
+      // given — same config version, MEMBER_0 at the same per-member version on both sides but
+      // with genuinely different content: the shape two brokers applying concurrent, same-member
+      // writes under a graph change can produce (see OperationGraph's class javadoc on why the
+      // graph model does not protect against this)
+      final var left = group(3, Map.of(MEMBER_0, broker(5, 1)));
+      final var right = group(3, Map.of(MEMBER_0, broker(5, 2)));
+
+      // when / then — rejected outright by BrokerPartitionState#merge, not silently resolved by
+      // picking one; this is the throw the change-view/reporting fixes assume when they describe
+      // this as a permanent-non-convergence failure mode rather than a silent one
+      assertThatThrownBy(() -> left.merge(right)).isInstanceOf(IllegalStateException.class);
+      assertThatThrownBy(() -> right.merge(left)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void shouldConvergeLastChangeDeterministicallyWhenBrokersMintDifferentTimestamps() {
       // given — same config version, both brokers minted a lastChange for the same completed
       // change (id 7) a moment apart: exactly what two brokers independently running
