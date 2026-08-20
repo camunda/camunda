@@ -50,7 +50,7 @@ class ProcessDefinitionDeletionJobHandlerTest {
     processDefinitionWriter = mock(ProcessDefinitionWriter.class);
     handler =
         new ProcessDefinitionDeletionJobHandler(
-            processDefinitionReader, processInstanceWriter, processDefinitionWriter);
+            processDefinitionReader, processInstanceWriter, processDefinitionWriter, millis -> {});
   }
 
   @Test
