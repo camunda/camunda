@@ -14,13 +14,14 @@ import {
 import {ProcessInstanceHeader} from '../index';
 import {mockInstance} from './index.setup';
 import {MemoryRouter} from 'react-router';
-import {createUser, mockProcessXML} from 'modules/testUtils';
+import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -65,6 +66,7 @@ describe('InstanceHeader', () => {
       },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -111,6 +113,7 @@ describe('InstanceHeader', () => {
       },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockMe().withSuccess(
       createUser({
         tenants: [
