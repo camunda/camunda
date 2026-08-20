@@ -70,7 +70,9 @@ final class SystemContextTest {
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Snapshot period PT-1M needs to be larger then or equals to one minute.");
+        .hasMessage(
+            "Snapshot period PT-1M needs to be larger then or equals to one minute. "
+                + "[physical tenant 'default']");
   }
 
   @Test
@@ -82,7 +84,9 @@ final class SystemContextTest {
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Snapshot period PT1S needs to be larger then or equals to one minute.");
+        .hasMessage(
+            "Snapshot period PT1S needs to be larger then or equals to one minute. "
+                + "[physical tenant 'default']");
   }
 
   @Test
@@ -601,6 +605,269 @@ final class SystemContextTest {
     assertThatThrownBy(() -> ctx.getPhysicalTenantContext("unknown-tenant"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unknown-tenant");
+  }
+
+  // --- per-tenant BrokerCfg bucketing regression tests ---
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantHasInvalidSnapshotPeriod() {
+    // given – the default tenant's config is valid, but the non-default tenant's own BrokerCfg
+    // has an invalid snapshot period. Routing this through SystemContextTestFactory.singleTenant
+    // would collapse both tenants onto the same config object and make this test vacuous.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getData().setSnapshotPeriod(Duration.ofSeconds(1));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Snapshot period PT1S needs to be larger")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantOverridesDataDirectory() {
+    // given – data.primary-storage.directory is deny-listed for per-tenant override, so every
+    // tenant's effective BrokerCfg must agree with the root on it; a divergent value must be
+    // rejected rather than silently ignored.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getData().setDirectory("some/other/directory");
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected data directory to be")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantOverridesReplicationFactor() {
+    // given – cluster.replication-factor is deny-listed for per-tenant override, so every
+    // tenant's effective BrokerCfg must agree with the root on it; a divergent value must be
+    // rejected rather than silently ignored.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getCluster().setReplicationFactor(2);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected replication factor to be")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantHasInvalidBatchOperationChunkSize() {
+    // given
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getExperimental().getEngine().getBatchOperations().setChunkSize(0);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperations.chunkSize must be greater than 0")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldNotValidateMaxAppendBatchSizePerTenant() {
+    // given – maxAppendBatchSize is deny-listed for per-tenant override, so it is only ever
+    // validated against the root BrokerCfg; an invalid value on a non-default tenant's own
+    // BrokerCfg must not fail construction.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)));
+  }
+
+  @Test
+  void shouldNotValidateDiskConfigPerTenant() {
+    // given – disk free-space monitoring is deny-listed for per-tenant override, so it is only
+    // ever validated against the root BrokerCfg; an invalid value on a non-default tenant's own
+    // BrokerCfg must not fail construction.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    final var freeSpaceCfg = tenantACfg.getData().getDisk().getFreeSpace();
+    tenantACfg.getData().getDisk().setEnableMonitoring(true);
+    freeSpaceCfg.setProcessing(DataSize.ofMegabytes(1));
+    freeSpaceCfg.setReplication(DataSize.ofMegabytes(2));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)));
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultTenantPartitionCountExceedsFixedSchemeCoverage() {
+    // given – the root's fixed scheme covers partition 1 for both the default tenant and
+    // tenantA, but tenantA overrides its own cluster.partition-count above the root value, so
+    // its partition 2 is left uncovered.
+    final var rootCfg = new BrokerCfg();
+    final var defaultPartition = new FixedPartitionCfg();
+    defaultPartition.setPartitionId(1);
+    defaultPartition.getNodes().add(new NodeCfg());
+    final var fixedPartition = new FixedPartitionCfg();
+    fixedPartition.setPartitionId(1);
+    fixedPartition.setPhysicalTenantId("tenantA");
+    fixedPartition.getNodes().add(new NodeCfg());
+    rootCfg.getExperimental().getPartitioning().setScheme(Scheme.FIXED);
+    rootCfg.getExperimental().getPartitioning().setFixed(List.of(defaultPartition, fixedPartition));
+
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getExperimental().getPartitioning().setScheme(Scheme.FIXED);
+    tenantACfg.getCluster().setPartitionsCount(2);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("partition 2 has 0 configured replicas")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantBackupIsRequiredButStoreIsNone() {
+    // given – the default tenant's backup config is untouched, but tenantA's own BrokerCfg
+    // requires a backup without configuring a store.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    final var backupCfg = tenantACfg.getData().getBackup();
+    backupCfg.setRequired(true);
+    backupCfg.setStore(BackupStoreType.NONE);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("Backup is required but no backup store is configured")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFilterGlobalTaskListenersPerTenantIndependently() {
+    // given – each tenant carries its own invalid + valid global user-task listener; filtering
+    // one tenant's list must not affect the other's.
+    final var rootCfg = new BrokerCfg();
+    rootCfg
+        .getExperimental()
+        .getEngine()
+        .getGlobalListeners()
+        .setUserTask(
+            List.of(
+                createListenerCfg("root-valid", List.of("creating")),
+                createListenerCfg("root-invalid", List.of("non-existing-type"))));
+
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg
+        .getExperimental()
+        .getEngine()
+        .getGlobalListeners()
+        .setUserTask(
+            List.of(
+                createListenerCfg("tenantA-valid", List.of("assigning")),
+                createListenerCfg("tenantA-invalid", List.of("non-existing-type"))));
+
+    // when
+    initSystemContextWithBrokerCfgs(
+        rootCfg,
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rootCfg, "tenantA", tenantACfg));
+
+    // then
+    assertThat(rootCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .extracting(GlobalListenerCfg::getType)
+        .containsExactly("root-valid");
+    assertThat(tenantACfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .extracting(GlobalListenerCfg::getType)
+        .containsExactly("tenantA-valid");
+  }
+
+  private SystemContext initSystemContextWithBrokerCfgs(
+      final BrokerCfg rootCfg, final Map<String, BrokerCfg> brokerCfgsByTenant) {
+    return SystemContextTestFactory.multiTenant(
+        SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
+        rootCfg,
+        brokerCfgsByTenant,
+        mock(ActorScheduler.class),
+        mock(AtomixCluster.class),
+        mock(BrokerClient.class),
+        new SimpleMeterRegistry(),
+        EngineSecurityConfigurations.defaultConfig(),
+        mock(UserServices.class),
+        mock(PasswordEncoder.class),
+        mock(JwtDecoder.class),
+        (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+        mock(SearchClientsProxy.class),
+        mock(BrokerRequestAuthorizationConverter.class),
+        mock(NodeIdProvider.class),
+        () -> brokerCfgsByTenant.keySet());
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
