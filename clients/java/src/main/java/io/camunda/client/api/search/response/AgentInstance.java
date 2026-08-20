@@ -33,9 +33,8 @@ public interface AgentInstance {
   AgentInstanceStatus getStatus();
 
   /**
-   * Returns the current definition of the agent, containing model, provider, and system prompt.
-   * The initial values come from creation, but can be changed later via a CONFIGURATION history
-   * item.
+   * Returns the current definition of the agent, containing model, provider, and system prompt. The
+   * initial values come from creation, but can be changed later via a CONFIGURATION history item.
    */
   Definition getDefinition();
 
@@ -87,7 +86,10 @@ public interface AgentInstance {
   /** Returns the keys of all element instances associated with this agent instance. */
   List<Long> getElementInstanceKeys();
 
-  /** Definition of the agent. Set at creation, but can change later via a CONFIGURATION history item. */
+  /**
+   * Definition of the agent. Set at creation, but can change later via a CONFIGURATION history
+   * item.
+   */
   interface Definition {
 
     /** Returns the LLM model identifier (e.g. {@code gpt-4o}). */
