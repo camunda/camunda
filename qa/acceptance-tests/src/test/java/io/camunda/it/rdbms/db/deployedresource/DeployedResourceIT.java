@@ -237,6 +237,77 @@ public class DeployedResourceIT {
   }
 
   @TestTemplate
+  public void shouldTreatEmptyVersionTagAsMissing(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
+
+    final Long deploymentKey = nextKey();
+    final DeployedResourceDbModel resourceWithEmptyVersionTag =
+        createAndSaveDeployedResource(
+            rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag(""));
+    final DeployedResourceDbModel resourceWithNullVersionTag =
+        createAndSaveDeployedResource(
+            rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag(null));
+    createAndSaveDeployedResource(
+        rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag("v1"));
+
+    // when
+    final var searchResult =
+        reader.search(
+            DeployedResourceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.deploymentKeyOperations(Operation.eq(deploymentKey))
+                                    .versionTagOperations(Operation.exists(false)))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(DeployedResourceEntity::resourceKey)
+        .containsExactlyInAnyOrder(
+            resourceWithEmptyVersionTag.resourceKey(), resourceWithNullVersionTag.resourceKey());
+  }
+
+  @TestTemplate
+  public void shouldTreatOnlyNonEmptyVersionTagAsExisting(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
+
+    final Long deploymentKey = nextKey();
+    createAndSaveDeployedResource(rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag(""));
+    createAndSaveDeployedResource(
+        rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag(null));
+    final DeployedResourceDbModel resourceWithVersionTag =
+        createAndSaveDeployedResource(
+            rdbmsWriters, b -> b.deploymentKey(deploymentKey).versionTag("v1"));
+
+    // when
+    final var searchResult =
+        reader.search(
+            DeployedResourceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.deploymentKeyOperations(Operation.eq(deploymentKey))
+                                    .versionTagOperations(Operation.exists(true)))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(DeployedResourceEntity::resourceKey)
+        .containsExactly(resourceWithVersionTag.resourceKey());
+  }
+
+  @TestTemplate
   public void shouldFindDeployedResourceByTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
