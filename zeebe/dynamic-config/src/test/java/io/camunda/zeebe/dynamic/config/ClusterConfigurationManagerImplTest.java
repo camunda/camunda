@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChange
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -51,17 +53,21 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -308,6 +314,299 @@ final class ClusterConfigurationManagerImplTest {
           .describedAs("member 0 left group '%s'", groupId)
           .isFalse();
     }
+  }
+
+  @Test
+  void shouldApplyEveryRunnableGraphOperationOfTheLocalMember() {
+    // given — a graph phase whose two operations have no edge between them, so both are runnable
+    // from the start. Under the queue the local member would have applied one, gossiped, and only
+    // then been offered the second.
+    final var manager = newManager(MEMBER_0);
+    manager.updateMultiConfiguration(ignored -> twoPartitionCluster()).join();
+    final var graph = OperationGraph.builder();
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 1, 1));
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1));
+
+    // when
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — both ran and the graph drained, without any peer having to move
+    final var defaultGroup =
+        configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.pendingGraphChanges()).isEmpty();
+    assertThat(defaultGroup.hasMember(MEMBER_0)).isFalse();
+  }
+
+  @Test
+  void shouldNotApplyAGraphOperationWhoseDependencyHasNotCompleted() {
+    // given — the local member's operation waits on a peer's, which nothing here will run. This is
+    // what keeps a declared edge meaningful: without it the local member would apply its own
+    // operation as soon as it saw the plan.
+    final var manager = newManager(MEMBER_0);
+    manager.updateMultiConfiguration(ignored -> twoPartitionCluster()).join();
+    final var graph = OperationGraph.builder();
+    final var peerOperation = graph.add(new PartitionLeaveOperation(MEMBER_1, 1, 1));
+    graph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1), Set.of(peerOperation));
+
+    // when
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — nothing was applied and both operations are still outstanding
+    final var defaultGroup =
+        configuration(manager).partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.pendingGraphChanges().orElseThrow().completed()).isEmpty();
+    assertThat(defaultGroup.getMember(MEMBER_0).partitions()).containsOnlyKeys(1, 2);
+  }
+
+  @Test
+  void shouldNotExceedTheConcurrencyCapAcrossReentrantReconciliation() {
+    // given — 6 independent operations on one broker, well above the concurrency cap (4), each
+    // held open (never resolving) so the count of simultaneously-applying operations can be
+    // observed. Staging an operation persists synchronously, which re-enters reconcile() before
+    // the operation that triggered it has itself been counted — a cap tracked as a count local to
+    // one reconcile() call resets to zero on every such nesting and never actually bounds
+    // anything, which is exactly the shape this pins.
+    final var member1 = MemberId.from("1");
+    final var startedCount = new AtomicInteger();
+    final var peakConcurrent = new AtomicInteger();
+    final var manager = newManager(MEMBER_0);
+    final var real =
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor());
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        operation -> {
+          final var delegate = real.getApplier(operation);
+          return new PartitionGroupConfigurationChangeApplier() {
+            @Override
+            public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+                final GlobalConfiguration global, final PartitionGroupConfiguration group) {
+              return delegate.init(global, group);
+            }
+
+            @Override
+            public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+              peakConcurrent.updateAndGet(ignored -> startedCount.incrementAndGet());
+              // Never completes: a real (I/O-bound) applier stays in flight for a while too, and
+              // that is the window the cap is meant to hold.
+              return new CompletableActorFuture<>();
+            }
+          };
+        });
+
+    final Map<Integer, PartitionState> partitions = new HashMap<>();
+    for (int p = 1; p <= 6; p++) {
+      partitions.put(p, PartitionState.active(1, partitionConfig));
+    }
+    manager
+        .updateMultiConfiguration(
+            ignored ->
+                new CurrentClusterConfiguration(
+                    CurrentClusterConfiguration.INITIAL_VERSION,
+                    new GlobalConfiguration(
+                        1,
+                        Optional.empty(),
+                        Map.of(
+                            MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                            member1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(
+                                MEMBER_0, BrokerPartitionState.initialize(partitions),
+                                member1, BrokerPartitionState.initialize(partitions)),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    PhasedChangeState.empty()))
+        .join();
+
+    // when — member 0 leaves all 6 of its own replicas; each partition keeps member 1's replica,
+    // so every leave is independently valid and none depends on another
+    final var graph = OperationGraph.builder();
+    for (int p = 1; p <= 6; p++) {
+      graph.add(new PartitionLeaveOperation(MEMBER_0, p, 1));
+    }
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupPhase(
+                            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))))
+        .join();
+
+    // then — never more than the cap were simultaneously applying, however deep the reentrant
+    // cascade of staging one operation into the next went
+    assertThat(peakConcurrent).hasValueLessThanOrEqualTo(4);
+  }
+
+  @Test
+  void shouldStartAReplacementOperationBlockedByAStaleInFlightId() {
+    // given — operation ids restart at 0 for every fresh graph, and in-flight tracking is keyed by
+    // that bare id, per group. Cancelling a plan while one of its operations is still applying
+    // (async, real work, not instantly resolving), then starting a replacement on the same group,
+    // reproduces the case: the replacement's own id-0 operation is runnable but looks like it is
+    // already in flight, because id 0 still is -- from the plan that no longer exists.
+    final var member1 = MemberId.from("1");
+    final var pendingApplies =
+        new HashMap<Integer, CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>>();
+    final var applied = new java.util.ArrayList<Integer>();
+    final var manager = newManager(MEMBER_0);
+    final var real =
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopModeChangeExecutor(),
+            new NoopRestoreChangeExecutor());
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        operation -> {
+          final var partitionOperation = (PartitionLeaveOperation) operation;
+          final var delegate = real.getApplier(operation);
+          return new PartitionGroupConfigurationChangeApplier() {
+            @Override
+            public Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+                final GlobalConfiguration global, final PartitionGroupConfiguration group) {
+              return delegate.init(global, group);
+            }
+
+            @Override
+            public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+              applied.add(partitionOperation.partitionId());
+              final var future =
+                  new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
+              pendingApplies.put(partitionOperation.partitionId(), future);
+              return future;
+            }
+          };
+        });
+
+    final var replicated =
+        BrokerPartitionState.initialize(
+            Map.of(
+                1, PartitionState.active(1, partitionConfig),
+                2, PartitionState.active(1, partitionConfig)));
+    manager
+        .updateMultiConfiguration(
+            ignored ->
+                new CurrentClusterConfiguration(
+                    CurrentClusterConfiguration.INITIAL_VERSION,
+                    new GlobalConfiguration(
+                        1,
+                        Optional.empty(),
+                        Map.of(
+                            MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                            member1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()),
+                    Map.of(
+                        CurrentClusterConfiguration.DEFAULT_GROUP,
+                        new PartitionGroupConfiguration(
+                            1,
+                            0,
+                            Map.of(MEMBER_0, replicated, member1, replicated),
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty())),
+                    PhasedChangeState.empty()))
+        .join();
+
+    // when — plan A leaves partition 1; its single operation gets id 0 and is still applying
+    // (its future is deliberately left unresolved) when the plan is cancelled
+    final var planAGraph = OperationGraph.builder();
+    planAGraph.add(new PartitionLeaveOperation(MEMBER_0, 1, 1));
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP, planAGraph.build())))))
+        .join();
+    assertThat(applied).containsExactly(1);
+    final var planAId =
+        configuration(manager).phasedChangeState().pending().keySet().iterator().next();
+    manager.updateMultiConfiguration(c -> c.cancelPendingChanges(planAId)).join();
+
+    // and — plan B leaves partition 2 instead; its single operation is also id 0 (a fresh graph
+    // numbers from zero), and is runnable, but is skipped: id 0 is still in flight, from plan A
+    final var planBGraph = OperationGraph.builder();
+    planBGraph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1));
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP, planBGraph.build())))))
+        .join();
+    assertThat(applied).describedAs("plan B blocked behind plan A's stale id").containsExactly(1);
+
+    // and — plan A's operation finally resolves. Its own plan is long gone (the version check
+    // inside onApplied sees that and returns early), but this must not also strand plan B's
+    // operation that only looked blocked because of the id it reused
+    pendingApplies.get(1).complete(UnaryOperator.identity());
+
+    // then — plan B's operation starts once the stale id clears
+    assertThat(applied)
+        .describedAs("plan B's operation runs once the stale in-flight id is gone")
+        .containsExactly(1, 2);
+  }
+
+  /** Both members replicate partitions 1 and 2, so either may leave either partition. */
+  private CurrentClusterConfiguration twoPartitionCluster() {
+    final var replicated =
+        BrokerPartitionState.initialize(
+            Map.of(
+                1, PartitionState.active(1, partitionConfig),
+                2, PartitionState.active(1, partitionConfig)));
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        new GlobalConfiguration(
+            1,
+            Optional.empty(),
+            Map.of(
+                MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty()),
+        Map.of(
+            CurrentClusterConfiguration.DEFAULT_GROUP,
+            new PartitionGroupConfiguration(
+                1,
+                0,
+                Map.of(MEMBER_0, replicated, MEMBER_1, replicated),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty())),
+        PhasedChangeState.empty());
   }
 
   @Test

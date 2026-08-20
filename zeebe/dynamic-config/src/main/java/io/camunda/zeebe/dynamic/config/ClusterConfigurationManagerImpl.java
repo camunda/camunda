@@ -23,7 +23,9 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -103,6 +105,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
   private final Map<Scope, ScopeReconciler> scopeReconcilers = new HashMap<>();
+  // Separate from scopeReconcilers: a graph runs several of a group's operations at once, so it
+  // cannot share ScopeReconciler's single-in-flight-operation contract. Keyed by group id, since a
+  // graph change only ever belongs to a partition group.
+  private final Map<String, GraphScopeReconciler> graphReconcilers = new HashMap<>();
   // Keyed by plan id, since multiple plans can be advancing (and independently retrying) at once.
   private final Map<Long, PlanAdvancer> planAdvancers = new HashMap<>();
   private final int completedChangeHistoryLimit;
@@ -255,20 +261,40 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
+                CurrentClusterConfiguration toPersist;
                 try {
                   // merge in case there was a concurrent update via gossip
-                  persistedCurrentConfiguration.update(
-                      configuration.merge(persistedCurrentConfiguration.getConfiguration()));
-                  LOG.debug(
-                      "Initialized cluster configuration '{}'",
-                      persistedCurrentConfiguration.getConfiguration());
-                  if (currentConfigurationGossiper != null) {
-                    currentConfigurationGossiper.accept(
-                        persistedCurrentConfiguration.getConfiguration());
-                  }
+                  toPersist = configuration.merge(persistedCurrentConfiguration.getConfiguration());
+                } catch (final RuntimeException e) {
+                  // The merge can throw when a concurrently-gossiped peer's write genuinely
+                  // conflicts with this member's own state at the same version (see
+                  // BrokerPartitionState#merge) -- a real disagreement between brokers, not a
+                  // transient error. Failing start over it would leave this broker down
+                  // indefinitely against a condition later, unrelated writes are what actually
+                  // resolve. Starting from this member's own freshly-initialized configuration
+                  // instead -- skipping the merge, not skipping the update -- lets normal gossip
+                  // reconciliation surface and retry against the same conflict once running,
+                  // exactly as it does for one arriving after start via {@link
+                  // #onGossipReceivedCurrent}.
+                  LOG.warn(
+                      "Failed to merge cluster configuration during startup; starting without "
+                          + "the merge",
+                      e);
+                  toPersist = configuration;
+                }
+                try {
+                  persistedCurrentConfiguration.update(toPersist);
                 } catch (final IOException e) {
                   startFuture.completeExceptionally(
                       "Failed to start update cluster configuration", e);
+                  return;
+                }
+                LOG.debug(
+                    "Initialized cluster configuration '{}'",
+                    persistedCurrentConfiguration.getConfiguration());
+                if (currentConfigurationGossiper != null) {
+                  currentConfigurationGossiper.accept(
+                      persistedCurrentConfiguration.getConfiguration());
                 }
                 setStarted();
               }
@@ -330,12 +356,27 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final CurrentClusterConfiguration configuration, final String groupId) {
     return configuration.phasedChangeState().pending().values().stream()
         .flatMap(plan -> plan.phases().stream())
-        .filter(PartitionGroupPhase.class::isInstance)
-        .map(PartitionGroupPhase.class::cast)
-        .map(phase -> phase.groupOperations().get(groupId))
+        .map(phase -> groupOperationsOf(phase, groupId))
         .filter(Objects::nonNull)
         .flatMap(List::stream)
         .anyMatch(operation -> operation.memberId().equals(localMemberId));
+  }
+
+  /**
+   * {@code phase}'s operations for {@code groupId}, or {@code null} if the phase targets no group
+   * at all ({@link GlobalPhase}) or not this one.
+   *
+   * <p>Switches over every phase kind rather than filtering for one — mirroring {@link
+   * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan#scopeOf}'s own javadoc warning against
+   * exactly that pattern — so a phase kind added later without a case here fails to compile instead
+   * of silently making {@link #wasTargetedByCurrentPlan} blind to it.
+   */
+  private static @Nullable List<PartitionGroupOperation> groupOperationsOf(
+      final Phase phase, final String groupId) {
+    return switch (phase) {
+      case final GlobalPhase ignored -> null;
+      case final PartitionGroupPhase groupPhase -> groupPhase.groupOperations().get(groupId);
+    };
   }
 
   void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
@@ -356,6 +397,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           scopeReconcilers.clear();
+          graphReconcilers.clear();
           planAdvancers.clear();
         });
   }
@@ -385,15 +427,15 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * The single place group-scoped {@link ScopeReconciler}s are created — registering a group's
-   * appliers via {@link #registerPartitionGroupChangeAppliers} does not create one. Every live
-   * group keeps a reconciler on every broker, whether or not the broker registered that group's
-   * appliers — a broker can be named in a group operation without ever hosting the group (a
-   * disabled physical tenant's forced removal executes on whichever broker received the request,
-   * and no broker runs a disabled tenant). Removed groups are tombstones that can never have work
-   * again, and they accumulate over a cluster's lifetime, so no new reconciler is created for one —
-   * an existing one persisting is fine, since reconcilers are deliberately never removed except on
-   * {@link #close}. A reconciler with nothing pending is a no-op per pass.
+   * The single place group-scoped {@link ScopeReconciler}s and {@link GraphScopeReconciler}s are
+   * created — registering a group's appliers via {@link #registerPartitionGroupChangeAppliers}
+   * does not create either. Every live group keeps both on every broker, whether or not the broker
+   * registered that group's appliers — a broker can be named in a group operation without ever
+   * hosting the group (a disabled physical tenant's forced removal executes on whichever broker
+   * received the request, and no broker runs a disabled tenant). Removed groups are tombstones that
+   * can never have work again, and they accumulate over a cluster's lifetime, so no new reconciler
+   * is created for one — an existing one persisting is fine, since reconcilers are deliberately
+   * never removed except on {@link #close}. A reconciler with nothing pending is a no-op per pass.
    */
   private void ensurePartitionGroupScopeReconcilers(final CurrentClusterConfiguration config) {
     config
@@ -403,6 +445,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
               if (!group.isRemoved()) {
                 scopeReconcilers.computeIfAbsent(
                     new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
+                graphReconcilers.computeIfAbsent(
+                    groupId, ignored -> newGraphScopeReconciler(groupId));
               }
             });
   }
@@ -411,12 +455,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           partitionGroupChangeAppliers.remove(groupId);
-          // Deliberately not removing this group's ScopeReconciler here: it's created solely by
-          // ensurePartitionGroupScopeReconcilers, so it survives a remove/register round-trip
-          // unmolested. PartitionManagerImpl/RecoveryPartitionManager re-register their change
-          // appliers on every recovery/processing mode transition; discarding the ScopeReconciler
-          // here would discard its in-flight retry/backoff state on every such transition, leaving
-          // a broker stuck mid-transition (see
+          // Deliberately not removing this group's ScopeReconciler or GraphScopeReconciler here:
+          // both are created solely by ensurePartitionGroupScopeReconcilers, so they survive a
+          // remove/register round-trip unmolested. PartitionManagerImpl/RecoveryPartitionManager
+          // re-register their change appliers on every recovery/processing mode transition;
+          // discarding either reconciler here would discard its in-flight retry/backoff state on
+          // every such transition, leaving a broker stuck mid-transition (see
           // ModeChangeAcceptanceIT#shouldCycleBetweenRecoveryAndProcessing).
         });
   }
@@ -463,6 +507,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                               "Failed to process cluster configuration received via gossip. '{}'",
                               receivedConfiguration,
                               error));
+            } else {
+              // The merge changed nothing locally, so reconcile() is not reached — but a graph
+              // change may still be drained and unfinished, most plausibly because an earlier
+              // attempt to finish it failed to persist. Retrying on every gossip round rides the
+              // existing sync cadence and needs no timer of its own.
+              maybeCompleteGraphChanges(merged);
             }
           } catch (final Exception e) {
             LOG.warn(
@@ -522,6 +572,49 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       planAdvancers.keySet().retainAll(pendingIds);
     }
     scopeReconcilers.values().forEach(ScopeReconciler::reconcile);
+    graphReconcilers.values().forEach(GraphScopeReconciler::reconcile);
+    maybeCompleteGraphChanges(config);
+  }
+
+  /**
+   * Finishes any graph change whose operations have all completed.
+   *
+   * <p>Runs on every broker with no coordinator check: completion is a pure function of converged
+   * state, so several brokers computing it agree. It must also run when a gossip merge changes
+   * nothing locally (see {@link #onGossipReceivedCurrent}) — otherwise a completion whose persist
+   * failed is never retried once the cluster converges, and the change sits drained but unfinished
+   * with nothing left to perturb it.
+   */
+  private void maybeCompleteGraphChanges(final CurrentClusterConfiguration config) {
+    final var drained =
+        config.partitionGroups().values().stream()
+            .anyMatch(
+                group ->
+                    group
+                        .pendingGraphChanges()
+                        .filter(plan -> !plan.hasPendingChanges())
+                        .isPresent());
+    if (!drained) {
+      return;
+    }
+    updateMultiConfiguration(ClusterConfigurationManagerImpl::completeDrainedGraphChanges)
+        .onComplete(
+            (ignore, completionError) -> {
+              if (completionError != null) {
+                LOG.warn("Failed to complete a drained configuration change", completionError);
+              }
+            });
+  }
+
+  private static CurrentClusterConfiguration completeDrainedGraphChanges(
+      final CurrentClusterConfiguration config) {
+    var result = config;
+    for (final String groupId : List.copyOf(config.partitionGroups().keySet())) {
+      result =
+          result.updatePartitionGroupConfig(
+              groupId, PartitionGroupConfiguration::completeGraphChangeIfDrained);
+    }
+    return result;
   }
 
   private PlanAdvancer newPlanAdvancer(final long planId) {
@@ -529,7 +622,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         planId,
         executor,
         this::updateMultiConfiguration,
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         this::isLocalMemberCoordinator,
         minRetryDelay,
         maxRetryDelay,
@@ -539,7 +632,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private ScopeReconciler newGlobalScopeReconciler() {
     return new ScopeReconciler(
         new GlobalScopeOperations(),
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
@@ -550,7 +643,20 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private ScopeReconciler newGroupScopeReconciler(final String groupId) {
     return new ScopeReconciler(
         new GroupScopeOperations(groupId),
-        () -> persistedCurrentConfiguration.getConfiguration(),
+        persistedCurrentConfiguration::getConfiguration,
+        this::updateLocalCurrentConfiguration,
+        executor,
+        topologyMetrics,
+        minRetryDelay,
+        maxRetryDelay);
+  }
+
+  private GraphScopeReconciler newGraphScopeReconciler(final String groupId) {
+    return new GraphScopeReconciler(
+        groupId,
+        localMemberId,
+        persistedCurrentConfiguration::getConfiguration,
+        () -> partitionGroupChangeAppliers.get(groupId),
         this::updateLocalCurrentConfiguration,
         executor,
         topologyMetrics,
