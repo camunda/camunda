@@ -342,6 +342,10 @@ public class DynamicNodeIdScalingIT {
     private static final int SCALE_DOWN_TARGET_CLUSTER_SIZE_IN_ZONE = 1;
     private static final int REPLICATION_FACTOR = 1;
 
+    // the gateway is usually included in the gossip update for the removed broker (after ~5s), but
+    // can take 10s if instead falling back to its own timeout - so we add some headroom
+    private static final Duration TOPOLOGY_TIMEOUT = Duration.ofSeconds(20);
+
     @TestZeebe(autoStart = false)
     protected TestCluster testCluster =
         TestCluster.builder()
@@ -360,6 +364,7 @@ public class DynamicNodeIdScalingIT {
                         cfg -> {
                           cfg.getCluster().setSize(initialClusterSize());
                           configureS3NodeIdProvider(cfg);
+                          cfg.getCluster().getMetadata().setSyncDelay(Duration.ofSeconds(1));
                         }))
             .build();
 
@@ -429,7 +434,7 @@ public class DynamicNodeIdScalingIT {
       // given
       shouldScaleDownCluster();
       testCluster.awaitCompleteTopology(
-          targetClusterSize(), PARTITIONS_COUNT, replicationFactor(), Duration.ofSeconds(10));
+          targetClusterSize(), PARTITIONS_COUNT, replicationFactor(), TOPOLOGY_TIMEOUT);
 
       // when
       final var clusterActuator = ClusterActuator.of(testCluster.anyGateway());
@@ -450,7 +455,7 @@ public class DynamicNodeIdScalingIT {
           .untilAsserted(
               () -> assertConfigurationChangeCompleted(clusterActuator, initialClusterSize()));
       testCluster.awaitCompleteTopology(
-          initialClusterSize(), PARTITIONS_COUNT, replicationFactor(), Duration.ofSeconds(10));
+          initialClusterSize(), PARTITIONS_COUNT, replicationFactor(), TOPOLOGY_TIMEOUT);
     }
   }
 
