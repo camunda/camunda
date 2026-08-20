@@ -313,6 +313,25 @@ final class JobBatchCollectorTest {
   }
 
   @Test
+  void shouldNotTrackReactivationWhenJobIsRejectedForBatchSize() {
+    // given — an agentic job that already holds a lease from a previous activation, so it looks
+    // like a re-activation, but the collector rejects it for being too large to write. Its
+    // existing lease is left untouched in state, so it must not be treated as reactivated.
+    final long variableScopeKey = state.getKeyGenerator().nextKey();
+    final TypedRecord<JobBatchRecord> record = createRecord();
+    record.getValue().setWithLease(true);
+    createLeasedJob(variableScopeKey);
+    when(agentDefinitionBehavior.belongsToAgent(any())).thenReturn(true);
+    lengthEvaluator.canWriteEventOfLength = (length) -> false;
+
+    // when
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // then
+    assertThat(collector.reactivatedAgenticJobKeys()).isEmpty();
+  }
+
+  @Test
   void shouldCollectJobsWithVariables() {
     // given - multiple jobs to ensure variables are collected based on the scope
     final TypedRecord<JobBatchRecord> record = createRecord();
