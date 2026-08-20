@@ -12,12 +12,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Nested;
@@ -295,17 +298,33 @@ final class DependencyChangePlanTest {
 
     @Test
     void shouldKeepTheEarliestTimestampForTheSameOperation() {
-      // given — the same operation completed twice, as happens when a broker retries or restarts
+      // given — the same operation completed twice, at two fixed, distinct timestamps, as happens
+      // when a broker retries or restarts. Fixed rather than derived from call order, so this
+      // fails against an implementation that keeps whichever side merge() is called on, or the
+      // latest, and not only one that keeps the earliest.
       final var builder = OperationGraph.builder();
       final var only = builder.add(op(0, 1));
-      final var base = DependencyChangePlan.init(PLAN_ID, builder.build());
-      final var first = base.completeOperation(only);
-      final var second = base.completeOperation(only);
+      final var graph = builder.build();
+      final var earlier = Instant.parse("2024-01-01T00:00:00Z");
+      final var later = earlier.plusSeconds(60);
+      final var first =
+          new DependencyChangePlan(
+              PLAN_ID,
+              Status.IN_PROGRESS,
+              Instant.now(),
+              graph,
+              new TreeMap<>(Map.of(only, earlier)));
+      final var second =
+          new DependencyChangePlan(
+              PLAN_ID,
+              Status.IN_PROGRESS,
+              Instant.now(),
+              graph,
+              new TreeMap<>(Map.of(only, later)));
 
-      // when / then — picking the earlier value is what keeps merge commutative here
-      assertThat(first.merge(second)).isEqualTo(second.merge(first));
-      assertThat(first.merge(second).completed().get(only))
-          .isBeforeOrEqualTo(second.completed().get(only));
+      // when / then — the earlier value wins regardless of merge direction
+      assertThat(first.merge(second).completed().get(only)).isEqualTo(earlier);
+      assertThat(second.merge(first).completed().get(only)).isEqualTo(earlier);
     }
   }
 
@@ -434,6 +453,62 @@ final class DependencyChangePlanTest {
       // when / then — accepted, and both offered at once
       final var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
       assertThat(plan.runnableFor(member(0))).hasSize(2);
+    }
+
+    @Test
+    void shouldRejectAnEmptyGraphEvenThroughTheCanonicalConstructor() {
+      // given / when / then — of() is not the only way to build one of these; the canonical
+      // constructor must reject what of() rejects, or callers that bypass it (a decode path, a
+      // direct `new`) could produce a graph with no timestamp to derive a completion from.
+      assertThatThrownBy(() -> new OperationGraph(new java.util.TreeMap<>()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("at least one operation");
+    }
+
+    @Test
+    void shouldRejectADependencyCycleEvenThroughTheCanonicalConstructor() {
+      // given — same cycle as shouldRejectADependencyCycle, built through `new` instead of of()
+      final var operations = new java.util.TreeMap<OperationId, OperationGraph.PlannedOperation>();
+      operations.put(
+          OperationId.of(0),
+          new OperationGraph.PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(0)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(1)))));
+      operations.put(
+          OperationId.of(1),
+          new OperationGraph.PlannedOperation(
+              new UpdateIncarnationNumberOperation(member(1)),
+              new java.util.TreeSet<>(Set.of(OperationId.of(0)))));
+
+      // when / then
+      assertThatThrownBy(() -> new OperationGraph(operations))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("dependency cycle");
+    }
+
+    @Test
+    void shouldRejectACompletedOperationIdNotInTheGraph() {
+      // given — a plan whose completed map names an id its own graph does not contain, as a
+      // decode path or a directly constructed plan could produce without this check:
+      // hasPendingChanges
+      // (a size comparison) would then disagree with pendingOperations (a containsKey filter)
+      // about whether the plan is done.
+      final var builder = OperationGraph.builder();
+      builder.add(op(0, 1));
+      final var graph = builder.build();
+      final var foreignId = OperationId.of(99);
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  new DependencyChangePlan(
+                      PLAN_ID,
+                      Status.IN_PROGRESS,
+                      Instant.now(),
+                      graph,
+                      new TreeMap<>(Map.of(foreignId, Instant.now()))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not part of this plan");
     }
   }
 }

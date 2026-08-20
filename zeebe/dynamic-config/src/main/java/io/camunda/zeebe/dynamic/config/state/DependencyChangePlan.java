@@ -49,6 +49,13 @@ public record DependencyChangePlan(
 
   public DependencyChangePlan {
     completed = Collections.unmodifiableSortedMap(new TreeMap<>(completed));
+    for (final var operationId : completed.keySet()) {
+      if (!graph.operations().containsKey(operationId)) {
+        throw new IllegalArgumentException(
+            "Operation %s is marked complete, but is not part of this plan's graph"
+                .formatted(operationId));
+      }
+    }
   }
 
   public static DependencyChangePlan init(final long id, final OperationGraph graph) {

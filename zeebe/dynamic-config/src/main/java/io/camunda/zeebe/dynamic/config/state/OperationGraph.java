@@ -70,8 +70,19 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations) {
 
+  /**
+   * Rejects a graph that cannot execute: empty (nothing to run, and {@link
+   * DependencyChangePlan#toCompletedChange()} has no timestamp to derive a completion from), or
+   * cyclic (see {@link #validateAcyclic}). Enforced here, in the canonical constructor, rather than
+   * only in {@link #of} — the compact constructor is not the only way to build one of these; a bare
+   * {@code new OperationGraph(...)} must reject the same graphs {@link #of} does, or a decode path
+   * that does not go through either factory could construct one that violates both.
+   */
   public OperationGraph {
     operations = Collections.unmodifiableSortedMap(new TreeMap<>(operations));
+    if (operations.isEmpty()) {
+      throw new IllegalArgumentException("A dependency graph must have at least one operation");
+    }
     for (final var entry : operations.entrySet()) {
       for (final var dependency : entry.getValue().dependsOn()) {
         if (!operations.containsKey(dependency)) {
@@ -81,23 +92,12 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
         }
       }
     }
+    validateAcyclic(operations);
   }
 
-  /**
-   * Builds a graph and rejects it if it cannot execute: empty (nothing to run, and {@link
-   * DependencyChangePlan#toCompletedChange()} has no timestamp to derive a completion from), or
-   * cyclic (see {@link #validateAcyclic()}). The same non-emptiness this factory enforces is
-   * already required on the create path by {@code
-   * PartitionGroupConfiguration#startGraphConfigurationChange}; enforcing it here as well closes it
-   * for the decode path too, which does not go through that method.
-   */
+  /** Same validation as the canonical constructor; kept for readability at the call site. */
   public static OperationGraph of(final SortedMap<OperationId, PlannedOperation> operations) {
-    if (operations.isEmpty()) {
-      throw new IllegalArgumentException("A dependency graph must have at least one operation");
-    }
-    final var graph = new OperationGraph(operations);
-    graph.validateAcyclic();
-    return graph;
+    return new OperationGraph(operations);
   }
 
   /**
@@ -135,8 +135,11 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
   /**
    * A cycle would leave every operation in it permanently un-runnable and the change would stall
    * with no error at all, so it is rejected here rather than discovered in production.
+   *
+   * <p>Static, and takes {@code operations} as a parameter rather than reading the field: called
+   * from the compact constructor, before the field is assigned.
    */
-  private void validateAcyclic() {
+  private static void validateAcyclic(final SortedMap<OperationId, PlannedOperation> operations) {
     final Map<OperationId, Integer> remaining = new HashMap<>();
     operations.forEach((id, planned) -> remaining.put(id, planned.dependsOn().size()));
     final var ready = new ArrayDeque<OperationId>();
