@@ -122,6 +122,7 @@ import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum;
 import io.camunda.gateway.protocol.model.MessageWaitStateDetails;
+import io.camunda.gateway.protocol.model.OwnAuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
@@ -1758,6 +1759,16 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toAuthorizations)
                 .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  public static OwnAuthorizationSearchResult toOwnAuthorizationSearchQueryResponse(
+      final SearchQueryResult<AuthorizationEntity> result, final boolean authorizationsEnabled) {
+    final var authorizationSearchResult = toAuthorizationSearchQueryResponse(result);
+    return OwnAuthorizationSearchResult.Builder.create()
+        .page(authorizationSearchResult.getPage())
+        .items(authorizationSearchResult.getItems())
+        .authorizationsEnabled(authorizationsEnabled)
         .build();
   }
 

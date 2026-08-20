@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -59,10 +60,12 @@ public class AuthenticationControllerTest extends RestControllerTest {
   @MockitoBean private ServiceRegistry serviceRegistry;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private AuthorizationServices authorizationServices;
+  @Autowired private CamundaSecurityLibraryProperties securityProperties;
 
   @BeforeEach
   void setUpAuthorizationServices() {
     when(serviceRegistry.authorizationServices(any())).thenReturn(authorizationServices);
+    securityProperties.getAuthorizations().setEnabled(true);
   }
 
   @Test
@@ -172,6 +175,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
         .json(
             """
                 {
+                  "authorizationsEnabled": true,
                   "items": [
                     {
                       "authorizationKey": "1",
@@ -207,6 +211,33 @@ public class AuthenticationControllerTest extends RestControllerTest {
     verify(authorizationServices)
         .searchOwnAuthorizations(
             any(AuthorizationQuery.class), eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
+  }
+
+  @Test
+  void searchOwnAuthorizationsShouldIndicateWhenAuthorizationsAreDisabled() {
+    // given
+    securityProperties.getAuthorizations().setEnabled(false);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(authorizationServices.searchOwnAuthorizations(any(AuthorizationQuery.class), any()))
+        .thenReturn(SearchQueryResult.empty());
+
+    // when / then
+    webClient
+        .post()
+        .uri(ME_AUTHORIZATIONS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+                {
+                  "authorizationsEnabled": false,
+                  "items": []
+                }""",
+            JsonCompareMode.LENIENT);
   }
 
   @Test
