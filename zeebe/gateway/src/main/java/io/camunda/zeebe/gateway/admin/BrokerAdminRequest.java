@@ -49,6 +49,10 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
     request.setType(AdminRequestType.GET_EXPORTING_STATE);
   }
 
+  public void getMigrationStatus() {
+    request.setType(AdminRequestType.GET_MIGRATION_STATUS);
+  }
+
   public void getFLowControlConfiguration() {
     request.setType(AdminRequestType.GET_FLOW_CONTROL);
   }
