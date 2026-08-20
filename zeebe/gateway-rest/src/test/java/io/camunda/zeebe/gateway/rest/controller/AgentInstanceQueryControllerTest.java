@@ -18,6 +18,8 @@ import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceLimits;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceMetrics;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceTool;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.Operation;
@@ -67,7 +69,11 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
           AGENT_DEFINITION_KEY,
           List.of(ELEMENT_INSTANCE_KEY),
           AgentInstanceStatus.COMPLETED,
-          new AgentInstanceDefinition("gpt-4o", "openai", "You are a helpful assistant."),
+          new AgentInstanceDefinition(
+              "gpt-4o",
+              "openai",
+              List.of(
+                  new ContentItem(ContentType.TEXT, "You are a helpful assistant.", null, null))),
           new AgentInstanceMetrics(100L, 200L, 3, 5),
           new AgentInstanceLimits(10000L, 10, 50),
           List.of(new AgentInstanceTool("search", "Search the web", "searchElement")),
@@ -94,7 +100,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
             "definition": {
               "model": "gpt-4o",
               "provider": "openai",
-              "systemPrompt": "You are a helpful assistant."
+              "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
             },
             "metrics": {
               "inputTokens": 100,
@@ -181,7 +187,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
               "definition": {
                 "model": "gpt-4o",
                 "provider": "openai",
-                "systemPrompt": "You are a helpful assistant."
+                "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
               },
               "metrics": {
                 "inputTokens": 100,
