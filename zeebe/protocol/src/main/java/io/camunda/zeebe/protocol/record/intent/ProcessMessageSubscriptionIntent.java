@@ -27,7 +27,14 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
   DELETE((short) 6),
   DELETED((short) 7),
 
-  MIGRATED((short) 8);
+  MIGRATED((short) 8),
+
+  /**
+   * The target process instance is suspended (or resuming); the catch element was not activated and
+   * the process-instance-side subscription stays {@code OPENED} so it can correlate again after
+   * resume.
+   */
+  CORRELATION_DEFERRED((short) 9);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -55,6 +62,7 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
       case DELETING:
       case DELETED:
       case MIGRATED:
+      case CORRELATION_DEFERRED:
         return true;
       default:
         return false;
@@ -81,6 +89,8 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
         return DELETED;
       case 8:
         return MIGRATED;
+      case 9:
+        return CORRELATION_DEFERRED;
       default:
         return Intent.UNKNOWN;
     }
