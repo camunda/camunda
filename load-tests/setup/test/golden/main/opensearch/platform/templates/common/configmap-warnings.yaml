@@ -17,24 +17,6 @@ metadata:
     {}
 data:
   warnings: |-
-    [camunda][warning] DEPRECATION: values.yaml is using legacy option 'global.opensearch.enabled'. This option is deprecated and will be removed in a future version. Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).enabled'. or for optimize: 'optimize.database.(elasticsearch|opensearch).enabled'.
-    
-      
-    
-      
-    
-      
-    
-      
-        
-        
-        
-        
-        
-        
-        
-        
-        
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
         
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.minimumAge" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
