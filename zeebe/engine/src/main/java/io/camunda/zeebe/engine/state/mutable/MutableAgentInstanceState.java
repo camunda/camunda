@@ -26,4 +26,13 @@ public interface MutableAgentInstanceState extends AgentInstanceState {
    * locate the secondary index entry, avoiding an extra state lookup.
    */
   void delete(long agentInstanceKey, AgentInstanceRecord record);
+
+  /** Inserts or overwrites the committed configuration snapshot for {@code agentInstanceKey}. */
+  void putCommittedSnapshot(long agentInstanceKey, AgentInstanceRecord record);
+
+  /**
+   * Deletes the committed configuration snapshot for {@code agentInstanceKey}, if any. No-op if
+   * none exists.
+   */
+  void deleteCommittedSnapshot(long agentInstanceKey);
 }

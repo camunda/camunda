@@ -233,4 +233,63 @@ public final class AgentInstanceStateTest {
     // given / when / then
     assertThatCode(() -> agentInstanceState.delete(9999L)).doesNotThrowAnyException();
   }
+
+  @Test
+  public void shouldStoreAndLoadCommittedSnapshot() {
+    // given
+    final long key = 4242L;
+    final var snapshot =
+        new AgentInstanceRecord().setAgentInstanceKey(key).setElementInstanceKey(1234L);
+
+    // when
+    agentInstanceState.putCommittedSnapshot(key, snapshot);
+
+    // then
+    final var loaded = agentInstanceState.getCommittedSnapshot(key);
+    assertThat(loaded).isNotNull();
+    assertThat(loaded.getAgentInstanceKey()).isEqualTo(key);
+    assertThat(loaded.getElementInstanceKey()).isEqualTo(1234L);
+  }
+
+  @Test
+  public void shouldReturnNullForMissingCommittedSnapshot() {
+    assertThat(agentInstanceState.getCommittedSnapshot(9999L)).isNull();
+  }
+
+  @Test
+  public void shouldOverwriteCommittedSnapshotOnPut() {
+    // given
+    final long key = 4242L;
+    agentInstanceState.putCommittedSnapshot(
+        key, new AgentInstanceRecord().setAgentInstanceKey(key).setElementInstanceKey(1234L));
+
+    // when
+    agentInstanceState.putCommittedSnapshot(
+        key, new AgentInstanceRecord().setAgentInstanceKey(key).setElementInstanceKey(5678L));
+
+    // then
+    final var loaded = agentInstanceState.getCommittedSnapshot(key);
+    assertThat(loaded.getElementInstanceKey()).isEqualTo(5678L);
+  }
+
+  @Test
+  public void shouldDeleteCommittedSnapshot() {
+    // given
+    final long key = 4242L;
+    agentInstanceState.putCommittedSnapshot(
+        key, new AgentInstanceRecord().setAgentInstanceKey(key).setElementInstanceKey(1234L));
+
+    // when
+    agentInstanceState.deleteCommittedSnapshot(key);
+
+    // then
+    assertThat(agentInstanceState.getCommittedSnapshot(key)).isNull();
+  }
+
+  @Test
+  public void shouldNoOpOnDeleteOfMissingCommittedSnapshot() {
+    // given / when / then
+    assertThatCode(() -> agentInstanceState.deleteCommittedSnapshot(9999L))
+        .doesNotThrowAnyException();
+  }
 }

@@ -30,4 +30,10 @@ public interface AgentInstanceState {
    *     or {@code null} if none remain
    */
   Long getFirstAgentInstanceKeyByProcessInstanceKey(long processInstanceKey);
+
+  /**
+   * @return the last committed configuration snapshot for the given agent instance, or {@code null}
+   *     if none exists
+   */
+  AgentInstanceRecord getCommittedSnapshot(long agentInstanceKey);
 }
