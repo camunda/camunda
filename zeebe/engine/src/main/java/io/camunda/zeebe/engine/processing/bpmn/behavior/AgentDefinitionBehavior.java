@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class AgentDefinitionBehavior {
 
@@ -26,19 +25,24 @@ public final class AgentDefinitionBehavior {
    * Answers whether the given job belongs to an agent, i.e. whether the job's element was marked as
    * an agent definition at deployment time. It is cheap enough to call on every job cancellation,
    * completion, and thrown error.
+   *
+   * <p>A job's element id does not always refer to a real BPMN element: for example, {@link
+   * io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor} overwrites it with a synthetic
+   * marker when an error is thrown but not caught, and a deployment can be deleted while one of its
+   * jobs is still in flight. Neither case can have an agent definition, so both resolve to {@code
+   * false} rather than raising.
    */
   public boolean belongsToAgent(final JobRecord job) {
     final var process =
         processState.getProcessByKeyAndTenant(job.getProcessDefinitionKey(), job.getTenantId());
+    if (process == null) {
+      return false;
+    }
 
     final ExecutableFlowElement element =
         process.getProcess().getElementById(job.getElementIdBuffer());
     if (element == null) {
-      throw new IllegalStateException(
-          "Expected element with id '%s' to exist in process with key '%d', but it did not"
-              .formatted(
-                  BufferUtil.bufferAsString(job.getElementIdBuffer()),
-                  job.getProcessDefinitionKey()));
+      return false;
     }
 
     // A multi-instance body and its inner activity share the same element id, but only the inner
