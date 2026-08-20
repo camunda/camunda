@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.agentinstance;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
@@ -356,8 +357,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
+    @JsonIgnore
     public List<AgentHistoryRecordValue.AgentHistoryMessageContentValue> getSystemPrompt() {
-      // Optimize does not use the system prompt content, so it is never populated here.
+      // Optimize does not use the system prompt content, so it is never populated here. Ignored
+      // by Jackson so deserializing a real record with a non-empty array doesn't try to mutate
+      // this immutable list.
       return List.of();
     }
 
