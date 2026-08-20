@@ -510,6 +510,42 @@ public class ProcessDefinitionInstanceStatisticsIT {
     assertThat(countForProcId).isEqualTo(1);
   }
 
+  // Reproduction test for https://github.com/camunda/camunda/issues/51617
+  @Test
+  void shouldReturnHasMultipleVersionsTrueWhenOnlyLatestVersionHasInstances() {
+    // given
+    final String bpmnProcessId = "multi_version_no_v1_instances_proc";
+    final String v1Name = "Multi Version Bug V1";
+    final String v2Name = "Multi Version Bug V2";
+
+    deployServiceTaskProcess(camundaClient, bpmnProcessId, v1Name, "3");
+    final var deploymentV2 = deployServiceTaskProcess(camundaClient, bpmnProcessId, v2Name, "3");
+    final long v2Key = deploymentV2.getProcesses().getFirst().getProcessDefinitionKey();
+
+    // Start one instance on V2 only
+    startInstance(v2Key);
+
+    waitForProcessInstances(
+        camundaClient, f -> f.processDefinitionKey(v2Key).state(ProcessInstanceState.ACTIVE), 1);
+
+    // when
+    final var result = camundaClient.newProcessDefinitionInstanceStatisticsRequest().send().join();
+
+    // then
+    final var stats =
+        result.items().stream()
+            .filter(s -> Objects.equals(s.getProcessDefinitionId(), bpmnProcessId))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "Expected statistics entry for bpmnProcessId=" + bpmnProcessId));
+
+    // Two versions are deployed, even though only V2 has active instances
+    assertThat(stats.getHasMultipleVersions()).isTrue();
+    assertThat(stats.getActiveInstancesWithoutIncidentCount()).isOne();
+  }
+
   @Test
   void shouldSupportSortingAndPagination() {
     //
