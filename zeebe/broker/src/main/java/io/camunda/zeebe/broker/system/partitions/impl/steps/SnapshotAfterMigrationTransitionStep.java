@@ -38,7 +38,8 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
             new MigrationSnapshotDirector(
                 context.getSnapshotDirector(),
                 context.getConcurrencyControl(),
-                context.getComponentHealthMonitor());
+                context.getComponentHealthMonitor(),
+                context::markMigrationSnapshotTaken);
       }
     }
     return CompletableActorFuture.completed();

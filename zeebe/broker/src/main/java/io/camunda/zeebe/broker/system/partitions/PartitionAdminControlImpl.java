@@ -25,6 +25,7 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   private final Supplier<PartitionProcessingState> partitionProcessingStateSupplier;
   private final Supplier<ZeebeDb> zeebeDbSupplier;
   private final Supplier<LogStream> logStreamSupplier;
+  private final Supplier<Boolean> migrationSnapshotTakenSupplier;
 
   public PartitionAdminControlImpl(
       final Supplier<StreamProcessor> streamProcessorSupplier,
@@ -32,13 +33,15 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
       final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier,
       final Supplier<PartitionProcessingState> partitionProcessingStateSupplier,
       final Supplier<ZeebeDb> zeebeDbSupplier,
-      final Supplier<LogStream> logStreamSupplier) {
+      final Supplier<LogStream> logStreamSupplier,
+      final Supplier<Boolean> migrationSnapshotTakenSupplier) {
     this.streamProcessorSupplier = streamProcessorSupplier;
     this.exporterDirectorSupplier = exporterDirectorSupplier;
     this.snapshotDirectorSupplier = snapshotDirectorSupplier;
     this.partitionProcessingStateSupplier = partitionProcessingStateSupplier;
     this.zeebeDbSupplier = zeebeDbSupplier;
     this.logStreamSupplier = logStreamSupplier;
+    this.migrationSnapshotTakenSupplier = migrationSnapshotTakenSupplier;
   }
 
   @Override
@@ -104,5 +107,10 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   @Override
   public ExporterPhase getExporterPhase() {
     return partitionProcessingStateSupplier.get().getExporterPhase();
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTakenSupplier.get();
   }
 }

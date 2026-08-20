@@ -11,6 +11,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -18,10 +19,8 @@ import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
@@ -40,15 +39,18 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private final ConcurrencyControl control;
   private final HealthMonitor healthMonitor;
   private final RetryState retryState = new RetryState();
+  private final Runnable onSnapshotTaken;
   private volatile boolean closed = false;
 
   public MigrationSnapshotDirector(
       final AsyncSnapshotDirector asyncSnapshotDirector,
       final ConcurrencyControl control,
-      final HealthMonitor healthMonitor) {
+      final HealthMonitor healthMonitor,
+      final Runnable onSnapshotTaken) {
     snapshotDirector = asyncSnapshotDirector;
     this.control = control;
     this.healthMonitor = healthMonitor;
+    this.onSnapshotTaken = onSnapshotTaken;
     healthReport = snapshotNotTaken();
     healthMonitor.registerComponent(this);
     LOG.debug("Initialized migration snapshot director. Scheduling snapshot");
@@ -140,10 +142,22 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
     }
   }
 
+  /**
+   * Only a closed state store means retrying can never help -- everything else (an IOException, a
+   * transient race during the rapid role-transition churn at broker bootstrap, or any other error)
+   * should keep retrying with backoff instead of giving up permanently, the same way the periodic
+   * snapshot mechanism this wraps never gives up on its own scheduled attempts either.
+   */
   private boolean isRecoverableError(final Throwable error) {
-    return error == null
-        || (error instanceof IOException
-            || (error instanceof CompletionException && error.getCause() instanceof IOException));
+    if (error == null) {
+      return true;
+    }
+    for (var cause = error; cause != null; cause = cause.getCause()) {
+      if (cause instanceof StateClosedException) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private ActorFuture<Void> forceSnapshot() {
@@ -158,6 +172,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                   LOG.debug("Snapshot taken after migrations: {}", snapshot.getId());
                   healthReport = HealthReport.healthy(this);
                   notifyListeners();
+                  onSnapshotTaken.run();
                 }
                 runningSnapshot = null;
                 return error != null
