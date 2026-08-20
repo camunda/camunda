@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -34,5 +35,13 @@ public class MappingMetadataRepositoryES implements MappingMetadataRepository {
         .filter(mapping -> isImportIndex == mapping.isImportIndex())
         .map(esClient.getIndexNameService()::getOptimizeIndexAliasForIndex)
         .toArray(String[]::new);
+  }
+
+  @Override
+  public Set<String> getProcessDefinitionKeysWithInstanceIndex() {
+    final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+    return Set.copyOf(
+        mappingUtil.retrieveProcessInstanceIndexIdentifiers(
+            esClient.getIndexNameService().getIndexPrefix()));
   }
 }

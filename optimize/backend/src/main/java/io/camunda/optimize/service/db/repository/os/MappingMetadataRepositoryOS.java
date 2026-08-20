@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -34,5 +35,13 @@ public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
         .filter(mapping -> isImportIndex == mapping.isImportIndex())
         .map(osClient.getIndexNameService()::getOptimizeIndexAliasForIndex)
         .toArray(String[]::new);
+  }
+
+  @Override
+  public Set<String> getProcessDefinitionKeysWithInstanceIndex() {
+    final MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
+    return Set.copyOf(
+        mappingUtil.retrieveProcessInstanceIndexIdentifiers(
+            osClient.getIndexNameService().getIndexPrefix()));
   }
 }
