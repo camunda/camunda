@@ -17,7 +17,9 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceToolValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -55,7 +57,12 @@ class AgentInstanceCreatedHandlerTest {
                 b ->
                     b.withModel("claude-sonnet-4-5")
                         .withProvider("anthropic")
-                        .withSystemPrompt("You are helping Jane Doe with her order."))
+                        .withSystemPrompt(
+                            java.util.List.of(
+                                ImmutableAgentHistoryMessageContentValue.builder()
+                                    .withContentType(AgentHistoryContentType.TEXT)
+                                    .withText("You are helping Jane Doe with her order.")
+                                    .build())))
             .withTools(
                 java.util.List.of(
                     ImmutableAgentInstanceToolValue.builder()
