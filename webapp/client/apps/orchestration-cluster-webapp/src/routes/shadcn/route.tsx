@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {C4Provider} from '@camunda/design-system';
-import '@camunda/design-system/styles.css';
 import appCss from '#/shared/theme/tailwind.css?url';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
 
 const Route = createFileRoute('/shadcn')({
 	component: RouteComponent,
@@ -21,9 +20,9 @@ const Route = createFileRoute('/shadcn')({
 
 function RouteComponent() {
 	return (
-		<C4Provider>
+		<ThemeProvider>
 			<Outlet />
-		</C4Provider>
+		</ThemeProvider>
 	);
 }
 

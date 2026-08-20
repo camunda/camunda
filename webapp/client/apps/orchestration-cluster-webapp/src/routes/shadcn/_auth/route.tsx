@@ -7,9 +7,10 @@
  */
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
-import {SessionWatcher} from '#/shared/auth/components/SessionWatcher';
+import {SessionWatcher} from '#/shared/auth/shadcn.components/SessionWatcher';
 import {queries} from '#/shared/http/queries';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {Header} from '#/shared/header/shadcn.components/Header';
 
 export const Route = createFileRoute('/shadcn/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -36,7 +37,9 @@ export const Route = createFileRoute('/shadcn/_auth')({
 		return (
 			<>
 				<SessionWatcher />
-				<Outlet />
+				<Header>
+					<Outlet />
+				</Header>
 			</>
 		);
 	},
