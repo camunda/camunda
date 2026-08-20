@@ -20,6 +20,7 @@ import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awai
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitNoStreamRegistered;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitResolutionRequested;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.awaitStreamRegistered;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.backtickedSecretReference;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.createProcessInstance;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.createProcessInstances;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.deployProcessWithInput;
@@ -34,6 +35,7 @@ import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.reac
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionFailureStates;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.resolutionWasRequestedFor;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.secretReference;
+import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.uniqueHyphenatedSecretName;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.uniqueSecretName;
 import static io.camunda.zeebe.it.engine.secret.SecretResolutionTestHarness.writeSecret;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -160,6 +162,30 @@ final class SecretResolutionJobActivationIT {
     assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isTrue();
     assertThat(incidentsOf(processInstanceKey)).isEmpty();
     assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldResolveBacktickedHyphenatedSecretReference() {
+    // given - a dashed store name, the shape a Kubernetes secret data key or a GCP secret id
+    // routinely has, referenced the only way FEEL allows: backtick-escaped. The AST detector
+    // applies no charset check, so this authoring form already worked; the test pins it end to end
+    // because nothing else did
+    final String hyphenatedName = uniqueHyphenatedSecretName();
+    final String hyphenatedValue = "value-of-" + hyphenatedName;
+    writeSecret(broker, hyphenatedName, hyphenatedValue);
+    deployProcessWithInput(client, processId, jobType, backtickedSecretReference(hyphenatedName));
+    final long processInstanceKey = createProcessInstance(client, processId);
+    awaitJobKeyOf(processInstanceKey);
+
+    // when
+    final ActivatedJob job = onlyJob(poll().join());
+
+    // then - the dash survives the detector, the job record, the store lookup and the injector
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, hyphenatedValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(hyphenatedName, job.getKey())).isTrue();
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(hyphenatedValue);
   }
 
   @Test
@@ -457,6 +483,28 @@ final class SecretResolutionJobActivationIT {
     awaitActivationExported(jobType, job.getKey());
     assertThat(resolutionWasRequestedFor(secretName, job.getKey())).isTrue();
     assertNoRecordCarriesValue(secretValue);
+  }
+
+  @Test
+  void shouldActivateWithADashedSecretReachedThroughAClusterVariable() {
+    // given - a dashed store name reached through a cluster variable. This is the one path that
+    // finds a reference by scanning raw text (ClusterVariableSecretReferenceScanner) rather than by
+    // walking a parsed FEEL AST, so it is the path the reference charset actually gates
+    final String dashedName = uniqueHyphenatedSecretName();
+    final String dashedValue = "value-of-" + dashedName;
+    writeSecret(broker, dashedName, dashedValue);
+    createSecretReferenceClusterVariable(dashedName);
+    deployProcessReadingTheClusterVariable();
+    final long processInstanceKey = createProcessInstance(client, processId);
+
+    // then - the whole dashed name is captured and resolved. The narrower charset stopped the name
+    // at the dash, which requested an unrelated secret when one of that shorter name existed
+    final ActivatedJob job = onlyJob(poll().join());
+    assertThat(job.getVariablesAsMap()).containsEntry(INPUT_TARGET, dashedValue);
+    awaitActivationExported(jobType, job.getKey());
+    assertThat(resolutionWasRequestedFor(dashedName, job.getKey())).isTrue();
+    assertThat(incidentsOf(processInstanceKey)).isEmpty();
+    assertNoRecordCarriesValue(dashedValue);
   }
 
   @Test

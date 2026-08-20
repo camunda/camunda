@@ -40,6 +40,11 @@ import scala.jdk.javaapi.CollectionConverters;
  *       qualified name and is deliberately not treated as a reference.
  * </ul>
  *
+ * <p>A name carrying a character FEEL does not allow in a bare identifier — a dash above all — has
+ * to be backtick-escaped by the author: {@code =camunda.secrets.`db-password`}. Written bare,
+ * {@code =camunda.secrets.db-password} is a subtraction to FEEL, so it reports a reference named
+ * {@code db} and then fails at evaluation.
+ *
  * <p>Known gaps (an undetected or less-specific reference is simply not resolved, so nothing
  * leaks): a {@code camunda} bound by an iterator/parameter/context key still reports the reference;
  * a reference inside a FEEL list literal (e.g. {@code =[camunda.secrets.token]}) is reported at the
@@ -71,9 +76,23 @@ public record SecretReference(String storeId, String name) {
    * io.camunda.zeebe.engine.processing.deployment.model.validation.SecretReferenceLiteralValidator}
    * and {@link
    * io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableSecretReferenceScanner}).
+   *
+   * <p>The name segment is ASCII alphanumerics, {@code _} and {@code -}. The dash is in because the
+   * backing stores routinely hold dashed names — a Kubernetes secret data key is {@code
+   * [-._a-zA-Z0-9]+}, a GCP secret id {@code [a-zA-Z0-9_-]+}. It is not anchored: a leading or
+   * trailing dash is a legal store name too, and rejecting one here would move the
+   * store-versus-reference mismatch rather than close it.
+   *
+   * <p>Narrower than what {@link #parse} accepts, which applies no charset check at all and takes
+   * whatever feel-scala reports as an identifier — unicode letters, {@code $}, and anything at all
+   * once backtick-escaped, {@code =camunda.secrets.`tls.crt`} included. Those names are detected
+   * and resolved here while the {@code /v2/secrets} endpoints reject them. A dot cannot join this
+   * charset without this raw-text pattern swallowing a trailing path access ({@code
+   * camunda.secrets.token.length}), and a non-ASCII name first needs a decision on how it is
+   * normalized before it becomes an authorization resource id.
    */
   public static final Pattern REFERENCE_PATTERN =
-      Pattern.compile(Pattern.quote(PREFIX) + "[\\p{Alnum}_]+");
+      Pattern.compile(Pattern.quote(PREFIX) + "[\\p{Alnum}_-]+");
 
   /** Segments a {@code camunda.secrets.<name>} reference has: root, namespace and name. */
   private static final int REFERENCE_SEGMENT_COUNT = 3;

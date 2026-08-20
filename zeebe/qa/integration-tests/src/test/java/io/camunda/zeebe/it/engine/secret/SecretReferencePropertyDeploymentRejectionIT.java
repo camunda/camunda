@@ -48,7 +48,7 @@ final class SecretReferencePropertyDeploymentRejectionIT {
   private final String processId = Strings.newRandomValidBpmnId();
   private final String jobType = Strings.newRandomValidBpmnId();
   private final String propertyName = "authToken";
-  // a FEEL reference is a path, so the name has to be a single alphanumeric segment
+  // a FEEL reference is a path, so the name is kept to a bare identifier that needs no escaping
   private final String secretName = "s" + UUID.randomUUID().toString().replace("-", "");
   private final String secretReference = "camunda.secrets." + secretName;
 

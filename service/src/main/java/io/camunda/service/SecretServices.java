@@ -69,17 +69,36 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    */
   public static final int MAX_REFERENCE_LENGTH = 256;
 
+  /**
+   * The {@code <name>} segment of a reference: a single, non-empty token of alphanumerics, {@code
+   * _} and {@code -}. The charset is what keeps the FEEL expression an author writes, the
+   * authorization resource id a permission is granted on, and the store lookup key one identifier —
+   * the same string on all three surfaces, never one of them escaped or rewritten.
+   *
+   * <p>Writing that string in FEEL is a separate matter: a dash is in the charset, but FEEL reads a
+   * bare dash as the minus operator, so a dashed name is only ever authored backtick-escaped
+   * ({@code =camunda.secrets.`db-password`}). It is in regardless, because the backing stores
+   * routinely hold dashed names and leaving it out made {@code db-password} storable and listable
+   * but never resolvable. A dot is out because unquoted it separates path segments — {@code
+   * camunda.secrets.tls.crt} is four FEEL segments rather than a reference — and the raw-text
+   * scanners that share this charset cannot tell such a name from a trailing path access.
+   *
+   * <p>Not an injection boundary, and must not be narrowed as if it were: every authorization
+   * lookup matches the resource id exactly (a terms query on ES/OS, a parameterized {@code IN} on
+   * RDBMS, {@code Set.contains} here) rather than by pattern, and the charset has always admitted
+   * {@code _}, which is a SQL {@code LIKE} single-character wildcard.
+   *
+   * <p>Kept identical to the name segment of {@code SecretReference.REFERENCE_PATTERN} in {@code
+   * zeebe/engine}, which this module cannot depend on, so that both subsystems agree on what is a
+   * valid reference name. Public for the same reason {@link #MAX_REFERENCE_LENGTH} is: {@code
+   * SecretReferenceCharsetSyncTest}, in the one module with both artifacts on its classpath, is
+   * what holds the two definitions together.
+   */
+  public static final Pattern REFERENCE_NAME_PATTERN = Pattern.compile("[\\p{Alnum}_-]+");
+
   private static final Logger LOG = LoggerFactory.getLogger(SecretServices.class);
 
   private static final String REFERENCE_PREFIX = "camunda.secrets.";
-
-  // The <name> segment of a reference: a single, non-empty token of alphanumeric characters and
-  // underscores. Deliberately narrow — the reference is used as an authorization resource id and a
-  // store lookup key, so pattern/glob characters ('*', '%'), whitespace and dots must never reach
-  // either. Kept identical to the engine detector's single-segment camunda.secrets.<name> pattern
-  // (see SecretReferenceLiteralValidator) so both subsystems agree on what counts as a valid
-  // reference name for the same syntax.
-  private static final Pattern REFERENCE_NAME_PATTERN = Pattern.compile("[\\p{Alnum}_]+");
 
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
@@ -349,6 +368,11 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * Enumerates the references of every configured store, sorted and without duplicates. A store's
    * {@code list()} deliberately bypasses what it has cached: that is the values read so far, which
    * is not the tenant's set of secrets.
+   *
+   * <p>A listed reference is usable verbatim with {@link #resolve}, but not always in a FEEL
+   * expression: a name FEEL does not accept as a bare identifier — a dashed one above all — has to
+   * be backtick-escaped there, {@code =camunda.secrets.`db-password`}. The endpoint's description
+   * in {@code secrets.yaml} says so, since the caller cannot see this method.
    */
   private List<String> listFromStores() {
     final var references = new TreeSet<String>();
@@ -358,10 +382,10 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
           if (isResolvableName(name)) {
             references.add(REFERENCE_PREFIX + name);
           } else {
-            // A store may allow names this API cannot: a reference is a single
-            // camunda.secrets.<name> segment, so a name carrying a dot or a dash could neither be
-            // resolved by resolve() nor written in a BPMN expression or granted a permission.
-            // Listing it would only offer the caller a reference every other surface rejects.
+            // A store may allow names this API cannot: a name carrying a dot is outside the
+            // reference charset resolve() accepts and cannot be granted a permission on either,
+            // so listing it would only offer the caller a reference every other surface here
+            // rejects. See REFERENCE_NAME_PATTERN for why the charset stops where it does.
             LOG.debug(
                 "Omitting secret '{}' of store '{}' from the listing: its name cannot form a valid"
                     + " secret reference",
