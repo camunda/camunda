@@ -79,7 +79,12 @@ public class SnapshotApiRequestHandler
       final var request = requestReader.getRequest();
       return switch (request) {
         case final GetSnapshotChunk snapshotChunkRequest ->
-            handleGet(snapshotChunkRequest, partitionId, responseWriter, errorWriter, service);
+            handleGet(
+                snapshotChunkRequest,
+                registration.partitionId(),
+                responseWriter,
+                errorWriter,
+                service);
         case final DeleteSnapshotForBootstrapRequest deleteRequest ->
             handleDelete(partitionId, responseWriter, errorWriter, service);
       };
@@ -110,10 +115,11 @@ public class SnapshotApiRequestHandler
 
   private ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleGet(
       final GetSnapshotChunk request,
-      final int partitionId,
+      final PartitionId fullPartitionId,
       final SnapshotApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter,
       final SnapshotTransferService service) {
+    final int partitionId = fullPartitionId.number();
     if (request.lastChunkName().isPresent() && request.snapshotId().isPresent()) {
       return service
           .getNextChunk(
@@ -131,7 +137,7 @@ public class SnapshotApiRequestHandler
       LOG.atLevel(Level.DEBUG)
           .addKeyValue("transferId", request.transferId())
           .log("Received request to get the latest snapshot for partition {}", partitionId);
-      return getLastProcessedPositionRequired(request.transferId())
+      return getLastProcessedPositionRequired(request.transferId(), fullPartitionId.group())
           .andThen(
               lastProcessedPosition -> {
                 LOG.atLevel(Level.DEBUG)
@@ -170,10 +176,13 @@ public class SnapshotApiRequestHandler
     super.close();
   }
 
-  private ActorFuture<Long> getLastProcessedPositionRequired(final UUID transferId) {
+  private ActorFuture<Long> getLastProcessedPositionRequired(
+      final UUID transferId, final String partitionGroup) {
     final ActorFuture<Long> lastProcessedPosition = actor.createFuture();
+    final var request = new GetScaleUpProgress();
+    request.setPartitionGroup(partitionGroup);
     brokerClient
-        .sendRequestWithRetry(new GetScaleUpProgress())
+        .sendRequestWithRetry(request)
         .thenApplyAsync(
             r -> {
               final var response = r.getResponseOrThrow();
