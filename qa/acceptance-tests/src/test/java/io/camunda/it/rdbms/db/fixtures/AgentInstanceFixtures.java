@@ -12,6 +12,8 @@ import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,8 @@ public final class AgentInstanceFixtures extends CommonFixtures {
             .status(AgentInstanceStatus.IDLE)
             .model("gpt-4o")
             .provider("openai")
-            .systemPrompt("You are an assistant.")
+            .systemPromptItems(
+                List.of(new ContentItem(ContentType.TEXT, "You are an assistant.", null, null)))
             .maxTokens(10000L)
             .maxModelCalls(100)
             .maxToolCalls(50)

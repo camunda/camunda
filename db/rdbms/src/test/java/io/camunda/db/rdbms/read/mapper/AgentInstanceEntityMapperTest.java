@@ -13,6 +13,8 @@ import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,8 @@ class AgentInstanceEntityMapperTest {
               key.status(AgentInstanceStatus.THINKING);
               key.model("gpt-4");
               key.provider("openai");
-              key.systemPrompt("You are an assistant.");
+              key.systemPromptItems(
+                  List.of(new ContentItem(ContentType.TEXT, "You are an assistant.", null, null)));
               key.maxTokens(10000L);
               key.maxModelCalls(100);
               key.maxToolCalls(50);
@@ -72,7 +75,8 @@ class AgentInstanceEntityMapperTest {
     assertThat(entity.status()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(entity.definition().model()).isEqualTo("gpt-4");
     assertThat(entity.definition().provider()).isEqualTo("openai");
-    assertThat(entity.definition().systemPrompt()).isEqualTo("You are an assistant.");
+    assertThat(entity.definition().systemPrompt())
+        .containsExactly(new ContentItem(ContentType.TEXT, "You are an assistant.", null, null));
     assertThat(entity.limits().maxTokens()).isEqualTo(10000L);
     assertThat(entity.limits().maxModelCalls()).isEqualTo(100);
     assertThat(entity.limits().maxToolCalls()).isEqualTo(50);
@@ -105,7 +109,7 @@ class AgentInstanceEntityMapperTest {
               m.status(AgentInstanceStatus.IDLE);
               m.model("gpt");
               m.provider("openai");
-              m.systemPrompt("s");
+              m.systemPromptItems(List.of(new ContentItem(ContentType.TEXT, "s", null, null)));
               m.creationDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
               m.lastUpdatedDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
               m.toolValues(null);
