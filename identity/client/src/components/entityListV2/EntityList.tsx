@@ -363,7 +363,7 @@ function truncateCell(value: ReactNode, maxLength: number): ReactNode {
         >{`${text.substring(0, maxLength)}…`}</button>
       </TooltipTrigger>
       {/* DS ships no width cap on tooltip content; long text would else stretch to the viewport edge. */}
-      <TooltipContent className="max-w-[28rem]">{text}</TooltipContent>
+      <TooltipContent className="max-w-md">{text}</TooltipContent>
     </Tooltip>
   );
 }
