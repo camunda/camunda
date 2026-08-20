@@ -43,7 +43,6 @@ public class AuditLogAgentIT {
           .withAuthenticatedAccess();
 
   private static final String AGENT_ELEMENT_ID = "test_agent_ahsp";
-  private static CamundaClient adminClient;
 
   @BeforeAll
   static void setup(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
