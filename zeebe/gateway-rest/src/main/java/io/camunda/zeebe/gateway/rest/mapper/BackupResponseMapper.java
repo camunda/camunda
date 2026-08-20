@@ -312,6 +312,7 @@ public final class BackupResponseMapper {
     return switch (outcome) {
       case TRIGGERED -> ClusterRuntimeBackupTakeOutcome.TRIGGERED;
       case FAILED -> ClusterRuntimeBackupTakeOutcome.FAILED;
+      case UNKNOWN -> ClusterRuntimeBackupTakeOutcome.UNKNOWN;
     };
   }
 

@@ -28,6 +28,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
@@ -66,6 +67,11 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class ClusterRuntimeBackupServices {
 
+  /**
+   * The {@code BackupIdPrefix} schema of the REST contract, enforced before any tenant is asked.
+   */
+  private static final Pattern BACKUP_ID_PREFIX = Pattern.compile("^\\d*\\*$");
+
   private final SortedMap<String, PhysicalTenantBackupPort> portsByPhysicalTenant;
 
   public ClusterRuntimeBackupServices(final Collection<PhysicalTenantBackupPort> ports) {
@@ -99,7 +105,7 @@ public final class ClusterRuntimeBackupServices {
           final var targets = targets(physicalTenantId);
           requireBackupIdMatchesEveryTenantsMode(targets, backupId);
           return onEveryTenant(targets, target -> take(target, backupId))
-              .thenApply(ClusterRuntimeBackupServices::toTaken);
+              .thenApply(outcomes -> toTaken(outcomes, backupId));
         });
   }
 
@@ -115,6 +121,7 @@ public final class ClusterRuntimeBackupServices {
     return validated(
         () -> {
           final var targets = targets(physicalTenantId);
+          requirePositiveBackupId(backupId);
           return onEveryTenant(
                   targets, target -> target.api().getStatus(target.physicalTenantId(), backupId))
               .thenApply(PhysicalTenantFanOut::requireEveryTenant)
@@ -160,11 +167,13 @@ public final class ClusterRuntimeBackupServices {
   public CompletableFuture<Void> deleteBackup(
       final @Nullable String physicalTenantId, final long backupId) {
     return validated(
-        () ->
-            onEveryTenant(
-                    targets(physicalTenantId),
-                    target -> target.api().deleteBackup(target.physicalTenantId(), backupId))
-                .thenApply(ClusterRuntimeBackupServices::everyTenantSucceeded));
+        () -> {
+          final var targets = targets(physicalTenantId);
+          requirePositiveBackupId(backupId);
+          return onEveryTenant(
+                  targets, target -> target.api().deleteBackup(target.physicalTenantId(), backupId))
+              .thenApply(ClusterRuntimeBackupServices::everyTenantSucceeded);
+        });
   }
 
   /**
@@ -271,6 +280,15 @@ public final class ClusterRuntimeBackupServices {
               .formatted(generatingIds),
           Status.INVALID_ARGUMENT);
     }
+    requirePositiveBackupId(backupId);
+  }
+
+  /**
+   * Rejects an id the {@code BackupId} schema does not allow, so it never reaches a tenant. Without
+   * this, {@code 0} and negative ids read back as a 404 — indistinguishable from an id that is
+   * merely absent, when the request could never have been served at all.
+   */
+  private static void requirePositiveBackupId(final long backupId) {
     if (backupId <= 0) {
       throw new ServiceException(
           "A backupId must be > 0, but was %d".formatted(backupId), Status.INVALID_ARGUMENT);
@@ -286,14 +304,20 @@ public final class ClusterRuntimeBackupServices {
         .toList();
   }
 
-  /** Mirrors {@link RuntimeBackupServices#listBackups}'s prefix contract. */
+  /**
+   * Enforces the whole shape the {@code BackupIdPrefix} schema publishes — digits followed by a
+   * single wildcard — not merely that it ends in one. Backup ids are numbers, so a prefix like
+   * {@code abc*} can never match anything: answering the documented 400 tells the caller its
+   * request was malformed, where passing it to the store returns an empty list that reads as "no
+   * backups".
+   */
   private static String requireValidPrefix(final @Nullable String prefix) {
     if (prefix == null) {
       return BackupApi.WILDCARD;
     }
-    if (!prefix.endsWith(BackupApi.WILDCARD)) {
+    if (!BACKUP_ID_PREFIX.matcher(prefix).matches()) {
       throw new ServiceException(
-          "Expected a prefix ending with '*', but got '%s'".formatted(prefix),
+          "Expected a prefix of digits ending with a single '*', but got '%s'".formatted(prefix),
           Status.INVALID_ARGUMENT);
     }
     return prefix;
@@ -354,23 +378,10 @@ public final class ClusterRuntimeBackupServices {
     }
   }
 
-  private static ClusterRuntimeBackupTaken toTaken(final List<Outcome<Long>> outcomes) {
+  private static ClusterRuntimeBackupTaken toTaken(
+      final List<Outcome<Long>> outcomes, final @Nullable Long requestedBackupId) {
     final var perTenant =
-        outcomes.stream()
-            .map(
-                outcome ->
-                    outcome.isFailure()
-                        ? new PhysicalTenantRuntimeBackupTaken(
-                            outcome.physicalTenantId(),
-                            TakeOutcome.FAILED,
-                            null,
-                            outcome.cause().getMessage())
-                        : new PhysicalTenantRuntimeBackupTaken(
-                            outcome.physicalTenantId(),
-                            TakeOutcome.TRIGGERED,
-                            outcome.requireValue(),
-                            null))
-            .toList();
+        outcomes.stream().map(outcome -> toTenantOutcome(outcome, requestedBackupId)).toList();
     final var failureStatuses =
         outcomes.stream()
             .filter(Outcome::isFailure)
@@ -379,6 +390,36 @@ public final class ClusterRuntimeBackupServices {
     return new ClusterRuntimeBackupTaken(
         perTenant,
         failureStatuses.isEmpty() ? null : PhysicalTenantFanOut.sharedStatus(failureStatuses));
+  }
+
+  /**
+   * Classifies what one physical tenant did with the trigger.
+   *
+   * <p>A failure whose status says the broker may still have accepted the request — the connection
+   * was cut mid-flight, or the gateway timed out waiting — is reported as {@link
+   * TakeOutcome#UNKNOWN} rather than {@code FAILED}, and keeps the requested id. Calling it {@code
+   * FAILED} would tell the operator no backup is running on that tenant, which is the one thing
+   * this response exists not to get wrong: a backup left running under an id nobody was told about
+   * is exactly the silent partial trigger ADR 003 D4 forbids.
+   *
+   * <p>The residual gap is a tenant that generates its own ids: the id is generated behind {@link
+   * BackupApi}, so a call that never completes has none to report and the caller has to list that
+   * tenant's backups to find it. Closing that needs the port to surface the id it attempted.
+   */
+  private static PhysicalTenantRuntimeBackupTaken toTenantOutcome(
+      final Outcome<Long> outcome, final @Nullable Long requestedBackupId) {
+    if (!outcome.isFailure()) {
+      return new PhysicalTenantRuntimeBackupTaken(
+          outcome.physicalTenantId(), TakeOutcome.TRIGGERED, outcome.requireValue(), null);
+    }
+    final var cause = outcome.cause();
+    final var indeterminate =
+        cause.getStatus() == Status.ABORTED || cause.getStatus() == Status.DEADLINE_EXCEEDED;
+    return new PhysicalTenantRuntimeBackupTaken(
+        outcome.physicalTenantId(),
+        indeterminate ? TakeOutcome.UNKNOWN : TakeOutcome.FAILED,
+        indeterminate ? requestedBackupId : null,
+        cause.getMessage());
   }
 
   /**
@@ -526,9 +567,11 @@ public final class ClusterRuntimeBackupServices {
       List<PhysicalTenantRuntimeBackupTaken> physicalTenants, @Nullable Status failureStatus) {}
 
   /**
-   * @param backupId the id the backup is running under — the requested one, or the one the tenant
-   *     generated. Null when the tenant was not triggered.
-   * @param reason why the tenant was not triggered, null when it was
+   * @param backupId the id to monitor or delete this tenant's backup by — the one it is running
+   *     under when {@code TRIGGERED}, or the requested one to check when {@code UNKNOWN}. Null when
+   *     the tenant is known not to be running one, and when an {@code UNKNOWN} tenant generates its
+   *     own ids and never reported the one it generated.
+   * @param reason why the tenant did not report a triggered backup, null when it did
    */
   public record PhysicalTenantRuntimeBackupTaken(
       String physicalTenantId,
@@ -536,13 +579,17 @@ public final class ClusterRuntimeBackupServices {
       @Nullable Long backupId,
       @Nullable String reason) {}
 
-  /**
-   * Whether a physical tenant's backup was triggered. There is no code for a tenant that could not
-   * be reached — an unreachable tenant is a {@code FAILED} one, with the reason saying so.
-   */
+  /** What one physical tenant did with a trigger request. */
   public enum TakeOutcome {
+    /** The backup is running on this tenant. Not that it completed — poll its status for that. */
     TRIGGERED,
-    FAILED
+    /** This tenant is running no backup for this request, and nothing has to be cleaned up. */
+    FAILED,
+    /**
+     * The broker may or may not have accepted the request: the connection was cut mid-flight, or
+     * the gateway timed out waiting. Check this tenant's backups before retrying.
+     */
+    UNKNOWN
   }
 
   /** What each physical tenant reports for one backup id, plus the state folded over them. */

@@ -535,6 +535,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "502":
+          description: >-
+            The connection to the broker was cut mid-flight on at least one targeted physical tenant,
+            which may or may not have accepted the request. Those tenants are reported as `UNKNOWN`
+            with the id to check them under, and the tenants that were triggered keep running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
         "503":
           description: >-
             At least one targeted physical tenant could not be reached. The body lists the tenants
@@ -545,8 +554,9 @@ paths:
                 $ref: '#/components/schemas/ClusterTakeRuntimeBackupResponse'
         "504":
           description: >-
-            The request from gateway to broker timed out on at least one targeted physical tenant.
-            The body lists the tenants that were triggered and keep running.
+            The request from gateway to broker timed out on at least one targeted physical tenant,
+            which may or may not have accepted it. Those tenants are reported as `UNKNOWN` with the id
+            to check them under, and the tenants that were triggered keep running.
           content:
             application/json:
               schema:
@@ -861,6 +871,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClusterRuntimeBackupInfo'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "404":
@@ -914,6 +926,8 @@ paths:
       responses:
         "204":
           description: No targeted physical tenant holds the backup any more.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "404":
@@ -1484,19 +1498,21 @@ components:
           example: default
         backupId:
           description: >-
-            The id of the backup triggered on this physical tenant, which is the requested id, or the
-            id the tenant generated when ids are generated. Null when the tenant was not triggered.
+            The id to monitor or delete this physical tenant's backup by: the id it is running under
+            when `TRIGGERED` — the requested one, or the one the tenant generated when ids are
+            generated — and the requested id to check when `UNKNOWN`. Null when the tenant is known to
+            be running no backup, and also when an `UNKNOWN` tenant generates its own ids, because
+            the id it may be running under was never reported; list that tenant's backups to find it.
           nullable: true
           allOf:
             - $ref: 'backups.yaml#/components/schemas/BackupId'
         outcome:
-          description: Whether the backup was triggered on this physical tenant.
+          description: What this physical tenant did with the trigger.
           allOf:
             - $ref: '#/components/schemas/ClusterRuntimeBackupTakeOutcome'
         reason:
           description: >-
-            Why the backup could not be triggered on this physical tenant. Null when it was
-            triggered.
+            Why this physical tenant reported no triggered backup. Null when it was triggered.
           type: string
           nullable: true
           example: ""
@@ -1504,14 +1520,18 @@ components:
     ClusterRuntimeBackupTakeOutcome:
       title: Cluster Runtime Backup Take Outcome
       description: >-
-        Whether a physical tenant's runtime backup was triggered. `TRIGGERED` says the backup is
-        running, not that it completed — poll `GET /cluster/v2/backups/runtime/{backupId}` for that.
-        A `FAILED` tenant is running no backup for this request, and the ones that were triggered are
-        not rolled back.
+        What a physical tenant did with the trigger. `TRIGGERED` says the backup is running, not that
+        it completed — poll `GET /cluster/v2/backups/runtime/{backupId}` for that. A `FAILED` tenant
+        is running no backup for this request and needs no cleanup. `UNKNOWN` means the broker may or
+        may not have accepted the request — the connection was cut mid-flight, or the gateway timed
+        out waiting — so that tenant's backups have to be checked before retrying; it is reported
+        separately from `FAILED` precisely because calling it failed would claim nothing is running
+        there. Tenants that were triggered are never rolled back.
       type: string
       enum:
         - TRIGGERED
         - FAILED
+        - UNKNOWN
       example: TRIGGERED
 
     ClusterRuntimeBackupInfo:

@@ -182,6 +182,45 @@ public class ClusterRuntimeBackupControllerTest extends RestControllerTest {
   }
 
   /**
+   * A tenant whose broker connection was cut may or may not be running a backup, so it is reported
+   * as `UNKNOWN` with the id to check it under — not as failed, which would claim there is nothing
+   * to clean up.
+   */
+  @Test
+  void takeBackupShouldReportAnIndeterminateTenantAsUnknownWithTheIdToCheck() {
+    // given
+    when(clusterRuntimeBackupServices.takeBackup(isNull(), eq(17L)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ClusterRuntimeBackupTaken(
+                    List.of(
+                        triggered(TENANT_A, 17L),
+                        new PhysicalTenantRuntimeBackupTaken(
+                            TENANT_B, TakeOutcome.UNKNOWN, 17L, "the connection was cut")),
+                    Status.ABORTED)));
+
+    // when - then
+    webClient
+        .post()
+        .uri(BASE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupId\": 17}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.BAD_GATEWAY)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.physicalTenants[1].outcome")
+        .isEqualTo("UNKNOWN")
+        .jsonPath("$.physicalTenants[1].backupId")
+        .isEqualTo(17)
+        .jsonPath("$.physicalTenants[1].reason")
+        .isEqualTo("the connection was cut");
+  }
+
+  /**
    * A rejection that predates the fan-out answers with a problem detail, not the cluster body:
    * there is nothing running for the body to report, and that difference is what tells a caller
    * whether it has backups to clean up.

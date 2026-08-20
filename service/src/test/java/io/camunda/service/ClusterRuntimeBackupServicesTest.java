@@ -37,6 +37,8 @@ import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The contract of the cluster-wide runtime backup endpoints: a partial trigger is reported rather
@@ -249,14 +251,87 @@ public class ClusterRuntimeBackupServicesTest {
         .satisfies(result -> assertThat(result.failureStatus()).isNull());
   }
 
+  /**
+   * A cut connection may or may not have been accepted, so calling it {@code FAILED} would tell the
+   * operator no backup is running where one might be — the silent partial trigger this response
+   * exists to prevent.
+   */
   @Test
-  public void shouldRejectANonPositiveBackupId() {
+  public void shouldReportAnIndeterminateTriggerAsUnknownKeepingTheRequestedId() {
+    // given
+    when(apiA.takeBackup(TENANT_A, 42L)).thenReturn(CompletableFuture.completedFuture(42L));
+    when(apiB.takeBackup(TENANT_B, 42L))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("the connection was cut prematurely", Status.ABORTED)));
+
     // when
-    final var taken = services.takeBackup(null, 0L);
+    final var taken = services.takeBackup(null, 42L);
+
+    // then the tenant is neither triggered nor failed, and carries the id to check it under
+    assertThat(taken)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(
+            result -> {
+              assertThat(result.failureStatus()).isEqualTo(Status.ABORTED);
+              assertThat(result.physicalTenants())
+                  .extracting("physicalTenantId", "outcome", "backupId")
+                  .containsExactly(
+                      tuple(TENANT_A, TakeOutcome.TRIGGERED, 42L),
+                      tuple(TENANT_B, TakeOutcome.UNKNOWN, 42L));
+            });
+  }
+
+  @Test
+  public void shouldReportATimedOutTriggerAsUnknown() {
+    // given a gateway-to-broker timeout, which is equally indeterminate
+    when(apiA.takeBackup(TENANT_A, 42L)).thenReturn(CompletableFuture.completedFuture(42L));
+    when(apiB.takeBackup(TENANT_B, 42L))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("request timed out", Status.DEADLINE_EXCEEDED)));
+
+    // when
+    final var taken = services.takeBackup(null, 42L);
 
     // then
-    assertThat(failureOf(taken).getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
-    verify(apiA, never()).takeBackup(anyString(), anyLong());
+    assertThat(taken)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(
+            result ->
+                assertThat(result.physicalTenants())
+                    .extracting("physicalTenantId", "outcome")
+                    .containsExactly(
+                        tuple(TENANT_A, TakeOutcome.TRIGGERED),
+                        tuple(TENANT_B, TakeOutcome.UNKNOWN)));
+  }
+
+  /**
+   * A definite failure must not carry an id: reporting one would send the operator looking for a
+   * backup that is certainly not there.
+   */
+  @Test
+  public void shouldReportNoIdForADefiniteFailure() {
+    // given
+    when(apiA.takeBackup(TENANT_A, 42L)).thenReturn(CompletableFuture.completedFuture(42L));
+    when(apiB.takeBackup(TENANT_B, 42L))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("already exists", Status.ALREADY_EXISTS)));
+
+    // when
+    final var taken = services.takeBackup(null, 42L);
+
+    // then
+    assertThat(taken)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(
+            result ->
+                assertThat(result.physicalTenants())
+                    .extracting("physicalTenantId", "outcome", "backupId")
+                    .containsExactly(
+                        tuple(TENANT_A, TakeOutcome.TRIGGERED, 42L),
+                        tuple(TENANT_B, TakeOutcome.FAILED, null)));
   }
 
   // -- get --
@@ -395,14 +470,33 @@ public class ClusterRuntimeBackupServicesTest {
             });
   }
 
-  @Test
-  public void shouldRejectAPrefixWithoutAWildcard() {
+  /**
+   * The published {@code BackupIdPrefix} is digits plus one wildcard, and backup ids are numbers,
+   * so anything else can never match. Rejecting it says the request was malformed, where passing it
+   * to the store returns an empty list that reads as "no such backups".
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"17", "abc*", "1**", "*17", "17*x", "*-suffix", "1 *"})
+  public void shouldRejectAPrefixTheContractDoesNotAllow(final String prefix) {
     // when
-    final var backups = services.listBackups(null, "17");
+    final var backups = services.listBackups(null, prefix);
 
     // then
     assertThat(failureOf(backups).getStatus()).isEqualTo(Status.INVALID_ARGUMENT);
     verify(apiA, never()).listBackups(anyString(), anyString());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"*", "17*"})
+  public void shouldAcceptAPrefixTheContractAllows(final String prefix) {
+    // given
+    when(apiA.listBackups(TENANT_A, prefix))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(apiB.listBackups(TENANT_B, prefix))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when - then
+    assertThat(services.listBackups(null, prefix)).succeedsWithin(TIMEOUT);
   }
 
   // -- delete --
@@ -540,6 +634,28 @@ public class ClusterRuntimeBackupServicesTest {
     // then the other tenant is never contacted
     assertThat(deleted).succeedsWithin(TIMEOUT);
     verify(apiB, never()).deleteBackup(anyString(), anyLong());
+  }
+
+  /**
+   * The {@code BackupId} schema allows only positive ids, so an id outside it is a request error.
+   * Let through, it reads back as a 404 — indistinguishable from an id that is merely absent, when
+   * the request could never have been served at all.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {0L, -1L})
+  public void shouldRejectANonPositiveBackupIdOnEveryOperation(final long backupId) {
+    // when - then
+    assertThat(failureOf(services.getBackup(null, backupId)).getStatus())
+        .isEqualTo(Status.INVALID_ARGUMENT);
+    assertThat(failureOf(services.deleteBackup(null, backupId)).getStatus())
+        .isEqualTo(Status.INVALID_ARGUMENT);
+    assertThat(failureOf(services.takeBackup(null, backupId)).getStatus())
+        .isEqualTo(Status.INVALID_ARGUMENT);
+
+    // and no tenant is contacted
+    verify(apiA, never()).getStatus(anyString(), anyLong());
+    verify(apiA, never()).deleteBackup(anyString(), anyLong());
+    verify(apiA, never()).takeBackup(anyString(), anyLong());
   }
 
   @Test
