@@ -103,6 +103,27 @@ public class AgentHistoryCommittedApplierTest {
   }
 
   @Test
+  void shouldNotFailWhenAgentInstanceIsAlreadyGone() {
+    // given — a CONFIGURATION item whose agent instance was already deleted (e.g. the process
+    // instance completed before this COMMIT was processed).
+    final long agentInstanceKey = 1L;
+    final long historyKey = 10L;
+    final var item =
+        new AgentHistoryRecord()
+            .setAgentHistoryKey(historyKey)
+            .setAgentInstanceKey(agentInstanceKey)
+            .setRole(AgentHistoryRole.CONFIGURATION);
+    agentHistoryState.insert(historyKey, item);
+
+    // when — applying should not throw despite there being no live agent instance to read from
+    committedApplier.applyState(historyKey, item);
+
+    // then — no snapshot is created, and the history item is still deleted as usual
+    assertThat(agentInstanceState.getCommittedSnapshot(agentInstanceKey)).isNull();
+    assertThat(agentHistoryState.get(historyKey)).isNull();
+  }
+
+  @Test
   void shouldStillDeleteHistoryItemOnCommit() {
     // given
     final long agentInstanceKey = 1L;
