@@ -30,6 +30,12 @@ public class PublicApiVariableLabelsIT extends AbstractCCSMIT {
 
   private static final String TEST_ACCESS_TOKEN = "test-access-token";
 
+  // This class is inherently about the legacy static api.accessToken mechanism, which CSL's bearer
+  // chain does not support (no unprotected-API escape hatch on /api/public/**). Without pinning
+  // cslEnabled=false, the token would be rejected before any of the endpoint logic these tests
+  // target ever runs, turning every assertion here into an unrelated 401. Pin explicitly rather
+  // than rely on the ambient CI matrix value. api.accessToken having no CSL equivalent is a
+  // product gap, tracked separately at camunda/camunda#60639.
   @Override
   protected void startAndUseNewOptimizeInstance() {
     startAndUseNewOptimizeInstance(Map.of("optimize.security.csl.enabled", "false"), CCSM_PROFILE);
