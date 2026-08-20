@@ -8,7 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -36,9 +36,7 @@ public class PhysicalTenantSearchClientReadersConfiguration {
   @Bean
   public SearchClients searchClients(final PhysicalTenantResolver physicalTenantResolver) {
     return SearchClients.from(
-        physicalTenantResolver.mapValues(
-            physicalTenantCfg ->
-                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
+        physicalTenantResolver.mapValues(SearchEngineConnectConverter::convert));
   }
 
   @Bean

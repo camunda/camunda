@@ -13,9 +13,11 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 
-public class SearchEngineIndexPropertiesOverride {
+/** Converts a {@link Camunda} configuration into a {@link SearchEngineIndexProperties}. */
+public class SearchEngineIndexConverter {
 
-  public static void applyTo(final Camunda camunda, final SearchEngineIndexProperties override) {
+  public static SearchEngineIndexProperties convert(final Camunda camunda) {
+    final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
@@ -38,5 +40,7 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
     }
+
+    return override;
   }
 }

@@ -10,10 +10,12 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 
-public class SearchEngineSchemaManagerPropertiesOverride {
+/** Converts a {@link Camunda} configuration into a {@link SearchEngineSchemaManagerProperties}. */
+public class SearchEngineSchemaManagerConverter {
 
-  public static void applyTo(
-      final Camunda camunda, final SearchEngineSchemaManagerProperties override) {
+  public static SearchEngineSchemaManagerProperties convert(final Camunda camunda) {
+    final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
+
     override.setVersionCheckRestrictionEnabled(
         camunda.getSystem().getUpgrade().getEnableVersionCheck());
 
@@ -26,5 +28,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
               override.setCreateSchema(secondaryStorage.isCreateSchema());
             });
+
+    return override;
   }
 }

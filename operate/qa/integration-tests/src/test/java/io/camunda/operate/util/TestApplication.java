@@ -11,10 +11,6 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -43,11 +39,7 @@ import org.springframework.context.annotation.Import;
   UnifiedConfiguration.class,
   UnifiedConfigurationHelper.class,
   GatewayRestPropertiesOverride.class,
-  GatewayBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
-  SearchEngineRetentionPropertiesOverride.class,
-  SearchEngineSchemaManagerPropertiesOverride.class
+  GatewayBasedPropertiesOverride.class
 })
 public class TestApplication {
 

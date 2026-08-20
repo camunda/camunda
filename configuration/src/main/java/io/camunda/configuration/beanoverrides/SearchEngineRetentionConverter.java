@@ -13,12 +13,14 @@ import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 
-public class SearchEngineRetentionPropertiesOverride {
+/** Converts a {@link Camunda} configuration into a {@link SearchEngineRetentionProperties}. */
+public class SearchEngineRetentionConverter {
 
-  public static void applyTo(
-      final Camunda camunda, final SearchEngineRetentionProperties override) {
+  public static SearchEngineRetentionProperties convert(final Camunda camunda) {
+    final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     populateFromRetention(camunda, override);
     populateFromSecondaryStorage(camunda, override);
+    return override;
   }
 
   private static void populateFromRetention(

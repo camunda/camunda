@@ -13,7 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
 import io.camunda.debug.cli.Main;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.index.TargetIndex;
@@ -91,8 +91,7 @@ public class RecoverProcessDefinitionsMultiDbIT {
 
     final Camunda camunda = BROKER.bean(Camunda.class);
 
-    final ConnectConfiguration connectConfiguration =
-        new SearchEngineConnectPropertiesOverride.Converter(camunda).convert();
+    final ConnectConfiguration connectConfiguration = SearchEngineConnectConverter.convert(camunda);
     final boolean isElasticsearch = connectConfiguration.getTypeEnum().isElasticSearch();
     final String processIndexName =
         new IndexDescriptors(connectConfiguration.getIndexPrefix(), isElasticsearch)

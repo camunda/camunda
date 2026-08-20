@@ -9,14 +9,10 @@ package io.camunda.application.commons.search;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beans.SearchEngineConnectProperties;
-import io.camunda.configuration.beans.SearchEngineIndexProperties;
-import io.camunda.configuration.beans.SearchEngineRetentionProperties;
-import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectConverter;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexConverter;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionConverter;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerConverter;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -43,22 +39,11 @@ public class PhysicalTenantSearchEngineConfigurations {
   }
 
   private static SearchEngineConfiguration convert(final Camunda tenantCamunda) {
-    final var index = new SearchEngineIndexProperties();
-    SearchEngineIndexPropertiesOverride.applyTo(tenantCamunda, index);
-    final var retention = new SearchEngineRetentionProperties();
-    SearchEngineRetentionPropertiesOverride.applyTo(tenantCamunda, retention);
-    final var schemaManager = new SearchEngineSchemaManagerProperties();
-    SearchEngineSchemaManagerPropertiesOverride.applyTo(tenantCamunda, schemaManager);
-    return buildConfiguration(
-        new Converter(tenantCamunda).convert(), index, retention, schemaManager);
-  }
-
-  private static SearchEngineConfiguration buildConfiguration(
-      final SearchEngineConnectProperties connect,
-      final SearchEngineIndexProperties index,
-      final SearchEngineRetentionProperties retention,
-      final SearchEngineSchemaManagerProperties schemaManager) {
     return SearchEngineConfiguration.of(
-        b -> b.connect(connect).index(index).retention(retention).schemaManager(schemaManager));
+        b ->
+            b.connect(SearchEngineConnectConverter.convert(tenantCamunda))
+                .index(SearchEngineIndexConverter.convert(tenantCamunda))
+                .retention(SearchEngineRetentionConverter.convert(tenantCamunda))
+                .schemaManager(SearchEngineSchemaManagerConverter.convert(tenantCamunda)));
   }
 }
