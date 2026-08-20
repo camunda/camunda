@@ -366,7 +366,6 @@ test.describe('Process Instance Incident', () => {
   });
 
   test('Verify Incident root cause instance', async ({
-    page,
     operateProcessInstancePage,
     operateHomePage,
     operateProcessesPage,
