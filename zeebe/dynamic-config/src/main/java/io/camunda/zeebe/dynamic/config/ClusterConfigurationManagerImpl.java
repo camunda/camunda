@@ -21,7 +21,10 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupGraphPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -343,21 +346,40 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   /**
    * Returns {@code true} if the current (unmutated, per-phase) plan has an operation targeting
-   * {@link #localMemberId} within {@code groupId}'s {@link PartitionGroupParallelPhase}s, whether
-   * already completed or still pending. Phases are fixed at plan creation and never mutated, so
-   * this reflects the member's original involvement in the plan regardless of how far it has since
-   * progressed.
+   * {@link #localMemberId} within {@code groupId}'s partition-group phases — a {@link
+   * PartitionGroupParallelPhase} or a {@link PartitionGroupGraphPhase}, whichever model the phase
+   * uses — whether already completed or still pending. Phases are fixed at plan creation and never
+   * mutated, so this reflects the member's original involvement in the plan regardless of how far
+   * it has since progressed.
    */
   private boolean wasTargetedByCurrentPlan(
       final CurrentClusterConfiguration configuration, final String groupId) {
     return configuration.phasedChangeState().pending().values().stream()
         .flatMap(plan -> plan.phases().stream())
-        .filter(PartitionGroupParallelPhase.class::isInstance)
-        .map(PartitionGroupParallelPhase.class::cast)
-        .map(phase -> phase.groupOperations().get(groupId))
+        .map(phase -> groupOperationsOf(phase, groupId))
         .filter(Objects::nonNull)
         .flatMap(List::stream)
         .anyMatch(operation -> operation.memberId().equals(localMemberId));
+  }
+
+  /**
+   * {@code phase}'s operations for {@code groupId}, or {@code null} if the phase targets no group
+   * at all ({@link GlobalPhase}) or not this one.
+   *
+   * <p>Switches over every phase kind rather than filtering for one — mirroring {@link
+   * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan#scopeOf}'s own javadoc warning against
+   * exactly that pattern — so a phase kind added later without a case here fails to compile instead
+   * of silently making {@link #wasTargetedByCurrentPlan} blind to it the way it was blind to {@link
+   * PartitionGroupGraphPhase} before this method existed.
+   */
+  private static @Nullable List<PartitionGroupOperation> groupOperationsOf(
+      final Phase phase, final String groupId) {
+    return switch (phase) {
+      case final GlobalPhase ignored -> null;
+      case final PartitionGroupParallelPhase parallelPhase ->
+          parallelPhase.groupOperations().get(groupId);
+      case final PartitionGroupGraphPhase graphPhase -> graphPhase.groupOperations().get(groupId);
+    };
   }
 
   void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
