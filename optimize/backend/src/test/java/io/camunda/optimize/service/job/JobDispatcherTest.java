@@ -208,15 +208,19 @@ public class JobDispatcherTest {
   }
 
   @Test
-  public void shouldRefuseToDispatchAfterDestroy() {
+  public void shouldAbortBatchWithoutDispatchingAfterDestroy() {
     // given
-    when(jobRegistryReader.findOldestQueuedJobs(anyInt())).thenReturn(List.of(jobEntry("1")));
+    final JobRegistryEntryDto job = jobEntry("1");
+    when(jobRegistryReader.findOldestQueuedJobs(anyInt())).thenReturn(List.of(job));
     final JobDispatcher underTest = createDispatcherToTest();
     underTest.destroy();
 
     // when / then
-    // Once destroy() has run, no later dispatch may lazily spin up a fresh pool
-    assertThatExceptionOfType(IllegalStateException.class).isThrownBy(underTest::dispatchNextBatch);
+    // Once destroy() has run, no later dispatch may lazily spin up a fresh pool -- this is
+    // expected on shutdown, so it must not throw, just leave the entry untouched for the next
+    // dispatcher instance to pick up.
+    assertThatCode(underTest::dispatchNextBatch).doesNotThrowAnyException();
+    verify(jobRegistryWriter, never()).updateJobStatus(any(), any(), any());
   }
 
   @Test
@@ -233,11 +237,23 @@ public class JobDispatcherTest {
   @Test
   public void shouldFailToInitializeWhenThreadCountIsInvalid() {
     // given
+    configurationService.getJobRegistryDispatcherConfiguration().setEnabled(true);
     configurationService.getJobRegistryDispatcherConfiguration().setThreadCount(0);
     final JobDispatcher underTest = createDispatcherToTest();
 
     // when / then
     assertThatExceptionOfType(OptimizeConfigurationException.class).isThrownBy(underTest::init);
+  }
+
+  @Test
+  public void shouldNotValidateConfigurationWhenDisabled() {
+    // given
+    configurationService.getJobRegistryDispatcherConfiguration().setEnabled(false);
+    configurationService.getJobRegistryDispatcherConfiguration().setThreadCount(0);
+    final JobDispatcher underTest = createDispatcherToTest();
+
+    // when / then
+    assertThatCode(underTest::init).doesNotThrowAnyException();
   }
 
   @Test
