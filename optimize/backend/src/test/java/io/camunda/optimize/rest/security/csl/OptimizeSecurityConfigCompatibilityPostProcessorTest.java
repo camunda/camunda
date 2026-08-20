@@ -31,7 +31,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
   @RegisterExtension
   final LogCapturer logs =
       LogCapturer.create()
-          .captureForType(OptimizeSecurityConfigCompatibilityPostProcessor.class, Level.WARN);
+          .captureForType(OptimizeSecurityConfigCompatibilityPostProcessor.class, Level.INFO);
 
   private final OptimizeSecurityConfigCompatibilityPostProcessor processor =
       new OptimizeSecurityConfigCompatibilityPostProcessor();
@@ -221,6 +221,60 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
 
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/certs");
+  }
+
+  @Test
+  void shouldKeepExplicitlyConfiguredEndpointsAndDeriveOnlyTheMissingOnes() {
+    // A host that pointed one endpoint at its own IdP keeps it: the derived values are added as the
+    // lowest-precedence source, so they only fill the gaps.
+    final String backend = "http://identity.svc:18080/auth/realms/camunda-platform";
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.issuerBackendUrl", backend);
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put(OIDC + "authorization-uri", "https://idp.example.com/authorize");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "authorization-uri"))
+        .isEqualTo("https://idp.example.com/authorize");
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/token");
+    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/certs");
+    assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
+  }
+
+  @Test
+  void shouldTellOperatorsWhichKeysToSetWhenEndpointsAreDerived() {
+    // The only signal that Optimize started with endpoints browser login cannot use.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl",
+        "http://identity.svc:18080/auth/realms/camunda-platform");
+
+    processor.postProcessEnvironment(environmentWith(legacy), null);
+
+    logs.assertContains("camunda.identity.issuerBackendUrl");
+    logs.assertContains("Browser login cannot work against an internal URL");
+  }
+
+  @Test
+  void shouldNormaliseAWhitespacePaddedIssuerBackendUrl() {
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl",
+        "  http://identity.svc:18080/auth/realms/camunda-platform//  ");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "token-uri"))
+        .isEqualTo(
+            "http://identity.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token");
   }
 
   @Test
