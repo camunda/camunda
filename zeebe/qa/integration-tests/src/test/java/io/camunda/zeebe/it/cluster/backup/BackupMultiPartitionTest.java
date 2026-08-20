@@ -441,6 +441,7 @@ class BackupMultiPartitionTest {
     backupRequest.setBackupId(backupId);
     backupRequest.setPartitionId(partitionId);
     backupRequest.setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    backupRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     brokerClient.sendRequest(backupRequest).orTimeout(30, TimeUnit.SECONDS).join();
 
@@ -451,6 +452,7 @@ class BackupMultiPartitionTest {
     final BackupStatusRequest backupStatusRequest = new BackupStatusRequest();
     backupStatusRequest.setPartitionId(partitionId);
     backupStatusRequest.setBackupId(backupId);
+    backupStatusRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
         .ignoreExceptions()

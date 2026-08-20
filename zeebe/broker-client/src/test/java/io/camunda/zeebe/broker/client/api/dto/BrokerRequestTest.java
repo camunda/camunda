@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.client.api.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -20,12 +19,13 @@ import org.junit.jupiter.api.Test;
 class BrokerRequestTest {
 
   @Test
-  void shouldReturnDefaultPartitionGroup() {
+  void shouldHaveNoPartitionGroupByDefault() {
     // given
     final var request = new TestBrokerRequest();
 
     // then
-    assertThat(request.getPartitionGroup()).isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(request.hasPartitionGroup()).isFalse();
+    assertThat(request.getPartitionGroup()).isNull();
   }
 
   @Test
@@ -37,6 +37,7 @@ class BrokerRequestTest {
     request.setPartitionGroup("tenant1");
 
     // then
+    assertThat(request.hasPartitionGroup()).isTrue();
     assertThat(request.getPartitionGroup()).isEqualTo("tenant1");
   }
 

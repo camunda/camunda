@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.cluster.system;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
@@ -264,6 +265,7 @@ public class BrokerAdminServiceTest {
     final var expectedInstant = Instant.now().minusMillis(3600).truncatedTo(ChronoUnit.MILLIS);
     final var request =
         new TestClockRequest(new ClockRecord().pinAt(expectedInstant.toEpochMilli()));
+    request.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
     brokerClient.sendRequest(request, Duration.ofSeconds(30)).join();

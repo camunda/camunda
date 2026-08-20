@@ -60,6 +60,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request) {
+    ensurePartitionGroupSet(request);
     final CompletableFuture<BrokerResponse<T>> future = new CompletableFuture<>();
     brokerRequests.add(request);
 
@@ -87,6 +88,7 @@ public final class StubbedBrokerClient implements BrokerClient {
       final BrokerRequest<T> request,
       final BrokerResponseConsumer<T> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
+    ensurePartitionGroupSet(request);
     brokerRequests.add(request);
     try {
       final RequestHandler requestHandler = requestHandlers.get(request.getClass());
@@ -105,6 +107,18 @@ public final class StubbedBrokerClient implements BrokerClient {
       throwableConsumer.accept(e);
     } catch (final Exception e) {
       throwableConsumer.accept(new BrokerResponseException(e));
+    }
+  }
+
+  /**
+   * Mirrors the guard in the production {@code BrokerRequestManager}, so tests using this stub
+   * catch senders that forget to set the physical tenant instead of silently passing.
+   */
+  private static void ensurePartitionGroupSet(final BrokerRequest<?> request) {
+    if (!request.hasPartitionGroup()) {
+      throw new IllegalStateException(
+          "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
+              .formatted(request.getType()));
     }
   }
 

@@ -972,10 +972,13 @@ public final class LongPollingActivateJobsTest {
             .setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
             .setRequestTimeout(500)
             .build();
+    // requests must always carry a partition group before they are sent to the broker
+    final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+    brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final var request =
         new InflightActivateJobsRequest<ActivateJobsResponse>(
             getNextRequestId(),
-            RequestMapper.toActivateJobsRequest(grpcRequest),
+            brokerRequest,
             spy(ServerStreamObserver.class),
             grpcRequest.getRequestTimeout()) {
 
@@ -1012,6 +1015,9 @@ public final class LongPollingActivateJobsTest {
     assertThat(brokerRequestValue.getRetries()).isEqualTo(activatedJob.getRetries());
     assertThat(brokerRequestValue.getRetryBackoff()).isEqualTo(0);
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isNotNull();
+    assertThat(failRequest.getPartitionGroup())
+        .describedAs("fail request should inherit the activate request's partition group")
+        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -1126,9 +1132,12 @@ public final class LongPollingActivateJobsTest {
 
   private InflightActivateJobsRequest<ActivateJobsResponse> toInflightActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
+    // requests must always carry a partition group before they are sent to the broker
+    final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+    brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     return new InflightActivateJobsRequest<ActivateJobsResponse>(
         getNextRequestId(),
-        RequestMapper.toActivateJobsRequest(grpcRequest),
+        brokerRequest,
         spy(ServerStreamObserver.class),
         grpcRequest.getRequestTimeout());
   }

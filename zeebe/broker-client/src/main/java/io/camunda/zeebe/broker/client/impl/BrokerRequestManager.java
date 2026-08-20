@@ -101,6 +101,11 @@ final class BrokerRequestManager extends Actor {
       final BrokerRequest<T> request,
       final TransportRequestSender sender,
       final Duration requestTimeout) {
+    if (!request.hasPartitionGroup()) {
+      throw new IllegalStateException(
+          "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
+              .formatted(request.getType()));
+    }
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
     request.serializeValue();
     actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout));
