@@ -87,9 +87,7 @@ const Header: React.FC<Props> = ({children}) => {
 					/>
 					<div className="flex h-[calc(100dvh-3rem)]">
 						<div className="w-(--app-sidebar-width) shrink-0 transition-[width] duration-150 ease-out" />
-						<div id="main-content" className="min-w-0 flex-1 overflow-auto">
-							{children}
-						</div>
+						<div className="min-w-0 flex-1 overflow-auto">{children}</div>
 					</div>
 				</div>
 			</SidebarProvider>
