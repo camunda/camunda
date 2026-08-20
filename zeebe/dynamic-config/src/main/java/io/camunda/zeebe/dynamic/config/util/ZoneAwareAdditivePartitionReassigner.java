@@ -156,11 +156,7 @@ public final class ZoneAwareAdditivePartitionReassigner implements PartitionReas
             .collect(
                 Collectors.toMap(
                     ZoneSpec::name,
-                    spec ->
-                        targetMembers.stream()
-                            .filter(m -> m.isInZone(spec.name()))
-                            .sorted(MemberId.ID_COMPARATOR)
-                            .toList()));
+                    spec -> targetMembers.stream().filter(m -> m.isInZone(spec.name())).toList()));
 
     final List<PartitionId> sortedPartitionIds =
         targetPartitionIds.stream().distinct().sorted().toList();
