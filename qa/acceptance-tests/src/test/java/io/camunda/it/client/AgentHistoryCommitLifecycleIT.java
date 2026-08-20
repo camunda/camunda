@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -54,7 +56,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     final long historyItemKey2 =
         createHistoryItem(
             agentInstanceKey,
@@ -62,7 +65,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "history items indexed as PENDING",
@@ -94,7 +98,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.USER,
             "Hello, what can you do?",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     final long historyItemKey2 =
         createHistoryItem(
             agentInstanceKey,
@@ -102,7 +107,8 @@ public class AgentHistoryCommitLifecycleIT {
             activatedJob,
             AgentInstanceHistoryRole.ASSISTANT,
             "I can help with many tasks.",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "history items indexed as PENDING",
@@ -136,7 +142,8 @@ public class AgentHistoryCommitLifecycleIT {
             activation1,
             AgentInstanceHistoryRole.USER,
             "Message from superseded activation",
-            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"),
+            1);
     awaitHistoryStatuses(
         agentInstanceKey,
         "superseded item indexed as PENDING before fail",
@@ -164,7 +171,9 @@ public class AgentHistoryCommitLifecycleIT {
             activation2,
             AgentInstanceHistoryRole.ASSISTANT,
             "Message from winning activation",
-            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"),
+            2);
+
     awaitHistoryStatuses(
         agentInstanceKey,
         "both items PENDING before completion",
@@ -259,19 +268,25 @@ public class AgentHistoryCommitLifecycleIT {
       final ActivatedJob activatedJob,
       final AgentInstanceHistoryRole role,
       final String text,
-      final OffsetDateTime producedAt) {
-    final var finalCommandStep =
+      final OffsetDateTime producedAt,
+      final int loopIteration) {
+    final var commandStep =
         camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
+            .newUpdateAgentInstanceCommand(agentInstanceKey)
             .elementInstanceKey(elementInstanceKey)
             .jobKey(activatedJob.getKey())
-            .role(role)
-            .content(List.of(AgentInstanceHistoryContent.text(text)))
-            .producedAt(producedAt);
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(loopIteration)
+                        .role(role)
+                        .content(List.of(AgentInstanceHistoryContent.text(text)))
+                        .producedAt(producedAt)));
     if (activatedJob.getLeaseToken() != null) {
-      finalCommandStep.jobLease(activatedJob.getLeaseToken());
+      commandStep.jobLease(activatedJob.getLeaseToken());
     }
-    return finalCommandStep.execute().getHistoryItemKey();
+    return commandStep.send().join().getCreatedHistory().getFirst().getHistoryItemKey();
   }
 
   /**
