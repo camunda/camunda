@@ -7,7 +7,10 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  GetProcessDefinitionInstanceStatisticsResponseBody,
+  QueryProcessDefinitionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   GetIncidentProcessInstanceStatisticsByErrorResponseBody,
   GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
@@ -595,14 +598,31 @@ const mockProcessDefinitionVersionStatistics = {
   },
 };
 
+const mockDrainingProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
+  [
+    {
+      state: 'DRAINING',
+      processDefinitionKey: '2251799813687188',
+      name: 'Order process',
+      version: 2,
+      processDefinitionId: 'orderProcess',
+      resourceName: null,
+      versionTag: null,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+  ];
+
 function mockResponses({
   incidentsByError,
   incidentsByDefinition,
   processDefinitionStatistics,
+  drainingProcessDefinitions,
 }: {
   incidentsByError?: GetIncidentProcessInstanceStatisticsByErrorResponseBody;
   incidentsByDefinition?: GetIncidentProcessInstanceStatisticsByDefinitionResponseBody;
   processDefinitionStatistics?: GetProcessDefinitionInstanceStatisticsResponseBody;
+  drainingProcessDefinitions?: QueryProcessDefinitionsResponseBody['items'];
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -655,6 +675,20 @@ function mockResponses({
     const url = route.request().url();
     const method = route.request().method();
 
+    if (url.includes('/v2/process-definitions/search')) {
+      const items = drainingProcessDefinitions ?? [];
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items,
+          page: {totalItems: items.length},
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     if (
       url.includes(
         '/v2/process-definitions/statistics/process-instances-by-version',
@@ -697,5 +731,6 @@ export {
   mockIncidentsByDefinition,
   mockProcessDefinitionStatistics,
   mockProcessDefinitionVersionStatistics,
+  mockDrainingProcessDefinitions,
   mockResponses,
 };
