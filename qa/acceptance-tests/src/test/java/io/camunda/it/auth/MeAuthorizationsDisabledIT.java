@@ -64,7 +64,16 @@ class MeAuthorizationsDisabledIT {
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     assertThat(responseBody.path("authorizationsEnabled").asBoolean()).isFalse();
-    assertThat(responseBody.path("items").size()).isZero();
+    // user creation always grants a self USER authorization, so items is not empty even when
+    // authorization checks are disabled
+    assertThat(responseBody.path("items"))
+        .allSatisfy(
+            item -> {
+              assertThat(item.path("ownerId").asText()).isEqualTo(USERNAME);
+              assertThat(item.path("ownerType").asText()).isEqualTo("USER");
+              assertThat(item.path("resourceType").asText()).isEqualTo("USER");
+              assertThat(item.path("resourceId").asText()).isEqualTo(USERNAME);
+            });
   }
 
   private static String basicAuthentication() {
