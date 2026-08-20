@@ -10,10 +10,12 @@ package io.camunda.optimize.service.db.repository.es;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch._types.BulkIndexByScrollFailure;
 import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -135,8 +137,8 @@ public class TaskRepositoryES extends TaskRepository {
 
   private boolean syncUpdate(final UpdateByQueryRequest request) {
     try {
-      final Long deleted = esClient.submitUpdateTask(request).updated();
-      return deleted != null && deleted > 0L;
+      final Long updated = esClient.submitUpdateTask(request).updated();
+      return updated != null && updated > 0L;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Error while trying to submit update task", e);
     }
@@ -174,7 +176,9 @@ public class TaskRepositoryES extends TaskRepository {
 
   private boolean syncDelete(final DeleteByQueryRequest request) {
     try {
-      final Long deleted = esClient.submitDeleteTask(request).deleted();
+      final DeleteByQueryResponse response = esClient.submitDeleteTask(request);
+      throwOnFailures(response.failures());
+      final Long deleted = response.deleted();
       return deleted != null && deleted > 0L;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Error while trying to submit update task", e);
@@ -210,6 +214,15 @@ public class TaskRepositoryES extends TaskRepository {
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
           e);
+    }
+  }
+
+  private void throwOnFailures(final List<BulkIndexByScrollFailure> failures) {
+    if (failures != null && !failures.isEmpty()) {
+      final String message =
+          "A synchronous delete/update by query task contained failures: " + failures;
+      LOG.error(message);
+      throw new OptimizeRuntimeException(message);
     }
   }
 }

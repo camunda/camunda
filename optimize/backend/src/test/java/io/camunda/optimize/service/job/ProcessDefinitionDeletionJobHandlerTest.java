@@ -109,6 +109,35 @@ class ProcessDefinitionDeletionJobHandlerTest {
   }
 
   @Test
+  void shouldRetryOnRetryableErrorDuringDefinitionLookup() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")))
+        .thenReturn(Optional.of(definition()));
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(processDefinitionReader, times(2)).getProcessDefinition(DEFINITION_ID, false);
+    verify(processInstanceWriter).deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
+  }
+
+  @Test
+  void shouldPropagateOnceRetryableErrorDuringDefinitionLookupExceedsMaxAttempts() {
+    // given
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenThrow(new OptimizeRuntimeException("transient", new SocketTimeoutException("boom")));
+
+    // when / then
+    assertThatThrownBy(() -> handler.handle(job())).isInstanceOf(OptimizeRuntimeException.class);
+    verify(processDefinitionReader, times(3)).getProcessDefinition(DEFINITION_ID, false);
+    verify(processInstanceWriter, never()).deleteInstancesByDefinitionId(anyString(), anyString());
+    verify(processDefinitionWriter, never()).deleteDefinition(anyString());
+  }
+
+  @Test
   void shouldRetryOnRetryableErrorNestedTwoLevelsDeep() {
     // given -- the repository layer can wrap a retryable error inside another
     // OptimizeRuntimeException (e.g. an async delete-by-query task failure)
