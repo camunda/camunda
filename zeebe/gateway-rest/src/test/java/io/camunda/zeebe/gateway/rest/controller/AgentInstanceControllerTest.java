@@ -98,7 +98,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            { "agentInstanceKey": "%d" }
+            { "agentInstanceKey": "%d", "createdHistory": [] }
             """
                 .formatted(AGENT_INSTANCE_KEY),
             JsonCompareMode.STRICT);
@@ -382,7 +382,133 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 }
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
-            "No definition.systemPrompt provided."));
+            "No definition.systemPrompt provided."),
+        Arguments.of(
+            named(
+                "history without jobKey",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    },
+                    {
+                      "historyItemId": "item-1",
+                      "loopIteration": 1,
+                      "role": "USER",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "No jobKey provided."),
+        Arguments.of(
+            named(
+                "non-numeric jobKey",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  },
+                  "jobKey": "not-a-number"
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
+                + " Did you pass an entity id instead of an entity key?."),
+        Arguments.of(
+            named(
+                "definition with history",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  },
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "The definition must be omitted when history is provided."),
+        Arguments.of(
+            named(
+                "limits with history",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "limits": {
+                    "maxTokens": 100,
+                    "maxModelCalls": 1,
+                    "maxToolCalls": 1
+                  },
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-0",
+                      "loopIteration": 1,
+                      "role": "CONFIGURATION",
+                      "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                      "producedAt": "2025-06-01T12:00:00Z",
+                      "model": "gpt-4o",
+                      "provider": "openai",
+                      "systemPrompt": [{ "contentType": "TEXT", "text": "prompt" }]
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "The limits must be omitted when history is provided."),
+        Arguments.of(
+            named(
+                "history without a CONFIGURATION item establishing the definition",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "jobKey": "%d",
+                  "history": [
+                    {
+                      "historyItemId": "item-1",
+                      "loopIteration": 1,
+                      "role": "USER",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                  ]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY)),
+            "No CONFIGURATION history item sets 'model'; when history is provided, it must be"
+                + " set there instead of on definition. No CONFIGURATION history item sets"
+                + " 'provider'; when history is provided, it must be set there instead of on"
+                + " definition. No CONFIGURATION history item sets 'systemPrompt'; when history"
+                + " is provided, it must be set there instead of on definition."));
   }
 
   @Test
@@ -1182,6 +1308,312 @@ class AgentInstanceControllerTest extends RestControllerTest {
           }
           """
           .formatted(historyItemId, role, text);
+    }
+  }
+
+  @Nested
+  class CreateWithHistoryBatchTest {
+
+    private static final long HISTORY_ITEM_KEY_0 = 9007199254741021L;
+    private static final long HISTORY_ITEM_KEY_1 = 9007199254741019L;
+    private static final long HISTORY_ITEM_KEY_2 = 9007199254741020L;
+
+    @Test
+    void shouldReturn200WithAgentInstanceKeyAndCreatedHistoryInRequestOrderFlaggingDuplicates() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_0)
+              .setHistoryItemId("item-0"));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_1)
+              .setHistoryItemId("item-1"));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_2)
+              .setHistoryItemId("item-2")
+              .setDuplicate(true));
+      when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "jobLease": "lease-abc",
+            "history": [
+              {
+                "historyItemId": "item-0",
+                "loopIteration": 1,
+                "role": "CONFIGURATION",
+                "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                "producedAt": "2025-06-01T12:00:00Z",
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
+              },
+              {
+                "historyItemId": "item-1",
+                "loopIteration": 1,
+                "role": "USER",
+                "content": [{ "contentType": "TEXT", "text": "hello" }],
+                "producedAt": "2025-06-01T12:00:00Z"
+              },
+              {
+                "historyItemId": "item-2",
+                "loopIteration": 1,
+                "role": "ASSISTANT",
+                "content": [{ "contentType": "TEXT", "text": "hi there" }],
+                "producedAt": "2025-06-01T12:00:00Z"
+              }
+            ]
+          }
+          """
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "agentInstanceKey": "%d",
+                "createdHistory": [
+                  { "historyItemId": "item-0", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-1", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-2", "historyItemKey": "%d", "isDuplicate": true }
+                ]
+              }
+              """
+                  .formatted(
+                      AGENT_INSTANCE_KEY,
+                      HISTORY_ITEM_KEY_0,
+                      HISTORY_ITEM_KEY_1,
+                      HISTORY_ITEM_KEY_2),
+              JsonCompareMode.STRICT);
+
+      verify(agentInstanceServices)
+          .createAgentInstance(
+              assertArg(
+                  record -> {
+                    assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                    assertThat(record.getHistory()).hasSize(3);
+                    assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
+                    assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
+                    assertThat(record.getHistory().get(1).getContent().get(0).getText())
+                        .isEqualTo("hello");
+                    assertThat(record.getHistory().get(2).getHistoryItemId()).isEqualTo("item-2");
+                  }),
+              any());
+    }
+
+    @Test
+    void shouldAcceptHistoryBatchWithoutJobLease() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_0)
+              .setHistoryItemId("item-0"));
+      responseRecord.addHistoryItem(
+          new AgentHistoryRecord()
+              .setAgentHistoryKey(HISTORY_ITEM_KEY_1)
+              .setHistoryItemId("item-1"));
+      when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "history": [
+              {
+                "historyItemId": "item-0",
+                "loopIteration": 1,
+                "role": "CONFIGURATION",
+                "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                "producedAt": "2025-06-01T12:00:00Z",
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
+              },
+              {
+                "historyItemId": "item-1",
+                "loopIteration": 1,
+                "role": "USER",
+                "content": [{ "contentType": "TEXT", "text": "hello" }],
+                "producedAt": "2025-06-01T12:00:00Z"
+              }
+            ]
+          }
+          """
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              {
+                "agentInstanceKey": "%d",
+                "createdHistory": [
+                  { "historyItemId": "item-0", "historyItemKey": "%d", "isDuplicate": false },
+                  { "historyItemId": "item-1", "historyItemKey": "%d", "isDuplicate": false }
+                ]
+              }
+              """
+                  .formatted(AGENT_INSTANCE_KEY, HISTORY_ITEM_KEY_0, HISTORY_ITEM_KEY_1),
+              JsonCompareMode.STRICT);
+
+      verify(agentInstanceServices)
+          .createAgentInstance(
+              assertArg(
+                  record -> {
+                    assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                    assertThat(record.getJobLease()).isEmpty();
+                    assertThat(record.getHistory()).hasSize(2);
+                  }),
+              any());
+    }
+
+    @Test
+    void shouldReturnEmptyCreatedHistoryWhenHistoryIsEmptyArray() {
+      // given
+      final var responseRecord = new AgentInstanceRecord();
+      responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
+      when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "definition": {
+              "model": "gpt-4o",
+              "provider": "openai",
+              "systemPrompt": "You are a helpful assistant."
+            },
+            "history": []
+          }
+          """
+              .formatted(ELEMENT_INSTANCE_KEY);
+
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .json(
+              """
+              { "agentInstanceKey": "%d", "createdHistory": [] }
+              """
+                  .formatted(AGENT_INSTANCE_KEY),
+              JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void shouldReturn400WhenHistoryItemRejectedByBrokerWithMessageIntact() {
+      // given
+      final var rejectionReason =
+          ("Expected job with key '%d' referenced by history[0].historyItemId 'item-1' to be"
+                  + " currently activated for agent instance, but it is not.")
+              .formatted(JOB_KEY);
+      final var expectedDetail =
+          "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': " + rejectionReason;
+      when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  ErrorMapper.mapBrokerRejection(
+                      new BrokerRejection(
+                          AgentInstanceIntent.CREATE,
+                          ELEMENT_INSTANCE_KEY,
+                          RejectionType.INVALID_ARGUMENT,
+                          rejectionReason))));
+
+      final var requestBody =
+          """
+          {
+            "elementInstanceKey": "%d",
+            "jobKey": "%d",
+            "jobLease": "lease-abc",
+            "history": [
+              {
+                "historyItemId": "item-0",
+                "loopIteration": 1,
+                "role": "CONFIGURATION",
+                "content": [{ "contentType": "TEXT", "text": "configuration" }],
+                "producedAt": "2025-06-01T12:00:00Z",
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": [{ "contentType": "TEXT", "text": "You are a helpful assistant." }]
+              },
+              {
+                "historyItemId": "item-1",
+                "loopIteration": 1,
+                "role": "USER",
+                "content": [{ "contentType": "TEXT", "text": "hello" }],
+                "producedAt": "2025-06-01T12:00:00Z"
+              }
+            ]
+          }
+          """
+              .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+      // when / then
+      webClient
+          .post()
+          .uri(AGENT_INSTANCES_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(requestBody)
+          .exchange()
+          .expectStatus()
+          .isEqualTo(HttpStatus.BAD_REQUEST)
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+          .expectBody()
+          .json(
+              """
+              {
+                "type": "about:blank",
+                "title": "INVALID_ARGUMENT",
+                "status": 400,
+                "detail": "%s",
+                "instance": "/v2/agent-instances"
+              }
+              """
+                  .formatted(expectedDetail),
+              JsonCompareMode.STRICT);
     }
   }
 

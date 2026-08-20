@@ -22,14 +22,13 @@ import static org.assertj.core.groups.Tuple.tuple;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
+import io.camunda.client.api.command.AgentInstanceLimits;
 import io.camunda.client.api.command.AgentInstanceUpdateStatus;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentInstanceLimits;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.HistoryItem;
+import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
-import io.camunda.client.api.response.UpdateAgentInstanceResponse.CreatedHistoryItem;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.AgentInstanceCreatedHistoryItem;
@@ -60,8 +59,8 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
   private static final String JOB_LEASE = "lease-token";
   private static final OffsetDateTime PRODUCED_AT = OffsetDateTime.parse("2025-06-01T12:00:00Z");
 
-  private static HistoryItem historyItem(final String historyItemId) {
-    return new HistoryItem()
+  private static AgentInstanceHistoryItem historyItem(final String historyItemId) {
+    return new AgentInstanceHistoryItem()
         .historyItemId(historyItemId)
         .loopIteration(1)
         .role(AgentInstanceHistoryRole.USER)
@@ -364,7 +363,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemWithToolCallsAndMetrics() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .toolCalls(
                   Collections.singletonList(
@@ -417,7 +416,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
                   .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
                   .documentId("doc-abc")
                   .storeId("store-1"));
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc)));
 
@@ -508,7 +507,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemToolsWithAllFields() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")));
 
@@ -539,7 +538,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemToolWithNameOnlyOmittingNullOptionalFields() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1").tools(Arrays.asList(AgentTool.of("summarize")));
 
       // when
@@ -564,7 +563,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemModelAndProvider() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item = historyItem("item-1").model("gpt-4").provider("openai");
+      final AgentInstanceHistoryItem item = historyItem("item-1").model("gpt-4").provider("openai");
 
       // when
       client
@@ -587,7 +586,8 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemLimits() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item = historyItem("item-1").limits(AgentInstanceLimits.of(1000L, 10, 20));
+      final AgentInstanceHistoryItem item =
+          historyItem("item-1").limits(AgentInstanceLimits.of(1000L, 10, 20));
 
       // when
       client
@@ -656,7 +656,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapHistoryItemSystemPrompt() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .systemPrompt(Collections.singletonList(AgentInstanceHistoryContent.text("be nice")));
 
@@ -683,7 +683,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldSendExplicitEmptyToolsAndSystemPromptDistinctFromAbsent() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .tools(Collections.emptyList())
               .systemPrompt(Collections.emptyList());
@@ -734,7 +734,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldMapAllConfigurationFieldsOnConfigurationHistoryItem() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item =
+      final AgentInstanceHistoryItem item =
           historyItem("item-1")
               .role(AgentInstanceHistoryRole.CONFIGURATION)
               .tools(Arrays.asList(AgentTool.of("search", "A web search tool", "searchTask")))
@@ -907,7 +907,7 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
     void shouldAllowEmptyContentListInHistoryItem() {
       // given
       gatewayService.onUpdateAgentInstanceRequest(AGENT_INSTANCE_KEY);
-      final HistoryItem item = historyItem("item-1").content(Collections.emptyList());
+      final AgentInstanceHistoryItem item = historyItem("item-1").content(Collections.emptyList());
 
       // when
       client
@@ -996,9 +996,9 @@ class UpdateAgentInstanceCommandTest extends ClientRestTest {
       assertThat(result.getCreatedHistory())
           .isNotNull()
           .extracting(
-              CreatedHistoryItem::getHistoryItemId,
-              CreatedHistoryItem::getHistoryItemKey,
-              CreatedHistoryItem::isDuplicate)
+              item -> item.getHistoryItemId(),
+              item -> item.getHistoryItemKey(),
+              item -> item.isDuplicate())
           .containsExactly(
               tuple("item-1", 100L, false),
               tuple("item-2", 101L, true),

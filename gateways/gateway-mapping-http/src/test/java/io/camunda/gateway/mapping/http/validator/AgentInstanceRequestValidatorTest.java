@@ -9,6 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
@@ -929,6 +931,454 @@ class AgentInstanceRequestValidatorTest {
 
       assertThat(result).isPresent();
       assertThat(result.get().getDetail()).isEqualTo("No history[0].systemPrompt provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a blank model")
+    void shouldRejectHistoryItemWithBlankModel() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].model provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a blank provider")
+    void shouldRejectHistoryItemWithBlankProvider() {
+      final var request =
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .provider("   ")));
+
+      final Optional<ProblemDetail> result =
+          validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].provider provided.");
+    }
+  }
+
+  @Nested
+  @DisplayName("Create request rules")
+  class CreateRequestRuleTest {
+
+    private AgentInstanceCreationRequest validRequest() {
+      return AgentInstanceCreationRequest.Builder.create()
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .definition(
+              AgentInstanceDefinition.Builder.create()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt("You are a helpful assistant.")
+                  .build())
+          .build();
+    }
+
+    private AgentInstanceCreationRequest requestWithoutDefinition() {
+      return AgentInstanceCreationRequest.Builder.create()
+          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .build();
+    }
+
+    @Test
+    @DisplayName("Should reject missing elementInstanceKey")
+    void shouldRejectMissingElementInstanceKey() {
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(null)
+              .definition(
+                  AgentInstanceDefinition.Builder.create()
+                      .model("gpt-4o")
+                      .provider("openai")
+                      .systemPrompt("You are a helpful assistant.")
+                      .build())
+              .build();
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No elementInstanceKey provided.");
+    }
+
+    @Test
+    @DisplayName("Should accept a batch item with a non-blank historyItemId")
+    void shouldAcceptHistoryItemWithHistoryItemId() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build(),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should reject a batch with history but no jobKey")
+    void shouldRejectHistoryBatchWithoutJobKey() {
+      final var request = requestWithoutDefinition();
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build(),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobKey provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject a non-numeric jobKey even without a history batch")
+    void shouldRejectMalformedJobKeyWithoutHistory() {
+      final var request = validRequest();
+      request.setJobKey("not-a-number");
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo(
+              "The provided jobKey 'not-a-number' is not a valid key. Expected a numeric value."
+                  + " Did you pass an entity id instead of an entity key?.");
+    }
+
+    @Test
+    @DisplayName("Should reject a batch item with a missing (null) historyItemId")
+    void shouldRejectHistoryItemWithNullHistoryItemId() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId(null)
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build(),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[0].historyItemId provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject definition when history is provided")
+    void shouldRejectDefinitionWithHistory() {
+      final var request = validRequest();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build(),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("The definition must be omitted when history is provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject limits when history is provided")
+    void shouldRejectLimitsWithHistory() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setLimits(
+          AgentInstanceLimits.Builder.create()
+              .maxModelCalls(1)
+              .maxTokens(100L)
+              .maxToolCalls(1)
+              .build());
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build(),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo("The limits must be omitted when history is provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject missing definition when history is not provided")
+    void shouldRejectMissingDefinitionWithoutHistory() {
+      final var request = requestWithoutDefinition();
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No definition provided.");
+    }
+
+    @Test
+    @DisplayName("Should reject history without a CONFIGURATION item establishing the definition")
+    void shouldRejectHistoryWithoutConfigurationItem() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.USER)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("hello")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail())
+          .isEqualTo(
+              "No CONFIGURATION history item sets 'model'; when history is provided, it must be"
+                  + " set there instead of on definition. No CONFIGURATION history item sets"
+                  + " 'provider'; when history is provided, it must be set there instead of on"
+                  + " definition. No CONFIGURATION history item sets 'systemPrompt'; when history"
+                  + " is provided, it must be set there instead of on definition.");
+    }
+
+    @Test
+    @DisplayName(
+        "Should reject a later CONFIGURATION item that clears model with a blank value, even"
+            + " after an earlier CONFIGURATION item established it")
+    void shouldRejectLaterConfigurationItemWithBlankModel() {
+      final var request = requestWithoutDefinition();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-1")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("be helpful")
+                              .build())),
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-2")
+                  .loopIteration(2)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("switching model")
+                              .build()))
+                  .producedAt("2025-06-01T12:01:00Z")
+                  .build()
+                  .model("")));
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No history[1].model provided.");
     }
   }
 }

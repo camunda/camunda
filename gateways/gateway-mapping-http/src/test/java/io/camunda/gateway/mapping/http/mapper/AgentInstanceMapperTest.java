@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
@@ -294,7 +295,14 @@ class AgentInstanceMapperTest {
       assertThat(mappedItem.getSystemPrompt()).hasSize(1);
       assertThat(mappedItem.getSystemPrompt().get(0).getText()).isEqualTo("be helpful");
       assertThat(mappedItem.getChangedAttributes())
-          .containsExactlyInAnyOrder("tools", "model", "provider", "limits", "systemPrompt");
+          .containsExactlyInAnyOrder(
+              "tools",
+              "model",
+              "provider",
+              "maxTokens",
+              "maxModelCalls",
+              "maxToolCalls",
+              "systemPrompt");
     }
 
     @Test
@@ -370,6 +378,156 @@ class AgentInstanceMapperTest {
       final var record = result.get();
       assertThat(record.getHistory().get(0).getLoopIteration()).isEqualTo(2);
       assertThat(record.getHistory().get(1).getLoopIteration()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class CreateRequestMappingTest {
+
+    @Test
+    void shouldMapJobKeyJobLeaseAndHistoryOntoRecordPreservingOrder() {
+      // given
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setJobLease("lease-abc");
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(List.of(textContent("configuration")))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(List.of(textContent("You are a helpful assistant."))),
+              historyItem("item-1", AgentInstanceHistoryRoleEnum.USER, "hello"),
+              historyItem("item-2", AgentInstanceHistoryRoleEnum.ASSISTANT, "hi there")));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toCreateAgentInstanceRecord(request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getJobKey()).isEqualTo(2251799813685249L);
+      assertThat(record.getJobLease()).isEqualTo("lease-abc");
+      assertThat(record.getHistory()).hasSize(3);
+      assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-0");
+      assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-1");
+      assertThat(record.getHistory().get(2).getHistoryItemId()).isEqualTo("item-2");
+    }
+
+    @Test
+    void shouldLeaveDefinitionAndLimitsUnsetWhenNotProvidedAlongsideHistory() {
+      // given
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(List.of(textContent("configuration")))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toCreateAgentInstanceRecord(request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var record = result.get();
+      assertThat(record.getDefinition().getModel()).isEmpty();
+      assertThat(record.getDefinition().getProvider()).isEmpty();
+      assertThat(record.getDefinition().getSystemPrompt()).isEmpty();
+      assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
+      assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
+      assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+    }
+
+    @Test
+    void shouldMapConfigurationLimitsOnCreateUsingGranularChangedAttributes() {
+      // given
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(List.of(textContent("configuration")))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))
+                  .limits(
+                      AgentInstanceLimits.Builder.create()
+                          .maxModelCalls(10)
+                          .maxTokens(1000L)
+                          .maxToolCalls(5)
+                          .build())));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toCreateAgentInstanceRecord(request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getLimits().getMaxModelCalls()).isEqualTo(10);
+      assertThat(mappedItem.getLimits().getMaxTokens()).isEqualTo(1000L);
+      assertThat(mappedItem.getLimits().getMaxToolCalls()).isEqualTo(5);
+      assertThat(mappedItem.getChangedAttributes())
+          .containsExactlyInAnyOrder(
+              "model", "provider", "maxTokens", "maxModelCalls", "maxToolCalls", "systemPrompt");
+    }
+
+    @Test
+    void shouldMapCreatedHistoryFromCreationResult() {
+      // given
+      final var record = new AgentInstanceRecord();
+      record.setAgentInstanceKey(2251799813685250L);
+      record.addHistoryItem(
+          new AgentHistoryRecord().setHistoryItemId("item-1").setAgentHistoryKey(100L));
+      record.addHistoryItem(
+          new AgentHistoryRecord()
+              .setHistoryItemId("item-2")
+              .setAgentHistoryKey(101L)
+              .setDuplicate(true));
+
+      // when
+      final var result = mapper.toAgentInstanceCreationResult(record);
+
+      // then
+      assertThat(result.getAgentInstanceKey()).isEqualTo("2251799813685250");
+      assertThat(result.getCreatedHistory()).hasSize(2);
+      final var first = result.getCreatedHistory().get(0);
+      assertThat(first.getHistoryItemId()).isEqualTo("item-1");
+      assertThat(first.getHistoryItemKey()).isEqualTo("100");
+      assertThat(first.getIsDuplicate()).isFalse();
+      final var second = result.getCreatedHistory().get(1);
+      assertThat(second.getHistoryItemId()).isEqualTo("item-2");
+      assertThat(second.getHistoryItemKey()).isEqualTo("101");
+      assertThat(second.getIsDuplicate()).isTrue();
     }
   }
 

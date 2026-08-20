@@ -19,14 +19,16 @@ import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.DocumentContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentInstanceLimits;
-import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
+import io.camunda.client.api.command.AgentInstanceLimits;
+import io.camunda.client.api.command.AgentTool;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryRoleEnum;
 import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
 import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
 import io.camunda.client.protocol.rest.AgentInstanceTextContent;
@@ -38,12 +40,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Validates and maps the conversation-history sub-structures (content blocks, tool calls, metrics)
- * shared between {@link CreateAgentHistoryItemCommandImpl} (a single history item) and {@link
- * UpdateAgentInstanceCommandImpl} (a batch of history items). Both commands submit items built from
- * the same {@link AgentInstanceHistoryContent}/{@link AgentInstanceHistoryToolCall}/ {@link
+ * Validates and maps the conversation-history sub-structures (content blocks, tool calls, metrics,
+ * and whole history items) shared between {@link CreateAgentHistoryItemCommandImpl} (a single
+ * history item), {@link CreateAgentInstanceCommandImpl} and {@link UpdateAgentInstanceCommandImpl}
+ * (a batch of history items). All three commands submit items built from the same {@link
+ * AgentInstanceHistoryContent}/{@link AgentInstanceHistoryToolCall}/ {@link
  * AgentInstanceHistoryMetrics} API types onto the same protocol wire types, so this class keeps
- * their validation rules and error messages in one place rather than two.
+ * their validation rules and error messages in one place rather than several.
  */
 final class AgentInstanceHistoryMapper {
 
@@ -214,5 +217,38 @@ final class AgentInstanceHistoryMapper {
         .maxTokens(limits.getMaxTokens())
         .maxModelCalls(limits.getMaxModelCalls())
         .maxToolCalls(limits.getMaxToolCalls());
+  }
+
+  static io.camunda.client.protocol.rest.AgentInstanceHistoryItem toProtocolHistoryItem(
+      final AgentInstanceHistoryItem item) {
+    ArgumentUtil.ensureNotNull("historyItemId", item.getHistoryItemId());
+    if (item.getHistoryItemId().trim().isEmpty()) {
+      throw new IllegalArgumentException("historyItemId must not be blank");
+    }
+    ArgumentUtil.ensureGreaterThan("loopIteration", item.getLoopIteration(), 0);
+    ArgumentUtil.ensureNotNull("role", item.getRole());
+    ArgumentUtil.ensureNotNull("content", item.getContent());
+    ArgumentUtil.ensureNotNull("producedAt", item.getProducedAt());
+
+    final AgentInstanceHistoryRoleEnum protoRole =
+        AgentInstanceHistoryRoleEnum.fromValue(item.getRole().name());
+    if (protoRole == null) {
+      throw new IllegalArgumentException("Invalid role: " + item.getRole());
+    }
+
+    return new io.camunda.client.protocol.rest.AgentInstanceHistoryItem()
+        .historyItemId(item.getHistoryItemId())
+        .loopIteration(item.getLoopIteration())
+        .role(protoRole)
+        .content(toProtocolContent(item.getContent()))
+        .toolCalls(toProtocolToolCalls(item.getToolCalls()))
+        .metrics(toProtocolMetrics(item.getMetrics()))
+        .producedAt(item.getProducedAt().toString())
+        .tools(toProtocolTools(item.getTools()))
+        .model(item.getModel())
+        .provider(item.getProvider())
+        .limits(toProtocolLimits(item.getLimits()))
+        .systemPrompt(
+            item.getSystemPrompt() != null ? toProtocolContent(item.getSystemPrompt()) : null);
   }
 }

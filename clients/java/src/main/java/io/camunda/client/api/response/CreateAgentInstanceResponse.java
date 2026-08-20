@@ -15,10 +15,17 @@
  */
 package io.camunda.client.api.response;
 
+import java.util.List;
+
 public interface CreateAgentInstanceResponse {
 
   /**
    * @return the system-generated key for the created agent instance
    */
   long getAgentInstanceKey();
+
+  /**
+   * @return one entry per history item submitted on the create request, in request order
+   */
+  List<AgentInstanceCreatedHistoryItem> getCreatedHistory();
 }

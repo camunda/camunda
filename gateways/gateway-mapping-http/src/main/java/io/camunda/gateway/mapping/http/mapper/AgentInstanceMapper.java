@@ -65,15 +65,31 @@ public class AgentInstanceMapper {
 
           record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
 
-          final var def = request.getDefinition();
-          record
-              .getDefinition()
-              .setModel(def.getModel())
-              .setProvider(def.getProvider())
-              .setSystemPrompt(def.getSystemPrompt());
+          if (request.getDefinition() != null) {
+            final var def = request.getDefinition();
+            record
+                .getDefinition()
+                .setModel(def.getModel())
+                .setProvider(def.getProvider())
+                .setSystemPrompt(def.getSystemPrompt());
+          }
 
           if (request.getLimits() != null) {
             fillLimits(request.getLimits(), record.getLimits());
+          }
+
+          if (request.getJobKey() != null) {
+            record.setJobKey(Long.parseLong(request.getJobKey()));
+          }
+
+          if (request.getJobLease() != null) {
+            record.setJobLease(request.getJobLease());
+          }
+
+          if (request.getHistory() != null) {
+            for (final AgentInstanceHistoryItem historyItem : request.getHistory()) {
+              record.addHistoryItem(mapHistoryItem(historyItem));
+            }
           }
 
           return record;
@@ -140,21 +156,26 @@ public class AgentInstanceMapper {
       final AgentInstanceRecord record) {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
+        .createdHistory(toCreatedHistory(record))
         .build();
   }
 
   public AgentInstanceUpdateResult toAgentInstanceUpdateResult(final AgentInstanceRecord record) {
-    final List<AgentInstanceCreatedHistoryItem> createdHistory =
-        record.getHistory().stream()
-            .map(
-                item ->
-                    AgentInstanceCreatedHistoryItem.Builder.create()
-                        .historyItemId(item.getHistoryItemId())
-                        .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
-                        .isDuplicate(item.isDuplicate())
-                        .build())
-            .collect(Collectors.toList());
-    return AgentInstanceUpdateResult.Builder.create().createdHistory(createdHistory).build();
+    return AgentInstanceUpdateResult.Builder.create()
+        .createdHistory(toCreatedHistory(record))
+        .build();
+  }
+
+  private List<AgentInstanceCreatedHistoryItem> toCreatedHistory(final AgentInstanceRecord record) {
+    return record.getHistory().stream()
+        .map(
+            item ->
+                AgentInstanceCreatedHistoryItem.Builder.create()
+                    .historyItemId(item.getHistoryItemId())
+                    .historyItemKey(KeyUtil.keyToString(item.getAgentHistoryKey()))
+                    .isDuplicate(item.isDuplicate())
+                    .build())
+        .collect(Collectors.toList());
   }
 
   public Either<ProblemDetail, AgentHistoryRecord> toCreateAgentHistoryRecord(
@@ -262,8 +283,17 @@ public class AgentInstanceMapper {
     }
 
     if (historyItem.getLimits() != null) {
-      fillLimits(historyItem.getLimits(), record.getLimits());
-      record.addChangedAttribute("limits");
+      final AgentInstanceLimits limits = historyItem.getLimits();
+      fillLimits(limits, record.getLimits());
+      if (limits.getMaxTokens() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_TOKENS);
+      }
+      if (limits.getMaxModelCalls() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_MODEL_CALLS);
+      }
+      if (limits.getMaxToolCalls() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_TOOL_CALLS);
+      }
     }
 
     if (historyItem.getSystemPrompt() != null) {

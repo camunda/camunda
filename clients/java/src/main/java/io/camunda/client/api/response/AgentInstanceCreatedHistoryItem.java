@@ -15,12 +15,23 @@
  */
 package io.camunda.client.api.response;
 
-import java.util.List;
-
-public interface UpdateAgentInstanceResponse {
+/**
+ * The outcome of appending a single history item from a create or update request's history batch.
+ */
+public interface AgentInstanceCreatedHistoryItem {
 
   /**
-   * @return one entry per history item submitted on the update request, in request order
+   * @return the id of the corresponding request item, echoed back for correlation by id
    */
-  List<AgentInstanceCreatedHistoryItem> getCreatedHistory();
+  String getHistoryItemId();
+
+  /**
+   * @return the system-generated key for the created agent history item
+   */
+  long getHistoryItemKey();
+
+  /**
+   * @return true if this item was already present and no new history entry was created for it
+   */
+  boolean isDuplicate();
 }

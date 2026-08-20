@@ -15,57 +15,25 @@
  */
 package io.camunda.client.impl.response;
 
+import io.camunda.client.api.response.AgentInstanceCreatedHistoryItem;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
-import io.camunda.client.protocol.rest.AgentInstanceCreatedHistoryItem;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class UpdateAgentInstanceResponseImpl implements UpdateAgentInstanceResponse {
 
-  private final List<CreatedHistoryItem> createdHistory;
+  private final List<AgentInstanceCreatedHistoryItem> createdHistory;
 
   public UpdateAgentInstanceResponseImpl(final AgentInstanceUpdateResult result) {
-    if (result == null || result.getCreatedHistory() == null) {
-      createdHistory = Collections.emptyList();
-    } else {
-      createdHistory =
-          result.getCreatedHistory().stream()
-              .map(CreatedHistoryItemImpl::new)
-              .collect(Collectors.toList());
-    }
+    createdHistory =
+        result == null
+            ? Collections.emptyList()
+            : AgentInstanceCreatedHistoryItemImpl.toCreatedHistory(result.getCreatedHistory());
   }
 
   @Override
-  public List<CreatedHistoryItem> getCreatedHistory() {
+  public List<AgentInstanceCreatedHistoryItem> getCreatedHistory() {
     return createdHistory;
-  }
-
-  private static final class CreatedHistoryItemImpl implements CreatedHistoryItem {
-    private final String historyItemId;
-    private final long historyItemKey;
-    private final boolean duplicate;
-
-    private CreatedHistoryItemImpl(final AgentInstanceCreatedHistoryItem item) {
-      historyItemId = item.getHistoryItemId();
-      historyItemKey = Long.parseLong(item.getHistoryItemKey());
-      duplicate = Boolean.TRUE.equals(item.getIsDuplicate());
-    }
-
-    @Override
-    public String getHistoryItemId() {
-      return historyItemId;
-    }
-
-    @Override
-    public long getHistoryItemKey() {
-      return historyItemKey;
-    }
-
-    @Override
-    public boolean isDuplicate() {
-      return duplicate;
-    }
   }
 }
