@@ -16,7 +16,6 @@ import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
-import io.camunda.gateway.protocol.model.AgentInstanceMetricsDelta;
 import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
@@ -84,60 +83,6 @@ class AgentInstanceMapperTest {
       final var record = result.get();
       assertThat(record.getStatus().name()).isEqualTo("THINKING");
       assertThat(record.getChangedAttributes()).containsExactly("status");
-    }
-
-    @Test
-    void shouldMapMetricsOntoRecord() {
-      // given
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
-      request.getMetrics().setInputTokens(1000L);
-      request.getMetrics().setOutputTokens(500L);
-      request.getMetrics().setModelCalls(3);
-      request.getMetrics().setToolCalls(7);
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
-      assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
-      assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
-      assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
-      assertThat(record.getChangedAttributes()).containsExactly("metrics");
-    }
-
-    @Test
-    void shouldMapToolsOntoRecord() {
-      // given
-      final var request =
-          AgentInstanceUpdateRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setTools(
-          List.of(
-              AgentTool.Builder.create()
-                  .name("searchDatabase")
-                  .description("Searches the database")
-                  .elementId(null)
-                  .build()));
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toUpdateAgentInstanceRecord(AGENT_INSTANCE_KEY, request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getTools()).hasSize(1);
-      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
-      assertThat(record.getChangedAttributes()).containsExactly("tools");
     }
   }
 
@@ -566,22 +511,13 @@ class AgentInstanceMapperTest {
   class CombinedFieldMappingTest {
 
     @Test
-    void shouldMapStatusMetricsToolsAndHistoryTogetherWithoutLosingAny() {
+    void shouldMapStatusAndHistoryTogetherWithoutLosingAny() {
       // given
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
               .build();
       request.setStatus(AgentInstanceUpdateStatusEnum.IDLE);
-      request.setMetrics(AgentInstanceMetricsDelta.Builder.create().build());
-      request.getMetrics().setInputTokens(10L);
-      request.setTools(
-          List.of(
-              AgentTool.Builder.create()
-                  .name("searchDatabase")
-                  .description(null)
-                  .elementId(null)
-                  .build()));
       request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
@@ -596,13 +532,10 @@ class AgentInstanceMapperTest {
       assertThat(result.isRight()).isTrue();
       final var record = result.get();
       assertThat(record.getStatus().name()).isEqualTo("IDLE");
-      assertThat(record.getMetrics().getInputTokens()).isEqualTo(10L);
-      assertThat(record.getTools()).hasSize(1);
-      assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
       assertThat(record.getHistory()).hasSize(2);
       assertThat(record.getHistory().get(0).getHistoryItemId()).isEqualTo("item-1");
       assertThat(record.getHistory().get(1).getHistoryItemId()).isEqualTo("item-2");
-      assertThat(record.getChangedAttributes()).containsExactly("status", "metrics", "tools");
+      assertThat(record.getChangedAttributes()).containsExactly("status");
     }
   }
 }
