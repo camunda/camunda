@@ -21,7 +21,9 @@ public enum ContextType {
   JOB(false),
   MAPPING_RULE(false),
   MESSAGE_SUBSCRIPTION(false),
-  PROCESS_DEFINITION(false),
+  // draining-deletion issues markDraining and markDeleted as two UPDATEs on the same row, their
+  // order must be preserved so the state is updated correctly
+  PROCESS_DEFINITION(true),
   PROCESS_INSTANCE(false),
   ROLE(false),
   SEQUENCE_FLOW(false),

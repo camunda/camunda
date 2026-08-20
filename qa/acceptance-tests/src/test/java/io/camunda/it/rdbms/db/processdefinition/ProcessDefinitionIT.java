@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.time.OffsetDateTime;
@@ -203,5 +204,29 @@ public class ProcessDefinitionIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldMarkDeletedWhenDrainedAndDeletedInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a process definition deleted with zero active instances emits DRAINING and
+    // FULLY_DELETED back-to-back, so markDraining and markDeleted are queued into the same flush
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b);
+    final var key = processDefinition.processDefinitionKey();
+
+    // when both state transitions are flushed together
+    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
+    rdbmsWriters.getProcessDefinitionWriter().markDeleted(key);
+    rdbmsWriters.flush();
+
+    // then the terminal state wins and the row is DELETED, not stuck at DRAINING
+    final var deleted = processDefinitionReader.findOne(key).orElse(null);
+    assertThat(deleted).isNotNull();
+    assertThat(deleted.state()).isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.DELETED);
   }
 }
