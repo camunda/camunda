@@ -27,6 +27,8 @@ public class ProcessDefinitionDeletionRequestService {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionDeletionRequestService.class);
 
+  private static final String REST_API_IDENTIFIER_NAME = "processDefinitionKey";
+
   private final ProcessDefinitionReader processDefinitionReader;
   private final JobRegistryReader jobRegistryReader;
   private final JobRegistryWriter jobRegistryWriter;
@@ -40,47 +42,48 @@ public class ProcessDefinitionDeletionRequestService {
     this.jobRegistryWriter = jobRegistryWriter;
   }
 
-  public void queueProcessDefinitionDeletion(final String processDefinitionKey) {
+  public void queueProcessDefinitionDeletion(final String processDefinitionId) {
     LOG.info(
         "Received request to delete Optimize data for process definition [{}].",
-        processDefinitionKey);
+        processDefinitionId);
 
-    validateIsNumeric(processDefinitionKey);
-    validateDefinitionExists(processDefinitionKey);
-    validateNoBlockingJobExists(processDefinitionKey);
+    validateIsNumeric(processDefinitionId);
+    validateDefinitionExists(processDefinitionId);
+    validateNoBlockingJobExists(processDefinitionId);
 
     jobRegistryWriter.createJobEntry(
-        JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionKey);
+        JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionId);
   }
 
-  private void validateIsNumeric(final String processDefinitionKey) {
+  private void validateIsNumeric(final String processDefinitionId) {
     try {
-      Long.parseLong(processDefinitionKey);
+      Long.parseLong(processDefinitionId);
     } catch (final NumberFormatException e) {
       throw new BadRequestException(
-          String.format("processDefinitionKey [%s] must be numeric.", processDefinitionKey));
+          String.format("%s [%s] must be numeric.", REST_API_IDENTIFIER_NAME, processDefinitionId));
     }
   }
 
-  private void validateDefinitionExists(final String processDefinitionKey) {
-    if (processDefinitionReader.getProcessDefinition(processDefinitionKey, false).isEmpty()) {
+  private void validateDefinitionExists(final String processDefinitionId) {
+    if (!processDefinitionReader.processDefinitionExists(processDefinitionId)) {
       throw new NotFoundException(
           String.format(
-              "No process definition found for processDefinitionKey [%s].", processDefinitionKey));
+              "No process definition found for %s [%s].",
+              REST_API_IDENTIFIER_NAME, processDefinitionId));
     }
   }
 
-  private void validateNoBlockingJobExists(final String processDefinitionKey) {
+  private void validateNoBlockingJobExists(final String processDefinitionId) {
     final Optional<JobRegistryEntryDto> existingEntry =
         jobRegistryReader.findLastByJobTypeAndEntityId(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionKey);
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, processDefinitionId);
     final boolean deleteJobAlreadyExists =
         existingEntry.filter(entry -> entry.getStatus() != JobStatus.FAILED).isPresent();
     if (deleteJobAlreadyExists) {
       throw new OptimizeConflictException(
           String.format(
-              "A deletion job for processDefinitionKey [%s] already exists with status [%s].",
-              processDefinitionKey, existingEntry.get().getStatus()));
+              "A deletion job for %s [%s] already exists with status [%s].",
+              REST_API_IDENTIFIER_NAME, processDefinitionId, existingEntry.get().getStatus()));
     }
   }
 }

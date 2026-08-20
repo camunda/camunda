@@ -16,7 +16,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
 import io.camunda.optimize.dto.optimize.query.job.JobRegistryEntryDto;
 import io.camunda.optimize.dto.optimize.query.job.JobStatus;
@@ -34,7 +33,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class ProcessDefinitionDeletionRequestServiceTest {
 
-  private static final String PROCESS_DEFINITION_KEY = "123456789";
+  private static final String PROCESS_DEFINITION_ID = "123456789";
 
   private final ProcessDefinitionReader processDefinitionReader =
       mock(ProcessDefinitionReader.class);
@@ -46,44 +45,42 @@ public class ProcessDefinitionDeletionRequestServiceTest {
           processDefinitionReader, jobRegistryReader, jobRegistryWriter);
 
   @Test
-  public void shouldQueueJobWhenKeyIsValidAndNoBlockingEntryExists() {
+  public void shouldQueueJobWhenIdIsValidAndNoBlockingEntryExists() {
     // given
-    when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
-        .thenReturn(Optional.of(new ProcessDefinitionOptimizeDto()));
+    when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY))
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.empty());
 
     // when
-    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY);
+    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID);
 
     // then
     verify(jobRegistryWriter)
-        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
+        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
   }
 
   @Test
   public void shouldQueueBothJobsWhenConcurrentRequestsRaceThePreCreationCheck() {
     // given: two requests both check for a blocking entry before either has written its own,
     // modeling the race window between the read and the write
-    when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
-        .thenReturn(Optional.of(new ProcessDefinitionOptimizeDto()));
+    when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY))
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.empty());
 
     // when
-    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY);
-    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY);
+    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID);
+    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID);
 
     // then: both requests are allowed to queue their own job; concurrent duplicate deletion
     // requests are accepted
     verify(jobRegistryWriter, times(2))
-        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
+        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
   }
 
   @Test
-  public void shouldRejectNonNumericKey() {
+  public void shouldRejectNonNumericId() {
     // when
     final Throwable thrown =
         catchThrowable(() -> underTest.queueProcessDefinitionDeletion("not-a-number"));
@@ -94,14 +91,13 @@ public class ProcessDefinitionDeletionRequestServiceTest {
   }
 
   @Test
-  public void shouldRejectKeyNotFoundInProcessDefinitionIndex() {
+  public void shouldRejectIdNotFoundInProcessDefinitionIndex() {
     // given
-    when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
-        .thenReturn(Optional.empty());
+    when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(false);
 
     // when
     final Throwable thrown =
-        catchThrowable(() -> underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY));
+        catchThrowable(() -> underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID));
 
     // then
     assertThat(thrown).isInstanceOf(NotFoundException.class);
@@ -114,19 +110,18 @@ public class ProcessDefinitionDeletionRequestServiceTest {
       names = {"QUEUED", "COMPLETED"})
   public void shouldRejectWhenBlockingEntryAlreadyExists(final JobStatus blockingStatus) {
     // given
-    when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
-        .thenReturn(Optional.of(new ProcessDefinitionOptimizeDto()));
+    when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
     final JobRegistryEntryDto existingEntry =
         new JobRegistryEntryDto(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
     existingEntry.setStatus(blockingStatus);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY))
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.of(existingEntry));
 
     // when
     final Throwable thrown =
-        catchThrowable(() -> underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY));
+        catchThrowable(() -> underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID));
 
     // then
     assertThat(thrown).isInstanceOf(OptimizeConflictException.class);
@@ -136,21 +131,20 @@ public class ProcessDefinitionDeletionRequestServiceTest {
   @Test
   public void shouldQueueNewJobWhenExistingEntryHasFailedStatus() {
     // given
-    when(processDefinitionReader.getProcessDefinition(PROCESS_DEFINITION_KEY, false))
-        .thenReturn(Optional.of(new ProcessDefinitionOptimizeDto()));
+    when(processDefinitionReader.processDefinitionExists(PROCESS_DEFINITION_ID)).thenReturn(true);
     final JobRegistryEntryDto failedEntry =
         new JobRegistryEntryDto(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
     failedEntry.setStatus(JobStatus.FAILED);
     when(jobRegistryReader.findLastByJobTypeAndEntityId(
-            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY))
+            JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID))
         .thenReturn(Optional.of(failedEntry));
 
     // when
-    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_KEY);
+    underTest.queueProcessDefinitionDeletion(PROCESS_DEFINITION_ID);
 
     // then
     verify(jobRegistryWriter)
-        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_KEY);
+        .createJobEntry(JobType.DELETE, EntityType.PROCESS_DEFINITION, PROCESS_DEFINITION_ID);
   }
 }

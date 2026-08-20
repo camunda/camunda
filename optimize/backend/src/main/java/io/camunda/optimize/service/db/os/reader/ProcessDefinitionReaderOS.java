@@ -62,6 +62,20 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   }
 
   @Override
+  public boolean processDefinitionExists(final String definitionId) {
+    final Query query =
+        new BoolQuery.Builder()
+            .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
+            .build()
+            .toQuery();
+
+    final String errorMessage =
+        String.format(
+            "Was not able to check existence of process definition with id [%s].", definitionId);
+    return osClient.count(new String[] {PROCESS_DEFINITION_INDEX_NAME}, query, errorMessage) > 0;
+  }
+
+  @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
     final Query query =

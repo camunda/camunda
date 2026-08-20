@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -84,7 +83,6 @@ public class PublicApiRestService {
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   private static final String PROCESS_DEFINITION_BY_KEY_PATH =
       PROCESS_DEFINITION_SUB_PATH + "/{processDefinitionKey}";
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -181,11 +179,14 @@ public class PublicApiRestService {
     dashboardService.deleteDashboard(dashboardId);
   }
 
+  // The user-facing API follows the C8 notation and uses processDefinitionKey as the numeric
+  // identifier of a process definition. Since Optimize uses the C7 notation, here we switch to
+  // processDefinitionId.
   @DeleteMapping(PROCESS_DEFINITION_BY_KEY_PATH)
   @ResponseStatus(HttpStatus.ACCEPTED)
   public void deleteProcessDefinitionData(
-      final @PathVariable("processDefinitionKey") String processDefinitionKey) {
-    processDefinitionDeletionRequestService.queueProcessDefinitionDeletion(processDefinitionKey);
+      final @PathVariable("processDefinitionKey") String processDefinitionId) {
+    processDefinitionDeletionRequestService.queueProcessDefinitionDeletion(processDefinitionId);
   }
 
   @PostMapping(LABELS_SUB_PATH)
