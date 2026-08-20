@@ -2104,13 +2104,15 @@ public class ProtoBufSerializer
                     e -> MemberId.from(e.getKey()), e -> decodeBrokerPartitionState(e.getValue())));
     final Optional<RoutingState> routingState =
         proto.hasRoutingState() ? decodeRoutingState(proto.getRoutingState()) : Optional.empty();
-    // At most one is set; a group runs one change, and a change uses one execution model.
+    // A oneof, not a hasX()/hasY() preference chain: exactly one of the two can be set on the
+    // wire, so this switches on which rather than inferring it by checking one field first.
     final Optional<ChangePlan> pendingChanges =
-        proto.hasPendingChanges()
-            ? Optional.of(decodeChangePlan(proto.getPendingChanges()))
-            : proto.hasPendingGraphChanges()
-                ? Optional.of(decodeDependencyChangePlan(proto.getPendingGraphChanges()))
-                : Optional.empty();
+        switch (proto.getPendingChangeCase()) {
+          case PENDINGCHANGES -> Optional.of(decodeChangePlan(proto.getPendingChanges()));
+          case PENDINGGRAPHCHANGES ->
+              Optional.of(decodeDependencyChangePlan(proto.getPendingGraphChanges()));
+          case PENDINGCHANGE_NOT_SET -> Optional.empty();
+        };
     final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> lastChange =
         proto.hasLastChange()
             ? Optional.of(decodeCompletedChange(proto.getLastChange()))
