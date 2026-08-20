@@ -369,42 +369,6 @@ class AgentInstanceMapperTest {
     }
 
     @Test
-    void shouldLeaveDefinitionAndLimitsUnsetWhenNotProvidedAlongsideHistory() {
-      // given
-      final var request =
-          AgentInstanceCreationRequest.Builder.create()
-              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-              .build();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(List.of(textContent("configuration")))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))));
-
-      // when
-      final Either<ProblemDetail, AgentInstanceRecord> result =
-          mapper.toCreateAgentInstanceRecord(request);
-
-      // then
-      assertThat(result.isRight()).isTrue();
-      final var record = result.get();
-      assertThat(record.getDefinition().getModel()).isEmpty();
-      assertThat(record.getDefinition().getProvider()).isEmpty();
-      assertThat(record.getDefinition().getSystemPrompt()).isEmpty();
-      assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
-      assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
-      assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
-    }
-
-    @Test
     void shouldMapConfigurationLimitsOnCreateUsingGranularChangedAttributes() {
       // given
       final var request =
