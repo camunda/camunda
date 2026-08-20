@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryItem;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstance;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -119,12 +121,17 @@ class AgentInstanceAuthorizationIT {
     // Create history item immediately while jobKey1 is still active, before waiting for
     // other agents to be indexed (which can take long enough for the job to expire).
     adminClient
-        .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+        .newUpdateAgentInstanceCommand(agentInstanceKey1)
         .elementInstanceKey(elementInstanceKey1)
         .jobKey(jobKey1)
-        .role(AgentInstanceHistoryRole.USER)
-        .content(List.of(AgentInstanceHistoryContent.text("hello")))
-        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .history(
+            List.of(
+                new AgentInstanceHistoryItem()
+                    .historyItemId(UUID.randomUUID().toString())
+                    .loopIteration(1)
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
         .execute();
     // Complete job1 so JobCompleteProcessor emits AGENT_HISTORY:COMMIT, transitioning
     // the history item to COMMITTED so it becomes searchable.
@@ -311,12 +318,17 @@ class AgentInstanceAuthorizationIT {
     final ThrowingCallable execute =
         () ->
             camundaClient
-                .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+                .newUpdateAgentInstanceCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
                 .jobKey(jobKey1)
-                .role(AgentInstanceHistoryRole.USER)
-                .content(List.of(AgentInstanceHistoryContent.text("hello")))
-                .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                .history(
+                    List.of(
+                        new AgentInstanceHistoryItem()
+                            .historyItemId(UUID.randomUUID().toString())
+                            .loopIteration(1)
+                            .role(AgentInstanceHistoryRole.USER)
+                            .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                            .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
                 .execute();
 
     // then
@@ -335,12 +347,17 @@ class AgentInstanceAuthorizationIT {
         .isThrownBy(
             () ->
                 camundaClient
-                    .newCreateAgentHistoryItemCommand(agentInstanceKey3)
+                    .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
-                    .role(AgentInstanceHistoryRole.USER)
-                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
-                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                    .history(
+                        List.of(
+                            new AgentInstanceHistoryItem()
+                                .historyItemId(UUID.randomUUID().toString())
+                                .loopIteration(1)
+                                .role(AgentInstanceHistoryRole.USER)
+                                .content(List.of(AgentInstanceHistoryContent.text("hello")))
+                                .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))))
                     .execute());
   }
 

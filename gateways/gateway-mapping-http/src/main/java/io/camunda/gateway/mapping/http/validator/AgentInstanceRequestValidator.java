@@ -19,7 +19,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
-import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
@@ -100,50 +99,6 @@ public class AgentInstanceRequestValidator {
               violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
               violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
             }
-          }
-
-          return violations;
-        });
-  }
-
-  @SuppressWarnings("ConstantValue")
-  public Optional<ProblemDetail> validateHistoryItemRequest(
-      final String agentInstanceKey, final AgentInstanceHistoryItemRequest request) {
-    return validate(
-        () -> {
-          final List<String> violations = new ArrayList<>();
-
-          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
-
-          if (request.getElementInstanceKey() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-          } else {
-            validatePositiveKeyFormat(
-                request.getElementInstanceKey(), "elementInstanceKey", violations);
-          }
-
-          if (request.getJobKey() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
-          } else {
-            validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
-          }
-
-          if (request.getRole() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
-          }
-
-          if (request.getContent() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
-          } else {
-            for (int i = 0; i < request.getContent().size(); i++) {
-              validateContentItem("content[" + i + "]", request.getContent().get(i), violations);
-            }
-          }
-
-          if (request.getProducedAt() == null || request.getProducedAt().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("producedAt"));
-          } else {
-            validateDate(request.getProducedAt(), "producedAt", violations);
           }
 
           return violations;

@@ -194,68 +194,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
-  /agent-instances/{agentInstanceKey}/history:
-    post:
-      x-eventually-consistent: false
-      security:
-        - bearerAuth: []
-        - basicAuth: []
-      tags:
-        - Agent instance
-      operationId: createAgentInstanceHistoryItem
-      x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
-      summary: Create agent instance history item
-      description: |
-        Appends a single history item to an agent instance's conversation history.
-        The created item has commitStatus PENDING until the job identified by jobLease
-        completes successfully, at which point it transitions to COMMITTED. If the job
-        fails or is superseded by a retry, the item is marked DISCARDED.
-      x-semantic-establishes:
-        kind: AgentInstanceLoopIteration
-        identifiedBy:
-          - { in: body, name: loopIteration, semanticType: LoopIterationId }
-      parameters:
-        - name: agentInstanceKey
-          in: path
-          required: true
-          description: The key of the agent instance to append the history item to.
-          schema:
-            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AgentInstanceHistoryItemRequest'
-      responses:
-        "201":
-          description: The history item was created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AgentInstanceHistoryItemCreationResult'
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "404":
-          description: |
-            The agent instance with the given key was not found, or the specified
-            jobKey does not correspond to an active job.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-        "503":
-          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-added-in-version: "8.10"
-
   /agent-instances/{agentInstanceKey}/history/search:
     post:
       x-eventually-consistent: true
@@ -922,65 +860,6 @@ components:
 
     ## History schemas
 
-    AgentInstanceHistoryItemRequest:
-      description: Request to append a single history item to an agent instance's conversation history.
-      type: object
-      required:
-        - elementInstanceKey
-        - jobKey
-        - jobLease
-        - role
-        - content
-        - producedAt
-      properties:
-        elementInstanceKey:
-          description: |
-            The key of the currently-active element instance.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-        jobKey:
-          description: The key of the current job activation during which this history item was produced.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/JobKey'
-        jobLease:
-          description: Opaque lease token received from the job activation response.
-          type: string
-        loopIteration:
-          description: |
-            The loop iteration this item belongs to. Omit if not grouping items by
-            loopIteration.
-          nullable: true
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/LoopIterationId'
-        role:
-          description: The role of this history item in the conversation.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
-        content:
-          description: The content blocks of this history item.
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentInstanceMessageContent'
-        toolCalls:
-          description: |
-            Tool calls associated with this history item.
-            For ASSISTANT items: tool calls dispatched by this LLM response.
-            For TOOL_RESULT items: single-entry array referencing the originating tool call.
-            Omit for USER items.
-          type: array
-          nullable: true
-          items:
-            $ref: '#/components/schemas/AgentInstanceToolCall'
-        metrics:
-          description: Per-call token and latency metrics. Present on ASSISTANT items only.
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
-        producedAt:
-          description: The agent-side timestamp of when this message was produced.
-          type: string
-          format: date-time
-
     AgentInstanceHistoryItem:
       description: |
         A single history item to append to the agent instance's conversation history,
@@ -1065,19 +944,6 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/AgentInstanceMessageContent'
-
-    AgentInstanceHistoryItemCreationResult:
-      description: Response returned after successfully appending a history item.
-      type: object
-      x-semantic-provider:
-        - historyItemKey
-      required:
-        - historyItemKey
-      properties:
-        historyItemKey:
-          description: The system-generated key for the created history item.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
 
     AgentInstanceHistorySearchQuerySortRequest:
       type: object
