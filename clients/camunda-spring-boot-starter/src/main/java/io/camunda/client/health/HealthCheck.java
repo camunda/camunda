@@ -17,8 +17,12 @@ package io.camunda.client.health;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.StatusResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HealthCheck {
+  private static final Logger LOG = LoggerFactory.getLogger(HealthCheck.class);
+
   private final CamundaClient camundaClient;
 
   public HealthCheck(final CamundaClient camundaClient) {
@@ -26,10 +30,13 @@ public class HealthCheck {
   }
 
   public CheckResult health() {
-    final StatusResponse status = camundaClient.newStatusRequest().send().join();
-    if (status.getStatus() == StatusResponse.Status.UP) {
-      return CheckResult.UP;
-    } else {
+    try {
+      final StatusResponse status = camundaClient.newStatusRequest().send().join();
+      return status.getStatus() == StatusResponse.Status.UP ? CheckResult.UP : CheckResult.DOWN;
+    } catch (final RuntimeException e) {
+      // send().join() throws ClientException/ClientStatusException on connectivity issues or
+      // timeouts; the health endpoint must report DOWN rather than surface an error response.
+      LOG.warn("Failed to determine health status", e);
       return CheckResult.DOWN;
     }
   }
