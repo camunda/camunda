@@ -161,10 +161,12 @@ public final class MessageEventProcessors {
             new MessageSubscriptionDeferCorrelationProcessor(
                 processingState.getPartitionId(),
                 messageState,
+                messageCorrelationState,
                 subscriptionState,
                 subscriptionCommandSender,
                 writers,
-                clock))
+                clock,
+                metrics))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE_RETRY,

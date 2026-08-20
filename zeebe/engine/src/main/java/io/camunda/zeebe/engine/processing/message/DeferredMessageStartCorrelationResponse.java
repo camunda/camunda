@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -40,6 +41,14 @@ import org.slf4j.LoggerFactory;
  * UNIQUENESS_REJECTED}, {@code NO_SUBSCRIPTION_REJECTED}) call into this helper to flush that
  * pending request into the terminal {@link MessageCorrelationIntent#CORRELATED} / {@link
  * MessageCorrelationIntent#NOT_CORRELATED} event plus the matching gateway response.
+ *
+ * <p>The same deferral applies to a direct correlate targeting a catch event or receive task whose
+ * subscription lives on a different partition than the target process instance: {@code
+ * MessageSubscriptionDeferCorrelationProcessor} (P_K) calls {@link
+ * #writeNotCorrelatedResponse(MessageSubscriptionRecord, RejectionType, String)} once it has given
+ * up trying to redirect a suspended target's message to a ready sibling, for the same reason a
+ * message-start reply resolves here: the pending request's {@code requestId}/{@code
+ * requestStreamId} are only known on P_K, keyed by {@code messageKey}.
  *
  * <p>The helper is a no-op when no request data exists for the {@code messageKey}. That is the
  * expected case for a {@code publish} that was delegated (publishes are asynchronous and never
@@ -137,6 +146,27 @@ final class DeferredMessageStartCorrelationResponse {
         reply.getVariablesBuffer(),
         reply.getTenantId(),
         reply.getBusinessId(),
+        rejectionType,
+        reason);
+  }
+
+  /**
+   * Same outcome as {@link #writeNotCorrelatedResponse(MessageStartProcessInstanceRequestRecord,
+   * RejectionType, String)}, for a subscription deferred on the process-instance partition instead
+   * of a message-start reply. No-op when the deferred subscription's message key carries no pending
+   * request data (e.g. it was published rather than sent through a direct correlate).
+   */
+  void writeNotCorrelatedResponse(
+      final MessageSubscriptionRecord deferredSubscription,
+      final RejectionType rejectionType,
+      final String reason) {
+    writeNotCorrelatedResponse(
+        deferredSubscription.getMessageKey(),
+        deferredSubscription.getMessageName(),
+        deferredSubscription.getCorrelationKey(),
+        deferredSubscription.getVariablesBuffer(),
+        deferredSubscription.getTenantId(),
+        deferredSubscription.getBusinessId(),
         rejectionType,
         reason);
   }

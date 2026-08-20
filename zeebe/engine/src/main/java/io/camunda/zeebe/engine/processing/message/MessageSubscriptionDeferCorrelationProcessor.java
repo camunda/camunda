@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import static io.camunda.zeebe.engine.Engine.ERROR_MESSAGE_SUSPENDED_PI;
+
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -21,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import org.agrona.collections.MutableBoolean;
 
 /**
  * Handles {@link MessageSubscriptionIntent#DEFER_CORRELATION}, sent by the process instance
@@ -33,6 +38,17 @@ import java.time.InstantSource;
  * message to a ready sibling subscription of the same process sharing the same message name and
  * correlation key. Capping the redirect at depth one prevents two suspended siblings from bouncing
  * the same message between each other forever.
+ *
+ * <p>If the message can neither correlate here nor be redirected, any client request waiting on
+ * this exact message key is resolved immediately (see {@link
+ * DeferredMessageStartCorrelationResponse#writeNotCorrelatedResponse(MessageSubscriptionRecord,
+ * RejectionType, String)}) instead of being left pending: a direct {@code POST
+ * /v2/messages/correlation} targeting only a suspended subscription has no other path back to the
+ * client, since the message it published has {@code TTL = -1} and was already expired by {@link
+ * MessageCorrelationCorrelateProcessor} before this deferral could even run, so there is no
+ * buffered message left for a resume retry to pick up later. A {@code publish}-originated
+ * correlation has no such pending request, so this is a no-op for it and it keeps relying on the
+ * existing resume-retry mechanism.
  */
 @ExcludeAuthorizationCheck
 public final class MessageSubscriptionDeferCorrelationProcessor
@@ -46,20 +62,26 @@ public final class MessageSubscriptionDeferCorrelationProcessor
   private final MessageCorrelator messageCorrelator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final DeferredMessageStartCorrelationResponse correlationResponse;
 
   public MessageSubscriptionDeferCorrelationProcessor(
       final int partitionId,
       final MessageState messageState,
+      final MessageCorrelationState messageCorrelationState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final MessageCorrelationMetrics metrics) {
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     messageCorrelator =
         new MessageCorrelator(
             partitionId, messageState, commandSender, stateWriter, writers.sideEffect(), clock);
+    correlationResponse =
+        new DeferredMessageStartCorrelationResponse(
+            stateWriter, writers.response(), messageCorrelationState, messageState, metrics);
   }
 
   @Override
@@ -86,8 +108,13 @@ public final class MessageSubscriptionDeferCorrelationProcessor
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), MessageSubscriptionIntent.CORRELATION_DEFERRED, value);
 
-    if (!alreadyRedirected) {
-      redirectToSibling(value, subscription.getKey());
+    final boolean redirected =
+        !alreadyRedirected && redirectToSibling(value, subscription.getKey());
+    if (!redirected) {
+      correlationResponse.writeNotCorrelatedResponse(
+          value,
+          RejectionType.INVALID_STATE,
+          ERROR_MESSAGE_SUSPENDED_PI.formatted(value.getProcessInstanceKey()));
     }
   }
 
@@ -96,9 +123,13 @@ public final class MessageSubscriptionDeferCorrelationProcessor
    * subscription's message name and correlation key, and asks it to try correlating its next
    * available message. Stops at the first candidate found, whether or not it had a correlatable
    * message - this is a best-effort nudge, not a scan of every sibling.
+   *
+   * @return true if a sibling was found and actually had a correlatable message dispatched to it;
+   *     false if there was no eligible sibling, or the one found had nothing to correlate
    */
-  private void redirectToSibling(
+  private boolean redirectToSibling(
       final MessageSubscriptionRecord deferred, final long deferredSubscriptionKey) {
+    final var dispatchedToSibling = new MutableBoolean(false);
     subscriptionState.visitSubscriptions(
         deferred.getTenantId(),
         deferred.getMessageNameBuffer(),
@@ -112,9 +143,12 @@ public final class MessageSubscriptionDeferCorrelationProcessor
                       .getBpmnProcessIdBuffer()
                       .equals(deferred.getBpmnProcessIdBuffer());
           if (isSibling) {
-            messageCorrelator.correlateNextMessage(candidate.getKey(), candidate.getRecord(), true);
+            dispatchedToSibling.set(
+                messageCorrelator.correlateNextMessage(
+                    candidate.getKey(), candidate.getRecord(), true));
           }
           return !isSibling;
         });
+    return dispatchedToSibling.get();
   }
 }
