@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -66,7 +67,9 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   public void handle(final JobRegistryEntryDto job) {
     final String definitionId = job.getEntityId();
     final Optional<ProcessDefinitionOptimizeDto> definition =
-        processDefinitionReader.getProcessDefinition(definitionId, false);
+        withRetry(
+            "look up process definition " + definitionId,
+            () -> processDefinitionReader.getProcessDefinition(definitionId, false));
     if (definition.isEmpty()) {
       LOG.info("Process definition with ID {} no longer exists, nothing to delete.", definitionId);
       return;
@@ -81,12 +84,20 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   }
 
   private void deleteWithRetry(final String description, final Runnable deletion) {
+    withRetry(
+        description,
+        () -> {
+          deletion.run();
+          return null;
+        });
+  }
+
+  private <T> T withRetry(final String description, final Supplier<T> operation) {
     final BackoffCalculator backoffCalculator =
         new BackoffCalculator(MAX_BACKOFF_SECONDS, INITIAL_BACKOFF_MILLIS);
     for (int attempt = 1; ; attempt++) {
       try {
-        deletion.run();
-        return;
+        return operation.get();
       } catch (final Exception e) {
         if (!isRetryable(e) || attempt >= MAX_ATTEMPTS) {
           throw e;
