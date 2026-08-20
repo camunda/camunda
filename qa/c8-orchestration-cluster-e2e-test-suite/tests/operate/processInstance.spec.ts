@@ -417,12 +417,14 @@ test.describe('Process Instance Incident', () => {
     });
 
     await test.step('Click Call Activity and verify the error type', async () => {
-      await operateProcessInstancePage
-        .getDiagramElement('Task_CallActivity')
-        .dblclick();
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_CallActivity',
+      );
 
       await expect(
-        operateProcessInstancePage.getIncidentRow(/Called element error\./i),
+        operateProcessInstancePage.getSelectedIncidentRow(
+          /Called element error\./i,
+        ),
       ).toBeVisible();
     });
   });
