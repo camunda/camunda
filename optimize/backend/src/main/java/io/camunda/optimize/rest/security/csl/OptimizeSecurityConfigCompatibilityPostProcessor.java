@@ -233,7 +233,14 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         backendUrl.endsWith("/") ? backendUrl.substring(0, backendUrl.length() - 1) : backendUrl;
     derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", base + "/protocol/openid-connect/auth");
     derived.putIfAbsent(OIDC_PREFIX + "token-uri", base + "/protocol/openid-connect/token");
-    derived.putIfAbsent(OIDC_PREFIX + "jwk-set-uri", base + "/protocol/openid-connect/certs");
+    // The public API's own JWK set URI wins: it is configured for the IdP that signs the API
+    // tokens, which need not be the Identity instance behind issuerBackendUrl. bridgePublicApiJwt
+    // runs later and would not overwrite a value put here.
+    final String publicApiJwks =
+        env.getProperty("SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI");
+    derived.putIfAbsent(
+        OIDC_PREFIX + "jwk-set-uri",
+        isBlank(publicApiJwks) ? base + "/protocol/openid-connect/certs" : publicApiJwks);
     LOG.info(
         "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl' because no"
             + " OIDC issuer is configured. Browser login cannot work against an internal URL; set"
@@ -272,10 +279,21 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // cannot be built without a client id, so the guard below must not withhold the credentials.
   private static boolean hasOidcEndpoints(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
-    return hasExplicitOidcEndpoints(env)
-        || (derived.containsKey(OIDC_PREFIX + "authorization-uri")
-            && derived.containsKey(OIDC_PREFIX + "jwk-set-uri")
-            && derived.containsKey(OIDC_PREFIX + "token-uri"));
+    return !isBlank(effectiveOidcEndpoint(env, derived, "authorization-uri"))
+        && !isBlank(effectiveOidcEndpoint(env, derived, "jwk-set-uri"))
+        && !isBlank(effectiveOidcEndpoint(env, derived, "token-uri"));
+  }
+
+  // What CSL will actually see: the derived source is added last, so any explicitly set value wins
+  // even when blank.
+  private static String effectiveOidcEndpoint(
+      final ConfigurableEnvironment env, final Map<String, Object> derived, final String suffix) {
+    final String explicit = env.getProperty(OIDC_PREFIX + suffix);
+    if (explicit != null) {
+      return explicit;
+    }
+    final Object derivedValue = derived.get(OIDC_PREFIX + suffix);
+    return derivedValue == null ? null : derivedValue.toString();
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {

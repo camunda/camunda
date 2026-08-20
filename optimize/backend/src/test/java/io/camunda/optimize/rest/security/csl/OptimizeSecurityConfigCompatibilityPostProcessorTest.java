@@ -190,7 +190,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "benchmark-secret");
     legacy.put(
         "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI",
-        backend + "/protocol/openid-connect/certs");
+        "https://public-api-idp.example.com/keys");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
@@ -200,12 +200,48 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         .isEqualTo(backend + "/protocol/openid-connect/auth");
     assertThat(env.getProperty(OIDC + "token-uri"))
         .isEqualTo(backend + "/protocol/openid-connect/token");
+    // The public API's own JWK set URI wins over the derived one: it may belong to a different IdP.
     assertThat(env.getProperty(OIDC + "jwk-set-uri"))
-        .isEqualTo(backend + "/protocol/openid-connect/certs");
+        .isEqualTo("https://public-api-idp.example.com/keys");
     // The credentials must come with them: a registration cannot be built without a client id, so
     // the guard that withholds them when there is no issuer has to count the derived endpoints.
     assertThat(env.getProperty(OIDC + "client-id")).isEqualTo("optimize");
     assertThat(env.getProperty(OIDC + "client-secret")).isEqualTo("benchmark-secret");
+  }
+
+  @Test
+  void shouldDeriveTheJwkSetUriFromTheBackendUrlWhenThePublicApiConfiguresNone() {
+    final String backend = "http://identity.svc:18080/auth/realms/camunda-platform";
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put("camunda.identity.issuerBackendUrl", backend);
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "jwk-set-uri"))
+        .isEqualTo(backend + "/protocol/openid-connect/certs");
+  }
+
+  @Test
+  void shouldWithholdCredentialsWhenAnEndpointIsExplicitlyBlank() {
+    // An explicitly set blank value outranks the derived one, so the trio CSL sees is incomplete.
+    // Bridging the credentials into it would swap the missing-endpoint failure for a missing-client
+    // one rather than fixing anything.
+    final Map<String, Object> legacy = cslEnabledConfig();
+    legacy.put("camunda.identity.issuer", "");
+    legacy.put(
+        "camunda.identity.issuerBackendUrl",
+        "http://identity.svc:18080/auth/realms/camunda-platform");
+    legacy.put("camunda.identity.clientId", "optimize");
+    legacy.put("CAMUNDA_IDENTITY_CLIENT_SECRET", "secret");
+    legacy.put(OIDC + "token-uri", "");
+
+    final StandardEnvironment env = environmentWith(legacy);
+    processor.postProcessEnvironment(env, null);
+
+    assertThat(env.getProperty(OIDC + "client-id")).isNull();
+    assertThat(env.getProperty(OIDC + "client-secret")).isNull();
   }
 
   @Test
