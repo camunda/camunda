@@ -557,10 +557,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
    * Walks a dependency-graph change one runnable operation at a time.
    *
    * <p>The real cluster runs several of these at once on different brokers; the simulator takes
-   * them in ascending operation-id order instead. That is sound precisely because the graph is
-   * validated to have disjoint write sets between anything unordered, so every legal execution
-   * order reaches the same configuration — which is the property that makes a dry run meaningful at
-   * all.
+   * them in ascending operation-id order instead. Nothing validates that this is sound — the
+   * disjoint-write-set check that would have guaranteed every legal execution order reaches the
+   * same configuration was built, then removed (see {@link
+   * io.camunda.zeebe.dynamic.config.state.OperationGraph}'s class javadoc). This one arbitrary
+   * serialization is sound only to the extent the graph's author declared every edge that ordering
+   * actually requires; if an edge is missing, the simulation can silently disagree with what the
+   * real, concurrent execution does.
    *
    * <p>It deliberately drives the same {@code completeOperation} the manager uses rather than
    * modelling progress a second way: a divergence between what is simulated and what is applied
