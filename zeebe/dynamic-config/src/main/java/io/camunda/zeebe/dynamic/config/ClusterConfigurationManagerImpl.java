@@ -257,20 +257,40 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
+                CurrentClusterConfiguration toPersist;
                 try {
                   // merge in case there was a concurrent update via gossip
-                  persistedCurrentConfiguration.update(
-                      configuration.merge(persistedCurrentConfiguration.getConfiguration()));
-                  LOG.debug(
-                      "Initialized cluster configuration '{}'",
-                      persistedCurrentConfiguration.getConfiguration());
-                  if (currentConfigurationGossiper != null) {
-                    currentConfigurationGossiper.accept(
-                        persistedCurrentConfiguration.getConfiguration());
-                  }
+                  toPersist = configuration.merge(persistedCurrentConfiguration.getConfiguration());
+                } catch (final RuntimeException e) {
+                  // The merge can throw when a concurrently-gossiped peer's write genuinely
+                  // conflicts with this member's own state at the same version (see
+                  // BrokerPartitionState#merge) -- a real disagreement between brokers, not a
+                  // transient error. Failing start over it would leave this broker down
+                  // indefinitely against a condition later, unrelated writes are what actually
+                  // resolve. Starting from this member's own freshly-initialized configuration
+                  // instead -- skipping the merge, not skipping the update -- lets normal gossip
+                  // reconciliation surface and retry against the same conflict once running,
+                  // exactly as it does for one arriving after start via {@link
+                  // #onGossipReceivedCurrent}.
+                  LOG.warn(
+                      "Failed to merge cluster configuration during startup; starting without "
+                          + "the merge",
+                      e);
+                  toPersist = configuration;
+                }
+                try {
+                  persistedCurrentConfiguration.update(toPersist);
                 } catch (final IOException e) {
                   startFuture.completeExceptionally(
                       "Failed to start update cluster configuration", e);
+                  return;
+                }
+                LOG.debug(
+                    "Initialized cluster configuration '{}'",
+                    persistedCurrentConfiguration.getConfiguration());
+                if (currentConfigurationGossiper != null) {
+                  currentConfigurationGossiper.accept(
+                      persistedCurrentConfiguration.getConfiguration());
                 }
                 setStarted();
               }
