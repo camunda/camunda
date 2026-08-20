@@ -31,7 +31,10 @@ env:
   RELEASE_TAG_8_7: '8.7.37'
   RELEASE_TAG_8_8: '8.8.35'
   RELEASE_TAG_8_9: '8.9.16'
-  RELEASE_TAG_MAIN: '8.9.16'
+  # main tracks its own release line's latest published pre-release (8.10 alpha), not
+  # stable/8.9's tag — there is no 8.10 stable yet. Bump this to the newest 8.10.0-alphaN
+  # as new alphas are cut.
+  RELEASE_TAG_MAIN: '8.10.0-alpha4'
 
 jobs:
   # Resolves the RELEASE_TAG_* env vars into job outputs. This indirection exists because
@@ -52,10 +55,12 @@ jobs:
     steps:
       - id: tags
         run: |
-          echo "tag_8_7=${RELEASE_TAG_8_7}" >> "$GITHUB_OUTPUT"
-          echo "tag_8_8=${RELEASE_TAG_8_8}" >> "$GITHUB_OUTPUT"
-          echo "tag_8_9=${RELEASE_TAG_8_9}" >> "$GITHUB_OUTPUT"
-          echo "tag_main=${RELEASE_TAG_MAIN}" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag_8_7=${RELEASE_TAG_8_7}"
+            echo "tag_8_8=${RELEASE_TAG_8_8}"
+            echo "tag_8_9=${RELEASE_TAG_8_9}"
+            echo "tag_main=${RELEASE_TAG_MAIN}"
+          } >> "$GITHUB_OUTPUT"
 
   # Stable branch load tests — one job per active branch.
   # Release tags are pinned once via the RELEASE_TAG_* env vars above (surfaced here through the
