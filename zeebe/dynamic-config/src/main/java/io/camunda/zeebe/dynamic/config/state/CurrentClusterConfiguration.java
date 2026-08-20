@@ -612,6 +612,18 @@ public record CurrentClusterConfiguration(
    * sub-configuration it targets (the global configuration for a {@link GlobalPhase}, or each named
    * partition group for a {@link PartitionGroupParallelPhase}) has no pending changes left.
    *
+   * <p>For a {@link PartitionGroupGraphPhase}, "no pending changes left" means the group's {@code
+   * pendingGraphChanges} is gone entirely, not merely that every operation in it has completed.
+   * Those two are different moments: {@link PartitionGroupConfiguration#hasPendingChanges()} reads
+   * the plan's own content and goes {@code false} the instant the last operation completes, while
+   * clearing the plan itself is a separate, later step ({@link
+   * PartitionGroupConfiguration#completeGraphChangeIfDrained()}), run by whichever broker's
+   * reconcile or gossip round gets there first. Treating "drained" as "complete" here would let
+   * this plan be archived into history while the group still carries a (fully drained but not yet
+   * cleared) graph plan — which is exactly the state a decoder without this phase to consult can no
+   * longer tell apart from an actually-still-running one. The queue model has no such gap: {@link
+   * PartitionGroupConfiguration#advance()} clears its plan in the same call that drains it.
+   *
    * @throws IllegalStateException if no plan {@code planId} is pending
    */
   public boolean isCurrentPhaseComplete(final long planId) {
@@ -629,7 +641,7 @@ public record CurrentClusterConfiguration(
       case final PartitionGroupGraphPhase graphPhase ->
           graphPhase.groupGraphs().keySet().stream()
               .map(this::partitionGroup)
-              .allMatch(group -> group != null && !group.hasPendingChanges());
+              .allMatch(group -> group != null && group.pendingGraphChanges().isEmpty());
     };
   }
 
