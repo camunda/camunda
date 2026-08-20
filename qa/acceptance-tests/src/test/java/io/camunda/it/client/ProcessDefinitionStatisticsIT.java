@@ -301,6 +301,32 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   @Test
+  void shouldGetStatisticsWhenErrorMessageDoesNotExist() {
+    // given
+    final var processDefinitionKey = deployCompleteBPMN();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
+        2);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.errorMessage(b -> b.exists(false)))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+  }
+
+  @Test
   void shouldGetStatisticsAndFilterByIncidentHashCodeOrFilters() {
     // given
     final var processDefinitionKey =
