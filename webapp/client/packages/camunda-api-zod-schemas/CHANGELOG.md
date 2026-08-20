@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.90
+
+### 🩹 Fixes
+
+- Type `AgentInstanceDefinition.systemPrompt` as a content block array instead of a plain string, matching the breaking API change from [#60602](https://github.com/camunda/camunda/pull/60602) ([#60624](https://github.com/camunda/camunda/issues/60624))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.89
 
 ### 🩹 Fixes
