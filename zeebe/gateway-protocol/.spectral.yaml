@@ -149,7 +149,11 @@ rules:
   valid-deprecated-enum-members:
     description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
     severity: error
-    given: "$.components.schemas[*]"
+    # Matches named schemas and inline (property-level) enums alike. resolved:
+    # false reports at the schema's source location instead of at every $ref
+    # consumer (mirrors properties-added-in-version-shape below).
+    resolved: false
+    given: "$..[?(@['x-deprecated-enum-members'])]"
     message: "{{error}}"
     then:
       function: verifyDeprecatedEnumMembers
