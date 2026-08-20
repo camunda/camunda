@@ -25,6 +25,7 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.AgentContentMapper;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
@@ -110,7 +111,7 @@ public class AgentInstanceHandler
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
         .setProvider(value.getDefinition().getProvider())
-        .setSystemPrompt(value.getDefinition().getSystemPrompt())
+        .setSystemPrompt(AgentContentMapper.mapContent(value.getDefinition().getSystemPrompt()))
         .setMaxTokens(value.getLimits().getMaxTokens())
         .setMaxModelCalls(value.getLimits().getMaxModelCalls())
         .setMaxToolCalls(value.getLimits().getMaxToolCalls())
