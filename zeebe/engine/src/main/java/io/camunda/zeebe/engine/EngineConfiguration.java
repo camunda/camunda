@@ -106,6 +106,9 @@ public final class EngineConfiguration {
 
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
+  public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
+  public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY = -1;
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -181,6 +184,15 @@ public final class EngineConfiguration {
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+
+  /** Controls whether the archiverless mode is enabled. */
+  private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
+
+  /**
+   * Override default storage ordinal key with fixed value, mainly used during initial testing. The
+   * default value of -1 means no override is applied.
+   */
+  private int fixedStorageOrdinalKey = DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL_KEY;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -705,6 +717,29 @@ public final class EngineConfiguration {
   public EngineConfiguration setEnableRpaReexportMigration(
       final boolean enableRpaReexportMigration) {
     this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  public boolean isArchiverlessEnabled() {
+    return archiverlessEnabled;
+  }
+
+  public EngineConfiguration setArchiverlessEnabled(final boolean archiverlessEnabled) {
+    this.archiverlessEnabled = archiverlessEnabled;
+    return this;
+  }
+
+  public int getFixedStorageOrdinalKey() {
+    return fixedStorageOrdinalKey;
+  }
+
+  public EngineConfiguration setFixedStorageOrdinalKey(final int fixedStorageOrdinalKey) {
+    if (fixedStorageOrdinalKey < -1) {
+      throw new IllegalArgumentException(
+          "fixedStorageOrdinalKey must be -1 (no override) or >= 0 but was %d"
+              .formatted(fixedStorageOrdinalKey));
+    }
+    this.fixedStorageOrdinalKey = fixedStorageOrdinalKey;
     return this;
   }
 }
