@@ -29,6 +29,7 @@ import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -85,6 +86,8 @@ final class JobBatchCollectorTest {
           new SecretStoreRegistry(
               Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, new NoopSecretStore()),
               Map.of(SecretStoreRegistry.DEFAULT_STORE_ID, secretCache)));
+  private final AgentDefinitionBehavior agentDefinitionBehavior =
+      mock(AgentDefinitionBehavior.class);
 
   @SuppressWarnings("unused") // injected by the extension
   private MutableProcessingState state;
@@ -98,7 +101,14 @@ final class JobBatchCollectorTest {
     // are never invoked by the collector — pass nulls to satisfy the CslAuthorizationCheck ctor.
     final var cslCheck = new CslAuthorizationCheck(null, null, securityConfig);
     collector =
-        new JobBatchCollector(state, lengthEvaluator, cslCheck, clock, jobMetrics, secretInjector);
+        new JobBatchCollector(
+            state,
+            lengthEvaluator,
+            cslCheck,
+            clock,
+            jobMetrics,
+            secretInjector,
+            agentDefinitionBehavior);
   }
 
   @Test
@@ -148,7 +158,13 @@ final class JobBatchCollectorTest {
     final var securityConfig = EngineSecurityConfigurations.defaultConfig();
     final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
     return new JobBatchCollector(
-        state, lengthEvaluator, cslCheck, clock, jobMetrics, secretInjector);
+        state,
+        lengthEvaluator,
+        cslCheck,
+        clock,
+        jobMetrics,
+        secretInjector,
+        agentDefinitionBehavior);
   }
 
   @Test

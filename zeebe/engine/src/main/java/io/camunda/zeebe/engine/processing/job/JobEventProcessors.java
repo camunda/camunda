@@ -139,6 +139,7 @@ public final class JobEventProcessors {
                 tenantCheck,
                 clock,
                 bpmnBehaviors.incidentBehavior(),
+                bpmnBehaviors.agentDefinitionBehavior(),
                 secretStoreRegistry))
         .withListener(
             new JobTimeoutCheckScheduler(

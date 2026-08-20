@@ -11,6 +11,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
 import org.agrona.collections.ObjectHashSet;
@@ -43,6 +45,7 @@ import org.agrona.collections.ObjectHashSet;
  */
 final class JobBatchCollector {
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
+  private final LongHashSet reactivatedAgenticJobKeys = new LongHashSet();
 
   private final JobState jobState;
   private final JobVariablesCollector jobVariablesCollector;
@@ -51,6 +54,7 @@ final class JobBatchCollector {
   private final InstantSource clock;
   private final JobProcessingMetrics jobMetrics;
   private final JobSecretInjector jobSecretInjector;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   /**
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
@@ -66,7 +70,8 @@ final class JobBatchCollector {
       final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
       final JobProcessingMetrics jobMetrics,
-      final JobSecretInjector jobSecretInjector) {
+      final JobSecretInjector jobSecretInjector,
+      final AgentDefinitionBehavior agentDefinitionBehavior) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
@@ -74,6 +79,7 @@ final class JobBatchCollector {
     this.clock = clock;
     this.jobMetrics = jobMetrics;
     this.jobSecretInjector = jobSecretInjector;
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
   }
 
   /**
@@ -106,6 +112,7 @@ final class JobBatchCollector {
     final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
 
     jobSecretInjector.reset();
+    reactivatedAgenticJobKeys.clear();
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
@@ -145,6 +152,13 @@ final class JobBatchCollector {
           // adding it to the batch
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
           if (value.isWithLease()) {
+            if (!jobRecord.getLeaseToken().isEmpty()
+                && agentDefinitionBehavior.belongsToAgent(jobRecord)) {
+              // Re-activation: the previous lease's pending history items must be discarded
+              // before the new lease starts accumulating its own, so at most one lease's
+              // optimistic edits are ever unresolved on the AgentInstance at a time.
+              reactivatedAgenticJobKeys.add(key);
+            }
             jobRecord.setLeaseToken(LeaseTokens.generate());
           }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
@@ -186,6 +200,14 @@ final class JobBatchCollector {
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  /**
+   * Returns the keys of agentic jobs collected by the last {@link #collectJobs} call that already
+   * held a lease from a previous activation — i.e. are being re-activated with a new one.
+   */
+  LongHashSet reactivatedAgenticJobKeys() {
+    return reactivatedAgenticJobKeys;
   }
 
   private Predicate<JobRecord> buildAuthzPredicate(final TypedRecord<JobBatchRecord> record) {
