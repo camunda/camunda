@@ -148,13 +148,13 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
   // CAMUNDA_IDENTITY_CLIENT_SECRET env var it uses for the secret. Skipped when Auth0 is
   // configured (the two modes are mutually exclusive, cloud wins) to avoid a mixed registration.
   //
-  // Deliberately NOT bridged: camunda.identity.issuerBackendUrl. CSL has a single issuer-uri, used
+  // Never bridged into issuer-uri: camunda.identity.issuerBackendUrl. CSL uses that single value
   // for OIDC discovery AND for validating each token's iss claim against the discovery document's
   // issuer field. Keycloak reports the same externally-configured issuer regardless of which URL
   // was dialed to reach it, so pointing issuer-uri at the backend-reachable URL would make
   // discovery fail (issuer mismatch) instead of fixing reachability. camunda.identity.issuer (the
-  // browser-facing one) is the correct, and only, source for issuer-uri — mirroring the existing
-  // CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL precedent, which never bridged _ISSUER_BACKEND_URL either.
+  // browser-facing one) is the correct, and only, source for issuer-uri. The backend URL does feed
+  // the OIDC endpoints, which carry no issuer check — see deriveOidcEndpointsFromIssuerBackendUrl.
   //
   // Also deliberately NOT bridged: camunda.identity.clientSecret, the config-file secret key that
   // application-ccsm.yaml also declares — the official Helm chart never renders it, only the
@@ -174,6 +174,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"))) {
       mapIssuerUri(env, derived, "camunda.identity.issuer");
     }
+    deriveOidcEndpointsFromIssuerBackendUrl(env, derived);
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
     // CLIENT_SECRET while leaving camunda.identity.issuer blank. Bridging a client-id/secret with
@@ -181,16 +182,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // ScopedClientRegistrationFactory throw IllegalStateException at startup, so this bridge is
     // all-or-nothing on the issuer-uri: withhold both credentials rather than trade a login problem
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
-    if (!derived.containsKey(OIDC_PREFIX + "issuer-uri")
-        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))
-        && !hasExplicitOidcEndpoints(env)) {
+    if (isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))
+        && !hasOidcEndpoints(env, derived)) {
       final String clientId = env.getProperty("camunda.identity.clientId");
       final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
       if (!isBlank(clientId) || !isBlank(clientSecret)) {
         LOG.warn(
             "Optimize config 'camunda.identity.clientId'/'CAMUNDA_IDENTITY_CLIENT_SECRET' cannot"
-                + " be bridged without an OIDC issuer: 'camunda.identity.issuer' is blank and no"
-                + " 'camunda.security.authentication.oidc.issuer-uri' is set explicitly."
+                + " be bridged without an OIDC issuer: neither 'camunda.identity.issuer' nor"
+                + " 'camunda.security.authentication.oidc.issuer-uri' resolves to a value."
                 + " 'camunda.identity.issuerBackendUrl' cannot substitute for it (OIDC discovery"
                 + " would fail against it, see the Javadoc above). Leaving the OIDC client"
                 + " unconfigured rather than failing Optimize startup with a missing issuer.");
@@ -214,6 +214,41 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0RedirectAndContextPath(env, derived, clusterId);
     bridgeAuth0Credentials(env, derived, auth0ClientId);
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
+  }
+
+  // Last resort when no issuer-uri could be derived, so CSL can still build a registration: the
+  // endpoints carry no issuer check, unlike issuer-uri, so the backend URL is usable for them.
+  //
+  // The paths assume Keycloak's realm layout, which is what the chart's issuerBackendUrl points
+  // at. Elsewhere they are wrong, but only jwk-set-uri can be dialed from here: no issuer means
+  // no browser login for authorization-uri/token-uri, and the public API's own JWK set URI wins
+  // when it is set. Any other provider has to configure the endpoints explicitly.
+  private void deriveOidcEndpointsFromIssuerBackendUrl(
+      final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    if (!isBlank(effectiveOidcProperty(env, derived, "issuer-uri"))) {
+      return;
+    }
+    final String backendUrl = env.getProperty("camunda.identity.issuerBackendUrl");
+    if (isBlank(backendUrl)) {
+      return;
+    }
+    final String base = backendUrl.trim().replaceAll("/+$", "");
+    derived.putIfAbsent(OIDC_PREFIX + "authorization-uri", base + "/protocol/openid-connect/auth");
+    derived.putIfAbsent(OIDC_PREFIX + "token-uri", base + "/protocol/openid-connect/token");
+    // The public API's own JWK set URI wins: it is configured for the IdP that signs the API
+    // tokens, which need not be the Identity instance behind issuerBackendUrl. bridgePublicApiJwt
+    // runs later and would not overwrite a value put here.
+    final String publicApiJwks =
+        env.getProperty("SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI");
+    derived.putIfAbsent(
+        OIDC_PREFIX + "jwk-set-uri",
+        isBlank(publicApiJwks) ? base + "/protocol/openid-connect/certs" : publicApiJwks);
+    LOG.info(
+        "Optimize derived the CSL OIDC endpoints from 'camunda.identity.issuerBackendUrl', assuming"
+            + " Keycloak's realm paths, because no OIDC issuer is configured. Browser login cannot"
+            + " work against an internal URL: set 'camunda.identity.issuer' if this deployment"
+            + " serves the Optimize UI, or set the OIDC endpoints explicitly for a non-Keycloak"
+            + " provider.");
   }
 
   // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
@@ -240,6 +275,27 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
         && !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
         && !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
+  }
+
+  // As hasExplicitOidcEndpoints, but also counting endpoints derived in this pass: a registration
+  // cannot be built without a client id, so the guard below must not withhold the credentials.
+  private static boolean hasOidcEndpoints(
+      final ConfigurableEnvironment env, final Map<String, Object> derived) {
+    return !isBlank(effectiveOidcProperty(env, derived, "authorization-uri"))
+        && !isBlank(effectiveOidcProperty(env, derived, "jwk-set-uri"))
+        && !isBlank(effectiveOidcProperty(env, derived, "token-uri"));
+  }
+
+  // What CSL will actually see: the derived source is added last, so any explicitly set value wins
+  // even when blank.
+  private static String effectiveOidcProperty(
+      final ConfigurableEnvironment env, final Map<String, Object> derived, final String suffix) {
+    final String explicit = env.getProperty(OIDC_PREFIX + suffix);
+    if (explicit != null) {
+      return explicit;
+    }
+    final Object derivedValue = derived.get(OIDC_PREFIX + suffix);
+    return derivedValue == null ? null : derivedValue.toString();
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {
