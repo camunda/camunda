@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.57b4877f.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.12af9de9.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.4bad336b.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.357d7969.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -54,6 +54,11 @@ the <code>camunda-spring-boot-starter</code> onto a single (multi-client) auto-c
 path, remapping <code>camunda.client.*</code> to <code>camunda.clients.default.*</code>, with a
 <code>defaultCamundaClient</code> <code>@Primary</code> bean plus a <code>camundaClient</code> alias for
 backward compatibility (camunda/camunda#57344).</li>
+<li class=""><code>storage/001-remove-numeric-key-from-identity-entity-filters.md</code> — drop the
+internal numeric <code>key</code> filter fields from <code>UserFilter</code>, <code>GroupFilter</code>,
+<code>TenantFilter</code>, and <code>MappingRuleFilter</code>; Identity entities are filtered by their
+business string IDs only, with <code>AuthorizationFilter.authorizationKey</code> and sort
+fields explicitly out of scope (camunda/camunda#41657).</li>
 <li class=""><code>security/002-tenant-access-provider-ownership-and-seam.md</code> — CSL <code>core</code> owns
 the concrete tenant-access provider and the <code>TenantOwnedEntity</code> contract; a
 uniform <code>TenantAccessProvider</code> seam across the read (search) and write
