@@ -327,6 +327,56 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render document references in the system prompt', () => {
+    render(
+      <AgentDetails
+        agentInstances={[
+          mockAgentInstance({
+            definition: {
+              model: 'gpt-4',
+              provider: 'openai',
+              systemPrompt: [
+                {contentType: 'TEXT', text: 'You are a helpful assistant.'},
+                {
+                  contentType: 'DOCUMENT',
+                  documentReference: {
+                    'camunda.document.type': 'camunda',
+                    contentHash: 'abc123',
+                    documentId: 'doc-1',
+                    storeId: 'default',
+                    metadata: {
+                      contentType: 'text/plain',
+                      fileName: 'guidelines.txt',
+                      size: 1234,
+                      expiresAt: null,
+                      processDefinitionId: null,
+                      processInstanceKey: null,
+                      customProperties: {},
+                    },
+                  },
+                },
+              ],
+            },
+          }),
+        ]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const section = screen.getByTestId('agent-system-prompt-section');
+
+    expect(
+      within(section).getByText('You are a helpful assistant.'),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByRole('listitem', {name: 'guidelines.txt'}),
+    ).toBeInTheDocument();
+  });
+
   it('should not fetch the conversation history until its accordion item is opened', async () => {
     const historySpy = vi.fn();
     mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
