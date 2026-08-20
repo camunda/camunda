@@ -53,6 +53,9 @@ jobs:
       tag_8_9: ${{ steps.tags.outputs.tag_8_9 }}
       tag_main: ${{ steps.tags.outputs.tag_main }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: tags
         run: |
           {
@@ -61,6 +64,15 @@ jobs:
             echo "tag_8_9=${RELEASE_TAG_8_9}"
             echo "tag_main=${RELEASE_TAG_MAIN}"
           } >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Stable branch load tests — one job per active branch.
   # Release tags are pinned once via the RELEASE_TAG_* env vars above (surfaced here through the
