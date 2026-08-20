@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -23,14 +24,17 @@ import io.camunda.zeebe.engine.processing.job.JobSecretInjector.FailedInjectionJ
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -45,6 +49,7 @@ import java.time.InstantSource;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.collections.LongHashSet;
 
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
@@ -70,6 +75,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobBatchRecord responseValue = new JobBatchRecord();
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final JobBatchCollector jobBatchCollector;
@@ -89,9 +95,11 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final CslTenantCheck tenantCheck,
       final InstantSource clock,
       final BpmnIncidentBehavior incidentBehavior,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
       final SecretStoreRegistry secretStoreRegistry) {
 
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
@@ -104,7 +112,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             cslCheck,
             clock,
             jobMetrics,
-            jobSecretInjector);
+            jobSecretInjector,
+            agentDefinitionBehavior);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -218,8 +227,41 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final var jobsWithNonCachedSecrets = jobSecretInjector.jobsWithNonCachedSecrets();
 
     activateJobBatch(record, value, jobBatchKey);
+    discardSupersededHistoryForReactivatedJobs(value);
 
     requestSecretResolution(jobsWithNonCachedSecrets);
+  }
+
+  /**
+   * A re-activated agentic job (already held a lease from a previous activation) gets a blanket,
+   * lease-agnostic {@code AGENT_HISTORY:DISCARD} for its previous lease's pending items — the new
+   * lease has not created any items yet, so discarding everything pending for the job is equivalent
+   * to discarding only the old lease's items, without needing to read or compare the old lease
+   * value itself.
+   *
+   * <p>Only discards a job that made it into the batch actually written by {@link
+   * #activateJobBatch}: the collector marks a job reactivated optimistically, before {@link
+   * #responseValueFor} runs secret injection, which can still drop that job (and every job after
+   * it) from the batch, e.g. a failed injection or values that no longer fit the message size. A
+   * dropped job keeps its old, still-valid lease, so discarding its pending items anyway would wipe
+   * live configuration the job's next activation is still entitled to.
+   */
+  private void discardSupersededHistoryForReactivatedJobs(final JobBatchRecord activatedBatch) {
+    final var reactivatedJobKeys = jobBatchCollector.reactivatedAgenticJobKeys();
+    if (reactivatedJobKeys.isEmpty()) {
+      return;
+    }
+    final var activatedJobKeys = new LongHashSet();
+    activatedBatch.jobKeys().forEach(jobKey -> activatedJobKeys.add(jobKey.getValue()));
+    reactivatedJobKeys.forEach(
+        jobKey -> {
+          if (activatedJobKeys.contains(jobKey)) {
+            commandWriter.appendFollowUpCommand(
+                jobKey,
+                AgentHistoryIntent.DISCARD,
+                new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+          }
+        });
   }
 
   /**
