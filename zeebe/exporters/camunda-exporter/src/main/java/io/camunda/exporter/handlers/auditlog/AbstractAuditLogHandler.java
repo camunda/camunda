@@ -15,7 +15,6 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -49,7 +48,7 @@ abstract class AbstractAuditLogHandler<T extends ExporterEntity<T>, R extends Re
       return false;
     }
 
-    return configuration.isEnabled(AuditLogInfo.of(record));
+    return configuration.isEnabled(record);
   }
 
   @Override

@@ -95,6 +95,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ProcessDefinitionMetrics processDefinitionMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
       final boolean evaluateDuplicateOutputMappingTargetsInOrder,
+      final boolean userTaskCompletionVariableAuditEnabled,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -182,7 +183,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState,
             variableBehavior,
             eventTriggerBehavior,
-            evaluateDuplicateOutputMappingTargetsInOrder);
+            evaluateDuplicateOutputMappingTargetsInOrder,
+            userTaskCompletionVariableAuditEnabled);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
@@ -190,7 +192,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
+            processingState,
+            processingState.getKeyGenerator(),
+            writers.state(),
+            incidentMetrics,
+            userTaskCompletionVariableAuditEnabled);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

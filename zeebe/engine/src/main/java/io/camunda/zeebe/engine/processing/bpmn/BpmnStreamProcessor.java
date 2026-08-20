@@ -122,7 +122,7 @@ public final class BpmnStreamProcessor
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
-              processEvent(intent, processor, element);
+              processEvent(intent, processor, element, record.getAuthorizations());
             },
             violation ->
                 rejectionWriter.appendRejection(
@@ -176,7 +176,8 @@ public final class BpmnStreamProcessor
   private void processEvent(
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
-      final ExecutableFlowElement element) {
+      final ExecutableFlowElement element,
+      final java.util.Map<String, Object> actorClaims) {
 
     switch (intent) {
       case ACTIVATE_ELEMENT:
@@ -191,7 +192,14 @@ public final class BpmnStreamProcessor
         processor
             .onComplete(element, completingContext)
             .flatMap(ok -> afterCompleting(element, processor, completingContext))
-            .ifLeft(failure -> incidentBehavior.createIncident(failure, completingContext));
+            .ifLeft(
+                failure -> {
+                  if (element.getElementType() == BpmnElementType.USER_TASK) {
+                    incidentBehavior.createIncident(failure, completingContext, actorClaims);
+                  } else {
+                    incidentBehavior.createIncident(failure, completingContext);
+                  }
+                });
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);

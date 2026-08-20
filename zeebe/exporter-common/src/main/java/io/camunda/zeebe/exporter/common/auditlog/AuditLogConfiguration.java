@@ -9,11 +9,15 @@ package io.camunda.zeebe.exporter.common.auditlog;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.Set;
 
 public final class AuditLogConfiguration implements AuditLogCheck {
 
   private boolean enabled = true;
+  private boolean userTaskCompletionVariableAuditEnabled;
 
   private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
@@ -69,6 +73,24 @@ public final class AuditLogConfiguration implements AuditLogCheck {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public boolean isUserTaskCompletionVariableAuditEnabled() {
+    return userTaskCompletionVariableAuditEnabled;
+  }
+
+  public void setUserTaskCompletionVariableAuditEnabled(
+      final boolean userTaskCompletionVariableAuditEnabled) {
+    this.userTaskCompletionVariableAuditEnabled = userTaskCompletionVariableAuditEnabled;
+  }
+
+  public boolean isEnabled(final Record<?> record) {
+    if (record.getValue() instanceof final VariableRecordValue variable
+        && VariableOperationType.USER_TASK_COMPLETION.equals(variable.getSource().getType())
+        && !userTaskCompletionVariableAuditEnabled) {
+      return false;
+    }
+    return isEnabled(AuditLogInfo.of(record));
   }
 
   @Override

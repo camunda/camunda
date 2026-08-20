@@ -22,5 +22,6 @@ package io.camunda.zeebe.protocol.record.value;
  */
 public enum VariableOperationType {
   API,
+  USER_TASK_COMPLETION,
   UNKNOWN
 }

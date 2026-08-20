@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
@@ -21,14 +22,16 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
   //      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
 
   private static final StringValue TYPE_KEY = new StringValue("type");
+  private static final StringValue USER_TASK_KEY = new StringValue("userTaskKey");
 
   // possible enhancements documented in https://github.com/camunda/camunda/issues/46970
   private final EnumProperty<VariableOperationType> typeProp =
       new EnumProperty<>(TYPE_KEY, VariableOperationType.class, VariableOperationType.UNKNOWN);
+  private final LongProperty userTaskKeyProp = new LongProperty(USER_TASK_KEY, -1L);
 
   public VariableSourceRecord() {
-    super(1);
-    declareProperty(typeProp);
+    super(2);
+    declareProperty(typeProp).declareProperty(userTaskKeyProp);
   }
 
   @Override

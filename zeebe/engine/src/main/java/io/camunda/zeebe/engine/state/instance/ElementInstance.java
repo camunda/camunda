@@ -46,6 +46,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private static final StringValue ACTIVE_SEQUENCE_FLOW_IDS =
       new StringValue("activeSequenceFlowIds");
   private static final StringValue USER_TASK_KEY = new StringValue("userTaskKey");
+  private static final StringValue COMPLETED_USER_TASK_KEY =
+      new StringValue("completedUserTaskKey");
   private static final StringValue EXECUTION_LISTENER_INDEX =
       new StringValue("executionListenerIndex");
   private static final StringValue TASK_LISTENER_INDICES_RECORD =
@@ -78,6 +80,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final ArrayProperty<StringValue> activeSequenceFlowIdsProp =
       new ArrayProperty<>(ACTIVE_SEQUENCE_FLOW_IDS, StringValue::new);
   private final LongProperty userTaskKeyProp = new LongProperty(USER_TASK_KEY, -1L);
+  private final LongProperty completedUserTaskKeyProp =
+      new LongProperty(COMPLETED_USER_TASK_KEY, -1L);
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty(EXECUTION_LISTENER_INDEX, 0);
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
@@ -102,7 +106,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    *     the property existed, will not have a correct depth.
    */
   public ElementInstance() {
-    super(19);
+    super(20);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -116,6 +120,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
+        .declareProperty(completedUserTaskKeyProp)
         .declareProperty(executionListenerIndexProp)
         .declareProperty(taskListenerIndicesRecordProp)
         .declareProperty(processDepth)
@@ -321,6 +326,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public long getUserTaskKey() {
     return userTaskKeyProp.getValue();
+  }
+
+  public long getCompletedUserTaskKey() {
+    return completedUserTaskKeyProp.getValue();
+  }
+
+  public void setCompletedUserTaskKey(final long userTaskKey) {
+    completedUserTaskKeyProp.setValue(userTaskKey);
   }
 
   public void setUserTaskKey(final long userTaskKey) {

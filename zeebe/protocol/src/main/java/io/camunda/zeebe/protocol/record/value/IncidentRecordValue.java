@@ -120,4 +120,22 @@ public interface IncidentRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /** The user whose operation caused the incident, or an empty string if not applicable. */
+  @Value.Default
+  default String getAuthorizedUsername() {
+    return "";
+  }
+
+  /** The client whose operation caused the incident, or an empty string if not applicable. */
+  @Value.Default
+  default String getAuthorizedClientId() {
+    return "";
+  }
+
+  /** Whether the operation that caused the incident was initiated anonymously. */
+  @Value.Default
+  default boolean getAuthorizedAnonymousUser() {
+    return false;
+  }
 }

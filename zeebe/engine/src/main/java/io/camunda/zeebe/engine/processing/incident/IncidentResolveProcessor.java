@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -42,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
@@ -72,6 +75,8 @@ public final class IncidentResolveProcessor
   private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
+  private final boolean preserveUserTaskCompletionActor;
+  private final AsyncRequestState asyncRequestState;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
@@ -81,7 +86,8 @@ public final class IncidentResolveProcessor
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean preserveUserTaskCompletionActor) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
     stateWriter = writers.state();
@@ -97,10 +103,18 @@ public final class IncidentResolveProcessor
     this.incidentMetrics = incidentMetrics;
     this.bannedInstanceCheck =
         new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    this.preserveUserTaskCompletionActor = preserveUserTaskCompletionActor;
+    asyncRequestState = processingState.getAsyncRequestState();
   }
 
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
+    processRecord(command, new ProcessingSession() {});
+  }
+
+  @Override
+  public void processRecord(
+      final TypedRecord<IncidentRecord> command, final ProcessingSession session) {
     final long key = command.getKey();
     final var authorizedTenantIds =
         tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
@@ -157,7 +171,7 @@ public final class IncidentResolveProcessor
     publishIncidentRelatedJob(jobKey);
 
     // if it fails, a new incident is raised
-    attemptToContinueProcessProcessing(command, incident);
+    attemptToContinueProcessProcessing(command, incident, session);
   }
 
   private void rejectResolveCommand(
@@ -180,7 +194,9 @@ public final class IncidentResolveProcessor
   }
 
   private void attemptToContinueProcessProcessing(
-      final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
+      final TypedRecord<IncidentRecord> command,
+      final IncidentRecord incident,
+      final ProcessingSession session) {
 
     final long jobKey = incident.getJobKey();
     if (isJobRelatedIncident(jobKey)) {
@@ -189,7 +205,7 @@ public final class IncidentResolveProcessor
 
     getFailedCommand(incident)
         .ifRightOrLeft(
-            this::processFailedCommand,
+            failedCommand -> processFailedCommand(failedCommand, session),
             failure -> {
               final var message =
                   String.format(
@@ -199,11 +215,15 @@ public final class IncidentResolveProcessor
             });
   }
 
-  private void processFailedCommand(final TypedRecord<? extends UnifiedRecordValue> failedCommand) {
+  private void processFailedCommand(
+      final TypedRecord<? extends UnifiedRecordValue> failedCommand,
+      final ProcessingSession session) {
+    session.appendAuthInfoToFollowUps(failedCommand.getAuthInfo());
     if (failedCommand.getValue() instanceof ProcessInstanceRecord) {
-      bpmnStreamProcessor.processRecord((TypedRecord<ProcessInstanceRecord>) failedCommand);
+      bpmnStreamProcessor.processRecord(
+          (TypedRecord<ProcessInstanceRecord>) failedCommand, session);
     } else if (failedCommand.getValue() instanceof UserTaskRecord) {
-      userTaskProcessor.processRecord((TypedRecord<UserTaskRecord>) failedCommand);
+      userTaskProcessor.processRecord((TypedRecord<UserTaskRecord>) failedCommand, session);
     } else {
       throw new IllegalStateException(
           "Failed to process command due to unsupported record type: '%s'."
@@ -242,7 +262,7 @@ public final class IncidentResolveProcessor
 
     return isUserTaskListenerRelatedIncident(incidentRecord, elementInstance)
         ? createUserTaskCommand(elementInstance)
-        : createProcessInstanceCommand(elementInstance);
+        : createProcessInstanceCommand(elementInstance, incidentRecord);
   }
 
   private Either<String, TypedRecord<? extends UnifiedRecordValue>> createUserTaskCommand(
@@ -261,20 +281,39 @@ public final class IncidentResolveProcessor
             intent -> {
               final var userTaskRecord = new UserTaskRecord();
               userTaskRecord.wrap(intermediateState.getRecord());
-              return new RetryTypedRecord<>(userTaskKey, intent, userTaskRecord);
+              return new RetryTypedRecord<>(
+                  userTaskKey,
+                  intent,
+                  userTaskRecord,
+                  preserveUserTaskCompletionActor
+                      ? findCompletionActor(elementInstance)
+                      : java.util.Map.of());
             });
   }
 
   private Either<String, TypedRecord<? extends UnifiedRecordValue>> createProcessInstanceCommand(
-      final ElementInstance elementInstance) {
+      final ElementInstance elementInstance, final IncidentRecord incidentRecord) {
 
     return getFailedProcessInstanceCommandIntent(elementInstance)
         .map(
             intent -> {
               final var record = new ProcessInstanceRecord();
               record.wrap(elementInstance.getValue());
-              return new RetryTypedRecord<>(elementInstance.getKey(), intent, record);
+              return new RetryTypedRecord<>(
+                  elementInstance.getKey(),
+                  intent,
+                  record,
+                  preserveUserTaskCompletionActor
+                      ? incidentRecord.getActorClaims()
+                      : java.util.Map.of());
             });
+  }
+
+  private java.util.Map<String, Object> findCompletionActor(final ElementInstance elementInstance) {
+    return asyncRequestState
+        .findRequest(elementInstance.getKey(), ValueType.USER_TASK, UserTaskIntent.COMPLETE)
+        .map(request -> request.record().getActorClaims())
+        .orElseGet(java.util.Map::of);
   }
 
   private Either<String, UserTaskIntent> getFailedUserTaskCommandIntent(

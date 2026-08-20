@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
@@ -50,6 +51,31 @@ class VariableAddUpdateAuditLogTransformerTest {
   }
 
   @Test
+  void shouldSupportVariableRecordWithUserTaskCompletionSource() {
+    // given
+    final var record =
+        variableRecord(VariableIntent.CREATED, VariableSourceRecord.userTaskCompletion(456L));
+
+    // then
+    assertThat(transformer.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldTransformUserTaskCompletionSource() {
+    // given
+    final var record =
+        variableRecord(VariableIntent.UPDATED, VariableSourceRecord.userTaskCompletion(456L));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getUserTaskKey()).isEqualTo(456L);
+    assertThat(entity.getCategory()).isEqualTo(AuditLogOperationCategory.USER_TASKS);
+  }
+
+  @Test
   void shouldTransformVariableRecord() {
     // given
     final Record<VariableRecordValue> record =
@@ -70,6 +96,7 @@ class VariableAddUpdateAuditLogTransformerTest {
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());
     assertThat(entity.getEntityDescription()).isEqualTo("variable-name");
+    assertThat(entity.getCategory()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
   }
 
   private Record<VariableRecordValue> variableRecord(

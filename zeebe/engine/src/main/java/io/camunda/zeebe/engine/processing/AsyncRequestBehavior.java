@@ -27,7 +27,16 @@ public class AsyncRequestBehavior {
   public AsyncRequest writeAsyncRequestReceived(final long scopeKey, final TypedRecord<?> command) {
     final var key = keyGenerator.nextKey();
     final var record = toAsyncRequestRecord(scopeKey, command);
-    stateWriter.appendFollowUpEvent(key, AsyncRequestIntent.RECEIVED, record);
+    stateWriter.appendFollowUpEvent(key, AsyncRequestIntent.RECEIVED, record, 1);
+    return new AsyncRequest(key, record);
+  }
+
+  public AsyncRequest writeAsyncRequestReceivedWithActor(
+      final long scopeKey, final TypedRecord<?> command) {
+    final var key = keyGenerator.nextKey();
+    final var record =
+        toAsyncRequestRecord(scopeKey, command).setActor(command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(key, AsyncRequestIntent.RECEIVED, record, 2);
     return new AsyncRequest(key, record);
   }
 

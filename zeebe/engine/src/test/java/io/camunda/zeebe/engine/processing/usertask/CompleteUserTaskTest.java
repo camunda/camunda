@@ -20,8 +20,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,7 +33,11 @@ import org.junit.Test;
 
 public final class CompleteUserTaskTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setUserTaskCompletionVariableAuditEnabled(true));
+
   private static final String PROCESS_ID = "process";
 
   @Rule
@@ -131,6 +137,15 @@ public final class CompleteUserTaskTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.COMPLETING);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+    final var source =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("foo")
+            .getFirst()
+            .getValue()
+            .getSource();
+    assertThat(source.getType()).isEqualTo(VariableOperationType.USER_TASK_COMPLETION);
+    assertThat(source.getUserTaskKey()).isEqualTo(completedRecord.getKey());
   }
 
   @Test

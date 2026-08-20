@@ -105,7 +105,7 @@ final class ProtocolFactoryTest {
     final var recordValue = factory.generateObject(valueClass);
 
     // then
-    assertThat(recordValue).hasNoNullFieldsOrProperties();
+    assertThat(recordValue).hasNoNullFieldsOrPropertiesExcept("initShim");
   }
 
   @Test

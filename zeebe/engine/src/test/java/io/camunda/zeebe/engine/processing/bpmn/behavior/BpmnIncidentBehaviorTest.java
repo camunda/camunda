@@ -46,7 +46,7 @@ final class BpmnIncidentBehaviorTest {
     when(keyGenerator.nextKey()).thenReturn(999L);
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, keyGenerator, stateWriter, mock(IncidentMetrics.class));
+            processingState, keyGenerator, stateWriter, mock(IncidentMetrics.class), false);
   }
 
   @Test

@@ -1732,7 +1732,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinalKey": 6,
                   "elementInstanceKey": 3,
                   "source": {
-                    "type":"API"
+                    "type":"API",
+                    "userTaskKey": -1
                   }
                 }
                 """
@@ -1778,7 +1779,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinalKey": 6,
                   "elementInstanceKey": 3,
                   "source": {
-                    "type":"API"
+                    "type":"API",
+                    "userTaskKey": -1
                   }
                 }
                 """

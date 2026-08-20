@@ -31,7 +31,15 @@ final class ZeebeProtocolModuleTest {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
-  private final ProtocolFactory factory = new ProtocolFactory();
+  private final ProtocolFactory factory =
+      new ProtocolFactory()
+          .registerRandomizer(
+              field ->
+                  "authorizedUsername".equals(field.getName())
+                      || "authorizedClientId".equals(field.getName()),
+              random -> "")
+          .registerRandomizer(
+              field -> "authorizedAnonymousUser".equals(field.getName()), random -> false);
 
   @ParameterizedTest
   @MethodSource("provideValueTypes")

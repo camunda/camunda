@@ -13,7 +13,6 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Agent;
@@ -47,9 +46,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
 
   @Override
   public boolean canExport(final Record<R> record) {
-    final var info = AuditLogInfo.of(record);
-
-    return transformer.supports(record) && configuration.isEnabled(info);
+    return transformer.supports(record) && configuration.isEnabled(record);
   }
 
   @Override

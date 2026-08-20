@@ -853,6 +853,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
     register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
     register(UserTaskIntent.COMPLETED, 3, new UserTaskCompletedV3Applier(state));
+    register(UserTaskIntent.COMPLETED, 4, new UserTaskCompletedV4Applier(state));
     register(UserTaskIntent.ASSIGNING, 1, new UserTaskAssigningV1Applier(state));
     register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
     register(UserTaskIntent.ASSIGNING, 3, new UserTaskAssigningV3Applier(state));
@@ -1067,7 +1068,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAsyncRequestAppliers(final MutableProcessingState state) {
     final var asyncRequestState = state.getAsyncRequestState();
-    register(AsyncRequestIntent.RECEIVED, new AsyncRequestReceivedApplier(asyncRequestState));
+    register(AsyncRequestIntent.RECEIVED, 1, new AsyncRequestReceivedApplier(asyncRequestState));
+    register(AsyncRequestIntent.RECEIVED, 2, new AsyncRequestReceivedV2Applier(asyncRequestState));
     register(AsyncRequestIntent.PROCESSED, new AsyncRequestProcessedApplier(asyncRequestState));
   }
 

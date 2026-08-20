@@ -76,7 +76,7 @@ public class AuditLogCleanupHandlerTest {
 
   @Test
   void shouldNotHandleRecordWhenTransformerDoesNotSupport() {
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
     when(transformer.supports(any())).thenReturn(false);
     when(transformer.triggersCleanUp(any())).thenReturn(true);
 
@@ -86,7 +86,7 @@ public class AuditLogCleanupHandlerTest {
   @Test
   void shouldNotHandleRecordWhenAuditLogIsNotEnabled() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(false);
+    when(config.isEnabled(any(Record.class))).thenReturn(false);
     when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isFalse();
@@ -95,7 +95,7 @@ public class AuditLogCleanupHandlerTest {
   @Test
   void shouldNotHandleRecordWhenCleanupIsNotTriggered() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
     when(transformer.triggersCleanUp(any())).thenReturn(false);
 
     assertThat(handler.handlesRecord(record)).isFalse();
@@ -107,7 +107,7 @@ public class AuditLogCleanupHandlerTest {
         ImmutableRecord.builder().from(record).withValueType(DECISION_EVALUATION).build();
 
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
     when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(decisionRecord)).isFalse();
@@ -116,7 +116,7 @@ public class AuditLogCleanupHandlerTest {
   @Test
   void shouldHandleRecord() {
     when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
+    when(config.isEnabled(any(Record.class))).thenReturn(true);
     when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isTrue();

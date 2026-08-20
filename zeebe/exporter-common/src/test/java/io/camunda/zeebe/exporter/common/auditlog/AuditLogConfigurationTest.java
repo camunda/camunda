@@ -13,14 +13,24 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration.ActorAuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class AuditLogConfigurationTest {
+
+  private final ProtocolFactory factory = new ProtocolFactory();
 
   @Test
   void shouldBeEnabledByDefault() {
@@ -35,6 +45,33 @@ class AuditLogConfigurationTest {
     config.setEnabled(false);
 
     assertThat(config.isEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldDisableUserTaskCompletionVariableAuditByDefault() {
+    final var config = new AuditLogConfiguration();
+
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isFalse();
+  }
+
+  @Test
+  void shouldEnableUserTaskCompletionVariableAuditWhenConfigured() {
+    final var config = new AuditLogConfiguration();
+    config.setUserTaskCompletionVariableAuditEnabled(true);
+
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isTrue();
+  }
+
+  @Test
+  void shouldApplyUserTaskCategoryConfigurationToCompletionVariableAudit() {
+    final var config = new AuditLogConfiguration();
+    config.setUserTaskCompletionVariableAuditEnabled(true);
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isFalse();
+
+    config.getUser().setCategories(Set.of(AuditLogOperationCategory.USER_TASKS));
+    assertThat(config.isEnabled(userTaskCompletionVariableRecord())).isTrue();
   }
 
   @Test
@@ -56,6 +93,22 @@ class AuditLogConfigurationTest {
     assertThat(config.getUnknown().getCategories())
         .as("Unknown categories should be empty by default (opt-in logging)")
         .isEmpty();
+  }
+
+  private io.camunda.zeebe.protocol.record.Record<VariableRecordValue>
+      userTaskCompletionVariableRecord() {
+    final VariableRecordValue value =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withSource(VariableSourceRecord.userTaskCompletion(123L))
+            .build();
+    return factory.generateRecord(
+        ValueType.VARIABLE,
+        record ->
+            record
+                .withIntent(VariableIntent.CREATED)
+                .withValue(value)
+                .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
   }
 
   @Test

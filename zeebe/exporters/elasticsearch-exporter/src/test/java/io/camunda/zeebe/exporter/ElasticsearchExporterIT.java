@@ -85,7 +85,14 @@ final class ElasticsearchExporterIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
-              random -> null);
+              random -> null)
+          .registerRandomizer(
+              field ->
+                  "authorizedUsername".equals(field.getName())
+                      || "authorizedClientId".equals(field.getName()),
+              random -> "")
+          .registerRandomizer(
+              field -> "authorizedAnonymousUser".equals(field.getName()), random -> false);
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
