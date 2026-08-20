@@ -10,6 +10,7 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
+import io.camunda.db.rdbms.read.service.AgentDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.AgentHistoryDbReader;
 import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
@@ -228,6 +229,10 @@ public class RdbmsService {
 
   public HistoryDeletionDbReader getHistoryDeletionDbReader() {
     return tenantReaders.historyDeletionReader();
+  }
+
+  public AgentDefinitionDbReader getAgentDefinitionDbReader() {
+    return tenantReaders.agentDefinitionReader();
   }
 
   public AgentInstanceDbReader getAgentInstanceDbReader() {

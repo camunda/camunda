@@ -112,7 +112,7 @@ public record RdbmsTenantReaders(
   public static RdbmsTenantReaders create(
       final RdbmsMapperBundle mappers, final RdbmsReaderConfig readerConfig) {
     return new RdbmsTenantReaders(
-        new AgentDefinitionDbReader(),
+        new AgentDefinitionDbReader(mappers.agentDefinitionMapper(), readerConfig),
         new AgentInstanceDbReader(mappers.agentInstanceMapper(), readerConfig),
         new AgentHistoryDbReader(mappers.agentHistoryMapper(), readerConfig),
         new AuditLogDbReader(mappers.auditLogMapper(), readerConfig),

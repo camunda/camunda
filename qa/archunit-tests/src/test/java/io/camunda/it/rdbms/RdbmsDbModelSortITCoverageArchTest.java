@@ -55,8 +55,6 @@ class RdbmsDbModelSortITCoverageArchTest {
           "TenantMemberDbModel", // member sub-entity; no TenantMemberSortIT
           "RoleMemberDbModel", // member sub-entity; no RoleMemberSortIT
           "ClusterVariableMetadataDbModel", // metadata sub-entity; covered by ClusterVariableIT
-          "AgentDefinitionDbModel", // no read/search API yet (issue #59072 is write-only); add
-          // AgentDefinitionSortIT once #59079 implements AgentDefinitionDbReader#search()
           "ProcessDefinitionVariableNameLookupDbModel", // variable-name cache; has an IT but no
           // sort fields
           "BatchOperationErrorDbModel", // error sub-entity of BatchOperation; no sort fields
