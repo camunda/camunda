@@ -4,7 +4,19 @@
  * (`import "@camunda/design-system/styles.css"`). PostCSS does NOT
  * honor `exports`, so do NOT `@import` it from here.
  *
- *
+ * The two imports below give the Vite Tailwind plugin a local entry
+ * point so it compiles utility classes used in THIS app's own source
+ * (e.g. `max-w-[80ch]`) into real CSS. Preflight is deliberately
+ * skipped here — `@camunda/design-system/styles.css` already ships
+ * Tailwind's preflight scoped to `.c4-ui` (see the Carbon-coexistence
+ * rules below, which exist to patch around that already-active reset).
+ * Importing the full `"tailwindcss"` entry here would generate and
+ * apply a second, unscoped global preflight on top of it.
+ */
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
+/*
  * Carbon-coexistence opt-out.
  *
  * The shadcn primitives this package ships are authored to render
@@ -135,6 +147,8 @@
   font: revert;
   margin: revert;
   padding: revert;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 /* Consumer overrides go below. */

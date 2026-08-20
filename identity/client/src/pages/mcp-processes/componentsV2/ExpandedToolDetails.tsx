@@ -7,32 +7,9 @@
  */
 
 import { FC } from "react";
-import { styles } from "@carbon/elements";
-import styled from "styled-components";
+import { cn, Heading, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import type { McpProcessTool } from "../useMcpProcessTools";
-
-const SectionHeading = styled.h3`
-  font-size: ${styles.heading01.fontSize};
-  font-weight: ${styles.heading01.fontWeight};
-  line-height: ${styles.heading01.lineHeight};
-  letter-spacing: ${styles.heading01.letterSpacing};
-`;
-
-const SectionBody = styled.p`
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-inline-size: 80ch; // Keep descriptions at a readable line length
-
-  &[data-fallback="true"] {
-    font-style: italic;
-    color: var(--cds-text-secondary);
-  }
-
-  &:not(:last-child) {
-    margin-block-end: var(--cds-spacing-06);
-  }
-`;
 
 export const ExpandedToolDetails: FC<{ tool: McpProcessTool }> = ({ tool }) => {
   const { t } = useTranslate("mcpProcesses");
@@ -40,25 +17,56 @@ export const ExpandedToolDetails: FC<{ tool: McpProcessTool }> = ({ tool }) => {
 
   return (
     <>
-      <SectionHeading>{t("toolPurpose")}</SectionHeading>
-      <SectionBody data-fallback={!properties.purpose}>
-        {properties.purpose ?? t("informationMissing")}
-      </SectionBody>
+      <Heading as="h3" variant="heading-xs">
+        {t("toolPurpose")}
+      </Heading>
+      <Description
+        content={properties.purpose}
+        fallback={t("informationMissing")}
+      />
 
-      <SectionHeading>{t("toolResults")}</SectionHeading>
-      <SectionBody data-fallback={!properties.results}>
-        {properties.results ?? t("informationMissing")}
-      </SectionBody>
+      <Heading as="h3" variant="heading-xs">
+        {t("toolResults")}
+      </Heading>
+      <Description
+        content={properties.results}
+        fallback={t("informationMissing")}
+      />
 
-      <SectionHeading>{t("toolWhenToUse")}</SectionHeading>
-      <SectionBody data-fallback={!properties.whenToUse}>
-        {properties.whenToUse ?? t("informationMissing")}
-      </SectionBody>
+      <Heading as="h3" variant="heading-xs">
+        {t("toolWhenToUse")}
+      </Heading>
+      <Description
+        content={properties.whenToUse}
+        fallback={t("informationMissing")}
+      />
 
-      <SectionHeading>{t("toolWhenNotToUse")}</SectionHeading>
-      <SectionBody data-fallback={!properties.whenNotToUse}>
-        {properties.whenNotToUse ?? t("informationMissing")}
-      </SectionBody>
+      <Heading as="h3" variant="heading-xs">
+        {t("toolWhenNotToUse")}
+      </Heading>
+      <Description
+        content={properties.whenNotToUse}
+        fallback={t("informationMissing")}
+        isLast
+      />
     </>
+  );
+};
+
+const Description: FC<{
+  content: string | null;
+  fallback: string;
+  isLast?: boolean;
+}> = ({ content, fallback, isLast }) => {
+  return (
+    <Text
+      as="p"
+      className={cn("max-w-[80ch] whitespace-pre-wrap wrap-break-word", {
+        "mb-6": !isLast,
+        "italic text-neutral-foreground-subtle": content === null,
+      })}
+    >
+      {content ?? fallback}
+    </Text>
   );
 };
