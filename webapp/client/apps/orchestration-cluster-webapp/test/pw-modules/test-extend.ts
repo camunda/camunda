@@ -22,6 +22,7 @@ import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
 import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
+import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -29,6 +30,7 @@ type Fixtures = {
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
 	tasklistLoginPage: TasklistLoginPage;
+	shadcnTasklistLoginPage: ShadcnTasklistLoginPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
 	taskDetailPage: TaskDetailPage;
@@ -51,6 +53,9 @@ const test = base.extend<Fixtures>({
 	},
 	tasklistLoginPage: async ({page}, use) => {
 		await use(new TasklistLoginPage(page));
+	},
+	shadcnTasklistLoginPage: async ({page}, use) => {
+		await use(new ShadcnTasklistLoginPage(page));
 	},
 	tasklistIndexPage: async ({page}, use) => {
 		await use(new TasklistIndexPage(page));
