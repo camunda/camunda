@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,11 +22,13 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -328,7 +331,11 @@ public class MigrateAgentInstanceTest {
             new AgentInstanceDefinition()
                 .setModel("gpt-4o")
                 .setProvider("openai")
-                .setSystemPrompt(firstSystemPrompt));
+                .setSystemPrompt(
+                    List.of(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText(firstSystemPrompt))));
 
     Assertions.assertThat(migratedValuesByAgentInstanceKey.get(secondAgentInstanceKey))
         .describedAs(
@@ -346,7 +353,11 @@ public class MigrateAgentInstanceTest {
             new AgentInstanceDefinition()
                 .setModel("claude-sonnet-4-5")
                 .setProvider("anthropic")
-                .setSystemPrompt(secondSystemPrompt));
+                .setSystemPrompt(
+                    List.of(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText(secondSystemPrompt))));
   }
 
   @Test

@@ -1019,7 +1019,13 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
     assertThat(updated.getValue().getDefinition().getProvider()).isEqualTo("openai");
     assertThat(updated.getValue().getDefinition().getSystemPrompt())
-        .isEqualTo("You are a helpful agent.");
+        .hasSize(1)
+        .first()
+        .satisfies(
+            block -> {
+              assertThat(block.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
+              assertThat(block.getText()).isEqualTo("You are a helpful agent.");
+            });
     assertThat(updated.getValue().getTools()).extracting("name").containsExactly("calc");
     assertThat(updated.getValue().getLimits().getMaxTokens()).isEqualTo(5000L);
     assertThat(updated.getValue().getLimits().getMaxModelCalls()).isEqualTo(8);
