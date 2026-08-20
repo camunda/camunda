@@ -300,7 +300,8 @@ public final class JobCompleteProcessor
   }
 
   private void preCompleteActions(final JobRecord job, final ProcessingSession session) {
-    if (job.isAgentic()) {
+    final boolean belongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
+    if (job.isAgentic() || belongsToAgent) {
       session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
     }
   }
