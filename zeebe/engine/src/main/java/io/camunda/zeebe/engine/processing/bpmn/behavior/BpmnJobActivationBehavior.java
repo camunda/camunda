@@ -27,13 +27,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -72,6 +75,7 @@ public class BpmnJobActivationBehavior {
   private final JobStreamer jobStreamer;
   private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final SideEffectWriter sideEffectWriter;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
@@ -81,6 +85,7 @@ public class BpmnJobActivationBehavior {
   private final JobAuthorizationLogger jobAuthorizationLogger;
   private final JobSecretLookup secretLookup;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -92,12 +97,14 @@ public class BpmnJobActivationBehavior {
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final SecretStoreRegistry secretStoreRegistry,
-      final BpmnIncidentBehavior incidentBehavior) {
+      final BpmnIncidentBehavior incidentBehavior,
+      final AgentDefinitionBehavior agentDefinitionBehavior) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     jobVariablesCollector = new JobVariablesCollector(state);
     stateWriter = writers.state();
+    commandWriter = writers.command();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
     this.cslCheck = cslCheck;
@@ -105,6 +112,7 @@ public class BpmnJobActivationBehavior {
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
     this.incidentBehavior = incidentBehavior;
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
   }
 
   /**
@@ -193,6 +201,8 @@ public class BpmnJobActivationBehavior {
     final JobStream jobStream = optionalJobStream.get();
     final JobActivationProperties properties = jobStream.properties();
 
+    // snapshot before setJobProperties overwrites the job's lease token with a freshly minted one
+    final boolean isReactivation = isReactivation(wrappedJobRecord, properties);
     setJobProperties(wrappedJobRecord, properties);
     jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
     final var pushableJobRecord = new JobRecord();
@@ -218,6 +228,18 @@ public class BpmnJobActivationBehavior {
     }
     final var jobBatchKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
+    if (isReactivation) {
+      // Re-activation: this push mints a new lease for a job that already held one, the same
+      // situation JobBatchCollector discards for on the poll path. This site never goes through
+      // the collector, so it must emit the same blanket, lease-agnostic discard itself. Emitted
+      // only now that the ACTIVATED event is actually appended: an earlier abort (failed secret
+      // injection, no room left in the batch) leaves the job on its old, still-valid lease, whose
+      // pending items must not be discarded.
+      commandWriter.appendFollowUpCommand(
+          jobKey,
+          AgentHistoryIntent.DISCARD,
+          new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+    }
 
     final var activatedJob = new ActivatedJobImpl();
     activatedJob.setJobKey(jobKey).setRecord(pushableJobRecord);
@@ -357,6 +379,18 @@ public class BpmnJobActivationBehavior {
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
           return true;
         });
+  }
+
+  /**
+   * Returns whether this hand-out re-activates a job that already held a lease from a previous
+   * activation, i.e. whether the eager reactivation-discard in {@link #publishWork} applies. Must
+   * be read before {@link #setJobProperties} overwrites the job's lease token with a new one.
+   */
+  private boolean isReactivation(
+      final JobRecord jobRecord, final JobActivationProperties properties) {
+    return properties.withLease()
+        && jobRecord.hasLeaseToken()
+        && agentDefinitionBehavior.belongsToAgent(jobRecord);
   }
 
   private void setJobProperties(
