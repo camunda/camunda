@@ -49,6 +49,40 @@
       </when>
     </choose>
   </sql>
+  <sql id="errorMessageOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        ${column} LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        ${column} NOT LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        ${column} IS NULL
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
+          ${column} LIKE #{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler}
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" AND " close=")">
+          ${column} NOT LIKE #{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler}
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        ${column} LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
   <!--
     Oracle treats empty strings as NULL. When filtering with EQUALS '' or NOT_EQUALS '',
     we must use IS NULL / IS NOT NULL instead, because NULL = '' evaluates to UNKNOWN in SQL.
