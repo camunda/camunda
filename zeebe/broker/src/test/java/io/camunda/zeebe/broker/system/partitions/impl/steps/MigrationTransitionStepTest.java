@@ -127,6 +127,26 @@ public class MigrationTransitionStepTest {
   }
 
   @Test
+  public void shouldResetMigrationSnapshotTakenWhenAMigrationRerunsAfterAnEarlierCycle() {
+    // given - an earlier migration cycle already had its snapshot taken (e.g. by the real
+    // MigrationSnapshotDirector), but this replica has since been reverted to an older,
+    // unmigrated version -- e.g. by installing a received snapshot from a lagging peer -- so a
+    // fresh migration cycle is about to start
+    migrationState.setMigratedByVersion("8.7.0");
+    context.setBrokerCfg(new BrokerCfg());
+    context.setBrokerVersion("8.8.0");
+    context.markMigrationSnapshotTaken();
+    final var step = new MigrationTransitionStep();
+
+    // when
+    step.transitionTo(context, 0, Role.FOLLOWER).join();
+
+    // then - the stale flag from the earlier cycle must not survive into the new one
+    assertThat(context.areMigrationsPerformed()).isTrue();
+    assertThat(context.isMigrationSnapshotTaken()).isFalse();
+  }
+
+  @Test
   public void shouldNotMarkMigrationSnapshotTakenOnALaterTransitionWithinTheSameBoot() {
     // given - migrations already ran on an earlier transition in this same boot; a later
     // transition seeing the version already match must not short-circuit the still-pending

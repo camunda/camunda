@@ -425,6 +425,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
   public boolean isMigrationSnapshotTaken() {
     return migrationSnapshotTaken;
   }

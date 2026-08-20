@@ -166,12 +166,21 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   /**
    * Marks that a snapshot capturing the migrated state has been taken since this replica last ran
-   * its migrations. Once set, this must never be un-set: the underlying snapshot does not stop
-   * existing because of a later role transition, even though {@link
+   * its migrations. A later role transition alone never un-sets this -- {@link
    * io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector} itself is recreated
-   * on every transition.
+   * on every transition, but the snapshot it already took keeps existing regardless. It can,
+   * however, be reverted by {@link #resetMigrationSnapshotTaken()} when a *new* migration cycle
+   * starts, e.g. because a received snapshot transfer reverted this replica to an older, unmigrated
+   * version that needs to migrate again.
    */
   void markMigrationSnapshotTaken();
+
+  /**
+   * Invalidates a previously-marked {@link #markMigrationSnapshotTaken()} because a new migration
+   * cycle is starting (see {@link #markMigrationsDone()}) -- whatever was true about a prior
+   * migration's snapshot says nothing about whether *this* one has been snapshotted yet.
+   */
+  void resetMigrationSnapshotTaken();
 
   boolean isMigrationSnapshotTaken();
 

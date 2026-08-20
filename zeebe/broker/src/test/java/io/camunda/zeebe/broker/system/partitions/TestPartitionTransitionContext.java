@@ -396,6 +396,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
   public boolean isMigrationSnapshotTaken() {
     return migrationSnapshotTaken;
   }
