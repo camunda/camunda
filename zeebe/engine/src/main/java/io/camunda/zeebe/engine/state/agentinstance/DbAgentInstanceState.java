@@ -26,6 +26,9 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
   private final DbAgentInstance dbAgentInstance = new DbAgentInstance();
   private final ColumnFamily<DbLong, DbAgentInstance> agentInstancesColumnFamily;
 
+  private final DbAgentInstance committedSnapshotValue = new DbAgentInstance();
+  private final ColumnFamily<DbLong, DbAgentInstance> committedSnapshotColumnFamily;
+
   // Secondary index: (processInstanceKey, agentInstanceKey) -> nil
   private final DbLong processInstanceKey = new DbLong();
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyAndAgentInstanceKey =
@@ -47,6 +50,12 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
             transactionContext,
             processInstanceKeyAndAgentInstanceKey,
             DbNil.INSTANCE);
+    committedSnapshotColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AGENT_INSTANCE_COMMITTED_SNAPSHOT,
+            transactionContext,
+            agentInstanceKey,
+            committedSnapshotValue);
   }
 
   @Override
@@ -116,16 +125,21 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
 
   @Override
   public AgentInstanceRecord getCommittedSnapshot(final long key) {
-    throw new UnsupportedOperationException("not implemented yet");
+    agentInstanceKey.wrapLong(key);
+    final var stored = committedSnapshotColumnFamily.get(agentInstanceKey, DbAgentInstance::new);
+    return stored == null ? null : stored.getRecord();
   }
 
   @Override
   public void putCommittedSnapshot(final long key, final AgentInstanceRecord record) {
-    throw new UnsupportedOperationException("not implemented yet");
+    agentInstanceKey.wrapLong(key);
+    committedSnapshotValue.setRecord(record);
+    committedSnapshotColumnFamily.upsert(agentInstanceKey, committedSnapshotValue);
   }
 
   @Override
   public void deleteCommittedSnapshot(final long key) {
-    throw new UnsupportedOperationException("not implemented yet");
+    agentInstanceKey.wrapLong(key);
+    committedSnapshotColumnFamily.deleteIfExists(agentInstanceKey);
   }
 }

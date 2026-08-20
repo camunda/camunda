@@ -372,7 +372,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
   // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
   // reason as the sibling CF above.
-  AGENT_DEFINITION_BY_KEY(162, GLOBAL);
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
+
+  // agentInstanceKey -> DbAgentInstance holding the last CONFIGURATION fields (systemPrompt,
+  // model, provider, tools, limits) committed for that agent instance. Reuses DbAgentInstance
+  // as the value type even though only those fields are populated, so the optimistically-applied
+  // live AgentInstance can be rolled back to this snapshot on history-item discard.
+  AGENT_INSTANCE_COMMITTED_SNAPSHOT(163, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
