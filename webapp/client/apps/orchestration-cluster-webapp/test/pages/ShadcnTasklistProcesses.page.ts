@@ -6,32 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
-import {ShadcnHeader} from './ShadcnHeader';
 
 class ShadcnTasklistProcessesPage extends BasePage {
-	readonly header: ShadcnHeader;
-
-	constructor(page: Page) {
-		super(page);
-		this.header = new ShadcnHeader(page);
-	}
-
 	async goto() {
-		return this.page.goto('/shadcn/tasklist/processes');
+		return this.page.goto('/shadcn/tasklist');
 	}
 
 	get heading() {
-		return this.page.getByText('Hello "/shadcn/tasklist/processes"!');
+		return this.page.getByRole('heading', {name: 'Processes', exact: true});
 	}
 
-	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks', exact: true});
+	get description() {
+		return this.page.getByText('Browse and run processes published by your organization.');
 	}
 
-	get processesNavItem() {
-		return this.page.getByRole('link', {name: 'Processes'});
+	get startProcessButtons() {
+		return this.page.getByRole('button', {name: 'Start process'});
 	}
 }
 

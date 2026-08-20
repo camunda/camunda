@@ -31,7 +31,7 @@ class ShadcnTasklistLoginPage extends LoginPage {
 	}
 
 	get tasklistIndexContent() {
-		return this.page.getByText('Hello "/shadcn/tasklist"!');
+		return this.page.getByRole('heading', {name: 'Processes'});
 	}
 
 	get usernameError() {
