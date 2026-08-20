@@ -26,7 +26,7 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      test: ['CMD-SHELL', "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'"]
       interval: 30s
       timeout: 5s
       retries: 3
