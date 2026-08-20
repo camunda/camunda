@@ -218,7 +218,10 @@ public final class JobCompleteProcessor
   private void completeJob(
       final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingSession session) {
 
-    preCompleteActions(job, session);
+    final boolean jobBelongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
+    if (job.isAgentic() || jobBelongsToAgent) {
+      session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
+    }
 
     // If job completed variables are disabled, emit the COMPLETED event without variables to avoid
     // ExceededBatchRecordSizeException. Variables are not needed in the COMPLETED event; exporters
@@ -232,7 +235,7 @@ public final class JobCompleteProcessor
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), JobIntent.COMPLETED, job, command);
 
-    if (agentDefinitionBehavior.belongsToAgent(job)) {
+    if (jobBelongsToAgent) {
       commandWriter.appendFollowUpCommand(
           command.getKey(),
           AgentHistoryIntent.COMMIT,
@@ -297,13 +300,6 @@ public final class JobCompleteProcessor
     }
 
     return businessIdAssignmentBehavior.validate(processInstance, businessIdToAssign).map(d -> job);
-  }
-
-  private void preCompleteActions(final JobRecord job, final ProcessingSession session) {
-    final boolean belongsToAgent = agentDefinitionBehavior.belongsToAgent(job);
-    if (job.isAgentic() || belongsToAgent) {
-      session.appendAgentInfoToFollowUps(new AgentInfo().setElementId(job.getElementId()));
-    }
   }
 
   private void postCompleteActions(final JobRecord value) {
