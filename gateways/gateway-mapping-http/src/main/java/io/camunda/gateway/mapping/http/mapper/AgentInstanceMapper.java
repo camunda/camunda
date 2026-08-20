@@ -283,8 +283,17 @@ public class AgentInstanceMapper {
     }
 
     if (historyItem.getLimits() != null) {
-      fillLimits(historyItem.getLimits(), record.getLimits());
-      record.addChangedAttribute("limits");
+      final AgentInstanceLimits limits = historyItem.getLimits();
+      fillLimits(limits, record.getLimits());
+      if (limits.getMaxTokens() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_TOKENS);
+      }
+      if (limits.getMaxModelCalls() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_MODEL_CALLS);
+      }
+      if (limits.getMaxToolCalls() != null) {
+        record.addChangedAttribute(AgentInstanceRecord.ATTR_MAX_TOOL_CALLS);
+      }
     }
 
     if (historyItem.getSystemPrompt() != null) {

@@ -295,7 +295,14 @@ class AgentInstanceMapperTest {
       assertThat(mappedItem.getSystemPrompt()).hasSize(1);
       assertThat(mappedItem.getSystemPrompt().get(0).getText()).isEqualTo("be helpful");
       assertThat(mappedItem.getChangedAttributes())
-          .containsExactlyInAnyOrder("tools", "model", "provider", "limits", "systemPrompt");
+          .containsExactlyInAnyOrder(
+              "tools",
+              "model",
+              "provider",
+              "maxTokens",
+              "maxModelCalls",
+              "maxToolCalls",
+              "systemPrompt");
     }
 
     @Test
@@ -450,6 +457,48 @@ class AgentInstanceMapperTest {
       assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
       assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
       assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+    }
+
+    @Test
+    void shouldMapConfigurationLimitsOnCreateUsingGranularChangedAttributes() {
+      // given
+      final var request =
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(List.of(textContent("configuration")))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(List.of(textContent("You are a helpful assistant.")))
+                  .limits(
+                      AgentInstanceLimits.Builder.create()
+                          .maxModelCalls(10)
+                          .maxTokens(1000L)
+                          .maxToolCalls(5)
+                          .build())));
+
+      // when
+      final Either<ProblemDetail, AgentInstanceRecord> result =
+          mapper.toCreateAgentInstanceRecord(request);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mappedItem = result.get().getHistory().get(0);
+      assertThat(mappedItem.getLimits().getMaxModelCalls()).isEqualTo(10);
+      assertThat(mappedItem.getLimits().getMaxTokens()).isEqualTo(1000L);
+      assertThat(mappedItem.getLimits().getMaxToolCalls()).isEqualTo(5);
+      assertThat(mappedItem.getChangedAttributes())
+          .containsExactlyInAnyOrder(
+              "model", "provider", "maxTokens", "maxModelCalls", "maxToolCalls", "systemPrompt");
     }
 
     @Test
