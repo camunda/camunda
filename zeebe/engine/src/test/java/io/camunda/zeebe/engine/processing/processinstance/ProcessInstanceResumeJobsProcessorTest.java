@@ -45,9 +45,9 @@ import org.mockito.ArgumentCaptor;
 /**
  * Uses real element-instance/job/suspension state (via {@link ProcessingStateExtension}), mocking
  * only the writers and {@link BpmnJobActivationBehavior} — the same split {@code
- * ProcessInstanceBufferedCommandDrainProcessorTest} uses for the sibling processor in this resume
- * chain. The hand-out-declines-room case still needs the behavior mock to return false; everything
- * about the element and job state itself is real.
+ * BufferedCommandDrainProcessorTest} uses for the sibling processor in this resume chain. The
+ * hand-out-declines-room case still needs the behavior mock to return false; everything about the
+ * element and job state itself is real.
  */
 @ExtendWith(ProcessingStateExtension.class)
 public final class ProcessInstanceResumeJobsProcessorTest {
