@@ -56,6 +56,6 @@ public final class AgentHistoryDiscardProcessor
 
   @Override
   public SuspensionBehavior suspensionBehavior(final TypedRecord<AgentHistoryRecord> record) {
-    return SuspensionBehavior.BUFFER;
+    return SuspensionBehavior.PROCESS;
   }
 }
