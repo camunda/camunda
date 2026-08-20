@@ -41,6 +41,13 @@ describe('verifyDeprecatedEnumMembers', () => {
     });
   });
 
+  describe('valid: inline (property-level) enum with a deprecated member', () => {
+    it('produces no violations', () => {
+      const v = filterByPathSegment(violations, 'ValidInlineEnumResult');
+      assert.equal(v.length, 0);
+    });
+  });
+
   // ── Invalid cases ────────────────────────────────────────────────
 
   describe('invalid: x-deprecated-enum-members is not an array', () => {
@@ -148,6 +155,30 @@ describe('verifyDeprecatedEnumMembers', () => {
     it('reports the correct message', () => {
       const v = filterByPathSegment(violations, 'InvalidNoEnumEnum');
       assert.match(v[0].message, /requires the schema to have a non-empty `enum` array/);
+    });
+  });
+
+  describe('invalid: extension key present with no value (null)', () => {
+    it('flags one violation without crashing Spectral', () => {
+      const v = filterByPathSegment(violations, 'InvalidNullValueEnum');
+      assert.equal(v.length, 1);
+    });
+
+    it('reports the correct message', () => {
+      const v = filterByPathSegment(violations, 'InvalidNullValueEnum');
+      assert.match(v[0].message, /must be an array/);
+    });
+  });
+
+  describe('invalid: inline (property-level) enum with a malformed deprecated member', () => {
+    it('flags one violation', () => {
+      const v = filterByPathSegment(violations, 'InvalidInlineEnumResult');
+      assert.equal(v.length, 1);
+    });
+
+    it('reports the correct message', () => {
+      const v = filterByPathSegment(violations, 'InvalidInlineEnumResult');
+      assert.match(v[0].message, /deprecatedInVersion.*must be a semver string/);
     });
   });
 });
