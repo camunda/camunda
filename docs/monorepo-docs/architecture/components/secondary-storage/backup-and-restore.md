@@ -422,7 +422,7 @@ the secondary storage state (the exporter will simply re-process any gap after r
 | `BackupWriter` (Optimize)               | `optimize`       | Triggers two snapshots back-to-back; sequential on ES (blocking), concurrent on OS (async) |
 | `BackupReader` (Optimize)               | `optimize`       | Interface: reads snapshot state (ES + OS impls)                                            |
 | `BackupRestService` (Optimize)          | `optimize`       | `@RestControllerEndpoint(id = "backups")` - Optimize actuator                              |
-| `SnapshotUtil` (Optimize)               | `optimize`       | `camunda_optimize_{id}_{ver}_part_{1\                                                      |
+| `SnapshotUtil` (Optimize)               | `optimize`       | `camunda_optimize_{id}_{ver}_part_{1\|2}_of_2`                                             |
 | `RestoreManager`                        | `zeebe/restore`  | Restores Zeebe partition data; RDBMS-aware path included                                   |
 | `RestorePointResolver`                  | `zeebe/restore`  | Selects optimal backup checkpoint per partition aligned to RDBMS position                  |
 | `ExporterPositionMapper`                | `db/rdbms`       | Reads per-partition exporter positions from RDBMS during restore                           |
