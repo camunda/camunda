@@ -217,15 +217,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
   }
 
-  // Last resort when no issuer-uri could be derived: build the endpoints from
-  // camunda.identity.issuerBackendUrl, which is the in-cluster Identity URL and reachable from the
-  // pod. issuer-uri cannot be derived from it — CSL validates the discovery document's issuer
-  // against the URL it dialed, and Identity reports its externally-configured issuer either way —
-  // but the endpoints carry no such check, so a registration built from them works. Without this a
-  // deployment that configures only the public API (jwtAuthForApiEnabled plus a jwkSetUri, no
-  // browser login) has neither an issuer nor a complete endpoint set, and CSL fails to build any
-  // client registration at all. A deployment that does serve browser login configures
-  // camunda.identity.issuer and never reaches this.
+  // Last resort when no issuer-uri could be derived, so CSL can still build a registration: the
+  // endpoints carry no issuer check, unlike issuer-uri, so the backend URL is usable for them.
   private void deriveOidcEndpointsFromIssuerBackendUrl(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     if (derived.containsKey(OIDC_PREFIX + "issuer-uri")
@@ -275,9 +268,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         && !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
   }
 
-  // As hasExplicitOidcEndpoints, but also counting endpoints this bridge derived in this pass, so
-  // the credential guard below does not withhold client-id and client-secret from a registration
-  // the bridge has just made buildable.
+  // As hasExplicitOidcEndpoints, but also counting endpoints derived in this pass: a registration
+  // cannot be built without a client id, so the guard below must not withhold the credentials.
   private static boolean hasOidcEndpoints(
       final ConfigurableEnvironment env, final Map<String, Object> derived) {
     return hasExplicitOidcEndpoints(env)
