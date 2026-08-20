@@ -31,8 +31,9 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
-  // Keep in sync with the default in ExperimentalRaftCfg, which usually overrides this.
+  // Keep in sync with the defaults in ExperimentalRaftCfg, which usually override these.
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  private static final int DEFAULT_SNAPSHOT_CHUNK_SIZE = 8 * 1024 * 1024;
   private static final long DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD = 8L * 1024 * 1024;
   private static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
   private static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
@@ -53,7 +54,7 @@ public class RaftPartitionConfig {
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
-  private int snapshotChunkSize;
+  private int snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
 
   /**
