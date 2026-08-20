@@ -32,6 +32,8 @@ public interface ProcessDefinitionReader {
   Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
       final String definitionId, final boolean includeXml);
 
+  boolean processDefinitionExists(final String definitionId);
+
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
 
   DefinitionReader getDefinitionReader();
