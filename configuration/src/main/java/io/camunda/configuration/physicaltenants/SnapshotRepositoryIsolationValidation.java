@@ -76,9 +76,8 @@ class SnapshotRepositoryIsolationValidation implements CrossTenantValidation {
 
     if (!collisions.isEmpty()) {
       throw new UnifiedConfigurationException(
-          "Physical tenants must not share a secondary-storage snapshot repository: history "
-              + "snapshots carry no tenant id, so one tenant's listing, delete or restore would "
-              + "reach another tenant's backups. Register one repository per tenant and set a "
+          "Physical tenants must not share a secondary-storage snapshot repository."
+              + "Register one repository per tenant and set a "
               + "distinct data.secondary-storage.<database>.backup.repository-name for each. "
               + "Conflicts: "
               + String.join("; ", collisions));
