@@ -498,8 +498,6 @@ public final class ClusterRuntimeBackupServices {
         Status.NOT_FOUND);
   }
 
-  private record PhysicalTenantBackups(String physicalTenantId, List<BackupStatus> backups) {}
-
   /** Turns a rejection raised before the fan-out starts into a failed future. */
   private static <T> CompletableFuture<T> validated(final Supplier<CompletableFuture<T>> request) {
     try {
@@ -508,6 +506,8 @@ public final class ClusterRuntimeBackupServices {
       return CompletableFuture.failedFuture(e);
     }
   }
+
+  private record PhysicalTenantBackups(String physicalTenantId, List<BackupStatus> backups) {}
 
   /**
    * One physical tenant's runtime-backup port, plus the backup-id mode it is configured in — the
