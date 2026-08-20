@@ -401,6 +401,50 @@ class PhysicalTenantResolverTest {
         .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
+  @Test
+  void shouldRejectTenantsInheritingOneRootSnapshotRepository() {
+    // given a root repository-name and two tenants that override only their index prefix (so the
+    // isolation rule passes) — both inherit the one repository, which is the default outcome and
+    // only visible once the root and tenant configurations are resolved together
+    setProperties(
+        Map.of(
+            "camunda.data.secondary-storage.elasticsearch.backup.repository-name", "camunda-backup",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when / then resolution fails fast at boot on the shared snapshot repository
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("snapshot repository");
+  }
+
+  @Test
+  void shouldResolveWhenSharedClusterButDistinctSnapshotRepositories() {
+    // given two tenants on the same cluster that each override the inherited root repository-name
+    setProperties(
+        Map.of(
+            "camunda.data.secondary-storage.elasticsearch.backup.repository-name", "camunda-backup",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.backup.repository-name",
+                "camunda-backup-tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.backup.repository-name",
+                "camunda-backup-tenantb"),
+        "tenanta",
+        "tenantb");
+
+    // when / then distinct repositories isolate the tenants — resolution succeeds
+    final PhysicalTenantResolver resolver = newResolver();
+    assertThat(resolver.getAll())
+        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
   // --- exporter assignment wiring (ADR-0008 D1/D2/D5) --------------------------------------------
   // PhysicalTenantExporterAssignedValidation, PhysicalTenantExporterConfigurations#narrowToAssigned
   // and GenericExporterIsolationValidation are unit-tested standalone elsewhere; these tests
