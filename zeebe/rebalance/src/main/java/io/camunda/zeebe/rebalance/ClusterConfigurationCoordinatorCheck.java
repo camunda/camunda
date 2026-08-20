@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferResult;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -23,10 +23,10 @@ import org.jspecify.annotations.Nullable;
 public final class ClusterConfigurationCoordinatorCheck
     implements LeadershipTransferCoordinatorCheck {
 
-  private final Supplier<@Nullable ClusterConfiguration> clusterConfiguration;
+  private final Supplier<@Nullable CurrentClusterConfiguration> clusterConfiguration;
 
   public ClusterConfigurationCoordinatorCheck(
-      final Supplier<@Nullable ClusterConfiguration> clusterConfiguration) {
+      final Supplier<@Nullable CurrentClusterConfiguration> clusterConfiguration) {
     this.clusterConfiguration = clusterConfiguration;
   }
 
@@ -39,11 +39,11 @@ public final class ClusterConfigurationCoordinatorCheck
     }
     // A future version this node hasn't seen yet may have changed who the coordinator is, so it
     // must not be validated against this (older) membership either.
-    if (configurationVersion != configuration.version()) {
+    if (configurationVersion != configuration.globalConfiguration().version()) {
       return Optional.of(LeadershipTransferResult.STALE_CONFIGURATION);
     }
     final var expected =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(configuration.members().keySet())
+        ClusterConfigurationCoordinatorSupplier.ofMembers(configuration.getMembers())
             .getDefaultCoordinator();
     return expected.equals(coordinator)
         ? Optional.empty()

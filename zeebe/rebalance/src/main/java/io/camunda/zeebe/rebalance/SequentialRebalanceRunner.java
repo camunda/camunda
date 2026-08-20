@@ -356,7 +356,7 @@ public final class SequentialRebalanceRunner implements RebalanceRunner {
         LeadershipTransferInitiateRequest.builder()
             .withDesiredLeader(desiredLeader)
             .withCoordinator(localMemberId)
-            .withCoordinatorConfigVersion(rebalance.configuration().version())
+            .withCoordinatorConfigVersion(rebalance.configuration().globalConfiguration().version())
             .withCorrelationId(rebalance.id());
     final var overrides = rebalance.overrides();
     if (overrides.replicationLagThreshold() != null) {

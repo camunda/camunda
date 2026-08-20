@@ -311,6 +311,24 @@ final class SequentialRebalanceRunnerTest {
   }
 
   @Test
+  void shouldSendTheGlobalConfigVersion() {
+    // given
+    leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
+    final var configuration =
+        groupConfiguration(GROUP, Map.of(COORDINATOR, 1, MEMBER_1, 2, MEMBER_2, 3));
+
+    // when
+    start(configuration);
+
+    // then
+    final var leaderCheck = new ClusterConfigurationCoordinatorCheck(() -> configuration);
+    assertThat(
+            leaderCheck.validate(
+                COORDINATOR, transfers.lastInitiated().request().coordinatorConfigVersion()))
+        .isEmpty();
+  }
+
+  @Test
   void shouldApplyTheRebalancesOverridesToEachTransfer() {
     // given
     leaders.computeIfAbsent(GROUP, ignored -> new HashMap<>()).put(1, MEMBER_1);
