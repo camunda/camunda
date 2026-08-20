@@ -27,10 +27,6 @@ import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Limits;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
@@ -48,10 +44,14 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.entities.DocumentMetadata;
+import io.camunda.search.entities.DocumentReference;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -1046,7 +1046,10 @@ class SearchQueryResponseMapperTest {
             654L, // agentDefinitionKey
             List.of(456L), // elementInstanceKeys
             AgentInstanceEntity.AgentInstanceStatus.IDLE,
-            new AgentInstanceEntity.AgentInstanceDefinition("gpt-4o", "openai", "You are helpful"),
+            new AgentInstanceEntity.AgentInstanceDefinition(
+                "gpt-4o",
+                "openai",
+                List.of(new ContentItem(ContentType.TEXT, "You are helpful", null, null))),
             new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 1, 2),
             new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
             List.of(

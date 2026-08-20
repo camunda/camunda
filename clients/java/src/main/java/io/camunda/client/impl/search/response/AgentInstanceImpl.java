@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.client.impl.util.EnumUtil;
@@ -177,12 +178,17 @@ public class AgentInstanceImpl implements AgentInstance {
 
     private final String model;
     private final String provider;
-    private final String systemPrompt;
+    private final List<AgentInstanceHistoryContent> systemPrompt;
 
-    DefinitionImpl(final io.camunda.client.protocol.rest.AgentInstanceDefinition proto) {
+    DefinitionImpl(final io.camunda.client.protocol.rest.AgentInstanceDefinitionResult proto) {
       model = proto.getModel();
       provider = proto.getProvider();
-      systemPrompt = proto.getSystemPrompt();
+      systemPrompt =
+          proto.getSystemPrompt() == null
+              ? Collections.emptyList()
+              : proto.getSystemPrompt().stream()
+                  .map(AgentInstanceHistoryImpl::toContent)
+                  .collect(Collectors.toList());
     }
 
     @Override
@@ -196,7 +202,7 @@ public class AgentInstanceImpl implements AgentInstance {
     }
 
     @Override
-    public String getSystemPrompt() {
+    public List<AgentInstanceHistoryContent> getSystemPrompt() {
       return systemPrompt;
     }
   }

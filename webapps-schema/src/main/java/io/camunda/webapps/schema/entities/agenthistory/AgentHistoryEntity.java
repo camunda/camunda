@@ -10,7 +10,6 @@ package io.camunda.webapps.schema.entities.agenthistory;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
-import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -474,31 +473,6 @@ public final class AgentHistoryEntity
         + ", toolCalls="
         + toolCalls
         + '}';
-  }
-
-  /**
-   * A single content block in a history entry message. {@code text}, {@code documentReference}, and
-   * {@code object} are mutually exclusive based on {@code contentType}.
-   */
-  public record AgentHistoryContentValue(
-      AgentHistoryContentType contentType,
-      String text,
-      DocumentReferenceEntity documentReference,
-      Object object) {
-
-    public static AgentHistoryContentValue text(final String text) {
-      return new AgentHistoryContentValue(AgentHistoryContentType.TEXT, text, null, null);
-    }
-
-    public static AgentHistoryContentValue document(
-        final DocumentReferenceEntity documentReference) {
-      return new AgentHistoryContentValue(
-          AgentHistoryContentType.DOCUMENT, null, documentReference, null);
-    }
-
-    public static AgentHistoryContentValue object(final Object object) {
-      return new AgentHistoryContentValue(AgentHistoryContentType.OBJECT, null, null, object);
-    }
   }
 
   /** A tool call embedded in a history entry. */

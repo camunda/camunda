@@ -27,7 +27,9 @@ public class AgentInstanceEntityTransformer
 
     final var definition =
         new AgentInstanceDefinition(
-            source.getModel(), source.getProvider(), source.getSystemPrompt());
+            source.getModel(),
+            source.getProvider(),
+            AgentContentTransformer.toContent(source.getSystemPrompt()));
 
     final var metrics =
         new AgentInstanceMetrics(

@@ -61,11 +61,13 @@ public record AgentInstanceEntity(
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record AgentInstanceDefinition(String model, String provider, String systemPrompt) {
+  public record AgentInstanceDefinition(
+      String model, String provider, List<ContentItem> systemPrompt) {
     public AgentInstanceDefinition {
       Objects.requireNonNull(model, "model");
       Objects.requireNonNull(provider, "provider");
-      Objects.requireNonNull(systemPrompt, "systemPrompt");
+      // Mutable list required: MyBatis hydrates by calling .add()
+      systemPrompt = systemPrompt != null ? new ArrayList<>(systemPrompt) : new ArrayList<>();
     }
   }
 

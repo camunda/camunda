@@ -110,12 +110,16 @@ final class AgentInstanceRecordTest {
   @Test
   void shouldRoundTripDefinitionViaMsgPack() {
     // given
+    final var systemPromptBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Extract vendor, amount, date.");
     final AgentInstanceRecord original = new AgentInstanceRecord();
     original
         .getDefinition()
         .setModel("gpt-4o")
         .setProvider("openai")
-        .setSystemPrompt("Extract vendor, amount, date.");
+        .setSystemPrompt(List.of(systemPromptBlock));
 
     // when
     final AgentInstanceRecord copy = new AgentInstanceRecord();
@@ -124,7 +128,9 @@ final class AgentInstanceRecordTest {
     // then
     assertThat(copy.getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(copy.getDefinition().getProvider()).isEqualTo("openai");
-    assertThat(copy.getDefinition().getSystemPrompt()).isEqualTo("Extract vendor, amount, date.");
+    assertThat(copy.getDefinition().getSystemPrompt())
+        .extracting(AgentHistoryRecordValue.AgentHistoryMessageContentValue::getText)
+        .containsExactly("Extract vendor, amount, date.");
   }
 
   @Test

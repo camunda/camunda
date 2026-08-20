@@ -10,8 +10,10 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -53,7 +55,8 @@ public record AgentInstanceDbModel(
     implements Copyable<AgentInstanceDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentInstanceDbModel.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   public AgentInstanceDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
@@ -179,6 +182,17 @@ public record AgentInstanceDbModel(
     return deserializeTools(tools);
   }
 
+  /**
+   * Returns the structured system-prompt content list, deserializing the JSON form on every call.
+   * Returns an empty list, not null, when no JSON is stored.
+   */
+  public List<ContentItem> systemPromptItems() {
+    if (systemPrompt == null || systemPrompt.isEmpty()) {
+      return List.of();
+    }
+    return deserializeContentItems(systemPrompt);
+  }
+
   private static List<AgentInstanceToolDbValue> deserializeTools(final String tools) {
     try {
       return MAPPER.readValue(tools, new TypeReference<>() {});
@@ -197,6 +211,28 @@ public record AgentInstanceDbModel(
       return MAPPER.writeValueAsString(toolValues);
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to serialize agent instance tools", e);
+      return null;
+    }
+  }
+
+  private static List<ContentItem> deserializeContentItems(final String json) {
+    try {
+      return MAPPER.readValue(json, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to deserialize agent instance system prompt", e);
+      return Collections.emptyList();
+    }
+  }
+
+  private static String serializeContentItems(final List<ContentItem> items) {
+    if (items == null || items.isEmpty()) {
+      return null;
+    }
+
+    try {
+      return MAPPER.writeValueAsString(items);
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to serialize agent instance system prompt", e);
       return null;
     }
   }
@@ -344,6 +380,11 @@ public record AgentInstanceDbModel(
 
     public Builder systemPrompt(final String systemPrompt) {
       this.systemPrompt = systemPrompt;
+      return this;
+    }
+
+    public Builder systemPromptItems(final List<ContentItem> systemPromptItems) {
+      systemPrompt = serializeContentItems(systemPromptItems);
       return this;
     }
 

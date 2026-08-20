@@ -473,9 +473,11 @@ components:
         status:
           $ref: '#/components/schemas/AgentInstanceStatusEnum'
         definition:
-          description: The static definition of the agent, including model, provider, and system prompt.
+          description: |
+            The definition of the agent, including model, provider, and system prompt. Set at
+            creation, but can change later via a CONFIGURATION history item.
           allOf:
-            - $ref: '#/components/schemas/AgentInstanceDefinition'
+            - $ref: '#/components/schemas/AgentInstanceDefinitionResult'
         metrics:
           description: Aggregated metrics across all loopIterations of this agent instance.
           allOf:
@@ -544,7 +546,11 @@ components:
                 - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
 
     AgentInstanceDefinition:
-      description: The static definition of an agent instance, set once at creation.
+      description: |
+        The definition of an agent instance, as submitted at creation. The systemPrompt is a plain
+        string here for backwards compatibility with existing create requests; the read side
+        (AgentInstanceDefinitionResult) exposes it as content blocks instead. This write-side
+        string is deprecated and will be removed as part of #58795.
       type: object
       required:
         - model
@@ -560,6 +566,28 @@ components:
         systemPrompt:
           type: string
           description: The system prompt configured for this agent instance.
+
+    AgentInstanceDefinitionResult:
+      description: |
+        The definition of an agent instance. Set at creation, but can change later via a
+        CONFIGURATION history item.
+      type: object
+      required:
+        - model
+        - provider
+        - systemPrompt
+      properties:
+        model:
+          type: string
+          description: The LLM model identifier (for example, gpt-4o).
+        provider:
+          type: string
+          description: The LLM provider (for example, openai or anthropic).
+        systemPrompt:
+          description: The system prompt configured for this agent instance, as content blocks.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
 
     AgentTool:
       description: A tool available to the agent.
@@ -665,10 +693,11 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         definition:
           description: |
-            Static definition set once at creation. Required when history is empty
-            or omitted. Must be omitted when history is non-empty — supply model,
-            provider, and systemPrompt through a CONFIGURATION item in history
-            instead.
+            The agent's initial definition; model, provider, and systemPrompt can
+            all be changed later via a CONFIGURATION history item. Required when
+            history is empty or omitted. Must be omitted when history is
+            non-empty — supply model, provider, and systemPrompt through a
+            CONFIGURATION item in history instead.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceDefinition'
         limits:

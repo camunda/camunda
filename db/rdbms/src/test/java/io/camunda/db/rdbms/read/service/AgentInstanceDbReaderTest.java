@@ -18,6 +18,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
@@ -256,7 +258,8 @@ class AgentInstanceDbReaderTest {
         .status(AgentInstanceStatus.IDLE)
         .model("gpt-4o")
         .provider("openai")
-        .systemPrompt("You are an assistant.")
+        .systemPromptItems(
+            List.of(new ContentItem(ContentType.TEXT, "You are an assistant.", null, null)))
         .maxTokens(10000L)
         .maxModelCalls(100)
         .maxToolCalls(50)

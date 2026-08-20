@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -79,7 +80,13 @@ public class AgentInstanceCreateTest {
     assertThat(created.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(created.getValue().getDefinition().getProvider()).isEqualTo("openai");
     assertThat(created.getValue().getDefinition().getSystemPrompt())
-        .isEqualTo("You are a helpful agent.");
+        .hasSize(1)
+        .first()
+        .satisfies(
+            block -> {
+              assertThat(block.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
+              assertThat(block.getText()).isEqualTo("You are a helpful agent.");
+            });
     assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(1000L);
     assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(10);
     assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(20);

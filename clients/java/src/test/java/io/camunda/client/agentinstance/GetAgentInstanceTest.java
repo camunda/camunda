@@ -21,13 +21,15 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.response.AgentInstance;
-import io.camunda.client.protocol.rest.AgentInstanceDefinition;
+import io.camunda.client.protocol.rest.AgentInstanceDefinitionResult;
 import io.camunda.client.protocol.rest.AgentInstanceLimits;
 import io.camunda.client.protocol.rest.AgentInstanceMetrics;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceStatusEnum;
+import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentTool;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -66,10 +68,14 @@ class GetAgentInstanceTest extends ClientRestTest {
             .elementInstanceKeys(Collections.singletonList("6000"))
             .tools(Collections.singletonList(tool))
             .definition(
-                new AgentInstanceDefinition()
+                new AgentInstanceDefinitionResult()
                     .model("gpt-4o")
                     .provider("openai")
-                    .systemPrompt("You are a helpful agent"))
+                    .systemPrompt(
+                        Collections.singletonList(
+                            new AgentInstanceTextContent()
+                                .contentType("TEXT")
+                                .text("You are a helpful agent"))))
             .metrics(
                 new AgentInstanceMetrics()
                     .inputTokens(100L)
@@ -139,7 +145,11 @@ class GetAgentInstanceTest extends ClientRestTest {
           softly
               .assertThat(definition.getSystemPrompt())
               .as("systemPrompt")
-              .isEqualTo("You are a helpful agent");
+              .hasSize(1)
+              .first()
+              .isInstanceOfSatisfying(
+                  AgentInstanceHistoryContent.TextContent.class,
+                  block -> assertThat(block.getText()).isEqualTo("You are a helpful agent"));
 
           final AgentInstance.Metrics metrics = result.getMetrics();
           softly.assertThat(metrics.getInputTokens()).as("inputTokens").isEqualTo(100L);

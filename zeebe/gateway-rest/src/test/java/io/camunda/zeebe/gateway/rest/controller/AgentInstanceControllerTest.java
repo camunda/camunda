@@ -111,7 +111,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getDefinition().getModel()).isEqualTo("gpt-4o");
                   assertThat(record.getDefinition().getProvider()).isEqualTo("openai");
                   assertThat(record.getDefinition().getSystemPrompt())
-                      .isEqualTo("You are a helpful assistant.");
+                      .hasSize(1)
+                      .first()
+                      .satisfies(
+                          block -> {
+                            assertThat(block.getContentType())
+                                .isEqualTo(AgentHistoryContentType.TEXT);
+                            assertThat(block.getText()).isEqualTo("You are a helpful assistant.");
+                          });
                   assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
                   assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
                   assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);

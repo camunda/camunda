@@ -15,9 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMe
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -27,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Shared logic for the {@code AGENT_HISTORY}/{@code AGENT_INSTANCE} processors that deal with an
@@ -271,7 +268,7 @@ public final class AgentHistoryBatchBehavior {
       changed.add(AgentInstanceRecord.ATTR_PROVIDER);
     }
     if (itemChangedAttributes.contains(AgentInstanceRecord.ATTR_SYSTEM_PROMPT)) {
-      target.getDefinition().setSystemPrompt(extractText(item.getSystemPrompt()));
+      target.getDefinition().setSystemPrompt(item.getSystemPrompt());
       changed.add(AgentInstanceRecord.ATTR_SYSTEM_PROMPT);
     }
     if (itemChangedAttributes.contains(AgentInstanceRecord.ATTR_TOOLS)) {
@@ -292,24 +289,6 @@ public final class AgentHistoryBatchBehavior {
     }
 
     return changed;
-  }
-
-  /**
-   * Concatenates every {@code TEXT} content block's text (joined with a blank line) — the dedicated
-   * {@code systemPrompt} content-block list uses the same block shape as {@code content}, but only
-   * {@code TEXT} blocks are meaningful as a system prompt.
-   *
-   * <p><strong>Workaround:</strong> {@code AgentInstanceRecord}'s {@code systemPrompt} field is a
-   * plain string, so a multi-block system prompt (e.g. text interleaved with documents) is
-   * flattened and lossy here — only the {@code TEXT} blocks survive. #58797 is expected to change
-   * how the agent instance stores its system prompt to allow saving the full multi-content value;
-   * this flattening should be removed once that lands.
-   */
-  private String extractText(final List<? extends AgentHistoryMessageContentValue> blocks) {
-    return blocks.stream()
-        .filter(block -> block.getContentType() == AgentHistoryContentType.TEXT)
-        .map(AgentHistoryMessageContentValue::getText)
-        .collect(Collectors.joining("\n\n"));
   }
 
   /**

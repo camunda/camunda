@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -109,7 +111,15 @@ public final class AgentInstanceClient {
 
   public AgentInstanceClient withDefinition(
       final String model, final String provider, final String systemPrompt) {
-    record.getDefinition().setModel(model).setProvider(provider).setSystemPrompt(systemPrompt);
+    record
+        .getDefinition()
+        .setModel(model)
+        .setProvider(provider)
+        .setSystemPrompt(
+            List.of(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText(systemPrompt)));
     return this;
   }
 

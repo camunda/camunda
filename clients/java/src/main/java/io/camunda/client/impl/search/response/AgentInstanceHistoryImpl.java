@@ -195,7 +195,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     return systemPrompt;
   }
 
-  private static AgentInstanceHistoryContent toContent(final AgentInstanceMessageContent proto) {
+  static AgentInstanceHistoryContent toContent(final AgentInstanceMessageContent proto) {
     if (proto instanceof AgentInstanceTextContent) {
       return new TextContent(((AgentInstanceTextContent) proto).getText());
     } else if (proto instanceof AgentInstanceDocumentContent) {

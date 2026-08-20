@@ -33,7 +33,7 @@ public class AgentInstanceEntityMapper {
         new AgentInstanceDefinition(
             nullToEmpty(dbModel.model()),
             nullToEmpty(dbModel.provider()),
-            nullToEmpty(dbModel.systemPrompt())),
+            dbModel.systemPromptItems()),
         new AgentInstanceMetrics(
             dbModel.inputTokens(),
             dbModel.outputTokens(),

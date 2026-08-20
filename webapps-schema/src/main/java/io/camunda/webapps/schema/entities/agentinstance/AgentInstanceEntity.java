@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.agentinstance;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -70,7 +71,7 @@ public final class AgentInstanceEntity
   private String provider;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String systemPrompt;
+  private List<AgentHistoryContentValue> systemPrompt;
 
   // Limits fields — flattened from AgentInstanceLimitsValue
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -251,11 +252,11 @@ public final class AgentInstanceEntity
     return this;
   }
 
-  public String getSystemPrompt() {
+  public List<AgentHistoryContentValue> getSystemPrompt() {
     return systemPrompt;
   }
 
-  public AgentInstanceEntity setSystemPrompt(final String systemPrompt) {
+  public AgentInstanceEntity setSystemPrompt(final List<AgentHistoryContentValue> systemPrompt) {
     this.systemPrompt = systemPrompt;
     return this;
   }

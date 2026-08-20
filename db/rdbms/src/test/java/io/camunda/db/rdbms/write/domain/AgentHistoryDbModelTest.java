@@ -9,12 +9,12 @@ package io.camunda.db.rdbms.write.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
-import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Tool;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
+import io.camunda.search.entities.DocumentMetadata;
+import io.camunda.search.entities.DocumentReference;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
