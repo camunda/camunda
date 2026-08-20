@@ -43,14 +43,24 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final Sleeper sleeper;
 
   public ProcessDefinitionDeletionJobHandler(
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceWriter processInstanceWriter,
       final ProcessDefinitionWriter processDefinitionWriter) {
+    this(processDefinitionReader, processInstanceWriter, processDefinitionWriter, Thread::sleep);
+  }
+
+  ProcessDefinitionDeletionJobHandler(
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessInstanceWriter processInstanceWriter,
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final Sleeper sleeper) {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
     this.processDefinitionWriter = processDefinitionWriter;
+    this.sleeper = sleeper;
   }
 
   @Override
@@ -109,7 +119,7 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
             MAX_ATTEMPTS,
             e.getMessage());
         try {
-          Thread.sleep(backoffCalculator.calculateSleepTime());
+          sleeper.sleep(backoffCalculator.calculateSleepTime());
         } catch (final InterruptedException ie) {
           Thread.currentThread().interrupt();
           throw e;
@@ -128,5 +138,10 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       }
     }
     return false;
+  }
+
+  @FunctionalInterface
+  interface Sleeper {
+    void sleep(long millis) throws InterruptedException;
   }
 }
