@@ -5249,7 +5249,11 @@ final class JsonSerializableToJsonTest {
                   .setModel("gpt-4o")
                   .setProvider("openai")
                   .setSystemPrompt(
-                      "Extract vendor, amount, date, and line items from the invoice.");
+                      List.of(
+                          new AgentHistoryMessageContent()
+                              .setContentType(AgentHistoryContentType.TEXT)
+                              .setText(
+                                  "Extract vendor, amount, date, and line items from the invoice.")));
               record.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
               record
                   .getMetrics()
@@ -5277,7 +5281,14 @@ final class JsonSerializableToJsonTest {
           "definition": {
             "model": "gpt-4o",
             "provider": "openai",
-            "systemPrompt": "Extract vendor, amount, date, and line items from the invoice."
+            "systemPrompt": [
+              {
+                "contentType": "TEXT",
+                "text": "Extract vendor, amount, date, and line items from the invoice.",
+                "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+                "object": null
+              }
+            ]
           },
           "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
           "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 1, "toolCalls": 1 },
@@ -5311,7 +5322,7 @@ final class JsonSerializableToJsonTest {
           "versionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
-          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
@@ -5371,7 +5382,7 @@ final class JsonSerializableToJsonTest {
           "versionTag": "",
           "tenantId": "<default>",
           "status": "UNSPECIFIED",
-          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
