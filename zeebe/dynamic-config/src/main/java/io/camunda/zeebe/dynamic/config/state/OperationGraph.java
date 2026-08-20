@@ -33,12 +33,29 @@ import org.jspecify.annotations.NullMarked;
  * <h4>Correctness of the edges is the author's, and only the author's</h4>
  *
  * <p>Nothing here checks that concurrently-runnable operations are actually safe together. A
- * missing edge is not rejected; it is executed. The failure mode is quiet: two operations writing
- * the same member entry both succeed, and the sub-configuration merge keeps one of them by version,
- * so the other's effect is simply gone. Expect a rare stall or a lost transition, not a test
- * failure.
+ * missing edge is not rejected; it is executed.
  *
- * <p>Two traps that are not visible from an operation's own fields, learned the hard way:
+ * <p>The rule that actually makes the current adopters safe: <b>the broker applying an operation
+ * must be the only writer of the entry it writes</b> ({@code operation.memberId()} must equal
+ * whichever member's entry the applier touches). Every adopter applier writes only its own member's
+ * entry, and a broker serialises its own completions on its actor, so that entry's version
+ * increments monotonically and two brokers merging never see a same-version conflict on it. This is
+ * <em>not</em> the same as "two operations naming the same member need an edge unless they name
+ * different partitions" — a member's partitions all live in one {@code BrokerPartitionState} under
+ * one version, so two unordered operations on different partitions of the same member still write
+ * the same entry, and land on the branch below.
+ *
+ * <p>The failure mode when the rule is violated is not quiet. {@code
+ * BrokerPartitionState#merge(BrokerPartitionState)} throws on two same-version copies that differ,
+ * rather than picking one — so a broker whose peer has written an entry it also wrote rejects that
+ * merge outright, leaves its local state unchanged, and repeats the rejection on every later gossip
+ * round against that peer: <b>permanent non-convergence between the two brokers</b>, not a lost
+ * transition. (A silent loss is still possible, but only in the narrower case where one broker's
+ * write has not yet reached the other at merge time.)
+ *
+ * <p>Two operations that violate the rule outright, learned the hard way, and out of scope for
+ * concurrent execution under the current merge until either write-set validation is reinstated for
+ * these two shapes or {@code BrokerPartitionState.merge} stops throwing on same-version conflicts:
  *
  * <ul>
  *   <li>{@code MemberRemoveOperation} writes the entry of {@code memberToRemove()}, not of {@code
@@ -47,11 +64,8 @@ import org.jspecify.annotations.NullMarked;
  *   <li>{@code PartitionForceReconfigureOperation} writes an entry set that cannot be derived from
  *       the operation at all: its applier loops {@code group.members().keySet()} and removes the
  *       partition from every member outside the target replication group, so what it touches
- *       depends on the live configuration. Order it after everything in its group.
+ *       depends on the live configuration, not just on its own fields.
  * </ul>
- *
- * <p>The rule of thumb the current adopters follow: two operations naming the same member need an
- * edge between them unless they name different partitions of it.
  */
 @NullMarked
 public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations) {
