@@ -134,6 +134,7 @@ public final class BpmnJobBehavior {
   private final ResourceState resourceState;
   private final FormState formState;
   private final AgentDefinitionState agentDefinitionState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -150,6 +151,7 @@ public final class BpmnJobBehavior {
       final ResourceState resourceState,
       final FormState formState,
       final AgentDefinitionState agentDefinitionState,
+      final AgentDefinitionBehavior agentDefinitionBehavior,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
@@ -165,6 +167,7 @@ public final class BpmnJobBehavior {
     this.resourceState = resourceState;
     this.formState = formState;
     this.agentDefinitionState = agentDefinitionState;
+    this.agentDefinitionBehavior = agentDefinitionBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -822,7 +825,7 @@ public final class BpmnJobBehavior {
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
-      if (job.isAgentic()) {
+      if (agentDefinitionBehavior.belongsToAgent(job)) {
         // The job is destroyed without completing — discard all its pending history items. The
         // lease is left empty on purpose: the whole job is gone, so every activation's items must
         // be discarded regardless of the lease they were created with.

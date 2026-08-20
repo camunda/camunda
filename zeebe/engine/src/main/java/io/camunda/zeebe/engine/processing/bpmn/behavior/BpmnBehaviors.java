@@ -65,5 +65,7 @@ public interface BpmnBehaviors {
 
   AgentInstanceBehavior agentInstanceBehavior();
 
+  AgentDefinitionBehavior agentDefinitionBehavior();
+
   BpmnProcessDeletionBehavior processDeletionBehavior();
 }

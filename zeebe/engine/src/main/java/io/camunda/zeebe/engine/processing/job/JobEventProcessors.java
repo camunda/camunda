@@ -65,6 +65,7 @@ public final class JobEventProcessors {
                 eventHandle,
                 cslCheck,
                 tenantCheck,
+                bpmnBehaviors.agentDefinitionBehavior(),
                 bpmnBehaviors.variableBehavior(),
                 config.isIncludeVariablesInJobCompletedEvent(),
                 config.isBusinessIdUniquenessEnabled()))
@@ -97,6 +98,7 @@ public final class JobEventProcessors {
                 tenantCheck,
                 writers,
                 incidentMetrics,
+                bpmnBehaviors.agentDefinitionBehavior(),
                 bpmnBehaviors.variableBehavior()))
         .onCommand(
             ValueType.JOB,
@@ -118,7 +120,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.CANCEL,
-            new JobCancelProcessor(processingState, jobMetrics, writers))
+            new JobCancelProcessor(
+                processingState, bpmnBehaviors.agentDefinitionBehavior(), jobMetrics, writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,

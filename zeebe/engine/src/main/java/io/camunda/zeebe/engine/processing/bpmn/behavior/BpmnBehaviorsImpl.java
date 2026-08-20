@@ -75,6 +75,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
   private final AgentInstanceBehavior agentInstanceBehavior;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -264,6 +265,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             config.isCandidateGroupNameResolution(),
             clock);
 
+    agentDefinitionBehavior = new AgentDefinitionBehavior(processingState.getProcessState());
+
     jobBehavior =
         new BpmnJobBehavior(
             processingState.getKeyGenerator(),
@@ -274,6 +277,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getResourceState(),
             processingState.getFormState(),
             processingState.getAgentDefinitionState(),
+            agentDefinitionBehavior,
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
@@ -469,6 +473,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public AgentInstanceBehavior agentInstanceBehavior() {
     return agentInstanceBehavior;
+  }
+
+  @Override
+  public AgentDefinitionBehavior agentDefinitionBehavior() {
+    return agentDefinitionBehavior;
   }
 
   @Override
