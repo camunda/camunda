@@ -114,30 +114,6 @@ public class AgentInstanceMapper {
             record.addChangedAttribute("status");
           }
 
-          if (request.getMetrics() != null) {
-            final var delta = request.getMetrics();
-            if (delta.getInputTokens() != null) {
-              record.getMetrics().setInputTokens(delta.getInputTokens());
-            }
-            if (delta.getOutputTokens() != null) {
-              record.getMetrics().setOutputTokens(delta.getOutputTokens());
-            }
-            if (delta.getModelCalls() != null) {
-              record.getMetrics().setModelCalls(delta.getModelCalls());
-            }
-            if (delta.getToolCalls() != null) {
-              record.getMetrics().setToolCalls(delta.getToolCalls());
-            }
-            record.addChangedAttribute("metrics");
-          }
-
-          if (request.getTools() != null) {
-            final List<AgentInstanceTool> tools =
-                request.getTools().stream().map(this::mapTool).collect(Collectors.toList());
-            record.setTools(tools);
-            record.addChangedAttribute("tools");
-          }
-
           if (request.getJobKey() != null) {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }
