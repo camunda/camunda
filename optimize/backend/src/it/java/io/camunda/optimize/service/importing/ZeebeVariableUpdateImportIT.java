@@ -382,6 +382,10 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
   @Test
   public void zeebeVariableImport_updateObjectVariable() {
     // given
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredZeebe()
+        .setIncludeObjectVariableValue(true);
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put("name", "Pond");
     objectVar.put("age", 28);

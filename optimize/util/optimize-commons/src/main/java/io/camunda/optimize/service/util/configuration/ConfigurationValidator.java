@@ -9,9 +9,12 @@ package io.camunda.optimize.service.util.configuration;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConfigurationValidator {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ConfigurationValidator.class);
   private static final Pattern INVALID_INDEX_PREFIX_CHARS = Pattern.compile("[\\\\/*?\"<>| _]");
 
   public void validate(final ConfigurationService configurationService) {
@@ -19,6 +22,23 @@ public class ConfigurationValidator {
 
     validateIndexPrefix(configurationService.getElasticSearchConfiguration().getIndexPrefix());
     validateIndexPrefix(configurationService.getOpenSearchConfiguration().getIndexPrefix());
+    warnIfObjectVariableValuesAreNotImported(configurationService);
+  }
+
+  private void warnIfObjectVariableValuesAreNotImported(
+      final ConfigurationService configurationService) {
+    final ZeebeConfiguration zeebeConfiguration = configurationService.getConfiguredZeebe();
+    final boolean isImportingZeebeVariables =
+        zeebeConfiguration.isEnabled() && zeebeConfiguration.isVariableImportEnabled();
+    if (isImportingZeebeVariables && !zeebeConfiguration.isIncludeObjectVariableValue()) {
+      LOG.warn(
+          "Optimize is not importing object variable values (zeebe.includeObjectVariableValue "
+              + "is false). As of Camunda 8.10, this is the default for Self-Managed. Object "
+              + "variables will not be flattened into report-usable fields and their raw value "
+              + "will not be stored. If you rely on this, set zeebe.includeObjectVariableValue "
+              + "to true (or the CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE environment "
+              + "variable) to opt in.");
+    }
   }
 
   private void validateIndexPrefix(final String indexPrefix) {
