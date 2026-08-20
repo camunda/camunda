@@ -97,4 +97,30 @@ public class AgentInstanceCompletedApplierTest {
     assertThat(agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey))
         .containsExactly(secondAgentInstanceKey);
   }
+
+  @Test
+  void shouldDeleteCommittedSnapshotOnCompletion() {
+    // given — a committed configuration snapshot exists for the agent instance.
+    final long agentInstanceKey = 9L;
+    final long processInstanceKey = 5L;
+    createdApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentInstanceState.putCommittedSnapshot(
+        agentInstanceKey, new AgentInstanceRecord().setAgentInstanceKey(agentInstanceKey));
+
+    // when
+    completedApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then
+    assertThat(agentInstanceState.getCommittedSnapshot(agentInstanceKey)).isNull();
+  }
 }
