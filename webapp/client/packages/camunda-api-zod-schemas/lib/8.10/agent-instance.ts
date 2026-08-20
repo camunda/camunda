@@ -30,10 +30,35 @@ const agentInstanceStatusSchema = z.enum([
 ]);
 type AgentInstanceStatus = z.infer<typeof agentInstanceStatusSchema>;
 
+const agentInstanceTextContentSchema = z.object({
+	contentType: z.literal('TEXT'),
+	text: z.string(),
+});
+type AgentInstanceTextContent = z.infer<typeof agentInstanceTextContentSchema>;
+
+const agentInstanceDocumentContentSchema = z.object({
+	contentType: z.literal('DOCUMENT'),
+	documentReference: documentReferenceSchema,
+});
+type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentSchema>;
+
+const agentInstanceObjectContentSchema = z.object({
+	contentType: z.literal('OBJECT'),
+	object: z.unknown(),
+});
+type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
+
+const agentInstanceMessageContentSchema = z.discriminatedUnion('contentType', [
+	agentInstanceTextContentSchema,
+	agentInstanceDocumentContentSchema,
+	agentInstanceObjectContentSchema,
+]);
+type AgentInstanceMessageContent = z.infer<typeof agentInstanceMessageContentSchema>;
+
 const agentInstanceDefinitionSchema = z.object({
 	model: z.string(),
 	provider: z.string(),
-	systemPrompt: z.string(),
+	systemPrompt: z.array(agentInstanceMessageContentSchema),
 });
 type AgentInstanceDefinition = z.infer<typeof agentInstanceDefinitionSchema>;
 
@@ -132,31 +157,6 @@ type AgentInstanceHistoryRole = z.infer<typeof agentInstanceHistoryRoleSchema>;
 
 const agentInstanceHistoryCommitStatusSchema = z.enum(['COMMITTED', 'PENDING', 'DISCARDED']);
 type AgentInstanceHistoryCommitStatus = z.infer<typeof agentInstanceHistoryCommitStatusSchema>;
-
-const agentInstanceTextContentSchema = z.object({
-	contentType: z.literal('TEXT'),
-	text: z.string(),
-});
-type AgentInstanceTextContent = z.infer<typeof agentInstanceTextContentSchema>;
-
-const agentInstanceDocumentContentSchema = z.object({
-	contentType: z.literal('DOCUMENT'),
-	documentReference: documentReferenceSchema,
-});
-type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentSchema>;
-
-const agentInstanceObjectContentSchema = z.object({
-	contentType: z.literal('OBJECT'),
-	object: z.unknown(),
-});
-type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
-
-const agentInstanceMessageContentSchema = z.discriminatedUnion('contentType', [
-	agentInstanceTextContentSchema,
-	agentInstanceDocumentContentSchema,
-	agentInstanceObjectContentSchema,
-]);
-type AgentInstanceMessageContent = z.infer<typeof agentInstanceMessageContentSchema>;
 
 const agentInstanceToolCallSchema = z.object({
 	toolCallId: z.string(),
