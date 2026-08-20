@@ -7,22 +7,15 @@
  */
 
 import { FC } from "react";
-import { DataTableSkeleton } from "@carbon/react";
+import { DataTableSkeleton } from "@camunda/design-system/carbon-compat";
 import Page from "src/components/layoutV2/Page";
-import styled from "styled-components";
-
-const StyledPage = styled(Page)`
-  .cds--data-table-header__description {
-    display: none;
-  }
-`;
 
 type ListPageFallbackProps = { columns?: number };
 
 const ListPageFallback: FC<ListPageFallbackProps> = ({ columns = 2 }) => (
-  <StyledPage>
+  <Page>
     <DataTableSkeleton columnCount={columns} />
-  </StyledPage>
+  </Page>
 );
 
 export default ListPageFallback;
