@@ -205,7 +205,10 @@ public final class SystemContext {
     validateMaxAppendBatchSize(brokerCfg.getExperimental());
 
     physicalTenantContexts.forEach(
-        (tenantId, ctx) -> validatePerTenantConfiguration(tenantId, ctx.config()));
+        (tenantId, ctx) -> {
+          validateTenantMatchesRootConfig(tenantId, ctx.config());
+          validatePerTenantConfiguration(tenantId, ctx.config());
+        });
 
     // Exporter configuration is validated by SystemContextLoader before the SystemContext is
     // constructed, so that per-physical-tenant exporter configs are checked as they are loaded.
@@ -216,6 +219,39 @@ public final class SystemContext {
     }
 
     validateInitializationConfig();
+  }
+
+  /**
+   * Validates that the properties denied for per-tenant override (see {@code
+   * PhysicalTenantOverridePolicyValidation}) actually carry the same value in the tenant's
+   * effective {@link BrokerCfg} as in the root config. Without this check, an operator
+   * misconfiguring one of these per tenant is silently ignored (the tenant's own value is simply
+   * never read) rather than rejected, defeating the purpose of denying the override.
+   */
+  private void validateTenantMatchesRootConfig(final String tenantId, final BrokerCfg tenantCfg) {
+    final var rootDirectory = brokerCfg.getData().getDirectory();
+    final var tenantDirectory = tenantCfg.getData().getDirectory();
+    if (!Objects.equals(rootDirectory, tenantDirectory)) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "Expected data directory to be '%s' (shared across all physical tenants), but "
+                      + "was overridden to '%s'",
+                  rootDirectory, tenantDirectory)));
+    }
+
+    final var rootReplicationFactor = brokerCfg.getCluster().getReplicationFactor();
+    final var tenantReplicationFactor = tenantCfg.getCluster().getReplicationFactor();
+    if (rootReplicationFactor != tenantReplicationFactor) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "Expected replication factor to be %d (shared across all physical tenants), "
+                      + "but was overridden to %d",
+                  rootReplicationFactor, tenantReplicationFactor)));
+    }
   }
 
   /**

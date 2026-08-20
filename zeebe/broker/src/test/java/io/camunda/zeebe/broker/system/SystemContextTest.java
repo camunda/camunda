@@ -634,6 +634,54 @@ final class SystemContextTest {
   }
 
   @Test
+  void shouldFailWhenNonDefaultPhysicalTenantOverridesDataDirectory() {
+    // given – data.primary-storage.directory is deny-listed for per-tenant override, so every
+    // tenant's effective BrokerCfg must agree with the root on it; a divergent value must be
+    // rejected rather than silently ignored.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getData().setDirectory("some/other/directory");
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected data directory to be")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
+  void shouldFailWhenNonDefaultPhysicalTenantOverridesReplicationFactor() {
+    // given – cluster.replication-factor is deny-listed for per-tenant override, so every
+    // tenant's effective BrokerCfg must agree with the root on it; a divergent value must be
+    // rejected rather than silently ignored.
+    final var rootCfg = new BrokerCfg();
+    final var tenantACfg = new BrokerCfg();
+    tenantACfg.getCluster().setReplicationFactor(2);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                initSystemContextWithBrokerCfgs(
+                    rootCfg,
+                    Map.of(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                        rootCfg,
+                        "tenantA",
+                        tenantACfg)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected replication factor to be")
+        .hasMessageContaining("physical tenant 'tenantA'");
+  }
+
+  @Test
   void shouldFailWhenNonDefaultPhysicalTenantHasInvalidBatchOperationChunkSize() {
     // given
     final var rootCfg = new BrokerCfg();
