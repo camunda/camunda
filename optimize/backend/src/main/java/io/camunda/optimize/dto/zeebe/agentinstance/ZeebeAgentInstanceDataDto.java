@@ -358,7 +358,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     @Override
     public List<AgentHistoryRecordValue.AgentHistoryMessageContentValue> getSystemPrompt() {
       // Optimize does not use the system prompt content, so it is never populated here.
-      return new ArrayList<>();
+      return List.of();
     }
 
     @Override
