@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,6 +49,7 @@ import org.springframework.stereotype.Component;
 public class JobDispatcher extends AbstractScheduledService implements ConfigurationReloadable {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JobDispatcher.class);
+  private static final long SHUTDOWN_TIMEOUT_SECONDS = 60L;
 
   private final ConfigurationService configurationService;
   private final JobRegistryReader jobRegistryReader;
@@ -83,8 +86,8 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
   @PostConstruct
   public void init() {
     LOG.info("Initializing JobDispatcher");
-    getDispatcherConfiguration().validate();
     if (getDispatcherConfiguration().isEnabled()) {
+      getDispatcherConfiguration().validate();
       startJobDispatching();
     } else {
       stopJobDispatching();
@@ -107,6 +110,17 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
     stopJobDispatching();
     if (executorService != null) {
       executorService.shutdown();
+      try {
+        if (!executorService.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+          LOG.warn(
+              "Job dispatcher threads did not terminate within {}s of shutdown, forcing shutdown",
+              SHUTDOWN_TIMEOUT_SECONDS);
+          executorService.shutdownNow();
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        executorService.shutdownNow();
+      }
     }
   }
 
@@ -128,12 +142,22 @@ public class JobDispatcher extends AbstractScheduledService implements Configura
       return;
     }
     final Collection<JobRegistryEntryDto> jobsToDispatch = oldestPerEntity(queuedJobs);
-    LOG.info("Dispatching {} queued job registry entries", jobsToDispatch.size());
-    final ExecutorService executor = getExecutorService();
-    final List<CompletableFuture<Void>> futures =
-        jobsToDispatch.stream()
-            .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), executor))
-            .toList();
+    LOG.info(
+        "Dispatching {} queued job registry entries: {}",
+        jobsToDispatch.size(),
+        jobsToDispatch.stream().map(JobRegistryEntryDto::getId).toList());
+    final ExecutorService executor;
+    final List<CompletableFuture<Void>> futures;
+    try {
+      executor = getExecutorService();
+      futures =
+          jobsToDispatch.stream()
+              .map(job -> CompletableFuture.runAsync(() -> dispatchJob(job), executor))
+              .toList();
+    } catch (final RejectedExecutionException | IllegalStateException e) {
+      LOG.debug("Dispatcher is shutting down, aborting in-progress batch", e);
+      return;
+    }
     futures.forEach(CompletableFuture::join);
   }
 
