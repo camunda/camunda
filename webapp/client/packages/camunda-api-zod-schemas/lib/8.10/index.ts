@@ -8,12 +8,7 @@
 
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
-import {
-	getAgentInstance,
-	queryAgentInstances,
-	createAgentInstanceHistoryItem,
-	queryAgentInstanceHistory,
-} from './agent-instance';
+import {getAgentInstance, queryAgentInstances, queryAgentInstanceHistory} from './agent-instance';
 import {
 	createAuthorization,
 	updateAuthorization,
@@ -203,7 +198,6 @@ const endpoints = {
 	activateAdHocSubProcessActivities,
 	getAgentInstance,
 	queryAgentInstances,
-	createAgentInstanceHistoryItem,
 	queryAgentInstanceHistory,
 	createAuthorization,
 	updateAuthorization,
@@ -455,8 +449,6 @@ export {
 	agentInstanceHistoryItemMetricsSchema,
 	agentInstanceHistoryItemSchema,
 	agentInstanceHistoryFilterSchema,
-	createAgentInstanceHistoryItemRequestBodySchema,
-	createAgentInstanceHistoryItemResponseBodySchema,
 	queryAgentInstanceHistoryRequestBodySchema,
 	queryAgentInstanceHistoryResponseBodySchema,
 	type AgentInstanceStatus,
@@ -479,8 +471,6 @@ export {
 	type AgentInstanceHistoryItemMetrics,
 	type AgentInstanceHistoryItem,
 	type AgentInstanceHistoryFilter,
-	type CreateAgentInstanceHistoryItemRequestBody,
-	type CreateAgentInstanceHistoryItemResponseBody,
 	type QueryAgentInstanceHistoryRequestBody,
 	type QueryAgentInstanceHistoryResponseBody,
 } from './agent-instance';
