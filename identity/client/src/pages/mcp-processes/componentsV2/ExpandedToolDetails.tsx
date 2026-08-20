@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { Heading, Text } from "@camunda/design-system";
+import { cn, Heading, Text } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
 import type { McpProcessTool } from "../useMcpProcessTools";
 
@@ -61,7 +61,10 @@ const Description: FC<{
   return (
     <Text
       as="p"
-      className={`max-w-[80ch] whitespace-pre-wrap wrap-break-word ${isLast ? "" : "mb-6"} ${content === null ? "italic text-neutral-foreground-subtle" : ""}`}
+      className={cn("max-w-[80ch] whitespace-pre-wrap wrap-break-word", {
+        "mb-6": !isLast,
+        "italic text-neutral-foreground-subtle": content === null,
+      })}
     >
       {content ?? fallback}
     </Text>
