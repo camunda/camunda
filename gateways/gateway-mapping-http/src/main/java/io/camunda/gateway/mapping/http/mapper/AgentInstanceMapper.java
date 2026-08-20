@@ -71,7 +71,13 @@ public class AgentInstanceMapper {
                 .getDefinition()
                 .setModel(def.getModel())
                 .setProvider(def.getProvider())
-                .setSystemPrompt(def.getSystemPrompt());
+                // The create request still takes a plain string for backwards compatibility; wrap
+                // it into a single text content block. This will be removed as part of #58795.
+                .setSystemPrompt(
+                    List.of(
+                        new AgentHistoryMessageContent()
+                            .setContentType(AgentHistoryContentType.TEXT)
+                            .setText(def.getSystemPrompt())));
           }
 
           if (request.getLimits() != null) {

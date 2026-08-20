@@ -19,7 +19,7 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import io.camunda.gateway.protocol.model.AgentDefinitionResult;
 import io.camunda.gateway.protocol.model.AgentDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentDefinitionTypeEnum;
-import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
+import io.camunda.gateway.protocol.model.AgentInstanceDefinitionResult;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
@@ -2147,10 +2147,17 @@ public final class SearchQueryResponseMapper {
   public static AgentInstanceResult toAgentInstanceResult(final AgentInstanceEntity entity) {
     final var d = entity.definition();
     final var definition =
-        AgentInstanceDefinition.Builder.create()
+        AgentInstanceDefinitionResult.Builder.create()
             .model(d.model())
             .provider(d.provider())
-            .systemPrompt(d.systemPrompt())
+            .systemPrompt(
+                ofNullable(d.systemPrompt())
+                    .map(
+                        items ->
+                            items.stream()
+                                .map(SearchQueryResponseMapper::toAgentInstanceMessageContent)
+                                .toList())
+                    .orElseGet(Collections::emptyList))
             .build();
 
     final var m = entity.metrics();
