@@ -1,9 +1,8 @@
 # description: Orchestrates weekday release load tests across all active stable branches and main.
-#              Each branch has a pinned release tag, defined once as a literal output of the
-#              `versions` job below. These patch pins DO need periodic manual updates (e.g.,
-#              8.8.17 -> 8.8.18) to avoid version skew between the load-test client and the pinned
-#              server tag. The Slack "Tested versions" notification reads the same `versions` job
-#              outputs, so it stays in sync with the pinned tags automatically.
+#              Each branch has a hardcoded release tag. These patch pins DO need periodic manual
+#              updates (e.g., 8.8.17 -> 8.8.18) to avoid version skew between the load-test client
+#              and the pinned server tag — remember to update both the `with: tag:` input and the
+#              Slack "Tested versions" notification text below.
 # calls: camunda-release-load-test.yaml (one call per branch),
 #        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace per branch)
 # notifications: Slack (#reliability-testing-alerts) with per-branch results
@@ -27,85 +26,49 @@ env:
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
-  # Single source of truth for the pinned release tag per branch, exposed as literal job
-  # outputs. This job (rather than plain workflow-level values) exists because `with:` inputs
-  # on a job that calls a reusable workflow (`uses:`) cannot read the `env` context directly —
-  # only `github`, `needs`, `inputs`, `strategy`, `matrix`, and `vars` are available there.
-  # Job `outputs:` accept any valid expression, including plain literals, so every consumer
-  # (the load-test jobs' `with: tag:` and the Slack payload) can reference the exact same
-  # value via `needs.versions.outputs.*` without an intermediate steps-based echo.
-  versions:
-    name: Resolve release tags
-    runs-on: ubuntu-latest
-    permissions: {}
-    outputs:
-      tag_8_7: '8.7.37'
-      tag_8_8: '8.8.35'
-      tag_8_9: '8.9.16'
-      # main tracks its own release line's latest published pre-release (8.10 alpha), not
-      # stable/8.9's tag — there is no 8.10 stable yet. Bump this to the newest 8.10.0-alphaN
-      # as new alphas are cut.
-      tag_main: '8.10.0-alpha4'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   # Stable branch load tests — one job per active branch.
-  # Release tags are pinned once as literal outputs of the `versions` job above. These patch
-  # pins DO need periodic manual updates (e.g., 8.8.17 -> 8.8.18) to avoid version skew between
-  # the load-test client and the pinned server tag — bumping the output value in the `versions`
-  # job above is the only change needed; the Slack notification stays in sync automatically
-  # since it reads the same output.
+  # These patch pins DO need periodic manual updates (e.g., 8.8.17 -> 8.8.18) to avoid version
+  # skew between the load-test client and the pinned server tag.
   #
   # When to update:
-  # - A patch release should be tested: bump the matching tag_* output in the `versions` job above
-  # - A new minor version is released (e.g., 8.10): add a new job + tag_* output and update verify-and-cleanup/notify
-  # - A stable branch is deprecated: remove the corresponding job + tag_* output and update verify-and-cleanup/notify
+  # - A patch release should be tested: bump the tag below and the matching line in the Slack
+  #   "Tested versions" notification (see notify-on-success)
+  # - A new minor version is released (e.g., 8.10): add a new job and update verify-and-cleanup/notify
+  # - A stable branch is deprecated: remove the corresponding job and update verify-and-cleanup/notify
   release-load-test-8-7:
     name: Release load test (stable/8.7)
-    needs: [versions]
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.7
     secrets: inherit
     with:
       name: schedule-release-8-7-x
-      tag: ${{ needs.versions.outputs.tag_8_7 }}
+      tag: '8.7.37'
 
   release-load-test-8-8:
     name: Release load test (stable/8.8)
-    needs: [versions]
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.8
     secrets: inherit
     with:
       name: schedule-release-8-8-x
-      tag: ${{ needs.versions.outputs.tag_8_8 }}
+      tag: '8.8.35'
 
   release-load-test-8-9:
     name: Release load test (stable/8.9)
-    needs: [versions]
     uses: camunda/camunda/.github/workflows/camunda-release-load-test.yaml@stable/8.9
     secrets: inherit
     with:
       name: schedule-release-8-9-x
-      tag: ${{ needs.versions.outputs.tag_8_9 }}
+      tag: '8.9.16'
 
   release-load-test-main:
     name: Release load test (main)
-    needs: [versions]
     uses: ./.github/workflows/camunda-release-load-test.yaml
     secrets: inherit
     with:
       name: schedule-release-main
-      tag: ${{ needs.versions.outputs.tag_main }}
+      # main tracks its own release line's latest published pre-release (8.10 alpha), not
+      # stable/8.9's tag — there is no 8.10 stable yet. Bump this to the newest 8.10.0-alphaN
+      # as new alphas are cut.
+      tag: '8.10.0-alpha4'
 
   # Verify and cleanup jobs — one per branch, run in parallel.
   # Each job waits for pods + gateway connectivity, then deletes the namespace.
@@ -148,7 +111,7 @@ jobs:
   notify-on-success:
     name: Notify on success
     runs-on: ubuntu-latest
-    needs: [versions, verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
+    needs: [verify-and-cleanup-8-7, verify-and-cleanup-8-8, verify-and-cleanup-8-9, verify-and-cleanup-main]
     if: >-
       always() &&
       needs.verify-and-cleanup-8-7.result == 'success' &&
@@ -189,10 +152,10 @@ jobs:
                   type: mrkdwn
                   text: |-
                     *Tested versions:*
-                    • stable/8.7: `${{ needs.versions.outputs.tag_8_7 }}` (${{ needs.verify-and-cleanup-8-7.result }})
-                    • stable/8.8: `${{ needs.versions.outputs.tag_8_8 }}` (${{ needs.verify-and-cleanup-8-8.result }})
-                    • stable/8.9: `${{ needs.versions.outputs.tag_8_9 }}` (${{ needs.verify-and-cleanup-8-9.result }})
-                    • main: `${{ needs.versions.outputs.tag_main }}` (${{ needs.verify-and-cleanup-main.result }})
+                    • stable/8.7: `8.7.37` (${{ needs.verify-and-cleanup-8-7.result }})
+                    • stable/8.8: `8.8.35` (${{ needs.verify-and-cleanup-8-8.result }})
+                    • stable/8.9: `8.9.16` (${{ needs.verify-and-cleanup-8-9.result }})
+                    • main: `8.10.0-alpha4` (${{ needs.verify-and-cleanup-main.result }})
 
               - type: context
                 elements:
