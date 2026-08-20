@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -115,6 +116,7 @@ public class RdbmsWriters implements AutoCloseable {
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper,
+      final AgentDefinitionMapper agentDefinitionMapper,
       final AgentHistoryMapper agentHistoryMapper,
       final AgentInstanceMapper agentInstanceMapper,
       final WaitStateMapper waitStateMapper) {
@@ -191,7 +193,9 @@ public class RdbmsWriters implements AutoCloseable {
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
     writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
-    writers.put(AgentDefinitionWriter.class, new AgentDefinitionWriter(executionQueue));
+    writers.put(
+        AgentDefinitionWriter.class,
+        new AgentDefinitionWriter(agentDefinitionMapper, executionQueue));
     writers.put(
         AgentHistoryWriter.class,
         new AgentHistoryWriter(executionQueue, agentHistoryMapper, vendorDatabaseProperties));

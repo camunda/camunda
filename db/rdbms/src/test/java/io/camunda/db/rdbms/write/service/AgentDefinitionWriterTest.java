@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.write.domain.AgentDefinitionDbModel.AgentDefinitionDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -21,8 +22,9 @@ import org.junit.jupiter.api.Test;
 
 class AgentDefinitionWriterTest {
 
+  private final AgentDefinitionMapper mapper = mock(AgentDefinitionMapper.class);
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
-  private final AgentDefinitionWriter writer = new AgentDefinitionWriter(executionQueue);
+  private final AgentDefinitionWriter writer = new AgentDefinitionWriter(mapper, executionQueue);
 
   @Test
   void shouldCreateAgentDefinition() {

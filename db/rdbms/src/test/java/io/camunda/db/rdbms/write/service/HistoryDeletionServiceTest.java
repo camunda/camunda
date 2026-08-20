@@ -220,6 +220,31 @@ public class HistoryDeletionServiceTest {
   }
 
   @Test
+  void shouldDeleteAgentDefinitionsWhenDeletingProcessDefinition() {
+    // given
+    final var partitionId = 1;
+    final var processDefinitionKey1 = 1L;
+    final var processDefinitionKey2 = 2L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        processDefinitionKey1, HistoryDeletionTypeDbModel.PROCESS_DEFINITION),
+                    createModel(
+                        processDefinitionKey2, HistoryDeletionTypeDbModel.PROCESS_DEFINITION))));
+    when(processInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getAgentDefinitionWriter())
+        .deleteByProcessDefinitionKeys(
+            eq(List.of(processDefinitionKey1, processDefinitionKey2)), anyInt());
+  }
+
+  @Test
   void shouldNotDeleteProcessDefinitionIfStartEventSubscriptionsNotFullyDeleted() {
     // given
     final var partitionId = 1;
@@ -243,6 +268,36 @@ public class HistoryDeletionServiceTest {
     // then
     verify(rdbmsWritersMock.getVariableWriter())
         .deleteLookupByProcessDefinitionKeys(eq(List.of(processDefinitionKey)), anyInt());
+    verify(rdbmsWritersMock.getProcessDefinitionWriter(), never()).deleteByKeys(anyList());
+    verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
+  @Test
+  void shouldNotDeleteProcessDefinitionIfAgentDefinitionsNotFullyDeleted() {
+    // given
+    final var partitionId = 1;
+    final var processDefinitionKey = 1L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION))));
+    when(processInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+    when(rdbmsWritersMock
+            .getMessageSubscriptionWriter()
+            .deleteStartEventSubscriptionsByProcessDefinitionKeys(
+                List.of(processDefinitionKey), LIMIT))
+        .thenReturn(LIMIT - 1); // fully deleted, so this dependant must not cause the deferral
+    when(rdbmsWritersMock
+            .getAgentDefinitionWriter()
+            .deleteByProcessDefinitionKeys(List.of(processDefinitionKey), LIMIT))
+        .thenReturn(LIMIT); // not fully deleted
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
     verify(rdbmsWritersMock.getProcessDefinitionWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }
