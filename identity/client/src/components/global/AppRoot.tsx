@@ -9,6 +9,7 @@
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
 import { styles } from "@carbon/elements";
+import { IS_NAV_V2_ENABLED } from "src/feature-flags";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
@@ -63,12 +64,16 @@ const GridMain = styled.div`
   display: grid;
   grid-template-rows: 1fr auto;
   grid-template-columns: 1fr;
-  padding-top: var(--c3-header-height, 48px);
+  /* The design-system header sits in the grid's header row, so the content row
+     needs no offset. The legacy Carbon header is fixed and does. */
+  padding-top: ${IS_NAV_V2_ENABLED ? "0" : "var(--c3-header-height, 48px)"};
 `;
 
 const GridMainContent = styled.div`
   grid-area: 1 / 1 / 1 / 4;
-  padding-left: var(--c3-sidebar-width, 0);
+  /* Variable is set by "SidebarProvider". Or overwritten in this
+  component "AppContent" if no sidebar should be visible.  */
+  padding-left: var(--app-sidebar-width, 0);
   transition: padding-left 0.15s ease-out;
 `;
 
@@ -112,7 +117,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         <GridHeader>
           <AppHeader hideNavLinks />
         </GridHeader>
-        <GridMain>
+        <GridMain style={{ "--app-sidebar-width": 0 }}>
           <GridMainContent id="main-content" tabIndex={-1}>
             <ForbiddenComponent />
           </GridMainContent>

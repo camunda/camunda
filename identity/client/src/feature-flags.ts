@@ -9,4 +9,4 @@
 export const featureFlags = [];
 
 export const IS_NEW_DESIGN_SYSTEM_ENABLED = false;
-export const IS_NAV_V2_ENABLED = false;
+export const IS_NAV_V2_ENABLED = IS_NEW_DESIGN_SYSTEM_ENABLED;

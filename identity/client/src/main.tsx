@@ -11,14 +11,20 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.scss";
 import "@camunda/design-system/styles.css";
-import { C4Provider, TooltipProvider } from "@camunda/design-system";
+import {
+  C4Provider,
+  TooltipProvider,
+  SidebarProvider,
+} from "@camunda/design-system";
 import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "./feature-flags";
 import "./c4-ui.css";
 
 const app = IS_NEW_DESIGN_SYSTEM_ENABLED ? (
   <C4Provider>
     <TooltipProvider>
-      <App />
+      <SidebarProvider>
+        <App />
+      </SidebarProvider>
     </TooltipProvider>
   </C4Provider>
 ) : (
