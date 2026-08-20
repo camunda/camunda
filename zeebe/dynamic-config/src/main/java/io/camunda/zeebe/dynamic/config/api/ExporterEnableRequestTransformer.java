@@ -13,7 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ final class ExporterEnableRequestTransformer implements ConfigurationChangeReque
         groupOperations.put(groupId, operations);
       }
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(groupOperations)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(groupOperations)));
   }
 
   private List<PartitionGroupOperation> enableOperationsFor(

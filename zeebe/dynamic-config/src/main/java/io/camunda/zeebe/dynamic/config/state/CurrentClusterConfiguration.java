@@ -13,7 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -347,11 +347,16 @@ public record CurrentClusterConfiguration(
             (memberId, brokerState) ->
                 members.put(memberId, toLegacyMemberState(brokerState, group.getMember(memberId))));
 
+    // The single-group projection carries whichever model the group is running; both expose the
+    // same read API, and a dependency-graph change flattens into the sequential ordering it
+    // degrades to for a reader that predates it.
     final Optional<ClusterChangePlan> pendingChanges =
         globalConfiguration
             .pendingChanges()
-            .filter(ClusterChangePlan::hasPendingChanges)
-            .or(() -> group.pendingChanges().filter(ClusterChangePlan::hasPendingChanges));
+            .<ChangePlan>map(plan -> plan)
+            .filter(ChangePlan::hasPendingChanges)
+            .or(() -> group.pendingChanges().filter(ChangePlan::hasPendingChanges))
+            .map(CurrentClusterConfiguration::toQueueProjection);
 
     final Optional<CompletedChange> lastChange =
         phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
@@ -604,7 +609,19 @@ public record CurrentClusterConfiguration(
   /**
    * Returns {@code true} if plan {@code planId}'s current phase has fully drained: every
    * sub-configuration it targets (the global configuration for a {@link GlobalPhase}, or each named
-   * partition group for a {@link PartitionGroupParallelPhase}) has no pending changes left.
+   * partition group for a {@link PartitionGroupPhase}) has no pending changes left.
+   *
+   * <p>For a {@link PartitionGroupGraphPhase}, "no pending changes left" means the group's {@code
+   * pendingGraphChanges} is gone entirely, not merely that every operation in it has completed.
+   * Those two are different moments: {@link PartitionGroupConfiguration#hasPendingChanges()} reads
+   * the plan's own content and goes {@code false} the instant the last operation completes, while
+   * clearing the plan itself is a separate, later step ({@link
+   * PartitionGroupConfiguration#completeGraphChangeIfDrained()}), run by whichever broker's
+   * reconcile or gossip round gets there first. Treating "drained" as "complete" here would let
+   * this plan be archived into history while the group still carries a (fully drained but not yet
+   * cleared) graph plan — which is exactly the state a decoder without this phase to consult can no
+   * longer tell apart from an actually-still-running one. The queue model has no such gap: {@link
+   * PartitionGroupConfiguration#advance()} clears its plan in the same call that drains it.
    *
    * @throws IllegalStateException if no plan {@code planId} is pending
    */
@@ -616,10 +633,10 @@ public record CurrentClusterConfiguration(
     }
     return switch (plan.currentPhase()) {
       case final GlobalPhase ignored -> !globalConfiguration.hasPendingChanges();
-      case final PartitionGroupParallelPhase parallelPhase ->
-          parallelPhase.groupOperations().keySet().stream()
+      case final PartitionGroupPhase groupPhase ->
+          groupPhase.groupGraphs().keySet().stream()
               .map(this::partitionGroup)
-              .allMatch(group -> group != null && !group.hasPendingChanges());
+              .allMatch(group -> group != null && group.pendingGraphChanges().isEmpty());
     };
   }
 
@@ -652,9 +669,9 @@ public record CurrentClusterConfiguration(
         switch (plan.currentPhase()) {
           case final GlobalPhase ignored ->
               updateGlobalConfiguration(GlobalConfiguration::cancelPendingChanges);
-          case final PartitionGroupParallelPhase parallelPhase -> {
+          case final PartitionGroupPhase groupPhase -> {
             var r = this;
-            for (final var groupId : parallelPhase.groupOperations().keySet()) {
+            for (final var groupId : groupPhase.groupGraphs().keySet()) {
               r =
                   r.updatePartitionGroupConfig(
                       groupId, PartitionGroupConfiguration::cancelPendingChanges);
@@ -682,7 +699,7 @@ public record CurrentClusterConfiguration(
   /**
    * Activates the plan's current phase by copying its operations into the affected sub-config(s): a
    * {@link GlobalPhase} starts a configuration change on {@link GlobalConfiguration} only; a {@link
-   * PartitionGroupParallelPhase} starts one on each named partition group only.
+   * PartitionGroupPhase} starts one on each named partition group only.
    */
   private CurrentClusterConfiguration applyPhase(final PhasedChangePlan plan) {
     return switch (plan.currentPhase()) {
@@ -696,11 +713,11 @@ public record CurrentClusterConfiguration(
                 return global.startConfigurationChange(
                     List.<ClusterConfigurationChangeOperation>copyOf(globalPhase.operations()));
               });
-      case final PartitionGroupParallelPhase parallelPhase -> {
+      case final PartitionGroupPhase groupPhase -> {
         var result = this;
-        for (final var entry : parallelPhase.groupOperations().entrySet()) {
+        for (final var entry : groupPhase.groupGraphs().entrySet()) {
           final var groupId = entry.getKey();
-          final var operations = List.<ClusterConfigurationChangeOperation>copyOf(entry.getValue());
+          final var graph = entry.getValue();
           result =
               result.updatePartitionGroupConfig(
                   groupId,
@@ -710,7 +727,7 @@ public record CurrentClusterConfiguration(
                           "Cannot activate partition-group phase for %s: group already has pending changes"
                               .formatted(groupId));
                     }
-                    return group.startConfigurationChange(operations);
+                    return group.startGraphConfigurationChange(graph);
                   });
         }
         yield result;
@@ -741,9 +758,9 @@ public record CurrentClusterConfiguration(
   private boolean isRestorePlan(final PhasedChangePlan plan) {
     return plan.hasRestorePlanId()
         && plan.phases().size() == 1
-        && plan.phases().get(0) instanceof final PartitionGroupParallelPhase parallelPhase
-        && parallelPhase.groupOperations().size() == 1
-        && parallelPhase.groupOperations().values().stream()
+        && plan.phases().get(0) instanceof final PartitionGroupPhase groupPhase
+        && groupPhase.groupGraphs().size() == 1
+        && groupPhase.groupOperations().values().stream()
             .allMatch(
                 operations ->
                     operations.size() == 1 && operations.get(0) instanceof UpdateRoutingState);
@@ -791,6 +808,44 @@ public record CurrentClusterConfiguration(
   public Map<String, SortedMap<Integer, MemberId>> desiredLeaders() {
     return partitionGroups.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().desiredLeaders()));
+  }
+
+  /**
+   * Projects whichever execution model a change uses onto the queue shape the single-group {@link
+   * ClusterConfiguration} exposes.
+   *
+   * <p>A queue projects as itself. A dependency graph flattens into its pending and completed
+   * operations in plan order — a valid, merely slower, sequential reading of the same change — with
+   * the version taken as one per completed operation, which is the contract that field has always
+   * had.
+   *
+   * <p>The projection is necessarily lossy: it cannot express that several operations are running
+   * at once, and a reader that merges by this version alone would keep only one of two concurrent
+   * completions. That is a property of the queue model, not something the projection can repair, so
+   * nothing here tries to.
+   *
+   * <p><b>This is not only a reporting view.</b> {@link #toLegacyDefault()} — which calls this — is
+   * dual-written by {@code ClusterConfigurationGossiper} into the legacy gossip field a broker
+   * without the new model reads, and a receiver on that path merges it with {@code
+   * ClusterChangePlan#merge}, using the synthetic version minted here. During a graph change that
+   * synthetic version differs per broker by completed-operation count, so on a mixed-version
+   * cluster it is a live input to that merge, not just something rendered for an operator to read.
+   * An old broker on that path would also try to execute the flattened queue sequentially. Believed
+   * out of scope for today's two graph adopters, but callers should not read "for reporting" as
+   * "never on the wire."
+   */
+  private static ClusterChangePlan toQueueProjection(final ChangePlan plan) {
+    if (plan instanceof final ClusterChangePlan queue) {
+      return queue;
+    }
+    final var completed = plan.completedOperations();
+    return new ClusterChangePlan(
+        plan.id(),
+        1 + completed.size(),
+        plan.status(),
+        plan.startedAt(),
+        completed,
+        plan.pendingOperations());
   }
 
   private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {
@@ -854,9 +909,9 @@ public record CurrentClusterConfiguration(
    * Splits a flat legacy operation list into phases, preserving order: each maximal run of
    * consecutive operations of the same kind becomes one phase — a run of {@link
    * GlobalChangeOperation} becomes a {@link GlobalPhase}, a run of {@link PartitionGroupOperation}
-   * becomes a {@link PartitionGroupParallelPhase} targeting the default group. For example {@code
-   * [MemberJoin, PartitionJoin, PartitionLeave, MemberLeave]} yields three phases: a global phase,
-   * a default-group phase with the two partition operations, and another global phase.
+   * becomes a sequential {@link PartitionGroupPhase} targeting the default group. For example
+   * {@code [MemberJoin, PartitionJoin, PartitionLeave, MemberLeave]} yields three phases: a global
+   * phase, a default-group phase with the two partition operations, and another global phase.
    *
    * <p>Also used by the coordinator to turn a freshly generated flat operation list (from the
    * unchanged request transformers) into a {@link PhasedChangePlan} for the default group.
@@ -893,7 +948,7 @@ public record CurrentClusterConfiguration(
   private static void flushPartitionRun(
       final List<Phase> phases, final List<PartitionGroupOperation> run) {
     if (!run.isEmpty()) {
-      phases.add(new PartitionGroupParallelPhase(Map.of(DEFAULT_GROUP, List.copyOf(run))));
+      phases.add(PartitionGroupPhase.sequential(DEFAULT_GROUP, List.copyOf(run)));
       run.clear();
     }
   }

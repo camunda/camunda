@@ -35,7 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -353,15 +353,14 @@ final class ClusterPatchRequestTransformerTest {
         Optional.empty());
   }
 
-  private static PartitionGroupParallelPhase singlePhase(
-      final Either<Exception, List<Phase>> result) {
+  private static PartitionGroupPhase singlePhase(final Either<Exception, List<Phase>> result) {
     assertThat(result).isRight();
     Assertions.assertThat(result.get()).hasSize(1);
-    return (PartitionGroupParallelPhase) result.get().get(0);
+    return (PartitionGroupPhase) result.get().get(0);
   }
 
   private static List<PartitionBootstrapOperation> bootstraps(
-      final PartitionGroupParallelPhase phase, final String groupId) {
+      final PartitionGroupPhase phase, final String groupId) {
     return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
         .filter(PartitionBootstrapOperation.class::isInstance)
         .map(PartitionBootstrapOperation.class::cast)
@@ -369,7 +368,7 @@ final class ClusterPatchRequestTransformerTest {
   }
 
   private static List<PartitionJoinOperation> joins(
-      final PartitionGroupParallelPhase phase, final String groupId) {
+      final PartitionGroupPhase phase, final String groupId) {
     return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
         .filter(PartitionJoinOperation.class::isInstance)
         .map(PartitionJoinOperation.class::cast)
@@ -642,7 +641,7 @@ final class ClusterPatchRequestTransformerTest {
     // then
     assertThat(result).isRight();
     Assertions.assertThat(result.get()).hasSize(3);
-    final var partitionPhase = (PartitionGroupParallelPhase) result.get().get(1);
+    final var partitionPhase = (PartitionGroupPhase) result.get().get(1);
     Assertions.assertThat(partitionPhase.groupOperations()).containsOnlyKeys(TENANT_B);
     Assertions.assertThat(partitionPhase.groupOperations().get(TENANT_B))
         .describedAs("tenant-b gives up the partition on the departing broker")

@@ -14,10 +14,23 @@ import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -25,11 +38,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 /**
  * Edge cases for the {@code CurrentClusterConfiguration} serialization that the property test
  * ({@code ProtoBufSerializerPropertyTest#shouldEncodeAndDecodeCurrentClusterConfiguration}) cannot
- * exercise: decoding invalid bytes and decoding a proto that carries a broker lifecycle state which
- * the domain model cannot represent. The happy-path round-trips are all covered by the property
- * test.
+ * exercise: decoding invalid bytes, decoding a proto that carries a broker lifecycle state which
+ * the domain model cannot represent, and a group whose pending change is a dependency graph. The
+ * remaining happy-path round-trips are covered by the property test.
  */
 final class CurrentClusterConfigurationSerializerTest {
+
+  private static final MemberId MEMBER = MemberId.from("0");
+  private static final MemberId OTHER_MEMBER = MemberId.from("1");
 
   private final ProtoBufSerializer serializer = new ProtoBufSerializer();
 
@@ -102,5 +118,148 @@ final class CurrentClusterConfigurationSerializerTest {
     // then
     assertThat(decoded.getClusterConfiguration()).isEqualTo(legacy);
     assertThat(decoded.getCurrentClusterConfiguration()).isNull();
+  }
+
+  @Test
+  void shouldRejectADecodedGraphWithADependencyCycle() {
+    // given — a proto whose two operations depend on each other. Nothing produces this from the
+    // domain model (OperationGraph.of rejects the cycle before it could ever be encoded), so the
+    // only way it reaches decode is corruption or a future encoding bug -- exactly what a decode
+    // path has to distrust rather than assume.
+    final var operationA =
+        Topology.PartitionGroupChangeOperation.newBuilder()
+            .setMemberId(MEMBER.id())
+            .setModeChange(
+                Topology.ModeChangeOperation.newBuilder().setMode(Topology.Mode.MODE_PROCESSING))
+            .build();
+    final var plannedA =
+        Topology.PlannedOperation.newBuilder().setId(0).setOperation(operationA).addDependsOn(1);
+    final var plannedB =
+        Topology.PlannedOperation.newBuilder().setId(1).setOperation(operationA).addDependsOn(0);
+    final var graph =
+        Topology.OperationGraph.newBuilder()
+            .addOperations(plannedA)
+            .addOperations(plannedB)
+            .build();
+    final var plan =
+        Topology.DependencyChangePlan.newBuilder()
+            .setId(1)
+            .setStatus(Topology.ChangeStatus.IN_PROGRESS)
+            .setStartedAt(Timestamp.newBuilder().build())
+            .setGraph(graph)
+            .build();
+    final var group =
+        Topology.PartitionGroupConfiguration.newBuilder()
+            .setVersion(1)
+            .setIncarnationNumber(0)
+            .setPendingGraphChanges(plan)
+            .build();
+    final var proto =
+        Topology.CurrentClusterConfiguration.newBuilder()
+            .setVersion(0)
+            .setGlobalConfiguration(Topology.GlobalConfiguration.newBuilder().setVersion(1).build())
+            .putPartitionGroups("tenant", group)
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> serializer.decodeCurrentClusterConfiguration(proto.toByteArray()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dependency cycle");
+  }
+
+  @Test
+  void shouldRoundTripAGroupCarryingADependencyGraphChange() {
+    // given — a group whose pending change is a graph rather than a queue. The property test only
+    // generates queue plans, because the two models share one field and a generator cannot produce
+    // a graph whose edges and write sets are consistent.
+    final var graph = restoreGraph();
+    final var configuration = configurationWithGraph(graph);
+
+    // when
+    final var decoded =
+        serializer.decodeCurrentClusterConfiguration(
+            serializer.encodeCurrentClusterConfiguration(configuration));
+
+    // then — the operations and the edges between them both survive; an edge lost in transit would
+    // let a peer start an operation whose dependency has not run
+    assertThat(decoded).isEqualTo(configuration);
+    assertThat(decoded.partitionGroups().values())
+        .singleElement()
+        .satisfies(
+            group ->
+                assertThat(group.pendingGraphChanges().orElseThrow().graph()).isEqualTo(graph));
+  }
+
+  @Test
+  void shouldRoundTripPartialProgressThroughAGraph() {
+    // given — one operation of the graph has completed, which is the state a broker gossips while a
+    // graph change is in flight and the state a peer must be able to read to know what is runnable
+    final var started = groupWithGraph(restoreGraph());
+    final var firstOperation =
+        started.pendingGraphChanges().orElseThrow().graph().operations().firstKey();
+    final var inFlight =
+        configurationWith(started.completeOperation(firstOperation, UnaryOperator.identity()));
+
+    // when
+    final var decoded =
+        serializer.decodeCurrentClusterConfiguration(
+            serializer.encodeCurrentClusterConfiguration(inFlight));
+
+    // then
+    assertThat(decoded).isEqualTo(inFlight);
+    assertThat(decoded.partitionGroups().values())
+        .singleElement()
+        .satisfies(
+            group ->
+                assertThat(group.pendingGraphChanges().orElseThrow().completed())
+                    .containsKey(firstOperation));
+  }
+
+  /** A two-stage graph: both pre-restores may run at once, both restores wait for both of them. */
+  private static OperationGraph restoreGraph() {
+    final var builder = OperationGraph.builder();
+    final var preRestores =
+        Set.of(
+            builder.add(new PartitionPreRestoreOperation(MEMBER, 1)),
+            builder.add(new PartitionPreRestoreOperation(OTHER_MEMBER, 1)));
+    builder.add(new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(Set.of(1L))), preRestores);
+    builder.add(
+        new PartitionRestoreOperation(OTHER_MEMBER, 1, new TreeSet<>(Set.of(1L))), preRestores);
+    return builder.build();
+  }
+
+  private static CurrentClusterConfiguration configurationWithGraph(final OperationGraph graph) {
+    return configurationWith(groupWithGraph(graph));
+  }
+
+  private static PartitionGroupConfiguration groupWithGraph(final OperationGraph graph) {
+    final var members =
+        Map.of(
+            MEMBER, BrokerPartitionState.initialize(Map.of()),
+            OTHER_MEMBER, BrokerPartitionState.initialize(Map.of()));
+    return new PartitionGroupConfiguration(
+            1, 0, members, Optional.empty(), Optional.empty(), Optional.empty())
+        .startGraphConfigurationChange(graph);
+  }
+
+  private static CurrentClusterConfiguration configurationWith(
+      final PartitionGroupConfiguration group) {
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        globalConfiguration(),
+        Map.of("tenant", group),
+        PhasedChangeState.empty());
+  }
+
+  private static GlobalConfiguration globalConfiguration() {
+    return new GlobalConfiguration(
+        1,
+        Optional.empty(),
+        Map.of(
+            MEMBER, new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE),
+            OTHER_MEMBER, new BrokerState(0, Instant.EPOCH, BrokerState.State.ACTIVE)),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 }

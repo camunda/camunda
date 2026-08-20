@@ -94,7 +94,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -1346,7 +1346,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var phases = changeStatus.response().phases();
     assertThat(phases).hasSize(3);
     assertThat(phases.get(1))
-        .asInstanceOf(type(PartitionGroupParallelPhase.class))
+        .asInstanceOf(type(PartitionGroupPhase.class))
         .satisfies(
             phase -> {
               assertThat(phase.groupOperations()).containsKey(TENANT_B);

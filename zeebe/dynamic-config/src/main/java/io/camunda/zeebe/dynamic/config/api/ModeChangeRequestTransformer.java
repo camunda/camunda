@@ -17,7 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
     if (operationsPerGroup.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(operationsPerGroup)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(operationsPerGroup)));
   }
 
   /**

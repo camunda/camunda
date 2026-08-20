@@ -83,9 +83,9 @@ public interface ConfigurationChangeCoordinator {
      * Returns the phases to execute for this request. A phase is applied to the sub-configurations
      * it targets — {@link io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase} to
      * the cluster-wide broker lifecycle, {@link
-     * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase} to each
-     * named physical tenant's partition group at once — and one phase is fully drained before the
-     * next begins.
+     * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase} to each named
+     * physical tenant's partition group at once — and one phase is fully drained before the next
+     * begins.
      *
      * <p>A request that plans partition work has to decide which physical tenants it applies to.
      * There is no cluster-wide default to fall back on: partition ids restart at 1 in every tenant,

@@ -27,7 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
@@ -339,7 +339,7 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
                 Either.right(
                     plannedChange(
                         9L,
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 "default",
                                 List.of(
@@ -466,11 +466,11 @@ class ClusterRecoveryControllerTest extends RestControllerTest {
       groupOperations.put(
           physicalTenantId, List.of(new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING)));
     }
-    return plannedChange(changeId, new PartitionGroupParallelPhase(groupOperations));
+    return plannedChange(changeId, PartitionGroupPhase.sequential(groupOperations));
   }
 
   private ClusterConfigurationChangeResponse plannedChange(
-      final long changeId, final PartitionGroupParallelPhase phase) {
+      final long changeId, final PartitionGroupPhase phase) {
     final var flatOperations =
         phase.groupOperations().values().stream()
             .flatMap(List::stream)

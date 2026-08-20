@@ -44,7 +44,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -165,7 +165,7 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)))))))
@@ -220,7 +220,7 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(
@@ -290,7 +290,7 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)),
@@ -427,7 +427,7 @@ final class ClusterConfigurationManagerImplTest {
                 c.initPlan(
                     List.of(
                         new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0))),
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
@@ -502,9 +502,9 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of("a", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))),
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of("b", List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
         .join();
 
@@ -684,7 +684,7 @@ final class ClusterConfigurationManagerImplTest {
         PhasedChangePlan.init(
             1,
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, List.of(leaveOperation)))),
             Instant.EPOCH);
     final var seeded =
@@ -857,7 +857,7 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
@@ -934,7 +934,7 @@ final class ClusterConfigurationManagerImplTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
@@ -1194,7 +1194,7 @@ final class ClusterConfigurationManagerImplTest {
                 PhasedChangeState.empty())
             .initPlan(
                 List.of(
-                    new PartitionGroupParallelPhase(
+                    PartitionGroupPhase.sequential(
                         Map.of(
                             CurrentClusterConfiguration.DEFAULT_GROUP,
                             List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))))));

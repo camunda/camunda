@@ -20,7 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -84,7 +84,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     if (groupOperations.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(groupOperations)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(groupOperations)));
   }
 
   /**

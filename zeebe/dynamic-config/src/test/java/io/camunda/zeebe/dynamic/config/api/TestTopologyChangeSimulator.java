@@ -23,10 +23,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.OperationId;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Drains a change plan against the same appliers the broker uses, so a transformer test can assert
@@ -77,8 +80,8 @@ final class TestTopologyChangeSimulator {
       current =
           switch (plan.currentPhase()) {
             case final GlobalPhase ignored -> drainGlobalPhase(current, globalAppliers);
-            case final PartitionGroupParallelPhase parallelPhase ->
-                drainPartitionGroupPhase(current, parallelPhase, groupAppliers);
+            case final PartitionGroupPhase groupPhase ->
+                drainPartitionGroupPhase(current, groupPhase, groupAppliers);
           };
       current =
           current.phasedChangeState().pending().get(planId).hasNextPhase()
@@ -108,26 +111,55 @@ final class TestTopologyChangeSimulator {
     return current;
   }
 
+  /**
+   * Drains a partition-group phase by repeatedly running whatever each group's graph currently
+   * declares runnable, in operation-id order. A graph can offer several operations at once and
+   * offers none while an unfinished dependency blocks them — so a round that finds nothing runnable
+   * while operations remain is a stalled graph, not a finished one, and is failed loudly rather
+   * than looping forever.
+   */
   private static CurrentClusterConfiguration drainPartitionGroupPhase(
       final CurrentClusterConfiguration configuration,
-      final PartitionGroupParallelPhase phase,
+      final PartitionGroupPhase phase,
       final PartitionGroupConfigurationChangeAppliers appliers) {
     var current = configuration;
-    for (final var groupId : phase.groupOperations().keySet()) {
+    for (final var groupId : phase.groupGraphs().keySet()) {
       while (current.partitionGroup(groupId).hasPendingChanges()) {
         final var group = current.partitionGroup(groupId);
-        final var operation = group.nextPendingOperation();
-        final var applier = appliers.getApplier(operation);
-        final var init = applier.init(current.globalConfiguration(), group);
-        if (init.isLeft()) {
-          fail("Failed to init operation '%s' : '%s'", operation, init.getLeft());
+        final var plan = group.pendingGraphChanges().orElseThrow();
+        final var runnable = new TreeMap<OperationId, PartitionGroupOperation>();
+        plan.graph()
+            .operations()
+            .forEach(
+                (operationId, planned) -> {
+                  if (plan.isRunnable(operationId)) {
+                    runnable.put(operationId, (PartitionGroupOperation) planned.operation());
+                  }
+                });
+        if (runnable.isEmpty()) {
+          fail(
+              "Graph change of group '%s' has %d operation(s) left but none is runnable; blocked by %s",
+              groupId, plan.pendingOperations().size(), plan.blockedBy());
         }
-        final var transformer = applier.apply().join();
-        current =
-            current
-                .updatePartitionGroupConfig(groupId, init.get())
-                .updatePartitionGroupConfig(
-                    groupId, updated -> updated.advanceConfigurationChange(transformer));
+        for (final var entry : runnable.entrySet()) {
+          final var operation = entry.getValue();
+          final var applier = appliers.getApplier(operation);
+          final var staged = current.partitionGroup(groupId);
+          final var init = applier.init(current.globalConfiguration(), staged);
+          if (init.isLeft()) {
+            fail("Failed to init operation '%s' : '%s'", operation, init.getLeft());
+          }
+          final var transformer = applier.apply().join();
+          current =
+              current
+                  .updatePartitionGroupConfig(groupId, init.get())
+                  .updatePartitionGroupConfig(
+                      groupId,
+                      updated ->
+                          updated
+                              .completeOperation(entry.getKey(), transformer)
+                              .completeGraphChangeIfDrained());
+        }
       }
     }
     return current;

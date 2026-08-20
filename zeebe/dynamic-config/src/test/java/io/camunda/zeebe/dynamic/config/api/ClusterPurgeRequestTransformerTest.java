@@ -27,7 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -126,7 +126,7 @@ final class ClusterPurgeRequestTransformerTest {
 
     // then — both tenants are purged, each within its own group
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A, TENANT_B);
     assertThat(phase.groupOperations().get(TENANT_A))
         .containsExactly(
@@ -157,7 +157,7 @@ final class ClusterPurgeRequestTransformerTest {
 
     // then — tenant B keeps its partitions and its history
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A);
   }
 
@@ -262,7 +262,7 @@ final class ClusterPurgeRequestTransformerTest {
   private List<PartitionGroupOperation> operationsOf(
       final Either<Exception, List<Phase>> result, final String groupId) {
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     return phase.groupOperations().get(groupId);
   }
 

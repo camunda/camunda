@@ -18,7 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentOperationsGenerator;
@@ -82,8 +82,8 @@ final class PartitionGroupScalingPhases {
    *     leave every group's partition count as it is
    * @param newReplicationFactor the replication factor every partition of every group should reach,
    *     or empty to keep the one currently in use
-   * @return a single {@link PartitionGroupParallelPhase} covering every group whose partitions have
-   *     to change, or no phase at all when the cluster already has the requested placement. Left if
+   * @return a single {@link PartitionGroupPhase} covering every group whose partitions have to
+   *     change, or no phase at all when the cluster already has the requested placement. Left if
    *     the target count is below the group's current one — partitions can only be scaled up — if
    *     the live brokers cannot satisfy the replication factor, or if no valid distribution exists.
    */
@@ -214,7 +214,7 @@ final class PartitionGroupScalingPhases {
       // Every partition already sits where the requested distribution puts it.
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(operationsByGroup)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(operationsByGroup)));
   }
 
   /**

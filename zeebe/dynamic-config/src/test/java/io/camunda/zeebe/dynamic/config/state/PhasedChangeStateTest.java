@@ -14,7 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ class PhasedChangeStateTest {
 
   private List<PhasedChangePlan.Phase> groupPhase(final String groupId) {
     return List.of(
-        new PartitionGroupParallelPhase(
+        PartitionGroupPhase.sequential(
             Map.of(groupId, List.of(new UpdateIncarnationNumberOperation(MEMBER_1)))));
   }
 

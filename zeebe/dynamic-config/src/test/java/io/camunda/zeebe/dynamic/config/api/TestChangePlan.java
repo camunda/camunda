@@ -12,7 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -50,8 +50,10 @@ final class TestChangePlan {
     for (final var phase : phases) {
       switch (phase) {
         case final GlobalPhase globalPhase -> operations.addAll(globalPhase.operations());
-        case final PartitionGroupParallelPhase parallelPhase ->
-            parallelPhase.groupOperations().values().forEach(operations::addAll);
+        // A graph's operations flatten in plan order; the edges between them are execution detail
+        // this view does not carry.
+        case final PartitionGroupPhase groupPhase ->
+            groupPhase.groupGraphs().values().forEach(graph -> operations.addAll(graph.inOrder()));
       }
     }
     return operations;

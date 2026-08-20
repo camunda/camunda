@@ -14,7 +14,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.util.Either;
@@ -66,7 +66,7 @@ public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest
         .map(
             memberId ->
                 List.<Phase>of(
-                    new PartitionGroupParallelPhase(
+                    PartitionGroupPhase.sequential(
                         Map.of(groupId, List.of(new UpdateRoutingState(memberId, routingState))))));
   }
 

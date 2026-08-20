@@ -18,7 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHisto
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.time.Instant;
 import java.util.List;
@@ -78,6 +78,29 @@ class CurrentClusterConfigurationTest {
       final PhasedChangeState phasedChangeState) {
     return new CurrentClusterConfiguration(
         CurrentClusterConfiguration.INITIAL_VERSION, global, groups, phasedChangeState);
+  }
+
+  /**
+   * Completes every operation of {@code groupId}'s pending change, one runnable operation at a
+   * time, and finishes the change — what the broker applying the operations would leave behind,
+   * without any of their effects on member state.
+   */
+  private static CurrentClusterConfiguration drainGroup(
+      final CurrentClusterConfiguration config, final String groupId) {
+    var current = config;
+    while (current.partitionGroup(groupId).hasPendingChanges()) {
+      final var plan = current.partitionGroup(groupId).pendingGraphChanges().orElseThrow();
+      final var next =
+          plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElseThrow();
+      current =
+          current.updatePartitionGroupConfig(
+              groupId,
+              group ->
+                  group
+                      .completeOperation(next, UnaryOperator.identity())
+                      .completeGraphChangeIfDrained());
+    }
+    return current;
   }
 
   @Nested
@@ -170,7 +193,7 @@ class CurrentClusterConfigurationTest {
       assertThat(plan.phases())
           .containsExactly(
               new GlobalPhase(List.of(memberJoin)),
-              new PartitionGroupParallelPhase(
+              PartitionGroupPhase.sequential(
                   Map.of(
                       CurrentClusterConfiguration.DEFAULT_GROUP,
                       List.of(partitionJoin, partitionLeave))),
@@ -499,7 +522,7 @@ class CurrentClusterConfigurationTest {
       // then — a single default-group phase holds both, in order
       assertThat(migrated.phasedChangeState().onlyPending().phases())
           .containsExactly(
-              new PartitionGroupParallelPhase(
+              PartitionGroupPhase.sequential(
                   Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, List.of(join, leave))));
     }
 
@@ -846,8 +869,8 @@ class CurrentClusterConfigurationTest {
       return new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)));
     }
 
-    private static PartitionGroupParallelPhase parallelPhase(final String groupId) {
-      return new PartitionGroupParallelPhase(
+    private static PartitionGroupPhase groupPhase(final String groupId) {
+      return PartitionGroupPhase.sequential(
           Map.of(groupId, List.of(new DeleteHistoryOperation(MEMBER_0))));
     }
 
@@ -881,7 +904,7 @@ class CurrentClusterConfigurationTest {
       // given — plan: phase 0 global, phase 1 targets group "a"
       final var config =
           config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
-              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+              .initPlan(List.of(globalPhase(), groupPhase("a")));
 
       // when
       final var updated = config.activateNextPhase(config.phasedChangeState().onlyPending().id());
@@ -896,7 +919,7 @@ class CurrentClusterConfigurationTest {
       // given — plan: phase 0 global, phase 1 targets group "a"
       final var config =
           config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
-              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+              .initPlan(List.of(globalPhase(), groupPhase("a")));
       final var planId = config.phasedChangeState().onlyPending().id();
 
       // when — expectedPhaseIndex (0) matches the plan's actual current phase index
@@ -912,7 +935,7 @@ class CurrentClusterConfigurationTest {
       // given — a plan already advanced to phase 1 by an earlier trigger
       final var config =
           config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
-              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+              .initPlan(List.of(globalPhase(), groupPhase("a")));
       final var planId = config.phasedChangeState().onlyPending().id();
       final var advanced = config.activateNextPhase(planId);
 
@@ -995,7 +1018,7 @@ class CurrentClusterConfigurationTest {
       // given — a two-phase plan already advanced to phase 1 by an earlier trigger
       final var config =
           config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
-              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+              .initPlan(List.of(globalPhase(), groupPhase("a")));
       final var planId = config.phasedChangeState().onlyPending().id();
       final var advanced = config.activateNextPhase(planId);
 
@@ -1064,7 +1087,7 @@ class CurrentClusterConfigurationTest {
               PhasedChangeState.empty());
 
       // when
-      final var updated = config.initPlan(List.of(parallelPhase("a")));
+      final var updated = config.initPlan(List.of(groupPhase("a")));
 
       // then — only group "a" is changed; group "b" and the global config are untouched
       assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
@@ -1114,10 +1137,10 @@ class CurrentClusterConfigurationTest {
     }
 
     @Test
-    void shouldBeIncompleteForParallelPhaseUntilEveryNamedGroupDrains() {
-      // given — a parallel phase targeting groups "a" and "b"; only "a" has drained
+    void shouldBeIncompleteForGroupPhaseUntilEveryNamedGroupDrains() {
+      // given — a phase targeting groups "a" and "b"; only "a" has drained
       final var phase =
-          new PartitionGroupParallelPhase(
+          PartitionGroupPhase.sequential(
               Map.of(
                   "a", List.of(new DeleteHistoryOperation(MEMBER_0)),
                   "b", List.of(new DeleteHistoryOperation(MEMBER_0))));
@@ -1130,17 +1153,13 @@ class CurrentClusterConfigurationTest {
       final var planId = config.phasedChangeState().onlyPending().id();
 
       // when — group "a" drains its side of the phase, "b" is still pending
-      final var partiallyDrained =
-          config.updatePartitionGroupConfig(
-              "a", g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+      final var partiallyDrained = drainGroup(config, "a");
 
       // then
       assertThat(partiallyDrained.isCurrentPhaseComplete(planId)).isFalse();
 
       // when — group "b" drains too
-      final var fullyDrained =
-          partiallyDrained.updatePartitionGroupConfig(
-              "b", g -> g.advanceConfigurationChange(UnaryOperator.identity()));
+      final var fullyDrained = drainGroup(partiallyDrained, "b");
 
       // then
       assertThat(fullyDrained.isCurrentPhaseComplete(planId)).isTrue();
@@ -1192,7 +1211,7 @@ class CurrentClusterConfigurationTest {
                   PhasedChangeState.empty())
               .initPlan(
                   List.of(
-                      new PartitionGroupParallelPhase(
+                      PartitionGroupPhase.sequential(
                           Map.of(
                               "a",
                               List.of(new DeleteHistoryOperation(MEMBER_0)),
@@ -1222,9 +1241,9 @@ class CurrentClusterConfigurationTest {
                   PhasedChangeState.empty())
               .initPlan(
                   List.of(
-                      new PartitionGroupParallelPhase(
+                      PartitionGroupPhase.sequential(
                           Map.of("a", List.of(new DeleteHistoryOperation(MEMBER_0)))),
-                      new PartitionGroupParallelPhase(
+                      PartitionGroupPhase.sequential(
                           Map.of("b", List.of(new DeleteHistoryOperation(MEMBER_0))))));
       final var changeId = config.phasedChangeState().onlyPending().id();
 

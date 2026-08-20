@@ -23,7 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -321,17 +321,17 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   /**
    * Returns {@code true} if the current (unmutated, per-phase) plan has an operation targeting
-   * {@link #localMemberId} within {@code groupId}'s {@link PartitionGroupParallelPhase}s, whether
-   * already completed or still pending. Phases are fixed at plan creation and never mutated, so
-   * this reflects the member's original involvement in the plan regardless of how far it has since
+   * {@link #localMemberId} within {@code groupId}'s {@link PartitionGroupPhase}s, whether already
+   * completed or still pending. Phases are fixed at plan creation and never mutated, so this
+   * reflects the member's original involvement in the plan regardless of how far it has since
    * progressed.
    */
   private boolean wasTargetedByCurrentPlan(
       final CurrentClusterConfiguration configuration, final String groupId) {
     return configuration.phasedChangeState().pending().values().stream()
         .flatMap(plan -> plan.phases().stream())
-        .filter(PartitionGroupParallelPhase.class::isInstance)
-        .map(PartitionGroupParallelPhase.class::cast)
+        .filter(PartitionGroupPhase.class::isInstance)
+        .map(PartitionGroupPhase.class::cast)
         .map(phase -> phase.groupOperations().get(groupId))
         .filter(Objects::nonNull)
         .flatMap(List::stream)
