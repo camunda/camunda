@@ -8,6 +8,7 @@
 package io.camunda.zeebe.rebalance;
 
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,7 @@ public final class RebalanceRun {
   private final Instant startedAt;
   private final List<PartitionRebalance> partitions = new ArrayList<>();
 
+  private long partitionStartedAtNanos = System.nanoTime();
   private boolean cancelRequested;
   private boolean abandoned;
   private @Nullable Instant finishedAt;
@@ -77,6 +79,19 @@ public final class RebalanceRun {
   /** Records that this rebalance finished at the given instant. */
   public void finish(final Instant finishedAt) {
     this.finishedAt = finishedAt;
+  }
+
+  /**
+   * Starts tracking elapsed time for rebalancing a single partition. Only one partition is ever in
+   * flight.
+   */
+  public void startPartition() {
+    partitionStartedAtNanos = System.nanoTime();
+  }
+
+  /** How long the rebalance has been working on the latest partition it got to. */
+  public Duration partitionElapsed() {
+    return Duration.ofNanos(System.nanoTime() - partitionStartedAtNanos);
   }
 
   /**

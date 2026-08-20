@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -80,7 +81,7 @@ final class RebalanceCoordinatorTest {
   void shouldReportTheRebalanceItStarted() {
     // given
     final var coordinator = coordinatingWith(new BlockedRunner());
-    final var overrides = new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5);
+    final var overrides = new RebalanceOverrides(4096L, Duration.ofSeconds(30), 5, null);
 
     // when
     final var triggered =
@@ -408,7 +409,12 @@ final class RebalanceCoordinatorTest {
     final var runner = new BlockedRunner();
     final var coordinator =
         new RebalanceCoordinator(
-            LOWEST_ID_MEMBER, executor, runner, nextRebalanceId::getAndIncrement, stepClock);
+            LOWEST_ID_MEMBER,
+            executor,
+            runner,
+            nextRebalanceId::getAndIncrement,
+            stepClock,
+            new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
     coordinator.onClusterConfigurationUpdated(
         CurrentClusterConfiguration.fromLegacy(
             ClusterConfiguration.init()
@@ -494,7 +500,12 @@ final class RebalanceCoordinatorTest {
   private RebalanceCoordinator startCoordinator(
       final MemberId localMemberId, final RebalanceRunner runner) {
     return new RebalanceCoordinator(
-        localMemberId, executor, runner, nextRebalanceId::getAndIncrement, clock);
+        localMemberId,
+        executor,
+        runner,
+        nextRebalanceId::getAndIncrement,
+        clock,
+        new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
   }
 
   private void configurationWithBothMembers(final RebalanceCoordinator coordinator) {

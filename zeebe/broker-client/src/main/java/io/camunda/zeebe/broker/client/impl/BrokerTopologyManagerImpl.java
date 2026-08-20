@@ -70,7 +70,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
+  public @NonNull BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
     return topologyPerGroup.getOrDefault(
         physicalTenantId, BrokerClientTopologyImpl.uninitialized());
   }

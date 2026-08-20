@@ -46,7 +46,8 @@ final class ProtoBufRebalanceSerializerTest {
   void shouldRoundTripATriggerThatOverridesEverything() {
     // given
     final var request =
-        new TriggerRebalanceRequest(new RebalanceOverrides(8192L, Duration.ofMinutes(2), 7), true);
+        new TriggerRebalanceRequest(
+            new RebalanceOverrides(8192L, Duration.ofMinutes(2), 7, Duration.ZERO), true);
 
     // when
     final var decoded =
@@ -59,7 +60,8 @@ final class ProtoBufRebalanceSerializerTest {
   @Test
   void shouldDistinguishAnOverriddenSettingFromAnAbsentOne() {
     // given
-    final var request = new TriggerRebalanceRequest(new RebalanceOverrides(0L, null, null), false);
+    final var request =
+        new TriggerRebalanceRequest(new RebalanceOverrides(0L, null, null, null), false);
 
     // when
     final var decoded =
@@ -90,7 +92,7 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             new RebalanceStatus.Running(
                 42,
-                new RebalanceOverrides(null, Duration.ofSeconds(15), null),
+                new RebalanceOverrides(null, Duration.ofSeconds(15), null, null),
                 true,
                 true,
                 List.of(

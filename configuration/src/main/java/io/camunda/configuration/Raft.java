@@ -433,6 +433,12 @@ public class Raft {
      */
     private int maxTransferAttempts = 3;
 
+    /**
+     * How long the coordinator waits for a partition with no contactable leader to get one before
+     * giving up with {@code NO_LEADER}.
+     */
+    private Duration leaderWaitTimeout = Duration.ofMinutes(1);
+
     public DataSize getReplicationLagThreshold() {
       return replicationLagThreshold;
     }
@@ -467,6 +473,17 @@ public class Raft {
             "maxTransferAttempts must be positive but was %s".formatted(maxTransferAttempts));
       }
       this.maxTransferAttempts = maxTransferAttempts;
+    }
+
+    public Duration getLeaderWaitTimeout() {
+      return leaderWaitTimeout;
+    }
+
+    public void setLeaderWaitTimeout(final Duration leaderWaitTimeout) {
+      if (leaderWaitTimeout == null || leaderWaitTimeout.isNegative()) {
+        throw new IllegalArgumentException("leaderWaitTimeout must be non-negative");
+      }
+      this.leaderWaitTimeout = leaderWaitTimeout;
     }
   }
 }
