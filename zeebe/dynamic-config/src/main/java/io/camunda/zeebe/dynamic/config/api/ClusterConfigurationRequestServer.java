@@ -53,6 +53,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerZoneMigrationHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
+    registerRemovePhysicalTenantRequestHandler();
     registerModeChangeHandler();
     registerRestoreHandler();
     registerClusterRestoreHandler();
@@ -178,6 +179,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.FORCE_REMOVE_BROKERS.topic(),
         serializer::decodeForceRemoveBrokersRequest,
         request -> mapResponse(clusterConfigurationManagementApi.forceRemoveBrokers(request)),
+        this::encodeResponse);
+  }
+
+  private void registerRemovePhysicalTenantRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.REMOVE_PHYSICAL_TENANT.topic(),
+        serializer::decodeRemovePhysicalTenantRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.removePhysicalTenant(request)),
         this::encodeResponse);
   }
 

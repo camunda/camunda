@@ -39,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -48,11 +49,13 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -690,6 +693,73 @@ final class ProtoBufSerializerTest {
     final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
 
     // then
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeARemovedPhysicalTenant() {
+    // given — a tombstoned tenant, built from a group that had a member before removal cleared it
+    final var group =
+        new PartitionGroupConfiguration(
+                1,
+                0,
+                Map.of(
+                    MemberId.from("1"),
+                    new BrokerPartitionState(
+                        1,
+                        Instant.EPOCH,
+                        Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())),
+                        Mode.PROCESSING)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty())
+            .disable()
+            .remove();
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of("tenant-a", group),
+            new PhasedChangeState(1L, Map.of(), List.of()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then — the tombstone, and the cleared assignment behind it, survive a round trip; a restarted
+    // broker reading a stale, non-empty assignment back would re-arm the block the removal lifted
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
+    assertThat(decoded.partitionGroup("tenant-a").isRemoved()).isTrue();
+    assertThat(decoded.partitionGroup("tenant-a").members())
+        .describedAs("removal clears the old assignment rather than retaining it")
+        .isEmpty();
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionGroupChangeOperationForRemovePhysicalTenant() {
+    // given
+    final var groupId = "tenant-a";
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        groupId, List.of(new RemovePhysicalTenantOperation(MemberId.from("1")))))),
+            Instant.now());
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            new PhasedChangeState(2L, Map.of(plan.id(), plan), List.of()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then — a coordinator restart mid-plan has to be able to read the operation back
     final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
     assertThat(decoded).isEqualTo(configuration);
   }

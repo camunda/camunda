@@ -23,6 +23,7 @@ public enum ClusterConfigurationRequestTopics {
   PATCH_CLUSTER("topology-cluster-patch"),
   PURGE("topology-cluster-purge"),
   FORCE_REMOVE_BROKERS("topology-broker-force-remove"),
+  REMOVE_PHYSICAL_TENANT("topology-physical-tenant-remove"),
   UPDATE_ROUTING_STATE("topology-cluster-update-routing-state"),
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
   MODE_CHANGE("topology-mode-change"),

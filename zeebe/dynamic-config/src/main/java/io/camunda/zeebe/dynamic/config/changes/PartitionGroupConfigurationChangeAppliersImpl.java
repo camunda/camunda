@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionPreRestoreApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionRestoreApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -118,6 +120,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final UpdateRoutingState op ->
           new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation ignored -> new UpdateIncarnationNumberApplier();
+      case final RemovePhysicalTenantOperation ignored -> new RemovePhysicalTenantApplier();
       case final DeleteHistoryOperation ignored ->
           new DeleteHistoryApplier(partitionChangeExecutor);
       case final ModeChangeOperation op ->

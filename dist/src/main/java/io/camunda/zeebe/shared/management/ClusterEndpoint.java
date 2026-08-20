@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
@@ -623,6 +624,27 @@ public class ClusterEndpoint {
       final var forceRemoveRequest = new ForceZoneRemoveRequest(zoneId, dryRun);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.forceRemoveZone(forceRemoveRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  /**
+   * Discards a disabled physical tenant, allowing a broker still holding its partitions to leave
+   * the cluster. Does not delete the tenant's data; it stays on the brokers' disks until reclaimed
+   * out of band.
+   */
+  @DeleteMapping(path = "/physical-tenants/{physicalTenantId}")
+  public ResponseEntity<?> removePhysicalTenant(
+      @PathVariable final String physicalTenantId,
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force) {
+    try {
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender
+              .removePhysicalTenant(
+                  new RemovePhysicalTenantRequest(physicalTenantId, dryRun, force))
+              .join());
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }

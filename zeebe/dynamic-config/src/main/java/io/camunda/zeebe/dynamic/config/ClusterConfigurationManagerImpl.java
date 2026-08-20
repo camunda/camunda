@@ -15,12 +15,14 @@ import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.appliers.RemovePhysicalTenantApplier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -378,22 +380,43 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           partitionGroupChangeAppliers.put(groupId, appliers);
-          scopeReconcilers.computeIfAbsent(
-              new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
           reconcile(persistedCurrentConfiguration.getConfiguration());
         });
+  }
+
+  /**
+   * The single place group-scoped {@link ScopeReconciler}s are created — registering a group's
+   * appliers via {@link #registerPartitionGroupChangeAppliers} does not create one. Every live
+   * group keeps a reconciler on every broker, whether or not the broker registered that group's
+   * appliers — a broker can be named in a group operation without ever hosting the group (a
+   * disabled physical tenant's forced removal executes on whichever broker received the request,
+   * and no broker runs a disabled tenant). Removed groups are tombstones that can never have work
+   * again, and they accumulate over a cluster's lifetime, so no new reconciler is created for one —
+   * an existing one persisting is fine, since reconcilers are deliberately never removed except on
+   * {@link #close}. A reconciler with nothing pending is a no-op per pass.
+   */
+  private void ensurePartitionGroupScopeReconcilers(final CurrentClusterConfiguration config) {
+    config
+        .partitionGroups()
+        .forEach(
+            (groupId, group) -> {
+              if (!group.isRemoved()) {
+                scopeReconcilers.computeIfAbsent(
+                    new Scope.Group(groupId), ignored -> newGroupScopeReconciler(groupId));
+              }
+            });
   }
 
   void removePartitionGroupChangeAppliers(final String groupId) {
     executor.run(
         () -> {
           partitionGroupChangeAppliers.remove(groupId);
-          // Deliberately not removing this group's ScopeReconciler here: it's only ever fetched
-          // via computeIfAbsent in registerPartitionGroupChangeAppliers above, so it survives a
-          // remove/register round-trip unmolested. PartitionManagerImpl/RecoveryPartitionManager
-          // re-register their change appliers on every recovery/processing mode transition;
-          // discarding the ScopeReconciler here would discard its in-flight retry/backoff state
-          // on every such transition, leaving a broker stuck mid-transition (see
+          // Deliberately not removing this group's ScopeReconciler here: it's created solely by
+          // ensurePartitionGroupScopeReconcilers, so it survives a remove/register round-trip
+          // unmolested. PartitionManagerImpl/RecoveryPartitionManager re-register their change
+          // appliers on every recovery/processing mode transition; discarding the ScopeReconciler
+          // here would discard its in-flight retry/backoff state on every such transition, leaving
+          // a broker stuck mid-transition (see
           // ModeChangeAcceptanceIT#shouldCycleBetweenRecoveryAndProcessing).
         });
   }
@@ -486,6 +509,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    */
   private void reconcile(final CurrentClusterConfiguration config) {
     final var pendingIds = config.phasedChangeState().pending().keySet();
+    ensurePartitionGroupScopeReconcilers(config);
     if (isLocalMemberCoordinator()) {
       for (final var planId : List.copyOf(pendingIds)) {
         planAdvancers.computeIfAbsent(planId, this::newPlanAdvancer).maybeAdvance(config);
@@ -537,6 +561,21 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private boolean isLocalMemberCoordinator() {
     return coordinatorSupplier != null
         && localMemberId.equals(coordinatorSupplier.getDefaultCoordinator());
+  }
+
+  /**
+   * A {@code RemovePhysicalTenantOperation} is dispatchable even with no {@code appliers}
+   * registered for the group, since it is a pure configuration edit with no broker-side executor.
+   * Every other operation still requires a registered appliers set, returning {@code
+   * Optional.empty()} — leaving it pending — otherwise.
+   */
+  private static Optional<PartitionGroupConfigurationChangeApplier> applierFor(
+      final PartitionGroupOperation operation,
+      final @Nullable PartitionGroupConfigurationChangeAppliers appliers) {
+    if (operation instanceof RemovePhysicalTenantOperation) {
+      return Optional.of(new RemovePhysicalTenantApplier());
+    }
+    return Optional.ofNullable(appliers).map(a -> a.getApplier(operation));
   }
 
   private record GlobalOperation(
@@ -641,14 +680,16 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
     @Override
     public Optional<Operation> nextOperation(final CurrentClusterConfiguration config) {
-      final var appliers = partitionGroupChangeAppliers.get(groupId);
       final var group = config.partitionGroup(groupId);
-      if (appliers == null || group == null) {
+      if (group == null) {
         return Optional.empty();
       }
       return group
           .pendingChangesFor(localMemberId)
-          .map(operation -> new GroupOperation(groupId, operation, appliers.getApplier(operation)));
+          .flatMap(
+              operation ->
+                  applierFor(operation, partitionGroupChangeAppliers.get(groupId))
+                      .map(applier -> new GroupOperation(groupId, operation, applier)));
     }
 
     @Override

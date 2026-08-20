@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.dynamic.config.state.TenantAvailability.State;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class TenantAvailabilityTest {
 
     @Test
     void shouldBeEnabledInitially() {
-      assertThat(TenantAvailability.enabled().disabled()).isFalse();
+      assertThat(TenantAvailability.enabled().state()).isEqualTo(State.ENABLED);
     }
 
     @Test
@@ -31,7 +32,7 @@ class TenantAvailabilityTest {
       final var disabled = enabled.disable();
 
       // then
-      assertThat(disabled.disabled()).isTrue();
+      assertThat(disabled.state()).isEqualTo(State.DISABLED);
       assertThat(disabled.version()).isEqualTo(enabled.version() + 1);
     }
 
@@ -44,7 +45,7 @@ class TenantAvailabilityTest {
       final var enabled = disabled.enable();
 
       // then
-      assertThat(enabled.disabled()).isFalse();
+      assertThat(enabled.state()).isEqualTo(State.ENABLED);
       assertThat(enabled.version()).isEqualTo(disabled.version() + 1);
     }
 
@@ -70,6 +71,68 @@ class TenantAvailabilityTest {
 
       // then
       assertThat(stillEnabled).isEqualTo(enabled);
+    }
+  }
+
+  @Nested
+  class Removal {
+
+    @Test
+    void shouldRemoveADisabledTenantAndBumpTheVersion() {
+      // given
+      final var disabled = TenantAvailability.enabled().disable();
+
+      // when
+      final var removed = disabled.remove();
+
+      // then
+      assertThat(removed.state()).isEqualTo(State.REMOVED);
+      assertThat(removed.version())
+          .describedAs("bumped, so the removal wins over a peer that has not seen it")
+          .isEqualTo(disabled.version() + 1);
+    }
+
+    /** {@link State#REMOVED} is terminal; see its javadoc for why that matters. */
+    @Test
+    void shouldNotBeReEnabled() {
+      // given
+      final var removed = TenantAvailability.enabled().disable().remove();
+
+      // when / then
+      assertThat(removed.enable()).isSameAs(removed);
+      assertThat(removed.enable().state()).isEqualTo(State.REMOVED);
+    }
+
+    @Test
+    void shouldStayRemovedWhenDisabledAgain() {
+      // given
+      final var removed = TenantAvailability.enabled().disable().remove();
+
+      // when / then — the availability initializer re-derives this on every initialization
+      assertThat(removed.disable()).isSameAs(removed);
+    }
+
+    @Test
+    void shouldBeUnchangedWhenAlreadyRemoved() {
+      // given
+      final var removed = TenantAvailability.enabled().disable().remove();
+
+      // when / then
+      assertThat(removed.remove()).isSameAs(removed);
+    }
+
+    /**
+     * A removal must survive a merge with a peer that has not seen it yet; see the class javadoc.
+     */
+    @Test
+    void shouldWinOverAStaleCopyOfTheSameTenant() {
+      // given
+      final var stale = TenantAvailability.enabled().disable();
+      final var removed = stale.remove();
+
+      // when / then
+      assertThat(removed.merge(stale).state()).isEqualTo(State.REMOVED);
+      assertThat(stale.merge(removed).state()).isEqualTo(State.REMOVED);
     }
   }
 

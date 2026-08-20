@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemovePhysicalTenantRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
@@ -73,6 +74,9 @@ public interface ClusterConfigurationManagementApi {
       ClusterZoneMigrationRequest zoneMigrationRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> purge(PurgeRequest purgeRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> removePhysicalTenant(
+      RemovePhysicalTenantRequest removePhysicalTenantRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
       ForceRemoveBrokersRequest forceRemoveBrokersRequest);

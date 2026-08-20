@@ -46,12 +46,13 @@ message PartitionGroupConfiguration {
   TenantAvailability availability = 7;
 }
 
-// Whether a physical tenant is currently disabled (removed from local static configuration, but
-// retaining its partition assignment and data). Carries its own version, independent of the
-// enclosing PartitionGroupConfiguration.version.
+// Whether a physical tenant is running, and if not why. Carries its own version, independent of the
+// enclosing PartitionGroupConfiguration.version — that independent version is what makes a removal
+// converge, since the group itself cannot be deleted: the partitionGroups map is merged by union of
+// its keys, so a peer that has not seen the removal would put a deleted group straight back.
 message TenantAvailability {
   int64 version = 1;
-  bool disabled = 2;
+  TenantAvailabilityState state = 2;
 }
 
 // Broker lifecycle state. Holds State and timestamps; no partition assignment.
@@ -159,6 +160,7 @@ message PartitionGroupChangeOperation {
     ExportingStateChangeOperation exporterStateChange = 18;
     PartitionPreRestoreOperation partitionPreRestore = 19;
     PartitionRestoreOperation partitionRestore = 20;
+    RemovePhysicalTenantOperation removePhysicalTenant = 21;
   }
 }
 
@@ -271,12 +273,19 @@ message TopologyChangeOperation {
     ExportingStateChangeOperation exporterStateChange = 26;
     PartitionPreRestoreOperation partitionPreRestore = 27;
     PartitionRestoreOperation partitionRestore = 28;
+    RemovePhysicalTenantOperation removePhysicalTenant = 29;
   }
 }
 
 message UpdatePartitionDistributorConfigOperation {
   PartitionDistributorConfig config = 1;
 }
+
+// Records that an operator explicitly discarded a disabled physical tenant, so that a broker still
+// holding its partitions may leave the cluster. No fields: the target group's id comes from the
+// PartitionGroupParallelPhase map key that carries this operation, same as every other
+// PartitionGroupChangeOperation.
+message RemovePhysicalTenantOperation {}
 
 message CompletedTopologyChangeOperation {
   TopologyChangeOperation operation = 1;
@@ -444,4 +453,13 @@ enum Mode {
   MODE_UNKNOWN = 0;
   MODE_PROCESSING = 1;
   MODE_RECOVERING = 2;
+}
+
+// TENANT_ENABLED is 0 so that a tenant with no availability recorded reads as running, which is what
+// the field's absence has always meant. TENANT_REMOVED is terminal: a removed tenant is never
+// re-enabled, and its partition group is retained as a tombstone rather than deleted.
+enum TenantAvailabilityState {
+  TENANT_ENABLED = 0;
+  TENANT_DISABLED = 1;
+  TENANT_REMOVED = 2;
 }

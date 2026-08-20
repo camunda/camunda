@@ -336,7 +336,7 @@ public record PartitionGroupConfiguration(
   }
 
   public boolean isDisabled() {
-    return availability.disabled();
+    return availability.state() != TenantAvailability.State.ENABLED;
   }
 
   /**
@@ -351,10 +351,49 @@ public record PartitionGroupConfiguration(
 
   /**
    * Marks this tenant as enabled again. Does not change {@code version} or touch {@code members}.
-   * Returns {@code this} if already enabled.
+   * Returns {@code this} if already enabled, or if it has been removed — see {@link
+   * TenantAvailability#enable()}.
    */
   public PartitionGroupConfiguration enable() {
     return withAvailability(availability.enable());
+  }
+
+  /**
+   * Whether an operator has explicitly discarded this tenant. A removed tenant is also {@link
+   * #isDisabled() disabled}; the difference matters only for leaving the cluster, since a broker
+   * holding only removed tenants' partitions may leave it, unlike one holding merely disabled ones.
+   */
+  public boolean isRemoved() {
+    return availability.state() == TenantAvailability.State.REMOVED;
+  }
+
+  /**
+   * Marks this tenant as explicitly discarded, terminally — see {@link TenantAvailability}. Returns
+   * {@code this} if already removed.
+   *
+   * <p>Clears {@code members} and {@code routingState} rather than retaining them, since a removed
+   * tenant is never re-enabled and so has nothing left to resume. This still converges: the group
+   * version bumps once the operation's plan completes ({@link #advance()}), so the
+   * higher-versioned, cleared copy wins wholesale over a peer that has not seen the removal yet
+   * ({@link #merge(PartitionGroupConfiguration)}).
+   *
+   * <p>{@code incarnationNumber} stays put because removal purges no data — it stays on disk,
+   * unreachable through this configuration but not deleted by it. {@code pendingChanges} and {@code
+   * version} stay untouched too, so the {@link #advance()} call right after this one still sees,
+   * and completes, the operation it belongs to.
+   */
+  public PartitionGroupConfiguration remove() {
+    if (isRemoved()) {
+      return this;
+    }
+    return new PartitionGroupConfiguration(
+        version,
+        incarnationNumber,
+        Map.of(),
+        Optional.empty(),
+        pendingChanges,
+        lastChange,
+        availability.remove());
   }
 
   private PartitionGroupConfiguration withAvailability(

@@ -235,7 +235,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
             gateway.getCommunicationService(),
             ClusterConfigurationCoordinatorSupplier.from(
                 () -> manager.getMultiConfiguration().join()),
-            new ProtoBufSerializer());
+            new ProtoBufSerializer(),
+            gateway.getMembershipService().getLocalMember().id());
 
     final var validatorRegistry = new RequestValidatorRegistry();
     validatorRegistry.registerValidator(

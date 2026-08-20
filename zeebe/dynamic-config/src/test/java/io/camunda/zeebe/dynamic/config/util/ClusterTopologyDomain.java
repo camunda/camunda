@@ -265,8 +265,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   @Provide
   Arbitrary<TenantAvailability> tenantAvailabilities() {
     final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var disabled = Arbitraries.of(true, false);
-    return Combinators.combine(version, disabled).as(TenantAvailability::new);
+    final var state = Arbitraries.of(TenantAvailability.State.values());
+    return Combinators.combine(version, state).as(TenantAvailability::new);
   }
 
   @Provide

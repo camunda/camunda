@@ -53,6 +53,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysicalTenantOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -426,6 +427,11 @@ final class ClusterApiUtils {
               new Operation()
                   .operation(OperationEnum.BROKER_REMOVE)
                   .brokers(List.of(brokerIdValue(memberRemoveOperation.memberToRemove())));
+          case final RemovePhysicalTenantOperation ignored ->
+              // A partition-group operation, so physicalTenantId here is already the target group.
+              new Operation()
+                  .operation(OperationEnum.REMOVE_PHYSICAL_TENANT)
+                  .physicalTenant(physicalTenantId);
           case final PartitionDisableExporterOperation disableExporterOperation ->
               new Operation()
                   .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
@@ -1080,6 +1086,10 @@ final class ClusterApiUtils {
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_MODE_CHANGE)
                   .brokerId(brokerIdValue(modeChange.memberId()));
+          case final RemovePhysicalTenantOperation removal ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.REMOVE_PHYSICAL_TENANT)
+                  .brokerId(brokerIdValue(removal.memberId()));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

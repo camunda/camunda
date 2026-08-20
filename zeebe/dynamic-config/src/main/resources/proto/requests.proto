@@ -32,6 +32,14 @@ message PurgeRequest {
   optional string physicalTenantId = 2;
 }
 
+// Discards a disabled physical tenant, so a broker still holding its partitions may leave the
+// cluster.
+message RemovePhysicalTenantRequest {
+  bool dryRun = 1;
+  string physicalTenantId = 2;
+  bool force = 3;
+}
+
 message LeavePartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;

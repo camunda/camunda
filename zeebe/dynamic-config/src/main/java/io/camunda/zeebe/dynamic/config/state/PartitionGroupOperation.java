@@ -43,6 +43,16 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
   record UpdateIncarnationNumberOperation(MemberId memberId)
       implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
 
+  /**
+   * Records that an operator has explicitly discarded this physical tenant, allowing a broker
+   * holding its partitions to leave the cluster.
+   *
+   * @param memberId the broker applying this operation — usually the coordinator, but a forced
+   *     request names whichever broker received it, since the coordinator may be unreachable
+   */
+  record RemovePhysicalTenantOperation(MemberId memberId)
+      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+
   record ModeChangeOperation(MemberId memberId, Mode mode)
       implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
 
