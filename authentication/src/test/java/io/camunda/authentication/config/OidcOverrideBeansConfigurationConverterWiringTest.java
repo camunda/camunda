@@ -126,7 +126,7 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     // given a login on a physical tenant's own OIDC registration, converted with the real
     // propagator. This converter is built per registration id, separately from the root one above.
     final var loginRequest = new MockHttpServletRequest();
-    PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenant-a");
+    PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenanta");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(loginRequest));
 
     final Map<String, String> tenantSeenByLookup = recordTenantPerLookup();
@@ -143,10 +143,10 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
     assertThat(authentication.authenticatedRoleIds()).containsExactly("role-1");
     assertThat(authentication.authenticatedTenantIds()).containsExactly("tenant-1");
     assertThat(tenantSeenByLookup)
-        .containsEntry("mappingRuleIds", "tenant-a")
-        .containsEntry("groupIds", "tenant-a")
-        .containsEntry("roleIds", "tenant-a")
-        .containsEntry("tenantIds", "tenant-a");
+        .containsEntry("mappingRuleIds", "tenanta")
+        .containsEntry("groupIds", "tenanta")
+        .containsEntry("roleIds", "tenanta")
+        .containsEntry("tenantIds", "tenanta");
   }
 
   @AfterEach
