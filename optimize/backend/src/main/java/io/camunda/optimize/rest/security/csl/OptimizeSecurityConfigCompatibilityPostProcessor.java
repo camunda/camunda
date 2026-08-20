@@ -164,11 +164,16 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     if (isAuth0Configured(env)) {
       return;
     }
-    mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL", OIDC_PREFIX + "issuer-uri");
+    mapIssuerUri(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL");
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID", OIDC_PREFIX + "client-id");
     mapIfPresent(
         env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET", OIDC_PREFIX + "client-secret");
-    mapIfCslKeyUnset(env, derived, "camunda.identity.issuer", OIDC_PREFIX + "issuer-uri");
+    // Only when that env var is absent: application-ccsm.yaml mirrors it into
+    // camunda.identity.issuer for every docker-compose CCSM install, so feeding both would
+    // double-warn for a value the operator only set once.
+    if (isBlank(env.getProperty("CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL"))) {
+      mapIssuerUri(env, derived, "camunda.identity.issuer");
+    }
 
     // The Helm chart's Optimize ConfigMap can legitimately render clientId/CAMUNDA_IDENTITY_
     // CLIENT_SECRET while leaving camunda.identity.issuer blank. Bridging a client-id/secret with
@@ -177,7 +182,8 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // all-or-nothing on the issuer-uri: withhold both credentials rather than trade a login problem
     // for a boot failure. Mirrors bridgeAuth0SaasOrgAndCluster's all-or-nothing precedent below.
     if (!derived.containsKey(OIDC_PREFIX + "issuer-uri")
-        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))) {
+        && isBlank(env.getProperty(OIDC_PREFIX + "issuer-uri"))
+        && !hasExplicitOidcEndpoints(env)) {
       final String clientId = env.getProperty("camunda.identity.clientId");
       final String clientSecret = env.getProperty("CAMUNDA_IDENTITY_CLIENT_SECRET");
       if (!isBlank(clientId) || !isBlank(clientSecret)) {
@@ -208,6 +214,32 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     bridgeAuth0RedirectAndContextPath(env, derived, clusterId);
     bridgeAuth0Credentials(env, derived, auth0ClientId);
     bridgeAuth0SaasOrgAndCluster(env, derived, clusterId);
+  }
+
+  // Bridges a legacy issuer source into issuer-uri, but only when the host left the OIDC endpoints
+  // to CSL: an issuer-uri makes CSL discover them by dialing the browser-facing issuer from inside
+  // the pod, which is what explicit endpoints exist to avoid. The key is deprecated either way, so
+  // the warning is emitted whenever it is set.
+  private void mapIssuerUri(
+      final ConfigurableEnvironment env,
+      final Map<String, Object> derived,
+      final String legacyKey) {
+    final String value = env.getProperty(legacyKey);
+    if (isBlank(value)) {
+      return;
+    }
+    warnDeprecated(legacyKey, OIDC_PREFIX + "issuer-uri");
+    if (!hasExplicitOidcEndpoints(env)) {
+      derived.putIfAbsent(OIDC_PREFIX + "issuer-uri", value);
+    }
+  }
+
+  // All three are required: CSL accepts an issuer-uri or the complete trio, so withholding the
+  // derived issuer-uri from a partial set would turn a working startup into a registration failure.
+  private static boolean hasExplicitOidcEndpoints(final ConfigurableEnvironment env) {
+    return !isBlank(env.getProperty(OIDC_PREFIX + "authorization-uri"))
+        && !isBlank(env.getProperty(OIDC_PREFIX + "jwk-set-uri"))
+        && !isBlank(env.getProperty(OIDC_PREFIX + "token-uri"));
   }
 
   private static boolean isAuth0Configured(final ConfigurableEnvironment env) {
