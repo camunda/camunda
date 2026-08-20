@@ -151,14 +151,11 @@ final class JobBatchCollector {
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
+          final boolean isReactivation =
+              value.isWithLease()
+                  && !jobRecord.getLeaseToken().isEmpty()
+                  && agentDefinitionBehavior.belongsToAgent(jobRecord);
           if (value.isWithLease()) {
-            if (!jobRecord.getLeaseToken().isEmpty()
-                && agentDefinitionBehavior.belongsToAgent(jobRecord)) {
-              // Re-activation: the previous lease's pending history items must be discarded
-              // before the new lease starts accumulating its own, so at most one lease's
-              // optimistic edits are ever unresolved on the AgentInstance at a time.
-              reactivatedAgenticJobKeys.add(key);
-            }
             jobRecord.setLeaseToken(LeaseTokens.generate());
           }
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
@@ -176,6 +173,12 @@ final class JobBatchCollector {
             final var appendedJob = appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
             jobSecretInjector.registerForInjection(
                 secretCheckResult, activatedCount.value, appendedJob);
+            if (isReactivation) {
+              // Re-activation: the previous lease's pending history items must be discarded
+              // before the new lease starts accumulating its own, so at most one lease's
+              // optimistic edits are ever unresolved on the AgentInstance at a time.
+              reactivatedAgenticJobKeys.add(key);
+            }
             activatedCount.increment();
 
             // track the count of activated jobs by their JobKind
