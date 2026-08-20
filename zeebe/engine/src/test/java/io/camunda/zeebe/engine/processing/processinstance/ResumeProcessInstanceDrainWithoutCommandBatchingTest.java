@@ -43,8 +43,10 @@ public final class ResumeProcessInstanceDrainWithoutCommandBatchingTest {
   @Test
   public void shouldDrainWhenEveryCycleIsCommittedSeparately() {
     // given
-    final long processInstanceKey = deployAndStart();
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = deployAndStart(processId);
     final var children = activatedChildren(processInstanceKey);
+    ENGINE.jobs().withType(processId).withMaxJobsToActivate(BUFFERED_COMMAND_COUNT).activate();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -77,8 +79,9 @@ public final class ResumeProcessInstanceDrainWithoutCommandBatchingTest {
         .await();
   }
 
-  private static long deployAndStart() {
-    final String processId = Strings.newRandomValidBpmnId();
+  private static long deployAndStart(final String processId) {
+    // job type reuses the already-unique processId rather than a literal, so activating jobs by
+    // type in this test can't pick up another test method's leftover jobs
     ENGINE
         .deployment()
         .withXmlResource(
@@ -87,7 +90,7 @@ public final class ResumeProcessInstanceDrainWithoutCommandBatchingTest {
                 .serviceTask(
                     "task",
                     t ->
-                        t.zeebeJobType("type")
+                        t.zeebeJobType(processId)
                             .multiInstance(
                                 m ->
                                     m.zeebeInputCollectionExpression("items")

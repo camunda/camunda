@@ -17,9 +17,11 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +47,7 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
 
   private MutableElementInstanceState elementInstanceState;
   private MutableJobState jobState;
+  private MutableSuspensionState suspensionState;
   private StateWriter stateWriter;
   private ProcessInstanceSuspensionJobBehavior behavior;
 
@@ -51,9 +55,11 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   void setUp() {
     elementInstanceState = processingState.getElementInstanceState();
     jobState = processingState.getJobState();
+    suspensionState = processingState.getSuspensionState();
     stateWriter = mock(StateWriter.class);
     behavior =
-        new ProcessInstanceSuspensionJobBehavior(elementInstanceState, jobState, stateWriter);
+        new ProcessInstanceSuspensionJobBehavior(
+            elementInstanceState, jobState, suspensionState, stateWriter);
   }
 
   @Test
@@ -141,33 +147,54 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   @Test
-  void shouldVisitOnlySuspendedJobs() {
-    // given - one SUSPENDED job and one still-ACTIVATABLE job
+  void shouldSearchTheIndexFromTheResumeCursor() {
+    // given - two suspended jobs; the cursor already points past the first
     rootInstance();
-    childInstance(CHILD_ELEMENT_KEY, PROCESS_INSTANCE_KEY);
     suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY);
-    activatableJob(CHILD_ELEMENT_KEY, CHILD_JOB_KEY);
-    final var visited = new ArrayList<Long>();
+    suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY + 1);
+    suspensionState.setSuspensionState(PROCESS_INSTANCE_KEY, SuspensionState.State.RESUMING);
+    suspensionState.setLastResumedJobKey(PROCESS_INSTANCE_KEY, JOB_KEY);
 
     // when
-    behavior.forEachSuspendedJob(
-        elementInstanceState.getInstance(PROCESS_INSTANCE_KEY),
-        (jobKey, job) -> {
-          visited.add(jobKey);
-          return true;
-        });
+    final var visited = collectVisitedJobs();
+
+    // then - the seek starts at the cursor (inclusive) and reaches only what is left
+    assertThat(visited).containsExactly(JOB_KEY, JOB_KEY + 1);
+  }
+
+  @Test
+  void shouldVisitOnlySuspendedJobs() {
+    // given - one SUSPENDED job and one still-ACTIVATABLE job, both indexed under the instance
+    rootInstance();
+    suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+    activatableJob(PROCESS_INSTANCE_KEY, CHILD_JOB_KEY);
+
+    // when
+    final var visited = collectVisitedJobs();
 
     // then
     assertThat(visited).containsExactly(JOB_KEY);
   }
 
   @Test
-  void shouldStopTheWalkWhenVisitorReturnsFalse() {
-    // given - two suspended jobs
+  void shouldNotVisitAnIndexEntryThatIsNoLongerSuspended() {
+    // given - an entry the seek reaches that was already resumed (or never suspended)
     rootInstance();
-    childInstance(CHILD_ELEMENT_KEY, PROCESS_INSTANCE_KEY);
+    activatableJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+
+    // when
+    final var visited = collectVisitedJobs();
+
+    // then
+    assertThat(visited).isEmpty();
+  }
+
+  @Test
+  void shouldStopTheWalkWhenVisitorReturnsFalse() {
+    // given - two suspended jobs on the same instance
+    rootInstance();
     suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY);
-    suspendedJob(CHILD_ELEMENT_KEY, CHILD_JOB_KEY);
+    suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY + 1);
     final var visited = new ArrayList<Long>();
 
     // when - the visitor stops after the first job it sees
@@ -187,18 +214,38 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
     // given
     rootInstance();
     activatableJob(PROCESS_INSTANCE_KEY, JOB_KEY);
-    final var visited = new ArrayList<Long>();
 
     // when
+    final var visited = collectVisitedJobs();
+
+    // then
+    assertThat(visited).isEmpty();
+  }
+
+  @Test
+  void shouldExcludeJobsOfAnotherProcessInstance() {
+    // given
+    rootInstance();
+    suspendedJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+    jobState.create(CHILD_JOB_KEY, jobRecord().setProcessInstanceKey(999L));
+    jobState.updateJobState(CHILD_JOB_KEY, State.SUSPENDED);
+
+    // when
+    final var visited = collectVisitedJobs();
+
+    // then
+    assertThat(visited).containsExactly(JOB_KEY);
+  }
+
+  private List<Long> collectVisitedJobs() {
+    final var visited = new ArrayList<Long>();
     behavior.forEachSuspendedJob(
         elementInstanceState.getInstance(PROCESS_INSTANCE_KEY),
         (jobKey, job) -> {
           visited.add(jobKey);
           return true;
         });
-
-    // then
-    assertThat(visited).isEmpty();
+    return visited;
   }
 
   private void rootInstance() {
@@ -215,7 +262,7 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   private void activatableJob(final long elementKey, final long jobKey) {
-    final var record = jobRecord();
+    final var record = jobRecordFor(elementKey);
     jobState.insertJobRecordActivatable(jobKey, record);
     jobState.makeJobActivatableByPriority(
         record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
@@ -223,7 +270,7 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   private void secretWaitingJob(final long elementKey, final long jobKey) {
-    final var record = jobRecord();
+    final var record = jobRecordFor(elementKey);
     jobState.insertJobRecordActivatable(jobKey, record);
     jobState.makeJobActivatableByPriority(
         record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
@@ -232,7 +279,7 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   private void activatedJob(final long elementKey, final long jobKey) {
-    final var record = jobRecord();
+    final var record = jobRecordFor(elementKey);
     jobState.insertJobRecordActivatable(jobKey, record);
     jobState.makeJobActivatableByPriority(
         record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
@@ -241,13 +288,20 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   private void suspendedJob(final long elementKey, final long jobKey) {
-    final var record = jobRecord();
+    final var record = jobRecordFor(elementKey);
     jobState.insertJobRecordActivatable(jobKey, record);
     jobState.makeJobActivatableByPriority(
         record.getTypeBuffer(), jobKey, record.getTenantId(), record.getPriority());
     jobState.updateJobState(jobKey, State.SUSPENDED);
     jobState.makeJobNotActivatable(jobKey, record);
     elementInstanceState.updateInstance(elementKey, ei -> ei.setJobKey(jobKey));
+  }
+
+  /** A job record whose processInstanceKey matches the element it will be attached to. */
+  private JobRecord jobRecordFor(final long elementKey) {
+    final var owningProcessInstanceKey =
+        elementInstanceState.getInstance(elementKey).getValue().getProcessInstanceKey();
+    return jobRecord().setProcessInstanceKey(owningProcessInstanceKey);
   }
 
   private ProcessInstanceRecord processInstanceRecord(final long processInstanceKey) {

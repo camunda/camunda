@@ -99,7 +99,7 @@ public final class ProcessInstanceResumeJobsProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter);
+            elementInstanceState, processingState.getJobState(), suspensionState, stateWriter);
     this.jobActivationBehavior = jobActivationBehavior;
   }
 

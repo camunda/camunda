@@ -915,7 +915,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldSeekFromNegativeStartAtTheFirstEntry() {
+  public void shouldStartAtFirstEntryWhenStartAtIsNegative() {
     // given
     final long processInstanceKey = 10L;
     jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
@@ -936,7 +936,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldSeekInclusivelyFromAGivenJobKey() {
+  public void shouldIncludeStartAtJobKeyInSearch() {
     // given
     final long processInstanceKey = 10L;
     jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
