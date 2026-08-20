@@ -25,6 +25,10 @@ import java.util.Set;
  * overrides secret-waiting so a later secret reactivation cannot put the job back into the index
  * while the process instance is still suspended. A job a worker or a failure already owns is left
  * alone.
+ *
+ * <p>Also backfills the {@code JOBS_BY_PROCESS_INSTANCE} index entry for the job — {@code
+ * Job.SUSPENDED} is the only event that writes {@link State#SUSPENDED}, so every suspended job
+ * passes through this applier, including a pre-8.10 job that has no entry from creation.
  */
 public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -48,5 +52,6 @@ public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, J
     }
     jobState.updateJobState(key, State.SUSPENDED);
     jobState.makeJobNotActivatable(key, storedJob);
+    jobState.indexJobByProcessInstance(storedJob.getProcessInstanceKey(), key);
   }
 }

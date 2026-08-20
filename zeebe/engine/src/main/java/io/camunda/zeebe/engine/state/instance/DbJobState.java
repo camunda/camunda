@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
@@ -92,6 +94,22 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
+  /**
+   * Secondary index: {@code (processInstanceKey, jobKey) → ∅}; supports prefix iteration to find
+   * jobs of a process instance.
+   *
+   * <p>Filled at job creation (8.10+); {@link
+   * io.camunda.zeebe.engine.state.appliers.JobSuspendedApplier} backfills a pre-8.10 job via {@link
+   * #indexJobByProcessInstance(long, long)} the moment it is actually suspended. Complete for every
+   * currently {@code SUSPENDED} job, but not an authoritative "all jobs of this instance" list — a
+   * pre-8.10 job that has never been suspended has no entry.
+   */
+  private final DbLong jobIndexProcessInstanceKey;
+
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> processInstanceJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      jobsByProcessInstanceColumnFamily;
+
   /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
   private volatile boolean isLegacyCfDrained = false;
 
@@ -142,6 +160,15 @@ public final class DbJobState implements JobState, MutableJobState {
     backoffColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
+
+    jobIndexProcessInstanceKey = new DbLong();
+    processInstanceJobKey = new DbCompositeKey<>(jobIndexProcessInstanceKey, fkJob);
+    jobsByProcessInstanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOBS_BY_PROCESS_INSTANCE,
+            transactionContext,
+            processInstanceJobKey,
+            DbNil.INSTANCE);
   }
 
   /**
@@ -233,6 +260,11 @@ public final class DbJobState implements JobState, MutableJobState {
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
+
+    // deleteIfExists: a job that predates this CF and was never suspended has no entry here
+    jobKey.wrapLong(key);
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
+    jobsByProcessInstanceColumnFamily.deleteIfExists(processInstanceJobKey);
   }
 
   /**
@@ -485,6 +517,25 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffKey.wrapLong(backoff);
       backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
+  }
+
+  @Override
+  public void indexJobByProcessInstance(final long processInstanceKey, final long jobKey) {
+    jobIndexProcessInstanceKey.wrapLong(processInstanceKey);
+    this.jobKey.wrapLong(jobKey);
+    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void visitJobsOfProcessInstance(
+      final long processInstanceKey, final long startAtJobKey, final LongPredicate visitor) {
+    jobIndexProcessInstanceKey.wrapLong(processInstanceKey);
+    jobKey.wrapLong(startAtJobKey);
+    final var startAt = startAtJobKey < 0 ? null : processInstanceJobKey;
+    final KeyValuePairVisitor<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil> kvVisitor =
+        (key, value) -> visitor.test(key.second().inner().getValue());
+    jobsByProcessInstanceColumnFamily.whileEqualPrefix(
+        jobIndexProcessInstanceKey, startAt, kvVisitor);
   }
 
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
@@ -780,6 +831,9 @@ public final class DbJobState implements JobState, MutableJobState {
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(record);
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
+
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
+    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   private void initializeJobState() {
