@@ -422,7 +422,9 @@ test.describe('Process Instance Incident', () => {
         .getDiagramElement('Task_CallActivity')
         .dblclick();
 
-      await expect(operateProcessInstancePage.getIncidentRow(/Called element error\./i)).toBeVisible({timeout: 15000});
+      await expect(
+        operateProcessInstancePage.getIncidentRow(/Called element error\./i),
+      ).toBeVisible({timeout: 15000});
     });
   });
 
