@@ -9,7 +9,6 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -105,8 +104,6 @@ public class ProcessInstanceSuspendResumeIT {
     // they don't linger on the shared broker for the rest of the suite
     camundaClient.newCancelInstanceCommand(suspendedKey).send().join();
     camundaClient.newCancelInstanceCommand(notSuspendedKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, suspendedKey);
-    waitForProcessInstanceToBeTerminated(camundaClient, notSuspendedKey);
   }
 
   @Test
@@ -163,14 +160,8 @@ public class ProcessInstanceSuspendResumeIT {
 
     // leaves an instance active at taskB; cancel it so it doesn't linger on the shared broker
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, processInstanceKey);
   }
 
-  /**
-   * Variable modification is a recovery tool while a process instance is suspended (see #58089).
-   * The set-variables command must be accepted immediately and the new values must be visible in
-   * secondary storage, without resuming the instance.
-   */
   @Test
   void shouldUpdateVariablesWhileSuspended() {
     // given
@@ -226,15 +217,8 @@ public class ProcessInstanceSuspendResumeIT {
     assertThat(stillSuspended.getState()).isEqualTo(ProcessInstanceState.SUSPENDED);
 
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, processInstanceKey);
   }
 
-  /**
-   * Variable updates during suspension may satisfy a conditional catch event. The variable write
-   * itself must apply immediately, and the token only moves past the catch event after resume. That
-   * the trigger is buffered rather than dropped is asserted on the record stream in
-   * VariableDocumentUpdateWhileSuspendedTest; secondary storage cannot show it reliably.
-   */
   @Test
   void shouldBufferConditionalActivationTriggeredByVariableUpdateUntilResume() {
     // given - waiting on a conditional intermediate catch event that is not yet satisfied
@@ -327,9 +311,7 @@ public class ProcessInstanceSuspendResumeIT {
                             .join()
                             .items())
                     .isNotEmpty());
-
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
-    waitForProcessInstanceToBeTerminated(camundaClient, processInstanceKey);
   }
 
   private static void activateAndCompleteJobs(final String jobType, final int count) {
