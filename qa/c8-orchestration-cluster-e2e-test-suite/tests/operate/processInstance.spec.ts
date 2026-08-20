@@ -421,6 +421,9 @@ test.describe('Process Instance Incident', () => {
         .getDiagramElement('Task_CallActivity')
         .dblclick();
 
+      await expect(operateProcessInstancePage.getDiagramElement('Task_PreProcessing_Level1')).toBeVisible();
+      await operateProcessInstancePage.clickIncidentsTab();
+
       await expect(
         operateProcessInstancePage.getIncidentRow(/Called element error\./i),
       ).toBeVisible();
