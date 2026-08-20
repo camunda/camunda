@@ -426,7 +426,7 @@ test.describe('Process Instance Incident', () => {
 
       await expect(
         operateProcessInstancePage.getIncidentRow(/Called element error\./i),
-      ).toBeVisible({timeout: 15000});
+      ).toBeVisible();
     });
   });
 
