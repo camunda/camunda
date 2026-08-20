@@ -39,6 +39,8 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
+  private boolean navV2Enabled = true;
+
   private String tasklistUrl = null;
 
   @Value("${camunda.operate.internal.version.current:unknown-version}")
@@ -147,6 +149,14 @@ public class OperateProperties {
 
   public void setEnterprise(final boolean enterprise) {
     this.enterprise = enterprise;
+  }
+
+  public boolean isNavV2Enabled() {
+    return navV2Enabled;
+  }
+
+  public void setNavV2Enabled(final boolean navV2Enabled) {
+    this.navV2Enabled = navV2Enabled;
   }
 
   public IdentityProperties getIdentity() {

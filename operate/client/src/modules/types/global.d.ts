@@ -44,6 +44,7 @@ export declare global {
       resourcePermissionsEnabled?: boolean;
       multiTenancyEnabled?: boolean;
       waitStatesEnabled?: boolean;
+      isNavV2Enabled?: boolean;
     };
     Osano?: {
       cm?: {

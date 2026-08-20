@@ -35,6 +35,7 @@ public class ClientConfig {
   public boolean multiTenancyEnabled;
   public String databaseType;
   public boolean waitStatesEnabled;
+  public boolean isNavV2Enabled;
   @Autowired private OperateProfileService profileService;
   @Autowired private EnvironmentService environmentService;
   @Autowired private OperateProperties operateProperties;
@@ -60,6 +61,7 @@ public class ClientConfig {
     multiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
     waitStatesEnabled = waitStatesEnabledProperty;
+    isNavV2Enabled = operateProperties.isNavV2Enabled();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
