@@ -453,20 +453,76 @@ public class ClusterRuntimeBackupServicesTest {
     // when
     final var backups = services.listBackups(null, null);
 
-    // then only the tenants holding an id are listed under it, and its state folds over those alone
+    // then every group reports every targeted tenant, so the id only tenantA holds is INCOMPLETE
     assertThat(backups)
         .succeedsWithin(TIMEOUT)
         .satisfies(
             result -> {
               assertThat(result).extracting("backupId").containsExactly(43L, 42L);
-              assertThat(result.get(0).state()).isEqualTo(State.IN_PROGRESS);
+              assertThat(result.get(0).state()).isEqualTo(State.INCOMPLETE);
               assertThat(result.get(0).physicalTenants())
-                  .extracting("physicalTenantId")
-                  .containsExactly(TENANT_A);
+                  .extracting("physicalTenantId", "backup.status")
+                  .containsExactly(
+                      tuple(TENANT_A, State.IN_PROGRESS), tuple(TENANT_B, State.DOES_NOT_EXIST));
               assertThat(result.get(1).state()).isEqualTo(State.COMPLETED);
               assertThat(result.get(1).physicalTenants())
                   .extracting("physicalTenantId")
                   .containsExactly(TENANT_A, TENANT_B);
+            });
+  }
+
+  /**
+   * The state of a listed group has to mean what it means on a single-id read, or an operator
+   * scanning the listing for the backups the cluster can be restored from cannot trust it.
+   */
+  @Test
+  public void shouldFoldAListedGroupTheSameWayASingleIdReadDoes() {
+    // given a backup only one tenant holds, and both a listing and a direct read of it
+    when(apiA.listBackups(TENANT_A, "*"))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup(42L, State.COMPLETED))));
+    when(apiB.listBackups(TENANT_B, "*")).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(apiA.getStatus(TENANT_A, 42L))
+        .thenReturn(CompletableFuture.completedFuture(backup(42L, State.COMPLETED)));
+    when(apiB.getStatus(TENANT_B, 42L))
+        .thenReturn(CompletableFuture.completedFuture(backup(42L, State.DOES_NOT_EXIST)));
+
+    // when
+    final var listed = services.listBackups(null, null);
+    final var read = services.getBackup(null, 42L);
+
+    // then both say the same thing about the same backup
+    assertThat(listed)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(result -> assertThat(result.get(0).state()).isEqualTo(State.INCOMPLETE));
+    assertThat(read)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(result -> assertThat(result.state()).isEqualTo(State.INCOMPLETE));
+  }
+
+  /**
+   * A listing asks each tenant for the backups it has, so a tenant that holds nothing for a listed
+   * id has no partition detail to report — unlike the single-id read, where the broker answers per
+   * partition.
+   */
+  @Test
+  public void shouldReportNoPartitionDetailForATenantHoldingNothingInAListing() {
+    // given
+    when(apiA.listBackups(TENANT_A, "*"))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup(42L, State.COMPLETED))));
+    when(apiB.listBackups(TENANT_B, "*")).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    final var backups = services.listBackups(null, null);
+
+    // then
+    assertThat(backups)
+        .succeedsWithin(TIMEOUT)
+        .satisfies(
+            result -> {
+              final var absent = result.get(0).physicalTenants().get(1);
+              assertThat(absent.physicalTenantId()).isEqualTo(TENANT_B);
+              assertThat(absent.backup().backupId()).isEqualTo(42L);
+              assertThat(absent.backup().partitions()).isEmpty();
             });
   }
 

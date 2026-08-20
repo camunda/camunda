@@ -190,6 +190,17 @@ final class ClusterRuntimeBackupIT {
                   .isEqualTo("DOES_NOT_EXIST");
             });
 
+    // and the listing says the same thing about it, rather than reporting it as complete because
+    // only the tenant holding it was counted
+    final var listed = listClusterBackups();
+    assertThat(listed.statusCode()).isEqualTo(200);
+    final var group = groupOf(JSON.readTree(listed.body()), backupId);
+    assertThat(group.get("state").asText()).isEqualTo("INCOMPLETE");
+    assertThat(physicalTenantIds(group.get("physicalTenants")))
+        .containsExactly(DEFAULT_TENANT_ID, TENANT_A);
+    assertThat(fieldOf(group.get("physicalTenants"), DEFAULT_TENANT_ID, "state"))
+        .isEqualTo("DOES_NOT_EXIST");
+
     assertThat(deleteClusterBackup(backupId).statusCode()).isEqualTo(204);
   }
 

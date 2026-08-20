@@ -14,12 +14,13 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.backup.client.api.BackupApi;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -139,8 +140,8 @@ public final class ClusterRuntimeBackupServices {
 
   /**
    * Lists the backups of every targeted physical tenant, grouped by backup id, most recent id
-   * first. A tenant that holds none of the matching ids simply contributes no entry, so each
-   * group's folded state accounts for the listed tenants alone.
+   * first. Every group reports every targeted tenant, so a backup only some tenants hold folds to
+   * {@code INCOMPLETE} here just as it does on a single-id read.
    *
    * @param physicalTenantId the single tenant to target, or {@code null} for every tenant
    */
@@ -444,9 +445,20 @@ public final class ClusterRuntimeBackupServices {
         .toList();
   }
 
+  /**
+   * Groups the tenants' backups by backup id, most recent id first, reporting every targeted tenant
+   * under every id — including the tenants that hold nothing for it.
+   *
+   * <p>Listing only the holders would make the same {@link ClusterRuntimeBackup} mean two different
+   * things: a backup half the cluster is missing would read {@code COMPLETED} in a listing and
+   * {@code INCOMPLETE} when looked up directly. An operator scanning the listing for the backups
+   * the cluster can actually be restored from has to be able to trust the state, so a tenant that
+   * holds nothing for an id contributes {@link State#DOES_NOT_EXIST} here, exactly as it does on
+   * the single-id read.
+   */
   private static List<ClusterRuntimeBackup> groupByBackupId(
       final List<PhysicalTenantBackupPort> targets, final List<List<BackupStatus>> perTenant) {
-    final Map<Long, List<PhysicalTenantRuntimeBackup>> byBackupId =
+    final Map<Long, Map<String, BackupStatus>> holdersByBackupId =
         new TreeMap<>(Comparator.reverseOrder());
     zip(targets, perTenant, PhysicalTenantBackups::new)
         .forEach(
@@ -455,14 +467,35 @@ public final class ClusterRuntimeBackupServices {
                     .backups()
                     .forEach(
                         backup ->
-                            byBackupId
-                                .computeIfAbsent(backup.backupId(), id -> new ArrayList<>())
-                                .add(
-                                    new PhysicalTenantRuntimeBackup(
-                                        tenant.physicalTenantId(), backup))));
-    return byBackupId.entrySet().stream()
-        .map(entry -> toClusterBackup(entry.getKey(), List.copyOf(entry.getValue())))
+                            holdersByBackupId
+                                .computeIfAbsent(backup.backupId(), id -> new HashMap<>())
+                                .put(tenant.physicalTenantId(), backup)));
+    return holdersByBackupId.entrySet().stream()
+        .map(entry -> toClusterBackup(entry.getKey(), everyTenant(targets, entry)))
         .toList();
+  }
+
+  /**
+   * Reports each targeted tenant's backup for one id, filling in the tenants that hold none. The
+   * filled-in entry carries no partition detail: a listing asks each tenant for the backups it has,
+   * so there is nothing to report per partition for one it does not.
+   */
+  private static List<PhysicalTenantRuntimeBackup> everyTenant(
+      final List<PhysicalTenantBackupPort> targets,
+      final Map.Entry<Long, Map<String, BackupStatus>> holders) {
+    return targets.stream()
+        .map(
+            target ->
+                new PhysicalTenantRuntimeBackup(
+                    target.physicalTenantId(),
+                    holders
+                        .getValue()
+                        .getOrDefault(target.physicalTenantId(), absent(holders.getKey()))))
+        .toList();
+  }
+
+  private static BackupStatus absent(final long backupId) {
+    return new BackupStatus(backupId, State.DOES_NOT_EXIST, Optional.empty(), List.of());
   }
 
   private static ClusterRuntimeBackup toClusterBackup(

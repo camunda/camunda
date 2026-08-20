@@ -574,10 +574,13 @@ paths:
       summary: List runtime backups across physical tenants
       description: >-
         Lists the runtime backups of every physical tenant of the cluster, or of the one named by
-        `physicalTenantId`, grouped by backup id. A backup id that only some physical tenants hold is
-        a supported outcome rather than a degraded one, so only the tenants that hold it are listed
-        under it, and the group's aggregated state accounts for those tenants alone. Tenants that
-        generate their own backup ids never share one, so each of their backups forms its own group.
+        `physicalTenantId`, grouped by backup id. Every group reports every targeted tenant,
+        including the ones holding nothing for that id, so a backup only some tenants hold aggregates
+        to `INCOMPLETE` here exactly as it does when looked up directly — the state of a listed group
+        can be trusted to say whether the cluster can be restored from it. A backup id that only some
+        physical tenants hold is a supported outcome rather than a degraded one; tenants that
+        generate their own backup ids never share one, so in that mode each backup forms its own
+        group and the other tenants report `DOES_NOT_EXIST` under it.
 
 
         The request is all-or-nothing: a physical tenant whose backups cannot be read fails the whole
@@ -1537,7 +1540,7 @@ components:
     ClusterRuntimeBackupInfo:
       description: >-
         A runtime backup id, what each physical tenant reports for it, and the state aggregated over
-        the reported tenants — folded from the per-tenant states by the same rules a per-tenant state
+        every targeted tenant — folded from the per-tenant states by the same rules a per-tenant state
         is folded from its partitions.
       type: object
       required:
@@ -1552,9 +1555,10 @@ components:
             - $ref: 'backups.yaml#/components/schemas/BackupId'
         state:
           description: >-
-            The state aggregated over the physical tenants listed below, which is every targeted
-            tenant when looking a backup id up directly, and only the tenants holding the id within
-            a listing.
+            The state aggregated over every targeted physical tenant, whether the backup id was
+            looked up directly or listed. A tenant holding nothing for this id counts as
+            `DOES_NOT_EXIST`, so the aggregate is `INCOMPLETE` unless every targeted tenant holds
+            the backup.
           allOf:
             - $ref: 'backups.yaml#/components/schemas/StateCode'
         failureReason:
@@ -1564,10 +1568,8 @@ components:
           example: ""
         physicalTenants:
           description: >-
-            What each physical tenant reports for this backup id, ordered by physical tenant id. When
-            looking a backup id up directly, every targeted tenant is listed, including the ones
-            reporting `DOES_NOT_EXIST`. Within a listing, only the tenants that hold the id are
-            listed.
+            What each physical tenant reports for this backup id, ordered by physical tenant id.
+            Every targeted tenant is listed, including the ones reporting `DOES_NOT_EXIST`.
           type: array
           items:
             $ref: '#/components/schemas/ClusterRuntimeBackupTenantInfo'
@@ -1596,8 +1598,11 @@ components:
           example: ""
         details:
           description: >-
-            Detailed status of the backup per partition of this physical tenant. Always contains
-            every partition of the tenant, including when the tenant holds no such backup.
+            Detailed status of the backup per partition of this physical tenant. Contains every
+            partition of the tenant when the backup id was looked up directly, including for a tenant
+            that holds no such backup. Empty for a tenant that holds nothing for a listed id: a
+            listing asks each tenant for the backups it has, so there is nothing to report per
+            partition for one it does not.
           type: array
           items:
             $ref: 'backups.yaml#/components/schemas/PartitionBackupInfo'
