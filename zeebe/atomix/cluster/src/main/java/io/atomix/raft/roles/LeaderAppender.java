@@ -416,6 +416,9 @@ final class LeaderAppender {
     if (member.getNextSnapshotIndex() != persistedSnapshot.getIndex()) {
       try {
         final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
+        if (raft.getSnapshotChunkSize() > 0) {
+          snapshotChunkReader.setMaximumChunkSize(raft.getSnapshotChunkSize());
+        }
         member.setSnapshotChunkReader(snapshotChunkReader);
       } catch (final UncheckedIOException e) {
         LOGGER.warn(
