@@ -12,6 +12,7 @@ import {
   IncidentsCount,
   Label,
   BarContainer,
+  RightControls,
   ActiveInstancesBar,
   ActiveCount,
   IncidentsBar,
@@ -49,6 +50,8 @@ const InstancesBar: React.FC<Props> = ({
   const hasIncidents = incidentsCount > 0;
   const hasActiveInstances = (activeInstancesCount ?? 0) > 0;
   const showIncidentsBar = activeInstancesCount !== undefined;
+  const showActiveInstancesCount =
+    activeInstancesCount !== undefined && activeInstancesCount >= 0;
 
   return (
     <div className={className}>
@@ -67,25 +70,29 @@ const InstancesBar: React.FC<Props> = ({
             {label.text}
           </Label>
         )}
-        {isDraining && (
-          <Tooltip
-            label={drainingDescription ?? 'Draining'}
-            align="top"
-            autoAlign
-          >
-            <DrainingIndicator data-testid="draining-indicator">
-              <Timer size={16} />
-            </DrainingIndicator>
-          </Tooltip>
-        )}
+        {(isDraining || showActiveInstancesCount) && (
+          <RightControls>
+            {isDraining && (
+              <Tooltip
+                label={drainingDescription ?? 'Draining'}
+                align="top"
+                autoAlign
+              >
+                <DrainingIndicator data-testid="draining-indicator">
+                  <Timer size={16} />
+                </DrainingIndicator>
+              </Tooltip>
+            )}
 
-        {activeInstancesCount !== undefined && activeInstancesCount >= 0 && (
-          <ActiveCount
-            data-testid="active-instances-badge"
-            $hasActiveInstances={hasActiveInstances}
-          >
-            {activeInstancesCount}
-          </ActiveCount>
+            {showActiveInstancesCount && (
+              <ActiveCount
+                data-testid="active-instances-badge"
+                $hasActiveInstances={hasActiveInstances}
+              >
+                {activeInstancesCount}
+              </ActiveCount>
+            )}
+          </RightControls>
         )}
       </Wrapper>
       {showIncidentsBar && (
