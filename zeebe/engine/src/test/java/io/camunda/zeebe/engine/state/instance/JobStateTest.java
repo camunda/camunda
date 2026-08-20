@@ -915,17 +915,17 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldSeekFromNegativeStartAtTheFirstEntry() {
+  public void shouldStartAtFirstEntryWhenStartAtIsNegative() {
     // given
     final long processInstanceKey = 10L;
     jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
     jobState.create(2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
 
-    // when
+    // when - a non-sentinel negative key, to prove any negative (not only -1) starts from the first
     final var visited = new ArrayList<Long>();
     jobState.visitJobsOfProcessInstance(
         processInstanceKey,
-        -1L,
+        -2L,
         jobKey -> {
           visited.add(jobKey);
           return true;
@@ -936,7 +936,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldSeekInclusivelyFromAGivenJobKey() {
+  public void shouldIncludeStartAtJobKeyInSearch() {
     // given
     final long processInstanceKey = 10L;
     jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));

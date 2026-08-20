@@ -85,8 +85,15 @@ public final class ProcessInstanceResumeRestartTest {
   @Test
   public void shouldDrainExactlyOnceWithTwoOverlappingResumeChains() {
     // given
-    final long processInstanceKey = deployAndStart();
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = deployAndStart(processId);
     final var children = activatedChildren(processInstanceKey);
+    // a real job only reaches SUSPENDED from ACTIVATABLE, and completing its element normally
+    // requires the job to have been activated first, which exempts it from suspension - without
+    // this, the raw COMPLETE_ELEMENT commands buffered below would leave each job dangling
+    // SUSPENDED with its owning element already gone, a state the index-seeking resume can reach
+    // and would race the drain chain ahead of COMPLETE_RESUMING
+    ENGINE.jobs().withType(processId).withMaxJobsToActivate(BUFFERED_COMMAND_COUNT).activate();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferCompleteCommands(children);
 
@@ -162,7 +169,10 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static long deployAndStart() {
-    final String processId = Strings.newRandomValidBpmnId();
+    return deployAndStart(Strings.newRandomValidBpmnId());
+  }
+
+  private static long deployAndStart(final String processId) {
     ENGINE.deployment().withXmlResource(parallelMultiInstanceProcess(processId)).deploy();
     return ENGINE
         .processInstance()
@@ -172,12 +182,15 @@ public final class ProcessInstanceResumeRestartTest {
   }
 
   private static BpmnModelInstance parallelMultiInstanceProcess(final String processId) {
+    // job type reuses the already-unique processId instead of a literal shared across every test
+    // method on the same class-scoped ENGINE, so activating jobs by type in one test can't pick up
+    // another test's leftover jobs
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .serviceTask(
             "task",
             t ->
-                t.zeebeJobType("type")
+                t.zeebeJobType(processId)
                     .multiInstance(
                         m -> m.zeebeInputCollectionExpression("items").zeebeInputElement("item")))
         .endEvent()

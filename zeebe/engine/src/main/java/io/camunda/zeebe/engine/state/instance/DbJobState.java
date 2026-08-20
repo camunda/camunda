@@ -98,11 +98,10 @@ public final class DbJobState implements JobState, MutableJobState {
    * Secondary index: {@code (processInstanceKey, jobKey) → ∅}; supports prefix iteration to find
    * jobs of a process instance.
    *
-   * <p>Filled at job creation (8.10+); {@link
+   * <p>Filled by {@link #insertJobRecordActivatable} (the 8.10+ creation path); {@link
    * io.camunda.zeebe.engine.state.appliers.JobSuspendedApplier} backfills a pre-8.10 job via {@link
-   * #indexJobByProcessInstance(long, long)} the moment it is actually suspended. Complete for every
-   * currently {@code SUSPENDED} job, but not an authoritative "all jobs of this instance" list — a
-   * pre-8.10 job that has never been suspended has no entry.
+   * #indexJob(long, JobRecord)} the moment it is actually suspended. Not populated by the
+   * deprecated {@link #create} path, so pre-8.10 jobs that have never been suspended have no entry.
    */
   private final DbLong jobIndexProcessInstanceKey;
 
@@ -453,6 +452,8 @@ public final class DbJobState implements JobState, MutableJobState {
   public void insertJobRecordActivatable(final long key, final JobRecord record) {
     createJobRecord(key, record);
     initializeJobState();
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
+    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   /** Updates the job record without updating variables */
@@ -832,9 +833,6 @@ public final class DbJobState implements JobState, MutableJobState {
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(record);
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
-
-    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
-    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   private void initializeJobState() {

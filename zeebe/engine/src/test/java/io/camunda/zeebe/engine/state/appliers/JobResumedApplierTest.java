@@ -84,7 +84,7 @@ public class JobResumedApplierTest {
   }
 
   @Test
-  void shouldLeaveJobThatWasNeverSuspendedAlone() {
+  void shouldNotModifyJobNotInSuspendedState() {
     // given
     final long jobKey = 3L;
     final var record = jobRecord();
@@ -147,7 +147,7 @@ public class JobResumedApplierTest {
   }
 
   @Test
-  void shouldAdvanceCursorUsingStoredProcessInstanceKeyWhenEventRecordDiffers() {
+  void shouldAdvanceLastResumedJobKeyUsingStoredProcessInstanceKey() {
     // given - a mismatched event value must not advance the wrong process instance's cursor
     final long jobKey = 6L;
     final long storedProcessInstanceKey = 100L;
@@ -165,7 +165,7 @@ public class JobResumedApplierTest {
   }
 
   @Test
-  void shouldNotAdvanceCursorForAJobThatWasNeverSuspended() {
+  void shouldNotAdvanceLastResumedJobKeyForNonSuspendedJob() {
     // given
     final long jobKey = 7L;
     final long processInstanceKey = 100L;
