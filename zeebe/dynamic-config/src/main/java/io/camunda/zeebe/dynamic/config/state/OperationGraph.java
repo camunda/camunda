@@ -69,8 +69,18 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
     }
   }
 
-  /** Builds a graph and rejects it if it cannot execute: see {@link #validateAcyclic()}. */
+  /**
+   * Builds a graph and rejects it if it cannot execute: empty (nothing to run, and {@link
+   * DependencyChangePlan#toCompletedChange()} has no timestamp to derive a completion from), or
+   * cyclic (see {@link #validateAcyclic()}). The same non-emptiness this factory enforces is
+   * already required on the create path by {@code
+   * PartitionGroupConfiguration#startGraphConfigurationChange}; enforcing it here as well closes it
+   * for the decode path too, which does not go through that method.
+   */
   public static OperationGraph of(final SortedMap<OperationId, PlannedOperation> operations) {
+    if (operations.isEmpty()) {
+      throw new IllegalArgumentException("A dependency graph must have at least one operation");
+    }
     final var graph = new OperationGraph(operations);
     graph.validateAcyclic();
     return graph;
