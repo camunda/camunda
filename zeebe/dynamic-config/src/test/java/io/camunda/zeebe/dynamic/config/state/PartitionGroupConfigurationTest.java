@@ -124,6 +124,51 @@ class PartitionGroupConfigurationTest {
     }
 
     @Test
+    void shouldConvergeLastChangeDeterministicallyWhenBrokersMintDifferentTimestamps() {
+      // given — same config version, both brokers minted a lastChange for the same completed
+      // change (id 7) a moment apart: exactly what two brokers independently running
+      // completeGraphChangeIfDrained can produce, since neither is gated by a coordinator
+      final var earlier =
+          new CompletedChange(
+              7, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(1));
+      final var later =
+          new CompletedChange(
+              7, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH.plusSeconds(5));
+      final var left =
+          new PartitionGroupConfiguration(
+              3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(earlier));
+      final var right =
+          new PartitionGroupConfiguration(
+              3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(later));
+
+      // when / then — the earlier timestamp wins regardless of which side is the receiver, so two
+      // brokers merging in either order converge on the same value instead of each keeping its own
+      assertThat(left.merge(right).lastChange()).contains(earlier);
+      assertThat(right.merge(left).lastChange()).contains(earlier);
+    }
+
+    @Test
+    void shouldPreferHigherChangeIdForLastChangeWhenIdsDiffer() {
+      // given — same config version, but the two sides disagree on which change last completed on
+      // this group: a genuinely later, unrelated completion on one side, not a re-stamp of the
+      // same one
+      final var older =
+          new CompletedChange(3, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+      final var newer =
+          new CompletedChange(4, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+      final var left =
+          new PartitionGroupConfiguration(
+              3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(older));
+      final var right =
+          new PartitionGroupConfiguration(
+              3, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.of(newer));
+
+      // when / then — ids are monotonic, so the higher one is always the newer change
+      assertThat(left.merge(right).lastChange()).contains(newer);
+      assertThat(right.merge(left).lastChange()).contains(newer);
+    }
+
+    @Test
     void shouldTakeMaxIncarnationNumber() {
       // given
       final var left =
