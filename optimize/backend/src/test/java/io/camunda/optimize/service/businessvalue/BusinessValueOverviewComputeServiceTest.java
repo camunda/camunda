@@ -75,6 +75,12 @@ class BusinessValueOverviewComputeServiceTest {
   /** Values the stubbed evaluation should return, keyed by process definition key. */
   private final Map<String, Double> stubbedValuesByKey = new java.util.HashMap<>();
 
+  /**
+   * Values keyed by tenant instead, for asserting that a tenant's answer lands only on that
+   * tenant's rows. Takes precedence over {@link #stubbedValuesByKey} when populated.
+   */
+  private final Map<String, Double> valuesByTenant = new java.util.HashMap<>();
+
   private final AtomicInteger evaluationCount = new AtomicInteger();
 
   @BeforeEach
@@ -165,6 +171,58 @@ class BusinessValueOverviewComputeServiceTest {
     assertThat(evaluationCount.get()).isEqualTo(2 * 2);
   }
 
+  /**
+   * Counting evaluations proves the tenants are queried separately; this proves the answers are not
+   * crossed over on the way back into the rows.
+   */
+  @Test
+  void shouldAttributeEachTenantsValueToItsOwnRow() {
+    // given one process key on two tenants, each measuring a different cycle time
+    givenDefinitionsAcrossTenants(Map.of("tenant-a", 1, "tenant-b", 1));
+    valuesByTenant.put("tenant-a", 1_000.0);
+    valuesByTenant.put("tenant-b", 9_000.0);
+
+    // when computing a single range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then neither tenant sees the other's number, nor the blend of the two
+    final List<BusinessValueOverviewDto> rows = capturedRows();
+    assertThat(rows)
+        .filteredOn(row -> "tenant-a".equals(row.getTenantId()))
+        .singleElement()
+        .satisfies(row -> assertThat(row.getCycleTime().getValue()).isEqualTo(1_000L));
+    assertThat(rows)
+        .filteredOn(row -> "tenant-b".equals(row.getTenantId()))
+        .singleElement()
+        .satisfies(row -> assertThat(row.getCycleTime().getValue()).isEqualTo(9_000L));
+  }
+
+  @Test
+  void shouldSkipDefinitionsWhoseTenantIsNotDefined() {
+    // given a definition surfacing the "not defined" tenant bucket as a literal null alongside a
+    // real tenant, as DefinitionReader does for legacy or malformed rows
+    final DefinitionWithTenantIdsDto definition =
+        new DefinitionWithTenantIdsDto(
+            "process-0",
+            "process-0",
+            DefinitionType.PROCESS,
+            new ArrayList<>(java.util.Arrays.asList(null, DEFAULT_TENANT)),
+            Collections.emptySet());
+    when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
+        .thenReturn(List.of(definition));
+    when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
+        .thenReturn(Set.of("process-0"));
+
+    // when computing a single range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then only the real tenant gets a row — the writer rejects a null tenantId, and one
+    // un-tenanted definition must not abort the whole sweep
+    assertThat(capturedRows())
+        .singleElement()
+        .satisfies(row -> assertThat(row.getTenantId()).isEqualTo(DEFAULT_TENANT));
+  }
+
   @Test
   void shouldPinEveryDefinitionInTheChunkToTheEvaluatedTenant() {
     // given two definitions on one tenant
@@ -243,6 +301,39 @@ class BusinessValueOverviewComputeServiceTest {
     assertThat(reportData.getDefinitions())
         .extracting(ReportDataDefinitionDto::getKey)
         .containsExactly("process-0");
+  }
+
+  /**
+   * The instance index name is built by lowercasing the definition key, so the identifiers read
+   * back from the index pattern are lowercase while the definition keeps the casing of its BPMN
+   * process id. Comparing the two directly would drop every mixed-case key — {@code Process_1} is
+   * the Modeler default — out of the query and leave its row permanently null.
+   */
+  @Test
+  void shouldEvaluateDefinitionsWhoseKeyContainsUppercase() {
+    // given a definition whose BPMN process id is mixed case, whose instance index is therefore
+    // registered in lowercase
+    final DefinitionWithTenantIdsDto definition =
+        new DefinitionWithTenantIdsDto(
+            "Process_1",
+            "Process_1",
+            DefinitionType.PROCESS,
+            new ArrayList<>(List.of(DEFAULT_TENANT)),
+            Collections.emptySet());
+    when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
+        .thenReturn(List.of(definition));
+    when(mappingMetadataRepository.getProcessDefinitionKeysWithInstanceIndex())
+        .thenReturn(Set.of("process_1"));
+    stubbedValuesByKey.put("Process_1", 7_000.0);
+
+    // when computing a single range
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then it is still evaluated and its row carries the measured value
+    assertThat(evaluationCount.get()).isEqualTo(2);
+    assertThat(capturedRows())
+        .singleElement()
+        .satisfies(row -> assertThat(row.getCycleTime().getValue()).isEqualTo(7_000L));
   }
 
   @Test
@@ -348,9 +439,8 @@ class BusinessValueOverviewComputeServiceTest {
       final ProcessReportDataDto reportData) {
     final List<MapResultEntryDto> entries =
         reportData.getDefinitions().stream()
-            .map(ReportDataDefinitionDto::getKey)
-            .filter(stubbedValuesByKey::containsKey)
-            .map(key -> new MapResultEntryDto(key, stubbedValuesByKey.get(key)))
+            .map(definition -> new MapResultEntryDto(definition.getKey(), valueFor(definition)))
+            .filter(entry -> entry.getValue() != null)
             .collect(Collectors.toList());
 
     final SingleProcessReportDefinitionRequestDto report =
@@ -361,6 +451,18 @@ class BusinessValueOverviewComputeServiceTest {
         new MapCommandResult(List.of(MeasureDto.of(entries)), reportData);
     return new AuthorizedReportEvaluationResult(
         new SingleReportEvaluationResult<>(report, commandResult), RoleType.VIEWER);
+  }
+
+  /**
+   * Resolves the value a definition should report. Reading the tenant off the pinned definition is
+   * what lets a test prove a tenant's answer cannot land on another tenant's row — if the service
+   * ever stopped pinning the tenant, this would return null and the assertions would fail.
+   */
+  private Double valueFor(final ReportDataDefinitionDto definition) {
+    if (!valuesByTenant.isEmpty()) {
+      return definition.getTenantIds().stream().findFirst().map(valuesByTenant::get).orElse(null);
+    }
+    return stubbedValuesByKey.get(definition.getKey());
   }
 
   private static ConfigurationService configurationServiceWithBucketLimit(final int bucketLimit) {

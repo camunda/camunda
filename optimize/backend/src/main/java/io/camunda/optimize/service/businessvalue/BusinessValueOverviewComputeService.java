@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -137,22 +138,18 @@ public class BusinessValueOverviewComputeService {
           chunk(evaluableDefinitions(tenantDefinitions, keysWithInstanceIndex));
 
       for (final MetricRange range : ranges) {
-        final Map<String, Double> cycleMillisByKey = new HashMap<>();
-        final Map<String, Double> automationPctByKey = new HashMap<>();
-        for (final List<DefinitionEntry> chunk : chunks) {
-          cycleMillisByKey.putAll(
-              evaluateByDefinitionKey(
-                  BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
-                  range,
-                  tenantId,
-                  chunk));
-          automationPctByKey.putAll(
-              evaluateByDefinitionKey(
-                  BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
-                  range,
-                  tenantId,
-                  chunk));
-        }
+        final Map<String, Double> cycleMillisByKey =
+            evaluateChunks(
+                BusinessValueDashboardService.DURATION_BY_PROCESS_REPORT_ID,
+                range,
+                tenantId,
+                chunks);
+        final Map<String, Double> automationPctByKey =
+            evaluateChunks(
+                BusinessValueDashboardService.AUTOMATION_RATE_BY_PROCESS_REPORT_ID,
+                range,
+                tenantId,
+                chunks);
 
         for (final DefinitionEntry def : tenantDefinitions) {
           rowsToUpsert.add(
@@ -170,6 +167,19 @@ public class BusinessValueOverviewComputeService {
     overviewWriter.bulkUpsertFromScheduler(rowsToUpsert);
   }
 
+  /** Evaluates one report across every chunk of a tenant's definitions and merges the results. */
+  private Map<String, Double> evaluateChunks(
+      final String reportId,
+      final MetricRange range,
+      final String tenantId,
+      final List<List<DefinitionEntry>> chunks) {
+    final Map<String, Double> valuesByKey = new HashMap<>();
+    for (final List<DefinitionEntry> chunk : chunks) {
+      valuesByKey.putAll(evaluateByDefinitionKey(reportId, range, tenantId, chunk));
+    }
+    return valuesByKey;
+  }
+
   /**
    * Drops definitions with no process instance index. That index is created by {@code
    * ProcessInstanceWriter} on the first instance import, so a definition that is deployed but never
@@ -180,11 +190,21 @@ public class BusinessValueOverviewComputeService {
    *
    * <p>Nothing is lost by dropping them: no instance index means no instances, so no completed
    * instances, so the value is null either way. They still get a row, with null values.
+   *
+   * <p>Keys are matched case-insensitively because {@link
+   * io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex#constructIndexName} lowercases
+   * the definition key to build the index name, while the definition itself keeps the casing of the
+   * BPMN process id. Comparing them directly would drop every definition whose key contains an
+   * uppercase character — {@code Process_1} and friends — from the query.
    */
   private static List<DefinitionEntry> evaluableDefinitions(
       final List<DefinitionEntry> definitions, final Set<String> keysWithInstanceIndex) {
+    final Set<String> normalized =
+        keysWithInstanceIndex.stream()
+            .map(key -> key.toLowerCase(Locale.ENGLISH))
+            .collect(Collectors.toSet());
     return definitions.stream()
-        .filter(def -> keysWithInstanceIndex.contains(def.processDefinitionKey()))
+        .filter(def -> normalized.contains(def.processDefinitionKey().toLowerCase(Locale.ENGLISH)))
         .toList();
   }
 
