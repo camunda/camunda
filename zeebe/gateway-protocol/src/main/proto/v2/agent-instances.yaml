@@ -114,11 +114,9 @@ paths:
         - basicAuth: []
       summary: Update agent instance
       description: |
-        Updates the mutable fields of an agent instance (status, metric counters, and
-        tools) and appends a batch of history items to its conversation history. Metric
-        values are treated as deltas and applied immediately to the aggregate counters.
-        Tool updates replace the existing tool list. Each history item created for this
-        request is echoed back in the response.
+        Updates the status of an agent instance and appends a batch of history items
+        to its conversation history. Each history item created for this request is
+        echoed back in the response.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -694,34 +692,6 @@ components:
           items:
             $ref: '#/components/schemas/AgentInstanceCreatedHistoryItem'
 
-    AgentInstanceMetricsDelta:
-      description: |
-        Metric increments to apply to the agent instance aggregate counters. The engine
-        accumulates these deltas into running totals on each UPDATED event. All fields
-        are optional; omit a field to leave the corresponding counter unchanged.
-      type: object
-      properties:
-        inputTokens:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Increment to apply to the total input token counter.
-        outputTokens:
-          type: integer
-          format: int64
-          minimum: 0
-          description: Increment to apply to the total output token counter.
-        modelCalls:
-          type: integer
-          format: int32
-          minimum: 0
-          description: Increment to apply to the total model call counter.
-        toolCalls:
-          type: integer
-          format: int32
-          minimum: 0
-          description: Increment to apply to the total tool call counter.
-
     AgentInstanceUpdateRequest:
       description: |
         Request to update the mutable state of an agent instance.
@@ -743,19 +713,6 @@ components:
           description: The new status of the agent instance.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceUpdateStatusEnum'
-        metrics:
-          description: Metric increments to apply to the aggregate counters.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceMetricsDelta'
-        tools:
-          description: |
-            The complete list of tools available to the agent, replacing any previously
-            stored tools. When provided, the engine replaces the existing tool list with
-            this value.
-          nullable: true
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentTool'
         jobKey:
           description: |
             The key of the job activation during which this update is being made.

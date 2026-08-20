@@ -56,57 +56,6 @@ public interface UpdateAgentInstanceCommandStep1 {
     UpdateAgentInstanceCommandStep2 status(AgentInstanceUpdateStatus status);
 
     /**
-     * Increments the input token counter by the given delta.
-     *
-     * @param inputTokens the number of input tokens to add. Must be >= 0.
-     * @return this builder for method chaining
-     */
-    UpdateAgentInstanceCommandStep2 inputTokens(long inputTokens);
-
-    /**
-     * Increments the output token counter by the given delta.
-     *
-     * @param outputTokens the number of output tokens to add. Must be >= 0.
-     * @return this builder for method chaining
-     */
-    UpdateAgentInstanceCommandStep2 outputTokens(long outputTokens);
-
-    /**
-     * Increments the model call counter by the given delta.
-     *
-     * @param modelCalls the number of model calls to add. Must be >= 0.
-     * @return this builder for method chaining
-     */
-    UpdateAgentInstanceCommandStep2 modelCalls(int modelCalls);
-
-    /**
-     * Increments the tool call counter by the given delta.
-     *
-     * @param toolCalls the number of tool calls to add. Must be >= 0.
-     * @return this builder for method chaining
-     */
-    UpdateAgentInstanceCommandStep2 toolCalls(int toolCalls);
-
-    /**
-     * Replaces the full list of tools available to the agent instance. An empty list clears all
-     * tools. Use {@link AgentTool#of(String)} or {@link AgentTool#of(String, String, String)} to
-     * construct tool entries.
-     *
-     * <p>Example:
-     *
-     * <pre>
-     *   .tools(List.of(
-     *       AgentTool.of("search", "Search the web", "searchTask"),
-     *       AgentTool.of("summarize")
-     *   ))
-     * </pre>
-     *
-     * @param tools the tools to set; pass an empty list to clear all tools
-     * @return this builder for method chaining
-     */
-    UpdateAgentInstanceCommandStep2 tools(List<AgentTool> tools);
-
-    /**
      * Sets the job key of the currently active job during which this update was produced. Required
      * whenever {@link #history(List)} is non-empty; otherwise irrelevant to the update.
      *

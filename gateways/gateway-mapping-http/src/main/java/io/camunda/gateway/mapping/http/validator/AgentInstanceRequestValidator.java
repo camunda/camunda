@@ -122,18 +122,6 @@ public class AgentInstanceRequestValidator {
             validateKeyFormat(request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
-          if (request.getMetrics() != null) {
-            final var metrics = request.getMetrics();
-            violations.addAll(validateDelta("metrics.inputTokens", metrics.getInputTokens()));
-            violations.addAll(validateDelta("metrics.outputTokens", metrics.getOutputTokens()));
-            violations.addAll(validateDelta("metrics.modelCalls", metrics.getModelCalls()));
-            violations.addAll(validateDelta("metrics.toolCalls", metrics.getToolCalls()));
-          }
-
-          if (request.getTools() != null) {
-            validateTools("tools", request.getTools(), violations);
-          }
-
           if (request.getJobKey() != null) {
             validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
           }
@@ -311,13 +299,6 @@ public class AgentInstanceRequestValidator {
   private List<String> validateLimit(final String limitName, final Number limit) {
     if (limit != null && limit.longValue() < -1) {
       return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(limitName, limit, ">= -1"));
-    }
-    return Collections.emptyList();
-  }
-
-  private List<String> validateDelta(final String fieldName, final @Nullable Number value) {
-    if (value != null && value.longValue() < 0) {
-      return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(fieldName, value, ">= 0"));
     }
     return Collections.emptyList();
   }
