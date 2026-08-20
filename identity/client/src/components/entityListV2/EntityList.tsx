@@ -359,6 +359,7 @@ function truncateCell(value: ReactNode, maxLength: number): ReactNode {
       <TooltipTrigger asChild>
         <button
           type="button"
+          aria-label={text}
           className="[all:unset]"
         >{`${text.substring(0, maxLength)}…`}</button>
       </TooltipTrigger>
