@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.ContentItem;
@@ -54,7 +55,8 @@ public record AgentInstanceDbModel(
     implements Copyable<AgentInstanceDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentInstanceDbModel.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   public AgentInstanceDbModel {
     // Must stay mutable: MyBatis appends to this via <collection> after construction.
