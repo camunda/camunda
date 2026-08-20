@@ -113,4 +113,19 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
     agentInstancesColumnFamily.deleteIfExists(agentInstanceKey);
     byProcessInstanceKeyColumnFamily.deleteIfExists(processInstanceKeyAndAgentInstanceKey);
   }
+
+  @Override
+  public AgentInstanceRecord getCommittedSnapshot(final long key) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
+
+  @Override
+  public void putCommittedSnapshot(final long key, final AgentInstanceRecord record) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
+
+  @Override
+  public void deleteCommittedSnapshot(final long key) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 }
