@@ -855,7 +855,17 @@ public record CurrentClusterConfiguration(
    * <p>The projection is necessarily lossy: it cannot express that several operations are running
    * at once, and a reader that merges by this version alone would keep only one of two concurrent
    * completions. That is a property of the queue model, not something the projection can repair, so
-   * nothing here tries to. The single-group view is for reporting.
+   * nothing here tries to.
+   *
+   * <p><b>This is not only a reporting view.</b> {@link #toLegacyDefault()} — which calls this — is
+   * dual-written by {@code ClusterConfigurationGossiper} into the legacy gossip field a broker
+   * without the new model reads, and a receiver on that path merges it with {@code
+   * ClusterChangePlan#merge}, using the synthetic version minted here. During a graph change that
+   * synthetic version differs per broker by completed-operation count, so on a mixed-version
+   * cluster it is a live input to that merge, not just something rendered for an operator to read.
+   * An old broker on that path would also try to execute the flattened queue sequentially. Believed
+   * out of scope for today's two graph adopters, but callers should not read "for reporting" as
+   * "never on the wire."
    */
   private static ClusterChangePlan toQueueProjection(final ChangePlan plan) {
     if (plan instanceof final ClusterChangePlan queue) {
