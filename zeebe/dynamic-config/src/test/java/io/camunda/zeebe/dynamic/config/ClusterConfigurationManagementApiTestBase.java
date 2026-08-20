@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
@@ -1197,6 +1198,115 @@ abstract class ClusterConfigurationManagementApiTestBase {
                 .getMember(coordinatorId)
                 .mode())
         .isEqualTo(Mode.PROCESSING);
+  }
+
+  @Test
+  void shouldApplyExportingStateChangeEndToEndForLocalMember() {
+    // given — the coordinator is active and exporting in the default group
+    setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(
+                coordinatorId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+
+    // when — pause exporting
+    clientApi
+        .changeExportingState(
+            new ExportingStateChangeRequest(
+                ExportingState.PAUSED,
+                Optional.of(CurrentClusterConfiguration.DEFAULT_GROUP),
+                false))
+        .join()
+        .get();
+
+    // then — the plan is applied and the coordinator's partition is now paused
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .partitions()
+                .get(1)
+                .config()
+                .exporting()
+                .state())
+        .isEqualTo(ExportingState.PAUSED);
+  }
+
+  @Test
+  void shouldApplyExportingStateChangeToEveryPhysicalTenantInOnePlan() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    clientApi
+        .changeExportingState(
+            new ExportingStateChangeRequest(ExportingState.PAUSED, Optional.empty(), false))
+        .join()
+        .get();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .partitions()
+                .get(1)
+                .config()
+                .exporting()
+                .state())
+        .isEqualTo(ExportingState.PAUSED);
+    assertThat(
+            config
+                .partitionGroup(TENANT_B)
+                .getMember(coordinatorId)
+                .partitions()
+                .get(1)
+                .config()
+                .exporting()
+                .state())
+        .isEqualTo(ExportingState.PAUSED);
+  }
+
+  @Test
+  void shouldApplyExportingStateChangeToOnlyTheRequestedPhysicalTenant() {
+    // given
+    wireTwoPhysicalTenants();
+
+    // when
+    clientApi
+        .changeExportingState(
+            new ExportingStateChangeRequest(ExportingState.PAUSED, Optional.of(TENANT_B), false))
+        .join()
+        .get();
+
+    // then
+    final var config = manager.getMultiConfiguration().join();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+    assertThat(
+            config
+                .partitionGroup(TENANT_B)
+                .getMember(coordinatorId)
+                .partitions()
+                .get(1)
+                .config()
+                .exporting()
+                .state())
+        .isEqualTo(ExportingState.PAUSED);
+    assertThat(
+            config
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .getMember(coordinatorId)
+                .partitions()
+                .get(1)
+                .config()
+                .exporting()
+                .state())
+        .isEqualTo(ExportingState.UNKNOWN);
   }
 
   /**

@@ -26,6 +26,7 @@ public enum ClusterConfigurationRequestTopics {
   UPDATE_ROUTING_STATE("topology-cluster-update-routing-state"),
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
   MODE_CHANGE("topology-mode-change"),
+  EXPORTING_STATE_CHANGE("topology-exporting-state-change"),
   RESTORE("cluster-restore"),
   CLUSTER_ADMIN_RESTORE("cluster-admin-restore"),
   ZONE_MIGRATION("topology-cluster-zone-migration"),
