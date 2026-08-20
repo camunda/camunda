@@ -11,6 +11,8 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
@@ -83,6 +85,13 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
   public ActorFuture<ExporterPhase> getExporterPhase() {
     logCall();
     return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<PartitionMigrationStatus> getMigrationStatus() {
+    logCall();
+    return CompletableActorFuture.completed(
+        new PartitionMigrationStatus(MigrationStatusCode.UNKNOWN, "no-op partition admin access"));
   }
 
   private void logCall() {

@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusPayload;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -79,6 +80,7 @@ public class AdminApiRequestHandler
       case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
       case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
       case GET_EXPORTING_STATE -> getExportingState(responseWriter, partitionId, errorWriter);
+      case GET_MIGRATION_STATUS -> getMigrationStatus(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
   }
@@ -172,6 +174,40 @@ public class AdminApiRequestHandler
                     Either.left(
                         errorWriter.internalError(
                             "Failed to get the exporting state on partition %s", partitionId)));
+              }
+            });
+
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getMigrationStatus(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Partition %s failed to report its migration status. Could not find the partition.",
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
+        .getMigrationStatus()
+        .onComplete(
+            (status, t) -> {
+              if (t == null) {
+                responseWriter.setPayload(MigrationStatusPayload.encode(status));
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to get the migration status on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to get the migration status on partition %s", partitionId)));
               }
             });
 
