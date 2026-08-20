@@ -17,11 +17,14 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.backup.BackupServiceRegistry;
 import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
+import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryBackupTenantInfo;
@@ -52,12 +55,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith({SpringExtension.class, MockitoExtension.class})
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
-public abstract sealed class BackupControllerTest {
+public abstract class BackupControllerTest {
 
   private static final OffsetDateTime START_TIME =
       OffsetDateTime.of(2024, 12, 1, 8, 29, 13, 0, ZoneOffset.UTC);
@@ -152,10 +154,10 @@ public abstract sealed class BackupControllerTest {
 
   @Test
   public void shouldReturnBadRequestOnInvalidBackupId() {
-    assertThat(backupController.takeBackup(-1L).getStatus()).isEqualTo(400);
-    assertThat(backupController.takeBackup(0L).getStatus()).isEqualTo(400);
-    assertThat(backupController.deleteBackup(-1L).getStatus()).isEqualTo(400);
-    assertThat(backupController.deleteBackup(0L).getStatus()).isEqualTo(400);
+    assertThat(backupController.takeBackup(-1L, null).getStatus()).isEqualTo(400);
+    assertThat(backupController.takeBackup(0L, null).getStatus()).isEqualTo(400);
+    assertThat(backupController.deleteBackup(-1L, null).getStatus()).isEqualTo(400);
+    assertThat(backupController.deleteBackup(0L, null).getStatus()).isEqualTo(400);
   }
 
   @Test
@@ -163,7 +165,7 @@ public abstract sealed class BackupControllerTest {
     final var backups = List.of("snapshot-1");
     when(backupService.takeBackup(any()))
         .thenReturn(new TakeBackupResponseDto().setScheduledSnapshots(backups));
-    final var response = backupController.takeBackup(1L);
+    final var response = backupController.takeBackup(1L, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody())
         .isEqualTo(new TakeBackupHistoryResponse().scheduledSnapshots(backups));
@@ -172,7 +174,7 @@ public abstract sealed class BackupControllerTest {
 
   @Test
   public void shouldDeleteBackup() {
-    final var response = backupController.deleteBackup(1L);
+    final var response = backupController.deleteBackup(1L, null);
     assertThat(response.getStatus()).isEqualTo(204);
     verify(backupService).deleteBackup(eq(1L));
   }
@@ -186,7 +188,7 @@ public abstract sealed class BackupControllerTest {
                 .setState(BackupStateDto.FAILED)
                 .setFailureReason("Out of disk space")
                 .setDetails(List.of(DETAIL_DTO)));
-    final var response = backupController.getBackupState(1L);
+    final var response = backupController.getBackupState(1L, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(EXPECTED_INFO);
   }
@@ -201,7 +203,7 @@ public abstract sealed class BackupControllerTest {
                     .setState(BackupStateDto.FAILED)
                     .setFailureReason("Out of disk space")
                     .setDetails(List.of(DETAIL_DTO))));
-    final var response = backupController.getBackups(true, null);
+    final var response = backupController.getBackups(true, null, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
@@ -216,7 +218,7 @@ public abstract sealed class BackupControllerTest {
                     .setState(BackupStateDto.FAILED)
                     .setFailureReason("Out of disk space")
                     .setDetails(List.of(DETAIL_DTO))));
-    final var response = backupController.getBackups(null, null);
+    final var response = backupController.getBackups(null, null, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
@@ -234,7 +236,7 @@ public abstract sealed class BackupControllerTest {
         .thenReturn(
             new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.IN_PROGRESS));
 
-    final var response = controller.getBackupState(1L);
+    final var response = controller.getBackupState(1L, null);
 
     assertThat(response.getStatus()).isEqualTo(200);
     final var info = (HistoryBackupInfo) response.getBody();
@@ -259,7 +261,7 @@ public abstract sealed class BackupControllerTest {
         .thenReturn(
             new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.COMPLETED));
 
-    final var response = controller.getBackupState(1L);
+    final var response = controller.getBackupState(1L, null);
 
     assertThat(((HistoryBackupInfo) response.getBody()).getState())
         .isEqualTo(HistoryStateCode.COMPLETED);
@@ -276,8 +278,8 @@ public abstract sealed class BackupControllerTest {
     when(physicalTenantService.takeBackup(any()))
         .thenReturn(new TakeBackupResponseDto().setScheduledSnapshots(List.of("snapshot-2")));
 
-    final var takeResponse = controller.takeBackup(1L);
-    final var deleteResponse = controller.deleteBackup(1L);
+    final var takeResponse = controller.takeBackup(1L, null);
+    final var deleteResponse = controller.deleteBackup(1L, null);
 
     assertThat(takeResponse.getBody())
         .isEqualTo(
@@ -310,13 +312,121 @@ public abstract sealed class BackupControllerTest {
                     .setBackupId(2L)
                     .setState(BackupStateDto.COMPLETED)));
 
-    final var response = controller.getBackups(true, null);
+    final var response = controller.getBackups(true, null, null);
 
     @SuppressWarnings("unchecked")
     final var infos = (List<HistoryBackupInfo>) response.getBody();
     assertThat(infos.size()).isEqualTo(2);
     assertThat(infos.get(0).getState()).isEqualTo(HistoryStateCode.IN_PROGRESS);
     assertThat(infos.get(1).getState()).isEqualTo(HistoryStateCode.COMPLETED);
+  }
+
+  @Test
+  public void shouldNarrowTakeToRequestedPhysicalTenant() {
+    // given
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(physicalTenantService.takeBackup(any()))
+        .thenReturn(new TakeBackupResponseDto().setScheduledSnapshots(List.of("snapshot-2")));
+
+    // when
+    final var response = controller.takeBackup(1L, "tenant1");
+
+    // then
+    assertThat(response.getBody())
+        .isEqualTo(new TakeBackupHistoryResponse().scheduledSnapshots(List.of("snapshot-2")));
+    verify(backupService, never()).takeBackup(any());
+  }
+
+  @Test
+  public void shouldNarrowListToRequestedPhysicalTenant() {
+    // given
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(physicalTenantService.getBackups(anyBoolean(), any()))
+        .thenReturn(
+            List.of(
+                new GetBackupStateResponseDto()
+                    .setBackupId(2L)
+                    .setState(BackupStateDto.COMPLETED)));
+
+    // when
+    final var response = controller.getBackups(true, null, "tenant1");
+
+    // then
+    @SuppressWarnings("unchecked")
+    final var infos = (List<HistoryBackupInfo>) response.getBody();
+    assertThat(infos)
+        .singleElement()
+        .satisfies(
+            info ->
+                assertThat(info.getPhysicalTenants())
+                    .extracting(HistoryBackupTenantInfo::getPhysicalTenantId)
+                    .containsExactly("tenant1"));
+    verify(backupService, never()).getBackups(anyBoolean(), any());
+  }
+
+  @Test
+  public void shouldNarrowDeleteToRequestedPhysicalTenant() {
+    // given
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+
+    // when
+    final var response = controller.deleteBackup(1L, "tenant1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(204);
+    verify(physicalTenantService).deleteBackup(1L);
+    verify(backupService, never()).deleteBackup(any());
+  }
+
+  @Test
+  public void shouldRejectUnknownPhysicalTenant() {
+    // given
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("repo-2");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+
+    // when
+    final var response = controller.getBackupState(1L, "tenantz");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(((Error) response.getBody()).getMessage())
+        .isEqualTo(
+            "Unknown physical tenant 'tenantz'. Configured physical tenants: [default, tenant1].");
+    verifyNoInteractions(physicalTenantService);
+  }
+
+  @Test
+  public void shouldNotRequireARepositoryOfAPhysicalTenantOutOfScope() {
+    // given a tenant whose repository is not configured
+    final BackupService physicalTenantService = mock(BackupService.class);
+    final BackupRepositoryProps physicalTenantProps = mock(BackupRepositoryProps.class);
+    lenient().when(physicalTenantProps.repositoryName()).thenReturn("");
+    final var controller = twoTenantController(physicalTenantService, physicalTenantProps);
+    when(backupService.getBackupState(1L))
+        .thenReturn(
+            new GetBackupStateResponseDto().setBackupId(1L).setState(BackupStateDto.COMPLETED));
+
+    // when narrowing to the healthy tenant
+    final var narrowed = controller.getBackupState(1L, "default");
+    // and when covering every tenant
+    final var clusterWide = controller.getBackupState(1L, null);
+
+    // then only the cluster-wide request is refused
+    assertThat(narrowed.getStatus()).isEqualTo(200);
+    assertThat(clusterWide.getStatus()).isEqualTo(400);
+    assertThat(((Error) clusterWide.getBody()).getMessage())
+        .isEqualTo("No backup repository configured for physical tenant(s): [tenant1]");
   }
 
   @EnumSource(BackupStateDto.class)
@@ -329,12 +439,6 @@ public abstract sealed class BackupControllerTest {
       assertThat(mapped).isEqualTo(COMPLETED);
     }
   }
-
-  @ActiveProfiles("operate")
-  public static final class BackupControllerOperateTest extends BackupControllerTest {}
-
-  @ActiveProfiles("tasklist")
-  public static final class BackupControllerTasklistTest extends BackupControllerTest {}
 
   @Nested
   class ESConnectionError extends ErrorTest {
@@ -398,7 +502,7 @@ public abstract sealed class BackupControllerTest {
       // given
       setupMocks.run();
       // when
-      final var response = backupController.getBackups(true, null);
+      final var response = backupController.getBackups(true, null, null);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
     }
@@ -408,7 +512,7 @@ public abstract sealed class BackupControllerTest {
       // given
       setupMocks.run();
       // when
-      final var response = backupController.takeBackup(11L);
+      final var response = backupController.takeBackup(11L, null);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
     }
@@ -419,7 +523,7 @@ public abstract sealed class BackupControllerTest {
       setupMocks.run();
 
       // when
-      final var response = backupController.getBackupState(1L);
+      final var response = backupController.getBackupState(1L, null);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
     }
@@ -429,7 +533,7 @@ public abstract sealed class BackupControllerTest {
       // given
       setupMocks.run();
       // when
-      final var response = backupController.takeBackup(11L);
+      final var response = backupController.takeBackup(11L, null);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
       if (errorCode == 200) {
