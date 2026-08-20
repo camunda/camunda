@@ -70,6 +70,23 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   }
 
   @Override
+  public boolean processDefinitionExists(final String definitionId) {
+    final BoolQuery.Builder query =
+        new BoolQuery.Builder()
+            .must(m -> m.term(t -> t.field(PROCESS_DEFINITION_ID).value(definitionId)));
+
+    try {
+      return esClient.count(new String[] {PROCESS_DEFINITION_INDEX_NAME}, query) > 0;
+    } catch (final IOException e) {
+      final String reason =
+          String.format(
+              "Was not able to check existence of process definition with id [%s].", definitionId);
+      LOG.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+  }
+
+  @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
 
