@@ -537,10 +537,17 @@ public record PartitionGroupConfiguration(
    * Starts a change whose operations carry their own dependencies, bumping the group version as any
    * plan start does.
    *
-   * @throws IllegalArgumentException if a change is already in progress, or the graph is empty
+   * <p>Rejects on {@code pendingChanges.isPresent()} rather than on {@link #hasPendingChanges()}: a
+   * graph plan whose last operation has completed but which has not yet been cleared by {@link
+   * #completeGraphChangeIfDrained()} still has content this call would destroy — its {@code
+   * lastChange} would never be recorded and the members it emptied never pruned — while {@link
+   * #hasPendingChanges()}, which reads the plan's content, already reports {@code false} for it.
+   *
+   * @throws IllegalArgumentException if the group still carries a change plan, drained or not, or
+   *     the graph is empty
    */
   public PartitionGroupConfiguration startGraphConfigurationChange(final OperationGraph graph) {
-    if (hasPendingChanges()) {
+    if (pendingChanges.isPresent()) {
       throw new IllegalArgumentException(
           "Expected to start new configuration change, but there is a configuration change in progress "
               + pendingChanges);

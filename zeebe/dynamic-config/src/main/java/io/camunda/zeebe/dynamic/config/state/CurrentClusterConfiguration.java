@@ -611,17 +611,26 @@ public record CurrentClusterConfiguration(
    * sub-configuration it targets (the global configuration for a {@link GlobalPhase}, or each named
    * partition group for a {@link PartitionGroupPhase}) has no pending changes left.
    *
-   * <p>For a {@link PartitionGroupGraphPhase}, "no pending changes left" means the group's {@code
-   * pendingGraphChanges} is gone entirely, not merely that every operation in it has completed.
-   * Those two are different moments: {@link PartitionGroupConfiguration#hasPendingChanges()} reads
-   * the plan's own content and goes {@code false} the instant the last operation completes, while
-   * clearing the plan itself is a separate, later step ({@link
-   * PartitionGroupConfiguration#completeGraphChangeIfDrained()}), run by whichever broker's
-   * reconcile or gossip round gets there first. Treating "drained" as "complete" here would let
-   * this plan be archived into history while the group still carries a (fully drained but not yet
-   * cleared) graph plan — which is exactly the state a decoder without this phase to consult can no
-   * longer tell apart from an actually-still-running one. The queue model has no such gap: {@link
-   * PartitionGroupConfiguration#advance()} clears its plan in the same call that drains it.
+   * <p>For a {@link PartitionGroupPhase}, "no pending changes left" means the group's {@code
+   * pendingChanges} is gone entirely, not merely that every operation in it has completed. Those
+   * two are different moments under the dependency-graph model: {@link
+   * PartitionGroupConfiguration#hasPendingChanges()} reads the plan's own content and goes {@code
+   * false} the instant the last operation completes, while clearing the plan itself is a separate,
+   * later step ({@link PartitionGroupConfiguration#completeGraphChangeIfDrained()}), run by
+   * whichever broker's reconcile or gossip round gets there first. Treating "drained" as "complete"
+   * here would let this plan be archived into history while the group still carries a (fully
+   * drained but not yet cleared) graph plan — which is exactly the state a decoder without this
+   * phase to consult can no longer tell apart from an actually-still-running one. The queue model
+   * has no such gap: {@link PartitionGroupConfiguration#advance()} clears its plan in the same call
+   * that drains it.
+   *
+   * <p>The check reads {@code pendingChanges}, not {@code pendingGraphChanges}: a group whose plan
+   * is a queue would otherwise read as complete simply because it is not a graph, letting the phase
+   * advance over a change still in progress. No caller can produce that state today — {@link
+   * #applyPhase} refuses to activate onto a group that has a change, and the one path that starts a
+   * queue change on a group ({@code PhysicalTenantProvisioningInitializer}) only ever creates
+   * groups that do not exist yet — but the narrower read buys nothing for the model this phase does
+   * run, and a stuck plan is the better failure than an archived one.
    *
    * @throws IllegalStateException if no plan {@code planId} is pending
    */
@@ -636,7 +645,7 @@ public record CurrentClusterConfiguration(
       case final PartitionGroupPhase groupPhase ->
           groupPhase.groupGraphs().keySet().stream()
               .map(this::partitionGroup)
-              .allMatch(group -> group != null && group.pendingGraphChanges().isEmpty());
+              .allMatch(group -> group != null && group.pendingChanges().isEmpty());
     };
   }
 
