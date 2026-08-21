@@ -362,6 +362,7 @@ public final class EngineProcessors {
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
 
+    // TODO: @yohanfernando >> next need to apply storage ordinal changes here onwards
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
 
