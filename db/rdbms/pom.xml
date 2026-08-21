@@ -162,4 +162,23 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!--
+            spring-beans is needed to compile against SpringLiquibase, whose supertypes
+            (InitializingBean, BeanNameAware) the compiler has to resolve, but no class here
+            references it directly, so the analyzer cannot see the need.
+          -->
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>org.springframework:spring-beans</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

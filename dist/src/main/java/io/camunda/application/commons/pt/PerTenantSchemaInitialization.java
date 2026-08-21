@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * source code was applied, never that the tenant's storage is currently reachable.
  */
 @NullMarked
-public final class PerTenantSchemaInitialization implements AutoCloseable {
+public final class PerTenantSchemaInitialization implements SchemaInitialization {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerTenantSchemaInitialization.class);
 

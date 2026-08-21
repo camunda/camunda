@@ -55,7 +55,6 @@ class LiquibaseSchemaManagerStaleLockH2Test {
     schemaManager.initialize();
 
     // then - migration completed successfully and the stale lock was released
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(isLockHeld()).isFalse();
   }
 
@@ -70,6 +69,24 @@ class LiquibaseSchemaManagerStaleLockH2Test {
     schemaManager.releaseStaleLockIfPresent();
 
     // then - the recent lock remains held
+    assertThat(isLockHeld()).isTrue();
+  }
+
+  @Test
+  void shouldNotProbeAgainWithinTheTimeoutSoALivePeersLockSurvives() throws Exception {
+    // given - a peer holding the lock for longer than the timeout, which is indistinguishable
+    // from a crashed one; the first probe releases it, as it always has
+    final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
+    insertLock(Instant.now().minus(Duration.ofHours(1)), "peer-still-migrating");
+    schemaManager.releaseStaleLockIfPresent();
+    assertThat(isLockHeld()).isFalse();
+
+    // when - the peer reacquires it and this tenant's retry loop comes round again straight away
+    insertLock(Instant.now().minus(Duration.ofHours(1)), "peer-still-migrating");
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then - the probe is spaced, so the peer keeps its lock instead of losing it every few
+    // seconds to a second changelog run against the same schema
     assertThat(isLockHeld()).isTrue();
   }
 

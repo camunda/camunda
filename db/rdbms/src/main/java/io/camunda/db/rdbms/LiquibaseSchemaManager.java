@@ -36,8 +36,12 @@ import org.slf4j.LoggerFactory;
  * prefix and DDL lock-wait timeout.
  *
  * <p>Before applying the migration the schema upgrade path is validated against the running
- * application version by {@link RdbmsSchemaVersionStore}; an illegal upgrade path causes startup to
- * fail with a {@link RdbmsSchemaVersionIncompatibleException}.
+ * application version by {@link RdbmsSchemaVersionStore}; an illegal upgrade path fails with a
+ * {@link RdbmsSchemaVersionIncompatibleException}.
+ *
+ * <p>{@link #initialize()} is safely re-runnable, which is what lets the caller retry a failed
+ * attempt: the runner is rebuilt per call, the stale-lock release is best-effort, the changelog is
+ * idempotent and the version record is upserted.
  */
 public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
@@ -73,7 +77,11 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
 
   private final RdbmsSchemaVersionStore versionStore;
 
-  private volatile boolean initialized = false;
+  /**
+   * When the stale-lock probe last ran, so it can be spaced by {@code ddl-lock-wait-timeout}. Null
+   * until the first attempt, which always probes.
+   */
+  private volatile Instant lastStaleLockProbe;
 
   public LiquibaseSchemaManager(
       final PerTenantSchemaConfig config, final String applicationVersion) {
@@ -109,13 +117,21 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     versionStore.checkCompatibility();
     performMigrationWithRetry(runner);
     versionStore.recordCurrentVersion();
-    initialized = true;
     LOG.debug("[RDBMS Schema] Liquibase migration completed for prefix '{}'.", prefix);
   }
 
-  @Override
-  public boolean isInitialized() {
-    return initialized;
+  /**
+   * Whether the stale-lock probe may run again. Lock age is only a proxy for "the holder died": a
+   * peer whose migration legitimately runs longer than {@code ddl-lock-wait-timeout} looks exactly
+   * like a crashed one. That was tolerable while {@link #initialize()} ran once per node start, but
+   * it is now also driven by a per-tenant retry loop that calls it every few seconds — which would
+   * force-release a live peer's lock over and over and let two changelog runs execute against one
+   * schema. Spacing the probe by the same timeout keeps the recovery it exists for, at a cadence no
+   * worse than the restarting node this used to be.
+   */
+  private boolean staleLockProbeIsDue() {
+    final var lastProbe = lastStaleLockProbe;
+    return lastProbe == null || lastProbe.plus(ddlLockWaitTimeout).isBefore(Instant.now());
   }
 
   @VisibleForTesting
@@ -216,6 +232,10 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     if (ddlLockWaitTimeout == null || dataSource == null) {
       return;
     }
+    if (!staleLockProbeIsDue()) {
+      return;
+    }
+    lastStaleLockProbe = Instant.now();
     try (final var connection = dataSource.getConnection()) {
       final var database = openDatabase(connection, prefix + "DATABASECHANGELOGLOCK");
       try {
