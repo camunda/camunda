@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
@@ -119,7 +118,6 @@ public class MyBatisConfiguration {
           tenantId,
           buildSqlSessionFactory(
               rdbmsDataSources.dataSourceFor(tenantId),
-              rdbmsDataSources.databaseIdProviderFor(tenantId),
               rdbmsDataSources.vendorPropertiesFor(tenantId),
               prefix));
     }
@@ -146,18 +144,20 @@ public class MyBatisConfiguration {
 
   private SqlSessionFactory buildSqlSessionFactory(
       final DataSource dataSource,
-      final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
       final String prefix)
       throws Exception {
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
+    // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
+    // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
+    // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.
+    configuration.setDatabaseId(databaseProperties.databaseId());
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
     factoryBean.setConfiguration(configuration);
     factoryBean.setDataSource(dataSource);
-    factoryBean.setDatabaseIdProvider(databaseIdProvider);
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
