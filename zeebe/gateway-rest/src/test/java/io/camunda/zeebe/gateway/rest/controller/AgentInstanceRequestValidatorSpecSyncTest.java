@@ -80,8 +80,8 @@ class AgentInstanceRequestValidatorSpecSyncTest {
    */
   private static String schemaUnderTest() {
     final var yaml = agentInstancesYaml();
-    // exact match on "AgentInstanceHistoryItem:" -- the colon excludes the similarly-prefixed
-    // sibling schemas AgentInstanceHistoryItemRequest, AgentInstanceHistoryItemResult, etc.
+    // exact match on "AgentInstanceHistoryItem:" -- the colon excludes similarly-prefixed
+    // sibling schemas such as AgentInstanceHistoryItemResult.
     final var start = yaml.indexOf(SCHEMA_UNDER_TEST + ":");
     if (start < 0) {
       throw new AssertionError(

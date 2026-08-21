@@ -28,6 +28,7 @@ import java.util.List;
  *       .newCreateAgentInstanceCommand()
  *       .elementInstanceKey(2251799813685248L)
  *       .jobKey(jobKey)
+ *       .jobLease(jobLease)
  *       .history(List.of(configurationItem, ...))
  *       .send()
  *       .join();
@@ -46,8 +47,8 @@ public interface CreateAgentInstanceCommandStep1 {
   interface CreateAgentInstanceCommandStep2 extends FinalCommandStep<CreateAgentInstanceResponse> {
 
     /**
-     * Sets the job key of the currently active job during which this creation was produced.
-     * Required whenever {@link #history(List)} is non-empty; otherwise irrelevant to the creation.
+     * Sets the job key of the currently active job during which this creation was produced. Always
+     * required — a creation must always be attributed to the active job that produced it.
      *
      * @param jobKey the key of the active job. Must be greater than 0.
      * @return this builder for method chaining
@@ -55,9 +56,11 @@ public interface CreateAgentInstanceCommandStep1 {
     CreateAgentInstanceCommandStep2 jobKey(long jobKey);
 
     /**
-     * Sets the opaque job lease token received from the job activation response. Disambiguates this
-     * activation from any other activation of the same job: if the job is later retried, history
-     * items submitted under a superseded lease are discarded rather than committed.
+     * Sets the opaque job lease token received from the job activation response. Always required —
+     * activate the job with leasing enabled (see the job worker's {@code withLease} option, off by
+     * default) and pass the returned token here. The lease disambiguates this activation from any
+     * other activation of the same job: if the job is later retried, history items submitted under
+     * a superseded lease are discarded rather than committed.
      *
      * @param jobLease the lease token. Must not be null or blank.
      * @return this builder for method chaining

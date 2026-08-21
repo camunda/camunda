@@ -34,6 +34,7 @@ class AgentInstanceRequestValidatorTest {
   private static final String AGENT_INSTANCE_KEY = "9007199254741017";
   private static final String ELEMENT_INSTANCE_KEY = "2251799813685248";
   private static final String JOB_KEY = "2251799813685249";
+  private static final String JOB_LEASE = "lease-token-1";
 
   private final AgentInstanceRequestValidator validator = new AgentInstanceRequestValidator();
 
@@ -42,11 +43,13 @@ class AgentInstanceRequestValidatorTest {
   class ExistingUpdateRuleTest {
 
     @Test
-    @DisplayName("Should accept a request with only elementInstanceKey")
+    @DisplayName("Should accept a request with only elementInstanceKey and jobKey")
     void shouldAcceptValidUpdateRequest() {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
 
       final Optional<ProblemDetail> result =
@@ -59,7 +62,11 @@ class AgentInstanceRequestValidatorTest {
     @DisplayName("Should reject missing elementInstanceKey")
     void shouldRejectMissingElementInstanceKey() {
       final var request =
-          AgentInstanceUpdateRequest.Builder.create().elementInstanceKey(null).build();
+          AgentInstanceUpdateRequest.Builder.create()
+              .elementInstanceKey(null)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .build();
 
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
@@ -79,8 +86,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -108,8 +116,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -138,8 +147,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -168,8 +178,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -210,8 +221,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -240,6 +252,8 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(null)
+              .jobLease(JOB_LEASE)
               .build();
       request.setHistory(
           List.of(
@@ -269,8 +283,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey("not-a-number")
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey("not-a-number");
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -302,8 +317,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -332,8 +348,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -356,8 +373,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -386,8 +404,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -419,8 +438,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey("not-a-number")
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey("not-a-number");
 
       final Optional<ProblemDetail> result =
           validator.validateUpdateRequest(AGENT_INSTANCE_KEY, request);
@@ -438,8 +458,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       final var history = new ArrayList<AgentInstanceHistoryItem>();
       history.add(null);
       request.setHistory(history);
@@ -457,8 +478,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -488,8 +510,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -519,8 +542,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -550,8 +574,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -582,8 +607,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -613,8 +639,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -650,8 +677,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -681,8 +709,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -723,8 +752,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -760,8 +790,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -797,8 +828,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -834,8 +866,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -871,8 +904,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -902,8 +936,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -933,8 +968,9 @@ class AgentInstanceRequestValidatorTest {
       final var request =
           AgentInstanceUpdateRequest.Builder.create()
               .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
               .build();
-      request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -963,10 +999,9 @@ class AgentInstanceRequestValidatorTest {
   @DisplayName("Create request rules")
   class CreateRequestRuleTest {
 
-    private AgentInstanceCreationRequest validRequest() {
-      final var request = bareRequest();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
+    private AgentInstanceCreationRequest validRequest(final String jobKey) {
+      return bareRequest(
+          jobKey,
           List.of(
               AgentInstanceHistoryItem.Builder.create()
                   .historyItemId("item-0")
@@ -988,12 +1023,15 @@ class AgentInstanceRequestValidatorTest {
                               .contentType("TEXT")
                               .text("You are a helpful assistant.")
                               .build()))));
-      return request;
     }
 
-    private AgentInstanceCreationRequest bareRequest() {
+    private AgentInstanceCreationRequest bareRequest(
+        final String jobKey, final List<AgentInstanceHistoryItem> history) {
       return AgentInstanceCreationRequest.Builder.create()
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+          .jobKey(jobKey)
+          .jobLease(JOB_LEASE)
+          .history(history)
           .build();
     }
 
@@ -1001,30 +1039,33 @@ class AgentInstanceRequestValidatorTest {
     @DisplayName("Should reject missing elementInstanceKey")
     void shouldRejectMissingElementInstanceKey() {
       final var request =
-          AgentInstanceCreationRequest.Builder.create().elementInstanceKey(null).build();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("configuration")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("You are a helpful assistant.")
-                              .build()))));
+          AgentInstanceCreationRequest.Builder.create()
+              .elementInstanceKey(null)
+              .jobKey(JOB_KEY)
+              .jobLease(JOB_LEASE)
+              .history(
+                  List.of(
+                      AgentInstanceHistoryItem.Builder.create()
+                          .historyItemId("item-0")
+                          .loopIteration(1)
+                          .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                          .content(
+                              List.of(
+                                  AgentInstanceTextContent.Builder.create()
+                                      .contentType("TEXT")
+                                      .text("configuration")
+                                      .build()))
+                          .producedAt("2025-06-01T12:00:00Z")
+                          .build()
+                          .model("gpt-4o")
+                          .provider("openai")
+                          .systemPrompt(
+                              List.of(
+                                  AgentInstanceTextContent.Builder.create()
+                                      .contentType("TEXT")
+                                      .text("You are a helpful assistant.")
+                                      .build()))))
+              .build();
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1035,42 +1076,42 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should accept a batch item with a non-blank historyItemId")
     void shouldAcceptHistoryItemWithHistoryItemId() {
-      final var request = bareRequest();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-1")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.USER)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("hello")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build(),
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("configuration")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("You are a helpful assistant.")
-                              .build()))));
+      final var request =
+          bareRequest(
+              JOB_KEY,
+              List.of(
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-1")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.USER)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("hello")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build(),
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-0")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("configuration")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build()
+                      .model("gpt-4o")
+                      .provider("openai")
+                      .systemPrompt(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("You are a helpful assistant.")
+                                  .build()))));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1080,41 +1121,42 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject a batch with history but no jobKey")
     void shouldRejectHistoryBatchWithoutJobKey() {
-      final var request = bareRequest();
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-1")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.USER)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("hello")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build(),
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("configuration")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("You are a helpful assistant.")
-                              .build()))));
+      final var request =
+          bareRequest(
+              null,
+              List.of(
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-1")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.USER)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("hello")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build(),
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-0")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("configuration")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build()
+                      .model("gpt-4o")
+                      .provider("openai")
+                      .systemPrompt(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("You are a helpful assistant.")
+                                  .build()))));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1123,10 +1165,20 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
+    @DisplayName("Should reject missing jobKey even without a history batch")
+    void shouldRejectMissingJobKeyWithoutHistory() {
+      final var request = bareRequest(null, null);
+
+      final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
+
+      assertThat(result).isPresent();
+      assertThat(result.get().getDetail()).isEqualTo("No jobKey provided. No history provided.");
+    }
+
+    @Test
     @DisplayName("Should reject a non-numeric jobKey on create")
     void shouldRejectMalformedJobKeyOnCreate() {
-      final var request = validRequest();
-      request.setJobKey("not-a-number");
+      final var request = validRequest("not-a-number");
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1140,42 +1192,42 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject a batch item with a missing (null) historyItemId")
     void shouldRejectHistoryItemWithNullHistoryItemId() {
-      final var request = bareRequest();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId(null)
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.USER)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("hello")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build(),
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-0")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("configuration")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("You are a helpful assistant.")
-                              .build()))));
+      final var request =
+          bareRequest(
+              JOB_KEY,
+              List.of(
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId(null)
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.USER)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("hello")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build(),
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-0")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("configuration")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build()
+                      .model("gpt-4o")
+                      .provider("openai")
+                      .systemPrompt(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("You are a helpful assistant.")
+                                  .build()))));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1186,22 +1238,22 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject history without a CONFIGURATION item establishing the definition")
     void shouldRejectHistoryWithoutConfigurationItem() {
-      final var request = bareRequest();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-1")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.USER)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("hello")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()));
+      final var request =
+          bareRequest(
+              JOB_KEY,
+              List.of(
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-1")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.USER)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("hello")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build()));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1219,43 +1271,43 @@ class AgentInstanceRequestValidatorTest {
         "Should reject a later CONFIGURATION item that clears model with a blank value, even"
             + " after an earlier CONFIGURATION item established it")
     void shouldRejectLaterConfigurationItemWithBlankModel() {
-      final var request = bareRequest();
-      request.setJobKey(JOB_KEY);
-      request.setHistory(
-          List.of(
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-1")
-                  .loopIteration(1)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("configuration")
-                              .build()))
-                  .producedAt("2025-06-01T12:00:00Z")
-                  .build()
-                  .model("gpt-4o")
-                  .provider("openai")
-                  .systemPrompt(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("be helpful")
-                              .build())),
-              AgentInstanceHistoryItem.Builder.create()
-                  .historyItemId("item-2")
-                  .loopIteration(2)
-                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
-                  .content(
-                      List.of(
-                          AgentInstanceTextContent.Builder.create()
-                              .contentType("TEXT")
-                              .text("switching model")
-                              .build()))
-                  .producedAt("2025-06-01T12:01:00Z")
-                  .build()
-                  .model("")));
+      final var request =
+          bareRequest(
+              JOB_KEY,
+              List.of(
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-1")
+                      .loopIteration(1)
+                      .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("configuration")
+                                  .build()))
+                      .producedAt("2025-06-01T12:00:00Z")
+                      .build()
+                      .model("gpt-4o")
+                      .provider("openai")
+                      .systemPrompt(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("be helpful")
+                                  .build())),
+                  AgentInstanceHistoryItem.Builder.create()
+                      .historyItemId("item-2")
+                      .loopIteration(2)
+                      .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                      .content(
+                          List.of(
+                              AgentInstanceTextContent.Builder.create()
+                                  .contentType("TEXT")
+                                  .text("switching model")
+                                  .build()))
+                      .producedAt("2025-06-01T12:01:00Z")
+                      .build()
+                      .model("")));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
