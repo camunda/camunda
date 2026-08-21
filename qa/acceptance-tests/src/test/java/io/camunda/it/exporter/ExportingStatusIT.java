@@ -32,13 +32,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  * physical tenant so backup tooling can confirm a pause took effect instead of trusting its own
  * bookkeeping.
  *
- * <p>{@code DynamicConfigExportingStateControllerTest} and {@code ExportingControllerTest} stub
- * the underlying dependencies, so they only prove the status is submitted and aggregated
- * correctly. What they cannot prove is that the status read out of a running, multi-partition
- * cluster is the one pause and resume just applied via dynamic cluster configuration, including
- * across a restart — that is the whole point of the endpoint. Every phase assertion is therefore
- * cross-checked against the {@code partitions} actuator, which reads the phase by an independent
- * path.
+ * <p>{@code DynamicConfigExportingStateControllerTest} and {@code ExportingControllerTest} stub the
+ * underlying dependencies, so they only prove the status is submitted and aggregated correctly.
+ * What they cannot prove is that the status read out of a running, multi-partition cluster is the
+ * one pause and resume just applied via dynamic cluster configuration, including across a restart —
+ * that is the whole point of the endpoint. Every phase assertion is therefore cross-checked against
+ * the {@code partitions} actuator, which reads the phase by an independent path.
  *
  * <p>Several partitions are configured because the endpoint folds over all of them: with a single
  * partition, an aggregation that dropped every partition but the first would still pass.

@@ -10,6 +10,8 @@ package io.camunda.zeebe.shared.management;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -131,7 +133,8 @@ final class ExportingEndpointTest {
   @ParameterizedTest
   @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
   void shouldApplyToEveryPhysicalTenantWithoutParameter(final String operation) {
-    // given
+    // given - the input set is deliberately reversed to prove the endpoint sorts rather than
+    // relying on Set iteration order
     final var controller = controllerFor(Set.of("tenanta", "tenantb"));
     final var endpoint = new ExportingEndpoint(controller, () -> Set.of("tenantb", "tenanta"));
     final var byTenantA = controller.getByTenant("tenanta");
@@ -140,6 +143,7 @@ final class ExportingEndpointTest {
     when(byTenantA.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
     when(byTenantB.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
     when(byTenantB.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
+    clearInvocations(controller);
 
     // when
     final var response = endpoint.post(operation, false, null);
@@ -154,6 +158,10 @@ final class ExportingEndpointTest {
       }
     }
     verifyNoMoreInteractions(byTenantA, byTenantB);
+    // the endpoint must process tenants in sorted order, not Set iteration order
+    final var inOrderOnController = inOrder(controller);
+    inOrderOnController.verify(controller).getByTenant("tenanta");
+    inOrderOnController.verify(controller).getByTenant("tenantb");
   }
 
   @ParameterizedTest
