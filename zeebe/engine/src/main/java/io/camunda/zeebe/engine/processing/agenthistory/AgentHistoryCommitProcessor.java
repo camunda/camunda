@@ -70,8 +70,9 @@ public final class AgentHistoryCommitProcessor
 
   private void commitHistoryItem(
       final AgentHistoryRecord item, final AtomicReference<AgentInstanceRecord> agentInstance) {
-    // Items in state are already trimmed to identity fields by AgentHistoryCreatedApplier,
-    // so the COMMITTED/DISCARDED events emitted here carry that same trimmed shape for free.
+    // Items in state are already trimmed down by AgentHistoryCreatedApplier (identity fields
+    // only, plus the CONFIGURATION-specific fields below for that role), so the
+    // COMMITTED/DISCARDED events emitted here carry that same trimmed shape for free.
     stateWriter.appendFollowUpEvent(item.getAgentHistoryKey(), AgentHistoryIntent.COMMITTED, item);
 
     // When committing a CONFIGURATION item, the Agent Instance itself is updated with the new
