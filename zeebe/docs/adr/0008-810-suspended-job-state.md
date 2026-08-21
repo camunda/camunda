@@ -121,41 +121,43 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
 `JOBS_BY_SECRET_REFERENCE`.
 
 - **Scope.** The index covers every job on the process instance, not only suspended ones — broader
-  than suspend/resume alone needs, because it is a generic, reusable secondary index. It is kept in
-  sync at the two existing chokepoints in `DbJobState`: `createJobRecord` upserts an entry on every
-  job creation, including the deprecated legacy `create()` path, so replaying an old log through
-  that path still populates the index for jobs that predate it; `delete()` removes the entry
-  (`deleteIfExists`), covering completion, cancellation, and error-thrown alike. `suspendJobs` (D2)
-  does not read this index to find jobs to suspend — it still walks the tree once per suspend, because
-  suspending is what determines which jobs need to be suspended in the first place; the index cannot help
-  find jobs that are not yet known to be suspended. Only the resume-side lookup,
+  than suspend/resume alone needs, because it is a generic, reusable secondary index. `DbJobState`
+  owns it wholly — no caller passes index keys in; it is kept in sync at three points inside the
+  class: `insertJobRecordActivatable` upserts an entry on job creation via the 8.10+ applier path;
+  `updateJobState` upserts on the transition to `SUSPENDED` (the backfill, below); `delete()`
+  removes the entry (`deleteIfExists`), covering completion, cancellation, and error-thrown alike.
+  The deprecated `create()` path (replaying pre-8.10 log events) does not populate the index —
+  pre-8.10 jobs that have never been suspended have no entry, but that is acceptable because the
+  `SUSPENDED` transition backfills each one the moment it is suspended. `suspendJobs` (D2) does not
+  read this index to find jobs to suspend — it still walks the tree once per suspend, because
+  suspending is what determines which jobs need to be suspended in the first place; the index cannot
+  help find jobs that are not yet known to be suspended. Only the resume-side lookup,
   `ProcessInstanceSuspensionJobBehavior#forEachSuspendedJob`, reads it, searching from the resume
   cursor and skipping any entry the search reaches that is not currently `SUSPENDED`.
-- **Backfilling jobs that predate the index.** A job created before 8.10 never passed through the
-  new `createJobRecord` hook, so on its own the index would miss it. `JobSuspendedApplier` closes
-  that gap by also upserting an index entry — using the persisted job record's
-  `processInstanceKey`, not the event value — whenever a job transitions to `SUSPENDED`. This
-  catches every such job going forward, including an `ACTIVATED` job that times out while the
-  instance is suspended (the `JobTimeOut` row in D3's table already covers that transition writing
-  `Job.SUSPENDED`). No startup migration is needed on top of this: process instance suspension has
+- **Backfilling jobs that predate the index.** A job created before 8.10 was created via the
+  deprecated `create()` path, which does not populate the index, so on its own the index would miss
+  it. `updateJobState` closes that gap: on the transition to `SUSPENDED` it upserts an index entry
+  using the persisted job record's `processInstanceKey` (read from state, not trusting a
+  caller-supplied value), so index maintenance stays entirely inside `DbJobState` rather than
+  leaking onto the mutable-state interface. Because `Job.SUSPENDED` is the only event that writes
+  `SUSPENDED`, this catches every such job going forward, including an `ACTIVATED` job that times
+  out while the instance is suspended (the `JobTimeOut` row in D3's table already covers that
+  transition writing `Job.SUSPENDED`). No startup migration is needed on top of this: process
+  instance suspension has
   not shipped in any released version, so no released cluster's snapshot could ever hold a job
   already `SUSPENDED` before this applier existed to index it. A cluster running unreleased code
   from between this feature's own stacked PRs merging is not a supported upgrade path; pre-release
   builds are not held to the same snapshot-compatibility guarantee as released versions.
-- **Resume cursor.** `SuspensionMarkerValue` — the value of the existing
-  `SUSPENDED_PROCESS_INSTANCES` column family, keyed by `processInstanceKey` — gains
-  `lastResumedJobKey`, sentinel `-1` meaning "start from the beginning." `JobResumedApplier`
-  advances it to the resumed job's own key (from the persisted record's `processInstanceKey`) every
-  time a job is re-activated, so the next `RESUME_JOBS` cycle's search continues from there.
-  `setSuspensionState` resets the cursor to `-1` on every fresh `SUSPENDED` or first-time-`RESUMING`
-  transition, but not on a restart of an already-in-flight resume — restarting does not call
-  `setSuspensionState` again, so a stalled-then-restarted resume correctly continues from where it
-  left off instead of re-scanning from zero. Watch-out, matching this ADR's habit of calling out
-  non-obvious invariants (compare D3's `JobTimeOut` note above): `DbSuspensionState` reuses one
-  shared mutable value object across every process instance on the partition, so
-  `setSuspensionState` must explicitly reset the cursor field on every call — otherwise a stale
-  cursor value left over from one process instance's prior write could leak onto a different,
-  unrelated process instance's fresh marker.
+- **Resume cursor.** The cursor is carried on the `RESUME_JOBS` command itself via
+  `ProcessInstanceRecord.resumeFromJobKey` (sentinel `-1` meaning "start from the beginning"),
+  not persisted in state. `ProcessInstanceResumeJobsProcessor` reads the cursor from the incoming
+  command, passes it to `ProcessInstanceSuspensionJobBehavior.forEachSuspendedJob`, and — after
+  resuming a job — writes the next `RESUME_JOBS` follow-up with the cursor advanced to that job's
+  key, so the next cycle's search continues from there. When no job is found the cursor is not
+  included in the `COMPLETE_RESUMING` follow-up, since that command has no resume semantics.
+  A stalled-then-restarted resume re-appends `DRAIN` without a new `RESUMING` event, so the last
+  `RESUME_JOBS` command's cursor value is effectively re-used — the restart correctly continues
+  from where it left off rather than re-scanning from zero.
 - **Alternatives rejected during design** (see Source): a one-off migration alone, without hooking
   the applier, was rejected as too big a migration that engine governance would push back on.
   Populating the index eagerly on every job activation, rather than only at creation and
