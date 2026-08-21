@@ -232,9 +232,11 @@ class AgentInstanceAuthorizationIT {
             camundaClient
                 .newCreateAgentInstanceCommand()
                 .elementInstanceKey(elementInstanceKey1)
-                .model("gpt-4o")
-                .provider("openai")
-                .systemPrompt("You are a helpful assistant.")
+                .jobKey(1L)
+                .history(
+                    List.of(
+                        configurationHistoryItem(
+                            "gpt-4o", "openai", "You are a helpful assistant.")))
                 .execute();
 
     // then
@@ -260,9 +262,11 @@ class AgentInstanceAuthorizationIT {
                     camundaClient
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKey3)
-                        .model("gpt-4o")
-                        .provider("openai")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(jobKey3)
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "gpt-4o", "openai", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -428,16 +432,6 @@ class AgentInstanceAuthorizationIT {
             .getFirst()
             .getElementInstanceKey();
 
-    final var agentInstanceKey =
-        adminClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .execute()
-            .getAgentInstanceKey();
-
     final var activatedJobs =
         adminClient
             .newActivateJobsCommand()
@@ -452,7 +446,31 @@ class AgentInstanceAuthorizationIT {
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
 
+    final var agentInstanceKey =
+        adminClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .history(
+                List.of(
+                    configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
+            .execute()
+            .getAgentInstanceKey();
+
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+  }
+
+  private static AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 
   private record AgentInstanceCreationResult(

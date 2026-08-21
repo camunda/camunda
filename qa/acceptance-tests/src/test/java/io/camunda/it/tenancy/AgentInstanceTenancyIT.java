@@ -228,9 +228,11 @@ public class AgentInstanceTenancyIT {
                     camundaClient
                         .newCreateAgentInstanceCommand()
                         .elementInstanceKey(elementInstanceKeyB)
-                        .model("gpt-4o")
-                        .provider("openai")
-                        .systemPrompt("You are a helpful assistant.")
+                        .jobKey(1L)
+                        .history(
+                            List.of(
+                                configurationHistoryItem(
+                                    "gpt-4o", "openai", "You are a helpful assistant.")))
                         .execute())
             .actual();
 
@@ -389,16 +391,6 @@ public class AgentInstanceTenancyIT {
             .getFirst()
             .getElementInstanceKey();
 
-    final var agentInstanceKey =
-        client
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .execute()
-            .getAgentInstanceKey();
-
     final var activatedJobs =
         client
             .newActivateJobsCommand()
@@ -414,7 +406,31 @@ public class AgentInstanceTenancyIT {
         .isNotEmpty();
     final long jobKey = activatedJobs.get(0).getKey();
 
+    final var agentInstanceKey =
+        client
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .history(
+                List.of(
+                    configurationHistoryItem("gpt-4o", "openai", "You are a helpful assistant.")))
+            .execute()
+            .getAgentInstanceKey();
+
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
+  }
+
+  private static AgentInstanceHistoryItem configurationHistoryItem(
+      final String model, final String provider, final String systemPrompt) {
+    return new AgentInstanceHistoryItem()
+        .historyItemId(UUID.randomUUID().toString())
+        .loopIteration(1)
+        .role(AgentInstanceHistoryRole.CONFIGURATION)
+        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+        .producedAt(OffsetDateTime.now())
+        .model(model)
+        .provider(provider)
+        .systemPrompt(List.of(AgentInstanceHistoryContent.text(systemPrompt)));
   }
 
   private record AgentInstanceCreationResult(
