@@ -83,6 +83,12 @@ public final class AgentHistoryCommitProcessor
         agentInstance.set(agentInstanceState.getRecord(item.getAgentInstanceKey()));
       }
 
+      // Safety net, should never happen: a CONFIGURATION item's job is always tied to exactly one
+      // still-existing agent instance. Guards against an NPE below if that ever stops holding.
+      if (agentInstance.get() == null) {
+        return;
+      }
+
       // Apply configuration changes and emit UPDATED event
       final var changedAttributes =
           AgentHistoryBatchBehavior.applyConfigurationChanges(agentInstance.get(), item);
