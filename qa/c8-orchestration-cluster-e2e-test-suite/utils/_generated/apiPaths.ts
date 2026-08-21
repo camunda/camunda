@@ -21,7 +21,6 @@ export type ApiPath =
   | '/agent-instances'
   | '/agent-instances/search'
   | '/agent-instances/{agentInstanceKey}'
-  | '/agent-instances/{agentInstanceKey}/history'
   | '/agent-instances/{agentInstanceKey}/history/search'
   | '/audit-logs/search'
   | '/audit-logs/{auditLogKey}'
