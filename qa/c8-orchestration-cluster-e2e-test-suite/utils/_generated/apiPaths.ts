@@ -59,6 +59,7 @@ export type ApiPath =
   | '/cluster/v2/exporting/pause'
   | '/cluster/v2/exporting/resume'
   | '/cluster/v2/mode'
+  | '/cluster/v2/rebalance'
   | '/cluster/v2/restore'
   | '/cluster/v2/status'
   | '/cluster/v2/topology'
