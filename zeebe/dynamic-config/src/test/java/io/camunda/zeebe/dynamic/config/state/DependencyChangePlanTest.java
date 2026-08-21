@@ -281,6 +281,26 @@ final class DependencyChangePlanTest {
     }
 
     @Test
+    void shouldRejectMergingSameIdDifferentGraphs() {
+      // given — two self-believed coordinators derive the same plan id (the enclosing
+      // sub-configuration's version) for two unrelated graphs; OperationGraph.Builder numbers
+      // operations 0..n-1 in both, so the ids collide even though the operations do not
+      final var builderA = OperationGraph.builder();
+      final var opA = builderA.add(op(0, 1));
+      final var planA = DependencyChangePlan.init(PLAN_ID, builderA.build()).completeOperation(opA);
+
+      final var builderB = OperationGraph.builder();
+      builderB.add(op(1, 1));
+      final var planB = DependencyChangePlan.init(PLAN_ID, builderB.build());
+
+      // when / then — merged blindly, planB would end up with opA (a different member's operation
+      // under the same id) marked complete despite never having run
+      assertThatThrownBy(() -> planA.merge(planB))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("different graphs");
+    }
+
+    @Test
     void shouldBeCommutativeAndIdempotent() {
       // given
       final var builder = OperationGraph.builder();

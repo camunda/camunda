@@ -196,19 +196,33 @@ public record DependencyChangePlan(
   /**
    * Merges two copies of this plan seen by different brokers.
    *
-   * <p>A flat union: the graph is fixed and identical, and each completion has a single writer, so
-   * nothing can be lost. The earliest timestamp wins a collision so that a broker re-stamping after
-   * a restart still converges with its peers.
+   * <p>A flat union: the graph is fixed and identical for two copies of the <em>same</em> plan, and
+   * each completion has a single writer, so nothing can be lost. The earliest timestamp wins a
+   * collision so that a broker re-stamping after a restart still converges with its peers.
+   *
+   * <p>"Same plan" is asserted, not assumed. The id is the enclosing sub-configuration's version,
+   * derived locally by whichever broker starts the change — two self-believed coordinators (the
+   * forced-request path, which bypasses the single-coordinator check) can derive the same id for
+   * two different graphs. {@code OperationGraph.Builder} numbers operations {@code 0..n-1} in
+   * insertion order, so two unrelated graphs almost always share operation ids; blindly unioning
+   * {@code completed} in that case would mark one graph's operation complete because the other's,
+   * coincidentally sharing its id, ran — silently, since the merged plan still drains and completes
+   * normally. Mirrors the same-id-different-content guard {@link PhasedChangePlan#merge} already
+   * has for phases.
    */
   public DependencyChangePlan merge(final @Nullable DependencyChangePlan other) {
     if (other == null) {
       return this;
     }
     if (id != other.id) {
-      // Not reachable in practice — a plan id comes from the enclosing sub-configuration's version,
-      // and that merge only delegates here when the versions are equal. Resolved deterministically
-      // rather than by favouring the receiver, so that merge stays commutative.
+      // Resolved deterministically rather than by favouring the receiver, so that merge stays
+      // commutative.
       return id > other.id ? this : other;
+    }
+    if (!graph.equals(other.graph)) {
+      throw new IllegalStateException(
+          "Cannot merge plans with the same ID but different graphs: %s vs %s"
+              .formatted(graph, other.graph));
     }
     final var merged = new TreeMap<>(completed);
     other.completed.forEach(
