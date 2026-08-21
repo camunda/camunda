@@ -2250,4 +2250,94 @@ public class AgentInstanceHistoryBatchProcessingTest {
             supply one too."""
                 .formatted(jobKey));
   }
+
+  @Test
+  public void shouldRejectPushFromSecondActiveElementInstanceLinkedToSameAgentInstance() {
+    // given — a parallel multi-instance AI-agent service task produces two element instances,
+    // EI1 and EI2, active at the same time, sharing the same elementId and process instance.
+    final var multiInstanceProcessId = "dedup-parallel-multi-instance";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType(helper.getJobType())
+                            .zeebeAiAgentTaskDefinition()
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0).getKey();
+    final var ei2 = children.get(1).getKey();
+
+    // the agent instance is created on EI1; EI1 remains active (parallel multi-instance).
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+
+    ENGINE.jobs().withType(helper.getJobType()).withMaxJobsToActivate(2).activate();
+    final var job2Key =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .filter(r -> r.getValue().getElementInstanceKey() == ei2)
+            .getFirst()
+            .getKey();
+
+    // when — EI2, a second, still-active element instance, attempts to push a history batch to
+    // the same agent instance while EI1 (the current writer) has not completed.
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2)
+            .withJobKey(job2Key)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-from-ei2")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi"))))
+            .expectRejection()
+            .update();
+
+    // then — only one element instance may write to a given agent instance at a time.
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            """
+            Expected to update agent instance with key '%d' for element instance with key '%d', \
+            but element instance with key '%d' is still the active writer for this agent instance \
+            and has not completed. Only one element instance may write to a given agent instance \
+            at a time."""
+                .formatted(agentInstanceKey, ei2, ei1));
+  }
 }
