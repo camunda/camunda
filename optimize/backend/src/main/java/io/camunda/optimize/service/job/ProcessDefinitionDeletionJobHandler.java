@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -36,7 +37,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
           IOException.class,
           SocketTimeoutException.class,
           ElasticsearchException.class,
-          OpenSearchException.class);
+          OpenSearchException.class,
+          OptimizeByQueryFailureException.class);
   private static final int MAX_ATTEMPTS = 3;
   private static final long MAX_BACKOFF_SECONDS = 5;
   private static final long INITIAL_BACKOFF_MILLIS = 1000;

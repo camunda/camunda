@@ -27,6 +27,7 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -194,7 +195,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final List<BulkByScrollFailure> failures = taskResponse.response().failures();
       if (failures != null && !failures.isEmpty()) {
         LOG.error("Opensearch task contains failures: {}", failures);
-        throw new OptimizeRuntimeException(failures.toString());
+        throw new OptimizeByQueryFailureException(failures.toString());
       }
     }
   }
