@@ -208,4 +208,19 @@ public interface ProcessInstanceRecordValue
    * @since 8.9
    */
   String getBusinessId();
+
+  /**
+   * Returns the resume cursor carried by a {@code RESUME_JOBS} command: the job key of the last job
+   * a previous resume cycle re-activated, so the next cycle can seek past already-resumed jobs
+   * instead of re-scanning from the beginning. A negative value means "start from the beginning."
+   *
+   * <p>Only meaningful on {@code RESUME_JOBS} commands. All other record intents carry the default
+   * value {@code -1}, which is safe to ignore.
+   *
+   * @return the job key to resume from (inclusive), or {@code -1} if none has been resumed yet
+   * @since 8.10
+   */
+  default long getResumeFromJobKey() {
+    return -1L;
+  }
 }
