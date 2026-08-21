@@ -10,7 +10,6 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -57,19 +56,11 @@ public class AgentInstanceRequestValidator {
 
           final var history = request.getHistory();
 
-          if (history != null && !history.isEmpty()) {
+          if (history == null || history.isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("history"));
+          } else {
             if (request.getJobKey() == null) {
               violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
-            }
-
-            // This is #59784's own mutual-exclusivity rule (definition/limits vs. history),
-            // landing ahead of #58795, which removes definition/limits from this endpoint
-            // entirely — not part of #58795's scope.
-            if (request.getDefinition() != null) {
-              violations.add(ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY.formatted("definition"));
-            }
-            if (request.getLimits() != null) {
-              violations.add(ERROR_MESSAGE_NOT_ALLOWED_WITH_HISTORY.formatted("limits"));
             }
 
             for (int i = 0; i < history.size(); i++) {
@@ -77,28 +68,6 @@ public class AgentInstanceRequestValidator {
             }
 
             validateConfigurationEstablishesDefinition(history, violations);
-          } else {
-            if (request.getDefinition() == null) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition"));
-            } else {
-              final var def = request.getDefinition();
-              if (def.getModel() == null || def.getModel().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.model"));
-              }
-              if (def.getProvider() == null || def.getProvider().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.provider"));
-              }
-              if (def.getSystemPrompt() == null || def.getSystemPrompt().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("definition.systemPrompt"));
-              }
-            }
-
-            if (request.getLimits() != null) {
-              final var limits = request.getLimits();
-              violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
-              violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
-              violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
-            }
           }
 
           return violations;

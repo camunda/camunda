@@ -63,25 +63,6 @@ public class AgentInstanceMapper {
 
           record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
 
-          if (request.getDefinition() != null) {
-            final var def = request.getDefinition();
-            record
-                .getDefinition()
-                .setModel(def.getModel())
-                .setProvider(def.getProvider())
-                // The create request still takes a plain string for backwards compatibility; wrap
-                // it into a single text content block. This will be removed as part of #58795.
-                .setSystemPrompt(
-                    List.of(
-                        new AgentHistoryMessageContent()
-                            .setContentType(AgentHistoryContentType.TEXT)
-                            .setText(def.getSystemPrompt())));
-          }
-
-          if (request.getLimits() != null) {
-            fillLimits(request.getLimits(), record.getLimits());
-          }
-
           if (request.getJobKey() != null) {
             record.setJobKey(Long.parseLong(request.getJobKey()));
           }

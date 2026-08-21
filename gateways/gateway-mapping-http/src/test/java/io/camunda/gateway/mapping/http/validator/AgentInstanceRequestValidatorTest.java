@@ -10,7 +10,6 @@ package io.camunda.gateway.mapping.http.validator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
-import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItem;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
@@ -965,18 +964,34 @@ class AgentInstanceRequestValidatorTest {
   class CreateRequestRuleTest {
 
     private AgentInstanceCreationRequest validRequest() {
-      return AgentInstanceCreationRequest.Builder.create()
-          .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-          .definition(
-              AgentInstanceDefinition.Builder.create()
+      final var request = bareRequest();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
                   .model("gpt-4o")
                   .provider("openai")
-                  .systemPrompt("You are a helpful assistant.")
-                  .build())
-          .build();
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
+      return request;
     }
 
-    private AgentInstanceCreationRequest requestWithoutDefinition() {
+    private AgentInstanceCreationRequest bareRequest() {
       return AgentInstanceCreationRequest.Builder.create()
           .elementInstanceKey(ELEMENT_INSTANCE_KEY)
           .build();
@@ -986,15 +1001,30 @@ class AgentInstanceRequestValidatorTest {
     @DisplayName("Should reject missing elementInstanceKey")
     void shouldRejectMissingElementInstanceKey() {
       final var request =
-          AgentInstanceCreationRequest.Builder.create()
-              .elementInstanceKey(null)
-              .definition(
-                  AgentInstanceDefinition.Builder.create()
-                      .model("gpt-4o")
-                      .provider("openai")
-                      .systemPrompt("You are a helpful assistant.")
-                      .build())
-              .build();
+          AgentInstanceCreationRequest.Builder.create().elementInstanceKey(null).build();
+      request.setJobKey(JOB_KEY);
+      request.setHistory(
+          List.of(
+              AgentInstanceHistoryItem.Builder.create()
+                  .historyItemId("item-0")
+                  .loopIteration(1)
+                  .role(AgentInstanceHistoryRoleEnum.CONFIGURATION)
+                  .content(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("configuration")
+                              .build()))
+                  .producedAt("2025-06-01T12:00:00Z")
+                  .build()
+                  .model("gpt-4o")
+                  .provider("openai")
+                  .systemPrompt(
+                      List.of(
+                          AgentInstanceTextContent.Builder.create()
+                              .contentType("TEXT")
+                              .text("You are a helpful assistant.")
+                              .build()))));
 
       final Optional<ProblemDetail> result = validator.validateCreateRequest(request);
 
@@ -1005,7 +1035,7 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should accept a batch item with a non-blank historyItemId")
     void shouldAcceptHistoryItemWithHistoryItemId() {
-      final var request = requestWithoutDefinition();
+      final var request = bareRequest();
       request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
@@ -1050,7 +1080,7 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject a batch with history but no jobKey")
     void shouldRejectHistoryBatchWithoutJobKey() {
-      final var request = requestWithoutDefinition();
+      final var request = bareRequest();
       request.setHistory(
           List.of(
               AgentInstanceHistoryItem.Builder.create()
@@ -1093,8 +1123,8 @@ class AgentInstanceRequestValidatorTest {
     }
 
     @Test
-    @DisplayName("Should reject a non-numeric jobKey even without a history batch")
-    void shouldRejectMalformedJobKeyWithoutHistory() {
+    @DisplayName("Should reject a non-numeric jobKey on create")
+    void shouldRejectMalformedJobKeyOnCreate() {
       final var request = validRequest();
       request.setJobKey("not-a-number");
 
@@ -1110,7 +1140,7 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject a batch item with a missing (null) historyItemId")
     void shouldRejectHistoryItemWithNullHistoryItemId() {
-      final var request = requestWithoutDefinition();
+      final var request = bareRequest();
       request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
@@ -1156,7 +1186,7 @@ class AgentInstanceRequestValidatorTest {
     @Test
     @DisplayName("Should reject history without a CONFIGURATION item establishing the definition")
     void shouldRejectHistoryWithoutConfigurationItem() {
-      final var request = requestWithoutDefinition();
+      final var request = bareRequest();
       request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(
@@ -1190,7 +1220,7 @@ class AgentInstanceRequestValidatorTest {
         "Should reject a later CONFIGURATION item that clears model with a blank value, even"
             + " after an earlier CONFIGURATION item established it")
     void shouldRejectLaterConfigurationItemWithBlankModel() {
-      final var request = requestWithoutDefinition();
+      final var request = bareRequest();
       request.setJobKey(JOB_KEY);
       request.setHistory(
           List.of(

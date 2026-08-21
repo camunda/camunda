@@ -481,28 +481,6 @@ components:
             allOf:
                 - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
 
-    AgentInstanceDefinition:
-      description: |
-        The definition of an agent instance, as submitted at creation. The systemPrompt is a plain
-        string here for backwards compatibility with existing create requests; the read side
-        (AgentInstanceDefinitionResult) exposes it as content blocks instead. This write-side
-        string is deprecated and will be removed as part of #58795.
-      type: object
-      required:
-        - model
-        - provider
-        - systemPrompt
-      properties:
-        model:
-          type: string
-          description: The LLM model identifier (for example, gpt-4o).
-        provider:
-          type: string
-          description: The LLM provider (for example, openai or anthropic).
-        systemPrompt:
-          type: string
-          description: The system prompt configured for this agent instance.
-
     AgentInstanceDefinitionResult:
       description: |
         The definition of an agent instance. Set at creation, but can change later via a
@@ -627,22 +605,6 @@ components:
             processDefinitionKey, and tenantId.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-        definition:
-          description: |
-            The agent's initial definition; model, provider, and systemPrompt can
-            all be changed later via a CONFIGURATION history item. Required when
-            history is empty or omitted. Must be omitted when history is
-            non-empty — supply model, provider, and systemPrompt through a
-            CONFIGURATION item in history instead.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceDefinition'
-        limits:
-          description: |
-            Limits for the agent execution. When omitted, all limits default to -1
-            (no limit). Must be omitted when history is non-empty — supply limits
-            through a CONFIGURATION item in history instead, if needed.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceLimits'
         jobKey:
           description: |
             The key of the job activation during which this creation is being made.
@@ -662,10 +624,9 @@ components:
           description: |
             A batch of history items to append to the agent instance's conversation
             history, in request order. Each created item is echoed back in the
-            response's createdHistory, positionally correlated. When non-empty,
-            model, provider, and systemPrompt (and, if needed, limits) must be
-            established through a CONFIGURATION item in this batch instead of the
-            top-level definition/limits, which must then be omitted.
+            response's createdHistory, positionally correlated. Must include a
+            CONFIGURATION item establishing model, provider, and systemPrompt (and,
+            if needed, limits).
           nullable: true
           type: array
           items:
