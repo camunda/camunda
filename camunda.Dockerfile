@@ -229,8 +229,21 @@ USER 1001:1001
 # into data/ and logs/ leaves them at the default 0755. Either one alone is
 # enough to break an OpenShift-style deployment, which runs as an arbitrary uid
 # in group 0 and so needs these group-writable and empty.
+#
+# On by default, so an image built straight from this file is the image we ship, but
+# only ever for amd64. Training boots Camunda, and a multi-arch build would boot the
+# foreign platform under QEMU: on the Docker Checks job that took the image build from
+# ~1m15s to 8m05s, nearly all of it emulating the arm64 boot. The arch has to be tested
+# here rather than in CI because a build arg applies to every platform of one buildx
+# invocation, so excluding arm64 from the caller would cost amd64 its cache too. The
+# price of excluding it at all is that arm64 images get no startup win.
+#
+# The test is for arm64 rather than against amd64 so that an unset TARGETARCH -- a
+# builder that does not populate it -- still trains, instead of silently producing
+# an image with no cache.
 ARG AOT_CACHE="true"
-RUN if [ "${AOT_CACHE}" = "true" ]; then \
+ARG TARGETARCH
+RUN if [ "${AOT_CACHE}" = "true" ] && [ "${TARGETARCH}" != "arm64" ]; then \
       CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_CREATESCHEMA=false \
       JAVA_OPTS="-XX:AOTCacheOutput=${CAMUNDA_HOME}/camunda.aot -Dspring.context.exit=onRefresh" \
         "${CAMUNDA_HOME}/bin/camunda" && \
