@@ -24,6 +24,7 @@ import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.net.SocketTimeoutException;
 import java.util.Optional;
@@ -86,6 +87,26 @@ class ProcessDefinitionDeletionJobHandlerTest {
     // then
     verify(processInstanceWriter, never()).deleteInstancesByDefinitionId(anyString(), anyString());
     verify(processDefinitionWriter, never()).deleteDefinition(anyString());
+  }
+
+  @Test
+  void shouldRetryOnByQueryVersionConflictAndOnlyDeleteDefinitionAfterSuccessfulRetry() {
+    // given -- simulates the conflict a concurrent write raises on the underlying delete-by-query
+    // task, which the repository layer surfaces as OptimizeByQueryFailureException
+    when(processDefinitionReader.getProcessDefinition(DEFINITION_ID, false))
+        .thenReturn(Optional.of(definition()));
+    doThrow(new OptimizeByQueryFailureException("version conflict"))
+        .doNothing()
+        .when(processInstanceWriter)
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+
+    // when
+    handler.handle(job());
+
+    // then
+    verify(processInstanceWriter, times(2))
+        .deleteInstancesByDefinitionId(BPMN_PROCESS_ID, DEFINITION_ID);
+    verify(processDefinitionWriter).deleteDefinition(DEFINITION_ID);
   }
 
   @Test
