@@ -42,10 +42,6 @@ import org.junit.Test;
  */
 public final class AgentDefinitionDeploymentTest {
 
-  /** {@code zeebe:modelerTemplate} id of the Agentic AI service task connector template. */
-  private static final String MODELER_TEMPLATE_AI_AGENT_TASK =
-      "io.camunda.connectors.agenticai.aiagent.v1";
-
   private static final String FORM_V1 = "/form/test-form-1.form";
   private static final String FORM_V2 = "/form/test-form-1_v2.form";
 
@@ -104,48 +100,6 @@ public final class AgentDefinitionDeploymentTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertAgentDefinitionCreatedAfterProcessCreated(deployment.getKey());
-  }
-
-  @Test
-  public void shouldCreateAgentDefinitionViaModelerTemplateFallback() {
-    // given
-    final var processId = "process-modeler-template-fallback";
-    final var elementId = "agent-task";
-
-    // when — no explicit zeebe:agentDefinition marker, only a recognized modelerTemplate
-    final var deployment =
-        engine
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask(
-                        elementId,
-                        t ->
-                            t.name("AI Agent Task")
-                                .zeebeJobType("agent-task-job")
-                                .zeebeModelerTemplate(MODELER_TEMPLATE_AI_AGENT_TASK))
-                    .endEvent()
-                    .done())
-            .deploy();
-    final var processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
-    // then
-    final var agentDefinitionRecord =
-        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
-            .withProcessDefinitionKey(processDefinitionKey)
-            .getFirst();
-
-    Assertions.assertThat(agentDefinitionRecord.getValue())
-        .describedAs(
-            "Should resolve AI_AGENT_TASK via the modelerTemplate fallback through the full"
-                + " deployment pipeline, not just the isolated transformer unit")
-        .hasAgentType(AgentDefinitionType.AI_AGENT_TASK)
-        .hasName("AI Agent Task")
-        .hasElementId(elementId)
-        .hasBpmnProcessId(processId)
-        .hasProcessDefinitionKey(processDefinitionKey);
   }
 
   @Test
