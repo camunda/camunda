@@ -48,6 +48,7 @@ public class ClusterAdminBasicAuthenticationIT {
   public static final String PATH_CLUSTER_RUNTIME_BACKUPS = "cluster/v2/backups/runtime";
   public static final String PATH_CLUSTER_RUNTIME_BACKUP = "cluster/v2/backups/runtime/1";
   public static final String PATH_CLUSTER_RUNTIME_BACKUP_STATE = "cluster/v2/backups/runtime/state";
+  public static final String PATH_CLUSTER_REBALANCE = "cluster/v2/rebalance";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
@@ -125,6 +126,16 @@ public class ClusterAdminBasicAuthenticationIT {
         send(clusterUri(PATH_CLUSTER_TOPOLOGY), basicAuth(DB_USERNAME, DB_PASSWORD));
 
     // then — the cluster-admin chain has its own isolated store; a DB user is not known to it
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"GET", "POST", "DELETE"})
+  void shouldRejectRebalanceWithoutCredentials(final String method) throws Exception {
+    // when
+    final HttpResponse<String> response = send(method, clusterUri(PATH_CLUSTER_REBALANCE), null);
+
+    // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
   }
 
@@ -231,7 +242,13 @@ public class ClusterAdminBasicAuthenticationIT {
 
   private HttpResponse<String> send(final URI uri, final String authorizationHeader)
       throws Exception {
-    final HttpRequest.Builder builder = HttpRequest.newBuilder().uri(uri);
+    return send("GET", uri, authorizationHeader);
+  }
+
+  private HttpResponse<String> send(
+      final String method, final URI uri, final String authorizationHeader) throws Exception {
+    final HttpRequest.Builder builder =
+        HttpRequest.newBuilder(uri).method(method, HttpRequest.BodyPublishers.noBody());
     if (authorizationHeader != null) {
       builder.header("Authorization", authorizationHeader);
     }

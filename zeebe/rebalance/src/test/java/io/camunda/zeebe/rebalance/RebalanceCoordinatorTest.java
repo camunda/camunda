@@ -28,8 +28,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,6 +52,8 @@ final class RebalanceCoordinatorTest {
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final AtomicLong nextRebalanceId = new AtomicLong(100);
   private final Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+  private final PartitionBalancePlanner balancePlanner =
+      new PartitionBalancePlanner(physicalTenantId -> partitionId -> Optional.empty());
 
   @Test
   void shouldRefuseRequestsBeforeAnyConfigurationArrives() {
@@ -132,12 +136,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100,
-                RebalanceOutcome.COMPLETED,
-                false,
-                List.of(PLAN),
-                FIXED_INSTANT,
-                FIXED_INSTANT));
+                100, RebalanceOutcome.COMPLETED, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -159,23 +158,106 @@ final class RebalanceCoordinatorTest {
   void shouldAnswerADryRunWithThePlanItWouldHaveCarriedOut() {
     // given
     final var coordinator = coordinatingWith(new PlanningRunner());
+    final var overrides = RebalanceOverrides.none();
+
+    // when
+    final var triggered =
+        coordinator.triggerRebalance(new TriggerRebalanceRequest(overrides, true));
+
+    // then
+    final var status = triggered.join();
+    final var running = status.running();
+    assertThat(running).isNotNull();
+    assertThat(running.rebalanceId()).isEqualTo(100);
+    assertThat(running.dryRun()).isTrue();
+    assertThat(running.cancelRequested()).isFalse();
+    assertThat(running.partitions()).containsExactly(PLAN);
+    assertThat(status.lastCompleted()).isNull();
+
+    final var afterPlanning = coordinator.getRebalanceStatus().join();
+    assertThat(afterPlanning.running()).isNull();
+    assertThat(afterPlanning.lastCompleted()).isNull();
+  }
+
+  @Test
+  void shouldNotRetainADryRunAsTheLastCompletedRebalance() {
+    // given
+    final var coordinator = coordinatingWith(new PlanningRunner());
+    coordinator.triggerRebalance(TriggerRebalanceRequest.withConfiguredSettings());
+    final var realCompletion = coordinator.getRebalanceStatus().join().lastCompleted();
+
+    // when
+    final var dryRun =
+        coordinator
+            .triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true))
+            .join();
+
+    // then
+    assertThat(dryRun.running()).isNotNull();
+    assertThat(dryRun.running().rebalanceId()).isEqualTo(101);
+    assertThat(dryRun.running().dryRun()).isTrue();
+    assertThat(dryRun.lastCompleted()).isEqualTo(realCompletion);
+
+    final var afterDryRun = coordinator.getRebalanceStatus().join();
+    assertThat(afterDryRun.running()).isNull();
+    assertThat(afterDryRun.lastCompleted()).isEqualTo(realCompletion);
+  }
+
+  @Test
+  void shouldFailTheTriggerFutureWhenDryRunPlanningFails() {
+    // given
+    final var failure = new RuntimeException("planning blew up");
+    final var coordinator = coordinatingWith(new FailingRunner(failure));
 
     // when
     final var triggered =
         coordinator.triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true));
 
     // then
-    final var status = triggered.join();
+    assertThatThrownBy(triggered::join).hasCause(failure);
+    final var status = coordinator.getRebalanceStatus().join();
     assertThat(status.running()).isNull();
-    assertThat(status.lastCompleted())
-        .isEqualTo(
-            new RebalanceStatus.Completed(
-                100,
-                RebalanceOutcome.COMPLETED,
-                true,
-                List.of(PLAN),
-                FIXED_INSTANT,
-                FIXED_INSTANT));
+    assertThat(status.lastCompleted()).isNull();
+  }
+
+  @Test
+  void shouldNotChangeElapsedTimerCountsForADryRun() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var coordinator =
+        new RebalanceCoordinator(
+            LOWEST_ID_MEMBER,
+            executor,
+            new PlanningRunner(),
+            balancePlanner,
+            nextRebalanceId::getAndIncrement,
+            clock,
+            new ClusterRebalanceMetrics(registry));
+    configurationWithBothMembers(coordinator);
+    final var countsBefore = elapsedTimerCounts(registry);
+
+    // when
+    coordinator
+        .triggerRebalance(new TriggerRebalanceRequest(RebalanceOverrides.none(), true))
+        .join();
+
+    // then
+    assertThat(elapsedTimerCounts(registry)).isEqualTo(countsBefore);
+  }
+
+  private static Map<RebalanceOutcome, Long> elapsedTimerCounts(
+      final SimpleMeterRegistry registry) {
+    final Map<RebalanceOutcome, Long> counts = new EnumMap<>(RebalanceOutcome.class);
+    for (final var outcome : RebalanceOutcome.values()) {
+      counts.put(
+          outcome,
+          registry
+              .get("zeebe.cluster.rebalance.elapsed")
+              .tag("result", outcome.name())
+              .timer()
+              .count());
+    }
+    return counts;
   }
 
   @Test
@@ -208,7 +290,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.join().lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100, RebalanceOutcome.FAILED, false, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
+                100, RebalanceOutcome.FAILED, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -242,12 +324,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.join().lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100,
-                RebalanceOutcome.CANCELLED,
-                false,
-                List.of(PLAN),
-                FIXED_INSTANT,
-                FIXED_INSTANT));
+                100, RebalanceOutcome.CANCELLED, List.of(PLAN), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -268,7 +345,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.join().lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100, RebalanceOutcome.CANCELLED, false, List.of(), FIXED_INSTANT, FIXED_INSTANT));
+                100, RebalanceOutcome.CANCELLED, List.of(), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -290,7 +367,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.join().lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100, RebalanceOutcome.CANCELLED, false, List.of(), FIXED_INSTANT, FIXED_INSTANT));
+                100, RebalanceOutcome.CANCELLED, List.of(), FIXED_INSTANT, FIXED_INSTANT));
   }
 
   @Test
@@ -412,6 +489,7 @@ final class RebalanceCoordinatorTest {
             LOWEST_ID_MEMBER,
             executor,
             runner,
+            balancePlanner,
             nextRebalanceId::getAndIncrement,
             stepClock,
             new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
@@ -431,7 +509,7 @@ final class RebalanceCoordinatorTest {
     assertThat(status.join().lastCompleted())
         .isEqualTo(
             new RebalanceStatus.Completed(
-                100, RebalanceOutcome.COMPLETED, false, List.of(PLAN), startedAt, finishedAt));
+                100, RebalanceOutcome.COMPLETED, List.of(PLAN), startedAt, finishedAt));
   }
 
   @Test
@@ -503,6 +581,7 @@ final class RebalanceCoordinatorTest {
         localMemberId,
         executor,
         runner,
+        balancePlanner,
         nextRebalanceId::getAndIncrement,
         clock,
         new ClusterRebalanceMetrics(new SimpleMeterRegistry()));
@@ -745,6 +824,21 @@ final class RebalanceCoordinatorTest {
     public ActorFuture<Void> run(final RebalanceRun rebalance) {
       rebalance.plan(List.of(PLAN));
       return CompletableActorFuture.completed();
+    }
+  }
+
+  private static final class FailingRunner implements RebalanceRunner {
+
+    private final RuntimeException failure;
+
+    private FailingRunner(final RuntimeException failure) {
+      this.failure = failure;
+    }
+
+    @Override
+    public ActorFuture<Void> run(final RebalanceRun rebalance) {
+      rebalance.plan(List.of(PLAN));
+      throw failure;
     }
   }
 }

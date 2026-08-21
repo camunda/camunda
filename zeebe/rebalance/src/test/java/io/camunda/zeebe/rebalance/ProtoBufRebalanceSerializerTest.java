@@ -25,6 +25,21 @@ final class ProtoBufRebalanceSerializerTest {
 
   private static final Instant STARTED_AT = Instant.parse("2024-01-01T00:00:00Z");
   private static final Instant FINISHED_AT = Instant.parse("2024-01-01T00:00:05Z");
+  private static final ClusterLeadershipStatus LEADERSHIP_STATUS =
+      ClusterLeadershipStatus.aggregateOf(
+          List.of(
+              new PartitionLeadershipStatus(
+                  "default",
+                  1,
+                  MemberId.from("0"),
+                  MemberId.from("1"),
+                  PartitionLeadershipStatus.State.TRANSFERRING),
+              new PartitionLeadershipStatus(
+                  "tenant-a",
+                  2,
+                  MemberId.from("2"),
+                  MemberId.from("2"),
+                  PartitionLeadershipStatus.State.BALANCED)));
 
   private final ProtoBufRebalanceSerializer serializer = new ProtoBufRebalanceSerializer();
 
@@ -101,14 +116,15 @@ final class ProtoBufRebalanceSerializerTest {
                         1,
                         MemberId.from("0"),
                         MemberId.from("1"),
-                        PartitionRebalanceProgress.TRANSFERRING))),
+                        PartitionRebalanceProgress.TRANSFERRING)),
+                STARTED_AT),
             new RebalanceStatus.Completed(
                 41,
                 RebalanceOutcome.CANCELLED,
-                false,
                 List.of(PartitionRebalance.alreadyLeader("tenant-a", 2, MemberId.from("2"))),
                 STARTED_AT,
-                FINISHED_AT));
+                FINISHED_AT),
+            LEADERSHIP_STATUS);
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -124,7 +140,8 @@ final class ProtoBufRebalanceSerializerTest {
     final var status =
         new RebalanceStatus(
             null,
-            new RebalanceStatus.Completed(7, outcome, false, List.of(), STARTED_AT, FINISHED_AT));
+            new RebalanceStatus.Completed(7, outcome, List.of(), STARTED_AT, FINISHED_AT),
+            LEADERSHIP_STATUS);
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -145,7 +162,8 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT));
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
+            LEADERSHIP_STATUS);
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -170,7 +188,8 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, false, List.of(partition), STARTED_AT, FINISHED_AT));
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
+            LEADERSHIP_STATUS);
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));
@@ -189,7 +208,8 @@ final class ProtoBufRebalanceSerializerTest {
         new RebalanceStatus(
             null,
             new RebalanceStatus.Completed(
-                7, RebalanceOutcome.COMPLETED, true, List.of(partition), STARTED_AT, FINISHED_AT));
+                7, RebalanceOutcome.COMPLETED, List.of(partition), STARTED_AT, FINISHED_AT),
+            LEADERSHIP_STATUS);
 
     // when
     final var decoded = serializer.decodeRebalanceStatusResponse(serializer.encodeResponse(status));

@@ -1281,6 +1281,206 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.10"
 
+  /cluster/v2/rebalance:
+    servers:
+      - url: "{schema}://{host}:{port}"
+        variables:
+          host:
+            default: localhost
+            description: The hostname of the Orchestration Cluster REST Gateway.
+          port:
+            default: "8080"
+            description: The port of the Orchestration Cluster REST API server.
+          schema:
+            default: http
+            description: The schema of the Orchestration Cluster REST API server.
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: triggerClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Trigger a cluster-wide leadership rebalance
+      description: >-
+        Transfers leadership of every partition that is not led by its highest-priority replica
+        towards that replica, one partition at a time. Returns as soon as the rebalance has been
+        accepted (poll `GET /cluster/v2/rebalance` to monitor progress).
+
+
+        Each rebalance can specify overrides for the configured rebalance settings (e.g. maximum
+        replication lag to allow). An absent request body means "use the configured settings".
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      parameters:
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            If true, report the plan the rebalance would carry out without pausing any partition
+            or transferring any leadership.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterRebalanceRequest'
+      responses:
+        "202":
+          description: The rebalance was accepted, and its status is reported as it starts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterBalanceResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "409":
+          description: >-
+            A rebalance or cluster configuration change is already in progress, so there is no
+            settled configuration to plan a rebalance against.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+    get:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: getClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Report the cluster's current leadership balance
+      description: >-
+        Reports whether the cluster is currently balanced, the current leadership state of every
+        partition, and what became of the last rebalance to finish. The last completed rebalance is
+        held in memory by the coordinating broker, so none will be reported if the coordinator has
+        moved or restarted since the last rebalance.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      responses:
+        "200":
+          description: The cluster's current leadership balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterBalanceResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Cluster
+      operationId: cancelClusterRebalance
+      x-required-permissions: [ ]
+      security:
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+      summary: Stop the running rebalance
+      description: >-
+        Asks the running rebalance to stop once the transfer in flight has finished. Partitions
+        already transferred keep their new leaders, and those the rebalance had not yet reached keep
+        their current ones.
+
+
+        Cancellation requests are idempotent and always accepted. The `wasRunning` response field
+        can be used to distinguish a cancellation that found a running rebalance from one that did
+        not.
+
+
+        Requires the cluster-admin security chain. Although this operation lists `bearerAuth` /
+        `basicAuth` like the rest of the Orchestration Cluster API, it does not accept an
+        Orchestration Cluster user's credentials — only the separate cluster-admin credentials are
+        valid here.
+      responses:
+        "200":
+          description: The cancellation was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebalanceCancellationResponse'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "502":
+          description: The coordinator was reached, but its response was absent or unusable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "503":
+          description: No coordinator is currently available or reachable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "504":
+          description: The coordinator did not answer before the request timeout.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -1748,3 +1948,255 @@ components:
         - INCOMPATIBLE
         - NOT_FOUND
       example: COMPLETED
+
+    ClusterRebalanceRequest:
+      description: >-
+        The settings to run a given rebalance with. Every setting is optional; an absent request
+        body is equivalent to a body with every field absent, and means "use the configured
+        settings".
+      type: object
+      properties:
+        replicationLagThreshold:
+          description: >-
+            The highest replication lag (in bytes) that a desired leader may have for its transfer
+            to be accepted.
+          type: integer
+          format: int64
+          minimum: 0
+          example: 8388608
+        replicationTimeout:
+          description: >-
+            How long a partition may stay frozen waiting for its desired leader to catch up (as a
+            positive ISO-8601 duration).
+          type: string
+          example: "PT10S"
+        maxTransferAttempts:
+          description: >-
+            How many times a current leader may prompt the desired leader to take over leadership
+            before giving up.
+          type: integer
+          format: int32
+          minimum: 1
+          example: 3
+        leaderWaitTimeout:
+          description: >-
+            How long the coordinator waits for a partition without a leader to acquire one before
+            reporting `NO_LEADER` and moving on (as a positive ISO-8601 duration).
+          type: string
+          example: "PT1M"
+
+    ClusterBalanceResponse:
+      description: >-
+        The cluster's current per-partition balance state, the running rebalance, and the last
+        completed rebalance.
+      type: object
+      required:
+        - state
+        - partitions
+        - runningRebalance
+        - lastCompletedRebalance
+      properties:
+        state:
+          description: The cluster's aggregate balance state as of the time of the request.
+          type: string
+          enum:
+            - BALANCED
+            - BALANCING
+            - UNBALANCED
+          example: "UNBALANCED"
+        partitions:
+          description: >-
+            The balance state of each partition as of the time of the request.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRebalancePartition'
+        runningRebalance:
+          description: >-
+            Normally the rebalance currently running, or absent if no rebalance is running. For a
+            dry-run response, this is instead the unexecuted plan of that dry run.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ClusterRunningRebalance'
+        lastCompletedRebalance:
+          description: The last completed non-dry-run rebalance this coordinator finished.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ClusterCompletedRebalance'
+
+    ClusterRebalancePartition:
+      description: >-
+        One partition's leadership/balance status - its current leader, its desired leader, and
+        whether a rebalance is currently moving it.
+      type: object
+      required:
+        - partitionId
+        - physicalTenantId
+        - currentLeader
+        - desiredLeader
+        - state
+      properties:
+        partitionId:
+          description: The unique ID of this partition, within its physical tenant.
+          type: integer
+          format: int32
+          example: 1
+        physicalTenantId:
+          description: >-
+            The partition group this partition belongs to. Partition IDs are unique only within a
+            group, so this is needed to identify the partition.
+          type: string
+          example: default
+        currentLeader:
+          description: >-
+            The broker ID currently leading this partition, or absent if it has no leader.
+          type: string
+          nullable: true
+          example: "0"
+        desiredLeader:
+          description: The broker ID the current configuration wants to lead this partition.
+          type: string
+          example: "0"
+        state:
+          description: >-
+            Whether this partition is being actively transferred, unbalanced, or balanced.
+          type: string
+          enum:
+            - TRANSFERRING
+            - UNBALANCED
+            - BALANCED
+          example: "UNBALANCED"
+
+
+    ClusterRebalance:
+      description: >-
+        The fields common to a running and a completed rebalance.
+      type: object
+      required:
+        - rebalanceId
+        - partitions
+        - startedAt
+      properties:
+        rebalanceId:
+          description: The ID of this rebalance.
+          type: integer
+          format: int64
+        partitions:
+          description: Every partition in the rebalance plan and its progress within this rebalance.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterRebalanceOperationPartition'
+        startedAt:
+          description: When this rebalance was created.
+          type: string
+          format: date-time
+
+    ClusterRunningRebalance:
+      description: The rebalance currently running.
+      allOf:
+        - $ref: '#/components/schemas/ClusterRebalance'
+        - type: object
+          required:
+            - dryRun
+            - cancelRequested
+          properties:
+            dryRun:
+              description: Whether this rebalance is a dry run.
+              type: boolean
+            cancelRequested:
+              description: >-
+                Whether cancellation has been requested.
+              type: boolean
+
+    ClusterRebalanceOperationPartition:
+      description: One partition's plan, progress, and outcome within a rebalance.
+      type: object
+      required:
+        - partitionId
+        - physicalTenantId
+        - currentLeader
+        - desiredLeader
+        - progress
+        - result
+      properties:
+        partitionId:
+          description: The unique ID of this partition, within its physical tenant.
+          type: integer
+          format: int32
+          example: 1
+        physicalTenantId:
+          description: The partition group this partition belongs to.
+          type: string
+          example: default
+        currentLeader:
+          description: The leader last observed by this rebalance, or absent if there was no leader.
+          type: string
+          nullable: true
+          example: "0"
+        desiredLeader:
+          description: The leader selected when this rebalance was planned.
+          type: string
+          example: "1"
+        progress:
+          description: Where this rebalance has reached for the partition.
+          type: string
+          enum:
+            - PENDING
+            - TRANSFERRING
+            - COMPLETED
+        result:
+          description: The terminal outcome, present only when progress is COMPLETED.
+          type: string
+          nullable: true
+          enum:
+            - TRANSFERRED
+            - ALREADY_LEADER
+            - NOT_MEMBER
+            - NOT_REPLICATING
+            - UNREACHABLE
+            - NOT_COORDINATOR
+            - STALE_CONFIGURATION
+            - TRANSFER_IN_PROGRESS
+            - LAG_TOO_HIGH
+            - LEADER_INITIALIZING
+            - CONFIGURATION_CHANGE_IN_PROGRESS
+            - PAUSE_FAILED
+            - REPLICATION_TIMED_OUT
+            - TIMEOUT_NOW_EXHAUSTED
+            - LEADER_CHANGED
+            - NO_LEADER
+            - NO_RESPONSE
+            - CANCELLED
+
+    ClusterCompletedRebalance:
+      description: >-
+        The last completed rebalance.
+      allOf:
+        - $ref: '#/components/schemas/ClusterRebalance'
+        - type: object
+          required:
+            - finishedAt
+            - result
+          properties:
+            finishedAt:
+              description: When this rebalance finished.
+              type: string
+              format: date-time
+            result:
+              description: How the rebalance ended.
+              type: string
+              enum:
+                - COMPLETED
+                - CANCELLED
+                - FAILED
+              example: "COMPLETED"
+
+    RebalanceCancellationResponse:
+      description: Response to a rebalance cancellation request.
+      type: object
+      required:
+        - wasRunning
+      properties:
+        wasRunning:
+          description: Whether there was a rebalance to stop.
+          type: boolean
+          example: true

@@ -524,6 +524,8 @@ paths:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history~1{backupId}'
   /cluster/v2/mode:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
+  /cluster/v2/rebalance:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1rebalance'
   /cluster/v2/restore:
     $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1restore'
   /cluster/v2/status:

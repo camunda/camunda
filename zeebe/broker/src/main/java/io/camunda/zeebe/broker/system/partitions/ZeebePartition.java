@@ -122,13 +122,10 @@ public final class ZeebePartition extends Actor
             transitionContext.getPartitionId());
     coordinatorCheck =
         new ClusterConfigurationCoordinatorCheck(
-            () -> {
-              final var current =
-                  transitionContext
-                      .getClusterConfigurationService()
-                      .getCurrentClusterConfiguration();
-              return current == null ? null : current.toLegacyDefault();
-            });
+            () ->
+                transitionContext
+                    .getClusterConfigurationService()
+                    .getCurrentClusterConfiguration());
   }
 
   public static String componentName(final PartitionId partitionId) {

@@ -33,6 +33,7 @@ import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterExportingServices;
 import io.camunda.service.ClusterHistoryBackupServices;
+import io.camunda.service.ClusterRebalanceServices;
 import io.camunda.service.ClusterRecoveryServices;
 import io.camunda.service.ClusterRuntimeBackupServices;
 import io.camunda.service.ClusterRuntimeBackupServices.PhysicalTenantBackupPort;
@@ -87,6 +88,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -148,6 +150,7 @@ public class CamundaServicesConfiguration {
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
       final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
+      final RebalanceRequestSender rebalanceRequestSender,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
@@ -591,6 +594,7 @@ public class CamundaServicesConfiguration {
     builder.clusterExportingServices(
         new ClusterExportingServices(
             exportingRequestBroadcaster, physicalTenantResolver.getAll().keySet()));
+    builder.clusterRebalanceServices(new ClusterRebalanceServices(rebalanceRequestSender));
 
     builder.clusterRuntimeBackupServices(new ClusterRuntimeBackupServices(runtimeBackupPorts));
 

@@ -140,7 +140,8 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
               .setOverrides(encodeOverrides(running.overrides()))
               .setDryRun(running.dryRun())
               .setCancelRequested(running.cancelRequested())
-              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList()));
+              .addAllPartitions(running.partitions().stream().map(this::encodePartition).toList())
+              .setStartedAt(toTimestamp(running.startedAt())));
     }
     final var lastCompleted = status.lastCompleted();
     if (lastCompleted != null) {
@@ -148,13 +149,94 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
           Rebalance.CompletedRebalance.newBuilder()
               .setRebalanceId(lastCompleted.rebalanceId())
               .setOutcome(encodeOutcome(lastCompleted.outcome()))
-              .setDryRun(lastCompleted.dryRun())
               .addAllPartitions(
                   lastCompleted.partitions().stream().map(this::encodePartition).toList())
               .setStartedAt(toTimestamp(lastCompleted.startedAt()))
               .setFinishedAt(toTimestamp(lastCompleted.finishedAt())));
     }
+    builder.setLeadershipStatus(encodeClusterLeadershipStatus(status.leadershipStatus()));
     return builder.build();
+  }
+
+  private Rebalance.ClusterLeadershipStatus encodeClusterLeadershipStatus(
+      final ClusterLeadershipStatus status) {
+    return Rebalance.ClusterLeadershipStatus.newBuilder()
+        .setState(encodeClusterLeadershipState(status.state()))
+        .addAllPartitions(
+            status.partitions().stream().map(this::encodePartitionLeadershipStatus).toList())
+        .build();
+  }
+
+  private ClusterLeadershipStatus decodeClusterLeadershipStatus(
+      final Rebalance.ClusterLeadershipStatus status) {
+    return new ClusterLeadershipStatus(
+        decodeClusterLeadershipState(status.getState()),
+        status.getPartitionsList().stream().map(this::decodePartitionLeadershipStatus).toList());
+  }
+
+  private Rebalance.ClusterLeadershipStatus.State encodeClusterLeadershipState(
+      final ClusterLeadershipStatus.State state) {
+    return switch (state) {
+      case BALANCING -> Rebalance.ClusterLeadershipStatus.State.BALANCING;
+      case UNBALANCED -> Rebalance.ClusterLeadershipStatus.State.UNBALANCED;
+      case BALANCED -> Rebalance.ClusterLeadershipStatus.State.BALANCED;
+    };
+  }
+
+  private ClusterLeadershipStatus.State decodeClusterLeadershipState(
+      final Rebalance.ClusterLeadershipStatus.State state) {
+    return switch (state) {
+      case BALANCING -> ClusterLeadershipStatus.State.BALANCING;
+      case UNBALANCED -> ClusterLeadershipStatus.State.UNBALANCED;
+      case BALANCED -> ClusterLeadershipStatus.State.BALANCED;
+      case STATE_UNSPECIFIED, UNRECOGNIZED ->
+          throw new DecodingFailed("Cluster leadership state is missing or unrecognized: " + state);
+    };
+  }
+
+  private Rebalance.PartitionLeadershipStatus encodePartitionLeadershipStatus(
+      final PartitionLeadershipStatus partition) {
+    final var builder =
+        Rebalance.PartitionLeadershipStatus.newBuilder()
+            .setPhysicalTenantId(partition.physicalTenantId())
+            .setPartitionId(partition.partitionId())
+            .setDesiredLeader(partition.desiredLeader().id())
+            .setState(encodePartitionLeadershipState(partition.state()));
+    if (partition.currentLeader() != null) {
+      builder.setCurrentLeader(partition.currentLeader().id());
+    }
+    return builder.build();
+  }
+
+  private PartitionLeadershipStatus decodePartitionLeadershipStatus(
+      final Rebalance.PartitionLeadershipStatus partition) {
+    return new PartitionLeadershipStatus(
+        partition.getPhysicalTenantId(),
+        partition.getPartitionId(),
+        partition.hasCurrentLeader() ? MemberId.from(partition.getCurrentLeader()) : null,
+        MemberId.from(partition.getDesiredLeader()),
+        decodePartitionLeadershipState(partition.getState()));
+  }
+
+  private Rebalance.PartitionLeadershipStatus.State encodePartitionLeadershipState(
+      final PartitionLeadershipStatus.State state) {
+    return switch (state) {
+      case TRANSFERRING -> Rebalance.PartitionLeadershipStatus.State.TRANSFERRING;
+      case UNBALANCED -> Rebalance.PartitionLeadershipStatus.State.UNBALANCED;
+      case BALANCED -> Rebalance.PartitionLeadershipStatus.State.BALANCED;
+    };
+  }
+
+  private PartitionLeadershipStatus.State decodePartitionLeadershipState(
+      final Rebalance.PartitionLeadershipStatus.State state) {
+    return switch (state) {
+      case TRANSFERRING -> PartitionLeadershipStatus.State.TRANSFERRING;
+      case UNBALANCED -> PartitionLeadershipStatus.State.UNBALANCED;
+      case BALANCED -> PartitionLeadershipStatus.State.BALANCED;
+      case STATE_UNSPECIFIED, UNRECOGNIZED ->
+          throw new DecodingFailed(
+              "Partition leadership state is missing or unrecognized: " + state);
+    };
   }
 
   private Rebalance.PartitionRebalance encodePartition(final PartitionRebalance partition) {
@@ -268,7 +350,8 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
   private RebalanceStatus decodeStatus(final Rebalance.RebalanceStatusResponse status) {
     return new RebalanceStatus(
         status.hasRunning() ? decodeRunning(status.getRunning()) : null,
-        status.hasLastCompleted() ? decodeCompleted(status.getLastCompleted()) : null);
+        status.hasLastCompleted() ? decodeCompleted(status.getLastCompleted()) : null,
+        decodeClusterLeadershipStatus(status.getLeadershipStatus()));
   }
 
   private RebalanceStatus.Running decodeRunning(final Rebalance.RunningRebalance running) {
@@ -277,14 +360,14 @@ public final class ProtoBufRebalanceSerializer implements RebalanceRequestsSeria
         decodeOverrides(running.getOverrides()),
         running.getDryRun(),
         running.getCancelRequested(),
-        running.getPartitionsList().stream().map(this::decodePartition).toList());
+        running.getPartitionsList().stream().map(this::decodePartition).toList(),
+        fromTimestamp(running.getStartedAt()));
   }
 
   private RebalanceStatus.Completed decodeCompleted(final Rebalance.CompletedRebalance completed) {
     return new RebalanceStatus.Completed(
         completed.getRebalanceId(),
         decodeOutcome(completed.getOutcome()),
-        completed.getDryRun(),
         completed.getPartitionsList().stream().map(this::decodePartition).toList(),
         fromTimestamp(completed.getStartedAt()),
         fromTimestamp(completed.getFinishedAt()));

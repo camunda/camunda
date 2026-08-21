@@ -67,7 +67,8 @@ public final class ServiceRegistryArchTest {
       Set.of(
           ManagementServices.class.getName(),
           ClusterTopologyServices.class.getName(),
-          ClusterExportingServices.class.getName());
+          ClusterExportingServices.class.getName(),
+          ClusterRebalanceServices.class.getName());
 
   // -- conditions --
 
