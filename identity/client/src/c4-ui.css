@@ -152,3 +152,18 @@
 }
 
 /* Consumer overrides go below. */
+
+/* MultiSelect options are unclickable when opened from inside a Dialog.
+ *
+ * Radix's scroll lock sets `pointer-events: none` on `<body>` while a Dialog
+ * is open, then restores `pointer-events: auto` on the Dialog's own content
+ * so it stays interactive. `MultiSelect`'s portaled popover is a sibling of
+ * the Dialog, not a descendant of its content, so it never gets that
+ * restoration and inherits `none` — the dropdown renders and looks clickable,
+ * but every click passes through to whatever is underneath it. `Select`
+ * doesn't have this problem; Radix's own `Select` primitive already sets
+ * `pointer-events: auto` on its content itself.
+ */
+:where(.c4-ui) [data-slot="multi-select-content"] {
+  pointer-events: auto;
+}

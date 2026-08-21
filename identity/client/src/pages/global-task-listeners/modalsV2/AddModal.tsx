@@ -8,17 +8,25 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
+import {
+  MultiSelect,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@camunda/design-system";
 import { FormModal, UseModalProps } from "src/components/modalV2";
 import useTranslate from "src/utility/localization";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
+import FormField from "src/components/formV2/FormField";
 import TextField from "src/components/formV2/TextField";
+import NumberField from "src/components/formV2/NumberField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
   getEventTypeLabel,
-  getEventTypeLabels,
   LISTENER_TYPE_PATTERN,
 } from "src/pages/global-task-listeners/utility";
 import type {
@@ -119,10 +127,17 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     );
   };
 
+  // `Select` is value-based, so the boolean is carried as its stringified form
+  // and converted back in `onValueChange`.
   const afterNonGlobalOptions = [
-    { id: "false", label: t("executionOrderBefore"), value: false },
-    { id: "true", label: t("executionOrderAfter"), value: true },
+    { value: "false", label: t("executionOrderBefore") },
+    { value: "true", label: t("executionOrderAfter") },
   ];
+
+  const eventTypeOptions = LISTENER_EVENT_TYPES.map((eventType) => ({
+    value: eventType,
+    label: getEventTypeLabel(eventType, t),
+  }));
 
   return (
     <FormModal
@@ -183,50 +198,46 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           validate: (value) => value.length > 0 || t("eventTypeRequired"),
         }}
         render={({ field, fieldState }) => (
-          <MultiSelect
-            id="event-type-multiselect"
-            titleText={t("eventType")}
-            label={
-              field.value.length > 0
-                ? getEventTypeLabels(field.value, t)
-                : t("selectEventTypes")
-            }
-            items={[...LISTENER_EVENT_TYPES]}
-            selectedItems={field.value}
-            onChange={({
-              selectedItems,
-            }: {
-              selectedItems: GlobalTaskListenerEventType[];
-            }) => {
-              handleEventTypeChange(selectedItems);
-            }}
-            itemToString={(item: GlobalTaskListenerEventType) =>
-              getEventTypeLabel(item, t)
-            }
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
-          />
+          <FormField label={t("eventType")} error={fieldState.error?.message}>
+            {({ id }) => (
+              <MultiSelect
+                id={id}
+                placeholder={t("selectEventTypes")}
+                options={eventTypeOptions}
+                // "all" is a real API value listed next to the individual
+                // events, so the schema order carries meaning and the built-in
+                // select-all row would duplicate the "All events" option.
+                sorted={false}
+                hideSelectAll
+                searchable={false}
+                // Checking "All events" selects every type at once, and the
+                // default cap of 3 would collapse the rest into a "+N more"
+                // chip that hides what is about to be submitted.
+                maxCount={LISTENER_EVENT_TYPES.length}
+                value={field.value}
+                onValueChange={(value) => {
+                  handleEventTypeChange(
+                    LISTENER_EVENT_TYPES.filter((eventType) =>
+                      value.includes(eventType),
+                    ),
+                  );
+                }}
+              />
+            )}
+          </FormField>
         )}
       />
       <Controller
         name="retries"
         control={control}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="retries-input"
+          <NumberField
             label={t("retries")}
             min={1}
             step={1}
             value={field.value}
-            onChange={(_, { value }) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -234,56 +245,41 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         name="afterNonGlobal"
         control={control}
         render={({ field }) => (
-          <Dropdown
-            id="execution-order-dropdown"
-            titleText={t("executionOrder")}
-            label={t("executionOrder")}
-            items={afterNonGlobalOptions}
-            selectedItem={afterNonGlobalOptions.find(
-              (opt) => opt.value === field.value,
+          <FormField label={t("executionOrder")}>
+            {({ id }) => (
+              <Select
+                value={String(field.value)}
+                onValueChange={(value) => {
+                  field.onChange(value === "true");
+                }}
+              >
+                <SelectTrigger id={id} className="w-full">
+                  <SelectValue placeholder={t("executionOrder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {afterNonGlobalOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-            onChange={({
-              selectedItem,
-            }: {
-              selectedItem: {
-                id: string;
-                label: string;
-                value: boolean;
-              } | null;
-            }) => {
-              if (selectedItem) {
-                field.onChange(selectedItem.value);
-              }
-            }}
-            itemToString={(item: { id: string; label: string } | null) =>
-              item?.label ?? ""
-            }
-          />
+          </FormField>
         )}
       />
       <Controller
         name="priority"
         control={control}
         render={({ field, fieldState }) => (
-          <NumberInput
-            id="priority-input"
+          <NumberField
             label={t("priority")}
             helperText={t("priorityHelperText")}
             min={0}
             step={1}
             value={field.value}
-            onChange={(
-              _,
-              { value }: { value: string | number; direction: string },
-            ) => {
-              const numValue =
-                typeof value === "string" ? parseInt(value, 10) : value;
-              if (!isNaN(numValue)) {
-                field.onChange(numValue);
-              }
-            }}
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            onValueChange={field.onChange}
+            error={fieldState.error?.message}
           />
         )}
       />
