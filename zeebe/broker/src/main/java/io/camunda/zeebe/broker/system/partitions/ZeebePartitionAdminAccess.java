@@ -220,6 +220,29 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     return future;
   }
 
+  @Override
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    final ActorFuture<PartitionMigrationStatus> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> {
+          final var exporterDirector = adminControl.getExporterDirector();
+          if (exporterDirector == null) {
+            future.complete(
+                new PartitionMigrationStatus(
+                    MigrationStatusCode.UNKNOWN,
+                    "partition "
+                        + partitionId
+                        + ": no exporter director running on this replica"
+                        + " yet"));
+            return;
+          }
+          exporterDirector.getExportingMigrationStatus().onComplete(future);
+        });
+
+    return future;
+  }
+
   /**
    * Reads {@code DbMigrationState.getMigratedByVersion()} through a second transaction on the
    * already-open, live {@code ZeebeDb}, without disturbing the stream processor's own state — the
