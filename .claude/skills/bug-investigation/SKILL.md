@@ -138,12 +138,12 @@ Read title, body, **all** comments (later comments often contain reproduction co
 narrowed repro steps, or a maintainer's initial hunch — don't stop at the issue body). Classify the
 bug type — this drives Phase 3's reproduction method:
 
-| Signal in issue                                      | Bug type      | Reproduction method (Phase 3)   |
-|-------------------------------------------------------|---------------|----------------------------------|
-| UI screenshot, Operate/Tasklist/Identity page mentioned | UI            | Playwright                      |
-| REST/gRPC request/response, curl repro steps          | API/behavior  | Generated API script            |
-| "flaky", "sometimes fails", CI link to a failed test  | Flaky test    | Repeat the existing test N times|
-| Stack trace only, no UI/API repro path                | Backend/engine| Code analysis + targeted unit/IT|
+| Signal in issue                                         | Bug type       | Reproduction method (Phase 3)    |
+| ------------------------------------------------------- | -------------- | -------------------------------- |
+| UI screenshot, Operate/Tasklist/Identity page mentioned | UI             | Playwright                       |
+| REST/gRPC request/response, curl repro steps            | API/behavior   | Generated API script             |
+| "flaky", "sometimes fails", CI link to a failed test    | Flaky test     | Repeat the existing test N times |
+| Stack trace only, no UI/API repro path                  | Backend/engine | Code analysis + targeted unit/IT |
 
 Read `references/triage-guidelines.md` for how severity/likelihood/urgency labels should shape the
 tone and urgency of the final report.
@@ -220,7 +220,16 @@ not "mostly validated," it's unvalidated.
    (`git log --grep`, similar test names) — does this fix follow the established pattern, or
    deviate from it without reason?
 4. **Simulation** — mentally re-run the failing scenario from Phase 3 with the fix applied. Does it
-   actually resolve what was observed?
+   actually resolve what was observed? For a frontend/CSS/layout fix specifically, don't conclude
+   "no test infrastructure exists to verify this" from checking only one local tool (e.g. a vitest
+   browser-mode project with zero test files does not mean no visual test exists) — actively search
+   for the module's CI-defined test suites first: `grep -rl "toHaveScreenshot\|visual-regression"
+<module>/` and check `.github/workflows/ci-<module>.yml` for a job named "Visual Regression" or
+   similar. CI workflow files are the authoritative list of what actually gates the PR, more so than
+   any single local config file. If a real suite exists, run it locally before opening the PR (even
+   without CI's exact container, e.g. `npm run build:visual-regression && npm run test:visual`) as a
+   smoke check — catching a stale snapshot pre-push is cheaper than discovering it from a failed CI
+   run after the PR is already open.
 5. **Compatibility check (Hard rule 7)** — does the fix change a REST/gRPC API's request/response
    shape or status codes, rename/remove an exported type/field/CLI flag, or change an on-disk/wire
    format that existing callers depend on? Check the module's `docs/adr/` for any documented
@@ -244,13 +253,13 @@ Score confidence using the table in
 [`references/triage-guidelines.md`](references/triage-guidelines.md#confidence-scoring) and act on
 it:
 
-| Confidence            | Diff size        | Action                                                          |
-|------------------------|-------------------|------------------------------------------------------------------|
-| High (≥ 0.80)          | < 1000 lines      | Implement the fix, validate it, open a **draft** PR (see [PR creation](#pr-creation)) |
-| High (≥ 0.80)          | ≥ 1000 lines      | Treat as Medium — large diffs need human judgment regardless of confidence |
-| Medium (0.50–0.79)     | any               | Implement + open a **draft** PR as above, and `@mention`/tag the issue owner or assignee asking them to weigh in before it's marked ready |
-| Low (< 0.50) — blocked by missing info | any | No PR. Post report only, explicitly list what's blocking higher confidence (missing logs, couldn't reproduce, ambiguous root cause) |
-| Low (< 0.50) — issue premise looks wrong (expected behavior, already covered by another endpoint/feature, doc mismatch) | any | No PR. Post report only, `@mention`/tag the **issue reporter** directly (not the assignee) explaining what already covers their need or why the behavior is expected, and ask them to confirm whether to close as not-a-bug or re-scope as a feature request |
+| Confidence                                                                                                              | Diff size    | Action                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| High (≥ 0.80)                                                                                                           | < 1000 lines | Implement the fix, validate it, open a **draft** PR (see [PR creation](#pr-creation))                                                                                                                                                                        |
+| High (≥ 0.80)                                                                                                           | ≥ 1000 lines | Treat as Medium — large diffs need human judgment regardless of confidence                                                                                                                                                                                   |
+| Medium (0.50–0.79)                                                                                                      | any          | Implement + open a **draft** PR as above, and `@mention`/tag the issue owner or assignee asking them to weigh in before it's marked ready                                                                                                                    |
+| Low (< 0.50) — blocked by missing info                                                                                  | any          | No PR. Post report only, explicitly list what's blocking higher confidence (missing logs, couldn't reproduce, ambiguous root cause)                                                                                                                          |
+| Low (< 0.50) — issue premise looks wrong (expected behavior, already covered by another endpoint/feature, doc mismatch) | any          | No PR. Post report only, `@mention`/tag the **issue reporter** directly (not the assignee) explaining what already covers their need or why the behavior is expected, and ask them to confirm whether to close as not-a-bug or re-scope as a feature request |
 
 If more than one independent fix is viable for **different symptoms or layers** of the same issue
 (e.g. a frontend workaround alongside a backend root-cause fix, where each stands on its own even
