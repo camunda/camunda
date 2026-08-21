@@ -452,6 +452,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void insertJobRecordActivatable(final long key, final JobRecord record) {
     createJobRecord(key, record);
     initializeJobState();
+    indexJobByProcessInstance(key, record);
   }
 
   /** Updates the job record without updating variables */
@@ -469,7 +470,13 @@ public final class DbJobState implements JobState, MutableJobState {
     jobState.setState(newState);
     statesJobColumnFamily.update(fkJob, jobState);
     if (newState == State.SUSPENDED) {
-      indexJobByProcessInstance(key);
+      final JobRecord job = getJob(key);
+      // guarded anyway because an exception in an event applier bans the process instance,
+      // or fails the partition on replay
+      if (job == null) {
+        return;
+      }
+      indexJobByProcessInstance(key, job);
     }
   }
 
@@ -522,19 +529,14 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   /**
-   * Backfills the {@code JOBS_BY_PROCESS_INSTANCE} entry for a job that reaches {@link
-   * State#SUSPENDED}. A pre-8.10 job created via the deprecated {@link #create} path was never
-   * indexed at creation; suspension is the point every such job passes through, so index it here.
-   * An 8.10+ job is already indexed by {@link #insertJobRecordActivatable}, and the {@code upsert}
-   * makes the repeat harmless. Reads the persisted record for the {@code processInstanceKey} rather
-   * than trusting a caller-supplied one, so index maintenance stays wholly inside this class.
+   * Upserts the {@code JOBS_BY_PROCESS_INSTANCE} entry for {@code key}. Called from {@link
+   * #insertJobRecordActivatable} at creation time and from {@link #updateJobState} on the
+   * transition to {@link State#SUSPENDED} as a backfill for pre-8.10 jobs that were created via the
+   * deprecated {@link #create} path and therefore never indexed at creation time. The {@code
+   * upsert} makes the repeat on an already-indexed job harmless.
    */
-  private void indexJobByProcessInstance(final long key) {
-    final JobRecord job = getJob(key);
-    if (job == null) {
-      return;
-    }
-    jobIndexProcessInstanceKey.wrapLong(job.getProcessInstanceKey());
+  private void indexJobByProcessInstance(final long key, final JobRecord record) {
+    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
     jobKey.wrapLong(key);
     jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
@@ -844,9 +846,6 @@ public final class DbJobState implements JobState, MutableJobState {
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(record);
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
-
-    jobIndexProcessInstanceKey.wrapLong(record.getProcessInstanceKey());
-    jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   private void initializeJobState() {
