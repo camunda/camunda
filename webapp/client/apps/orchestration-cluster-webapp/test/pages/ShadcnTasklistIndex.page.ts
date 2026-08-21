@@ -22,8 +22,16 @@ class ShadcnTasklistIndexPage extends BasePage {
 		return this.page.goto('/shadcn/tasklist');
 	}
 
-	get content() {
-		return this.page.getByText('Hello "/shadcn/tasklist"!');
+	get tasksPanel() {
+		return this.page.getByRole('region', {name: 'Tasks side panel'});
+	}
+
+	get noTasksMessage() {
+		return this.page.getByRole('heading', {name: 'No tasks found'});
+	}
+
+	get welcomeHeading() {
+		return this.page.getByRole('heading', {name: 'Welcome to Tasklist'});
 	}
 }
 
