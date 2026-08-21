@@ -28,9 +28,9 @@ elasticsearch:
     - &saas '8.19.16'
   es9:
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
-    - "9.4.5"
+    - '9.4.5'
     # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
-    - "9.5.2"
+    - '9.5.2'
   saas: *saas
 
 opensearch:
@@ -39,11 +39,11 @@ opensearch:
     - '2.19.6'
   os3:
     # renovate: datasource=docker depName=opensearchproject/opensearch
-    - "3.6.0"  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
+    - '3.6.0'  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
     # renovate: datasource=docker depName=opensearchproject/opensearch
-    - "3.7.0"
+    - '3.7.0'
     # renovate: datasource=docker depName=opensearchproject/opensearch
-    - "3.8.0"
+    - '3.8.0'
 
 # ── RDBMS databases ─────────────────────────────────────────────────────────────
 # Each entry is a Docker image tag representing one supported major version.
@@ -77,4 +77,4 @@ azure-sql:
 oracle:
   - "21-slim-faststart"
   # renovate: datasource=docker depName=gvenzl/oracle-free versioning=docker
-  - "23.26.2-slim-faststart"
+  - '23.26.2-slim-faststart'
