@@ -512,9 +512,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentDocument incident,
       final IncidentState newState,
       final String fniId,
-      final List<String> flowNodeIndices,
+      final Collection<String> flowNodeIndices,
       final IncidentBulkUpdate updates,
-      final List<String> listViewIndices) {
+      final Collection<String> listViewIndices) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
@@ -599,7 +599,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentState newState,
       final String piId,
       final IncidentBulkUpdate updates,
-      final List<String> indexes) {
+      final Collection<String> indexes) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
