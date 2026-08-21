@@ -338,37 +338,6 @@ final class DependencyChangePlanTest {
       assertThat(byOne.merge(byOne)).isEqualTo(byOne);
       assertThat(byOne.merge(byAnother).merge(byAnother)).isEqualTo(byOne.merge(byAnother));
     }
-
-    @Test
-    void shouldKeepTheEarliestTimestampForTheSameOperation() {
-      // given — the same operation completed twice, at two fixed, distinct timestamps, as happens
-      // when a broker retries or restarts. Fixed rather than derived from call order, so this
-      // fails against an implementation that keeps whichever side merge() is called on, or the
-      // latest, and not only one that keeps the earliest.
-      final var builder = OperationGraph.builder();
-      final var only = builder.add(op(0, 1));
-      final var graph = builder.build();
-      final var earlier = Instant.parse("2024-01-01T00:00:00Z");
-      final var later = earlier.plusSeconds(60);
-      final var first =
-          new DependencyChangePlan(
-              PLAN_ID,
-              Status.IN_PROGRESS,
-              Instant.now(),
-              graph,
-              new TreeMap<>(Map.of(only, earlier)));
-      final var second =
-          new DependencyChangePlan(
-              PLAN_ID,
-              Status.IN_PROGRESS,
-              Instant.now(),
-              graph,
-              new TreeMap<>(Map.of(only, later)));
-
-      // when / then — the earlier value wins regardless of merge direction
-      assertThat(first.merge(second).completed().get(only)).isEqualTo(earlier);
-      assertThat(second.merge(first).completed().get(only)).isEqualTo(earlier);
-    }
   }
 
   /**

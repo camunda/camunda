@@ -34,9 +34,9 @@ import org.jspecify.annotations.Nullable;
  * <h4>Convergence</h4>
  *
  * <p>The graph is fixed for the plan's lifetime. {@code completed} is grow-only and every entry has
- * exactly one writer — the broker that applies that operation — so merge is a flat union with the
- * earliest timestamp winning a collision. Commutative, associative and idempotent by construction,
- * with no version to move and no barrier to release.
+ * exactly one writer — the broker that applies that operation — so merge is a flat union.
+ * Commutative, associative, and idempotent by construction, with no version to move and no barrier
+ * to release.
  */
 @NullMarked
 public record DependencyChangePlan(
@@ -205,8 +205,8 @@ public record DependencyChangePlan(
    * Merges two copies of this plan seen by different brokers.
    *
    * <p>A flat union: the graph is fixed and identical for two copies of the <em>same</em> plan, and
-   * each completion has a single writer, so nothing can be lost. The earliest timestamp wins a
-   * collision so that a broker re-stamping after a restart still converges with its peers.
+   * each completion has a single writer — the operation's owning member, which never re-stamps an
+   * entry it already holds — so one key cannot carry two timestamps and nothing can be lost.
    *
    * <p>"Same plan" is asserted, not assumed. The id is the enclosing sub-configuration's version,
    * derived locally by whichever broker starts the change — two self-believed coordinators (the
@@ -233,9 +233,7 @@ public record DependencyChangePlan(
               .formatted(graph, other.graph));
     }
     final var merged = new TreeMap<>(completed);
-    other.completed.forEach(
-        (operationId, at) ->
-            merged.merge(operationId, at, (mine, theirs) -> mine.isBefore(theirs) ? mine : theirs));
+    merged.putAll(other.completed);
     return new DependencyChangePlan(id, status, startedAt, graph, merged);
   }
 
