@@ -24,5 +24,6 @@ public final class AgentInstanceCompletedApplier
   @Override
   public void applyState(final long key, final AgentInstanceRecord value) {
     agentInstanceState.delete(key, value);
+    agentInstanceState.deleteCommittedSnapshot(key);
   }
 }
