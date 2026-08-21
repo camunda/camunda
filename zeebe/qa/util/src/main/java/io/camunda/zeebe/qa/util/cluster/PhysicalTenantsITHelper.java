@@ -62,9 +62,9 @@ public final class PhysicalTenantsITHelper {
 
   private static final Duration ADMIN_READY_TIMEOUT = Duration.ofSeconds(30);
 
-  private final Map<String, Storage> tenants;
+  private final Map<String, TenantSpec> tenants;
 
-  private PhysicalTenantsITHelper(final Map<String, Storage> tenants) {
+  private PhysicalTenantsITHelper(final Map<String, TenantSpec> tenants) {
     this.tenants = Collections.unmodifiableMap(new LinkedHashMap<>(tenants));
   }
 
@@ -85,11 +85,26 @@ public final class PhysicalTenantsITHelper {
   }
 
   /**
-   * Assigns the {@code admin} default role to each non-default physical tenant's {@code
-   * <tenant>-admin} user. Does not touch secondary storage, so it is safe to call once at static
-   * setup while storage is (re-)applied per run via {@link #refreshSecondaryStorage}.
+   * Applies each tenant's static configuration: the {@code admin} default role for each non-default
+   * physical tenant's {@code <tenant>-admin} user, the exporters-assigned manifest, and the
+   * per-tenant partition count when one was declared via {@link Builder#withTenant(String, Storage,
+   * int)}. Does not touch secondary storage, so it is safe to call once at static setup while
+   * storage is (re-)applied per run via {@link #refreshSecondaryStorage}.
    */
   public TestStandaloneBroker configureAdminRoles(final TestStandaloneBroker broker) {
+    tenants.forEach(
+        (tenant, spec) -> {
+          if (spec.partitionCount() == null) {
+            return;
+          }
+          if (DEFAULT_TENANT_ID.equals(tenant)) {
+            // the default tenant's partitions are the broker's root cluster configuration
+            broker.withClusterConfig(cluster -> cluster.setPartitionCount(spec.partitionCount()));
+          } else {
+            broker.withPtConfig(
+                tenant, camunda -> camunda.getCluster().setPartitionCount(spec.partitionCount()));
+          }
+        });
     tenants
         .keySet()
         .forEach(
@@ -182,7 +197,7 @@ public final class PhysicalTenantsITHelper {
    * left untouched.
    */
   public TestStandaloneBroker refreshSecondaryStorage(final TestStandaloneBroker broker) {
-    tenants.forEach((tenant, storage) -> storage.applyTo(broker, tenant));
+    tenants.forEach((tenant, spec) -> spec.storage().applyTo(broker, tenant));
     return broker;
   }
 
@@ -261,18 +276,40 @@ public final class PhysicalTenantsITHelper {
     return new LinkedHashSet<>(tenants.keySet());
   }
 
+  private record TenantSpec(Storage storage, Integer partitionCount) {}
+
   public static final class Builder {
 
-    private final Map<String, Storage> tenants = new LinkedHashMap<>();
+    private final Map<String, TenantSpec> tenants = new LinkedHashMap<>();
 
     private Builder() {}
 
     public Builder withTenant(final String tenantId, final Storage storage) {
+      return withTenant(tenantId, storage, null);
+    }
+
+    /**
+     * Declares a physical tenant with an explicit partition count. Giving tenants different
+     * partition counts is the configuration that exposes misrouted requests: on a symmetric
+     * cluster, a request that reaches the wrong tenant's engine often still finds an
+     * identical-looking partition and passes.
+     */
+    public Builder withTenant(
+        final String tenantId, final Storage storage, final int partitionCount) {
+      if (partitionCount < 1) {
+        throw new IllegalArgumentException(
+            "partitionCount of tenant '" + tenantId + "' must be at least 1");
+      }
+      return withTenant(tenantId, storage, Integer.valueOf(partitionCount));
+    }
+
+    private Builder withTenant(
+        final String tenantId, final Storage storage, final Integer partitionCount) {
       if (tenantId == null || tenantId.isBlank()) {
         throw new IllegalArgumentException("tenantId must not be null or blank");
       }
       Objects.requireNonNull(storage, "storage must not be null for tenant '" + tenantId + "'");
-      if (tenants.putIfAbsent(tenantId, storage) != null) {
+      if (tenants.putIfAbsent(tenantId, new TenantSpec(storage, partitionCount)) != null) {
         throw new IllegalArgumentException(
             "physical tenant '" + tenantId + "' is already declared");
       }
