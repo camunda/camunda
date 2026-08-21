@@ -39,6 +39,7 @@ on:
           - typical
           - max
           - archiver
+          - zeebe-secrets
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -67,7 +68,7 @@ on:
         default: ""
         required: false
       load-test-setup-helm-values:
-        description: 'Additional Helm values for the load-test-setup chart (e.g. --set elasticsearch.storage.requests=64Gi)'
+        description: 'Additional Helm values for the load-test-setup chart, as raw Helm args (e.g. --set elasticsearch.storage.requests=64Gi, or -f zeebe-secrets-values-resolve-only.yaml to drive the zeebe-secrets scenario resolve-only instead of its default mixed traffic)'
         type: string
         default: ""
         required: false
@@ -158,7 +159,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver, zeebe-secrets.'
         type: string
         required: false
         default: ""
@@ -172,7 +173,7 @@ on:
         default: ""
         required: false
       load-test-setup-helm-values:
-        description: 'Allows to specify additional values/configurations for the load-test-setup Helm chart, which deploys the secondary storage and supporting infra. For example, the Elasticsearch disk size can be reduced. Allows arbitrary helm arguments, like --set elasticsearch.storage.requests=64Gi'
+        description: 'Allows to specify additional values/configurations for the load-test-setup Helm chart, which deploys the secondary storage and supporting infra. For example, the Elasticsearch disk size can be reduced. Allows arbitrary helm arguments, like --set elasticsearch.storage.requests=64Gi, or -f zeebe-secrets-values-resolve-only.yaml to drive the zeebe-secrets scenario resolve-only instead of its default mixed traffic'
         type: string
         default: ""
         required: false
@@ -477,6 +478,9 @@ jobs:
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
       - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
+      - name: Build Zeebe Secrets Image
+        if: ${{ inputs.scenario == 'zeebe-secrets' }}
+        run: ./mvnw -pl load-tests/load-tester jib:build -P zeebe-secrets -P\!include-optimize -D image="${IMAGE_REPOSITORY}/zeebe-secrets:${IMAGE_TAG}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -577,6 +581,11 @@ jobs:
         run: .github/scripts/load-test-print-tool-versions.sh
 
       - name: Scaffold load-test folder
+        env:
+          # The zeebe-secrets scenario needs the platform chart's unreleased
+          # orchestration.secretStore.file, so source it from git main. Empty for
+          # every other scenario, which keeps using the pinned released chart.
+          LOAD_TEST_PLATFORM_CHART_GIT_REF: ${{ inputs.scenario == 'zeebe-secrets' && 'main' || '' }}
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered

@@ -39,27 +39,36 @@ VERSION_DIR="$SCRIPT_DIR/$target_version"
 # Defaults match the main version; stable versions override only what differs.
 elasticsearch_version=""
 
+# camunda_platform_helm_chart_git_subdir names the chart directory inside the
+# camunda/camunda-platform-helm git repository that corresponds to this version.
+# Only used when LOAD_TEST_PLATFORM_CHART_GIT_REF opts into sourcing the chart
+# from git (e.g. to pick up unreleased features); the default path pulls the
+# released camunda_platform_helm_chart_version from helm.camunda.io instead.
 case "$target_version" in
   main)
     # renovate: version=camunda-platform-8.10
     camunda_platform_helm_chart_version="15.0.0-alpha4"
+    camunda_platform_helm_chart_git_subdir="camunda-platform-8.10"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     ;;
   stable-87)
     # renovate: version=camunda-platform-8.7
     camunda_platform_helm_chart_version="12.13.3"
+    camunda_platform_helm_chart_git_subdir="camunda-platform-8.7"
     allowed_storage=(elasticsearch)
     elasticsearch_version="8.17.4"
     ;;
   stable-88)
     # renovate: version=camunda-platform-8.8
     camunda_platform_helm_chart_version="13.12.5"
+    camunda_platform_helm_chart_git_subdir="camunda-platform-8.8"
     allowed_storage=(elasticsearch opensearch none)
     elasticsearch_version="8.18.0"
     ;;
   stable-89)
     # renovate: version=camunda-platform-8.9
     camunda_platform_helm_chart_version="14.8.3"
+    camunda_platform_helm_chart_git_subdir="camunda-platform-8.9"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
@@ -169,14 +178,27 @@ mkdir -p "$TARGET_DIRECTORY"
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondary_storage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
+#
+# The charts source has no trailing slash on purpose: `cp -r charts dest/`
+# creates `dest/charts/` on both GNU and BSD cp, whereas `cp -r charts/ dest/`
+# copies the directory contents (flattening `charts/`) on BSD cp, which breaks
+# the scaffold on macOS. See CHARTS_DIR usage below, which expects dest/charts/.
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
-cp -rv "$SCRIPT_DIR/charts/"                                                    "$TARGET_DIRECTORY/"
+cp -rv "$SCRIPT_DIR/charts"                                                     "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
+cp -v  "$SCRIPT_DIR/scenarios/zeebe-secrets-values-resolve-only.yaml"           "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
+
+# The zeebe-secrets benchmark's platform overrides (file secret store + SECRET authz)
+# only exist for the main version, which is the only version the `zeebe-secrets`
+# scenario supports. Copy it when present so `make zeebe-secrets` can reference it.
+if [[ -f "$VERSION_DIR/values/camunda-platform-values-zeebe-secrets.yaml" ]]; then
+  cp -v "$VERSION_DIR/values/camunda-platform-values-zeebe-secrets.yaml"              "$TARGET_DIRECTORY/"
+fi
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
@@ -373,7 +395,36 @@ CHARTS_DIR="charts"
 # per version, before this script runs), reuse it instead of pulling over the
 # network again. Unset by default, so a manual invocation always pulls fresh.
 platform_cache_src="${LOAD_TEST_CHART_CACHE_DIR:-}/${camunda_platform_helm_chart_version}/camunda-platform"
-if [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
+if [[ -n "${LOAD_TEST_PLATFORM_CHART_GIT_REF:-}" ]]; then
+  # Opt-in override: source the camunda-platform chart from a git ref of
+  # camunda/camunda-platform-helm instead of the released artifact, to pick up
+  # features that have merged to the chart repo but are not released yet (e.g.
+  # orchestration.secretStore for the `zeebe-secrets` benchmark scenario). The default
+  # path (helm pull) is unchanged, so every other scenario keeps using the
+  # pinned, released camunda_platform_helm_chart_version.
+  git_ref="$LOAD_TEST_PLATFORM_CHART_GIT_REF"
+  echo "Sourcing camunda-platform chart from git ($git_ref, $camunda_platform_helm_chart_git_subdir)..."
+  clone_dir="$(mktemp -d)"
+  RETRY_CLEANUP_CMD="rm -rf \"$clone_dir\"" retry_with_backoff git clone --depth 1 \
+      --branch "$git_ref" https://github.com/camunda/camunda-platform-helm "$clone_dir"
+  rm -rf "$CHARTS_DIR/camunda-platform"
+  cp -r "$clone_dir/charts/$camunda_platform_helm_chart_git_subdir" "$CHARTS_DIR/camunda-platform"
+  # The versioned chart references sibling helper charts by relative path (e.g.
+  # `file://../common-2`), which live next to it in the git repo but outside the
+  # copied subdir. Copy each referenced sibling into the scaffold's charts/ dir
+  # so those `../<name>` paths resolve; the released artifact ships them
+  # pre-packaged, so this only applies to the git-sourced chart.
+  while IFS= read -r sibling; do
+    [[ -z "$sibling" ]] && continue
+    rm -rf "${CHARTS_DIR:?}/$sibling"
+    cp -r "$clone_dir/charts/$sibling" "$CHARTS_DIR/$sibling"
+  done < <(grep -oE 'file://\.\./[^"]+' "$CHARTS_DIR/camunda-platform/Chart.yaml" \
+      | sed 's#file://\.\./##' | sort -u)
+  rm -rf "$clone_dir"
+  # The git chart declares sub-chart dependencies that the released artifact
+  # ships pre-packaged; build them from the repos and siblings prepared above.
+  retry_with_backoff helm dependency build "$CHARTS_DIR/camunda-platform"
+elif [[ -n "${LOAD_TEST_CHART_CACHE_DIR:-}" && -d "$platform_cache_src" ]]; then
   echo "Using pre-warmed camunda-platform $camunda_platform_helm_chart_version chart from cache..."
   rm -rf "$CHARTS_DIR/camunda-platform"
   cp -r "$platform_cache_src" "$CHARTS_DIR/camunda-platform"

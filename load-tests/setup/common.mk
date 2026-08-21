@@ -78,6 +78,17 @@ _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-pla
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
+else ifeq ($(scenario),zeebe-secrets)
+# Benchmark the secrets API (POST /v2/secrets/resolve, /v2/secrets/list) against a
+# file-based secret store. Seed the store data and run the zeebe-secrets driver instead of
+# the process starter/workers (zeebeSecretsBenchmark, from the load-test-setup chart), and
+# configure the orchestration cluster's file store + SECRET authorization (platform
+# flags). The file store is wired via the chart's first-class orchestration.secretStore.file
+# (camunda-platform-helm#6721), which is unreleased — so this scenario requires the
+# platform chart to be sourced from git main via LOAD_TEST_PLATFORM_CHART_GIT_REF
+# (see newLoadTest.sh and load-tests/docs/zeebe-secrets-benchmark.md).
+_scenario_load_test_flags = --set zeebeSecretsBenchmark.enabled=true --set load-tester.starter.replicas=0 --set 'load-tester.workers.worker=null'
+_scenario_platform_flags = -f camunda-platform-values-zeebe-secrets.yaml
 else
 _scenario_load_test_flags =
 _scenario_platform_flags =
@@ -360,7 +371,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver zeebe-secrets
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -371,6 +382,8 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+zeebe-secrets:
+	$(MAKE) install scenario=zeebe-secrets
 
 .PHONY: clean
 clean:
