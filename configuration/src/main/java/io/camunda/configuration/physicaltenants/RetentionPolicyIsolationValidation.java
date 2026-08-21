@@ -103,8 +103,8 @@ class RetentionPolicyIsolationValidation implements CrossTenantValidation {
       throw new UnifiedConfigurationException(
           "Physical tenants with retention enabled must not share a secondary-storage lifecycle "
               + "(ILM/ISM) policy, or they would overwrite each other's retention policy on the same "
-              + "cluster. Use a distinct data.secondary-storage.<database>.history.policy-name (or "
-              + "…history.usage-metrics-policy-name) per tenant that shares a cluster. Conflicts: "
+              + "cluster. Use a distinct data.secondary-storage.<database>.history.policy-name and "
+              + "…history.usage-metrics-policy-name per tenant that shares a cluster. Conflicts: "
               + String.join("; ", collisions));
     }
   }
