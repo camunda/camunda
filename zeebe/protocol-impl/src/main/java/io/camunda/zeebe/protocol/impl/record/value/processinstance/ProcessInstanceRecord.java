@@ -144,6 +144,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     businessIdProp.setValue(record.getBusinessId());
+    resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
   }
 
   @JsonIgnore
