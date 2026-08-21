@@ -252,11 +252,10 @@ class AgentInstanceWriterTest {
 
   @Test
   void shouldMergeConfigurationFieldsIntoRowInsertWhenMergedBeforeFlush() throws Exception {
-    // given: a real ExecutionQueue so the actual merge logic (UpsertMerger) runs, reproducing the
-    // Copilot-flagged gap from https://github.com/camunda/camunda/pull/60728 - update()'s merge
-    // function only copied agentDefinition/processDefinition/status/metrics/tools onto the pending
-    // INSERT, silently dropping model/provider/systemPrompt/maxTokens/maxModelCalls/maxToolCalls
-    // whenever the update coalesced into a not-yet-flushed create().
+    // given: a real ExecutionQueue so the actual merge logic (UpsertMerger) runs - an update that
+    // coalesces into a not-yet-flushed create() must carry its configuration fields
+    // (model/provider/systemPrompt/maxTokens/maxModelCalls/maxToolCalls) onto the pending INSERT,
+    // not just agentDefinition/processDefinition/status/metrics/tools.
     final var session = mock(SqlSession.class);
     final var sqlSessionFactory = mock(SqlSessionFactory.class);
     final var metrics = mock(RdbmsWriterMetrics.class);
