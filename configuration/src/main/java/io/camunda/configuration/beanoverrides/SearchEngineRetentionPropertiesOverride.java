@@ -64,6 +64,7 @@ public class SearchEngineRetentionPropertiesOverride {
     final Retention retention = camunda.getData().getSecondaryStorage().getRetention();
     override.setEnabled(retention.isEnabled());
     override.setMinimumAge(retention.getMinimumAge());
+    override.setUsageMetricsMinimumAge(retention.getUsageMetricsMinimumAge());
   }
 
   private static void populateFromSecondaryStorage(
@@ -82,5 +83,6 @@ public class SearchEngineRetentionPropertiesOverride {
     }
 
     override.setPolicyName(database.getHistory().getPolicyName());
+    override.setUsageMetricsPolicyName(database.getHistory().getUsageMetricsPolicyName());
   }
 }

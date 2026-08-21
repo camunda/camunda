@@ -127,12 +127,16 @@ public class MultiDbConfigurator {
       final boolean retentionEnabled) {
     cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
     cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
+    cfg.getData().getSecondaryStorage().getRetention().setUsageMetricsMinimumAge("0s");
     final var documentBasedDatabase =
         cfg.getData().getSecondaryStorage().getDocumentBasedDatabase();
     documentBasedDatabase.setCreateSchema(true);
     documentBasedDatabase.setUrl(url);
     documentBasedDatabase.setIndexPrefix(indexPrefix);
     documentBasedDatabase.getHistory().setPolicyName(indexPrefix + "-ilm");
+    documentBasedDatabase
+        .getHistory()
+        .setUsageMetricsPolicyName(indexPrefix + "-usage-metrics-ilm");
     if (userName != null && !userName.isBlank()) {
       documentBasedDatabase.setUsername(userName);
     }

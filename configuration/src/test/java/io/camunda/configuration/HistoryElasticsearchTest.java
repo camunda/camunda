@@ -152,6 +152,45 @@ public class HistoryElasticsearchTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.history.usage-metrics-policy-name=custom-usage-metrics-policy",
+        "camunda.data.secondary-storage.elasticsearch.history.usage-metrics-rollover-interval=2w",
+      })
+  class WithUsageMetricsPropertiesSet {
+    final SearchEngineRetentionProperties searchEngineRetentionProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithUsageMetricsPropertiesSet(
+        @Autowired final SearchEngineRetentionProperties searchEngineRetentionProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.searchEngineRetentionProperties = searchEngineRetentionProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testCamundaSearchEngineRetentionProperties() {
+      assertThat(searchEngineRetentionProperties)
+          .returns(
+              "custom-usage-metrics-policy",
+              SearchEngineRetentionProperties::getUsageMetricsPolicyName);
+    }
+
+    @Test
+    void testCamundaExporterProperties() {
+      final ExporterConfiguration exporterConfiguration =
+          getExporterConfiguration(brokerBasedProperties);
+
+      assertThat(exporterConfiguration.getHistory().getRetention())
+          .returns(
+              "custom-usage-metrics-policy", RetentionConfiguration::getUsageMetricsPolicyName);
+      assertThat(exporterConfiguration.getHistory().getUsageMetricsRolloverInterval())
+          .isEqualTo("2w");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled=false",
         "camunda.data.secondary-storage.type=elasticsearch",
       })

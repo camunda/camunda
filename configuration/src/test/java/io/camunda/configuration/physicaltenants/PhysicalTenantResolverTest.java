@@ -387,11 +387,15 @@ class PhysicalTenantResolverTest {
             "camunda.physical-tenants.tenanta.data.secondary-storage.retention.enabled", "true",
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.history.policy-name",
                 "tenanta-policy",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.history.usage-metrics-policy-name",
+                "tenanta-usage-metrics-policy",
             "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                 "tenantb",
             "camunda.physical-tenants.tenantb.data.secondary-storage.retention.enabled", "true",
             "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.history.policy-name",
-                "tenantb-policy"),
+                "tenantb-policy",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.history.usage-metrics-policy-name",
+                "tenantb-usage-metrics-policy"),
         "tenanta",
         "tenantb");
 

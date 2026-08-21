@@ -36,10 +36,10 @@ import org.jspecify.annotations.NullMarked;
  * resolve to a one-entry map and are a no-op. Colliding tenants are reported as a single grouped
  * error, not O(n²) pairwise messages.
  *
- * <p><b>Out of scope:</b> the separate <em>usage-metrics</em> lifecycle policy. It is created with
- * a fixed default name today and is not yet configurable through unified configuration; extending
- * this rule to cover it is tracked by <a
- * href="https://github.com/camunda/camunda/issues/58237">#58237</a>.
+ * <p>The separate <em>usage-metrics</em> lifecycle policy ({@link UsageMetricsPolicyIdentity}) is
+ * checked the same way, independently: a collision on the general policy name and a collision on
+ * the usage-metrics policy name are two distinct groupings, so that tenants sharing one name but
+ * not the other are still caught on whichever name they actually share.
  */
 @NullMarked
 class RetentionPolicyIsolationValidation implements CrossTenantValidation {
@@ -52,6 +52,8 @@ class RetentionPolicyIsolationValidation implements CrossTenantValidation {
     }
 
     final Map<RetentionPolicyIdentity, List<String>> tenantsByPolicy = new LinkedHashMap<>();
+    final Map<UsageMetricsPolicyIdentity, List<String>> tenantsByUsageMetricsPolicy =
+        new LinkedHashMap<>();
     resolvedByTenant.forEach(
         (tenantId, camunda) -> {
           final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
@@ -63,12 +65,18 @@ class RetentionPolicyIsolationValidation implements CrossTenantValidation {
           secondaryStorage
               .elasticsearchOrOpensearch()
               .ifPresent(
-                  database ->
-                      tenantsByPolicy
-                          .computeIfAbsent(
-                              RetentionPolicyIdentity.of(secondaryStorage.getType(), database),
-                              k -> new ArrayList<>())
-                          .add(tenantId));
+                  database -> {
+                    tenantsByPolicy
+                        .computeIfAbsent(
+                            RetentionPolicyIdentity.of(secondaryStorage.getType(), database),
+                            k -> new ArrayList<>())
+                        .add(tenantId);
+                    tenantsByUsageMetricsPolicy
+                        .computeIfAbsent(
+                            UsageMetricsPolicyIdentity.of(secondaryStorage.getType(), database),
+                            k -> new ArrayList<>())
+                        .add(tenantId);
+                  });
         });
 
     final List<String> collisions = new ArrayList<>();
@@ -81,13 +89,22 @@ class RetentionPolicyIsolationValidation implements CrossTenantValidation {
                     tenantIds, identity.describe()));
           }
         });
+    tenantsByUsageMetricsPolicy.forEach(
+        (identity, tenantIds) -> {
+          if (tenantIds.size() > 1) {
+            collisions.add(
+                String.format(
+                    "tenants %s share the same usage-metrics lifecycle policy [%s]",
+                    tenantIds, identity.describe()));
+          }
+        });
 
     if (!collisions.isEmpty()) {
       throw new UnifiedConfigurationException(
           "Physical tenants with retention enabled must not share a secondary-storage lifecycle "
               + "(ILM/ISM) policy, or they would overwrite each other's retention policy on the same "
-              + "cluster. Use a distinct data.secondary-storage.<database>.history.policy-name per "
-              + "tenant that shares a cluster. Conflicts: "
+              + "cluster. Use a distinct data.secondary-storage.<database>.history.policy-name and "
+              + "…history.usage-metrics-policy-name per tenant that shares a cluster. Conflicts: "
               + String.join("; ", collisions));
     }
   }
