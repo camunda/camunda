@@ -33,18 +33,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Drives one partition group's dependency-graph change, the counterpart of {@link ScopeReconciler}
- * for the other execution model.
+ * Drives one partition group's change, the per-group counterpart of {@link ScopeReconciler} (which
+ * drives the global configuration, and only that).
  *
  * <p>The difference that makes this a separate class rather than a mode of {@link ScopeReconciler}:
- * a queue offers the local member exactly one operation at a time, so a single {@code ongoing} flag
- * is enough to keep re-entrant reconciliation idempotent. A graph offers every operation whose
- * dependencies have completed — typically several — so in-flight state and retry backoff are keyed
- * per {@link OperationId} instead. Everything else (read the config fresh, stage, apply, record,
- * persist, re-reconcile) mirrors {@link ScopeReconciler} deliberately.
- *
- * <p>A group holds one change of one model, so for any given group at most one of the two
- * reconcilers ever finds work.
+ * the global configuration's queue offers the local member exactly one operation at a time, so a
+ * single {@code ongoing} flag is enough to keep re-entrant reconciliation idempotent. A group's
+ * graph offers every operation whose dependencies have completed — typically several — so in-flight
+ * state and retry backoff are keyed per operation instead (see {@link OperationKey}). Everything
+ * else (read the config fresh, stage, apply, record, persist, re-reconcile) mirrors {@link
+ * ScopeReconciler} deliberately.
  */
 @NullMarked
 final class GraphScopeReconciler {
@@ -75,15 +73,14 @@ final class GraphScopeReconciler {
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
 
-  private final Set<OperationId> inFlight = new HashSet<>();
-  private final Map<OperationId, ExponentialBackoffRetryDelay> backoffs = new HashMap<>();
+  private final Set<OperationKey> inFlight = new HashSet<>();
+  private final Map<OperationKey, ExponentialBackoffRetryDelay> backoffs = new HashMap<>();
 
   /**
    * @param applierFor resolves the applier for one operation, or {@link Optional#empty()} to leave
-   *     it pending — the same per-operation resolution {@code ClusterConfigurationManagerImpl}'s
-   *     {@code applierFor} gives the queue model's {@code GroupScopeOperations}, so a {@code
-   *     RemovePhysicalTenantOperation} (dispatchable with no registered appliers at all, since it
-   *     is a pure configuration edit) is not blocked by this group having none.
+   *     it pending. Resolution is per operation rather than per group so that a {@code
+   *     RemovePhysicalTenantOperation} — dispatchable with no registered appliers at all, since it
+   *     is a pure configuration edit — is not blocked by this group having none.
    */
   GraphScopeReconciler(
       final String groupId,
@@ -120,27 +117,52 @@ final class GraphScopeReconciler {
   void reconcile() {
     final var group = currentConfiguration.get().partitionGroup(groupId);
     if (group == null) {
+      forgetOperationsOutside(null);
       return;
     }
+    final var plan = group.pendingChanges().orElse(null);
+    if (plan == null) {
+      forgetOperationsOutside(null);
+      return;
+    }
+    forgetOperationsOutside(plan.id());
 
     for (final var entry : group.runnableFor(localMemberId).entrySet()) {
+      final var key = new OperationKey(plan.id(), entry.getKey());
       if (inFlight.size() >= MAX_CONCURRENT_OPERATIONS) {
         break;
       }
-      if (inFlight.contains(entry.getKey())) {
+      if (inFlight.contains(key)) {
         continue;
       }
-      start(entry.getKey(), entry.getValue());
+      start(key, entry.getValue());
     }
   }
 
   /**
-   * Leaves {@code operationId} pending — neither in-flight nor retried on a timer — if {@link
-   * #applierFor} resolves nothing for it, exactly as {@code GroupScopeOperations} does for the
-   * queue model: stalling visibly on a genuinely-unregistered operation, rather than fabricating a
-   * no-op success for it.
+   * Drops in-flight and backoff state belonging to any plan other than {@code planId} ({@code null}
+   * meaning the group has no change at all).
+   *
+   * <p>This is the only thing that reclaims that state when the plan it belongs to goes away.
+   * {@code PartitionGroupConfiguration#cancelPendingChanges()} — the operator's last resort for a
+   * stuck change — is a pure transformation of the persisted configuration and cannot reach these
+   * in-memory maps. The per-operation completion path cannot be relied on either: it only runs once
+   * the operation's {@code apply()} future completes, and a genuinely hung operation (precisely
+   * what gets a change cancelled) never gets there. Without this, that operation's entry would hold
+   * one of {@link #MAX_CONCURRENT_OPERATIONS} slots for the lifetime of the process.
    */
-  private void start(final OperationId operationId, final PartitionGroupOperation operation) {
+  private void forgetOperationsOutside(final @Nullable Long planId) {
+    inFlight.removeIf(key -> planId == null || key.planId() != planId);
+    backoffs.keySet().removeIf(key -> planId == null || key.planId() != planId);
+  }
+
+  /**
+   * Leaves the operation pending — neither in-flight nor retried on a timer — if {@link
+   * #applierFor} resolves nothing for it: stalling visibly on a genuinely-unregistered operation,
+   * rather than fabricating a no-op success for it.
+   */
+  private void start(final OperationKey key, final PartitionGroupOperation operation) {
+    final var operationId = key.operationId();
     final var resolvedApplier = applierFor.apply(operation);
     if (resolvedApplier.isEmpty()) {
       return;
@@ -154,7 +176,7 @@ final class GraphScopeReconciler {
       return;
     }
 
-    inFlight.add(operationId);
+    inFlight.add(key);
     final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying partition group '{}' operation {} ({})", groupId, operationId, operation);
 
@@ -166,7 +188,7 @@ final class GraphScopeReconciler {
             .flatMap(updateLocally);
     if (initialized.isLeft()) {
       observer.failed();
-      inFlight.remove(operationId);
+      inFlight.remove(key);
       LOG.error(
           "Failed to initialize partition group '{}' operation {}",
           groupId,
@@ -180,25 +202,24 @@ final class GraphScopeReconciler {
         .apply()
         .onComplete(
             (transformer, error) ->
-                onApplied(operationId, operation, transformer, error, startedVersion, observer));
+                onApplied(key, operation, transformer, error, startedVersion, observer));
   }
 
   private void onApplied(
-      final OperationId operationId,
+      final OperationKey key,
       final PartitionGroupOperation operation,
       final UnaryOperator<PartitionGroupConfiguration> transformer,
       final @Nullable Throwable error,
       final long startedVersion,
       final OperationObserver observer) {
-    inFlight.remove(operationId);
+    inFlight.remove(key);
 
     if (error != null) {
       observer.failed();
       final Duration delay =
           backoffs
               .computeIfAbsent(
-                  operationId,
-                  ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
+                  key, ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
               .nextDelay();
       LOG.warn(
           "Failed to apply partition group '{}' operation {}. Will be retried in {}.",
@@ -213,30 +234,19 @@ final class GraphScopeReconciler {
     }
 
     observer.applied();
-    backoffs.remove(operationId);
+    backoffs.remove(key);
 
     final var config = currentConfiguration.get();
     if (versionOf(config) != startedVersion) {
       // Recording an operation moves no version, so a version change here means the change was
-      // cancelled or already completed while this operation was running.
+      // cancelled or already completed while this operation was running. Nothing to clean up or
+      // re-check: the key carries the plan id, so whatever plan runs on this group now cannot be
+      // waiting on state this completion holds, and the update that started it already reconciled.
       LOG.debug(
           "Partition group '{}' changed while applying operation {}. Most likely the change was"
               + " cancelled.",
           groupId,
           operation);
-      // Also clears any backoff this operationId accumulated: a replacement plan on this group
-      // numbers its operations from zero, same as this one did, so its operationId can collide
-      // with this one, and without this an operation that failed a few times before this plan was
-      // cancelled would leave an inflated delay for the replacement plan's same-numbered operation
-      // to inherit -- the same reasoning ScopeReconciler's stale-version path already applies to
-      // its single shared backoff.
-      backoffs.remove(operationId);
-      // A replacement plan on this group numbers its operations from zero, same as this one did,
-      // so its own operationId may collide with the one just removed from inFlight above. If that
-      // collision was blocking it, this is the only place left to notice: nothing else about this
-      // stale completion touches the replacement plan, so without this call the collision clears
-      // but nothing ever re-checks what it was blocking.
-      reconcile();
       return;
     }
 
@@ -244,7 +254,9 @@ final class GraphScopeReconciler {
         config.updatePartitionGroupConfig(
             groupId,
             group ->
-                group.completeOperation(operationId, transformer).completeGraphChangeIfDrained());
+                group
+                    .completeOperation(key.operationId(), transformer)
+                    .completeGraphChangeIfDrained());
     // Persisting re-triggers reconciliation across every scope and plan, which is what picks up the
     // operations this completion just made runnable — no explicit "run the loop again" is needed.
     final var persisted = updateLocally.apply(advanced);
@@ -254,8 +266,7 @@ final class GraphScopeReconciler {
       final Duration delay =
           backoffs
               .computeIfAbsent(
-                  operationId,
-                  ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
+                  key, ignored -> new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay))
               .nextDelay();
       LOG.warn(
           "Applied partition group '{}' operation {} but failed to record it. Will be retried in"
@@ -274,4 +285,12 @@ final class GraphScopeReconciler {
     final var group = config.partitionGroup(groupId);
     return group == null ? -1 : group.version();
   }
+
+  /**
+   * Identifies one operation of one plan. The plan id is part of the key because {@code
+   * OperationGraph.Builder} numbers every plan's operations from zero: keyed by {@link OperationId}
+   * alone, an entry left behind by a cancelled plan would be indistinguishable from — and would
+   * block — the same-numbered operation of whatever plan replaces it on this group.
+   */
+  private record OperationKey(long planId, OperationId operationId) {}
 }

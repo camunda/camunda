@@ -464,12 +464,12 @@ final class ClusterConfigurationManagerImplTest {
   }
 
   @Test
-  void shouldStartAReplacementOperationBlockedByAStaleInFlightId() {
-    // given — operation ids restart at 0 for every fresh graph, and in-flight tracking is keyed by
-    // that bare id, per group. Cancelling a plan while one of its operations is still applying
-    // (async, real work, not instantly resolving), then starting a replacement on the same group,
-    // reproduces the case: the replacement's own id-0 operation is runnable but looks like it is
-    // already in flight, because id 0 still is -- from the plan that no longer exists.
+  void shouldNotLetACancelledPlansInFlightOperationBlockItsReplacement() {
+    // given — operation ids restart at 0 for every fresh graph. Cancelling a plan while one of its
+    // operations is still applying (async, real work, never resolving here -- the "stuck change"
+    // that gets a plan cancelled in the first place), then starting a replacement on the same
+    // group, is the case: the replacement's own id-0 operation is runnable, and must not be taken
+    // for the cancelled plan's id-0 operation that is still in flight and may never finish.
     final var member1 = MemberId.from("1");
     final var pendingApplies =
         new HashMap<Integer, CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>>();
@@ -553,8 +553,8 @@ final class ClusterConfigurationManagerImplTest {
         configuration(manager).phasedChangeState().pending().keySet().iterator().next();
     manager.updateMultiConfiguration(c -> c.cancelPendingChanges(planAId)).join();
 
-    // and — plan B leaves partition 2 instead; its single operation is also id 0 (a fresh graph
-    // numbers from zero), and is runnable, but is skipped: id 0 is still in flight, from plan A
+    // when — plan B leaves partition 2 instead; its single operation is also id 0 (a fresh graph
+    // numbers from zero)
     final var planBGraph = OperationGraph.builder();
     planBGraph.add(new PartitionLeaveOperation(MEMBER_0, 2, 1));
     manager
@@ -566,17 +566,17 @@ final class ClusterConfigurationManagerImplTest {
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP, planBGraph.build())))))
         .join();
-    assertThat(applied).describedAs("plan B blocked behind plan A's stale id").containsExactly(1);
 
-    // and — plan A's operation finally resolves. Its own plan is long gone (the version check
-    // inside onApplied sees that and returns early), but this must not also strand plan B's
-    // operation that only looked blocked because of the id it reused
-    pendingApplies.get(1).complete(UnaryOperator.identity());
-
-    // then — plan B's operation starts once the stale id clears
+    // then — it starts immediately, without waiting on plan A's operation. In-flight state is keyed
+    // by (plan id, operation id), so the shared id 0 is not a collision; keyed by the bare id it
+    // would be, and plan B would be stuck for as long as plan A's operation stayed unresolved --
+    // forever, if it is genuinely hung, since nothing else reclaims that entry.
     assertThat(applied)
-        .describedAs("plan B's operation runs once the stale in-flight id is gone")
+        .describedAs("plan B's operation is not blocked by plan A's stale in-flight id")
         .containsExactly(1, 2);
+    assertThat(pendingApplies.get(1).isDone())
+        .describedAs("plan A's operation is still unresolved")
+        .isFalse();
   }
 
   /** Both members replicate partitions 1 and 2, so either may leave either partition. */
