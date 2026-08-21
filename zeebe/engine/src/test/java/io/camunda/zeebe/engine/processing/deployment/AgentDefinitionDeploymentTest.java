@@ -29,12 +29,12 @@ import org.junit.Test;
 
 /**
  * Covers the core detection-to-emission story for {@code AgentDefinition:CREATED} at deploy time:
- * an element carrying a recognized agent marker (explicit {@code zeebe:agentDefinition}, or a
- * {@code zeebe:modelerTemplate} fallback) mints exactly one {@code AgentDefinition} per deployed
- * process version, while an unmarked element mints nothing. Also covers the deployment versioning
- * invariants also enforced for other deployed resources: a fully duplicate deployment must not mint
- * an additional {@code AgentDefinition}, while a mixed deployment that reassigns a duplicate BPMN
- * resource to a new process version must mint a new one for it.
+ * an element carrying an explicit {@code zeebe:agentDefinition} marker mints exactly one {@code
+ * AgentDefinition} per deployed process version, while an unmarked element mints nothing. Also
+ * covers the deployment versioning invariants also enforced for other deployed resources: a fully
+ * duplicate deployment must not mint an additional {@code AgentDefinition}, while a mixed
+ * deployment that reassigns a duplicate BPMN resource to a new process version must mint a new one
+ * for it.
  *
  * <p>Also covers a single BPMN resource containing more than one executable, agent-marked {@code
  * <process>} element, pinning down that {@code BpmnResourceTransformer} always finds the right
@@ -105,7 +105,8 @@ public final class AgentDefinitionDeploymentTest {
   @Test
   public void shouldNotCreateAgentDefinitionForElementWithoutAgentMarker() {
     // given — a plain service task, an ad-hoc sub-process with no marker, and a service task with
-    // an unrecognized modelerTemplate: none of these are agent definitions
+    // a modelerTemplate but no explicit marker: none of these are agent definitions, since a
+    // modelerTemplate alone no longer resolves to an agent type
     final var processId = "process-unmarked";
 
     // when
@@ -117,10 +118,10 @@ public final class AgentDefinitionDeploymentTest {
                     .startEvent()
                     .serviceTask("plain-task", t -> t.zeebeJobType("plain-task-job"))
                     .serviceTask(
-                        "unrecognized-template-task",
+                        "templated-task",
                         t ->
-                            t.zeebeJobType("unrecognized-template-task-job")
-                                .zeebeModelerTemplate("some.other.connector.template.v3"))
+                            t.zeebeJobType("templated-task-job")
+                                .zeebeModelerTemplate("some.connector.template.v3"))
                     .adHocSubProcess("plain-ad-hoc", ahsp -> ahsp.task("inner"))
                     .endEvent()
                     .done())
