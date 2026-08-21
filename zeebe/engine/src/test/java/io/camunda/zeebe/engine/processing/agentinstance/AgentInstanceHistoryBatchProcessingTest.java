@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTo
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
@@ -948,7 +949,7 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldApplyInstanceFieldsFromConfigurationItemOnUpdate() {
+  public void shouldApplyInstanceFieldsFromConfigurationItemOnlyOnCommit() {
     // given
     ENGINE
         .deployment()
@@ -988,11 +989,11 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .setHistoryItemId("item-config")
             .setRole(AgentHistoryRole.CONFIGURATION)
             .setLoopIteration(1);
-    configItem.setModel("gpt-4o-mini").setProvider("openai");
+    configItem.setModel("gpt-4o-mini").setProvider("azure-openai");
     configItem.addSystemPrompt(
         new AgentHistoryMessageContent()
             .setContentType(AgentHistoryContentType.TEXT)
-            .setText("You are a helpful agent."));
+            .setText("You are a specialized agent."));
     configItem.setTools(List.of(new AgentInstanceTool().setName("calc").setElementId("calc-task")));
     configItem.getLimits().setMaxTokens(5000L).setMaxModelCalls(8).setMaxToolCalls(16);
     configItem.setChangedAttributes(
@@ -1015,22 +1016,50 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withHistory(List.of(configItem))
             .update();
 
-    // then — applied immediately onto the live fields, driven by the item's own changedAttributes.
-    assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    // then — the item is only queued, not yet applied: the live fields still reflect the
+    // instance's definition at creation, so the instance always has a valid definition even
+    // while this CONFIGURATION item is pending.
+    assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(updated.getValue().getDefinition().getProvider()).isEqualTo("openai");
     assertThat(updated.getValue().getDefinition().getSystemPrompt())
         .hasSize(1)
         .first()
-        .satisfies(
-            block -> {
-              assertThat(block.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
-              assertThat(block.getText()).isEqualTo("You are a helpful agent.");
-            });
-    assertThat(updated.getValue().getTools()).extracting("name").containsExactly("calc");
-    assertThat(updated.getValue().getLimits().getMaxTokens()).isEqualTo(5000L);
-    assertThat(updated.getValue().getLimits().getMaxModelCalls()).isEqualTo(8);
-    assertThat(updated.getValue().getLimits().getMaxToolCalls()).isEqualTo(16);
-    assertThat(updated.getValue().getChangedAttributes())
+        .satisfies(block -> assertThat(block.getText()).isEqualTo("You are a helpful agent."));
+    assertThat(updated.getValue().getTools()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).isEmpty();
+
+    // the persisted AGENT_HISTORY event is still a full copy of the item, including these fields.
+    final var historyItem =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .getFirst();
+    assertThat(historyItem.getValue().getModel()).isEqualTo("gpt-4o-mini");
+    assertThat(historyItem.getValue().getProvider()).isEqualTo("azure-openai");
+
+    // when — the item is committed
+    final var committed =
+        ENGINE.agentHistories().withAgentInstanceKey(agentInstanceKey).withJobKey(jobKey).commit();
+    assertThat(committed.getIntent()).isEqualTo(AgentHistoryIntent.COMMITTED);
+
+    // then — only now are the live fields driven by the item's own changedAttributes. Skip the
+    // UPDATED event from the update command itself (queuing the item, no config applied yet) to
+    // reach the one commit() causes.
+    final var instanceUpdated =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .skip(1)
+            .getFirst();
+    assertThat(instanceUpdated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    assertThat(instanceUpdated.getValue().getDefinition().getProvider()).isEqualTo("azure-openai");
+    assertThat(instanceUpdated.getValue().getDefinition().getSystemPrompt())
+        .hasSize(1)
+        .first()
+        .satisfies(block -> assertThat(block.getText()).isEqualTo("You are a specialized agent."));
+    assertThat(instanceUpdated.getValue().getTools()).extracting("name").containsExactly("calc");
+    assertThat(instanceUpdated.getValue().getLimits().getMaxTokens()).isEqualTo(5000L);
+    assertThat(instanceUpdated.getValue().getLimits().getMaxModelCalls()).isEqualTo(8);
+    assertThat(instanceUpdated.getValue().getLimits().getMaxToolCalls()).isEqualTo(16);
+    assertThat(instanceUpdated.getValue().getChangedAttributes())
         .containsExactlyInAnyOrder(
             "systemPrompt",
             "model",
@@ -1039,22 +1068,14 @@ public class AgentInstanceHistoryBatchProcessingTest {
             "maxTokens",
             "maxModelCalls",
             "maxToolCalls");
-
-    // the persisted AGENT_HISTORY event is a full copy of the item, including these fields.
-    final var historyEvent =
-        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
-            .withAgentInstanceKey(agentInstanceKey)
-            .getFirst();
-    assertThat(historyEvent.getValue().getModel()).isEqualTo("gpt-4o-mini");
-    assertThat(historyEvent.getValue().getProvider()).isEqualTo("openai");
   }
 
   @Test
-  public void shouldOnlyApplyAttributesNamedInConfigurationItemChangedAttributes() {
+  public void shouldOnlyApplyAttributesNamedInConfigurationItemChangedAttributesOnCommit() {
     // given — the agent instance is created with model="gpt-4o"/provider="openai" below. The item
     // carries a different value for both, but only names "model" in its own changedAttributes:
-    // provider must be left at its original value, since presence alone no longer drives
-    // application (that's what tells apart "left as-is" from "deliberately cleared").
+    // provider must be left at its original value once committed, since presence alone no longer
+    // drives application (that's what tells apart "left as-is" from "deliberately cleared").
     ENGINE
         .deployment()
         .withXmlResource(
@@ -1106,10 +1127,24 @@ public class AgentInstanceHistoryBatchProcessingTest {
             .withHistory(List.of(configItem))
             .update();
 
-    // then
-    assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    // then — nothing is applied yet, the item is only queued
+    assertThat(updated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
     assertThat(updated.getValue().getDefinition().getProvider()).isEqualTo("openai");
-    assertThat(updated.getValue().getChangedAttributes()).containsExactly("model");
+    assertThat(updated.getValue().getChangedAttributes()).isEmpty();
+
+    // when — the item is committed
+    ENGINE.agentHistories().withAgentInstanceKey(agentInstanceKey).withJobKey(jobKey).commit();
+
+    // then — only "model" lands, "provider" is left at its original value. Skip the UPDATED
+    // event from the update command itself (queuing the item, no config applied yet).
+    final var instanceUpdated =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .skip(1)
+            .getFirst();
+    assertThat(instanceUpdated.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    assertThat(instanceUpdated.getValue().getDefinition().getProvider()).isEqualTo("openai");
+    assertThat(instanceUpdated.getValue().getChangedAttributes()).containsExactly("model");
   }
 
   @Test
@@ -1371,6 +1406,77 @@ public class AgentInstanceHistoryBatchProcessingTest {
     assertThat(historyEvent.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
     // changedAttributes stays empty on CREATED, unaffected by the history batch.
     assertThat(created.getValue().getChangedAttributes()).isEmpty();
+  }
+
+  @Test
+  public void shouldApplyInstanceFieldsFromConfigurationItemImmediatelyOnCreate() {
+    // given — unlike UPDATE (where a CONFIGURATION item stays pending until it is committed),
+    // CREATE applies it right away, so the instance is guaranteed to start with a valid
+    // definition instead of the placeholder one on its CREATE command.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1);
+    configItem.setModel("gpt-4o-mini").setProvider("azure-openai");
+    configItem.setTools(List.of(new AgentInstanceTool().setName("calc").setElementId("calc-task")));
+    configItem.getLimits().setMaxTokens(5000L).setMaxModelCalls(8).setMaxToolCalls(16);
+    configItem.setChangedAttributes(
+        List.of("model", "provider", "tools", "maxTokens", "maxModelCalls", "maxToolCalls"));
+
+    // when — the initial definition below ("gpt-4o"/"openai") is a placeholder immediately
+    // overridden by the CONFIGURATION item in the same CREATE command
+    final var created =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .withJobKey(jobKey)
+            .withHistory(List.of(configItem))
+            .create();
+
+    // then
+    assertThat(created.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    assertThat(created.getValue().getDefinition().getProvider()).isEqualTo("azure-openai");
+    assertThat(created.getValue().getTools()).extracting("name").containsExactly("calc");
+    assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(5000L);
+    assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(8);
+    assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(16);
+    // CREATED has no prior state to diff against, so changedAttributes stays empty regardless
+    // (same as for a non-CONFIGURATION item, see shouldEmitHistoryEventsOnCreate above).
+    assertThat(created.getValue().getChangedAttributes()).isEmpty();
+
+    final var historyEvent =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.CREATED)
+            .withAgentInstanceKey(created.getKey())
+            .getFirst();
+    assertThat(historyEvent.getValue().getModel()).isEqualTo("gpt-4o-mini");
   }
 
   @Test
