@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -26,16 +27,18 @@ public class AgentInstanceCompletedApplierTest {
   private MutableProcessingState processingState;
 
   private MutableAgentInstanceState agentInstanceState;
+  private MutableAgentHistoryState agentHistoryState;
   private AgentInstanceCreatedApplier createdApplier;
   private AgentInstanceCompletedApplier completedApplier;
 
   @BeforeEach
   public void setup() {
     agentInstanceState = processingState.getAgentInstanceState();
+    agentHistoryState = processingState.getAgentHistoryState();
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     createdApplier = new AgentInstanceCreatedApplier(agentInstanceState, elementInstanceState);
-    completedApplier = new AgentInstanceCompletedApplier(agentInstanceState);
+    completedApplier = new AgentInstanceCompletedApplier(agentInstanceState, agentHistoryState);
   }
 
   @Test
@@ -96,5 +99,63 @@ public class AgentInstanceCompletedApplierTest {
     assertThat(agentInstanceState.getRecord(secondAgentInstanceKey)).isNotNull();
     assertThat(agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey))
         .containsExactly(secondAgentInstanceKey);
+  }
+
+  @Test
+  void shouldDeleteCommittedHistoryItemIdsOnCompletion() {
+    // given — a completed agent instance with committed history item ids recorded against it.
+    final long agentInstanceKey = 21L;
+    final long processInstanceKey = 5L;
+    createdApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentHistoryState.putCommittedHistoryItemKey(agentInstanceKey, "history-item-1", 101L);
+    agentHistoryState.putCommittedHistoryItemKey(agentInstanceKey, "history-item-2", 102L);
+
+    // when — the agent instance completes.
+    completedApplier.applyState(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then — every committed id recorded for this agent instance is gone.
+    assertThat(agentHistoryState.getCommittedHistoryItemKey(agentInstanceKey, "history-item-1"))
+        .isNull();
+    assertThat(agentHistoryState.getCommittedHistoryItemKey(agentInstanceKey, "history-item-2"))
+        .isNull();
+  }
+
+  @Test
+  void shouldNotAffectCommittedHistoryItemIdsOfOtherAgentInstances() {
+    // given — committed ids for two different agent instances.
+    final long processInstanceKey = 5L;
+    final long firstAgentInstanceKey = 22L;
+    final long secondAgentInstanceKey = 23L;
+    createdApplier.applyState(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentHistoryState.putCommittedHistoryItemKey(firstAgentInstanceKey, "history-item-1", 101L);
+    agentHistoryState.putCommittedHistoryItemKey(secondAgentInstanceKey, "history-item-1", 201L);
+
+    // when — only the first agent instance completes.
+    completedApplier.applyState(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.COMPLETED));
+
+    // then — the second agent instance's committed id is untouched.
+    assertThat(
+            agentHistoryState.getCommittedHistoryItemKey(secondAgentInstanceKey, "history-item-1"))
+        .isEqualTo(201L);
   }
 }
