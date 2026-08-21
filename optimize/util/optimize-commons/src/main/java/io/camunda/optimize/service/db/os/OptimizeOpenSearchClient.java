@@ -186,7 +186,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public static void validateTaskResponse(final GetTasksResponse taskResponse) {
     if (taskResponse.error() != null) {
       LOG.error("An Opensearch task failed with error: {}", taskResponse.error());
-      throw new OptimizeRuntimeException(taskResponse.error().toString());
+      // ErrorCause has no toString() override; toJsonString() serializes every field.
+      throw new OptimizeRuntimeException(taskResponse.error().toJsonString());
     }
 
     if (taskResponse.response() != null) {
@@ -955,8 +956,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
 
     final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
-    LOG.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
-    return taskStatus.updated() > 0L;
+    LOG.debug("Deleted [{}] {}.", taskStatus.deleted(), deleteItemIdentifier);
+    return taskStatus.deleted() > 0L;
   }
 
   public void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {

@@ -24,12 +24,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -84,6 +86,22 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
       throw new OptimizeRuntimeException(
           String.format(
               "There was a problem when trying to mark process definition with ID %s as deleted",
+              definitionId),
+          e);
+    }
+  }
+
+  @Override
+  public void deleteDefinition(final String definitionId) {
+    LOG.debug("Deleting process definition with ID {}", definitionId);
+    try {
+      esClient.delete(
+          OptimizeDeleteRequestBuilderES.of(
+              d -> d.optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME).id(definitionId)));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "There was a problem when trying to delete process definition with ID %s",
               definitionId),
           e);
     }
