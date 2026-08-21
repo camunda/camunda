@@ -10,7 +10,7 @@ import {BasePage} from './BasePage';
 
 class ShadcnTasklistProcessesPage extends BasePage {
 	async goto() {
-		return this.page.goto('/shadcn/tasklist');
+		return this.page.goto('/shadcn/tasklist/processes');
 	}
 
 	get heading() {
@@ -23,6 +23,14 @@ class ShadcnTasklistProcessesPage extends BasePage {
 
 	get startProcessButtons() {
 		return this.page.getByRole('button', {name: 'Start process'});
+	}
+
+	get tasksNavItem() {
+		return this.page.getByRole('link', {name: 'Tasks', exact: true});
+	}
+
+	get processesNavItem() {
+		return this.page.getByRole('link', {name: 'Processes', exact: true});
 	}
 }
 

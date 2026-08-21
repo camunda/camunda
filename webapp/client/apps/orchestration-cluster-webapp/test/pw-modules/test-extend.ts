@@ -25,7 +25,6 @@ import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
 import {ShadcnTasklistIndexPage} from '#/pages/ShadcnTasklistIndex.page';
 import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
 import {ShadcnTasklistLoginPage} from '#/pages/ShadcnTasklistLogin.page';
-import {ShadcnTasklistProcessesPage} from '#/pages/ShadcnTasklistProcesses.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -46,7 +45,6 @@ type Fixtures = {
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
 	shadcnTasklistIndexPage: ShadcnTasklistIndexPage;
-	shadcnTasklistProcessesPage: ShadcnTasklistProcessesPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -98,9 +96,6 @@ const test = base.extend<Fixtures>({
 	},
 	shadcnTasklistIndexPage: async ({page}, use) => {
 		await use(new ShadcnTasklistIndexPage(page));
-	},
-	shadcnTasklistProcessesPage: async ({page}, use) => {
-		await use(new ShadcnTasklistProcessesPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [
