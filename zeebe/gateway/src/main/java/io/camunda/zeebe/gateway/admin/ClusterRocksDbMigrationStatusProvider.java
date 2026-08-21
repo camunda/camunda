@@ -81,7 +81,7 @@ public class ClusterRocksDbMigrationStatusProvider implements MigrationStatusPro
     // and a tenant where every known partition happens to report MIGRATED would then be reported
     // as fully migrated even though one partition was never actually checked.
     try {
-      ExportingRequestBroadcaster.validateTopology(topology);
+      TopologyValidation.validateTopology(topology);
     } catch (final IncompleteTopologyException e) {
       return CompletableFuture.completedFuture(
           new PartitionMigrationStatus(
