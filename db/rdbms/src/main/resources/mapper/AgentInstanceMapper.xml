@@ -75,8 +75,10 @@
   </insert>
 
   <!--
-  Partial update: mutable fields plus the process-definition fields (only ever changed by a MIGRATED event)
-  Limits and identity columns are the only ones left genuinely write-once.
+  Partial update: mutable fields plus the process-definition fields (only ever changed by a MIGRATED event).
+  Model, provider, systemPrompt and the limits are mutable too - a CONFIGURATION history item commit
+  can change any of them via an UPDATED event - so they are included here rather than treated as
+  write-once. Only the identity columns are genuinely write-once.
   -->
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     UPDATE ${prefix}AGENT_INSTANCE
@@ -88,6 +90,12 @@
       VERSION_TAG                = #{versionTag},
       ELEMENT_ID                 = #{elementId},
       STATUS                     = #{status},
+      MODEL                      = #{model},
+      PROVIDER                   = #{provider},
+      SYSTEM_PROMPT              = #{systemPrompt, jdbcType=CLOB},
+      MAX_TOKENS                 = #{maxTokens},
+      MAX_MODEL_CALLS            = #{maxModelCalls},
+      MAX_TOOL_CALLS             = #{maxToolCalls},
       INPUT_TOKENS               = #{inputTokens},
       OUTPUT_TOKENS              = #{outputTokens},
       MODEL_CALLS                = #{modelCalls},
