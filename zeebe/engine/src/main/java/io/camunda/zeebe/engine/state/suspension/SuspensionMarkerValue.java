@@ -11,17 +11,15 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public final class SuspensionMarkerValue extends UnpackedObject implements DbValue {
 
   private final EnumProperty<SuspensionState.State> stateProp =
       new EnumProperty<>("suspensionState", SuspensionState.State.class);
-  private final LongProperty lastResumedJobKeyProp = new LongProperty("lastResumedJobKey", -1L);
 
   public SuspensionMarkerValue() {
-    super(2);
-    declareProperty(stateProp).declareProperty(lastResumedJobKeyProp);
+    super(1);
+    declareProperty(stateProp);
   }
 
   public SuspensionState.State getState() {
@@ -30,13 +28,5 @@ public final class SuspensionMarkerValue extends UnpackedObject implements DbVal
 
   public void setState(final SuspensionState.State state) {
     stateProp.setValue(state);
-  }
-
-  public long getLastResumedJobKey() {
-    return lastResumedJobKeyProp.getValue();
-  }
-
-  public void setLastResumedJobKey(final long lastResumedJobKey) {
-    lastResumedJobKeyProp.setValue(lastResumedJobKey);
   }
 }

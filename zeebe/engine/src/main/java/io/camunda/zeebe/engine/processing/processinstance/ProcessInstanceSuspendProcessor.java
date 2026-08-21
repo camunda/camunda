@@ -67,7 +67,7 @@ public final class ProcessInstanceSuspendProcessor
     suspensionState = processingState.getSuspensionState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), suspensionState, stateWriter);
+            elementInstanceState, processingState.getJobState(), stateWriter);
   }
 
   @Override

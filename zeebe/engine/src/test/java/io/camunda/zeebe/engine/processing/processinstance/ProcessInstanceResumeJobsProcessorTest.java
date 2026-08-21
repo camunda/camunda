@@ -146,6 +146,42 @@ public final class ProcessInstanceResumeJobsProcessorTest {
   }
 
   @Test
+  void shouldCarryTheResumedJobKeyAsCursorOnTheNextResumeJobs() {
+    // given - one parked job
+    rootInstance(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    parkJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+
+    // when - resuming from the start (default -1 cursor)
+    processor.processRecord(resumeJobsCommand());
+
+    // then - the follow-up RESUME_JOBS carries the resumed job's key so the next cycle continues
+    // after it (the inclusive re-seek then skips it, since it is no longer SUSPENDED)
+    final var followUp = ArgumentCaptor.forClass(ProcessInstanceRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUME_JOBS), followUp.capture());
+    assertThat(followUp.getValue().getResumeFromJobKey()).isEqualTo(JOB_KEY);
+  }
+
+  @Test
+  void shouldResumeFromTheCursorCarriedOnTheCommand() {
+    // given - two parked jobs, ordered by key
+    seedTwoParkedJobs();
+
+    // when - the command's cursor points past the first job
+    processor.processRecord(resumeJobsCommandFrom(CHILD_JOB_KEY));
+
+    // then - only the job at/after the cursor is resumed; the earlier one is left untouched
+    verify(stateWriter).appendFollowUpEvent(eq(CHILD_JOB_KEY), eq(JobIntent.RESUMED), any());
+    verify(stateWriter, never()).appendFollowUpEvent(eq(JOB_KEY), eq(JobIntent.RESUMED), any());
+    final var followUp = ArgumentCaptor.forClass(ProcessInstanceRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUME_JOBS), followUp.capture());
+    assertThat(followUp.getValue().getResumeFromJobKey()).isEqualTo(CHILD_JOB_KEY);
+  }
+
+  @Test
   void shouldResumeOnlyTheFirstOfSeveralParkedJobsInOneCycle() {
     // given - two parked jobs on two element instances of the same instance
     seedTwoParkedJobs();
@@ -321,5 +357,14 @@ public final class ProcessInstanceResumeJobsProcessorTest {
         PROCESS_INSTANCE_KEY,
         new RecordMetadata(),
         new ProcessInstanceRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+  }
+
+  private MockTypedRecord<ProcessInstanceRecord> resumeJobsCommandFrom(final long cursor) {
+    return new MockTypedRecord<>(
+        PROCESS_INSTANCE_KEY,
+        new RecordMetadata(),
+        new ProcessInstanceRecord()
+            .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+            .setResumeFromJobKey(cursor));
   }
 }

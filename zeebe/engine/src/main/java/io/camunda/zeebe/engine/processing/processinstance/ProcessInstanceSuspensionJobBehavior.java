@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -21,16 +19,14 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
-import org.slf4j.Logger;
 
 /**
- * Suspends and resumes the jobs of a process instance while it is suspended, walking its
- * element-instance tree in bounded batches.
+ * Suspends and resumes the jobs of a process instance while it is suspended.
  *
- * <p>{@link #suspendJobs} always walks the tree — suspending is what populates the {@code
- * JOBS_BY_PROCESS_INSTANCE} index, so the index can't help find newly-suspendable jobs. {@link
- * #forEachSuspendedJob} seeks that index from the resume cursor instead; keyed by each job's own
- * {@code processInstanceKey}, the index excludes a called child instance's jobs.
+ * <p>{@link #suspendJobs} always walks the element-instance tree — suspending is what populates the
+ * {@code JOBS_BY_PROCESS_INSTANCE} index, so the index can't help find newly-suspendable jobs.
+ * {@link #forEachSuspendedJob} seeks that index from the resume cursor instead; keyed by each job's
+ * own {@code processInstanceKey}, the index excludes a called child instance's jobs.
  *
  * <p>Jobs of called child instances are left untouched by the tree walk — {@link
  * ElementInstanceState#getChildren} never returns a child instance's root, so the walk can't reach
@@ -38,8 +34,6 @@ import org.slf4j.Logger;
  */
 @NullMarked
 public final class ProcessInstanceSuspensionJobBehavior {
-
-  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   /**
    * States {@link JobIntent#SUSPENDED} may leave from; includes secret-waiting so a later
@@ -50,17 +44,14 @@ public final class ProcessInstanceSuspensionJobBehavior {
 
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
-  private final SuspensionState suspensionState;
   private final StateWriter stateWriter;
 
   public ProcessInstanceSuspensionJobBehavior(
       final ElementInstanceState elementInstanceState,
       final JobState jobState,
-      final SuspensionState suspensionState,
       final StateWriter stateWriter) {
     this.elementInstanceState = elementInstanceState;
     this.jobState = jobState;
-    this.suspensionState = suspensionState;
     this.stateWriter = stateWriter;
   }
 
@@ -85,29 +76,23 @@ public final class ProcessInstanceSuspensionJobBehavior {
   /**
    * Visits {@link State#SUSPENDED} jobs of the process instance until {@code visitor} stops the
    * walk, without changing their state. Seeks the {@code JOBS_BY_PROCESS_INSTANCE} index from
-   * {@link SuspensionState#getLastResumedJobKey} (inclusive): the cursor marks the last job a
-   * previous cycle resumed, so every entry from there onward is either resumed (advancing the
-   * cursor past it) or halts the scan for this cycle. Takes the already-loaded root so a per-cycle
-   * caller doesn't re-read it, even though only its {@code processInstanceKey} is used here.
+   * {@code startAtJobKey} (inclusive): the cursor marks the last job a previous cycle resumed, so
+   * every entry from there onward is either already resumed (skipped) or halts the scan for this
+   * cycle. Takes the already-loaded root so a per-cycle caller doesn't re-read it, even though only
+   * its {@code processInstanceKey} is used here.
+   *
+   * <p>If the index entry for {@code startAtJobKey} no longer exists (e.g. the job was deleted
+   * after the cursor was recorded), RocksDB's seek lands on the next key ≥ {@code startAtJobKey},
+   * so iteration naturally continues from there.
    */
-  public void forEachSuspendedJob(final ElementInstance processInstance, final JobVisitor visitor) {
+  public void forEachSuspendedJob(
+      final ElementInstance processInstance, final long startAtJobKey, final JobVisitor visitor) {
     final long processInstanceKey = processInstance.getValue().getProcessInstanceKey();
-    final long startAtJobKey = suspensionState.getLastResumedJobKey(processInstanceKey);
-    jobState.visitJobsOfProcessInstance(
+    jobState.forEachJobsByProcessInstance(
         processInstanceKey,
         startAtJobKey,
         jobKey -> {
-          final var state = jobState.getState(jobKey);
-          if (state == State.NOT_FOUND) {
-            LOG.warn(
-                "Expected to find job with key {} while resuming process instance {}, but no job"
-                    + " found",
-                jobKey,
-                processInstanceKey);
-            return true;
-          }
-          if (state != State.SUSPENDED) {
-            // not (or no longer) suspended; keep scanning past it instead of stopping the cycle
+          if (jobState.getState(jobKey) != State.SUSPENDED) {
             return true;
           }
           final var job = jobState.getJob(jobKey);

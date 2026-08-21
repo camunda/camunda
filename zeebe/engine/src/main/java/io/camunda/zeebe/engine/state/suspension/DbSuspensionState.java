@@ -80,12 +80,6 @@ public final class DbSuspensionState implements MutableSuspensionState {
   public void setSuspensionState(final long key, final SuspensionState.State state) {
     processInstanceKey.wrapLong(key);
     suspensionMarkerValue.setState(state);
-    // ColumnFamily#get returns this same instance rather than a copy, so it still holds whatever
-    // marker was read last — this instance's own earlier resume cycle, or another instance's. Every
-    // property must therefore be set explicitly here; a leftover cursor would make a fresh resume
-    // seek past jobs it has to re-activate. A resume restart does not come through here: it
-    // re-appends DRAIN without a new RESUMING event, so an in-flight cursor survives correctly.
-    suspensionMarkerValue.setLastResumedJobKey(-1L);
     suspensionColumnFamily.upsert(processInstanceKey, suspensionMarkerValue);
   }
 
@@ -93,28 +87,6 @@ public final class DbSuspensionState implements MutableSuspensionState {
   public void removeSuspensionState(final long key) {
     processInstanceKey.wrapLong(key);
     suspensionColumnFamily.deleteIfExists(processInstanceKey);
-  }
-
-  @Override
-  public long getLastResumedJobKey(final long key) {
-    processInstanceKey.wrapLong(key);
-    final var stored = suspensionColumnFamily.get(processInstanceKey);
-    return stored == null ? -1L : stored.getLastResumedJobKey();
-  }
-
-  @Override
-  public void setLastResumedJobKey(final long key, final long jobKey) {
-    processInstanceKey.wrapLong(key);
-    final var stored = suspensionColumnFamily.get(processInstanceKey);
-    if (stored == null) {
-      LOG.warn(
-          "Expected to find suspension marker for process instance '{}' to advance the resume"
-              + " cursor, but none was found; the cursor will not be advanced",
-          key);
-      return;
-    }
-    stored.setLastResumedJobKey(jobKey);
-    suspensionColumnFamily.upsert(processInstanceKey, stored);
   }
 
   @Override

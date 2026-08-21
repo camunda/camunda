@@ -10,10 +10,8 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -30,14 +28,12 @@ public class JobResumedApplierTest {
   private MutableProcessingState processingState;
 
   private MutableJobState jobState;
-  private MutableSuspensionState suspensionState;
   private JobSuspendedApplier suspendedApplier;
   private JobResumedApplier applier;
 
   @BeforeEach
   public void setup() {
     jobState = processingState.getJobState();
-    suspensionState = processingState.getSuspensionState();
     suspendedApplier = new JobSuspendedApplier(processingState);
     applier = new JobResumedApplier(processingState);
   }
@@ -127,58 +123,6 @@ public class JobResumedApplierTest {
     // then
     assertThat(jobState.getState(jobKey)).isEqualTo(State.ACTIVATABLE);
     assertThat(isServedAsActivatable(jobKey)).isTrue();
-  }
-
-  @Test
-  void shouldAdvanceResumeCursorToTheResumedJobKey() {
-    // given
-    final long jobKey = 5L;
-    final long processInstanceKey = 100L;
-    final var record = jobRecord().setProcessInstanceKey(processInstanceKey);
-    createActivatableJob(jobKey, record);
-    suspendedApplier.applyState(jobKey, record);
-    suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.RESUMING);
-
-    // when
-    applier.applyState(jobKey, record);
-
-    // then
-    assertThat(suspensionState.getLastResumedJobKey(processInstanceKey)).isEqualTo(jobKey);
-  }
-
-  @Test
-  void shouldAdvanceLastResumedJobKeyUsingStoredProcessInstanceKey() {
-    // given - a mismatched event value must not advance the wrong process instance's cursor
-    final long jobKey = 6L;
-    final long storedProcessInstanceKey = 100L;
-    final var stored = jobRecord().setProcessInstanceKey(storedProcessInstanceKey);
-    createActivatableJob(jobKey, stored);
-    suspendedApplier.applyState(jobKey, stored);
-    suspensionState.setSuspensionState(storedProcessInstanceKey, SuspensionState.State.RESUMING);
-    final var mismatchedEvent = jobRecord().setProcessInstanceKey(200L);
-
-    // when
-    applier.applyState(jobKey, mismatchedEvent);
-
-    // then
-    assertThat(suspensionState.getLastResumedJobKey(storedProcessInstanceKey)).isEqualTo(jobKey);
-  }
-
-  @Test
-  void shouldNotAdvanceLastResumedJobKeyForNonSuspendedJob() {
-    // given
-    final long jobKey = 7L;
-    final long processInstanceKey = 100L;
-    final var record = jobRecord().setProcessInstanceKey(processInstanceKey);
-    createActivatableJob(jobKey, record);
-    jobState.activate(jobKey, record);
-    suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.RESUMING);
-
-    // when
-    applier.applyState(jobKey, record);
-
-    // then
-    assertThat(suspensionState.getLastResumedJobKey(processInstanceKey)).isLessThan(0);
   }
 
   private void createActivatableJob(final long jobKey, final JobRecord record) {
