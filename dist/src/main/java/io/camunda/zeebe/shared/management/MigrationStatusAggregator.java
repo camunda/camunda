@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +43,17 @@ public class MigrationStatusAggregator {
         providers.stream().map(MigrationStatusProvider::conditionName).toList();
     final var physicalTenants = new LinkedHashMap<String, Map<String, MigrationConditionStatus>>();
 
-    for (final var provider : providers) {
-      final var conditionName = provider.conditionName();
-      final var freshStatuses = safeGetMigrationStatus(provider);
+    // Poll every provider concurrently rather than one at a time, so a slow provider doesn't add
+    // its own timeout on top of every other provider's.
+    final var pendingStatusesByProvider =
+        providers.stream()
+            .map(provider -> CompletableFuture.supplyAsync(() -> safeGetMigrationStatus(provider)))
+            .toList();
+    CompletableFuture.allOf(pendingStatusesByProvider.toArray(CompletableFuture<?>[]::new)).join();
+
+    for (int i = 0; i < providers.size(); i++) {
+      final var conditionName = providers.get(i).conditionName();
+      final var freshStatuses = pendingStatusesByProvider.get(i).join();
       knownPhysicalTenantIds.addAll(freshStatuses.keySet());
       freshStatuses.forEach(
           (physicalTenantId, status) -> {
