@@ -383,7 +383,7 @@ public final class JobStateTest {
 
   @Test
   public void shouldNotParkJobForSecretResolutionWhenItIsNotUpForActivation() {
-    // given - a job a worker already holds
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     createAndActivateJobRecord(jobKey, jobRecord);
@@ -391,13 +391,13 @@ public final class JobStateTest {
     // when
     jobState.parkForSecretResolution(jobKey, jobRecord);
 
-    // then - the activation keeps the job, parking it would take its state away from the worker
+    // then
     assertJobState(jobKey, State.ACTIVATED);
   }
 
   @Test
   public void shouldMakeWaitingJobActivatableAfterSecretResolution() {
-    // given - a job parked while its secret references are resolved
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
@@ -412,19 +412,35 @@ public final class JobStateTest {
 
   @Test
   public void shouldNotMakeJobActivatableAfterSecretResolutionWhenItNoLongerWaits() {
-    // given - a job that was already reactivated by another resolved reference of the same
-    // activation, and has been activated by a worker since
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
     jobState.makeActivatableAfterSecretResolution(jobKey);
     jobState.activate(jobKey, jobRecord);
 
-    // when - the resolution of the second reference reactivates it again
+    // when
     jobState.makeActivatableAfterSecretResolution(jobKey);
 
-    // then - the activated job is left alone; re-inserting it would hand it out twice
+    // then
     assertJobState(jobKey, State.ACTIVATED);
+    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+  }
+
+  @Test
+  public void shouldNotMakeSuspendedJobActivatableAfterSecretResolution() {
+    // given
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    parkJobForSecretResolution(jobKey, jobRecord);
+    jobState.updateJobState(jobKey, State.SUSPENDED);
+    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+
+    // when
+    jobState.makeActivatableAfterSecretResolution(jobKey);
+
+    // then
+    assertJobState(jobKey, State.SUSPENDED);
     refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
   }
 
@@ -433,14 +449,14 @@ public final class JobStateTest {
     // given
     final long jobKey = 999L;
 
-    // when / then - no exception, no state change
+    // when / then
     jobState.makeActivatableAfterSecretResolution(jobKey);
     assertThat(jobState.exists(jobKey)).isFalse();
   }
 
   @Test
   public void shouldKeepJobParkedWhenUpdatingPriorityOfJobWaitingForSecretResolution() {
-    // given - a job parked while its secret references are resolved
+    // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord();
     parkJobForSecretResolution(jobKey, jobRecord);
@@ -448,7 +464,7 @@ public final class JobStateTest {
     // when
     jobState.updateJobPriority(jobKey, 99);
 
-    // then - the new priority is stored, but the job is not put back into the activatable index
+    // then
     assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(99);
     assertJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
     refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
