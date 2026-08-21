@@ -12,8 +12,6 @@ services:
     image: centos:8@sha256:a27fd8080b517143cbbbab9dfb7c8571c40d67d534bbdee55bd6c473f432b177
     command: "sysctl -w vm.max_map_count=262144"
   opensearch:
-    # Fallback is inert (every caller sets OPENSEARCH_VERSION); dropped the stale 2.19.5
-    # digest pin rather than guess one for 2.19.6.
     image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.19.6}
     container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9200}
     depends_on:
