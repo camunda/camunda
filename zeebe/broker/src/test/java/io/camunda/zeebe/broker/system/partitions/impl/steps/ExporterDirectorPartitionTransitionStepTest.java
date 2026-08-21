@@ -326,6 +326,40 @@ class ExporterDirectorPartitionTransitionStepTest {
         .enableExporterWithRetry(eq(reEnabledExporterId), any(), any());
   }
 
+  @ParameterizedTest
+  @EnumSource(ExportingState.class)
+  void shouldSeedExporterPhaseFromDynamicConfigOnOpen(final ExportingState exportingState) {
+    // given - a partition (re)opening its exporter director, e.g. on broker restart or on a
+    // replica that joins after a pause was applied - sees the exporting state dynamic config
+    // already has, not some broker-local default
+    transitionContext.setDynamicPartitionConfig(
+        new DynamicPartitionConfig(new ExportingConfig(exportingState, Map.of())));
+
+    final AtomicReference<ExporterPhase> capturedPhase = new AtomicReference<>();
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    when(mockedExporterDirector.startAsync(any()))
+        .thenReturn(TestActorFuture.completedFuture(null));
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep(
+            (ctx, phase) -> {
+              capturedPhase.set(phase);
+              return mockedExporterDirector;
+            });
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    final var expectedPhase = ExporterPhase.from(exportingState);
+    assertThat(capturedPhase.get()).isEqualTo(expectedPhase);
+    switch (expectedPhase) {
+      case PAUSED -> verify(mockedExporterDirector).pauseExporting();
+      case SOFT_PAUSED -> verify(mockedExporterDirector).softPauseExporting();
+      default -> verify(mockedExporterDirector).resumeExporting();
+    }
+  }
+
   @Test
   void shouldUseGossipResolvedClusterIdEvenWhenStaticConfigDiffers() {
     // given - the static broker config disagrees with the gossip-resolved cluster topology
