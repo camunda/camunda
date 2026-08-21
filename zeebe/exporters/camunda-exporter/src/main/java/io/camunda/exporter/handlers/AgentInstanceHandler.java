@@ -14,11 +14,17 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_MODEL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
@@ -150,6 +156,12 @@ public class AgentInstanceHandler
 
     // Runtime fields
     updateFields.put(STATUS, entity.getStatus());
+    updateFields.put(MODEL, entity.getModel());
+    updateFields.put(PROVIDER, entity.getProvider());
+    updateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    updateFields.put(MAX_TOKENS, entity.getMaxTokens());
+    updateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
+    updateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
     updateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
     updateFields.put(MODEL_CALLS, entity.getModelCalls());

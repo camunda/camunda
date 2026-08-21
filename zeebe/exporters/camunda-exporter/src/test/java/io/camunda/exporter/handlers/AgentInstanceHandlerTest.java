@@ -14,11 +14,17 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.ELEMENT_INSTANCE_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.INPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.LAST_UPDATED_DATE;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_MODEL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOKENS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MAX_TOOL_CALLS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.MODEL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.OUTPUT_TOKENS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.PROVIDER;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.STATUS;
+import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.SYSTEM_PROMPT;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.VERSION_TAG;
@@ -438,6 +444,12 @@ final class AgentInstanceHandlerTest {
     // then — updateFields keys match template constants; values come from entity (not hardcoded)
     final var expectedUpdateFields = new LinkedHashMap<String, Object>();
     expectedUpdateFields.put(STATUS, entity.getStatus());
+    expectedUpdateFields.put(MODEL, entity.getModel());
+    expectedUpdateFields.put(PROVIDER, entity.getProvider());
+    expectedUpdateFields.put(SYSTEM_PROMPT, entity.getSystemPrompt());
+    expectedUpdateFields.put(MAX_TOKENS, entity.getMaxTokens());
+    expectedUpdateFields.put(MAX_MODEL_CALLS, entity.getMaxModelCalls());
+    expectedUpdateFields.put(MAX_TOOL_CALLS, entity.getMaxToolCalls());
     expectedUpdateFields.put(INPUT_TOKENS, entity.getInputTokens());
     expectedUpdateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
     expectedUpdateFields.put(MODEL_CALLS, entity.getModelCalls());
