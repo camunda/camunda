@@ -374,7 +374,12 @@ public final class EngineProcessors {
     typedRecordProcessors.withListener(suspensionMetrics);
 
     addDecisionProcessors(
-        typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
+        typedRecordProcessors,
+        decisionBehavior,
+        writers,
+        processingState,
+        storageOrdinalKeyProvider,
+        cslCheck);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -855,11 +860,16 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final Writers writers,
       final MutableProcessingState processingState,
+      final StorageOrdinalKeyProvider storageOrdinalKeyProvider,
       final CslAuthorizationCheck cslCheck) {
 
     final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
         new DecisionEvaluationEvaluateProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers, cslCheck);
+            decisionBehavior,
+            processingState.getKeyGenerator(),
+            storageOrdinalKeyProvider,
+            writers,
+            cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
