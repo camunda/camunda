@@ -378,6 +378,12 @@ public record AgentInstanceDbModel(
       return this;
     }
 
+    public Builder truncateDefinitionFields(final int sizeLimit, final Integer byteLimit) {
+      model = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+      provider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
+      return this;
+    }
+
     public Builder systemPrompt(final String systemPrompt) {
       this.systemPrompt = systemPrompt;
       return this;

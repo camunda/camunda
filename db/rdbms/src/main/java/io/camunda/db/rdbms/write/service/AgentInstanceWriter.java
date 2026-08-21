@@ -76,6 +76,9 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               if (agentInstance.completionDate() != null) {
                 b.completionDate(agentInstance.completionDate());
               }
+              b.truncateDefinitionFields(
+                  vendorDatabaseProperties.userCharColumnSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes());
               return b;
             });
 
@@ -86,7 +89,9 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               WriteStatementType.UPDATE,
               agentInstance.agentInstanceKey(),
               "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
-              agentInstance));
+              agentInstance.truncateDefinitionFields(
+                  vendorDatabaseProperties.userCharColumnSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes())));
     }
 
     syncElementInstanceKeys(agentInstance);
