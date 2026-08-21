@@ -8,8 +8,7 @@
 package io.camunda.zeebe.shared.management;
 
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
@@ -26,24 +25,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
+  private final ExportingStateController exportingStateController;
   private final PhysicalTenantIds physicalTenantIds;
 
   @Autowired
   public ExportingEndpoint(
-      final BrokerClient brokerClient, final PhysicalTenantIds physicalTenantIds) {
-    this(new ExportingRequestBroadcaster(brokerClient), physicalTenantIds);
-  }
-
-  ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
-    this(exportingRequestBroadcaster, PhysicalTenantIds.DEFAULT);
-  }
-
-  ExportingEndpoint(
-      final ExportingRequestBroadcaster exportingRequestBroadcaster,
+      final ExportingStateController exportingStateController,
       final PhysicalTenantIds physicalTenantIds) {
-    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
+    this.exportingStateController = exportingStateController;
     this.physicalTenantIds = physicalTenantIds;
+  }
+
+  ExportingEndpoint(final ExportingStateController exportingStateController) {
+    this(exportingStateController, PhysicalTenantIds.DEFAULT);
   }
 
   /**
@@ -83,12 +77,10 @@ public final class ExportingEndpoint {
 
   private CompletableFuture<Void> apply(
       final String operationKey, final boolean soft, final String physicalTenantId) {
+    final var tenant = exportingStateController.getByTenant(physicalTenantId);
     return switch (operationKey) {
-      case RESUME -> exportingRequestBroadcaster.resumeExporting(physicalTenantId);
-      case PAUSE ->
-          soft
-              ? exportingRequestBroadcaster.softPauseExporting(physicalTenantId)
-              : exportingRequestBroadcaster.pauseExporting(physicalTenantId);
+      case RESUME -> tenant.resumeExporting();
+      case PAUSE -> soft ? tenant.softPauseExporting() : tenant.pauseExporting();
       default -> throw new UnsupportedOperationException();
     };
   }

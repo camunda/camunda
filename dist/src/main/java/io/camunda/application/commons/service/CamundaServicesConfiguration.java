@@ -85,7 +85,7 @@ import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
@@ -151,6 +151,7 @@ public class CamundaServicesConfiguration {
       final BrokerTopologyManager brokerTopologyManager,
       final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
       final RebalanceRequestSender rebalanceRequestSender,
+      final ExportingStateController exportingStateController,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
@@ -162,7 +163,6 @@ public class CamundaServicesConfiguration {
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
-    final var exportingRequestBroadcaster = new ExportingRequestBroadcaster(brokerClient);
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
@@ -408,7 +408,7 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          exportingRequestBroadcaster,
+                          exportingStateController.getByTenant(tenantId),
                           authorizationChecker,
                           tenantSecurity.getAuthorizations(),
                           executor,
@@ -592,8 +592,7 @@ public class CamundaServicesConfiguration {
         new ClusterRecoveryServices(clusterConfigurationRequestSender, restoreEnvironmentByTenant));
 
     builder.clusterExportingServices(
-        new ClusterExportingServices(
-            exportingRequestBroadcaster, physicalTenantResolver.getAll().keySet()));
+        new ClusterExportingServices(exportingStateController.clusterWide()));
     builder.clusterRebalanceServices(new ClusterRebalanceServices(rebalanceRequestSender));
 
     builder.clusterRuntimeBackupServices(new ClusterRuntimeBackupServices(runtimeBackupPorts));
