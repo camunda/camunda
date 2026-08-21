@@ -16,8 +16,10 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbe
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1441,5 +1444,544 @@ public class AgentInstanceHistoryBatchProcessingTest {
     // before ever storing a record — if they didn't, the first update's batch would still be
     // sitting in state and would leak back out here.
     assertThat(secondUpdate.getValue().getHistory()).isEmpty();
+  }
+
+  @Test
+  public void shouldMarkResentItemAsDuplicateWithinSameJobActivation() {
+    // given — an item is created once, then the same historyItemId is resent on a second UPDATE
+    // to the same still-activated job (e.g. an HTTP client retry).
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    // when — first submission creates the item
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-user")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi"))))
+            .update();
+    final var originalKey = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+
+    // when — the same historyItemId is resent, with different content, on a second UPDATE to the
+    // same job (content differs on purpose: dedup keys on historyItemId alone, not on content).
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-user")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi again"))))
+            .update();
+
+    // then — the batch is still accepted, but the resent item is echoed back flagged as a
+    // duplicate of the original, not as a new entry.
+    final var echoed = secondUpdate.getValue().getHistory();
+    assertThat(echoed).hasSize(1);
+    assertThat(echoed.get(0).isDuplicate()).isTrue();
+    assertThat(echoed.get(0).getAgentHistoryKey()).isEqualTo(originalKey);
+
+    // no second AGENT_HISTORY:CREATED event was appended for "item-user" — bounded via a clock
+    // reset as a sentinel so the check cannot hang waiting for a record that must never arrive.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    final var createdForItem =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.CREATED)
+            .filter(
+                r ->
+                    ((AgentHistoryRecordValue) r.getValue()).getHistoryItemId().equals("item-user"))
+            .toList();
+    assertThat(createdForItem).hasSize(1);
+  }
+
+  @Test
+  public void shouldNotReaccumulateMetricsForDuplicateAssistantItem() {
+    // given — an ASSISTANT item with token metrics and a tool call is applied once.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-assistant")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("Sure, here is the summary."));
+    assistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    assistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+
+    // when — first submission applies the metrics
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(assistantItem))
+            .update();
+    assertThat(firstUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(firstUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(firstUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+
+    // when — the exact same item is resent on a second UPDATE to the same job
+    final var resentAssistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-assistant")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("Sure, here is the summary."));
+    resentAssistantItem.getMetrics().setInputTokens(100L).setOutputTokens(40L);
+    resentAssistantItem.addToolCall(
+        new AgentHistoryEmbeddedToolCall().setToolCallId("call-1").setToolName("lookup"));
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(resentAssistantItem))
+            .update();
+
+    // then — the duplicate must not be counted a second time: metrics stay exactly as after the
+    // first submission.
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(40L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldNotReapplyChangedAttributesForDuplicateConfigurationItem() {
+    // given — a CONFIGURATION item changes the model once.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1)
+            .setModel("gpt-4o-mini")
+            .setChangedAttributes(List.of("model"));
+
+    // when — first submission applies the model change
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(configItem))
+            .update();
+    assertThat(firstUpdate.getValue().getDefinition().getModel()).isEqualTo("gpt-4o-mini");
+    assertThat(firstUpdate.getValue().getChangedAttributes()).contains("model");
+
+    // when — the exact same item is resent on a second UPDATE to the same job
+    final var resentConfigItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1)
+            .setModel("gpt-4o-mini")
+            .setChangedAttributes(List.of("model"));
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(resentConfigItem))
+            .update();
+
+    // then — re-applying the same values would be unobservable on the field itself, so the
+    // durable signal is that "model" is absent from changedAttributes on the resend, and the
+    // echoed item is flagged as a duplicate.
+    assertThat(secondUpdate.getValue().getChangedAttributes()).doesNotContain("model");
+    assertThat(secondUpdate.getValue().getHistory().get(0).isDuplicate()).isTrue();
+  }
+
+  @Test
+  public void shouldDedupUniformlyAcrossAllRoles() {
+    // given — one item per role (USER, ASSISTANT, TOOL_RESULT, CONFIGURATION) is created.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+
+    final var userItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-user")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hi"));
+    final var assistantItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-assistant")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("hello back"));
+    final var toolResultItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-tool-result")
+            .setRole(AgentHistoryRole.TOOL_RESULT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("lookup result"));
+    final var configItem =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-config")
+            .setRole(AgentHistoryRole.CONFIGURATION)
+            .setLoopIteration(1)
+            .setModel("gpt-4o-mini")
+            .setChangedAttributes(List.of("model"));
+
+    // when — first submission creates all four items
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(userItem, assistantItem, toolResultItem, configItem))
+            .update();
+    final var originalKeys =
+        firstUpdate.getValue().getHistory().stream()
+            .map(AgentHistoryRecordValue::getAgentHistoryKey)
+            .toList();
+
+    // when — the same four historyItemIds are resent, in the same order, on a second UPDATE
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-user")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hi")),
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-assistant")
+                        .setRole(AgentHistoryRole.ASSISTANT)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("hello back")),
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-tool-result")
+                        .setRole(AgentHistoryRole.TOOL_RESULT)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("lookup result")),
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-config")
+                        .setRole(AgentHistoryRole.CONFIGURATION)
+                        .setLoopIteration(1)
+                        .setModel("gpt-4o-mini")
+                        .setChangedAttributes(List.of("model"))))
+            .update();
+
+    // then — every role dedups the same way: all four echoed entries are flagged duplicates of
+    // their respective originals, regardless of role.
+    final var echoed = secondUpdate.getValue().getHistory();
+    assertThat(echoed).hasSize(4);
+    assertThat(echoed)
+        .extracting(AgentHistoryRecordValue::isDuplicate)
+        .containsExactly(true, true, true, true);
+    assertThat(echoed)
+        .extracting(AgentHistoryRecordValue::getAgentHistoryKey)
+        .containsExactlyElementsOf(originalKeys);
+  }
+
+  @Test
+  public void shouldFlagOnlyAlreadySeenItemsInMixedBatchPreservingOrder() {
+    // given — two items ("item-a", "item-b") are created on a first UPDATE.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType(helper.getJobType()).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst()
+            .getKey();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .create()
+            .getKey();
+    ENGINE.jobs().withType(helper.getJobType()).activate();
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(helper.getJobType())
+            .getFirst()
+            .getKey();
+    final var itemA =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-a")
+            .setRole(AgentHistoryRole.USER)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("first"));
+    final var itemB =
+        new AgentHistoryRecord()
+            .setHistoryItemId("item-b")
+            .setRole(AgentHistoryRole.ASSISTANT)
+            .setLoopIteration(1)
+            .addContent(
+                new AgentHistoryMessageContent()
+                    .setContentType(AgentHistoryContentType.TEXT)
+                    .setText("second"));
+    final var firstUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(List.of(itemA, itemB))
+            .update();
+    final var keyA = firstUpdate.getValue().getHistory().get(0).getAgentHistoryKey();
+    final var keyB = firstUpdate.getValue().getHistory().get(1).getAgentHistoryKey();
+
+    // when — a second UPDATE mixes the two already-seen items with one brand-new item
+    // ("item-c"), deliberately out of creation order: [b, c, a].
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withJobKey(jobKey)
+            .withHistory(
+                List.of(
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-b")
+                        .setRole(AgentHistoryRole.ASSISTANT)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("second")),
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-c")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("third")),
+                    new AgentHistoryRecord()
+                        .setHistoryItemId("item-a")
+                        .setRole(AgentHistoryRole.USER)
+                        .setLoopIteration(1)
+                        .addContent(
+                            new AgentHistoryMessageContent()
+                                .setContentType(AgentHistoryContentType.TEXT)
+                                .setText("first"))))
+            .update();
+
+    // then — exactly one entry per submitted item, in request order: [b (dup), c (new), a (dup)].
+    final var echoed = secondUpdate.getValue().getHistory();
+    assertThat(echoed).hasSize(3);
+    assertThat(echoed)
+        .extracting(AgentHistoryRecordValue::getHistoryItemId)
+        .containsExactly("item-b", "item-c", "item-a");
+    assertThat(echoed.get(0).isDuplicate()).isTrue();
+    assertThat(echoed.get(0).getAgentHistoryKey()).isEqualTo(keyB);
+    assertThat(echoed.get(1).isDuplicate()).isFalse();
+    assertThat(echoed.get(2).isDuplicate()).isTrue();
+    assertThat(echoed.get(2).getAgentHistoryKey()).isEqualTo(keyA);
+
+    // exactly one new AGENT_HISTORY:CREATED event was appended by the second UPDATE, for
+    // "item-c" only.
+    final var clockResetKey = ENGINE.clock().reset().getKey();
+    final var newCreatedEvents =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .withIntent(AgentHistoryIntent.CREATED)
+            .filter(r -> r.getSourceRecordPosition() == secondUpdate.getSourceRecordPosition())
+            .toList();
+    assertThat(newCreatedEvents).hasSize(1);
+    assertThat(((AgentHistoryRecordValue) newCreatedEvents.get(0).getValue()).getHistoryItemId())
+        .isEqualTo("item-c");
   }
 }
