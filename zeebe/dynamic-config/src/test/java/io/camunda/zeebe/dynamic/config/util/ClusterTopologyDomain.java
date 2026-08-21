@@ -413,17 +413,27 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         .set()
         .ofMaxSize(ids.size())
         .map(
-            completedIds -> {
+            pickedIds -> {
+              // An operation counts as complete only once everything it depends on is: no
+              // execution can produce any other combination, and DependencyChangePlan rejects
+              // one outright. Ids ascend with dependency order (see operationGraphs()), so a
+              // single ascending pass suffices -- a picked operation whose dependencies were not
+              // themselves picked is simply not reached yet, and is dropped.
+              //
               // Each completion gets its own instant, derived from the operation id so it stays
               // reproducible. Reusing startedAt for all of them would make every generated plan
               // share the shape an encoder bug produces -- writing startedAt in place of each
               // operation's real completion instant -- and the round-trip property could then
               // never tell the bug from the fixture.
               final SortedMap<OperationId, Instant> completed = new TreeMap<>();
-              completedIds.forEach(
-                  operationId ->
-                      completed.put(
-                          operationId, partial.startedAt().plusMillis(1L + operationId.value())));
+              for (final var operationId : ids) {
+                final var planned = partial.graph().operations().get(operationId);
+                if (pickedIds.contains(operationId)
+                    && completed.keySet().containsAll(planned.dependsOn())) {
+                  completed.put(
+                      operationId, partial.startedAt().plusMillis(1L + operationId.value()));
+                }
+              }
               return new DependencyChangePlan(
                   partial.id(), partial.status(), partial.startedAt(), partial.graph(), completed);
             });
