@@ -8,7 +8,9 @@
 package io.camunda.zeebe.it.cluster.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import feign.FeignException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -33,10 +36,13 @@ import java.util.Objects;
 import java.util.concurrent.Future;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
 public class BrokerAdminServiceTest {
@@ -49,10 +55,12 @@ public class BrokerAdminServiceTest {
 
   @AutoClose private ZeebeResourcesHelper resourcesHelper;
   private PartitionsActuator partitions;
+  private ExportingActuator exporting;
 
   @BeforeEach
   void beforeEach() {
     partitions = PartitionsActuator.of(zeebe);
+    exporting = ExportingActuator.of(zeebe);
     resourcesHelper = new ZeebeResourcesHelper(zeebe.newClientBuilder().build());
   }
 
@@ -122,28 +130,53 @@ public class BrokerAdminServiceTest {
     }
   }
 
+  /**
+   * Exporting is controlled exclusively through dynamic cluster configuration; {@code
+   * /actuator/partitions} no longer applies these operations, and rejects them instead. See ADR
+   * {@code docs/adr/management/006-exporting-state-via-dynamic-config.md} (D1).
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"pauseExporting", "softPauseExporting", "resumeExporting"})
+  void shouldRejectExportingOperations(final String operation) {
+    // given
+    final ThrowingCallable trigger =
+        switch (operation) {
+          case "pauseExporting" -> partitions::pauseExporting;
+          case "softPauseExporting" -> partitions::softPauseExporting;
+          default -> partitions::resumeExporting;
+        };
+
+    // then
+    assertThatThrownBy(trigger)
+        .asInstanceOf(InstanceOfAssertFactories.throwable(FeignException.class))
+        .extracting(FeignException::status)
+        .isEqualTo(500);
+  }
+
   @Test
   void shouldPauseExporterWhenRequested() {
     // when
-    final var status = partitions.pauseExporting();
+    exporting.pause();
 
     // then
-    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.PAUSED.toString());
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.PAUSED.toString());
   }
 
   @Test
   void shouldSoftPauseExporterWhenRequested() {
     // when
-    final var status = partitions.softPauseExporting();
+    exporting.softPause();
 
     // then
-    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.SOFT_PAUSED.toString());
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.SOFT_PAUSED.toString());
   }
 
   @Test
   void shouldContinueToExportWhileSoftPaused() {
     // given
-    partitions.softPauseExporting();
+    exporting.softPause();
 
     // when
     try (final var client = zeebe.newClientBuilder().build()) {
@@ -168,19 +201,20 @@ public class BrokerAdminServiceTest {
   @Test
   void shouldResumeExportingFromSoftPausedWhenRequested() {
     // given
-    partitions.softPauseExporting();
+    exporting.softPause();
 
     // when
-    final var status = partitions.resumeExporting();
+    exporting.resume();
 
     // then
-    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.EXPORTING.toString());
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.EXPORTING.toString());
   }
 
   @Test
   void shouldResumeExportingWhenRequested() {
     // given
-    partitions.pauseExporting();
+    exporting.pause();
 
     // when
     try (final var client = zeebe.newClientBuilder().build()) {
@@ -191,10 +225,11 @@ public class BrokerAdminServiceTest {
           .send()
           .join();
     }
-    final var status = partitions.resumeExporting();
+    exporting.resume();
 
     // then
-    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.EXPORTING.toString());
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.EXPORTING.toString());
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
