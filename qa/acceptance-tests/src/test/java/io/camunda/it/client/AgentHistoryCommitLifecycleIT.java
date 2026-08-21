@@ -230,16 +230,46 @@ public class AgentHistoryCommitLifecycleIT {
   }
 
   private long createAgentInstance(final long elementInstanceKey) {
+    // CREATE now requires a jobKey backed by an actual activation of the agentic job; fail it
+    // straight back (no backoff) so the test's own activateAgenticJob call can still pick it up.
+    final var activatedJob =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .withLease(false)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+
     final long agentInstanceKey =
         camundaClient
             .newCreateAgentInstanceCommand()
             .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
+            .jobKey(activatedJob.getKey())
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.now())
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
             .send()
             .join()
             .getAgentInstanceKey();
+
+    // This also emits AGENT_HISTORY:DISCARD for the CONFIGURATION item just created above (no
+    // committed snapshot exists yet, so model/provider/systemPrompt roll back to defaults). Tests
+    // using this helper only assert on the non-CONFIGURATION history items they create afterward.
+    camundaClient.newFailCommand(activatedJob).retries(1).execute();
 
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
     return agentInstanceKey;
@@ -293,7 +323,8 @@ public class AgentHistoryCommitLifecycleIT {
    * Awaits until the agent instance's history items match exactly the expected (key, commit-status)
    * tuples. Filters by all commit statuses so that any spurious item of any status is visible (the
    * search API returns COMMITTED items by default) and so that leftover PENDING items would fail
-   * the assertion rather than be silently hidden.
+   * the assertion rather than be silently hidden. Excludes the CONFIGURATION item that CREATE now
+   * mandatorily establishes, since it is not one of the items under test in any of these scenarios.
    */
   private void awaitHistoryStatuses(
       final long agentInstanceKey, final String description, final Tuple... expected) {
@@ -308,11 +339,12 @@ public class AgentHistoryCommitLifecycleIT {
                       .filter(
                           f ->
                               f.commitStatus(
-                                  s ->
-                                      s.in(
-                                          AgentInstanceHistoryCommitStatus.PENDING,
-                                          AgentInstanceHistoryCommitStatus.COMMITTED,
-                                          AgentInstanceHistoryCommitStatus.DISCARDED)))
+                                      s ->
+                                          s.in(
+                                              AgentInstanceHistoryCommitStatus.PENDING,
+                                              AgentInstanceHistoryCommitStatus.COMMITTED,
+                                              AgentInstanceHistoryCommitStatus.DISCARDED))
+                                  .role(r -> r.neq(AgentInstanceHistoryRole.CONFIGURATION)))
                       .execute()
                       .items();
               assertThat(items)

@@ -46,6 +46,7 @@ public class AgentInstanceHistorySearchIT {
   private static long agentInstanceKey;
   private static long elementInstanceKey;
   private static long jobKey;
+  private static long historyItemKey0;
   private static long historyItemKey1;
   private static long historyItemKey2;
   private static long historyItemKey3;
@@ -81,19 +82,6 @@ public class AgentInstanceHistorySearchIT {
             .getFirst()
             .getElementInstanceKey();
 
-    agentInstanceKey =
-        camundaClient
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("gpt-4o")
-            .provider("openai")
-            .systemPrompt("You are a helpful assistant.")
-            .send()
-            .join()
-            .getAgentInstanceKey();
-
-    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
-
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
@@ -107,6 +95,34 @@ public class AgentInstanceHistorySearchIT {
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
     jobKey = activatedJobs.get(0).getKey();
+
+    // The initial CONFIGURATION history item establishing model/provider/systemPrompt is
+    // produced before the USER/ASSISTANT/TOOL_RESULT items added below, so give it an earlier
+    // timestamp to keep producedAt-ascending ordering deterministic across all 4 items.
+    final var createResponse =
+        camundaClient
+            .newCreateAgentInstanceCommand()
+            .elementInstanceKey(elementInstanceKey)
+            .jobKey(jobKey)
+            .history(
+                List.of(
+                    new AgentInstanceHistoryItem()
+                        .historyItemId(UUID.randomUUID().toString())
+                        .loopIteration(1)
+                        .role(AgentInstanceHistoryRole.CONFIGURATION)
+                        .content(List.of(AgentInstanceHistoryContent.text("configuration")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T09:59:00Z"))
+                        .model("gpt-4o")
+                        .provider("openai")
+                        .systemPrompt(
+                            List.of(
+                                AgentInstanceHistoryContent.text("You are a helpful assistant.")))))
+            .send()
+            .join();
+    agentInstanceKey = createResponse.getAgentInstanceKey();
+    historyItemKey0 = createResponse.getCreatedHistory().getFirst().getHistoryItemKey();
+
+    waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
 
     // Create 3 history items with different roles
     final var createdHistory =
@@ -161,7 +177,7 @@ public class AgentInstanceHistorySearchIT {
     // causing history items to transition to COMMITTED and become searchable.
     camundaClient.newCompleteCommand(jobKey).execute();
 
-    waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 3);
+    waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 4);
   }
 
   @Test
@@ -173,7 +189,8 @@ public class AgentInstanceHistorySearchIT {
     // then
     assertThat(response.items())
         .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactlyInAnyOrder(historyItemKey1, historyItemKey2, historyItemKey3);
+        .containsExactlyInAnyOrder(
+            historyItemKey0, historyItemKey1, historyItemKey2, historyItemKey3);
   }
 
   @Test
@@ -220,10 +237,10 @@ public class AgentInstanceHistorySearchIT {
             .sort(s -> s.producedAt().asc())
             .execute();
 
-    // then — items should come back in producedAt order: item1 < item2 < item3
+    // then — items should come back in producedAt order: item0 < item1 < item2 < item3
     assertThat(response.items())
         .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactly(historyItemKey1, historyItemKey2, historyItemKey3);
+        .containsExactly(historyItemKey0, historyItemKey1, historyItemKey2, historyItemKey3);
   }
 
   @Test
