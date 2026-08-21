@@ -214,7 +214,7 @@ class PhysicalTenantDefaultAliasChainIT {
   }
 
   // =========================================================================
-  // In-JVM JWKS + OIDC discovery server
+  // Minimal host beans CSL's chain builder needs
   // =========================================================================
 
   @Configuration
@@ -226,10 +226,6 @@ class PhysicalTenantDefaultAliasChainIT {
     }
   }
 
-  // =========================================================================
-  // Minimal host beans CSL's chain builder needs
-  // =========================================================================
-
   /** The OC host's {@link SecurityPathPort}, so CSL knows {@code /v2/**} is an API path. */
   @Configuration
   static class OcPathsConfig {
@@ -239,6 +235,10 @@ class PhysicalTenantDefaultAliasChainIT {
       return new SecurityPathAdapter();
     }
   }
+
+  // =========================================================================
+  // In-JVM JWKS + OIDC discovery server
+  // =========================================================================
 
   /**
    * Minimal JWKS + discovery server; mirrors the pattern in {@link
