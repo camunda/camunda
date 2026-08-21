@@ -63,6 +63,12 @@ public class Retention {
     this.minimumAge = minimumAge;
   }
 
+  /**
+   * Unlike {@link #getMinimumAge()}, this deliberately uses {@code SUPPORTED} rather than {@code
+   * SUPPORTED_ONLY_IF_VALUES_MATCH}: pre-existing deployments already override the legacy {@code
+   * usageMetricsMinimumAge} property at arbitrary non-default values (the #58237 workaround), and
+   * the strict mode would fail startup for them unless the unified property is also set to match.
+   */
   public String getUsageMetricsMinimumAge() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".usage-metrics-minimum-age",

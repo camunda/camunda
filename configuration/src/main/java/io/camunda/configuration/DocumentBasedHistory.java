@@ -108,11 +108,12 @@ public class DocumentBasedHistory {
   /**
    * No-arg constructor solely so spring-boot-configuration-processor does not treat this class as
    * constructor-bound — with a single parameterized constructor, the processor derives metadata
-   * only from that constructor's parameters and silently ignores every getter/setter below. This
-   * constructor is never invoked at runtime; {@link #DocumentBasedHistory(String)} remains the only
-   * real construction path (see {@link DocumentBasedSecondaryStorageDatabase}).
+   * only from that constructor's parameters and silently ignores every getter/setter below.
+   * Deliberately unused and {@code private}: nothing — not even a test — should ever call it;
+   * {@link #DocumentBasedHistory(String)} remains the only real construction path (see {@link
+   * DocumentBasedSecondaryStorageDatabase}). Do not remove as dead code.
    */
-  DocumentBasedHistory() {}
+  private DocumentBasedHistory() {}
 
   public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
