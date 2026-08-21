@@ -124,15 +124,26 @@ public record PhasedChangePlan(
     return scopeOf(phases);
   }
 
-  /** Same as {@link #scope()}, computable before a plan (and its id) exists. */
+  /**
+   * Same as {@link #scope()}, computable before a plan (and its id) exists.
+   *
+   * <p>Switches over every phase kind rather than filtering for the one it cares about. The result
+   * feeds {@link #conflicts(Scope, Scope)}, which decides whether two plans may be pending
+   * concurrently — a phase kind added later and silently contributing no group ids would make its
+   * plan look like it touches nothing, admitting a second plan onto the very groups it is changing.
+   * That failure is invisible at runtime (a rejection that should happen, doesn't), so it has to be
+   * a compile error instead.
+   */
   public static Scope scopeOf(final List<Phase> phases) {
-    if (phases.stream().anyMatch(GlobalPhase.class::isInstance)) {
-      return new Global();
-    }
     final Set<String> groupIds = new HashSet<>();
     for (final var phase : phases) {
-      if (phase instanceof final PartitionGroupPhase groupPhase) {
-        groupIds.addAll(groupPhase.groupGraphs().keySet());
+      switch (phase) {
+        case final GlobalPhase ignored -> {
+          // Cluster-wide: conflicts with everything, so no group set can narrow it.
+          return new Global();
+        }
+        case final PartitionGroupPhase groupPhase ->
+            groupIds.addAll(groupPhase.groupGraphs().keySet());
       }
     }
     return new Groups(groupIds);

@@ -369,10 +369,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * {@code phase}'s operations for {@code groupId}, or {@code null} if the phase targets no group
    * at all ({@link GlobalPhase}) or not this one.
    *
-   * <p>Switches over every phase kind rather than filtering for one — mirroring {@link
-   * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan#scopeOf}'s own javadoc warning against
-   * exactly that pattern — so a phase kind added later without a case here fails to compile instead
-   * of silently making {@link #wasTargetedByCurrentPlan} blind to it.
+   * <p>Switches over every phase kind rather than filtering for one, for the same reason {@link
+   * io.camunda.zeebe.dynamic.config.state.PhasedChangePlan#scopeOf} does: a phase kind added later
+   * without a case here fails to compile, instead of silently making {@link
+   * #wasTargetedByCurrentPlan} blind to it.
    */
   private static @Nullable List<PartitionGroupOperation> groupOperationsOf(
       final Phase phase, final String groupId) {
