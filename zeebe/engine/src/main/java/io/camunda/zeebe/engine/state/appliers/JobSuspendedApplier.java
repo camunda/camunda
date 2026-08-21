@@ -26,9 +26,10 @@ import java.util.Set;
  * while the process instance is still suspended. A job a worker or a failure already owns is left
  * alone.
  *
- * <p>Also backfills the {@code JOBS_BY_PROCESS_INSTANCE} index entry for the job — {@code
- * Job.SUSPENDED} is the only event that writes {@link State#SUSPENDED}, so every suspended job
- * passes through this applier, including a pre-8.10 job that has no entry from creation.
+ * <p>The {@code JOBS_BY_PROCESS_INSTANCE} index entry is backfilled inside {@link
+ * MutableJobState#updateJobState} on the transition to {@link State#SUSPENDED} — {@code
+ * Job.SUSPENDED} is the only event that writes that state, so every suspended job is indexed there,
+ * including a pre-8.10 job that has no entry from creation.
  */
 public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -52,6 +53,5 @@ public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, J
     }
     jobState.updateJobState(key, State.SUSPENDED);
     jobState.makeJobNotActivatable(key, storedJob);
-    jobState.indexJobByProcessInstance(storedJob.getProcessInstanceKey(), key);
   }
 }

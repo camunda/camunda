@@ -61,7 +61,7 @@ public interface JobState {
    *     beginning
    * @param visitor called with each job key; returning {@code false} stops the iteration
    */
-  void visitJobsOfProcessInstance(
+  void forEachJobsByProcessInstance(
       long processInstanceKey, long startAtJobKey, LongPredicate visitor);
 
   /** Index to point to a specific position in the jobs with deadline column family. */

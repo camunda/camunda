@@ -126,10 +126,4 @@ public interface MutableJobState extends JobState {
 
   /** Removes from the {@code JOB_BACKOFF} column family. */
   void removeJobBackoff(long job, long backoff);
-
-  /**
-   * Idempotently associates a job with its process instance in the {@code JOBS_BY_PROCESS_INSTANCE}
-   * index. Used by {@code JobSuspendedApplier} to backfill jobs that predate the index.
-   */
-  void indexJobByProcessInstance(long processInstanceKey, long jobKey);
 }
