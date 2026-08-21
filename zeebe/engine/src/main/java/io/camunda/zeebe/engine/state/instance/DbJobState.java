@@ -98,11 +98,10 @@ public final class DbJobState implements JobState, MutableJobState {
    * Secondary index: {@code (processInstanceKey, jobKey) → ∅}; supports prefix iteration to find
    * jobs of a process instance.
    *
-   * <p>Filled at job creation (8.10+); {@link
-   * io.camunda.zeebe.engine.state.appliers.JobSuspendedApplier} backfills a pre-8.10 job via {@link
-   * #indexJobByProcessInstance(long, long)} the moment it is actually suspended. Complete for every
-   * currently {@code SUSPENDED} job, but not an authoritative "all jobs of this instance" list — a
-   * pre-8.10 job that has never been suspended has no entry.
+   * <p>Filled by {@link #insertJobRecordActivatable} (the 8.10+ creation path) and backfilled by
+   * {@link #updateJobState} when a job reaches {@link State#SUSPENDED}, so a pre-8.10 job created
+   * via the deprecated {@link #create} path is indexed the moment it is suspended. Not otherwise
+   * populated by that legacy path, so pre-8.10 jobs that have never been suspended have no entry.
    */
   private final DbLong jobIndexProcessInstanceKey;
 
@@ -469,6 +468,9 @@ public final class DbJobState implements JobState, MutableJobState {
     jobKey.wrapLong(key);
     jobState.setState(newState);
     statesJobColumnFamily.update(fkJob, jobState);
+    if (newState == State.SUSPENDED) {
+      indexJobByProcessInstance(key);
+    }
   }
 
   @Override
@@ -519,15 +521,26 @@ public final class DbJobState implements JobState, MutableJobState {
     }
   }
 
-  @Override
-  public void indexJobByProcessInstance(final long processInstanceKey, final long jobKey) {
-    jobIndexProcessInstanceKey.wrapLong(processInstanceKey);
-    this.jobKey.wrapLong(jobKey);
+  /**
+   * Backfills the {@code JOBS_BY_PROCESS_INSTANCE} entry for a job that reaches {@link
+   * State#SUSPENDED}. A pre-8.10 job created via the deprecated {@link #create} path was never
+   * indexed at creation; suspension is the point every such job passes through, so index it here.
+   * An 8.10+ job is already indexed by {@link #insertJobRecordActivatable}, and the {@code upsert}
+   * makes the repeat harmless. Reads the persisted record for the {@code processInstanceKey} rather
+   * than trusting a caller-supplied one, so index maintenance stays wholly inside this class.
+   */
+  private void indexJobByProcessInstance(final long key) {
+    final JobRecord job = getJob(key);
+    if (job == null) {
+      return;
+    }
+    jobIndexProcessInstanceKey.wrapLong(job.getProcessInstanceKey());
+    jobKey.wrapLong(key);
     jobsByProcessInstanceColumnFamily.upsert(processInstanceJobKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void visitJobsOfProcessInstance(
+  public void forEachJobsByProcessInstance(
       final long processInstanceKey, final long startAtJobKey, final LongPredicate visitor) {
     jobIndexProcessInstanceKey.wrapLong(processInstanceKey);
     jobKey.wrapLong(startAtJobKey);

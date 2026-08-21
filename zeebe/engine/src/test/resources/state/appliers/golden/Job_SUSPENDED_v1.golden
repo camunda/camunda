@@ -26,14 +26,10 @@ import java.util.Set;
  * while the process instance is still suspended. A job a worker or a failure already owns is left
  * alone.
  *
- * <p>Also backfills the {@code JOBS_BY_PROCESS_INSTANCE} index entry for the job, regardless of
- * when it was created. Per ADR 0008 D1, {@code Job.SUSPENDED} is the only event that ever writes
- * {@link State#SUSPENDED} — so this one applier is reached both when a still-{@code ACTIVATABLE}
- * job is suspended by the suspend-time element instance walk, and when an already-{@code ACTIVATED}
- * job times out while its instance is suspended (ADR 0008 D3, {@code JobTimeOutProcessor} appending
- * {@code Job.SUSPENDED} after {@code TIMED_OUT} in the same batch). A job created before this index
- * existed has no entry from creation; backfilling it here, at the one point every suspended job
- * passes through, covers it going forward.
+ * <p>The {@code JOBS_BY_PROCESS_INSTANCE} index entry is backfilled inside {@link
+ * MutableJobState#updateJobState} on the transition to {@link State#SUSPENDED} — {@code
+ * Job.SUSPENDED} is the only event that writes that state, so every suspended job is indexed there,
+ * including a pre-8.10 job that has no entry from creation.
  */
 public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -57,6 +53,5 @@ public final class JobSuspendedApplier implements TypedEventApplier<JobIntent, J
     }
     jobState.updateJobState(key, State.SUSPENDED);
     jobState.makeJobNotActivatable(key, storedJob);
-    jobState.indexJobByProcessInstance(storedJob.getProcessInstanceKey(), key);
   }
 }

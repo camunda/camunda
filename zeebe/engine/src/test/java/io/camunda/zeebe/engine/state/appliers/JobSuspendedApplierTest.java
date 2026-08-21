@@ -168,12 +168,13 @@ public class JobSuspendedApplierTest {
 
   @Test
   void shouldIndexUsingStoredJobsProcessInstanceKeyWhenEventRecordDiffers() {
-    // given - the index key must come from the stored job, same as the activatable-index removal
-    // above, so a mismatched event value cannot desync the index from what is actually persisted
+    // given - a job created via the deprecated path, so it is unindexed and the only index entry
+    // can come from the suspension backfill; the backfill must key off the stored job, so a
+    // mismatched event value cannot desync the index from what is actually persisted
     final long jobKey = 9L;
     final long storedProcessInstanceKey = 100L;
     final var stored = jobRecord().setProcessInstanceKey(storedProcessInstanceKey);
-    createActivatableJob(jobKey, stored);
+    jobState.create(jobKey, stored);
     final var mismatchedEvent = jobRecord().setProcessInstanceKey(200L);
 
     // when
@@ -186,7 +187,7 @@ public class JobSuspendedApplierTest {
 
   private List<Long> visitedJobsOfProcessInstance(final long processInstanceKey) {
     final List<Long> visited = new ArrayList<>();
-    jobState.visitJobsOfProcessInstance(
+    jobState.forEachJobsByProcessInstance(
         processInstanceKey,
         -1L,
         jobKey -> {
