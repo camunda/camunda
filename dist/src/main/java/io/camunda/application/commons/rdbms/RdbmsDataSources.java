@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.jdbc.DatabaseDriver;
@@ -49,7 +48,6 @@ public final class RdbmsDataSources implements AutoCloseable {
   private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
-  private final Map<String, DatabaseIdProvider> databaseIdProviders = new LinkedHashMap<>();
 
   private RdbmsDataSources() {}
 
@@ -72,9 +70,8 @@ public final class RdbmsDataSources implements AutoCloseable {
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
         final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
         result.dataSources.put(currentPhysicalTenantId, ds);
-        final var databaseIdProvider = new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId());
-        result.databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
-        final var databaseId = databaseIdProvider.getDatabaseId(ds);
+        final var databaseId =
+            new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId()).getDatabaseId(ds);
         LOGGER.info(
             "Detected databaseId '{}' for physical tenant '{}'",
             databaseId,
@@ -126,15 +123,6 @@ public final class RdbmsDataSources implements AutoCloseable {
           "No VendorDatabaseProperties configured for physical tenant " + physicalTenantId);
     }
     return props;
-  }
-
-  public DatabaseIdProvider databaseIdProviderFor(final String physicalTenantId) {
-    final var databaseIdProvider = databaseIdProviders.get(physicalTenantId);
-    if (databaseIdProvider == null) {
-      throw new IllegalArgumentException(
-          "No DatabaseIdProvider configured for physical tenant " + physicalTenantId);
-    }
-    return databaseIdProvider;
   }
 
   @Override
