@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -89,6 +90,7 @@ public final class AgentInstanceUpdateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
+  private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
   private final AgentHistoryBatchBehavior historyBatchHelper;
 
@@ -102,6 +104,7 @@ public final class AgentInstanceUpdateProcessor
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
+    jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
     historyBatchHelper = new AgentHistoryBatchBehavior(keyGenerator, processingState);
   }
@@ -203,20 +206,24 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    // An agent instance has one active writer at a time. It can span several element instances
-    // (e.g. sequential re-entry), but only one of them may add history at any moment — read as
-    // live state (is the previous writer still active?), not a latch, so sequential re-entry is
-    // accepted once that previous element instance has completed.
-    final var currentWriterElementInstanceKey = current.getElementInstanceKey();
-    if (currentWriterElementInstanceKey != newElementInstanceKey) {
-      final var currentWriter = elementInstanceState.getInstance(currentWriterElementInstanceKey);
-      if (currentWriter != null && currentWriter.isActive()) {
-        writeRejection(
-            command,
-            RejectionType.INVALID_STATE,
-            ERROR_MSG_SECOND_ACTIVE_WRITER.formatted(
-                agentInstanceKey, newElementInstanceKey, currentWriterElementInstanceKey));
-        return;
+    // Only matters when history is being pushed; a plain status update can't collide with
+    // another writer. The old writer counts as active only while its job is ACTIVATED, not
+    // while its element instance is active: history resolves in the same step as the job, but
+    // the element instance can stay active longer for unrelated reasons.
+    if (!commandValue.getHistory().isEmpty()) {
+      final var currentWriterElementInstanceKey = current.getElementInstanceKey();
+      if (currentWriterElementInstanceKey != newElementInstanceKey) {
+        final var currentWriter = elementInstanceState.getInstance(currentWriterElementInstanceKey);
+        final var currentWriterJobKey = currentWriter == null ? -1L : currentWriter.getJobKey();
+        if (currentWriterJobKey != -1L
+            && jobState.getState(currentWriterJobKey) == JobState.State.ACTIVATED) {
+          writeRejection(
+              command,
+              RejectionType.INVALID_STATE,
+              ERROR_MSG_SECOND_ACTIVE_WRITER.formatted(
+                  agentInstanceKey, newElementInstanceKey, currentWriterElementInstanceKey));
+          return;
+        }
       }
     }
 
