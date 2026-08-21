@@ -238,7 +238,8 @@ public final class AgentInstanceUpdateProcessor
               commandValue.getJobKey(),
               commandValue.getJobLease(),
               commandValue.getElementInstanceKey(),
-              commandValue.getHistory());
+              commandValue.getHistory(),
+              false);
 
       current
           .getHistory()

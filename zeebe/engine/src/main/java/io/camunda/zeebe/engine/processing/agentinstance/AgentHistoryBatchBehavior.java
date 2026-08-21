@@ -67,6 +67,10 @@ public final class AgentHistoryBatchBehavior {
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance configuration with history item '%s',"
           + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
+  private static final String ERROR_MSG_CHANGED_ATTRIBUTES_EMPTY =
+      "Expected to update agent instance configuration with history item '%s',"
+          + " but changedAttributes was empty. A CONFIGURATION item must name at least one"
+          + " attribute it changes.";
 
   private final KeyGenerator keyGenerator;
   private final ProcessingState processingState;
@@ -169,6 +173,13 @@ public final class AgentHistoryBatchBehavior {
       }
 
       if (item.getRole() == AgentHistoryRole.CONFIGURATION) {
+        if (item.getChangedAttributes().isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  ERROR_MSG_CHANGED_ATTRIBUTES_EMPTY.formatted(historyItemId)));
+        }
+
         final var unknown =
             item.getChangedAttributes().stream()
                 .filter(Predicate.not(ALLOWED_CONFIGURATION_ATTRIBUTES::contains))
@@ -190,14 +201,20 @@ public final class AgentHistoryBatchBehavior {
   /**
    * Applies an already-validated batch onto {@code target}, in array order: builds one {@code
    * AGENT_HISTORY} event per item (a full copy of the item, with its record-context fields
-   * overwritten to match {@code target}/{@code jobKey}/{@code jobLease}), accumulates metrics
-   * immediately, and — for {@link AgentHistoryRole#CONFIGURATION} items only — applies whichever of
-   * model/provider/systemPrompt/tools/limits the item names in its own {@code changedAttributes}.
+   * overwritten to match {@code target}/{@code jobKey}/{@code jobLease}) and accumulates metrics
+   * immediately. Whichever of model/provider/systemPrompt/tools/limits a {@link
+   * AgentHistoryRole#CONFIGURATION} item names in its own {@code changedAttributes} is only applied
+   * immediately if {@code applyConfigurationChanges} is {@code true} — CREATE passes {@code true}
+   * so a newly created instance always has a valid definition, while UPDATE passes {@code false}
+   * and instead defers that application to when the item is committed (see {@code
+   * AgentHistoryCommitProcessor}).
    *
    * <p><strong>Mutates {@code target} in place</strong> (metrics, definition, tools, limits,
    * history) and does not itself emit any event — the caller is responsible for turning {@code
    * target.getHistory()} into {@code AGENT_HISTORY:CREATED} follow-up events.
    *
+   * @param applyConfigurationChanges whether a CONFIGURATION item's changes should be applied onto
+   *     {@code target} immediately, rather than deferred until the item is committed
    * @return the {@code AgentInstanceRecord} attribute names that actually changed as a result
    */
   Set<String> applyInstanceChangesFromHistory(
@@ -205,7 +222,8 @@ public final class AgentHistoryBatchBehavior {
       final long jobKey,
       final String jobLease,
       final long elementInstanceKey,
-      final List<? extends AgentHistoryRecordValue> history) {
+      final List<? extends AgentHistoryRecordValue> history,
+      final boolean applyConfigurationChanges) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
 
@@ -232,7 +250,9 @@ public final class AgentHistoryBatchBehavior {
       if (applyMetrics(target.getMetrics(), item)) {
         changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
       }
-      changedAttributes.addAll(applyConfigurationChanges(target, item));
+      if (applyConfigurationChanges) {
+        changedAttributes.addAll(applyConfigurationChanges(target, item));
+      }
 
       items.add(event);
     }
@@ -249,7 +269,7 @@ public final class AgentHistoryBatchBehavior {
    *
    * @return the {@code AgentInstanceRecord} attribute names that actually changed
    */
-  private Set<String> applyConfigurationChanges(
+  public static Set<String> applyConfigurationChanges(
       final AgentInstanceRecord target, final AgentHistoryRecordValue item) {
     if (item.getRole() != AgentHistoryRole.CONFIGURATION) {
       return Set.of();
