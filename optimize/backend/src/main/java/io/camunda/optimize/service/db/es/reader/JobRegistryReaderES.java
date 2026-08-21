@@ -9,7 +9,9 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.JOB_REGISTRY_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -25,9 +27,12 @@ import io.camunda.optimize.service.db.schema.index.JobRegistryIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -91,24 +96,9 @@ public class JobRegistryReaderES implements JobRegistryReader {
         Query.of(
             q ->
                 q.bool(
-                    b ->
-                        b.must(
-                                m ->
-                                    m.term(
-                                        t ->
-                                            t.field(JobRegistryIndex.JOB_TYPE)
-                                                .value(jobType.name())))
-                            .must(
-                                m ->
-                                    m.term(
-                                        t ->
-                                            t.field(JobRegistryIndex.ENTITY_TYPE)
-                                                .value(entityType.name())))
-                            .must(
-                                m ->
-                                    m.term(
-                                        t ->
-                                            t.field(JobRegistryIndex.ENTITY_ID).value(entityId)))));
+                    jobTypeAndEntityTypeQuery(jobType, entityType)
+                        .must(m -> m.term(t -> t.field(JobRegistryIndex.ENTITY_ID).value(entityId)))
+                        .build()));
 
     final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
@@ -128,7 +118,7 @@ public class JobRegistryReaderES implements JobRegistryReader {
       if (searchResponse.hits().hits().isEmpty()) {
         return Optional.empty();
       }
-      return Optional.ofNullable(searchResponse.hits().hits().get(0).source());
+      return Optional.ofNullable(searchResponse.hits().hits().getFirst().source());
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -137,5 +127,68 @@ public class JobRegistryReaderES implements JobRegistryReader {
       LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public Set<String> findEntityIdsWithJob(
+      final JobType jobType, final EntityType entityType, final Collection<String> entityIds) {
+    if (entityIds.isEmpty()) {
+      return Set.of();
+    }
+    LOG.debug(
+        "Fetching entity IDs with [{}] job entries for entity type [{}] among [{}] candidates.",
+        jobType,
+        entityType,
+        entityIds.size());
+
+    final Query query =
+        Query.of(
+            q ->
+                q.bool(
+                    jobTypeAndEntityTypeQuery(jobType, entityType)
+                        .must(
+                            m ->
+                                m.terms(
+                                    t ->
+                                        t.field(JobRegistryIndex.ENTITY_ID)
+                                            .terms(
+                                                tt ->
+                                                    tt.value(
+                                                        entityIds.stream()
+                                                            .map(FieldValue::of)
+                                                            .toList()))))
+                        .build()));
+
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, JOB_REGISTRY_INDEX_NAME)
+                    .query(query)
+                    .source(src -> src.filter(f -> f.includes(JobRegistryIndex.ENTITY_ID)))
+                    .size(entityIds.size()));
+
+    try {
+      final SearchResponse<JobRegistryEntryDto> searchResponse =
+          esClient.search(searchRequest, JobRegistryEntryDto.class);
+      return searchResponse.hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .map(JobRegistryEntryDto::getEntityId)
+          .collect(Collectors.toSet());
+    } catch (final IOException e) {
+      final String message =
+          String.format(
+              "Was not able to fetch entity IDs with [%s] job entries for entity type [%s].",
+              jobType, entityType);
+      LOG.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private BoolQuery.Builder jobTypeAndEntityTypeQuery(
+      final JobType jobType, final EntityType entityType) {
+    return new BoolQuery.Builder()
+        .must(m -> m.term(t -> t.field(JobRegistryIndex.JOB_TYPE).value(jobType.name())))
+        .must(m -> m.term(t -> t.field(JobRegistryIndex.ENTITY_TYPE).value(entityType.name())));
   }
 }
