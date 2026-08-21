@@ -7,7 +7,6 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.ElasticsearchSchemaVersionStore.CurrentSchemaVersion.Kind;
 import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,6 +15,7 @@ import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.zeebe.util.migration.CurrentSchemaVersion.Kind;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;

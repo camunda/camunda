@@ -8,7 +8,6 @@
 package io.camunda.search.schema;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
-import io.camunda.cluster.migration.MigrationState;
 import io.camunda.cluster.migration.MigrationStatusProvider;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -16,10 +15,6 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -107,7 +102,7 @@ public final class ElasticsearchSchemaMigrationStatusProvider
     versionStoresByPhysicalTenant.forEach(
         (physicalTenantId, versionStore) ->
             statusesByPhysicalTenant.put(
-                physicalTenantId, toMigrationStatus(versionStore.getCurrentSchemaVersion())));
+                physicalTenantId, versionStore.getCurrentSchemaVersion().toMigrationStatus()));
     return statusesByPhysicalTenant;
   }
 
@@ -124,51 +119,5 @@ public final class ElasticsearchSchemaMigrationStatusProvider
                 e);
           }
         });
-  }
-
-  @VisibleForTesting
-  MigrationConditionStatus toMigrationStatus(
-      final ElasticsearchSchemaVersionStore.CurrentSchemaVersion currentSchemaVersion) {
-    return switch (currentSchemaVersion.kind()) {
-      case AVAILABLE ->
-          toMigrationStatus(
-              VersionCompatibilityCheck.check(
-                  currentSchemaVersion.schemaVersion().orElseThrow(),
-                  currentSchemaVersion.stableApplicationVersion().orElseThrow()));
-      case FRESH_DATABASE ->
-          new MigrationConditionStatus(
-              MigrationState.MIGRATION_IN_PROGRESS,
-              "no schema version recorded yet for prefix '"
-                  + currentSchemaVersion.prefix()
-                  + "' (fresh database)");
-      case READ_FAILURE ->
-          new MigrationConditionStatus(
-              MigrationState.UNKNOWN, currentSchemaVersion.detail().orElseThrow());
-    };
-  }
-
-  private MigrationConditionStatus toMigrationStatus(
-      final VersionCompatibilityCheck.CheckResult result) {
-    return switch (result) {
-      case final Compatible.SameVersion same ->
-          new MigrationConditionStatus(
-              MigrationState.MIGRATED,
-              "schema version " + same.version() + " matches the application version");
-      case final Compatible.PatchUpgrade patch ->
-          new MigrationConditionStatus(
-              MigrationState.MIGRATION_IN_PROGRESS,
-              "schema version " + patch.from() + " has not yet migrated to " + patch.to());
-      case final Compatible.MinorUpgrade minor ->
-          new MigrationConditionStatus(
-              MigrationState.MIGRATION_IN_PROGRESS,
-              "schema version " + minor.from() + " has not yet migrated to " + minor.to());
-      case final Incompatible incompatible ->
-          new MigrationConditionStatus(
-              MigrationState.UNKNOWN, "incompatible schema upgrade path: " + incompatible);
-      case final Indeterminate indeterminate ->
-          new MigrationConditionStatus(
-              MigrationState.UNKNOWN,
-              "cannot determine schema version compatibility: " + indeterminate);
-    };
   }
 }

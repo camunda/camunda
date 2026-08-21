@@ -10,6 +10,7 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.CurrentSchemaVersion;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
@@ -393,44 +394,6 @@ public class RdbmsSchemaVersionStore {
         connection.prepareStatement("INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
       insertStmt.setString(1, stableVersion);
       insertStmt.executeUpdate();
-    }
-  }
-
-  public record CurrentSchemaVersion(
-      CurrentSchemaVersion.Kind kind,
-      String prefix,
-      Optional<String> schemaVersion,
-      Optional<String> stableApplicationVersion,
-      Optional<String> detail) {
-
-    static CurrentSchemaVersion available(
-        final String prefix, final String schemaVersion, final String stableApplicationVersion) {
-      return new CurrentSchemaVersion(
-          Kind.AVAILABLE,
-          prefix,
-          Optional.of(schemaVersion),
-          Optional.of(stableApplicationVersion),
-          Optional.empty());
-    }
-
-    static CurrentSchemaVersion freshDatabase(final String prefix) {
-      return new CurrentSchemaVersion(
-          Kind.FRESH_DATABASE, prefix, Optional.empty(), Optional.empty(), Optional.empty());
-    }
-
-    static CurrentSchemaVersion readFailure(final String prefix, final Exception e) {
-      return new CurrentSchemaVersion(
-          Kind.READ_FAILURE,
-          prefix,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of("failed to read schema version: " + e.getMessage()));
-    }
-
-    public enum Kind {
-      AVAILABLE,
-      FRESH_DATABASE,
-      READ_FAILURE
     }
   }
 }
