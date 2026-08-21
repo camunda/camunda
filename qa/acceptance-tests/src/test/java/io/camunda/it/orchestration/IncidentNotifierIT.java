@@ -27,6 +27,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -107,7 +108,7 @@ public class IncidentNotifierIT {
     }
 
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               // get all webhook requests received by WireMock
@@ -141,7 +142,7 @@ public class IncidentNotifierIT {
     }
 
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var requests = getRequestsToWebhook();
@@ -172,7 +173,7 @@ public class IncidentNotifierIT {
   private void waitForIncidentToExist(
       final ProcessInstanceEvent incident, final CamundaClient camundaClient) {
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofSeconds(1))
         .until(
             () -> getIncidents(camundaClient),

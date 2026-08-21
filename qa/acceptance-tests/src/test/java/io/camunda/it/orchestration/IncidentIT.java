@@ -18,6 +18,7 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
@@ -217,7 +218,7 @@ public class IncidentIT {
 
   private long getChildProcessInstanceKey(final CamundaClient client) {
     return Awaitility.await("until one element exists in the child process instance")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .until(
             () ->
@@ -324,7 +325,7 @@ public class IncidentIT {
       final CamundaClient client, final Consumer<IncidentFilter> filterFn) {
     return Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> client.newIncidentSearchRequest().filter(filterFn).send().join().items(),
             Predicate.not(List::isEmpty))
