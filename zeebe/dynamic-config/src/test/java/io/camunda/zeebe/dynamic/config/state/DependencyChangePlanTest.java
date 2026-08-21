@@ -214,6 +214,29 @@ final class DependencyChangePlanTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("not part of the graph");
     }
+
+    @Test
+    void shouldRejectACompletionWhoseDependenciesAreNotComplete() {
+      // given — a two-operation chain where only the dependent operation is marked complete. No
+      // execution path produces this, but a decoded or hand-built plan can, and blockedBy() would
+      // then report the first operation as still to run after the second already has.
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(op(0, 1));
+      final var second = builder.add(op(0, 2), Set.of(first));
+      final var graph = builder.build();
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  new DependencyChangePlan(
+                      PLAN_ID,
+                      Status.IN_PROGRESS,
+                      Instant.now(),
+                      graph,
+                      new TreeMap<>(Map.of(second, Instant.now()))))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("the operations it depends on are not");
+    }
   }
 
   @Nested

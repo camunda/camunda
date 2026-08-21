@@ -50,10 +50,18 @@ public record DependencyChangePlan(
   public DependencyChangePlan {
     completed = Collections.unmodifiableSortedMap(new TreeMap<>(completed));
     for (final var operationId : completed.keySet()) {
-      if (!graph.operations().containsKey(operationId)) {
+      final var planned = graph.operations().get(operationId);
+      if (planned == null) {
         throw new IllegalArgumentException(
             "Operation %s is marked complete, but is not part of this plan's graph"
                 .formatted(operationId));
+      }
+      final var incompleteDependencies = new TreeSet<>(planned.dependsOn());
+      incompleteDependencies.removeAll(completed.keySet());
+      if (!incompleteDependencies.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Operation %s is marked complete, but the operations it depends on are not: %s"
+                .formatted(operationId, incompleteDependencies));
       }
     }
   }
