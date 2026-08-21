@@ -62,8 +62,6 @@ import org.springframework.beans.factory.InitializingBean;
 public class RdbmsSchemaInitializer
     implements InitializingBean, DisposableBean, RdbmsSchemaManagerRegistry {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaInitializer.class);
-
   /**
    * The backoff a degraded tenant retries on, deliberately not configurable: what a degraded node
    * needs is to keep retrying, no deployment has asked to tune that, and a property surface is
@@ -78,6 +76,8 @@ public class RdbmsSchemaInitializer
    * them.
    */
   @VisibleForTesting static final RetryConfiguration DEFAULT_RETRY = unboundedRetry();
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsSchemaInitializer.class);
 
   private final Map<String, RdbmsSchemaManager> schemaManagers;
   private final SchemaInitialization initialization;
