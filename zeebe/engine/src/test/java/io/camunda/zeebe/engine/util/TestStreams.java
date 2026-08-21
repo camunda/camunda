@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -496,6 +497,15 @@ public final class TestStreams {
 
     public FluentLogWriter recordType(final RecordType recordType) {
       metadata.recordType(recordType);
+      return this;
+    }
+
+    /**
+     * Overrides the version stamped on this record, as if it had been written by a broker running
+     * that version — only needed to simulate a record written under a previous version.
+     */
+    public FluentLogWriter brokerVersion(final VersionInfo brokerVersion) {
+      metadata.brokerVersion(brokerVersion);
       return this;
     }
 

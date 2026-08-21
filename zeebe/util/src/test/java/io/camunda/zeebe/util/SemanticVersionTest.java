@@ -128,4 +128,11 @@ final class SemanticVersionTest {
                 "2.1.0-alpha3",
                 "2.1.0"));
   }
+
+  @Test
+  void shouldFormatOnlyMajorAndMinorAsAMinorVersionString() {
+    assertThat(new SemanticVersion(8, 10, 3, null, null).toMinorVersionString()).isEqualTo("8.10");
+    assertThat(new SemanticVersion(8, 10, 0, "SNAPSHOT", null).toMinorVersionString())
+        .isEqualTo("8.10");
+  }
 }
