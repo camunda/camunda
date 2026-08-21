@@ -233,9 +233,14 @@ public final class AgentInstanceCreateProcessor
     event
         .getHistory()
         .forEach(
-            item ->
+            item -> {
+              // A duplicate is skipped entirely: it was already created by an earlier request, so
+              // no second AGENT_HISTORY:CREATED event is appended for it.
+              if (!item.isDuplicate()) {
                 stateWriter.appendFollowUpEvent(
-                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item));
+                    item.getAgentHistoryKey(), AgentHistoryIntent.CREATED, item);
+              }
+            });
 
     responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);

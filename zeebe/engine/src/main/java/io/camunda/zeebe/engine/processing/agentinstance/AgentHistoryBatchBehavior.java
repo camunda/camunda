@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.agentinstance;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.immutable.AgentHistoryState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
@@ -20,8 +21,10 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -67,6 +70,14 @@ public final class AgentHistoryBatchBehavior {
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance configuration with history item '%s',"
           + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
+  static final String ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST =
+      "Expected to update agent instance, but historyItemId '%s' is used by more than one history "
+          + "item. Each history item must have a unique historyItemId.";
+  static final String ERROR_MSG_UNLEASED_REQUEST_WITH_LEASED_PENDING_ITEMS =
+      "Expected to update agent instance related to job with key '%d', but the job already has "
+          + "pending history items associated with a lease and this request carries none. Once a "
+          + "job's pending history is scoped to a lease, every later request for that job must "
+          + "supply one too.";
 
   private final KeyGenerator keyGenerator;
   private final ProcessingState processingState;
@@ -124,7 +135,46 @@ public final class AgentHistoryBatchBehavior {
                   jobKey, jobElementInstanceKey, elementInstanceKey)));
     }
 
+    // Leases separate attempts: pending items pushed with a lease survive only if their lease
+    // wins. A request with no lease can't say which attempt it belongs to, so once the job has
+    // any leased pending items, an unleased request that would introduce a genuinely new pending
+    // item is refused outright — that new item would carry no lease of its own and could be
+    // silently discarded once a real lease commits. An unleased request that resends ids already
+    // pending is not a risk: it creates nothing new, so it is left to the ordinary dedup check
+    // below instead of being rejected here.
+    if (jobLease.isEmpty() && history != null && !history.isEmpty()) {
+      final var pendingScan = scanPendingByJobKey(jobKey);
+      if (pendingScan.anyLeased()
+          && history.stream()
+              .anyMatch(
+                  item -> !pendingScan.byHistoryItemId().containsKey(item.getHistoryItemId()))) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_UNLEASED_REQUEST_WITH_LEASED_PENDING_ITEMS.formatted(jobKey)));
+      }
+    }
+
     return Either.right(job);
+  }
+
+  /** One pending scan for a job, gathering both facts the unleased-request check needs. */
+  private record PendingScanResult(boolean anyLeased, Map<String, Long> byHistoryItemId) {}
+
+  private PendingScanResult scanPendingByJobKey(final long jobKey) {
+    final var byHistoryItemId = new HashMap<String, Long>();
+    final var anyLeased = new boolean[1];
+    processingState
+        .getAgentHistoryState()
+        .visitByJobKey(
+            jobKey,
+            item -> {
+              byHistoryItemId.putIfAbsent(item.getHistoryItemId(), item.getAgentHistoryKey());
+              if (!item.getJobLease().isEmpty()) {
+                anyLeased[0] = true;
+              }
+            });
+    return new PendingScanResult(anyLeased[0], byHistoryItemId);
   }
 
   /**
@@ -143,6 +193,7 @@ public final class AgentHistoryBatchBehavior {
       return Either.rightVoid();
     }
 
+    final var seenHistoryItemIds = new HashSet<String>();
     for (int i = 0; i < history.size(); i++) {
       final var item = history.get(i);
       final var historyItemId = item.getHistoryItemId();
@@ -151,6 +202,13 @@ public final class AgentHistoryBatchBehavior {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_ARGUMENT, ERROR_MSG_HISTORY_ITEM_ID_MISSING.formatted(i)));
+      }
+
+      if (!seenHistoryItemIds.add(historyItemId)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                ERROR_MSG_DUPLICATE_HISTORY_ITEM_ID_IN_REQUEST.formatted(historyItemId)));
       }
 
       if (item.getRole() == AgentHistoryRole.UNSPECIFIED) {
@@ -208,9 +266,13 @@ public final class AgentHistoryBatchBehavior {
       final List<? extends AgentHistoryRecordValue> history) {
     final var changedAttributes = new HashSet<String>();
     final var items = new ArrayList<AgentHistoryRecord>(history.size());
+    final var pendingByHistoryItemId = collectPendingByHistoryItemId(jobKey, jobLease);
 
     for (final var item : history) {
-      final var historyKey = keyGenerator.nextKey();
+      final var historyItemId = item.getHistoryItemId();
+      final var matchedKey = pendingByHistoryItemId.get(historyItemId);
+      final var isDuplicate = matchedKey != null;
+      final var historyKey = isDuplicate ? matchedKey : keyGenerator.nextKey();
 
       final var event = new AgentHistoryRecord();
       // `item` is always a concrete AgentHistoryRecord at runtime (the only implementation of
@@ -227,18 +289,48 @@ public final class AgentHistoryBatchBehavior {
           .setProcessDefinitionKey(target.getProcessDefinitionKey())
           .setTenantId(target.getTenantId())
           .setJobKey(jobKey)
-          .setJobLease(jobLease);
+          .setJobLease(jobLease)
+          .setDuplicate(isDuplicate);
 
-      if (applyMetrics(target.getMetrics(), item)) {
-        changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
+      // A duplicate is skipped entirely: no metrics accumulation, no CONFIGURATION attributes
+      // applied — re-applying values the instance already reflects would be unobservable, so the
+      // durable signal that it was skipped is the isDuplicate flag on the echoed item alone.
+      if (!isDuplicate) {
+        if (applyMetrics(target.getMetrics(), item)) {
+          changedAttributes.add(AgentInstanceRecord.ATTR_METRICS);
+        }
+        changedAttributes.addAll(applyConfigurationChanges(target, item));
       }
-      changedAttributes.addAll(applyConfigurationChanges(target, item));
 
       items.add(event);
     }
 
     target.setHistory(items);
     return changedAttributes;
+  }
+
+  /**
+   * Collects, by {@code historyItemId}, the {@code agentHistoryKey} of every history item already
+   * pending for this activation: lease-scoped when {@code jobLease} is given (another lease's
+   * pending items are never duplicates — they belong to an attempt that may be about to lose), or
+   * scoped to the whole job when it is not (pending items live only until the job's committing
+   * lease clears them, so "all pending for this job" is exactly the set that will be committed
+   * together).
+   */
+  private Map<String, Long> collectPendingByHistoryItemId(
+      final long jobKey, final String jobLease) {
+    final var pendingByHistoryItemId = new HashMap<String, Long>();
+    final AgentHistoryState.AgentHistoryVisitor collect =
+        pending ->
+            pendingByHistoryItemId.putIfAbsent(
+                pending.getHistoryItemId(), pending.getAgentHistoryKey());
+    final var agentHistoryState = processingState.getAgentHistoryState();
+    if (jobLease.isEmpty()) {
+      agentHistoryState.visitByJobKey(jobKey, collect);
+    } else {
+      agentHistoryState.visitByJobLease(jobKey, jobLease, collect);
+    }
+    return pendingByHistoryItemId;
   }
 
   /**
