@@ -119,6 +119,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
+  private volatile boolean migrationSnapshotTaken = false;
   private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private ClusterConfigurationService clusterConfigurationService;
 
@@ -181,7 +182,8 @@ public class PartitionStartupAndTransitionContextImpl
         () -> snapshotDirector,
         () -> partitionProcessingState,
         () -> zeebeDb,
-        () -> logStream);
+        () -> logStream,
+        this::isMigrationSnapshotTaken);
   }
 
   @Override
@@ -415,6 +417,21 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public boolean areMigrationsPerformed() {
     return migrationsPerformed;
+  }
+
+  @Override
+  public void markMigrationSnapshotTaken() {
+    migrationSnapshotTaken = true;
+  }
+
+  @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTaken;
   }
 
   @Override

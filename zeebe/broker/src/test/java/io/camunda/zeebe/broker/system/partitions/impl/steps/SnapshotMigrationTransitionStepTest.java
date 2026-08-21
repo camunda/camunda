@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -300,6 +301,23 @@ public class SnapshotMigrationTransitionStepTest {
     assertThat(concurrencyControl.scheduledTasks()).isNotZero();
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      mode = Mode.EXCLUDE,
+      names = {"INACTIVE"})
+  public void shouldRetryErrorsThatAreNotAClosedState(final Role role) {
+    // given - only a closed state store means retrying can never help; every other error,
+    // including one that isn't an IOException, must still be retried
+    final var exception = new RuntimeException("expected");
+    setupCommonCase(role, CompletableActorFuture.completedExceptionally(exception));
+    // when
+    concurrencyControl.runAll();
+    // then
+    verify(snapshotDirector, atLeast(2)).forceSnapshot();
+    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+  }
+
   private void setupCommonCase(
       final Role role, final ActorFuture<PersistedSnapshot> snapshotResult) {
     // given
@@ -322,7 +340,9 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldCloseItselfIfExceptionIsNotRetriable(final Role role) {
     setupCommonCase(
-        role, CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
+        role,
+        CompletableActorFuture.completedExceptionally(
+            new SnapshotException.StateClosedException("expected")));
 
     Awaitility.await("Until report does not contain the component")
         .untilAsserted(

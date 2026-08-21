@@ -153,7 +153,12 @@ public class ExportingRequestBroadcaster {
     return members;
   }
 
-  private void validateTopology(final BrokerClusterState topology) {
+  /**
+   * Throws {@link IncompleteTopologyException} unless every partition of the topology, and every
+   * one of its members, is known -- shared with {@link ClusterRocksDbMigrationStatusProvider},
+   * which needs the same guarantee before fanning out to every partition replica.
+   */
+  static void validateTopology(final BrokerClusterState topology) {
     final var replicationFactor = topology.getReplicationFactor();
     final var expectedPartitions = topology.getPartitionsCount();
     final var partitions = topology.getPartitions();
