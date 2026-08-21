@@ -11,28 +11,35 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {StartProcessProvider} from '#/tasklist/modules/processes/StartProcessProvider';
+import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {TasklistProcessesPage} from './TasklistProcessesPage';
 
 describe('<TasklistProcessesPage />', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		storeStateLocally('tasklist.hasConsentedToStartProcess', true);
 	});
 
 	afterEach(() => {
 		sessionStorage.clear();
+		localStorage.clear();
 	});
 
 	it('should display the page heading and description', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{}}
-					tenants={[]}
-					processes={[]}
-					hasNextPage={false}
-					isFetchingNextPage={false}
-					onLoadMore={vi.fn()}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
@@ -44,14 +51,17 @@ describe('<TasklistProcessesPage />', () => {
 	it('should display the filter bar', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{}}
-					tenants={[]}
-					processes={[]}
-					hasNextPage={false}
-					isFetchingNextPage={false}
-					onLoadMore={vi.fn()}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
@@ -60,20 +70,23 @@ describe('<TasklistProcessesPage />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Filter processes'})).toBeVisible();
 	});
 
-	it('should display a tile per process with an enabled, no-op start-process action', async () => {
+	it('should display a tile per process with an enabled start-process action', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{}}
-					tenants={[]}
-					processes={[
-						createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1'}),
-						createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
-					]}
-					hasNextPage={false}
-					isFetchingNextPage={false}
-					onLoadMore={vi.fn()}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[
+							createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1'}),
+							createProcessDefinition({name: 'Order approval', processDefinitionKey: '2'}),
+						]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
@@ -85,17 +98,46 @@ describe('<TasklistProcessesPage />', () => {
 		await expect.element(startProcessButtons.first()).toBeEnabled();
 	});
 
+	it('should open the start-process form for a process that has a start form', async () => {
+		const onOpenStartProcessForm = vi.fn();
+		const screen = await renderWithRouter(
+			() => (
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[
+							createProcessDefinition({name: 'Invoice review', processDefinitionKey: '1', hasStartForm: true}),
+						]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={onOpenStartProcessForm}
+					/>
+				</StartProcessProvider>
+			),
+			{path: '/shadcn/tasklist/processes'},
+		);
+
+		await screen.getByRole('button', {name: 'Start process'}).click();
+
+		expect(onOpenStartProcessForm).toHaveBeenCalledWith('1');
+	});
+
 	it('should display an empty message when there are no processes', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{}}
-					tenants={[]}
-					processes={[]}
-					hasNextPage={false}
-					isFetchingNextPage={false}
-					onLoadMore={vi.fn()}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
@@ -106,14 +148,17 @@ describe('<TasklistProcessesPage />', () => {
 	it('should display a not-found message when filtered and no processes match', async () => {
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{search: 'invoice'}}
-					tenants={[]}
-					processes={[]}
-					hasNextPage={false}
-					isFetchingNextPage={false}
-					onLoadMore={vi.fn()}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{search: 'invoice'}}
+						tenants={[]}
+						processes={[]}
+						hasNextPage={false}
+						isFetchingNextPage={false}
+						onLoadMore={vi.fn()}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
@@ -125,14 +170,17 @@ describe('<TasklistProcessesPage />', () => {
 		const onLoadMore = vi.fn();
 		const screen = await renderWithRouter(
 			() => (
-				<TasklistProcessesPage
-					initialFilterValues={{}}
-					tenants={[]}
-					processes={[createProcessDefinition({name: 'Invoice review'})]}
-					hasNextPage
-					isFetchingNextPage={false}
-					onLoadMore={onLoadMore}
-				/>
+				<StartProcessProvider>
+					<TasklistProcessesPage
+						initialFilterValues={{}}
+						tenants={[]}
+						processes={[createProcessDefinition({name: 'Invoice review'})]}
+						hasNextPage
+						isFetchingNextPage={false}
+						onLoadMore={onLoadMore}
+						onOpenStartProcessForm={vi.fn()}
+					/>
+				</StartProcessProvider>
 			),
 			{path: '/shadcn/tasklist/processes'},
 		);
