@@ -216,11 +216,21 @@ public class BpmnJobActivationBehavior {
     // activate job in state; the batch drops the variables, so the injected values stay off the log
     final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
     appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
+    // Re-activation pairs the ACTIVATED event with a follow-up DISCARD for the superseded lease's
+    // pending history (below). Both are sized here, before either is appended, so a job is never
+    // activated without room left for its compensating discard — the discard is not optional
+    // cleanup the commit-time safety net can be trusted to catch later, it is what keeps at most
+    // one lease's pending edits unresolved on the AgentInstance at a time.
+    final AgentHistoryRecord discardRecord =
+        isReactivation ? new AgentHistoryRecord().setJobKey(jobKey).ignoreLease() : null;
+    final int requiredLength =
+        jobBatchRecord.getLength()
+            + (discardRecord == null ? 0 : discardRecord.getLength())
+            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
     // the activation is sized here rather than by the caller: only now is the stream known, and
     // with it the worker name this record carries twice. Letting the append overflow instead would
     // fail the whole command, which for an engine-written one means no rejection anybody reads
-    if (!stateWriter.canWriteEventOfLength(
-        jobBatchRecord.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+    if (!stateWriter.canWriteEventOfLength(requiredLength)) {
       // the job is not activated, so it stays available; the notification lets a long poll collect
       // it, and the caller stops handing out jobs this batch can no longer take
       notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
@@ -228,17 +238,14 @@ public class BpmnJobActivationBehavior {
     }
     final var jobBatchKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
-    if (isReactivation) {
+    if (discardRecord != null) {
       // Re-activation: this push mints a new lease for a job that already held one, the same
       // situation JobBatchCollector discards for on the poll path. This site never goes through
       // the collector, so it must emit the same blanket, lease-agnostic discard itself. Emitted
       // only now that the ACTIVATED event is actually appended: an earlier abort (failed secret
       // injection, no room left in the batch) leaves the job on its old, still-valid lease, whose
       // pending items must not be discarded.
-      commandWriter.appendFollowUpCommand(
-          jobKey,
-          AgentHistoryIntent.DISCARD,
-          new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+      commandWriter.appendFollowUpCommand(jobKey, AgentHistoryIntent.DISCARD, discardRecord);
     }
 
     final var activatedJob = new ActivatedJobImpl();
