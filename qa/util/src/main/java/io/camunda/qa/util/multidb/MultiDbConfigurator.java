@@ -137,7 +137,6 @@ public class MultiDbConfigurator {
     documentBasedDatabase
         .getHistory()
         .setUsageMetricsPolicyName(indexPrefix + "-usage-metrics-ilm");
-    documentBasedDatabase.getHistory().setUsageMetricsRolloverInterval("1w");
     if (userName != null && !userName.isBlank()) {
       documentBasedDatabase.setUsername(userName);
     }
