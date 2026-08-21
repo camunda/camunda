@@ -20,6 +20,8 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
+import io.camunda.search.entities.ContentItem;
+import io.camunda.search.entities.ContentItem.ContentType;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentInstanceQuery;
@@ -84,6 +86,43 @@ public class AgentInstanceIT {
   }
 
   @TestTemplate
+  public void shouldUpdateConfigurationFieldsOnUpdate(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given — a CONFIGURATION history item commit changes model, provider, systemPrompt, and the
+    // limits; these are mutable, not write-once, so an UPDATE must actually persist the new values
+    final AgentInstanceDbModel model = createAndSaveRandomAgentInstance(testApplication, b -> b);
+
+    final var updated =
+        model.copy(
+            b ->
+                ((AgentInstanceDbModel.Builder) b)
+                    .model("updated-model")
+                    .provider("updated-provider")
+                    .systemPromptItems(
+                        List.of(new ContentItem(ContentType.TEXT, "updated prompt", null, null)))
+                    .maxTokens(model.maxTokens() + 1)
+                    .maxModelCalls(model.maxModelCalls() + 1)
+                    .maxToolCalls(model.maxToolCalls() + 1));
+    final RdbmsWriters rdbmsWriters = testApplication.getRdbmsService().createWriter(0);
+    rdbmsWriters.getAgentInstanceWriter().update(updated);
+    rdbmsWriters.flush();
+
+    final var entity =
+        testApplication
+            .getRdbmsService()
+            .getAgentInstanceDbReader()
+            .getByKey(model.agentInstanceKey(), ResourceAccessChecks.disabled());
+
+    assertThat(entity.definition().model()).isEqualTo("updated-model");
+    assertThat(entity.definition().provider()).isEqualTo("updated-provider");
+    assertThat(entity.definition().systemPrompt())
+        .containsExactly(new ContentItem(ContentType.TEXT, "updated prompt", null, null));
+    assertThat(entity.limits().maxTokens()).isEqualTo(model.maxTokens() + 1);
+    assertThat(entity.limits().maxModelCalls()).isEqualTo(model.maxModelCalls() + 1);
+    assertThat(entity.limits().maxToolCalls()).isEqualTo(model.maxToolCalls() + 1);
+  }
+
+  @TestTemplate
   public void shouldCoalescePendingCreateAndUpdateBeforeFlush(
       final CamundaRdbmsTestApplication testApplication) {
     // given — a create() queued but not yet flushed
@@ -120,8 +159,9 @@ public class AgentInstanceIT {
     rdbmsWriters.getAgentInstanceWriter().update(updated);
     rdbmsWriters.flush();
 
-    // then — only the merged, final state was ever persisted; fields the update never touched
-    // (model/provider/systemPrompt/tenantId) survive from the original create() untouched
+    // then — only the merged, final state was ever persisted; the update's own copy() carried
+    // model/provider/systemPrompt unchanged, and tenantId is still genuinely write-once, so all
+    // three still read back exactly as create() originally wrote them
     final var entity =
         testApplication
             .getRdbmsService()

@@ -61,6 +61,12 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .versionTag(agentInstance.versionTag())
                   .elementId(agentInstance.elementId())
                   .status(agentInstance.status())
+                  .model(agentInstance.model())
+                  .provider(agentInstance.provider())
+                  .systemPrompt(agentInstance.systemPrompt())
+                  .maxTokens(agentInstance.maxTokens())
+                  .maxModelCalls(agentInstance.maxModelCalls())
+                  .maxToolCalls(agentInstance.maxToolCalls())
                   .inputTokens(agentInstance.inputTokens())
                   .outputTokens(agentInstance.outputTokens())
                   .modelCalls(agentInstance.modelCalls())
@@ -70,6 +76,9 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               if (agentInstance.completionDate() != null) {
                 b.completionDate(agentInstance.completionDate());
               }
+              b.truncateDefinitionFields(
+                  vendorDatabaseProperties.userCharColumnSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes());
               return b;
             });
 
@@ -80,7 +89,9 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               WriteStatementType.UPDATE,
               agentInstance.agentInstanceKey(),
               "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
-              agentInstance));
+              agentInstance.truncateDefinitionFields(
+                  vendorDatabaseProperties.userCharColumnSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes())));
     }
 
     syncElementInstanceKeys(agentInstance);
