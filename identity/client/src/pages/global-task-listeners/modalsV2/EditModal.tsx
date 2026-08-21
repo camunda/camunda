@@ -26,13 +26,15 @@ import NumberField from "src/components/formV2/NumberField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
-  getEventTypeLabel,
+  getEventTypeOptions,
+  getExecutionOrderOptions,
   LISTENER_TYPE_PATTERN,
+  syncAllEventType,
+  toRequestEventTypes,
 } from "src/pages/global-task-listeners/utility";
 import type {
   CreateGlobalTaskListenerRequestBody,
   GlobalTaskListener,
-  GlobalTaskListenerEventType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
@@ -50,7 +52,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     error,
   } = useMutation(globalTaskListenerMutations.update(qc));
 
-  const { control, handleSubmit, watch, setValue, reset } =
+  const { control, handleSubmit, reset } =
     useForm<CreateGlobalTaskListenerRequestBody>({
       defaultValues: {
         id: entity.id,
@@ -75,59 +77,12 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     });
   }, [entity, reset]);
 
-  const eventTypes = watch("eventTypes");
-
-  const handleEventTypeChange = (
-    selectedItems: GlobalTaskListenerEventType[],
-  ) => {
-    const individualTypes = LISTENER_EVENT_TYPES.filter((opt) => opt !== "all");
-
-    // If "all" was just checked, select all individual types too
-    if (selectedItems.includes("all") && !eventTypes.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    // If "all" was just unchecked, uncheck all individual types too
-    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
-      setValue("eventTypes", []);
-      return;
-    }
-
-    // If an individual type was unchecked while "all" is checked, uncheck "all" too
-    if (
-      eventTypes.includes("all") &&
-      selectedItems.length < LISTENER_EVENT_TYPES.length
-    ) {
-      setValue(
-        "eventTypes",
-        selectedItems.filter((item) => item !== "all"),
-      );
-      return;
-    }
-
-    // If all individual types are now selected, also select "all"
-    const allIndividualSelected = individualTypes.every((type) =>
-      selectedItems.includes(type),
-    );
-    if (allIndividualSelected && !selectedItems.includes("all")) {
-      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
-      return;
-    }
-
-    setValue("eventTypes", selectedItems);
-  };
-
   const onSubmit = (data: CreateGlobalTaskListenerRequestBody) => {
-    const eventTypes = data.eventTypes.includes("all")
-      ? ["all" as const]
-      : data.eventTypes.filter((type) => type !== "all");
-
     mutate(
       {
         id: entity.id,
         type: data.type,
-        eventTypes: eventTypes,
+        eventTypes: toRequestEventTypes(data.eventTypes),
         retries: data.retries,
         afterNonGlobal: data.afterNonGlobal,
         priority: data.priority,
@@ -145,17 +100,8 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     );
   };
 
-  // `Select` is value-based, so the boolean is carried as its stringified form
-  // and converted back in `onValueChange`.
-  const afterNonGlobalOptions = [
-    { value: "false", label: t("executionOrderBefore") },
-    { value: "true", label: t("executionOrderAfter") },
-  ];
-
-  const eventTypeOptions = LISTENER_EVENT_TYPES.map((eventType) => ({
-    value: eventType,
-    label: getEventTypeLabel(eventType, t),
-  }));
+  const afterNonGlobalOptions = getExecutionOrderOptions(t);
+  const eventTypeOptions = getEventTypeOptions(t);
 
   return (
     <FormModal
@@ -224,13 +170,9 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
                 // "+N more" chip and hide what is stored.
                 maxCount={LISTENER_EVENT_TYPES.length}
                 value={field.value}
-                onValueChange={(value) => {
-                  handleEventTypeChange(
-                    LISTENER_EVENT_TYPES.filter((eventType) =>
-                      value.includes(eventType),
-                    ),
-                  );
-                }}
+                onValueChange={(value) =>
+                  field.onChange(syncAllEventType(value, field.value))
+                }
               />
             )}
           </FormField>
