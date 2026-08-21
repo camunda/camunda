@@ -16,6 +16,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
@@ -54,7 +55,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
@@ -96,7 +96,7 @@ public final class ZeebePartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private final BrokerClient brokerClient;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -120,7 +120,7 @@ public final class ZeebePartitionFactory {
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -139,7 +139,7 @@ public final class ZeebePartitionFactory {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -200,7 +200,7 @@ public final class ZeebePartitionFactory {
             commandApiService,
             snapshotStore,
             snapshotCopy,
-            snapshotApiRequestHandler,
+            brokerClient,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,

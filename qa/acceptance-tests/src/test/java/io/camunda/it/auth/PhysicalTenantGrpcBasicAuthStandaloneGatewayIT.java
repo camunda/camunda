@@ -68,7 +68,7 @@ final class PhysicalTenantGrpcBasicAuthStandaloneGatewayIT {
 
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER =
-      TENANTS.configureAdminRoles(
+      TENANTS.configureStatic(
           new TestStandaloneBroker()
               .withAuthenticatedAccess()
               .withBasicAuth()

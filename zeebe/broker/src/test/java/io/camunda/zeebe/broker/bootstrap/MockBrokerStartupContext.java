@@ -37,7 +37,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -93,8 +92,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
   private OidcClaimsProvider oidcClaimsProvider = (jwtClaims, tokenValue) -> jwtClaims;
-  private SnapshotApiRequestHandler snapshotApiRequestHandler =
-      mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
@@ -407,17 +404,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
     return authConfig -> oidcClaimsProvider;
-  }
-
-  @Override
-  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return snapshotApiRequestHandler;
-  }
-
-  @Override
-  public void setSnapshotApiRequestHandler(
-      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
   @Override
