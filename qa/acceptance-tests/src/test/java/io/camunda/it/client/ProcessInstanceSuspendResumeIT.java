@@ -96,7 +96,8 @@ public class ProcessInstanceSuspendResumeIT {
     waitForProcessInstancesToBeCompleted(
         camundaClient, f -> f.processInstanceKey(b -> b.in(suspendedKey, notSuspendedKey)), 2);
     // Process-instance COMPLETED can be searchable before every element-instance update is
-    // exported. Wait until both trees agree and are fully COMPLETED rather than comparing once.
+    // exported. Wait until both trees are fully exported and agree rather than comparing once.
+    // Require the known service-task ids so equal-but-incomplete lag cannot pass early.
     await()
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
@@ -104,8 +105,12 @@ public class ProcessInstanceSuspendResumeIT {
             () -> {
               final var suspendedElements = elementIdsAndStates(suspendedKey);
               final var notSuspendedElements = elementIdsAndStates(notSuspendedKey);
+              // start + taskA/B/C + end
+              assertThat(suspendedElements).hasSize(ELEMENT_IDS.length + 2);
               assertThat(suspendedElements)
-                  .isNotEmpty()
+                  .extracting(t -> t.toList().get(0))
+                  .contains((Object[]) ELEMENT_IDS);
+              assertThat(suspendedElements)
                   .extracting(t -> t.toList().get(1))
                   .containsOnly(ElementInstanceState.COMPLETED);
               assertThat(suspendedElements)
