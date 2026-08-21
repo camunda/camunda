@@ -29,9 +29,11 @@ edges, not a new container type. `PartitionGroupPhase` now always carries one `O
 group; `DependencyChangePlan` tracks progress against it (which `OperationId`s are complete) the
 same way `ClusterChangePlan` already tracks progress against a queue, and a new
 `GraphScopeReconciler` drives it by starting every operation `runnableFor` the local member, in
-place of the old reconciler's one-at-a-time contract. A transformer with nothing to parallelize
-gets the old behaviour for free via `OperationGraph.sequential(...)`, which chains every operation
-behind its predecessor.
+place of the old reconciler's one-at-a-time contract. How many of those a broker starts at once is
+capped, which is a runtime policy knob and not a correctness bound: the graph says what *may* run
+together, and the cap says how much of that one broker chooses to take on. A transformer with
+nothing to parallelize gets the old behaviour for free via `OperationGraph.sequential(...)`, which
+chains every operation behind its predecessor.
 
 **D2. Correctness of the edges is the graph author's responsibility; it is not validated.**
 A missing edge is not rejected, it is executed. The rule that makes today's adopters safe — the
@@ -50,9 +52,11 @@ principle but needs two things this change does not do: adding `groupId()` to ev
 `PartitionGroupOperation`, and a wire migration from the phase-shaped format to a flat one that has
 not been investigated. Doing that here would mean designing and shipping an unrelated data-model
 change and an unscoped wire migration alongside the execution model change. `ClusterChangePlan` —
-the queue model still backing the single-group `ClusterConfiguration`, which is scheduled for
-removal on its own timeline — is left as it is for the same reason: it does not need graph
-semantics before it goes.
+the queue model — is left as it is for the same reason, in the two places it still backs: the
+single-group `ClusterConfiguration`, which is scheduled for removal on its own timeline, and
+`GlobalConfiguration`, whose operations are cluster-wide broker lifecycle steps taken one at a time
+by construction. Neither needs graph semantics: the first because it is going, the second because
+its operations have nothing to depend on.
 
 ## Alternatives considered
 
@@ -71,16 +75,32 @@ semantics before it goes.
 ## Consequences
 
 - `PhasedChangePlan.Phase` stays `GlobalPhase | PartitionGroupPhase`, and `ChangePlan` becomes a
-  sealed interface over `ClusterChangePlan` and `DependencyChangePlan` so
-  `CurrentClusterConfiguration`'s phase-completion and scope-reconciliation logic can dispatch on
-  which one a group is running.
-- A consumer that needs one uniform view across both models (REST change view, restore status,
-  metrics) renders a graph as a queue via `CurrentClusterConfiguration.toQueueProjection`, which is
-  lossy — it cannot show that several operations are running at once — by nature of the queue
-  model it renders into, not a defect in the projection.
-- The wire format gains a `oneof` between the flat operation list and the graph so existing
-  `PartitionGroupConfiguration` messages still decode; no adopter writes a graph until it migrates,
-  so there is nothing to migrate from on the write side.
+  sealed interface over `ClusterChangePlan` and `DependencyChangePlan`. The two never meet in one
+  place: a partition group's pending change is always a `DependencyChangePlan`, the global
+  configuration's is always a `ClusterChangePlan`. The interface exists so the legacy projection and
+  the reporting views can take either — not so a group's execution path can decide which model it is
+  running. Carrying both on a group would have meant two plan lifecycles, two merge paths and two
+  reconcilers per group, plus a class of bug where a check written for one silently does the wrong
+  thing for the other. The group-scoped queue reconciler is gone with it, and `ScopeReconciler` now
+  serves the global configuration only.
+- Every partition-group transformer emits a graph. Those with no parallelism to declare call
+  `OperationGraph.sequential(...)` and execute exactly as they did as queues, including
+  `PhysicalTenantProvisioningInitializer`, which starts a change directly on a group it has just
+  created rather than through a phase.
+- The legacy single-group view renders a graph as a queue via
+  `CurrentClusterConfiguration.toQueueProjection`, which is lossy — it cannot express that several
+  operations are running at once — by nature of the queue model it renders into, not a defect in the
+  projection. It is also not purely a reporting view: `toLegacyDefault()` is dual-written into the
+  legacy gossip field, so on a mixed-version cluster the synthetic plan version minted here is a
+  live input to an old broker's `ClusterChangePlan#merge`, and that broker would execute the
+  flattened queue sequentially.
+- Wire format: `PartitionGroupConfiguration`'s pending-change field keeps its tag and changes type
+  from `ClusterChangePlan` to `DependencyChangePlan`. That is a breaking change, taken deliberately
+  because the graph model has not been released, so no persisted or gossiped configuration carries
+  the old type on that tag. Compatibility *within* this change lives one level up instead, in
+  `PhasedChangePlanPhase`: the pre-merge `PartitionGroupParallelPhase` is kept as a decode-only arm,
+  so a configuration written before the queue phase and the graph phase became one type still
+  decodes — a flat operation list is exactly a sequential graph.
 - Every additional concurrency axis a future adopter wants is a change to that adopter's own edges,
   not a change to `OperationGraph`, `DependencyChangePlan`, or `GraphScopeReconciler`.
 
