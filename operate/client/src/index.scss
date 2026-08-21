@@ -59,6 +59,7 @@ body,
     min-width: 0;
     --operate-card-border-radius: 0.75rem;
     --operate-input-border-radius: 0.5rem;
+    --operate-button-border-radius: 0.5rem;
 
     .cds--text-input,
     .cds--text-area,
@@ -74,6 +75,65 @@ body,
     .cds--search-close {
       border-radius: 0 var(--operate-input-border-radius)
         var(--operate-input-border-radius) 0;
+    }
+
+    // Primary is Carbon's brand blue; the Design System's default button is
+    // the page's own text/background colors swapped, so it stays correct
+    // in both themes without a separate dark-mode override.
+    .cds--btn {
+      border-radius: var(--operate-button-border-radius);
+    }
+
+    .cds--btn--primary {
+      background-color: var(--cds-text-primary);
+      border-color: var(--cds-text-primary);
+      color: var(--cds-background);
+
+      &:hover {
+        background-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 85%,
+          var(--cds-background)
+        );
+        border-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 85%,
+          var(--cds-background)
+        );
+        color: var(--cds-background);
+      }
+
+      &:active {
+        background-color: color-mix(
+          in srgb,
+          var(--cds-text-primary) 70%,
+          var(--cds-background)
+        );
+      }
+    }
+
+    // Carbon's secondary is a solid dark fill; the Design System's is
+    // bordered with a light neutral fill instead. Tertiary (outlined) maps
+    // to the same treatment — the Design System has no separate outline
+    // variant.
+    .cds--btn--secondary,
+    .cds--btn--tertiary {
+      background-color: var(--cds-background);
+      border-color: var(--cds-border-subtle-01);
+      color: var(--cds-text-primary);
+
+      &:hover {
+        background-color: var(--cds-background-hover);
+        border-color: var(--cds-border-subtle-01);
+        color: var(--cds-text-primary);
+      }
+    }
+
+    // Carbon's ghost button text defaults to link-blue; the Design
+    // System's is a neutral text color. Danger ghost/tertiary are left
+    // untouched — Carbon's own danger red already matches.
+    .cds--btn--ghost {
+      color: var(--cds-text-primary);
     }
   }
 }
