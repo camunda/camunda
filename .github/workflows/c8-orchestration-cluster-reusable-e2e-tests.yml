@@ -192,7 +192,11 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for Optimize to be ready
-        # Only runs when Optimize was started (service present in this branch).
+        # Best-effort boot-time wait — never fails the job. Only runs when
+        # Optimize was started (service present in this branch). The authoritative
+        # readiness verdict is the `optimize-startup` Playwright test, which shares
+        # the JUnit/JSON/HTML report. This step only gives Optimize headroom to
+        # boot before that test's own poll begins, and captures logs for triage.
         run: |
           if ! docker ps --format '{{.Names}}' | grep -qx optimize; then
             echo "Optimize container not running; skipping wait."
@@ -214,9 +218,15 @@ jobs:
             sleep 10
           done
 
-          echo "Optimize failed to become ready in time."
+          # Do NOT exit 1 here. Failing this bash step aborts the run before the
+          # test framework executes, so an Optimize boot problem surfaces as an
+          # opaque workflow crash instead of a recorded test result — and it skips
+          # the later "Import Secrets" step, leaving the always()-run TestRail
+          # publish without credentials. Leave the verdict to the optimize-startup
+          # test and just surface diagnostics.
+          echo "Optimize not ready within the boot-wait budget; leaving the verdict" \
+               "to the optimize-startup Playwright test. Recent Optimize logs:"
           docker logs optimize --tail 100 || true
-          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Print Docker logs before failing
