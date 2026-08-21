@@ -28,6 +28,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -120,35 +121,36 @@ public final class ProcessInstanceResumeJobsProcessor
       return;
     }
 
-    final long startAtJobKey = command.getValue().getResumeFromJobKey();
-    final long resumedJobKey = resumeNextJob(processInstance, startAtJobKey);
-    final boolean resumedAJob = resumedJobKey >= 0;
-    final var nextIntent =
-        resumedAJob ? ProcessInstanceIntent.RESUME_JOBS : ProcessInstanceIntent.COMPLETE_RESUMING;
+    final long startAfterJobKey = command.getValue().getResumeFromJobKey();
+    final long resumedJobKey = resumeNextJob(processInstance, startAfterJobKey);
     final var followUpValue = processInstance.getValue();
-    if (resumedAJob) {
+    final ProcessInstanceIntent nextIntent;
+    if (resumedJobKey >= 0) {
       followUpValue.setResumeFromJobKey(resumedJobKey);
+      nextIntent = ProcessInstanceIntent.RESUME_JOBS;
+    } else {
+      nextIntent = ProcessInstanceIntent.COMPLETE_RESUMING;
     }
     commandWriter.appendFollowUpCommand(processInstanceKey, nextIntent, followUpValue);
   }
 
   /**
-   * Resumes and hands out the first still-suspended job found from {@code startAtJobKey}; returns
-   * its key, or {@code -1} if none was found. Stops the walk after that one job: one per cycle, see
-   * class javadoc.
+   * Resumes and hands out the first still-suspended job found from {@code startAfterJobKey};
+   * returns its key, or {@code -1} if none was found. Stops the walk after that one job: one per
+   * cycle, see class javadoc.
    */
-  private long resumeNextJob(final ElementInstance processInstance, final long startAtJobKey) {
-    final long[] resumedJobKey = {-1L};
+  private long resumeNextJob(final ElementInstance processInstance, final long startAfterJobKey) {
+    final AtomicLong resumedJobKey = new AtomicLong(-1L);
     suspensionJobBehavior.forEachSuspendedJob(
         processInstance,
-        startAtJobKey,
+        startAfterJobKey,
         (jobKey, job) -> {
           stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
           jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
-          resumedJobKey[0] = jobKey;
+          resumedJobKey.set(jobKey);
           return false;
         });
-    return resumedJobKey[0];
+    return resumedJobKey.get();
   }
 
   /**

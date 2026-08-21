@@ -76,21 +76,23 @@ public final class ProcessInstanceSuspensionJobBehavior {
   /**
    * Visits {@link State#SUSPENDED} jobs of the process instance until {@code visitor} stops the
    * walk, without changing their state. Seeks the {@code JOBS_BY_PROCESS_INSTANCE} index from
-   * {@code startAtJobKey} (inclusive): the cursor marks the last job a previous cycle resumed, so
-   * every entry from there onward is either already resumed (skipped) or halts the scan for this
+   * {@code startAfterJobKey} (inclusive): the cursor marks the last job a previous cycle resumed,
+   * so every entry from there onward is either already resumed (skipped) or halts the scan for this
    * cycle. Takes the already-loaded root so a per-cycle caller doesn't re-read it, even though only
    * its {@code processInstanceKey} is used here.
    *
-   * <p>If the index entry for {@code startAtJobKey} no longer exists (e.g. the job was deleted
-   * after the cursor was recorded), RocksDB's seek lands on the next key ≥ {@code startAtJobKey},
-   * so iteration naturally continues from there.
+   * <p>If the index entry for {@code startAfterJobKey} no longer exists (e.g. the job was deleted
+   * after the cursor was recorded), RocksDB's seek lands on the next key ≥ {@code
+   * startAfterJobKey}, so iteration naturally continues from there.
    */
   public void forEachSuspendedJob(
-      final ElementInstance processInstance, final long startAtJobKey, final JobVisitor visitor) {
+      final ElementInstance processInstance,
+      final long startAfterJobKey,
+      final JobVisitor visitor) {
     final long processInstanceKey = processInstance.getValue().getProcessInstanceKey();
     jobState.forEachJobsByProcessInstance(
         processInstanceKey,
-        startAtJobKey,
+        startAfterJobKey,
         jobKey -> {
           if (jobState.getState(jobKey) != State.SUSPENDED) {
             return true;
