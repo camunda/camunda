@@ -6,19 +6,11 @@
 # A trailing `# LTS` comment flags longer upstream support — don't remove that entry early.
 #
 # ── Renovate coverage ────────────────────────────────────────────────────────────
-#   Entries with a `# renovate: datasource=... depName=...` comment are kept current
-#   automatically. Entries without one are deliberately un-annotated, not overlooked:
-#     - postgresql / mysql / mariadb: every tag here is a floating family tag
-#       (e.g. `postgres:18-alpine`) that the upstream registry repoints to the latest
-#       patch itself — there is nothing for Renovate to ever detect as outdated. The
-#       only real "update" possible is a new major, which is a deliberate, manual
-#       decision (new matrix row, needs its own test coverage), not something to
-#       automate.
-#     - mssql / azure-sql: floating `-latest`/version-wrapper tags — "latest is
-#       acceptable" here by design.
-#     - oracle `21-slim-faststart` (gvenzl/oracle-xe): also a floating tag, and
-#       appears abandoned upstream (last pushed 2024-10-01) — worth a separate
-#       follow-up to re-evaluate Oracle 21c/XE support, not tracked here.
+#   A `# renovate:` comment keeps that entry current automatically. Entries without
+#   one (postgresql/mysql/mariadb/mssql/azure-sql, oracle's 21-slim-faststart) use
+#   floating tags the registry repoints itself — nothing for Renovate to bump, so
+#   they're deliberately left manual. gvenzl/oracle-xe also looks abandoned upstream
+#   (no push since 2024-10-01) — worth a follow-up for @camunda/data-layer.
 #
 # ── How to use this file in CI workflows ────────────────────────────────────────
 #   CI workflows read versions from this file via the reusable action:

@@ -12,10 +12,8 @@ services:
     image: centos:8@sha256:a27fd8080b517143cbbbab9dfb7c8571c40d67d534bbdee55bd6c473f432b177
     command: "sysctl -w vm.max_map_count=262144"
   opensearch:
-    # OPENSEARCH_VERSION is always set by every current caller (ci-optimize.yml), so this
-    # fallback default is inert. It previously pinned a specific digest for 2.19.5; since
-    # nothing exercises this path, the digest was dropped rather than guessing a correct
-    # one for 2.19.6 -- re-add one if this file gains a caller that relies on the fallback.
+    # Fallback is inert (every caller sets OPENSEARCH_VERSION); dropped the stale 2.19.5
+    # digest pin rather than guess one for 2.19.6.
     image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.19.6}
     container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9200}
     depends_on:
