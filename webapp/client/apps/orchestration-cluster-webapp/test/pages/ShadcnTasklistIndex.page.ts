@@ -25,14 +25,6 @@ class ShadcnTasklistIndexPage extends BasePage {
 	get content() {
 		return this.page.getByText('Hello "/shadcn/tasklist"!');
 	}
-
-	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks', exact: true});
-	}
-
-	get processesNavItem() {
-		return this.page.getByRole('link', {name: 'Processes'});
-	}
 }
 
 export {ShadcnTasklistIndexPage};

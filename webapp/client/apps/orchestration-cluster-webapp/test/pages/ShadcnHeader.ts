@@ -66,6 +66,14 @@ class ShadcnHeader extends View {
 		await this.page.getByRole('menuitemcheckbox', {name: language}).click();
 	}
 
+	get tasksNavItem() {
+		return this.page.getByRole('link', {name: 'Tasks', exact: true});
+	}
+
+	get processesNavItem() {
+		return this.page.getByRole('link', {name: 'Processes', exact: true});
+	}
+
 	async logout() {
 		await this.openUserSidebar();
 		await this.logoutButton.click();

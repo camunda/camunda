@@ -37,14 +37,14 @@ test.describe('Tasklist index page', () => {
 
 		await expect(shadcnTasklistIndexPage.content).toBeVisible();
 		await expect(shadcnTasklistIndexPage.header.branding).toBeVisible();
-		await expect(shadcnTasklistIndexPage.tasksNavItem).toBeVisible();
-		await expect(shadcnTasklistIndexPage.processesNavItem).toBeVisible();
+		await expect(shadcnTasklistIndexPage.header.tasksNavItem).toBeVisible();
+		await expect(shadcnTasklistIndexPage.header.processesNavItem).toBeVisible();
 	});
 
 	test('should navigate from Tasks to Processes', async ({shadcnTasklistIndexPage, page}) => {
 		await shadcnTasklistIndexPage.goto();
 
-		await shadcnTasklistIndexPage.processesNavItem.click();
+		await shadcnTasklistIndexPage.header.processesNavItem.click();
 
 		await expect(page).toHaveURL('/shadcn/tasklist/processes');
 	});
@@ -55,14 +55,14 @@ test.describe('Tasklist processes page', () => {
 		await shadcnTasklistProcessesPage.goto();
 
 		await expect(shadcnTasklistProcessesPage.heading).toBeVisible();
-		await expect(shadcnTasklistProcessesPage.tasksNavItem).toBeVisible();
-		await expect(shadcnTasklistProcessesPage.processesNavItem).toBeVisible();
+		await expect(shadcnTasklistProcessesPage.header.tasksNavItem).toBeVisible();
+		await expect(shadcnTasklistProcessesPage.header.processesNavItem).toBeVisible();
 	});
 
 	test('should navigate from Processes to Tasks', async ({shadcnTasklistProcessesPage, page}) => {
 		await shadcnTasklistProcessesPage.goto();
 
-		await shadcnTasklistProcessesPage.tasksNavItem.click();
+		await shadcnTasklistProcessesPage.header.tasksNavItem.click();
 
 		await expect(page).toHaveURL('/shadcn/tasklist');
 	});

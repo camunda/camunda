@@ -6,9 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
+import {ShadcnHeader} from './ShadcnHeader';
 
 class ShadcnTasklistProcessesPage extends BasePage {
+	readonly header: ShadcnHeader;
+
+	constructor(page: Page) {
+		super(page);
+		this.header = new ShadcnHeader(page);
+	}
+
 	async goto() {
 		return this.page.goto('/shadcn/tasklist/processes');
 	}
@@ -23,14 +32,6 @@ class ShadcnTasklistProcessesPage extends BasePage {
 
 	get startProcessButtons() {
 		return this.page.getByRole('button', {name: 'Start process'});
-	}
-
-	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks', exact: true});
-	}
-
-	get processesNavItem() {
-		return this.page.getByRole('link', {name: 'Processes', exact: true});
 	}
 }
 
