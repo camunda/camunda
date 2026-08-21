@@ -141,13 +141,17 @@ public final class AgentHistoryBatchBehavior {
     // item is refused outright — that new item would carry no lease of its own and could be
     // silently discarded once a real lease commits. An unleased request that resends ids already
     // pending is not a risk: it creates nothing new, so it is left to the ordinary dedup check
-    // below instead of being rejected here.
+    // below instead of being rejected here. Items with no historyItemId are excluded from this
+    // check too — they belong to validateHistory's rejection instead, which runs after this and
+    // names the actual defect.
     if (jobLease.isEmpty() && history != null && !history.isEmpty()) {
       final var pendingScan = scanPendingByJobKey(jobKey);
       if (pendingScan.anyLeased()
           && history.stream()
               .anyMatch(
-                  item -> !pendingScan.byHistoryItemId().containsKey(item.getHistoryItemId()))) {
+                  item ->
+                      !item.getHistoryItemId().isEmpty()
+                          && !pendingScan.byHistoryItemId().containsKey(item.getHistoryItemId()))) {
         return Either.left(
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,

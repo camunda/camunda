@@ -2251,7 +2251,8 @@ public class AgentInstanceHistoryBatchProcessingTest {
   }
 
   @Test
-  public void shouldRejectMissingHistoryItemIdWithItsOwnMessageEvenWhenUnleasedAndJobHasLeasedPending() {
+  public void
+      shouldRejectMissingHistoryItemIdWithItsOwnMessageEvenWhenUnleasedAndJobHasLeasedPending() {
     // given — job activated WITHOUT a lease; a first request pushes an item under an explicit
     // request-level lease, so the job now has leased pending items.
     ENGINE
