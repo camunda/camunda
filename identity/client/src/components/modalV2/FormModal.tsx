@@ -6,34 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, FormEvent, useState } from "react";
-import { Form, Stack, Loading, InlineNotification } from "@carbon/react";
-import styled from "styled-components";
+import { FC, SubmitEvent, useState } from "react";
+import { Alert } from "@camunda/design-system";
 import {
   ApiError,
   ErrorResponse,
   isDetailedError,
 } from "src/utility/api/request";
 import Modal, { ModalProps } from "./Modal";
-
-// carbon element z-indexes can only be imported using scss modules
-import styles from "./styles.module.scss";
-
-const HiddenSubmitButton = styled.input`
-  display: none;
-`;
-
-const LoadingLabel = styled.div`
-  position: fixed;
-  color: var(--cds-text-on-color);
-  z-index: ${styles.overlayZIndex + 1};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  block-size: 100%;
-  inline-size: 100%;
-  inset-inline-start: 0;
-`;
 
 type FormModalProps = {
   error?: ApiError | Error | ErrorResponse<"detailed"> | null;
@@ -47,9 +27,19 @@ const FormModal: FC<FormModalProps> = ({
 }) => {
   const [showError, setShowError] = useState(true);
 
-  const formSubmitHandler = (e: FormEvent) => {
-    e.preventDefault();
+  // The footer button and the form's implicit submit both land here, so a
+  // dismissed error reappears whichever way the retry was triggered. The
+  // in-flight guard covers the keyboard path: the footer button blocks its own
+  // repeat clicks while `loading`, pressing Enter in a field does not.
+  const submit = () => {
+    if (modalProps.loading) return;
+    setShowError(true);
     onSubmit?.();
+  };
+
+  const formSubmitHandler = (e: SubmitEvent) => {
+    e.preventDefault();
+    submit();
   };
 
   const apiErrorBody = (() => {
@@ -62,37 +52,22 @@ const FormModal: FC<FormModalProps> = ({
   })();
 
   return (
-    <Modal
-      {...modalProps}
-      onSubmit={async (...args) => {
-        setShowError(true);
-        await onSubmit?.(...args);
-      }}
-    >
-      {modalProps.loading && (
-        <>
-          <Loading />
-          <LoadingLabel>{modalProps.loadingDescription}</LoadingLabel>
-        </>
-      )}
-      <Form onSubmit={formSubmitHandler}>
-        <Stack gap="6">
-          <>{children}</>
+    <Modal {...modalProps} onSubmit={submit}>
+      <form onSubmit={formSubmitHandler}>
+        <div className="grid gap-6">
+          {children}
           {apiErrorBody && showError && (
-            <InlineNotification
-              kind="error"
-              role="alert"
-              lowContrast
+            <Alert
+              variant="destructive"
               title={apiErrorBody.title}
-              subtitle={apiErrorBody.detail}
-              onClose={() => {
-                setShowError(false);
-              }}
+              description={apiErrorBody.detail}
+              dismissible
+              onDismiss={() => setShowError(false)}
             />
           )}
-        </Stack>
-        <HiddenSubmitButton type="submit" />
-      </Form>
+        </div>
+        <input type="submit" className="hidden" />
+      </form>
     </Modal>
   );
 };
