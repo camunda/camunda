@@ -123,21 +123,21 @@ public final class ProcessInstanceResumeJobsProcessor
 
     final long startAfterJobKey = command.getValue().getResumeFromJobKey();
     final long resumedJobKey = resumeNextJob(processInstance, startAfterJobKey);
-    final var nextIntent =
-        resumedJobKey >= 0
-            ? ProcessInstanceIntent.RESUME_JOBS
-            : ProcessInstanceIntent.COMPLETE_RESUMING;
     final var followUpValue = processInstance.getValue();
+    final ProcessInstanceIntent nextIntent;
     if (resumedJobKey >= 0) {
       followUpValue.setResumeFromJobKey(resumedJobKey);
+      nextIntent = ProcessInstanceIntent.RESUME_JOBS;
+    } else {
+      nextIntent = ProcessInstanceIntent.COMPLETE_RESUMING;
     }
     commandWriter.appendFollowUpCommand(processInstanceKey, nextIntent, followUpValue);
   }
 
   /**
-   * Resumes and hands out the first still-suspended job found from {@code startAtJobKey}; returns
-   * its key, or {@code -1} if none was found. Stops the walk after that one job: one per cycle, see
-   * class javadoc.
+   * Resumes and hands out the first still-suspended job found from {@code startAfterJobKey};
+   * returns its key, or {@code -1} if none was found. Stops the walk after that one job: one per
+   * cycle, see class javadoc.
    */
   private long resumeNextJob(final ElementInstance processInstance, final long startAfterJobKey) {
     final AtomicLong resumedJobKey = new AtomicLong(-1L);
