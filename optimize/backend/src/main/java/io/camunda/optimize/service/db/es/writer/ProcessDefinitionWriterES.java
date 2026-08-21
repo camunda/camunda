@@ -27,6 +27,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -54,20 +55,26 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
   private final ConfigurationService configurationService;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ProcessDefinitionWriterES(
       final OptimizeElasticsearchClient esClient,
       final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
-      final TaskRepositoryES taskRepositoryES) {
+      final TaskRepositoryES taskRepositoryES,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     super(objectMapper, esClient, taskRepositoryES);
     this.configurationService = configurationService;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
   public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
-    LOG.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
-    writeProcessDefinitionInformation(procDefs);
+    final List<ProcessDefinitionOptimizeDto> filteredProcDefs =
+        deletedProcessDefinitionFilter.filterOutSuppressed(
+            procDefs, ProcessDefinitionOptimizeDto::getId);
+    LOG.debug("Writing [{}] process definitions to elasticsearch", filteredProcDefs.size());
+    writeProcessDefinitionInformation(filteredProcDefs);
   }
 
   @Override
