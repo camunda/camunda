@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex;
+import io.camunda.optimize.service.db.writer.DeletedProcessDefinitionFilter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -50,19 +51,25 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
   private final ConfigurationService configurationService;
+  private final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter;
 
   public ProcessDefinitionWriterOS(
       final OptimizeOpenSearchClient osClient,
       final ObjectMapper objectMapper,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final DeletedProcessDefinitionFilter deletedProcessDefinitionFilter) {
     super(objectMapper, osClient);
     this.configurationService = configurationService;
+    this.deletedProcessDefinitionFilter = deletedProcessDefinitionFilter;
   }
 
   @Override
   public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
-    LOG.debug("Writing [{}] process definitions to opensearch", procDefs.size());
-    writeProcessDefinitionInformation(procDefs);
+    final List<ProcessDefinitionOptimizeDto> filteredProcDefs =
+        deletedProcessDefinitionFilter.filterOutSuppressed(
+            procDefs, ProcessDefinitionOptimizeDto::getId);
+    LOG.debug("Writing [{}] process definitions to opensearch", filteredProcDefs.size());
+    writeProcessDefinitionInformation(filteredProcDefs);
   }
 
   @Override
