@@ -11,10 +11,8 @@ import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -37,9 +35,9 @@ import org.jspecify.annotations.Nullable;
  * to a broker within a single group.
  *
  * <p>{@code version} is incremented only at plan boundaries (see {@link
- * #startConfigurationChange(List)} and {@link #advance()}). Merge uses a two-level scheme: if two
- * copies have different versions, the higher version wins wholesale; if equal, members are merged
- * field-by-field using their per-member versions.
+ * #startGraphConfigurationChange(OperationGraph)} and {@link #completeGraphChangeIfDrained()}).
+ * Merge uses a two-level scheme: if two copies have different versions, the higher version wins
+ * wholesale; if equal, members are merged field-by-field using their per-member versions.
  *
  * <p>This class is immutable; every mutating method returns a new instance.
  *
@@ -47,7 +45,11 @@ import org.jspecify.annotations.Nullable;
  * @param incarnationNumber incarnation number of this group, incremented after the data is purged.
  * @param members per-broker partition state within this group
  * @param routingState routing state scoped to this group, if any
- * @param pendingChanges the ongoing change plan for this group, if any
+ * @param pendingChanges the ongoing change plan for this group, if any. Always a {@link
+ *     DependencyChangePlan}: a group's operations carry their own dependencies, and the
+ *     one-at-a-time queue ({@link ClusterChangePlan}) that groups used before it is gone. The queue
+ *     survives only where there is nothing to depend on — {@link GlobalConfiguration}, whose
+ *     operations are broker lifecycle steps taken cluster-wide, one at a time by construction.
  * @param lastChange the last completed change plan for this group, if any
  * @param availability whether this tenant is currently disabled; carries its own version,
  *     independent of {@code version} — see {@link TenantAvailability}
@@ -58,7 +60,7 @@ public record PartitionGroupConfiguration(
     long incarnationNumber,
     SortedMap<MemberId, BrokerPartitionState> members,
     Optional<RoutingState> routingState,
-    Optional<ClusterChangePlan> pendingChanges,
+    Optional<DependencyChangePlan> pendingChanges,
     Optional<CompletedChange> lastChange,
     TenantAvailability availability) {
 
@@ -83,7 +85,7 @@ public record PartitionGroupConfiguration(
       final long incarnationNumber,
       final Map<MemberId, BrokerPartitionState> members,
       final Optional<RoutingState> routingState,
-      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<DependencyChangePlan> pendingChanges,
       final Optional<CompletedChange> lastChange) {
     this(
         version,
@@ -101,7 +103,7 @@ public record PartitionGroupConfiguration(
       final long incarnationNumber,
       final Map<MemberId, BrokerPartitionState> members,
       final Optional<RoutingState> routingState,
-      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<DependencyChangePlan> pendingChanges,
       final Optional<CompletedChange> lastChange,
       final TenantAvailability availability) {
     this(
@@ -126,89 +128,6 @@ public record PartitionGroupConfiguration(
   }
 
   /**
-   * Starts a new configuration change for this group by setting {@code pendingChanges} to a new
-   * {@link ClusterChangePlan} and bumping the group version.
-   *
-   * @param operations the operations to execute, must be non-empty
-   * @return the updated group configuration
-   * @throws IllegalArgumentException if a change is already in progress, or {@code operations} is
-   *     empty
-   */
-  public PartitionGroupConfiguration startConfigurationChange(
-      final List<ClusterConfigurationChangeOperation> operations) {
-    if (hasPendingChanges()) {
-      throw new IllegalArgumentException(
-          "Expected to start new configuration change, but there is a configuration change in progress "
-              + pendingChanges);
-    }
-    if (operations.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Expected to start new configuration change, but there is no operation");
-    }
-    final long newVersion = version + 1;
-    return new PartitionGroupConfiguration(
-        newVersion,
-        incarnationNumber,
-        members,
-        routingState,
-        Optional.of(ClusterChangePlan.init(newVersion, operations)),
-        lastChange,
-        availability);
-  }
-
-  /**
-   * Advances the ongoing change plan by removing its first pending operation, following the same
-   * semantics as {@code ClusterConfiguration#advance()}.
-   *
-   * <p>While operations remain, the plan is simply stepped forward and the group version is
-   * unchanged. When the last operation is removed, the change is completed: {@code pendingChanges}
-   * is cleared, {@code lastChange} is set to the completed change, members whose {@code partitions}
-   * map is empty are removed (the structural equivalent of {@code State.LEFT} in the legacy model —
-   * a broker no longer replicating any partition of this group is no longer part of it), and the
-   * group version is bumped so peers overwrite their local copy on merge.
-   *
-   * @return the updated group configuration
-   * @throws IllegalStateException if there is no pending change to advance
-   */
-  public PartitionGroupConfiguration advance() {
-    if (!hasPendingChanges()) {
-      throw new IllegalStateException(
-          "Expected to advance the configuration change, but there is no pending change");
-    }
-
-    final var result =
-        new PartitionGroupConfiguration(
-            version,
-            incarnationNumber,
-            members,
-            routingState,
-            Optional.of(pendingChanges.orElseThrow().advance()),
-            lastChange,
-            availability);
-
-    if (result.hasPendingChanges()) {
-      return result;
-    }
-
-    // The last operation has been applied. Complete the change: clean up members that no longer
-    // replicate any partition of this group and bump the version so other members merge by
-    // overwriting their local copy.
-    final var remainingMembers =
-        result.members().entrySet().stream()
-            .filter(entry -> !entry.getValue().partitions().isEmpty())
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    final var completedChange = pendingChanges.orElseThrow().completed();
-    return new PartitionGroupConfiguration(
-        result.version() + 1,
-        incarnationNumber,
-        remainingMembers,
-        routingState,
-        Optional.empty(),
-        Optional.of(completedChange),
-        availability);
-  }
-
-  /**
    * Returns a new {@link PartitionGroupConfiguration} after merging this and {@code other}. Does
    * not mutate either operand.
    *
@@ -229,7 +148,7 @@ public record PartitionGroupConfiguration(
     final var mergedAvailability = availability.merge(other.availability);
 
     if (version > other.version) {
-      return this.availability.equals(mergedAvailability)
+      return availability.equals(mergedAvailability)
           ? this
           : new PartitionGroupConfiguration(
               version,
@@ -261,10 +180,10 @@ public record PartitionGroupConfiguration(
             .flatMap(Optional::stream)
             .reduce(RoutingState::merge);
 
-    final Optional<ClusterChangePlan> mergedChanges =
+    final Optional<DependencyChangePlan> mergedChanges =
         Stream.of(pendingChanges, other.pendingChanges)
             .flatMap(Optional::stream)
-            .reduce(ClusterChangePlan::merge);
+            .reduce(DependencyChangePlan::merge);
 
     return new PartitionGroupConfiguration(
         version,
@@ -272,8 +191,42 @@ public record PartitionGroupConfiguration(
         mergedMembers,
         mergedRoutingState,
         mergedChanges,
-        lastChange,
+        mergeLastChange(lastChange, other.lastChange),
         mergedAvailability);
+  }
+
+  /**
+   * Merges two {@code lastChange} records seen by different brokers, both stamped for the same
+   * completed change.
+   *
+   * <p>Every other equal-version field above is resolved by keeping the receiver's copy, safe
+   * because it either only ever has one writer or is itself independently mergeable (members,
+   * pendingChanges). {@code lastChange} for a graph change is neither: {@link
+   * #completeGraphChangeIfDrained()} runs on every broker with no coordinator gate, and each mints
+   * its own {@link CompletedChange} from its own view of when the last operation completed. Two
+   * brokers minting a moment apart can disagree on {@code completedAt} for the very same change, at
+   * the very same group version, and keeping "the receiver's own" would leave that disagreement
+   * standing forever — see {@code DependencyChangePlan#toCompletedChange}'s own javadoc for why.
+   *
+   * <p>Resolved the same way {@link DependencyChangePlan#merge} already resolves the analogous case
+   * for individual operation completions: same change id, earliest {@code completedAt} wins;
+   * different change id (a genuinely later, unrelated completion on this group), the higher id
+   * wins, since ids are monotonic and a higher one is always the newer change.
+   */
+  private static Optional<CompletedChange> mergeLastChange(
+      final Optional<CompletedChange> mine, final Optional<CompletedChange> theirs) {
+    if (mine.isEmpty()) {
+      return theirs;
+    }
+    if (theirs.isEmpty()) {
+      return mine;
+    }
+    final var mineChange = mine.orElseThrow();
+    final var theirsChange = theirs.orElseThrow();
+    if (mineChange.id() != theirsChange.id()) {
+      return mineChange.id() > theirsChange.id() ? mine : theirs;
+    }
+    return mineChange.completedAt().isBefore(theirsChange.completedAt()) ? mine : theirs;
   }
 
   /**
@@ -416,37 +369,6 @@ public record PartitionGroupConfiguration(
   }
 
   /**
-   * Returns the next pending operation for the given memberId, or empty if the next pending
-   * operation (if any) is not applicable to that member. Mirrors {@code
-   * ClusterConfiguration#pendingChangesFor(MemberId)}.
-   */
-  public Optional<PartitionGroupOperation> pendingChangesFor(final MemberId memberId) {
-    if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        (PartitionGroupOperation) pendingChanges.orElseThrow().nextPendingOperation());
-  }
-
-  public PartitionGroupOperation nextPendingOperation() {
-    if (!hasPendingChanges()) {
-      throw new NoSuchElementException();
-    }
-    return (PartitionGroupOperation) pendingChanges.orElseThrow().nextPendingOperation();
-  }
-
-  /**
-   * When the operation returned by {@link #pendingChangesFor(MemberId)} completes, the result is
-   * reflected here by applying {@code configurationUpdater} and then advancing past the completed
-   * operation (see {@link #advance()}). Mirrors {@code
-   * ClusterConfiguration#advanceConfigurationChange}.
-   */
-  public PartitionGroupConfiguration advanceConfigurationChange(
-      final UnaryOperator<PartitionGroupConfiguration> configurationUpdater) {
-    return configurationUpdater.apply(this).advance();
-  }
-
-  /**
    * Cancels any pending changes, returning a new configuration with the already-applied changes and
    * no pending changes. This is a dangerous operation that can leave the configuration
    * inconsistent; it should only be used as a last resort when a change is stuck. Mirrors {@code
@@ -465,6 +387,106 @@ public record PartitionGroupConfiguration(
         routingState,
         Optional.empty(),
         Optional.of(cancelledChange),
+        availability);
+  }
+
+  /**
+   * Starts a change whose operations carry their own dependencies, bumping the group version as any
+   * plan start does.
+   *
+   * <p>Rejects on {@code pendingChanges.isPresent()} rather than on {@link #hasPendingChanges()}: a
+   * graph plan whose last operation has completed but which has not yet been cleared by {@link
+   * #completeGraphChangeIfDrained()} still has content this call would destroy — its {@code
+   * lastChange} would never be recorded and the members it emptied never pruned — while {@link
+   * #hasPendingChanges()}, which reads the plan's content, already reports {@code false} for it.
+   *
+   * @throws IllegalArgumentException if the group still carries a change plan, drained or not, or
+   *     the graph is empty
+   */
+  public PartitionGroupConfiguration startGraphConfigurationChange(final OperationGraph graph) {
+    if (pendingChanges.isPresent()) {
+      throw new IllegalArgumentException(
+          "Expected to start new configuration change, but there is a configuration change in progress "
+              + pendingChanges);
+    }
+    if (graph.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expected to start new configuration change, but there is no operation");
+    }
+    final long newVersion = version + 1;
+    return new PartitionGroupConfiguration(
+        newVersion,
+        incarnationNumber,
+        members,
+        routingState,
+        Optional.of(DependencyChangePlan.init(newVersion, graph)),
+        lastChange,
+        availability);
+  }
+
+  /** Everything the given member may start right now. Empty unless a change is running. */
+  public SortedMap<OperationId, PartitionGroupOperation> runnableFor(final MemberId memberId) {
+    final SortedMap<OperationId, PartitionGroupOperation> runnable = new TreeMap<>();
+    pendingChanges.ifPresent(
+        plan ->
+            plan.runnableFor(memberId)
+                .forEach(
+                    (operationId, operation) ->
+                        runnable.put(operationId, (PartitionGroupOperation) operation)));
+    return runnable;
+  }
+
+  /**
+   * Applies a completed operation's effect and records it against the plan, in one transition.
+   *
+   * <p>Deliberately does not move the group version. Under a graph change several brokers progress
+   * at once, and a version bump here would take the group merge off its structural branch and
+   * discard the others' progress. Finishing the change is separate — see {@link
+   * #completeGraphChangeIfDrained()}.
+   */
+  public PartitionGroupConfiguration completeOperation(
+      final OperationId operationId, final UnaryOperator<PartitionGroupConfiguration> updater) {
+    final var updated = updater.apply(this);
+    final var plan =
+        updated
+            .pendingChanges()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Expected to record %s, but no change is in progress"
+                            .formatted(operationId)));
+    return new PartitionGroupConfiguration(
+        updated.version(),
+        updated.incarnationNumber(),
+        updated.members(),
+        updated.routingState(),
+        Optional.of(plan.completeOperation(operationId)),
+        updated.lastChange(),
+        updated.availability());
+  }
+
+  /**
+   * Finishes the change once every operation has completed: records {@code lastChange}, prunes
+   * members left replicating no partition of this group, and bumps the group version so peers
+   * overwrite their local copy on merge. Returns {@code this} unchanged otherwise, so every broker
+   * may call it on every merge — which is how the change completes without a coordinator.
+   */
+  public PartitionGroupConfiguration completeGraphChangeIfDrained() {
+    final var plan = pendingChanges.orElse(null);
+    if (plan == null || plan.hasPendingChanges()) {
+      return this;
+    }
+    final var remainingMembers =
+        members.entrySet().stream()
+            .filter(entry -> !entry.getValue().partitions().isEmpty())
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    return new PartitionGroupConfiguration(
+        version + 1,
+        incarnationNumber,
+        remainingMembers,
+        routingState,
+        Optional.empty(),
+        Optional.of(plan.toCompletedChange()),
         availability);
   }
 

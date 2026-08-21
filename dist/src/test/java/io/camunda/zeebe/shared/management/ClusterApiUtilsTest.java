@@ -17,9 +17,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -38,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
@@ -67,7 +66,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRouti
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -251,7 +250,7 @@ final class ClusterApiUtilsTest {
     final List<Phase> phases =
         List.of(
             new GlobalPhase(List.of(globalOperation)),
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     "tenant-a", List.of(tenantAOperation),
                     "tenant-b", List.of(tenantBOperation))));
@@ -1337,7 +1336,7 @@ final class ClusterApiUtilsTest {
     final var memberId1 = member(1);
     final List<Phase> phases =
         List.of(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of("default", List.of(new PartitionJoinOperation(memberId1, 1, 3)))),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
@@ -1361,27 +1360,25 @@ final class ClusterApiUtilsTest {
   }
 
   @Test
-  void shouldSplitActivePhaseOperationsUsingSubConfigProgress() {
-    // given: the active phase targets physical tenant "tenant-a" with two operations, but the
-    // tenant's own ClusterChangePlan shows the join already completed and only the leave pending
+  void shouldSplitActiveGraphPhaseUsingSubConfigProgress() {
+    // given: the active phase targets physical tenant "tenant-a" with two operations, and the
+    // tenant has run the join and not the leave -- which is what the API must report. A group's
+    // progress is a set of completed operations, with no queue index to read.
     final var memberId1 = member(1);
     final var joinOperation = new PartitionJoinOperation(memberId1, 3, 1);
-    final var leaveOperation = new PartitionLeaveOperation(memberId1, 3, 0);
-    final var tenantPlan =
-        new ClusterChangePlan(
-            1,
-            1,
-            Status.IN_PROGRESS,
-            Instant.now(),
-            List.of(new CompletedOperation(joinOperation, Instant.now())),
-            List.of(leaveOperation));
+    final var leaveOperation = new PartitionLeaveOperation(memberId1, 4, 0);
+    final var graphBuilder = OperationGraph.builder();
+    final var joinId = graphBuilder.add(joinOperation);
+    graphBuilder.add(leaveOperation, Set.of(joinId));
     final var tenantGroup =
         new PartitionGroupConfiguration(
-            1, 0, Map.of(), Optional.empty(), Optional.of(tenantPlan), Optional.empty());
+                1, 0, Map.of(), Optional.empty(), Optional.empty(), Optional.empty())
+            .startGraphConfigurationChange(graphBuilder.build())
+            .completeOperation(joinId, UnaryOperator.identity());
     final List<Phase> phases =
         List.of(
-            new PartitionGroupParallelPhase(
-                Map.of("tenant-a", List.of(joinOperation, leaveOperation))),
+            new PartitionGroupPhase(
+                Map.of("tenant-a", tenantGroup.pendingChanges().orElseThrow().graph())),
             new GlobalPhase(List.of(new MemberLeaveOperation(memberId1))));
     final var config =
         new CurrentClusterConfiguration(

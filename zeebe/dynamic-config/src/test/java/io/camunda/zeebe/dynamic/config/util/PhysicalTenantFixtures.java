@@ -9,7 +9,7 @@ package io.camunda.zeebe.dynamic.config.util;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.util.List;
 import java.util.Map;
@@ -48,10 +48,10 @@ public final class PhysicalTenantFixtures {
    * The phase of a plan that carries the per-tenant work, which is where a plan that only ever saw
    * the default partition group differs from one that saw every tenant's.
    */
-  public static PartitionGroupParallelPhase partitionGroupPhase(final List<Phase> phases) {
+  public static PartitionGroupPhase partitionGroupPhase(final List<Phase> phases) {
     return phases.stream()
-        .filter(PartitionGroupParallelPhase.class::isInstance)
-        .map(PartitionGroupParallelPhase.class::cast)
+        .filter(PartitionGroupPhase.class::isInstance)
+        .map(PartitionGroupPhase.class::cast)
         .findFirst()
         .orElseThrow(
             () -> new AssertionError("expected the plan to contain partition work: " + phases));

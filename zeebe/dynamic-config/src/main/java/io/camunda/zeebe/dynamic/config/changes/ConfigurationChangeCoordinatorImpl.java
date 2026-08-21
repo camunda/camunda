@@ -21,9 +21,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
@@ -325,18 +327,25 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                 "Cannot apply configuration change. The global configuration has changed since the request was generated.");
           }
         }
-        case final PartitionGroupParallelPhase parallelPhase -> {
-          for (final var groupId : parallelPhase.groupOperations().keySet()) {
-            final var latestGroupConfig = latestConfig.partitionGroup(groupId);
-            final var usedGroupConfig = configUsedForGeneratingOperations.partitionGroup(groupId);
-            if (!Objects.equals(latestGroupConfig, usedGroupConfig)) {
-              throw new ConcurrentModificationException(
-                  String.format(
-                      "Cannot apply configuration change. The partition group '%s' configuration has changed since the request was generated.",
-                      groupId));
-            }
-          }
-        }
+        case final PartitionGroupPhase groupPhase ->
+            checkGroupsUnchanged(
+                groupPhase.groupGraphs().keySet(), latestConfig, configUsedForGeneratingOperations);
+      }
+    }
+  }
+
+  private void checkGroupsUnchanged(
+      final Set<String> groupIds,
+      final CurrentClusterConfiguration latestConfig,
+      final CurrentClusterConfiguration configUsedForGeneratingOperations) {
+    for (final var groupId : groupIds) {
+      final var latestGroupConfig = latestConfig.partitionGroup(groupId);
+      final var usedGroupConfig = configUsedForGeneratingOperations.partitionGroup(groupId);
+      if (!Objects.equals(latestGroupConfig, usedGroupConfig)) {
+        throw new ConcurrentModificationException(
+            String.format(
+                "Cannot apply configuration change. The partition group '%s' configuration has changed since the request was generated.",
+                groupId));
       }
     }
   }
@@ -412,11 +421,11 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     switch (plan.currentPhase()) {
       case final GlobalPhase ignored ->
           simulateGlobalPhase(config, planId, globalSimulator, groupSimulator, simulationCompleted);
-      case final PartitionGroupParallelPhase parallelPhase ->
+      case final PartitionGroupPhase groupPhase ->
           simulatePartitionGroupPhase(
               config,
               planId,
-              new ArrayList<>(parallelPhase.groupOperations().keySet()),
+              new ArrayList<>(groupPhase.groupGraphs().keySet()),
               0,
               globalSimulator,
               groupSimulator,
@@ -501,7 +510,53 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       onGroupDrained.accept(config);
       return;
     }
-    final var operation = group.nextPendingOperation();
+    simulateGraphOperations(config, groupId, groupSimulator, onGroupDrained, simulationCompleted);
+  }
+
+  /**
+   * Walks a dependency-graph change one runnable operation at a time.
+   *
+   * <p>The real cluster runs several of these at once on different brokers; the simulator takes
+   * them in ascending operation-id order instead. Nothing validates that this is sound — the
+   * disjoint-write-set check that would have guaranteed every legal execution order reaches the
+   * same configuration was built, then removed (see {@link
+   * io.camunda.zeebe.dynamic.config.state.OperationGraph}'s class javadoc). This one arbitrary
+   * serialization is sound only to the extent the graph's author declared every edge that ordering
+   * actually requires; if an edge is missing, the simulation can silently disagree with what the
+   * real, concurrent execution does.
+   *
+   * <p>It deliberately drives the same {@code completeOperation} the manager uses rather than
+   * modelling progress a second way: a divergence between what is simulated and what is applied
+   * would be silent and very hard to find.
+   */
+  private void simulateGraphOperations(
+      final CurrentClusterConfiguration config,
+      final String groupId,
+      final PartitionGroupConfigurationChangeAppliers groupSimulator,
+      final Consumer<CurrentClusterConfiguration> onGroupDrained,
+      final ActorFuture<CurrentClusterConfiguration> simulationCompleted) {
+    final var group = Objects.requireNonNull(config.partitionGroup(groupId));
+    final var plan = group.pendingChanges().orElse(null);
+    if (plan == null || !plan.hasPendingChanges()) {
+      onGroupDrained.accept(config);
+      return;
+    }
+
+    final var next =
+        plan.operations().keySet().stream().filter(plan::isRunnable).findFirst().orElse(null);
+    if (next == null) {
+      // Every remaining operation is blocked, yet none has completed — only reachable if the graph
+      // has a cycle, which construction rejects. Fail loudly rather than spin.
+      failFuture(
+          simulationCompleted,
+          new InvalidRequest(
+              new IllegalStateException(
+                  "Change for group '%s' cannot make progress; outstanding operations are blocked on %s"
+                      .formatted(groupId, plan.blockedBy()))));
+      return;
+    }
+
+    final var operation = (PartitionGroupOperation) plan.operation(next);
     final var applier = groupSimulator.getApplier(operation);
     final var result = applier.init(config.globalConfiguration(), group);
     if (result.isLeft()) {
@@ -519,8 +574,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               }
               final var advanced =
                   configWithInit.updatePartitionGroupConfig(
-                      groupId, g -> g.advanceConfigurationChange(transformer));
-              simulatePartitionGroupOperations(
+                      groupId,
+                      g -> g.completeOperation(next, transformer).completeGraphChangeIfDrained());
+              simulateGraphOperations(
                   advanced, groupId, groupSimulator, onGroupDrained, simulationCompleted);
             });
   }
@@ -541,17 +597,17 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
 
   /**
    * Flattens a phase list back into the flat operation list the management API answers a request
-   * with, preserving phase order. Within a {@link PartitionGroupParallelPhase} the operations of
-   * each group are concatenated; the order between groups is unspecified (they apply concurrently),
-   * but is irrelevant while only the default group is used.
+   * with, preserving phase order. Within a {@link PartitionGroupPhase} the operations of each group
+   * are concatenated; the order between groups is unspecified (they apply concurrently), but is
+   * irrelevant while only the default group is used.
    */
   private static List<ClusterConfigurationChangeOperation> flattenPhases(final List<Phase> phases) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
     for (final var phase : phases) {
       switch (phase) {
         case final GlobalPhase globalPhase -> operations.addAll(globalPhase.operations());
-        case final PartitionGroupParallelPhase parallelPhase ->
-            parallelPhase.groupOperations().values().forEach(operations::addAll);
+        case final PartitionGroupPhase groupPhase ->
+            groupPhase.groupOperations().values().forEach(operations::addAll);
       }
     }
     return operations;

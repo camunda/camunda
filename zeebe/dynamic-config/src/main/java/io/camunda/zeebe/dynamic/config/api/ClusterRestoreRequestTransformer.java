@@ -14,7 +14,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
@@ -29,9 +29,9 @@ import java.util.Optional;
  * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the new-model coordinator
  * actually drives: each named physical tenant is restored from its own {@link
  * PartitionGroupConfiguration}, exactly like the same restore submitted through that tenant's own
- * API, and the resulting plans are combined into one {@link PartitionGroupParallelPhase} so every
- * named tenant restores in parallel. A cluster-wide request — one naming every physical tenant of
- * the cluster — restores them all this way in a single change.
+ * API, and the resulting plans are combined into one {@link PartitionGroupPhase} so every named
+ * tenant restores in parallel. A cluster-wide request — one naming every physical tenant of the
+ * cluster — restores them all this way in a single change.
  *
  * <p>A request naming no physical tenant at all plans nothing, rather than being rejected: there is
  * no tenant whose partitions it could restore.
@@ -72,7 +72,7 @@ public final class ClusterRestoreRequestTransformer implements ConfigurationChan
     if (operationsPerTenant.isEmpty()) {
       return Either.right(List.of());
     }
-    return Either.right(List.of(new PartitionGroupParallelPhase(operationsPerTenant)));
+    return Either.right(List.of(PartitionGroupPhase.sequential(operationsPerTenant)));
   }
 
   private Optional<RestoreRequestTransformer> singleTenantRestore() {

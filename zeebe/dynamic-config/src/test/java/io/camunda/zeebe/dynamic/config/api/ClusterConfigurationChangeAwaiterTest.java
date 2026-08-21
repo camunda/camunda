@@ -22,7 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.util.Either;
@@ -242,12 +242,11 @@ final class ClusterConfigurationChangeAwaiterTest {
                     CurrentClusterConfiguration.init(),
                     CurrentClusterConfiguration.init(),
                     List.of(
-                        new PartitionGroupParallelPhase(
-                            Map.of(
-                                "default",
-                                List.of(
-                                    new ExportingStateChangeOperation(
-                                        MemberId.from("0"), ExportingState.PAUSED)))))))));
+                        PartitionGroupPhase.sequential(
+                            "default",
+                            List.of(
+                                new ExportingStateChangeOperation(
+                                    MemberId.from("0"), ExportingState.PAUSED))))))));
   }
 
   private CompletableFuture<Either<ErrorResponse, CurrentClusterConfiguration>> topology(

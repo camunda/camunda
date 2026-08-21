@@ -36,7 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -455,7 +455,7 @@ class ScaleRequestTransformerTest {
                 assertThat(((GlobalPhase) list.get(0)).operations())
                     .contains(new MemberJoinOperation(MemberId.from("3")))
                     .doesNotContain(new MemberLeaveOperation(MemberId.from("2")));
-                assertThat(list.get(1)).isInstanceOf(PartitionGroupParallelPhase.class);
+                assertThat(list.get(1)).isInstanceOf(PartitionGroupPhase.class);
                 assertThat(((GlobalPhase) list.get(2)).operations())
                     .contains(new MemberLeaveOperation(MemberId.from("2")))
                     .doesNotContain(new MemberJoinOperation(MemberId.from("3")));
@@ -559,18 +559,17 @@ class ScaleRequestTransformerTest {
           .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class);
     }
 
-    private PartitionGroupParallelPhase partitionPhase(
-        final Either<Exception, List<Phase>> phases) {
+    private PartitionGroupPhase partitionPhase(final Either<Exception, List<Phase>> phases) {
       EitherAssert.assertThat(phases).isRight();
-      return (PartitionGroupParallelPhase)
+      return (PartitionGroupPhase)
           phases.get().stream()
-              .filter(PartitionGroupParallelPhase.class::isInstance)
+              .filter(PartitionGroupPhase.class::isInstance)
               .findFirst()
               .orElseThrow(() -> new AssertionError("no partition group phase in " + phases.get()));
     }
 
     private List<PartitionJoinOperation> joinedPartitions(
-        final PartitionGroupParallelPhase phase, final String groupId) {
+        final PartitionGroupPhase phase, final String groupId) {
       return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
           .filter(PartitionJoinOperation.class::isInstance)
           .map(PartitionJoinOperation.class::cast)
@@ -578,7 +577,7 @@ class ScaleRequestTransformerTest {
     }
 
     private List<PartitionLeaveOperation> leftPartitions(
-        final PartitionGroupParallelPhase phase, final String groupId) {
+        final PartitionGroupPhase phase, final String groupId) {
       return phase.groupOperations().getOrDefault(groupId, List.of()).stream()
           .filter(PartitionLeaveOperation.class::isInstance)
           .map(PartitionLeaveOperation.class::cast)
@@ -674,8 +673,8 @@ class ScaleRequestTransformerTest {
       EitherAssert.assertThat(phases).isRight();
       final var partitionPhase =
           phases.get().stream()
-              .filter(PartitionGroupParallelPhase.class::isInstance)
-              .map(PartitionGroupParallelPhase.class::cast)
+              .filter(PartitionGroupPhase.class::isInstance)
+              .map(PartitionGroupPhase.class::cast)
               .findFirst()
               .orElseThrow();
       assertThat(partitionPhase.groupOperations())

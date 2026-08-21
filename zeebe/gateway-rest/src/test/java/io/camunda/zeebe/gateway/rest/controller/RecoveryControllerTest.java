@@ -37,7 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
@@ -84,7 +84,7 @@ public class RecoveryControllerTest extends RestControllerTest {
         plannedChanges.isEmpty()
             ? List.<Phase>of()
             : List.<Phase>of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, plannedChanges)));
     return new ClusterConfigurationChangeResponse(
         changeId,

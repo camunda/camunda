@@ -24,7 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -114,7 +114,7 @@ class UpdateRoutingStateTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(TENANT_B, List.of(new UpdateRoutingState(id1, routingState)))));
   }
 
@@ -132,7 +132,7 @@ class UpdateRoutingStateTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(DEFAULT_GROUP, List.of(new UpdateRoutingState(id0, routingState)))));
   }
 

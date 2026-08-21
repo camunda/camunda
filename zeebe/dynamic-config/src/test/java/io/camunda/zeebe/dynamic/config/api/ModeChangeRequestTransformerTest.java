@@ -23,7 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Instant;
@@ -64,7 +64,7 @@ final class ModeChangeRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     DEFAULT_GROUP,
                     List.of(
@@ -99,7 +99,7 @@ final class ModeChangeRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     TENANT_B,
                     List.of(
@@ -119,7 +119,7 @@ final class ModeChangeRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     DEFAULT_GROUP,
                     List.of(
@@ -143,7 +143,7 @@ final class ModeChangeRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     DEFAULT_GROUP,
                     List.of(

@@ -36,7 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -397,7 +397,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
@@ -459,7 +459,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))
@@ -472,7 +472,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 "tenanta", List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)))))))
         .join();
@@ -517,7 +517,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 "tenanta", List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1)))))))
         .join();
@@ -551,7 +551,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
             c ->
                 c.initPlan(
                     List.of(
-                        new PartitionGroupParallelPhase(
+                        PartitionGroupPhase.sequential(
                             Map.of(
                                 CurrentClusterConfiguration.DEFAULT_GROUP,
                                 List.of(new PartitionLeaveOperation(MEMBER_1, 1, 1)))))))

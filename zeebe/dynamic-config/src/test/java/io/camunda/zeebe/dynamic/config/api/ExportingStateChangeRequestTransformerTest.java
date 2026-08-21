@@ -20,7 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
@@ -55,7 +55,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — one phase carrying both groups, so their partitions change concurrently
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations())
         .containsOnlyKeys(TENANT_A, TENANT_B)
         .allSatisfy(
@@ -81,7 +81,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — the group that has nothing to do is left out of the phase entirely
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations()).containsOnlyKeys(TENANT_A);
   }
 
@@ -105,7 +105,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — only the member not yet in the target state gets an operation
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations().get(TENANT_A))
         .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }
@@ -129,7 +129,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — one operation for the member, not one per partition
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations().get(TENANT_A))
         .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }
@@ -150,7 +150,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — tenant-b keeps exporting
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations())
         .containsOnlyKeys(TENANT_A)
         .hasEntrySatisfying(
@@ -233,7 +233,7 @@ final class ExportingStateChangeRequestTransformerTest {
 
     // then — id1 owns no partition, so there is nothing on it to change
     EitherAssert.assertThat(result).isRight();
-    final var phase = (PartitionGroupParallelPhase) result.get().getFirst();
+    final var phase = (PartitionGroupPhase) result.get().getFirst();
     assertThat(phase.groupOperations().get(TENANT_A))
         .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }

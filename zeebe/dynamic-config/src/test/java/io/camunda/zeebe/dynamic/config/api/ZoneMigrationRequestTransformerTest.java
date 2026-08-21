@@ -30,7 +30,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.HashMap;
@@ -499,10 +499,10 @@ final class ZoneMigrationRequestTransformerTest {
                           "Zone migration requires a persisted zone-aware partition distribution config, but was not set."));
     }
 
-    private PartitionGroupParallelPhase partitionPhase(final List<Phase> phases) {
+    private PartitionGroupPhase partitionPhase(final List<Phase> phases) {
       return phases.stream()
-          .filter(PartitionGroupParallelPhase.class::isInstance)
-          .map(PartitionGroupParallelPhase.class::cast)
+          .filter(PartitionGroupPhase.class::isInstance)
+          .map(PartitionGroupPhase.class::cast)
           .findFirst()
           .orElseThrow(
               () -> new AssertionError("expected the plan to contain partition work: " + phases));

@@ -59,7 +59,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.RemovePhysi
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -557,7 +557,7 @@ final class ProtoBufSerializerTest {
     final List<Phase> phases =
         List.of(
             new GlobalPhase(List.of(new MemberLeaveOperation(MemberId.from("1")))),
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     "default",
                     List.of(
@@ -646,7 +646,7 @@ final class ProtoBufSerializerTest {
             1,
             0,
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(
                         groupId,
                         List.of(new PartitionPreRestoreOperation(MemberId.from("1"), 1))))),
@@ -675,7 +675,7 @@ final class ProtoBufSerializerTest {
             1,
             0,
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(
                         groupId,
                         List.of(
@@ -745,7 +745,7 @@ final class ProtoBufSerializerTest {
             1,
             0,
             List.of(
-                new PartitionGroupParallelPhase(
+                PartitionGroupPhase.sequential(
                     Map.of(
                         groupId, List.of(new RemovePhysicalTenantOperation(MemberId.from("1")))))),
             Instant.now());

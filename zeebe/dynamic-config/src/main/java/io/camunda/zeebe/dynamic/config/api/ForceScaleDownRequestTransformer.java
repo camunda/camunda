@@ -18,7 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -115,7 +115,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
 
     final List<Phase> phases = new ArrayList<>();
     if (!reconfigureByTenant.isEmpty()) {
-      phases.add(new PartitionGroupParallelPhase(reconfigureByTenant));
+      phases.add(PartitionGroupPhase.sequential(reconfigureByTenant));
     }
     if (!removeMembers.isEmpty()) {
       phases.add(new GlobalPhase(removeMembers));

@@ -13,7 +13,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -56,6 +56,6 @@ public final class LeavePartitionRequestTransformer implements ConfigurationChan
 
     final List<PartitionGroupOperation> operations =
         List.of(new PartitionLeaveOperation(memberId, partitionId, MINIMUM_ALLOWED_REPLICAS));
-    return Either.right(List.of(new PartitionGroupParallelPhase(Map.of(groupId, operations))));
+    return Either.right(List.of(PartitionGroupPhase.sequential(Map.of(groupId, operations))));
   }
 }

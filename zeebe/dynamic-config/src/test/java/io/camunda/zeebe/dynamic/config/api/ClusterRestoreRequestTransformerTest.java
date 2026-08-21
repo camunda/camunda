@@ -33,7 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -66,7 +66,7 @@ final class ClusterRestoreRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
   }
 
@@ -86,7 +86,7 @@ final class ClusterRestoreRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(
                     DEFAULT_GROUP, defaultRestoreOperations(List.of(100L)),
                     TENANT_B, tenantBRestoreOperations(List.of(55L)),
@@ -109,7 +109,7 @@ final class ClusterRestoreRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
-            new PartitionGroupParallelPhase(
+            PartitionGroupPhase.sequential(
                 Map.of(TENANT_B, tenantBRestoreOperations(List.of(55L)))));
   }
 

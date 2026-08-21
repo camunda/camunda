@@ -41,9 +41,35 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 2;
   map<string, BrokerPartitionState> members = 3;
   RoutingState routingState = 4;
-  ClusterChangePlan pendingChanges = 5;
+  DependencyChangePlan pendingChanges = 5;
   CompletedChange lastChange = 6;
   TenantAvailability availability = 7;
+}
+
+// A change whose operations carry their own dependencies. An operation runs once
+// everything it depends on has completed, so concurrency is the absence of an edge.
+message DependencyChangePlan {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  OperationGraph graph = 4;
+  repeated OperationCompletion completed = 5;
+}
+
+// The immutable operations of a change and the order constraints between them.
+message OperationGraph {
+  repeated PlannedOperation operations = 1;
+}
+
+message PlannedOperation {
+  int32 id = 1;
+  PartitionGroupChangeOperation operation = 2;
+  repeated int32 dependsOn = 3;
+}
+
+message OperationCompletion {
+  int32 operationId = 1;
+  google.protobuf.Timestamp completedAt = 2;
 }
 
 // Whether a physical tenant is running, and if not why. Carries its own version, independent of the
@@ -104,7 +130,13 @@ message PhasedChangePlanPhase {
   oneof phase {
     GlobalPhase globalPhase = 1;
     PartitionGroupParallelPhase partitionGroupParallelPhase = 2;
+    PartitionGroupGraphPhase partitionGroupGraphPhase = 3;
   }
+}
+
+// Graphs written to the named groups' pendingChanges when this phase is activated.
+message PartitionGroupGraphPhase {
+  map<string, OperationGraph> groupGraphs = 1;
 }
 
 // Operations written to GlobalConfiguration.pendingChanges when this phase
@@ -113,8 +145,10 @@ message GlobalPhase {
   repeated GlobalChangeOperation operations = 1;
 }
 
-// Operations written atomically to named groups' pendingChanges when this
-// phase is activated.
+// Decode-only. Superseded by PartitionGroupGraphPhase, which represents the
+// same thing as a graph whose operations are chained one behind the other.
+// Retained so a configuration persisted or gossiped before the two phase kinds
+// became one still decodes.
 message PartitionGroupParallelPhase {
   map<string, PartitionGroupOperationList> groupOperations = 1;
 }

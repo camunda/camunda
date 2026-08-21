@@ -27,7 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeO
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
-import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
@@ -77,7 +77,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     return groupOperations(partitionGroup)
         .map(
             operations ->
-                List.of(new PartitionGroupParallelPhase(Map.of(physicalTenantId, operations))));
+                List.of(PartitionGroupPhase.sequential(Map.of(physicalTenantId, operations))));
   }
 
   /**
