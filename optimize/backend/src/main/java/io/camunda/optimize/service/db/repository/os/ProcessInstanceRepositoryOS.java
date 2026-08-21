@@ -110,7 +110,8 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       osClient.deleteByQueryTask(
           String.format("process instances with definitionId %s", definitionId),
           term(ProcessInstanceIndex.PROCESS_DEFINITION_ID, definitionId),
-          true,
+          true, // refresh
+          true, // failOnVersionConflicts
           getProcessInstanceIndexAliasName(bpmnProcessId));
     } catch (final RuntimeException e) {
       // Depending on how the async delete-by-query task fails, a missing index can surface as an

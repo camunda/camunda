@@ -114,6 +114,20 @@ public class TaskRepositoryES extends TaskRepository {
       final String deletedItemIdentifier,
       final boolean refresh,
       final String... indices) {
+    return tryDeleteByQueryRequest(query, deletedItemIdentifier, refresh, false, indices);
+  }
+
+  /**
+   * @param failOnVersionConflicts if {@code true}, the request aborts on the first version conflict
+   *     (a concurrent write on a matched document), which surfaces the conflict via the existing
+   *     failures-check as an {@link OptimizeByQueryFailureException}.
+   */
+  public boolean tryDeleteByQueryRequest(
+      final Query query,
+      final String deletedItemIdentifier,
+      final boolean refresh,
+      final boolean failOnVersionConflicts,
+      final String... indices) {
     LOG.debug("Deleting {}", deletedItemIdentifier);
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -128,7 +142,7 @@ public class TaskRepositoryES extends TaskRepository {
                     .query(query)
                     .refresh(refresh)
                     .waitForCompletion(!clusterTaskCheckingEnabled)
-                    .conflicts(Conflicts.Proceed));
+                    .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed));
 
     if (clusterTaskCheckingEnabled) {
       return asyncDelete(query, deletedItemIdentifier, request);

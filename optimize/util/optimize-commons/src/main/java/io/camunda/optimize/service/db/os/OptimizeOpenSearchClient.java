@@ -928,12 +928,26 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Query filterQuery,
       final boolean refresh,
       final String... indices) {
+    return deleteByQueryTask(deleteItemIdentifier, filterQuery, refresh, false, indices);
+  }
+
+  /**
+   * @param failOnVersionConflicts if {@code true}, the request aborts on the first version conflict
+   *     (a concurrent write on a matched document), which surfaces the conflict via the existing
+   *     failures-check as an {@link OptimizeByQueryFailureException}.
+   */
+  public boolean deleteByQueryTask(
+      final String deleteItemIdentifier,
+      final Query filterQuery,
+      final boolean refresh,
+      final boolean failOnVersionConflicts,
+      final String... indices) {
     LOG.debug("Deleting {}", deleteItemIdentifier);
     final Refresh refreshPolicy = refresh ? Refresh.True : Refresh.False;
     final DeleteByQueryRequest.Builder requestBuilder =
         new DeleteByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
-            .conflicts(Conflicts.Proceed)
+            .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed)
             .query(filterQuery)
             .refresh(refreshPolicy);
     final Function<Exception, String> errorMessage =
