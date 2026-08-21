@@ -53,6 +53,7 @@ const Tile = styled(BaseTitle)`
   display: flex;
   flex-direction: column;
   border: 1px solid var(--cds-border-subtle-01);
+  border-radius: var(--operate-card-border-radius, 0);
 `;
 
 const TileTitle = styled.h2`

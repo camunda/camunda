@@ -10,12 +10,12 @@ import {useMemo, useState} from 'react';
 import {createPath} from 'react-router-dom';
 import {
   Activity,
-  Dashboard,
-  DataTable,
-  DecisionTree,
-  Flow,
-  ListChecked,
-} from '@carbon/react/icons';
+  GitBranch,
+  LayoutDashboard,
+  ListChecks,
+  Table2,
+  Workflow,
+} from 'lucide-react';
 import type {SidebarNode} from '@camunda/design-system';
 import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -52,7 +52,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         type: 'item',
         key: 'dashboard',
         label: 'Dashboard',
-        icon: Dashboard,
+        icon: LayoutDashboard,
         linkProps: {to: Paths.dashboard()},
         onClick: () => {
           tracking.track({
@@ -66,7 +66,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         type: 'item',
         key: 'processes',
         label: 'Processes',
-        icon: Flow,
+        icon: Workflow,
         isActive: (active) =>
           active === 'processes' || active.startsWith('process-details'),
         linkProps: {
@@ -85,7 +85,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
         type: 'item',
         key: 'decisions',
         label: 'Decisions',
-        icon: DecisionTree,
+        icon: GitBranch,
         isActive: (active) =>
           active === 'decisions' || active === 'decision-details',
         linkProps: {
@@ -116,7 +116,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
             type: 'item',
             key: 'batch-operations',
             label: 'Batch operations',
-            icon: DataTable,
+            icon: Table2,
             linkProps: {to: Paths.batchOperations()},
             onClick: () => {
               tracking.track({
@@ -130,7 +130,7 @@ function useSidebarChildren(hideNavLinks = false): SidebarNode[] {
             type: 'item',
             key: 'operations-log',
             label: 'Operations log',
-            icon: ListChecked,
+            icon: ListChecks,
             linkProps: {to: Paths.operationsLog()},
             onClick: () => {
               tracking.track({

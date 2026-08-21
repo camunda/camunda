@@ -57,6 +57,24 @@ body,
 
   &.operate-nav-v2 {
     min-width: 0;
+    --operate-card-border-radius: 0.75rem;
+    --operate-input-border-radius: 0.5rem;
+
+    .cds--text-input,
+    .cds--text-area,
+    .cds--search-input,
+    .cds--list-box,
+    .cds--select-input,
+    .cds--date-picker__input,
+    .cds--number input[type='number'] {
+      border: 1px solid var(--cds-border-subtle-01);
+      border-radius: var(--operate-input-border-radius);
+    }
+
+    .cds--search-close {
+      border-radius: 0 var(--operate-input-border-radius)
+        var(--operate-input-border-radius) 0;
+    }
   }
 }
 
