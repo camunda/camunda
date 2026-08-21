@@ -14,8 +14,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.RdbmsSchemaVersionStore.CurrentSchemaVersion.Kind;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.zeebe.util.migration.CurrentSchemaVersion.Kind;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;

@@ -10,6 +10,7 @@ package io.camunda.search.schema;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.CurrentSchemaVersion;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,43 +94,5 @@ public class ElasticsearchSchemaVersionStore {
   static Optional<String> toStableVersion(final String version) {
     return SemanticVersion.parse(version)
         .map(sv -> sv.major() + "." + sv.minor() + "." + sv.patch());
-  }
-
-  public record CurrentSchemaVersion(
-      CurrentSchemaVersion.Kind kind,
-      String prefix,
-      Optional<String> schemaVersion,
-      Optional<String> stableApplicationVersion,
-      Optional<String> detail) {
-
-    static CurrentSchemaVersion available(
-        final String prefix, final String schemaVersion, final String stableApplicationVersion) {
-      return new CurrentSchemaVersion(
-          Kind.AVAILABLE,
-          prefix,
-          Optional.of(schemaVersion),
-          Optional.of(stableApplicationVersion),
-          Optional.empty());
-    }
-
-    static CurrentSchemaVersion freshDatabase(final String prefix) {
-      return new CurrentSchemaVersion(
-          Kind.FRESH_DATABASE, prefix, Optional.empty(), Optional.empty(), Optional.empty());
-    }
-
-    static CurrentSchemaVersion readFailure(final String prefix, final Exception e) {
-      return new CurrentSchemaVersion(
-          Kind.READ_FAILURE,
-          prefix,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of("failed to read schema version: " + e.getMessage()));
-    }
-
-    public enum Kind {
-      AVAILABLE,
-      FRESH_DATABASE,
-      READ_FAILURE
-    }
   }
 }
