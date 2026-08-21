@@ -58,7 +58,7 @@ final class UpgradeReadinessEndpointIT {
               });
 
   @Test
-  void shouldReportBothProvidersMigratedForTheDefaultPhysicalTenant() {
+  void shouldReportAllProvidersMigratedForTheDefaultPhysicalTenant() {
     Awaitility.await("until every registered condition settles on MIGRATED for the default tenant")
         .atMost(TIMEOUT)
         .untilAsserted(
@@ -67,9 +67,11 @@ final class UpgradeReadinessEndpointIT {
 
               assertThat(response.physicalTenants()).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID);
               final var defaultTenant = response.physicalTenants().get(DEFAULT_PHYSICAL_TENANT_ID);
-              assertThat(defaultTenant).containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated");
+              assertThat(defaultTenant)
+                  .containsKeys("rdbmsSchemaMigrated", "rocksDbMigrated", "exporterMigrated");
               assertThat(defaultTenant.get("rdbmsSchemaMigrated").state()).isEqualTo("MIGRATED");
               assertThat(defaultTenant.get("rocksDbMigrated").state()).isEqualTo("MIGRATED");
+              assertThat(defaultTenant.get("exporterMigrated").state()).isEqualTo("MIGRATED");
               assertThat(response.upgradeable()).isTrue();
             });
   }
