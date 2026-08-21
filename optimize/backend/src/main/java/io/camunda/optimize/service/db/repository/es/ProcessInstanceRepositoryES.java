@@ -118,7 +118,8 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
       taskRepositoryES.tryDeleteByQueryRequest(
           query,
           String.format("process instances with definitionId %s", definitionId),
-          true,
+          true, // refresh
+          true, // failOnVersionConflicts
           getProcessInstanceIndexAliasName(bpmnProcessId));
     } catch (final RuntimeException e) {
       // A missing index surfaces either as a synchronous ElasticsearchException, or, via the async

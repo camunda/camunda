@@ -17,9 +17,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryResponse;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -112,6 +114,20 @@ public class TaskRepositoryES extends TaskRepository {
       final String deletedItemIdentifier,
       final boolean refresh,
       final String... indices) {
+    return tryDeleteByQueryRequest(query, deletedItemIdentifier, refresh, false, indices);
+  }
+
+  /**
+   * @param failOnVersionConflicts if {@code true}, the request aborts on the first version conflict
+   *     (a concurrent write on a matched document), which surfaces the conflict via the existing
+   *     failures-check as an {@link OptimizeByQueryFailureException}.
+   */
+  public boolean tryDeleteByQueryRequest(
+      final Query query,
+      final String deletedItemIdentifier,
+      final boolean refresh,
+      final boolean failOnVersionConflicts,
+      final String... indices) {
     LOG.debug("Deleting {}", deletedItemIdentifier);
     final boolean clusterTaskCheckingEnabled =
         configurationService
@@ -126,7 +142,7 @@ public class TaskRepositoryES extends TaskRepository {
                     .query(query)
                     .refresh(refresh)
                     .waitForCompletion(!clusterTaskCheckingEnabled)
-                    .conflicts(Conflicts.Proceed));
+                    .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed));
 
     if (clusterTaskCheckingEnabled) {
       return asyncDelete(query, deletedItemIdentifier, request);
@@ -137,7 +153,9 @@ public class TaskRepositoryES extends TaskRepository {
 
   private boolean syncUpdate(final UpdateByQueryRequest request) {
     try {
-      final Long updated = esClient.submitUpdateTask(request).updated();
+      final UpdateByQueryResponse response = esClient.submitUpdateTask(request);
+      throwOnFailures(response.failures());
+      final Long updated = response.updated();
       return updated != null && updated > 0L;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Error while trying to submit update task", e);
@@ -222,7 +240,7 @@ public class TaskRepositoryES extends TaskRepository {
       final String message =
           "A synchronous delete/update by query task contained failures: " + failures;
       LOG.error(message);
-      throw new OptimizeRuntimeException(message);
+      throw new OptimizeByQueryFailureException(message);
     }
   }
 }
