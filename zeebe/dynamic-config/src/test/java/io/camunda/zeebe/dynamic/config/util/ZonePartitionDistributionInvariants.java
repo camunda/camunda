@@ -99,14 +99,34 @@ final class ZonePartitionDistributionInvariants {
             metadata
                 .getPrimary()
                 .ifPresent(primary -> leaderCountByMember.merge(primary, 1, Integer::sum)));
-    final int max =
-        leaderCountByMember.values().stream().mapToInt(Integer::intValue).max().orElse(0);
-    final int min =
-        leaderCountByMember.values().stream().mapToInt(Integer::intValue).min().orElse(0);
+    assertBalanced(
+        leaderCountByMember, "primary count per top-priority-zone", primaryBalanceTolerance);
+
+    // 6. replica count is balanced across every zone's own available brokers — catches a
+    // reassigner that keeps piling replicas onto the same subset of a zone's brokers instead of
+    // spreading them across all brokers the zone actually has available
+    zoneSpecs.forEach(
+        spec -> {
+          final Map<MemberId, Integer> replicaCountByZoneMember = new HashMap<>();
+          targetMembers.stream()
+              .filter(member -> member.isInZone(spec.name()))
+              .forEach(member -> replicaCountByZoneMember.put(member, 0));
+          result.forEach(
+              metadata ->
+                  metadata.members().stream()
+                      .filter(member -> member.isInZone(spec.name()))
+                      .forEach(member -> replicaCountByZoneMember.merge(member, 1, Integer::sum)));
+          assertBalanced(
+              replicaCountByZoneMember, "replica count in zone '" + spec.name() + "'", 1);
+        });
+  }
+
+  private static void assertBalanced(
+      final Map<MemberId, Integer> countByMember, final String kind, final int tolerance) {
+    final int max = countByMember.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+    final int min = countByMember.values().stream().mapToInt(Integer::intValue).min().orElse(0);
     assertThat(max - min)
-        .as(
-            "primary count per top-priority-zone member must be balanced, but was %s",
-            leaderCountByMember)
-        .isLessThanOrEqualTo(primaryBalanceTolerance);
+        .as("%s must be balanced, but was %s", kind, countByMember)
+        .isLessThanOrEqualTo(tolerance);
   }
 }
