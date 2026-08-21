@@ -250,6 +250,67 @@ class AgentInstanceWriterTest {
             eq(new AgentInstanceElementInstanceKeysDto(4L, List.of(300L, 301L))));
   }
 
+  @Test
+  void shouldMergeConfigurationFieldsIntoRowInsertWhenMergedBeforeFlush() throws Exception {
+    // given: a real ExecutionQueue so the actual merge logic (UpsertMerger) runs, reproducing the
+    // Copilot-flagged gap from https://github.com/camunda/camunda/pull/60728 - update()'s merge
+    // function only copied agentDefinition/processDefinition/status/metrics/tools onto the pending
+    // INSERT, silently dropping model/provider/systemPrompt/maxTokens/maxModelCalls/maxToolCalls
+    // whenever the update coalesced into a not-yet-flushed create().
+    final var session = mock(SqlSession.class);
+    final var sqlSessionFactory = mock(SqlSessionFactory.class);
+    final var metrics = mock(RdbmsWriterMetrics.class);
+    when(sqlSessionFactory.openSession(
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
+        .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
+
+    final var realExecutionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    final var realWriter =
+        new AgentInstanceWriter(realExecutionQueue, mapper, vendorDatabaseProperties);
+
+    final var created = buildModel(5L, List.of(400L));
+    final var updated =
+        new AgentInstanceDbModel.Builder()
+            .agentInstanceKey(5L)
+            .status(AgentInstanceStatus.IDLE)
+            .inputTokens(0L)
+            .outputTokens(0L)
+            .modelCalls(0)
+            .toolCalls(0)
+            .lastUpdatedDate(OffsetDateTime.now())
+            .model("gpt-5")
+            .provider("openai")
+            .systemPrompt("be helpful")
+            .maxTokens(1000L)
+            .maxModelCalls(10)
+            .maxToolCalls(5)
+            .elementInstanceKeys(List.of(400L))
+            .build();
+
+    // when
+    realWriter.create(created);
+    realWriter.update(updated);
+    realExecutionQueue.flush();
+
+    // then: the merged row INSERT carries the CONFIGURATION fields from the update, not the
+    // (empty) ones from create() - no separate UPDATE statement was needed
+    final var rowInsertParam = ArgumentCaptor.forClass(Object.class);
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), rowInsertParam.capture());
+    final var mergedRow = (AgentInstanceDbModel) rowInsertParam.getValue();
+    assertThat(mergedRow.model()).isEqualTo("gpt-5");
+    assertThat(mergedRow.provider()).isEqualTo("openai");
+    assertThat(mergedRow.systemPrompt()).isEqualTo("be helpful");
+    assertThat(mergedRow.maxTokens()).isEqualTo(1000L);
+    assertThat(mergedRow.maxModelCalls()).isEqualTo(10);
+    assertThat(mergedRow.maxToolCalls()).isEqualTo(5);
+    verify(session, never())
+        .update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+  }
+
   private AgentInstanceDbModel buildModel(final long key, final List<Long> elementInstanceKeys) {
     return new AgentInstanceDbModel.Builder()
         .agentInstanceKey(key)
