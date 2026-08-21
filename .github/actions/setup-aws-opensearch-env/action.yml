@@ -4,7 +4,7 @@ name: Setup AWS OpenSearch env
 # owner: @camunda/data-layer
 
 description: |
-  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected 
+  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected
   version, and configures AWS credentials.
 
 inputs:
@@ -75,3 +75,7 @@ runs:
         aws-region: ${{ env.AWS_REGION }}
         web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
         role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        # AWS OpenSearch tests take longer because we opted out of parallelizing them to avoid
+        # overloading the underlying infrastructure. Keep this credential live longer to avoid
+        # token expiry errors (set TTL to 6 hours).
+        role-duration-seconds: 21600
