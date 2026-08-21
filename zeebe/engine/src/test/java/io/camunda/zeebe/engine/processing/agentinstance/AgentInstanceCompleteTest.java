@@ -9,10 +9,12 @@ package io.camunda.zeebe.engine.processing.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +59,56 @@ public class AgentInstanceCompleteTest {
             .withRecordKey(fixture.agentInstanceKey())
             .getFirst();
     assertThat(completed.getValue().getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED);
+  }
+
+  @Test
+  public void shouldRemoveCommittedHistoryItemIdsAtScaleOnCompletion() {
+    // given — an agent instance that accumulated more than 1,000 committed history-item ids,
+    // seeded directly against state rather than by driving 1,500 real commands, since only the
+    // cleanup on completion is under test here
+    final var fixture = deployAndCreateAgentInstance();
+    final int committedIdCount = 1500;
+    Awaitility.await("engine is idle before writing directly to state")
+        .until(ENGINE::hasReachedEnd);
+    final var agentHistoryState =
+        ((MutableProcessingState) ENGINE.getProcessingState()).getAgentHistoryState();
+    IntStream.range(0, committedIdCount)
+        .forEach(
+            i ->
+                agentHistoryState.putCommittedHistoryItemKey(
+                    fixture.agentInstanceKey(), "history-item-" + i, i));
+
+    // when
+    ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
+
+    // then — the agent instance still completes normally
+    final var completed =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
+            .withRecordKey(fixture.agentInstanceKey())
+            .getFirst();
+    assertThat(completed.getValue().getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED);
+
+    // and — every committed id seeded for this agent instance is gone from state
+    Awaitility.await("engine is idle before reading directly from state")
+        .until(ENGINE::hasReachedEnd);
+    IntStream.range(0, committedIdCount)
+        .forEach(
+            i ->
+                assertThat(
+                        agentHistoryState.getCommittedHistoryItemKey(
+                            fixture.agentInstanceKey(), "history-item-" + i))
+                    .describedAs("committed id history-item-%d should be removed on completion", i)
+                    .isNull());
+
+    // and — cleanup did not write any AGENT_HISTORY records; it only touched the committed-ids
+    // column family directly, so this pins "no drain loop" without pinning a record count on the
+    // AGENT_INSTANCE value type, which legitimately carries the re-chain command and the closing
+    // NOT_FOUND rejection in addition to COMPLETED
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records -> records.withValueType(ValueType.AGENT_HISTORY).exists()))
+        .describedAs("completion must not write any AGENT_HISTORY records")
+        .isFalse();
   }
 
   @Test

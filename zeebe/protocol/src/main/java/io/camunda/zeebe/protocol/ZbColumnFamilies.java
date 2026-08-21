@@ -372,7 +372,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
   // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
   // reason as the sibling CF above.
-  AGENT_DEFINITION_BY_KEY(162, GLOBAL);
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
+
+  // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
+  // committed for an agent instance, so a later job resending an id that an earlier, already-
+  // completed job committed can still be recognized as a duplicate — pending state alone can't do
+  // this, since a committed item is deleted from it. Retained for the agent instance's whole
+  // lifetime and deleted in one pass when the instance completes (see
+  // AgentInstanceCompletedApplier).
+  AGENT_HISTORY_COMMITTED_IDS(163, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

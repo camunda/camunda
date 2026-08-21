@@ -27,9 +27,10 @@ public final class AgentHistoryCreatedApplier
     // Store only the identity fields in primary storage (RocksDB). content/toolCalls/metrics/
     // producedAt have already reached secondary storage via the CREATED event itself; nothing reads
     // them back out of primary storage — matching a COMMIT/DISCARD only needs jobKey/jobLease, and
-    // deleting the item needs the same two fields. Storing the trimmed copy also means the
-    // COMMITTED/DISCARDED events re-emitted from state carry only identity fields, with no extra
-    // stripping needed at those emit sites.
+    // deleting the item needs the same two fields. historyItemId is kept too: dedup matches on it
+    // once an item is pending or committed, so it must survive here as well. Storing the trimmed
+    // copy also means the COMMITTED/DISCARDED events re-emitted from state carry only identity
+    // fields, with no extra stripping needed at those emit sites.
     //
     // This is an explicit allow-list (not a full copy with payload cleared afterward) so that a
     // field added to AgentHistoryRecord in the future is excluded from primary storage by default —
@@ -50,6 +51,7 @@ public final class AgentHistoryCreatedApplier
             .setTenantId(value.getTenantId())
             .setJobKey(value.getJobKey())
             .setJobLease(value.getJobLease())
+            .setHistoryItemId(value.getHistoryItemId())
             .setLoopIteration(value.getLoopIteration())
             .setRole(value.getRole());
     agentHistoryState.insert(key, identityRecord);
