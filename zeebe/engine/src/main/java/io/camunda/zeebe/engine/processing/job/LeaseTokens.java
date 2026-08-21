@@ -27,6 +27,13 @@ public final class LeaseTokens {
    * Returns an opaque token; callers must not parse it. Call once per activated job — never reuse
    * one token across the jobs of a batch. Random with enough entropy that collisions between leased
    * jobs are negligible.
+   *
+   * <p>Every call site that applies a new lease to a job which may already hold one (a
+   * re-activation) must also discard that job's agent history for the old lease — see {@link
+   * io.camunda.zeebe.engine.processing.job.JobBatchCollector} and {@link
+   * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior} for the two
+   * existing sites. A new lease-minting site that skips this leaves the previous lease's pending
+   * {@code AgentHistory} items stranded, never discarded or committed.
    */
   public static String generate() {
     return UUID.randomUUID().toString();
