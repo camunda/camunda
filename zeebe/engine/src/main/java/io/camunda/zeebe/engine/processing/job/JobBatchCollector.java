@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -44,6 +45,13 @@ import org.agrona.collections.ObjectHashSet;
  * and added to the given batch record.
  */
 final class JobBatchCollector {
+
+  // constant regardless of the job key value: a fixed-width long field plus the ignoreLease flag.
+  // Reserved per reactivated job below so the ACTIVATED batch never grows into room its
+  // compensating DISCARD command (appended later, once the batch is final) would not fit in.
+  private static final int DISCARD_COMMAND_LENGTH =
+      new AgentHistoryRecord().setJobKey(Long.MAX_VALUE).ignoreLease().getLength();
+
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
   private final LongHashSet reactivatedAgenticJobKeys = new LongHashSet();
 
@@ -104,6 +112,8 @@ final class JobBatchCollector {
     final var maxActivatedCount = value.getMaxJobsToActivate();
     final var activatedCount = new MutableInteger(0);
     final var skippedUncachedSecretJobs = new MutableInteger(0);
+    // room already promised to the discard commands of the reactivated jobs accepted so far
+    final var reservedDiscardBytes = new MutableInteger(0);
     final var unwritableJob = new MutableReference<TooLargeJob>();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
     final var deadline = clock.millis() + value.getTimeout();
@@ -162,11 +172,14 @@ final class JobBatchCollector {
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,
-          // as well as an 8 KB buffer.
+          // room already reserved for earlier reactivated jobs' discard commands, this job's own
+          // discard command if it is a reactivation too, as well as an 8 KB buffer.
           final var jobRecordLength = jobRecord.getLength();
           final var expectedEventLength =
               record.getLength()
                   + jobRecordLength
+                  + reservedDiscardBytes.value
+                  + (isReactivation ? DISCARD_COMMAND_LENGTH : 0)
                   + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
           if (activatedCount.value <= maxActivatedCount
               && canWriteEventOfLength.test(expectedEventLength)) {
@@ -176,8 +189,11 @@ final class JobBatchCollector {
             if (isReactivation) {
               // Re-activation: the previous lease's pending history items must be discarded
               // before the new lease starts accumulating its own, so at most one lease's
-              // optimistic edits are ever unresolved on the AgentInstance at a time.
+              // optimistic edits are ever unresolved on the AgentInstance at a time. The room for
+              // that discard command was already reserved above, so it is guaranteed to fit once
+              // appended after this batch is final.
               reactivatedAgenticJobKeys.add(key);
+              reservedDiscardBytes.set(reservedDiscardBytes.value + DISCARD_COMMAND_LENGTH);
             }
             activatedCount.increment();
 
