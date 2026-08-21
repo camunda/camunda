@@ -95,7 +95,6 @@ public interface PartitionManager {
         brokerStartupContext.getDiskSpaceUsageMonitor(),
         partitionListeners,
         brokerStartupContext.getPartitionRaftListeners(),
-        brokerStartupContext.getSnapshotApiRequestHandler(),
         physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
         jobStreamService.jobStreamer(),

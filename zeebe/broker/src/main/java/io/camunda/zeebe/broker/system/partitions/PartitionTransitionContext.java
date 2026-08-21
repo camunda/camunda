@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -122,6 +124,12 @@ public interface PartitionTransitionContext extends PartitionContext {
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
   AtomixServerTransport getGatewayBrokerTransport();
+
+  BrokerClient getBrokerClient();
+
+  SnapshotApiRequestHandler getSnapshotApiRequestHandler();
+
+  void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
 
   BackupApiRequestHandler getBackupApiRequestHandler();
 

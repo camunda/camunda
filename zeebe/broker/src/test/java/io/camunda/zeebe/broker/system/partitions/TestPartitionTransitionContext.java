@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -84,6 +85,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private BrokerClient brokerClient;
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
@@ -210,7 +213,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return null;
+    return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public void setSnapshotApiRequestHandler(
+      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+  }
+
+  @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
+  public void setBrokerClient(final BrokerClient brokerClient) {
+    this.brokerClient = brokerClient;
   }
 
   @Override

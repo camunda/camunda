@@ -23,7 +23,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -128,10 +127,6 @@ final class PhysicalTenantPartitionScalingIT {
    * state to leak.
    */
   @Test
-  @Disabled(
-      "The hand-off really is cross-tenant today: SnapshotApiRequestHandler keys transfer"
-          + " services by bare partition number, so the new partition can bootstrap from the"
-          + " default tenant's snapshot — https://github.com/camunda/camunda/issues/60676")
   void shouldServeTheScaledUpPartitionFromItsOwnPhysicalTenant() {
     // given — a process deployed to tenant A, and a decoy deployed to the default tenant, before
     // tenant A is scaled up
