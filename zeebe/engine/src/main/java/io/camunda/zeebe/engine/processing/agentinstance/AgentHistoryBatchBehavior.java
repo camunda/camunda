@@ -67,6 +67,10 @@ public final class AgentHistoryBatchBehavior {
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance configuration with history item '%s',"
           + " but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
+  private static final String ERROR_MSG_CHANGED_ATTRIBUTES_EMPTY =
+      "Expected to update agent instance configuration with history item '%s',"
+          + " but changedAttributes was empty. A CONFIGURATION item must name at least one"
+          + " attribute it changes.";
 
   private final KeyGenerator keyGenerator;
   private final ProcessingState processingState;
@@ -169,6 +173,13 @@ public final class AgentHistoryBatchBehavior {
       }
 
       if (item.getRole() == AgentHistoryRole.CONFIGURATION) {
+        if (item.getChangedAttributes().isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  ERROR_MSG_CHANGED_ATTRIBUTES_EMPTY.formatted(historyItemId)));
+        }
+
         final var unknown =
             item.getChangedAttributes().stream()
                 .filter(Predicate.not(ALLOWED_CONFIGURATION_ATTRIBUTES::contains))
