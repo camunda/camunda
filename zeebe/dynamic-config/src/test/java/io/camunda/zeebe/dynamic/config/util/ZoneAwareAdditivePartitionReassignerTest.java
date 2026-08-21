@@ -355,6 +355,35 @@ final class ZoneAwareAdditivePartitionReassignerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  void shouldNotRejectWhenAnUnrelatedGroupHasMoreReplicasThanTheRequestedReplicationFactor() {
+    // given — tenantA already has 3 replicas in zone-a (e.g. from an earlier, independent
+    // per-tenant scale up), while tenantB (NEW_GROUP) is being provisioned with replicationFactor
+    // 1. tenantA is untouched and not being scaled by this call at all
+    final var zoneA0 = MemberId.from(ZONE_A, 0);
+    final var zoneA1 = MemberId.from(ZONE_A, 1);
+    final var zoneA2 = MemberId.from(ZONE_A, 2);
+    final var existingTenantA =
+        PartitionMetadataFixtures.partition("tenantA", 1, Set.of(zoneA0, zoneA1, zoneA2), zoneA0);
+    final var configuration =
+        configurationWithExistingGroups(Map.of("tenantA", Set.of(existingTenantA)));
+    final var reassigner =
+        new ZoneAwareAdditivePartitionReassigner(List.of(new ZoneSpec(ZONE_A, 1, 100)));
+    final var targetMembers = zoneMembers(ZONE_A, 3, ZONE_B, 0);
+    final var targetPartitionIds =
+        List.of(new PartitionId("tenantA", 1), new PartitionId(NEW_GROUP, 1));
+
+    // when — this must succeed rather than reject the whole batch just because an unrelated
+    // group's current replica count happens to exceed this call's replicationFactor
+    final var assigned =
+        reassigner.reassignPartitions(configuration, targetMembers, targetPartitionIds, 1);
+
+    // then — tenantA's over-replicated partition is passed through completely unchanged
+    assertThat(assigned).contains(existingTenantA);
+    final var placed = findPartition(assigned, NEW_GROUP, 1);
+    assertThat(placed.members()).hasSize(1);
+  }
+
   private CurrentClusterConfiguration configurationWithExistingGroups(
       final Map<String, Set<PartitionMetadata>> existingGroups) {
     final Set<PartitionMetadata> allExisting = new HashSet<>();

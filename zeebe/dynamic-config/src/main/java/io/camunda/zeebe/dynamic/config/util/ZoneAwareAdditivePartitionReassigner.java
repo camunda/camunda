@@ -9,7 +9,7 @@ package io.camunda.zeebe.dynamic.config.util;
 
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.accumulateLoad;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.selectNewPartitionMembers;
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateNoRemoval;
+import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateExistingPartitionsAreNotRemoved;
 import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateTargetMembers;
 
 import io.atomix.cluster.MemberId;
@@ -76,12 +76,13 @@ import java.util.stream.Stream;
  *
  * <p>Removing a partition or an entire group is not supported: {@code targetPartitionIds} must
  * include every existing partition id of every existing group, not just the ones being changed —
- * see {@link PartitionReassignmentSupport#validateNoRemoval}. This is a deliberate change from the
- * previous zone-aware provisioning path, which delegated to a from-scratch {@link
- * ZoneAwarePartitionDistributor} call with no notion of "current state" and therefore never
- * enforced this: a group with more replicas than {@code replicationFactor} now blocks the whole
- * batch here, the same as it already does for {@link AdditivePartitionReassigner} on non-zone-aware
- * clusters, rather than being silently tolerated only on zone-aware ones.
+ * see {@link PartitionReassignmentSupport#validateExistingPartitionsAreNotRemoved}. This is a
+ * deliberate change from the previous zone-aware provisioning path, which delegated to a
+ * from-scratch {@link ZoneAwarePartitionDistributor} call with no notion of "current state" and
+ * therefore never enforced this. An unrelated group's current replica count exceeding {@code
+ * replicationFactor} is not rejected, however — another physical tenant may legitimately be mid-way
+ * through its own, independent scaling operation when a new tenant is provisioned, which has no
+ * bearing on this call: it never touches any group but the new one(s) being added.
  *
  * <p>Example with 2 zones (zone-a prio=1000 x 2 replicas/4 brokers, zone-b prio=500 x 2 replicas/4
  * brokers), RF=4. {@code foo}/{@code bar} are the cluster's original tenants, placed at bootstrap
@@ -142,7 +143,7 @@ public final class ZoneAwareAdditivePartitionReassigner implements PartitionReas
 
     final Map<String, Set<PartitionMetadata>> distributionByGroup =
         ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(currentConfiguration);
-    validateNoRemoval(distributionByGroup, targetPartitionIds, replicationFactor);
+    validateExistingPartitionsAreNotRemoved(distributionByGroup, targetPartitionIds);
 
     final Set<String> targetGroups =
         targetPartitionIds.stream().map(PartitionId::group).collect(Collectors.toSet());

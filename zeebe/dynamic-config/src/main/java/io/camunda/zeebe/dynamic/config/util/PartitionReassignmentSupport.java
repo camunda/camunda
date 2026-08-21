@@ -306,10 +306,9 @@ public final class PartitionReassignmentSupport {
    * @throws IllegalArgumentException if any existing partition id, in any group, is missing from
    *     {@code targetPartitionIds}
    */
-  static void validateNoRemoval(
+  static void validateExistingPartitionsAreNotRemoved(
       final Map<String, Set<PartitionMetadata>> distributionByGroup,
-      final List<PartitionId> targetPartitionIds,
-      final int replicationFactor) {
+      final List<PartitionId> targetPartitionIds) {
     final Set<PartitionId> targetIdSet = Set.copyOf(targetPartitionIds);
     final var missing =
         distributionByGroup.values().stream()
@@ -323,21 +322,6 @@ public final class PartitionReassignmentSupport {
               + "removing partitions or groups is not supported by this reassigner, but is "
               + "missing: "
               + missing);
-    }
-
-    final var partitionsWithReducedReplicationFactor =
-        distributionByGroup.values().stream()
-            .flatMap(Set::stream)
-            .filter(metadata -> metadata.members().size() > replicationFactor)
-            .toList();
-
-    if (!partitionsWithReducedReplicationFactor.isEmpty()) {
-      throw new IllegalArgumentException(
-          "targetPartitionIds must not reduce the replication factor of any existing partition — "
-              + "reducing replication factor is not supported by this reassigner, but the following partitions have more members than the target replication factor: "
-              + partitionsWithReducedReplicationFactor.stream()
-                  .map(PartitionMetadata::id)
-                  .toList());
     }
   }
 

@@ -31,9 +31,9 @@ import java.util.Set;
  * treated as "leave it alone" or "remove it" — or rejected outright — is defined by each
  * implementation, not by this interface: {@link AdditivePartitionReassigner} does not support
  * removal at all and rejects any call that omits an existing partition or group (see {@link
- * PartitionReassignmentSupport#validateNoRemoval}); a future implementation is expected to support
- * explicit removal, where omitting an id means exactly that. Consult the implementation's javadoc
- * for its specific policy.
+ * PartitionReassignmentSupport#validateExistingPartitionsAreNotRemoved}); a future implementation
+ * is expected to support explicit removal, where omitting an id means exactly that. Consult the
+ * implementation's javadoc for its specific policy.
  *
  * <p>The order of {@code targetPartitionIds} does not affect the result — implementations process
  * ids in their natural {@link PartitionId} order, not list order, so two calls with the same id set

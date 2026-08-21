@@ -396,6 +396,31 @@ final class AdditivePartitionReassignerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  void shouldNotRejectWhenAnUnrelatedGroupHasMoreReplicasThanTheRequestedReplicationFactor() {
+    // given — tenantA already has 3 replicas (e.g. from an earlier, independent per-tenant scale
+    // up), while tenantB is being provisioned with replicationFactor 1. tenantA is untouched and
+    // not being scaled by this call at all
+    final PartitionMetadata existingTenantA =
+        PartitionMetadataFixtures.partition(
+            "tenantA", 1, Set.of(member(0), member(1), member(2)), member(0));
+    final var configuration =
+        configurationWithExistingGroups(Map.of("tenantA", Set.of(existingTenantA)));
+    final var targetMembers = members(3);
+    final var targetPartitionIds =
+        List.of(new PartitionId("tenantA", 1), new PartitionId(NEW_GROUP, 1));
+
+    // when — this must succeed rather than reject the whole batch just because an unrelated
+    // group's current replica count happens to exceed this call's replicationFactor
+    final var assigned =
+        reassigner.reassignPartitions(configuration, targetMembers, targetPartitionIds, 1);
+
+    // then — tenantA's over-replicated partition is passed through completely unchanged
+    assertThat(assigned).contains(existingTenantA);
+    final var placed = findPartition(assigned, NEW_GROUP, 1);
+    assertThat(placed.members()).hasSize(1);
+  }
+
   private CurrentClusterConfiguration configurationWithExistingGroups(
       final Map<String, Set<PartitionMetadata>> existingGroups) {
     final Set<PartitionMetadata> allExisting = new HashSet<>();
