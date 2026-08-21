@@ -23,6 +23,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -45,8 +47,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 final class ClusterEndpointTest {
 
@@ -417,6 +421,73 @@ final class ClusterEndpointTest {
       assertThat(body).isNotNull();
       assertThat(body.getChanges()).extracting(ConfigurationChange::getId).containsExactly(2L);
       verify(sender).getTopology();
+    }
+  }
+
+  @Nested
+  class DumpEndpoint {
+
+    @Test
+    void shouldDumpTheConfigurationAsJson() {
+      // given
+      final var configuration = configuration();
+      final var endpoint = new ClusterEndpoint(senderReturning(configuration));
+
+      // when
+      final var response = endpoint.dumpConfigurationAsJson();
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+      assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.STRING)
+          .isEqualTo(ClusterConfigurationJsonSerializer.toJson(configuration));
+    }
+
+    @Test
+    void shouldDumpTheSameConfigurationAsProtobuf() {
+      // given
+      final var configuration = configuration();
+      final var endpoint = new ClusterEndpoint(senderReturning(configuration));
+
+      // when
+      final var response = endpoint.dumpConfigurationAsProtobuf();
+
+      // then — the two encodings describe the same configuration, which is the point of deriving
+      // both from the schema the cluster itself uses
+      assertThat(response.getStatusCode().value()).isEqualTo(200);
+      assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROTOBUF);
+      assertThat(response.getBody())
+          .isEqualTo(new ProtoBufSerializer().encodeCurrentClusterConfiguration(configuration));
+    }
+
+    @Test
+    void shouldOfferProtobufAsAnAttachment() {
+      // given — a bare curl would otherwise write binary straight to the terminal
+      final var endpoint = new ClusterEndpoint(senderReturning(configuration()));
+
+      // when
+      final var response = endpoint.dumpConfigurationAsProtobuf();
+
+      // then
+      assertThat(response.getHeaders().getContentDisposition().isAttachment()).isTrue();
+    }
+
+    private CurrentClusterConfiguration configuration() {
+      return CurrentClusterConfiguration.fromLegacy(
+          ClusterConfiguration.init()
+              .addMember(
+                  MemberId.from("0"),
+                  MemberState.initializeAsActive(
+                      Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
+    }
+
+    private ClusterConfigurationManagementRequestSender senderReturning(
+        final CurrentClusterConfiguration configuration) {
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      when(sender.getTopology())
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
+      return sender;
     }
   }
 
